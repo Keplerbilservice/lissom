@@ -27,6 +27,7 @@
     .lx-kortgrid img { object-position: center 32%; }
     @keyframes lissomBolge { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
     @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+    button[aria-label="Meny"] { order: 3; }
     [data-screen-label="Admin mobil"] { display: none; }
     @media (max-width: 760px) {
       [data-screen-label^="Admin"] { display: none !important; }
@@ -42,7 +43,9 @@
       .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
       .lx-hero-p { font-size: 18px !important; }
       .lx-hero-cta { zoom: 1 !important; }
-      .lx-hero-hjerte { position: relative !important; top: auto !important; bottom: auto !important; right: auto !important; height: auto !important; order: 2; width: min(80vw, 380px) !important; margin: 0 auto 40px !important; }
+      .lx-hero-hjerte { display: none !important; }
+      .lx-hjertelogo { display: block !important; }
+      .lx-footlinks { flex-direction: row !important; flex-wrap: wrap !important; gap: 10px 18px !important; }
       .lx-foto { height: 320px !important; }
       .lx-fotokol { height: auto !important; }
       .lx-split { grid-template-columns: 1fr !important; }
@@ -88,6 +91,9 @@
 
       <section class="lx-hero" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: calc(82vh / 1.05);">
         <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; left: -140px; bottom: -180px; width: 560px; opacity: 0.07; pointer-events: none;">
+        <div class="lx-hjertelogo" aria-hidden="true" style="display: none; position: absolute; left: -320px; top: -40px; width: 900px; height: 870px; opacity: 0.12; pointer-events: none; transform: rotate(-8deg); -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);">
+          <div style="width: 100%; height: 100%; background: linear-gradient(160deg, var(--terracotta-500) 0%, var(--brown-500) 45%, var(--lissom-brown) 100%); -webkit-mask-image: url('uploads_logo-7df29c0f.png'); mask-image: url('uploads_logo-7df29c0f.png'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></div>
+        </div>
         <div class="lx-hero-hjerte" style="position: absolute; top: -30%; bottom: -46%; right: -16%; aspect-ratio: 1.036;">
           <div style="position: absolute; inset: 0; background-image: {{ heroBildeCss }}; background-size: cover; background-position: center top; mask-image: url('heart-logo-mask.png'); -webkit-mask-image: url('heart-logo-mask.png'); mask-size: 100% 100%; -webkit-mask-size: 100% 100%; mask-repeat: no-repeat; -webkit-mask-repeat: no-repeat; mask-position: center; -webkit-mask-position: center;" role="img" aria-label="Keramiker former leire på dreieskiven"></div>
         </div>
@@ -95,6 +101,7 @@
         <div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(to top left, var(--lissom-yellow) 8%, rgba(255,207,56,0.75) 22%, rgba(255,207,56,0.35) 40%, transparent 58%); pointer-events: none;"></div>
         <div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 200px var(--space-8) 96px max(var(--space-10), calc((100vw / 1.05 - 1800px) / 4 + 40px)); align-self: safe center;">
           <div style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-8);">Keramikkverksted på Teie, rett utenfor Tønsberg</div>
+
           <h1 class="lx-hero-h1" onMouseMove="{{ heroGradientMove }}" onMouseLeave="{{ heroGradientLeave }}" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(48px, 6vw, 100px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-16); max-width: none; text-wrap: balance; cursor: default;">{{ heroTittel }} <em style="font-style: italic; font-weight: 700;">{{ heroAksent }}</em></h1>
           <div style="max-width: 980px;">
             <p class="lx-hero-p" style="font: var(--type-body); font-size: clamp(19px, 1.5vw, 26px); line-height: 1.55; color: var(--brown-500); margin: 0; text-wrap: pretty;">{{ heroTekst }}</p>
@@ -106,6 +113,7 @@
             <sc-if value="{{ visKursvelger }}" hint-placeholder-val="{{ true }}">
               <p class="lx-hero-p" style="margin: var(--space-6) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">Trenger du hjelp til å finne kurset som passer deg? <button type="button" onClick="{{ kvApne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Trykk her</button></p>
             </sc-if>
+
           </div>
         </div>
       </section>
@@ -721,11 +729,12 @@
                   <sc-if value="{{ visAntallPlasser }}" hint-placeholder-val="{{ true }}">
                   <div>
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Antall plasser</label>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                      <sc-for list="{{ bAntallValg }}" as="t" hint-placeholder-count="3">
-                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ t.valgt }}" on-click="{{ t.velg }}" hint-size="auto,32px">{{ t.navn }}</x-import>
-                      </sc-for>
+                    <div style="display: inline-flex; align-items: center; gap: var(--space-2); border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px;">
+                      <button type="button" onClick="{{ bAntMinus }}" aria-label="Færre plasser" style="appearance: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--clay-100); color: var(--lissom-brown); font-size: 20px; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center;">−</button>
+                      <span style="min-width: 92px; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading);">{{ bAntTekst }}</span>
+                      <button type="button" onClick="{{ bAntPlus }}" aria-label="Flere plasser" style="appearance: none; cursor: pointer; width: 34px; height: 34px; border-radius: 50%; border: none; background: var(--lissom-yellow); color: var(--lissom-brown); font-size: 20px; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center;">+</button>
                     </div>
+                    <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">{{ bAntMaksTekst }}</div>
                   </div>
                   <div style="height: var(--space-4);"></div>
                   </sc-if>
@@ -2186,6 +2195,24 @@
                 <div style="font-size: var(--text-sm); color: var(--text-body);">{{ n.hva }}</div>
               </div>
             </sc-for>
+          </sc-if>
+        </div>
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div onClick="{{ mobForToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
+            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Medlemskapsforespørsler</span>
+            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobForPil }}</span>
+          </div>
+          <sc-if value="{{ mobForApen }}" hint-placeholder-val="{{ false }}">
+            <sc-for list="{{ ovMedlemskap }}" as="n" hint-placeholder-count="2">
+              <div onClick="{{ n.velg }}" style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+                <div style="display: flex; justify-content: space-between; gap: var(--space-3);">
+                  <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ n.hva }}</div>
+              </div>
+            </sc-for>
+            <div style="padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Trykk på en forespørsel for å godkjenne — også søknader om frys av medlemskap.</div>
           </sc-if>
         </div>
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
@@ -3902,7 +3929,7 @@
           </div>
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Utforsk</div>
-            <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+            <div class="lx-footlinks" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
               <sc-for list="{{ footerTilbud }}" as="l" hint-placeholder-count="6">
                 <button type="button" onClick="{{ l.velg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font-family: var(--font-sans); font-size: var(--text-base); color: var(--clay-200); transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">{{ l.navn }}</button>
               </sc-for>
@@ -3910,7 +3937,7 @@
           </div>
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Lissom</div>
-            <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+            <div class="lx-footlinks" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
               <sc-for list="{{ footerOm }}" as="l" hint-placeholder-count="6">
                 <button type="button" onClick="{{ l.velg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font-family: var(--font-sans); font-size: var(--text-base); color: var(--clay-200); transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">{{ l.navn }}</button>
               </sc-for>
@@ -6348,9 +6375,18 @@ class Component extends DCLogic {
       })),
       visAntallPlasser: ((this.state.valgtKurs || {}).tema || '') !== 'Medlemskap',
       visRefusjonNote: !this.state.bookKvittert && ((this.state.valgtKurs || {}).tema || '') !== 'Medlemskap',
-      bAntallValg: ['1 plass', '2 plasser', '3 plasser'].map(navn => ({
-        navn, valgt: (this.state.bAntall || '1 plass') === navn, velg: () => this.setState({ bAntall: navn }),
-      })),
+      ...(() => {
+        const k = this.state.valgtKurs || {};
+        const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
+        const maks = erDreiing ? 8 : 12;
+        const n = Math.min(this.state.bAntallN || 1, maks);
+        return {
+          bAntTekst: n + (n === 1 ? ' plass' : ' plasser'),
+          bAntMaksTekst: 'Maks ' + maks + ' plasser på dette kurset',
+          bAntMinus: () => this.setState({ bAntallN: Math.max(1, n - 1) }),
+          bAntPlus: () => this.setState({ bAntallN: Math.min(maks, n + 1) }),
+        };
+      })(),
       levValg: ['Hent i butikken på Teie', 'Send som pakke (89 kr)'].map(navn => ({
         navn, valgt: (this.state.levValg || 'Hent i butikken på Teie') === navn, velg: () => this.setState({ levValg: navn }),
       })),
@@ -6657,7 +6693,7 @@ class Component extends DCLogic {
           o[k + 'Pil'] = apne[k] ? '▲' : '▼';
           return o;
         };
-        return Object.assign({}, lag('mobKur'), lag('mobBut'), lag('mobMeld'), lag('mobInne'));
+        return Object.assign({}, lag('mobKur'), lag('mobBut'), lag('mobMeld'), lag('mobInne'), lag('mobFor'));
       })(),
       ovMedlemskap: [
         { navn: 'Ole Aarseth', hva: 'Vil forlenge prøvemedlemskapet', tid: '2 timer siden' },

@@ -1,0 +1,30 @@
+:root{
+--font-display:"Bitter","Clarendon","Georgia",serif;
+--font-sans:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+--font-caps:"Alegreya Sans SC","Alegreya Sans",system-ui,sans-serif;
+--font-mono:ui-monospace,"SFMono-Regular","Menlo",monospace;
+
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;--weight-black:800;
+
+--text-2xs:12px;--text-xs:14px;--text-sm:15px;--text-base:17px;--text-lg:19px;
+--text-xl:22px;--text-2xl:27px;--text-3xl:34px;--text-4xl:44px;--text-5xl:56px;
+--text-6xl:72px;--text-7xl:92px;
+
+--leading-tight:1.04;--leading-snug:1.18;--leading-normal:1.5;--leading-relaxed:1.65;
+
+--tracking-display:-0.02em;   /* heavy slab sets tight */
+--tracking-normal:0em;
+--tracking-wide:0.06em;
+--tracking-caps:0.14em;       /* KERAMIKK & HÅNDVERK lockup spacing */
+--tracking-micro:0.2em;       /* smallest legal/address lines */
+
+/* Semantic roles */
+--type-hero:var(--weight-black) var(--text-6xl)/var(--leading-tight) var(--font-display);
+--type-h1:var(--weight-bold) var(--text-4xl)/var(--leading-snug) var(--font-display);
+--type-h2:var(--weight-bold) var(--text-3xl)/var(--leading-snug) var(--font-display);
+--type-h3:var(--weight-bold) var(--text-xl)/var(--leading-snug) var(--font-display);
+--type-body:var(--weight-regular) var(--text-base)/var(--leading-relaxed) var(--font-sans);
+--type-body-sm:var(--weight-regular) var(--text-sm)/var(--leading-normal) var(--font-sans);
+--type-label:var(--weight-bold) var(--text-xs)/1.2 var(--font-sans);
+--type-eyebrow:var(--weight-bold) var(--text-xs)/1.2 var(--font-sans);
+}

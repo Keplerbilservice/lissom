@@ -1,0 +1,104 @@
+:root{
+/* ---- Brand core (sampled from the printed identity) ---- */
+--lissom-yellow:#FFCF38;      /* signage + letterhead field */
+--lissom-brown:#4D1D12;       /* wordmark, cup mark, all print ink */
+--lissom-brown-deep:#2E1002;  /* darkest ink, body text on light */
+
+/* ---- Yellow ramp ---- */
+--yellow-50:#FFF9E6;--yellow-100:#FFF0C2;--yellow-200:#FFE28C;--yellow-300:#FFD962;
+--yellow-400:#FFCF38;--yellow-500:#F0B81E;--yellow-600:#D19A0D;--yellow-700:#A87708;
+
+/* ---- Brown ramp ---- */
+--brown-50:#F6EDE6;--brown-100:#E9D6C7;--brown-200:#CBA88E;--brown-300:#A97656;
+--brown-400:#834A2B;--brown-500:#66300F;--brown-600:#4D1D12;--brown-700:#2E1002;
+
+/* ---- Clay neutrals (leire / naturtoner) ---- */
+--clay-50:#FBF6EE;   /* porselen */
+--clay-100:#F4EBDE;  /* bisque */
+--clay-200:#E8DBC8;  /* sand */
+--clay-300:#D6C4AB;  /* tørket leire */
+--clay-400:#B7A188;
+--clay-500:#94806A;
+--clay-600:#6F5D4C;  /* steintøy */
+--clay-700:#4F4136;
+--clay-800:#33291F;
+--clay-900:#1E1610;
+
+/* ---- Glaze accents ---- */
+--terracotta-100:#F5DED0;--terracotta-300:#DC9A74;--terracotta-500:#C0663A;--terracotta-600:#A2502B;
+--sage-100:#E5E8DD;--sage-300:#B3B9A4;--sage-500:#8A9078;--sage-600:#6E7460;
+--slip-100:#DDE4E4;--slip-500:#7E9291;--slip-600:#617573;
+
+/* ---- Semantic surfaces ---- */
+--surface-page:var(--clay-50);
+--surface-card:#FFFFFF;
+--surface-sunken:var(--clay-100);
+--surface-raised:#FFFFFF;
+--surface-brand:var(--lissom-yellow);
+--surface-ink:var(--lissom-brown);
+--surface-ink-deep:var(--brown-700);
+--surface-muted:var(--clay-200);
+
+/* ---- Semantic text ---- */
+--text-body:var(--brown-700);
+--text-heading:var(--lissom-brown);
+--text-muted:var(--clay-600);
+--text-faint:var(--clay-500);
+--text-inverse:var(--clay-50);
+--text-on-brand:var(--lissom-brown);
+--text-link:var(--lissom-brown);
+--text-link-hover:var(--terracotta-600);
+
+/* ---- Semantic borders ---- */
+--border-subtle:var(--clay-200);
+--border-default:var(--clay-300);
+--border-strong:var(--lissom-brown);
+--border-ink-rule:var(--lissom-brown);
+
+/* ---- Interactive ---- */
+--accent:var(--lissom-yellow);
+--accent-hover:var(--yellow-500);
+--accent-active:var(--yellow-600);
+--accent-fg:var(--lissom-brown);
+--focus-ring:var(--terracotta-500);
+
+/* ---- Status ---- */
+--success:var(--sage-600);--success-bg:var(--sage-100);
+--warning:var(--yellow-600);--warning-bg:var(--yellow-100);
+--danger:#9B3A2A;--danger-bg:var(--terracotta-100);
+--info:var(--slip-600);--info-bg:var(--slip-100);
+}
+
+/* Ink theme — full-bleed brown panels (footers, hero bands, slides) */
+[data-theme="ink"]{
+--surface-page:var(--lissom-brown);
+--surface-card:var(--brown-500);
+--surface-sunken:var(--brown-700);
+--text-body:var(--clay-100);
+--text-heading:var(--clay-50);
+--text-muted:var(--clay-300);
+--text-inverse:var(--lissom-brown);
+--text-link:var(--lissom-yellow);
+--text-link-hover:var(--yellow-200);
+--border-subtle:rgba(244,235,222,.18);
+--border-default:rgba(244,235,222,.3);
+--border-strong:var(--lissom-yellow);
+}
+
+/* Sun theme — yellow signage panels */
+[data-theme="sun"]{
+--surface-page:var(--lissom-yellow);
+--surface-card:var(--yellow-300);
+--surface-sunken:var(--yellow-500);
+--text-body:var(--lissom-brown);
+--text-heading:var(--lissom-brown);
+--text-muted:var(--brown-500);
+--text-link:var(--lissom-brown);
+--text-link-hover:var(--brown-700);
+--border-subtle:rgba(78,24,3,.2);
+--border-default:rgba(78,24,3,.35);
+--border-strong:var(--lissom-brown);
+--accent:var(--lissom-brown);
+--accent-hover:var(--brown-700);
+--accent-fg:var(--lissom-yellow);
+}

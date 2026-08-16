@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="ds-fonts.css">
+  <link rel="stylesheet" href="ds-colors.css">
+  <link rel="stylesheet" href="ds-typography.css">
+  <link rel="stylesheet" href="ds-spacing.css">
+  <link rel="stylesheet" href="ds-base.css">
+  <style>body { margin: 0; }</style>
+</helmet>
+<div style="min-height: 100vh; background: var(--clay-100); padding: 48px 24px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+  <div style="text-align: center;">
+    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 8px;">Mobilvisning</div>
+    <h1 style="margin: 0; font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">lissom.no på telefon</h1>
+    <p style="margin: 8px 0 0; font-size: var(--text-sm); color: var(--text-muted);">Hele nettsiden, vist i 390 px bredde. Du kan klikke og navigere som vanlig.</p>
+  </div>
+  <div style="width: 414px; background: var(--lissom-brown); border-radius: 48px; padding: 12px; box-shadow: var(--shadow-lg, 0 20px 50px rgba(46,16,2,.25));">
+    <iframe src="Lissom nettside.dc.html?v=3" title="lissom.no i mobilbredde" style="display: block; width: 390px; height: 780px; border: none; border-radius: 38px; background: var(--clay-50);"></iframe>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

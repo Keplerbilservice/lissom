@@ -1,0 +1,7 @@
+/* Lissom webfonts.
+   SUBSTITUTION NOTE: no original font binaries were supplied with the brand assets.
+   The lissom wordmark is a heavy Clarendon-style slab; Bitter (800) is the nearest
+   Google Fonts match and is used for display type. The letterspaced caps on the
+   letterhead and business cards are a warm humanist sans; Alegreya Sans is the
+   nearest match and is used for UI + body. Replace both if the real files surface. */
+@import url("https://fonts.googleapis.com/css2?family=Bitter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;0,800;1,400;1,500&family=Alegreya+Sans+SC:wght@400;500;700&display=swap");

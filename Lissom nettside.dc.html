@@ -19,7 +19,7 @@
   <script src="ds-bundle.js"></script>
   <script src="./image-slot.js"></script>
   <style>
-    html { background: var(--lissom-brown); }
+    html { background: var(--lissom-brown); overflow-x: clip; max-width: 100%; }
     body { margin: 0; background: var(--clay-100); zoom: 1.05; overflow-x: clip; --width-content: calc(100vw / 1.05 - 2 * max(40px, (100vw / 1.05 - 1800px) / 4 + 40px)); --width-wide: calc(100vw / 1.05 - 2 * max(40px, (100vw / 1.05 - 1800px) / 4 + 40px)); --section-y: 150px; }
     h2 { font-size: clamp(40px, 3vw, 60px); letter-spacing: var(--tracking-display); }
     a { color: var(--lissom-brown); text-decoration: none; }
@@ -51,7 +51,7 @@
       .lx-split { grid-template-columns: 1fr !important; }
       .lx-cols4 { grid-template-columns: 1fr 1fr !important; }
       .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
-      body { overflow-x: clip; }
+      html, body { overflow-x: clip; max-width: 100%; }
       .lx-wrapm { white-space: normal !important; }
       .lx-band { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
       .lx-band > * { max-width: 100% !important; }
@@ -128,7 +128,7 @@
             <div style="min-width: 0;">
               <div style="display: flex; align-items: baseline; gap: var(--space-3) var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
                 <span style="font: var(--type-eyebrow); font-size: var(--text-base); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); white-space: nowrap;">Åpent hus</span>
-                <span class="lx-wrapm" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(24px, 2vw, 34px); color: var(--clay-50); white-space: nowrap;">Lørdag 6. september · 11–16</span>
+                <span class="lx-wrapm" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(24px, 2vw, 34px); color: var(--clay-50); white-space: nowrap;">Søndag 6. september · 11–16</span>
               </div>
               <p style="margin: 0; font-size: var(--text-lg); color: var(--clay-300); text-wrap: pretty;">Prøv dreieskiva, se verkstedet — og kjøp keramikk laget av medlemmene. Gratis, ingen påmelding.</p>
             </div>
@@ -264,7 +264,7 @@
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Verkstedet</div>
           <h2 style="margin: 0 0 var(--space-8);">Dette skjer nå</h2>
           <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="Lørdag 6. september" title="Åpen dag i verkstedet" text="Kom innom mellom 11 og 16, prøv dreieskiva og se hva medlemmene har laget. Gratis, ingen påmelding." image="uploads_shutterstock_2829102169.jpg" cta-label="Les mer" on-book="{{ goEvents }}" hint-size="100%,420px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="Søndag 6. september" title="Åpen dag i verkstedet" text="Kom innom mellom 11 og 16, prøv dreieskiva og se hva medlemmene har laget. Gratis, ingen påmelding." image="uploads_shutterstock_2829102169.jpg" cta-label="Les mer" on-book="{{ goEvents }}" hint-size="100%,420px"></x-import>
             <sc-for list="{{ nyheter }}" as="n" hint-placeholder-count="3">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ n.dato }}" title="{{ n.tittel }}" text="{{ n.tekst }}" image="{{ n.image }}" cta-label="Les mer" on-book="{{ n.velg }}" hint-size="100%,420px"></x-import>
             </sc-for>
@@ -711,6 +711,9 @@
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--text-heading);">{{ bPris }}</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ bPrisNote }}</span>
               </div>
+              <sc-if value="{{ bPrisAntallNote }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin: -14px 0 var(--space-5);">{{ bPrisAntallNote }}</div>
+              </sc-if>
               <div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">{{ bOppsummering }}</div>
               <sc-if value="{{ harPlasser }}" hint-placeholder-val="{{ true }}">
               <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg dato</div>
@@ -806,11 +809,14 @@
                     <div style="display: flex; justify-content: space-between;"><span>Svarfrist når vi tilbyr plass</span><span style="color: var(--text-heading);">6 timer</span></div>
                   </div>
                 </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" hint-size="100%,66px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ vlNavn }}" on-change="{{ settVlNavn }}" hint-size="100%,66px"></x-import>
                 <div style="height: var(--space-4);"></div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ vlEpost }}" on-change="{{ settVlEpost }}" hint-size="100%,66px"></x-import>
                 <div style="height: var(--space-4);"></div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" hint-size="100%,66px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" value="{{ vlTlf }}" on-change="{{ settVlTlf }}" hint-size="100%,66px"></x-import>
+                <sc-if value="{{ vlFeil }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600;">{{ vlFeil }}</p>
+                </sc-if>
                 <div style="height: var(--space-6);"></div>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ bekreftVenteliste }}" hint-size="100%,52px">Sett meg på venteliste</x-import>
                 <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Ingen betaling før plassen er bekreftet.</p>
@@ -1320,7 +1326,7 @@
               </div>
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Betalt</div>
               <h3 style="margin: var(--space-3) 0 var(--space-4); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Plassen er din</h3>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Nybegynner dreiekurs, tirsdag 19. august kl. 18:00. Kvittering er sendt til ingrid@epost.no.</p>
+              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Nybegynner dreiekurs, onsdag 19. august kl. 18:00. Kvittering er sendt til ingrid@epost.no.</p>
               <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">
                 <div style="display: flex; justify-content: space-between;"><span>Betalt med</span><span style="color: var(--text-heading);">Vipps</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Referanse</span><span style="color: var(--text-heading);">LIS-10482</span></div>
@@ -1828,7 +1834,7 @@
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Medlemschat</span>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Tømmes hver natt</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Lagres kun i din nettleser</span>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: var(--space-3); flex: 1; max-height: 220px; overflow-y: auto; align-content: flex-start;">
                   <sc-for list="{{ chatMeldinger }}" as="c" hint-placeholder-count="2">
@@ -2561,7 +2567,7 @@
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6) var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Mandag 25. august</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Mandag 24. august</div>
             <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">God morgen, Monica</h1>
             <div style="font-size: var(--text-sm); color: var(--text-muted);">4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet nå</div>
           </div>
@@ -4157,7 +4163,7 @@
                   </div>
                   <div style="flex: 1; min-height: 0; overflow: hidden; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4);">
                     <div style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow);">Lørdag 6. september</div>
+                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow);">Søndag 6. september</div>
                       <h3 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--clay-50); margin: 8px 0 6px;">Åpen dag i verkstedet</h3>
                       <p style="margin: 0; font-size: var(--text-xs); color: var(--clay-300);">11–16. Gratis, ingen påmelding.</p>
                     </div>
@@ -4614,7 +4620,7 @@ const SIDEINNHOLD = {
       { l: 'Kicker', v: 'Nytt fra verkstedet' },
       { l: 'Overskrift', v: 'Dette skjer nå' },
       { l: 'Hovedsak', v: 'Åpen dag i verkstedet' },
-      { l: 'Dato', v: 'Lørdag 6. september' },
+      { l: 'Dato', v: 'Søndag 6. september' },
       { l: 'Tekst', v: 'Kom innom mellom 11 og 16, prøv dreieskiva og se hva medlemmene har laget. Gratis, ingen påmelding.', lang: true } ] },
     { navn: 'Kommende datoer', type: 'Kurs, automatisk', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events' },
@@ -4855,16 +4861,16 @@ Object.keys(SIDEINNHOLD).forEach(k => {
 });
 
 const PAMELDTE = [
-  { navn: 'Tom Ødegård', epost: 'tom@epost.no', tlf: '+47 918 22 431', kurs: 'Nybegynner dreiekurs', dato: 'tir 19. aug 18:00', sum: '2 800 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
-  { navn: 'Hanne Wiik', epost: 'hanne@epost.no', tlf: '+47 926 40 118', kurs: 'Nybegynner dreiekurs', dato: 'tir 19. aug 18:00', sum: '2 800 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
-  { navn: 'Ida Sørlie', epost: 'ida@epost.no', tlf: '+47 977 51 003', kurs: 'Nybegynner dreiekurs', dato: 'tir 19. aug 18:00', sum: '2 800 kr', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
-  { navn: 'Live Haugen', epost: 'live@epost.no', tlf: '+47 934 77 210', kurs: 'Nybegynner dreiekurs', dato: 'tir 19. aug 18:00', sum: '2 800 kr', maate: '—', status: 'Ubetalt', tone: 'danger' },
+  { navn: 'Tom Ødegård', epost: 'tom@epost.no', tlf: '+47 918 22 431', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
+  { navn: 'Hanne Wiik', epost: 'hanne@epost.no', tlf: '+47 926 40 118', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
+  { navn: 'Ida Sørlie', epost: 'ida@epost.no', tlf: '+47 977 51 003', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
+  { navn: 'Live Haugen', epost: 'live@epost.no', tlf: '+47 934 77 210', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: '—', status: 'Ubetalt', tone: 'danger' },
   { navn: 'Trude Holm', epost: 'trude@epost.no', tlf: '+47 951 08 664', kurs: 'Kurs boller', dato: 'man 24. aug 17:00', sum: '1 490 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
   { navn: 'Kaja Berge', epost: 'kaja@epost.no', tlf: '+47 468 12 397', kurs: 'Kurs boller', dato: 'man 24. aug 17:00', sum: '1 490 kr', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
-  { navn: 'Familien Five', epost: 'anne@epost.no', tlf: '+47 913 55 240', kurs: 'Paint on Pots', dato: 'søn 24. aug 12:00', sum: '2 070 kr', maate: 'Vipps', status: 'Betalt · 3 plasser', tone: 'success' },
-  { navn: 'Petter Nes', epost: 'petter@epost.no', tlf: '+47 970 31 882', kurs: 'Date Night', dato: 'fre 29. aug 18:00', sum: '2 380 kr', maate: 'Vipps', status: 'Betalt · 2 plasser', tone: 'success' },
-  { navn: 'Emma Bjørnstad', epost: 'emma@epost.no', tlf: '+47 902 14 887', kurs: 'Drop-in', dato: 'tir 26. aug 10:00', sum: '490 kr', maate: 'Vipps', status: 'Godkjent', tone: 'success' },
-  { navn: 'Line Sørhaug', epost: 'line@epost.no', tlf: '+47 489 60 175', kurs: 'Drop-in', dato: 'tir 26. aug 16:00', sum: '490 kr', maate: 'Vipps', status: 'Med Ingrid Hansen', tone: 'info' },
+  { navn: 'Familien Five', epost: 'anne@epost.no', tlf: '+47 913 55 240', kurs: 'Paint on Pots', dato: 'søn 23. aug 12:00', sum: '2 070 kr', maate: 'Vipps', status: 'Betalt · 3 plasser', tone: 'success' },
+  { navn: 'Petter Nes', epost: 'petter@epost.no', tlf: '+47 970 31 882', kurs: 'Date Night', dato: 'fre 28. aug 18:00', sum: '2 380 kr', maate: 'Vipps', status: 'Betalt · 2 plasser', tone: 'success' },
+  { navn: 'Emma Bjørnstad', epost: 'emma@epost.no', tlf: '+47 902 14 887', kurs: 'Drop-in', dato: 'tir 25. aug 10:00', sum: '490 kr', maate: 'Vipps', status: 'Godkjent', tone: 'success' },
+  { navn: 'Line Sørhaug', epost: 'line@epost.no', tlf: '+47 489 60 175', kurs: 'Drop-in', dato: 'tir 25. aug 16:00', sum: '490 kr', maate: 'Vipps', status: 'Med Ingrid Hansen', tone: 'info' },
   { navn: 'Tuva Aas', epost: 'tuva@epost.no', tlf: '+47 481 30 552', kurs: 'Drop-in', dato: 'tor 28. aug 16:00', sum: '490 kr', maate: '—', status: 'Ikke godkjent', tone: 'danger' },
 ];
 
@@ -4906,7 +4912,7 @@ const TALLMAAL = {
 
 const TALLDETALJER = {
   'Påmeldte denne uka': [
-    { navn: 'NYBEGYNNER DREIEKURS · TIR 19. AUG 18:00 · 7 AV 8', verdi: '' },
+    { navn: 'NYBEGYNNER DREIEKURS · ONS 19. AUG 18:00 · 7 AV 8', verdi: '' },
     { navn: 'Tom Ødegård', verdi: 'Betalt 2 800 kr · Vipps' },
     { navn: 'Hanne Wiik', verdi: 'Betalt 2 800 kr · Vipps' },
     { navn: 'Jonas Lie', verdi: 'Betalt 2 800 kr · Vipps' },
@@ -4920,9 +4926,9 @@ const TALLDETALJER = {
     { navn: 'Nina Ruud', verdi: 'Betalt 1 490 kr · Vipps' },
     { navn: 'Kaja Berge', verdi: 'Betalt 1 490 kr · gavekort' },
     { navn: 'Erik Dahl', verdi: 'Betalt 1 490 kr · Vipps' },
-    { navn: 'PAINT ON POTS · SØN 24. AUG 12:00 · 3 AV 10', verdi: '' },
+    { navn: 'PAINT ON POTS · SØN 23. AUG 12:00 · 3 AV 10', verdi: '' },
     { navn: 'Familien Five (3 stk)', verdi: 'Betalt 2 070 kr · Vipps' },
-    { navn: 'DATE NIGHT · FRE 29. AUG 18:00 · FULLBOOKET', verdi: '' },
+    { navn: 'DATE NIGHT · FRE 28. AUG 18:00 · FULLBOOKET', verdi: '' },
     { navn: 'Petter Nes', verdi: '2 plasser · betalt 2 380 kr' },
     { navn: 'Silje Bratt', verdi: '2 plasser · betalt 2 380 kr' },
     { navn: 'Anne Five', verdi: '2 plasser · betalt 2 380 kr' },
@@ -4979,31 +4985,31 @@ class Component extends DCLogic {
   ukeData(nr) {
     const uker = {
       35: [
-        { dag: 'Man', dato: '25', poster: [{ tekst: 'Kurs boller · 17:00' }] },
-        { dag: 'Tir', dato: '26', poster: [{ tekst: 'Dreiekurs · 18:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
-        { dag: 'Ons', dato: '27', poster: [{ tekst: 'Drop-in · 10:00', rolig: true }] },
-        { dag: 'Tor', dato: '28', poster: [{ tekst: 'Glasurbrann', rolig: true }] },
-        { dag: 'Fre', dato: '29', poster: [{ tekst: 'Date Night · 18:00', full: true }] },
-        { dag: 'Lør', dato: '30', poster: [{ tekst: 'Paint on Pots · 12:00' }] },
-        { dag: 'Søn', dato: '31', poster: [] },
+        { dag: 'Man', dato: '24', poster: [{ tekst: 'Kurs boller · 17:00' }] },
+        { dag: 'Tir', dato: '25', poster: [{ tekst: 'Drop-in · 10:00', rolig: true }] },
+        { dag: 'Ons', dato: '26', poster: [{ tekst: 'Dreiekurs · 18:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
+        { dag: 'Tor', dato: '27', poster: [{ tekst: 'Glasurbrann', rolig: true }] },
+        { dag: 'Fre', dato: '28', poster: [{ tekst: 'Date Night · 18:00', full: true }] },
+        { dag: 'Lør', dato: '29', poster: [] },
+        { dag: 'Søn', dato: '30', poster: [] },
       ],
       36: [
-        { dag: 'Man', dato: '1', poster: [{ tekst: 'Drop-in · 10:00', rolig: true }] },
-        { dag: 'Tir', dato: '2', poster: [{ tekst: 'Dreiekurs · 18:00' }] },
-        { dag: 'Ons', dato: '3', poster: [{ tekst: 'Kurs boller · 17:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
-        { dag: 'Tor', dato: '4', poster: [{ tekst: 'Råbrann', rolig: true }] },
-        { dag: 'Fre', dato: '5', poster: [{ tekst: 'Sip & Clay · 18:00' }] },
-        { dag: 'Lør', dato: '6', poster: [{ tekst: 'Åpen dag · 11–16', full: true }] },
-        { dag: 'Søn', dato: '7', poster: [{ tekst: 'Paint on Pots · 12:00' }] },
+        { dag: 'Man', dato: '31', poster: [{ tekst: 'Drop-in · 10:00', rolig: true }] },
+        { dag: 'Tir', dato: '1', poster: [] },
+        { dag: 'Ons', dato: '2', poster: [{ tekst: 'Dreiekurs · 18:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
+        { dag: 'Tor', dato: '3', poster: [{ tekst: 'Råbrann', rolig: true }] },
+        { dag: 'Fre', dato: '4', poster: [{ tekst: 'Sip & Clay · 18:00' }] },
+        { dag: 'Lør', dato: '5', poster: [] },
+        { dag: 'Søn', dato: '6', poster: [{ tekst: 'Åpen dag · 11–16', full: true }, { tekst: 'Paint on Pots · 12:00' }] },
       ],
       37: [
-        { dag: 'Man', dato: '8', poster: [] },
-        { dag: 'Tir', dato: '9', poster: [{ tekst: 'Dreiekurs · 18:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
-        { dag: 'Ons', dato: '10', poster: [{ tekst: 'Drop-in · 10:00', rolig: true }] },
-        { dag: 'Tor', dato: '11', poster: [{ tekst: 'Store fat kurs · 10:00' }] },
-        { dag: 'Fre', dato: '12', poster: [{ tekst: 'Date Night · 18:00' }] },
-        { dag: 'Lør', dato: '13', poster: [{ tekst: 'Paint on Pots · 12:00' }] },
-        { dag: 'Søn', dato: '14', poster: [] },
+        { dag: 'Man', dato: '7', poster: [{ tekst: 'Kurs boller · 17:00' }] },
+        { dag: 'Tir', dato: '8', poster: [{ tekst: 'Store fat kurs · 10:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
+        { dag: 'Ons', dato: '9', poster: [{ tekst: 'Dreiekurs · 18:00' }, { tekst: 'Drop-in · 10:00', rolig: true }] },
+        { dag: 'Tor', dato: '10', poster: [] },
+        { dag: 'Fre', dato: '11', poster: [{ tekst: 'Date Night · 18:00' }] },
+        { dag: 'Lør', dato: '12', poster: [] },
+        { dag: 'Søn', dato: '13', poster: [{ tekst: 'Paint on Pots · 12:00' }] },
       ],
     };
     return uker[nr] || [];
@@ -5103,6 +5109,8 @@ class Component extends DCLogic {
   }
 
   prisAv(navn) {
+    const gk = navn.match(/^Gavekort (\d[\d ]*) kr$/);
+    if (gk) return parseInt(gk[1].replace(/ /g, ''), 10);
     const p = this.priser();
     if (p[navn] != null) return p[navn];
     const k = Object.keys(p).find(x => navn.indexOf(x) === 0);
@@ -5287,6 +5295,13 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     clearInterval(this._karusell);
+    clearInterval(this._kurvPuls);
+    clearTimeout(this._kvitteringTimer);
+    clearTimeout(this._ventelisteTimer);
+    clearTimeout(this._kurvTimer);
+    clearInterval(this._kurvIntervall);
+    window.removeEventListener('resize', this._resize);
+    window.removeEventListener('storage', this._lagring);
     document.removeEventListener('click', this._klikk, true);
     document.removeEventListener('keydown', this._esc);
   }
@@ -5316,7 +5331,7 @@ class Component extends DCLogic {
     }));
   }
 
-  componentWillUnmount() { clearInterval(this._karusell); clearTimeout(this._kvitteringTimer); document.removeEventListener('click', this._klikk, true); }
+
 
   componentDidUpdate(prevProps, prevState) {
     if (this.state.kvittering && (!prevState || this.state.kvittering !== prevState.kvittering)) {
@@ -5985,12 +6000,12 @@ class Component extends DCLogic {
         navn, valgt: navn === this.state.kursFilter, velg: () => this.setState({ kursFilter: navn }),
       })),
       kursAlle: this.medBooking(this.filtrerKurs(this._kursListe = [
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true }, { dato: 'Tirsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' }, { dato: 'Tirsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom sentrering, oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 11. aug', duration: '10:00 – 13:00', price: 'Fra 1 490 kr', status: '2 plasser igjen', image: 'uploads_shutterstock_2645499765.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 11. august', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 9. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
-        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 29. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'assets_datenight-1.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', bilder: ['assets_datenight-1.jpg', 'assets_datenight-3.jpg'], punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 29. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
-        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_workshop4.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', bilder: ['uploads_workshop4.jpg', 'uploads_b7012bbb-b81d-4c66-8614-030285ed4d5e.jpg', 'uploads_fd08f232-4d9e-4963-b6af-491ea98f3836.jpg'], punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 24. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 7. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
-        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: '490 kr', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'Tre timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra 1 490 kr', status: '2 plasser igjen', image: 'uploads_shutterstock_2645499765.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'assets_datenight-1.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', bilder: ['assets_datenight-1.jpg', 'assets_datenight-3.jpg'], punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
+        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_workshop4.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', bilder: ['uploads_workshop4.jpg', 'uploads_b7012bbb-b81d-4c66-8614-030285ed4d5e.jpg', 'uploads_fd08f232-4d9e-4963-b6af-491ea98f3836.jpg'], punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
+        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: '490 kr', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
       ])),
       bedriftTilSkjema: () => {
         const el = document.getElementById('foresporsel-skjema');
@@ -6003,7 +6018,14 @@ class Component extends DCLogic {
           ? this.go('booking')
           : () => this.setState({ kvApen: true, kvSteg: 0, kvHvem: null, kvHva: null, kvAntall: null }),
         poster: d.poster.map(p => Object.assign(p, {
-          velg: this.go('booking'),
+          velg: () => {
+            const navn = (p.tekst || '').split(' · ')[0];
+            const alias = { 'Dreiekurs': 'Nybegynner dreiekurs', 'Drop-in': 'Drop-in i verkstedet' };
+            const tittel = alias[navn] || navn;
+            const k = (this._kursListe || []).find(x => x.title === tittel);
+            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); }
+            else { this.setState({ side: 'kurs', kursFilter: 'Alle' }); window.scrollTo(0, 0); }
+          },
           stil: {
             appearance: 'none', border: 'none', width: '100%', textAlign: 'left',
             cursor: 'pointer', fontFamily: 'inherit',
@@ -6151,7 +6173,7 @@ class Component extends DCLogic {
         },
       })),
       internkursAdmin: [
-        { navn: 'Glasurkveld for medlemmer', naar: 'Onsdag 27. august, 18:00 – 21:00', pris: 'Gratis', pameldte: '4 / 10', gjentas: 'Siste onsdag i måneden' },
+        { navn: 'Glasurkveld for medlemmer', naar: 'Onsdag 26. august, 18:00 – 21:00', pris: 'Gratis', pameldte: '4 / 10', gjentas: 'Siste onsdag i måneden' },
         
         { navn: 'Medlemsfrokost', naar: 'Søndag 21. september, 09:00 – 11:00', pris: 'Gratis', pameldte: '12 / 20', gjentas: 'Hver tredje søndag' },
       ].map(k => Object.assign(k, {
@@ -6181,12 +6203,23 @@ class Component extends DCLogic {
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis',
       bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : 'per person',
       erIntern: (this.state.valgtKurs && this.state.valgtKurs.level) === 'Kun for medlemmer',
+      vlNavn: this.state.vlNavn || '',
+      settVlNavn: e => this.setState({ vlNavn: e.target.value, vlFeil: null }),
+      vlEpost: this.state.vlEpost || '',
+      settVlEpost: e => this.setState({ vlEpost: e.target.value, vlFeil: null }),
+      vlTlf: this.state.vlTlf || '',
+      settVlTlf: e => this.setState({ vlTlf: e.target.value, vlFeil: null }),
+      vlFeil: this.state.vlFeil || '',
       bekreftVenteliste: () => {
+        const navn = (this.state.vlNavn || '').trim();
+        const epost = (this.state.vlEpost || '').trim();
+        if (!navn || !epost || epost.indexOf('@') < 1) { this.setState({ vlFeil: 'Fyll inn navn og gyldig e-post, så kan vi kontakte deg.' }); return; }
         const k = this.state.valgtKurs || {};
         const kursNavn = (k.title || k.tittel || 'Kurs') + (this.state.bDato ? ', ' + this.state.bDato : k.date ? ', ' + k.date : '');
         const plassNr = 3 + (this.state.nyVenteliste || []).length;
         this.setState(s => ({
-          nyVenteliste: (s.nyVenteliste || []).concat([{ navn: 'Ingrid Hansen', kurs: kursNavn, plass: 'Nr. ' + plassNr, tid: 'Nå nettopp', epost: 'ingrid@epost.no' }]),
+          nyVenteliste: (s.nyVenteliste || []).concat([{ navn, kurs: kursNavn, plass: 'Nr. ' + plassNr, tid: 'Nå nettopp', epost }]),
+          vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null,
         }));
         this.apne('Du er nå satt på venteliste', kursNavn + ' · plass nr. ' + plassNr, [
           { navn: 'Hva skjer nå', verdi: 'Vi kontakter deg på e-post og SMS dersom det blir ledig plass.' },
@@ -6209,7 +6242,7 @@ class Component extends DCLogic {
       ikkeBookKvittert: !this.state.bookKvittert,
       gaTilOrdre: () => this.setState({ bookOrdre: true }),
       bookOrdreTittel: (this.state.valgtKurs && (this.state.valgtKurs.title || this.state.valgtKurs.tittel)) || 'Nybegynner dreiekurs',
-      bookOrdreDato: (this.state.bDato) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Tirsdag 2. september, 17:30',
+      bookOrdreDato: (this.state.bDato) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
       bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra 2 800 kr').replace('Fra ', ''),
       bookTilKurv: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs' };
@@ -6217,7 +6250,7 @@ class Component extends DCLogic {
         this.leggTil((k.title || k.tittel || 'Kurs') + (dato ? ' — ' + dato : ''));
       },
       bekreftBooking: () => {
-        const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra 2 800 kr', date: 'Tirsdag 2. september, 17:30' };
+        const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra 2 800 kr', date: 'Onsdag 2. september, 17:30' };
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || (k.date + (k.duration ? ', ' + k.duration : ''));
         const erMedlem = k.level === 'Kun for medlemmer' || k.price === 'Gratis';
         if (erMedlem) {
@@ -6310,7 +6343,10 @@ class Component extends DCLogic {
       lukkOrdre: () => this.setState({ ordreApen: false }),
       stoppKlikk: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       kurvTom: Object.keys(this.state.kurv || {}).length === 0,
-      kurvSum: Object.keys(this.state.kurv || {}).reduce((n, navn) => n + this.prisAv(navn) * this.state.kurv[navn], 0).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
+      kurvSum: (Object.keys(this.state.kurv || {}).reduce((n, navn) => n + this.prisAv(navn) * this.state.kurv[navn], 0)
+        + ((this.state.levValg === 'Send som pakke (89 kr)' && Object.keys(this.state.kurv || {}).length > 0) ? 89 : 0)
+      ).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
+      kurvFraktLinje: this.state.levValg === 'Send som pakke (89 kr)' ? 'Inkludert frakt 89 kr' : '',
       betalKurv: () => {
         const k = this.state.kurv || {};
         const linjer = Object.keys(k).map(navn => ({
@@ -6356,9 +6392,9 @@ class Component extends DCLogic {
         'Nybegynner dreiekurs', 'Date Night', 'Paint on Pots',
       ].filter(t => (this.state.avbestilt || []).indexOf(t) === -1).length + (this.state.nyePaameldt || []).length) > 0,
       minePameldinger: [
-        { tittel: 'Nybegynner dreiekurs', nyDato: 'tirsdag 2. september, 18:00', naar: 'Tirsdag 19. august, 18:00', sum: '2 800 kr', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 5. august, 50 % til 12. august', kanAvbestille: true },
-        { tittel: 'Date Night', nyDato: 'fredag 26. september, 18:00', naar: 'Fredag 29. august, 18:00', sum: '2 380 kr · 2 plasser', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 15. august, 50 % til 22. august', kanAvbestille: true },
-        { tittel: 'Paint on Pots', nyDato: 'søndag 7. september, 12:00', naar: 'Søndag 24. august, 12:00', sum: '690 kr', status: 'Venteliste, nr. 2', tone: 'info', frist: 'Du belastes først når en plass blir ledig', kanAvbestille: false },
+        { tittel: 'Nybegynner dreiekurs', nyDato: 'onsdag 2. september, 18:00', naar: 'Onsdag 19. august, 18:00', sum: '2 800 kr', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 5. august, 50 % til 12. august', kanAvbestille: true },
+        { tittel: 'Date Night', nyDato: 'fredag 25. september, 18:00', naar: 'Fredag 28. august, 18:00', sum: '2 380 kr · 2 plasser', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 15. august, 50 % til 22. august', kanAvbestille: true },
+        { tittel: 'Paint on Pots', nyDato: 'søndag 6. september, 12:00', naar: 'Søndag 23. august, 12:00', sum: '690 kr', status: 'Venteliste, nr. 2', tone: 'info', frist: 'Du belastes først når en plass blir ledig', kanAvbestille: false },
       ].concat((this.state.nyePaameldt || []).map(n => Object.assign({}, n, { tone: n.intern ? 'info' : 'success', status: n.intern ? 'Intern samling' : 'Bekreftet', frist: 'Gratis avmelding inntil 24 timer før', kanAvbestille: true, nyDato: n.naar }))).filter(p => (this.state.avbestilt || []).indexOf(p.tittel) === -1).map(p => Object.assign(p, {
         naar: ((this.state.flyttet || {})[p.tittel]) ? ((this.state.flyttet || {})[p.tittel]).charAt(0).toUpperCase() + ((this.state.flyttet || {})[p.tittel]).slice(1) : p.naar,
         status: ((this.state.flyttet || {})[p.tittel]) ? 'Flyttet' : p.status,
@@ -6430,8 +6466,8 @@ class Component extends DCLogic {
         ], 'Svar på forespørselen'),
       })),
       venteliste: ((this.state.nyVenteliste || []).slice().reverse()).concat([
-        { navn: 'Marte Grøn', kurs: 'Date Night, 29. aug', plass: 'Nr. 1', tid: 'Meldte seg 21. aug', epost: 'marte@epost.no' },
-        { navn: 'Jonas Lie', kurs: 'Date Night, 29. aug', plass: 'Nr. 2', tid: 'Meldte seg 22. aug', epost: 'jonas@epost.no' },
+        { navn: 'Marte Grøn', kurs: 'Date Night, 28. aug', plass: 'Nr. 1', tid: 'Meldte seg 21. aug', epost: 'marte@epost.no' },
+        { navn: 'Jonas Lie', kurs: 'Date Night, 28. aug', plass: 'Nr. 2', tid: 'Meldte seg 22. aug', epost: 'jonas@epost.no' },
         { navn: 'Kaja Berge', kurs: 'Nybegynner dreiekurs, 19. aug', plass: 'Nr. 1', tid: 'Meldte seg 20. aug', epost: 'kaja@epost.no' },
       ]).map(v => Object.assign(v, {
         velg: this.apne(v.navn, v.kurs, [
@@ -6444,7 +6480,15 @@ class Component extends DCLogic {
       })),
       bTittel: (this.state.valgtKurs && this.state.valgtKurs.title) || 'Nybegynner dreiekurs',
       bNivaa: (this.state.valgtKurs && this.state.valgtKurs.level) || 'Nybegynner',
-      bPris: (this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra 2 800 kr',
+      bPris: (() => {
+        const k = this.state.valgtKurs || {};
+        const grunn = this.prisAv(k.title || 'Nybegynner dreiekurs') || 2800;
+        const antall = ((k.tema || '') === 'Medlemskap') ? 1 : (this.state.bAntallN || 1);
+        if (k.price === 'Gratis') return 'Gratis';
+        const sum = grunn * antall;
+        return (antall > 1 ? '' : 'Fra ') + sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr';
+      })(),
+      bPrisAntallNote: ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ((this.state.bAntallN) + ' × ' + (this.prisAv((this.state.valgtKurs || {}).title || 'Nybegynner dreiekurs') || 2800).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr') : '',
       bBilde: (this.state.valgtKurs && this.state.valgtKurs.image) || 'uploads_shutterstock_2630283113.jpg',
       bookingPunkter: (this.state.valgtKurs && this.state.valgtKurs.punkter) || ((this.state.valgtKurs || {}).level === 'Event' ? [
         'Ingen erfaring nødvendig — vi viser deg alt underveis.',
@@ -6462,13 +6506,13 @@ class Component extends DCLogic {
           ? [{ dato: this.state.valgtKurs.date, tid: this.state.valgtKurs.duration, plasser: this.state.valgtKurs.status, valgt: true }]
           : this.state.valgtKurs && this.state.valgtKurs.tema === 'Drop-in'
             ? [
-                { dato: 'Tirsdag 26. august', tid: '10:00 – 13:00', plasser: '4 plasser', valgt: true },
-                { dato: 'Onsdag 27. august', tid: '10:00 – 13:00', plasser: '6 plasser' },
-                { dato: 'Torsdag 28. august', tid: '16:00 – 19:00', plasser: '5 plasser' },
+                { dato: 'Tirsdag 25. august', tid: '10:00 – 13:00', plasser: '4 plasser', valgt: true },
+                { dato: 'Onsdag 26. august', tid: '10:00 – 13:00', plasser: '6 plasser' },
+                { dato: 'Torsdag 27. august', tid: '16:00 – 19:00', plasser: '5 plasser' },
               ]
             : [
-                { dato: 'Tirsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true },
-                { dato: 'Tirsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' },
+                { dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true },
+                { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' },
               ])
             ).map(d => { const valgtNaa = this.state.bDato ? d.dato === this.state.bDato : !!d.valgt; return Object.assign({}, d, {
         valgt: valgtNaa,
@@ -6539,7 +6583,7 @@ class Component extends DCLogic {
         { navn: 'Kari Nordbø', epost: 'kari@epost.no', initial: 'KN', abonnement: 'Fri tilgang', timer: '42 t', andel: 100, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Jonas Five', epost: 'jonas@epost.no', initial: 'JF', abonnement: 'Fri tilgang', timer: '38 t', andel: 90, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Silje Bratt', epost: 'silje@epost.no', initial: 'SB', abonnement: '30 timer', timer: '27 / 30', andel: 90, status: 'Aktiv', tone: 'neutral' },
-        { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 8', andel: 63, status: 'Utløper 3. sep', tone: 'warning' },
+        { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
       ].map(m => Object.assign(m, {
         velg: this.apne(m.navn, m.epost, [
@@ -6750,17 +6794,17 @@ class Component extends DCLogic {
       ovProgramListe: (() => {
         const v = this.state.ovProgram || 'I dag';
         if (v === 'Denne uka') return [
-          { tid: 'Man 25.', hva: 'Drop-in og glasurbrann', detalj: 'Se dagens program' },
-          { tid: 'Tir 26.', hva: 'Drop-in hele dagen', detalj: '10:00 og 16:00 · 4 gjester' },
-          { tid: 'Ons 27.', hva: 'Glasurkveld for medlemmer', detalj: '18:00 – 21:00 · 4 av 10' },
-          { tid: 'Fre 29.', hva: 'Date Night', detalj: '18:00 – 21:00 · fullbooket' },
-          { tid: 'Søn 31.', hva: 'Paint on Pots', detalj: '12:00 – 14:00 · 7 plasser igjen' },
+          { tid: 'Man 24.', hva: 'Drop-in og glasurbrann', detalj: 'Se dagens program' },
+          { tid: 'Tir 25.', hva: 'Drop-in hele dagen', detalj: '10:00 og 16:00 · 4 gjester' },
+          { tid: 'Ons 26.', hva: 'Glasurkveld for medlemmer', detalj: '18:00 – 21:00 · 4 av 10' },
+          { tid: 'Fre 28.', hva: 'Date Night', detalj: '18:00 – 21:00 · fullbooket' },
+          { tid: 'Søn 30.', hva: 'Paint on Pots', detalj: '12:00 – 14:00 · 7 plasser igjen' },
         ];
         if (v === 'Denne måneden') return [
           { tid: 'Uke 35', hva: '4 kurs og 2 events', detalj: '34 påmeldte · denne uka' },
-          { tid: 'Uke 36', hva: 'Salgsuke 2.–8. september', detalj: 'Åpen dag lørdag 6. · 11–16' },
-          { tid: 'Uke 37', hva: 'Store fat kurs starter', detalj: 'Tirsdag 9. september · 6 plasser' },
-          { tid: 'Uke 38', hva: 'Nybegynner dreiekurs, ny runde', detalj: 'Tirsdag 16. september · fullbooket' },
+          { tid: 'Uke 36', hva: 'Salgsuke 2.–8. september', detalj: 'Åpen dag søndag 6. · 11–16' },
+          { tid: 'Uke 37', hva: 'Store fat kurs starter', detalj: 'Tirsdag 8. september · 6 plasser' },
+          { tid: 'Uke 38', hva: 'Nybegynner dreiekurs, ny runde', detalj: 'Onsdag 16. september · fullbooket' },
         ];
         return (this.state.side, [
           { tid: '10:00', hva: 'Drop-in', detalj: '2 av 6 plasser · begge godkjent' },
@@ -6821,7 +6865,7 @@ class Component extends DCLogic {
             { navn: 'Leire og brenning', verdi: '7 500 kr' },
           ],
       ovOmsSum: (this.state.ovOms || 'I dag') === 'I dag' ? '7 470 kr' : '182 400 kr',
-      aDagsoppgjor: this.apne('Dagsoppgjør', 'Mandag 25. august · alt betalt med Vipps', [
+      aDagsoppgjor: this.apne('Dagsoppgjør', 'Mandag 24. august · alt betalt med Vipps', [
         { navn: 'Kurs og events', verdi: '4 800 kr' },
         { navn: 'Butikk', verdi: '1 240 kr' },
         { navn: 'Drop-in', verdi: '980 kr' },
@@ -7016,7 +7060,8 @@ class Component extends DCLogic {
           piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin' : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : 'Sendes på e-post med en gang') : '',
           piBildeCss: p ? "url('" + p.image + "')" : 'none',
           piFokus: p ? this.fokusFor(p.title) : 'center',
-          piLeggIKurv: () => { if (p) { this.leggTil(p.title); this.setState({ piProdukt: null }); } },
+          piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.title); this.setState({ piProdukt: null }); } },
+          piUtsolgt: !!(p && p.utsolgt),
         };
       })(),
       butikkVelgLissom: () => this.setState({ butikkFilter: 'Alt' }),
@@ -7055,13 +7100,13 @@ class Component extends DCLogic {
           { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: '390 kr', image: FOTO + 'butikken.jpg', badge: 'Matsikret', kategori: 'Kopper' },
           { title: 'Kopp med hank', detalj: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.', pris: '450 kr', image: FOTO + 'dreiing-naerbilde.jpg', badge: 'Matsikret', kategori: 'Kopper' },
           { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: '590 kr', image: FOTO + 'handbygging.jpg', badge: 'Matsikret', kategori: 'Boller' },
-          { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: '340 kr', image: FOTO + 'butikken.jpg', badge: 'Matsikret', kategori: 'Boller' },
+          { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: '340 kr', image: FOTO + 'butikken.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
           { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: '790 kr', image: FOTO + 'plateteknikk-fat.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
           { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108721.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
         ]).map(p => Object.assign({}, p, {
-          cta: 'Legg i kurv',
+          cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
-          velgHandling: () => this.leggTil(p.title),
+          velgHandling: p.utsolgt ? (() => {}) : (() => this.leggTil(p.title)),
           visInfo: () => this.setState({ piProdukt: p }),
         }));
         const medlem = this.galleriListe().filter(g => g.status === 'publisert').map(g => ({
@@ -7310,16 +7355,16 @@ class Component extends DCLogic {
         const hent = (l, fb) => il['Bedrift og event/' + seksjon + '/' + l] ?? fb;
         return [
           { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 690 kr per person'), bilde: 'kursrommet.jpg' },
-          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 590 kr per person'), bilde: 'date-night.jpg' },
-          { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 490 kr per person'), bilde: 'barn-keramikk.jpg' },
-        ].map(t => Object.assign(t, { bildeCss: "url('assets_photos_" + t.bilde + "')", bildeSti: 'assets_photos_' + t.bilde }));
+          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 590 kr per person'), bilde: 'uploads_datenight.jpg' },
+          { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 490 kr per person'), bilde: 'uploads_barn2.jpg' },
+        ].map(t => { const sti = t.bilde.indexOf('_') >= 0 && t.bilde.indexOf('/') < 0 ? t.bilde : t.bilde.indexOf('/') >= 0 ? t.bilde.replace(/\//g, '_') : 'assets_photos_' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
       })(),
       vilkar: [
         { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 342 122 236 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
         { h: 'Priser og betaling', p: 'Alle priser vises i norske kroner og er inkl. mva der mva gjelder (kurs og undervisning er mva-fritt). Betaling skjer med Vipps ved bestilling. Medlemskap trekkes månedlig via Vipps Recurring.' },
         { h: 'Angrerett', p: 'Du har 14 dagers angrerett etter angrerettloven på varer kjøpt i nettbutikken. Angreretten gjelder ikke kurs og events med fastsatt dato når du har samtykket til at tjenesten starter — men våre avbestillingsregler under gjelder alltid.' },
         { h: 'Avbestilling av kurs og events', p: 'Full refusjon ved avbestilling mer enn 14 dager før kursstart, 50 % inntil 7 dager før. Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen. Refusjon skjer til Vipps innen 3 virkedager.' },
-        { h: 'Medlemskap', p: 'Medlemskap løper måned til måned og fornyes automatisk. Du kan si opp når som helst — medlemskapet løper da ut inneværende måned. Ubrukte timer overføres ikke. Prøv Lissom kan kun benyttes én gang per person.' },
+        { h: 'Medlemskap', p: 'Medlemskap løper måned til måned og fornyes automatisk. Du kan si opp når som helst — medlemskapet løper da ut inneværende måned. Årsmedlemskap er en årsavtale med binding i 12 måneder. Prøv Lissom stopper av seg selv etter 30 dager. Ubrukte timer overføres ikke. Prøv Lissom kan kun benyttes én gang per person.' },
         { h: 'Levering og henting', p: 'Varer hentes i verkstedet på Teie innen to uker, eller sendes med Posten mot frakt. Spesialbestillinger har leveringstid etter avtale.' },
         { h: 'Reklamasjon', p: 'Håndlaget keramikk varierer i farge og form — det er ikke en mangel. Ved skade eller feil, kontakt oss på monica@lissom.no innen rimelig tid, så finner vi en løsning etter forbrukerkjøpsloven.' },
         { h: 'Avlysning fra oss', p: 'Ved for få påmeldte eller sykdom kan vi avlyse kurs. Du får da valget mellom ny dato eller full refusjon.' },
@@ -8338,9 +8383,12 @@ class Component extends DCLogic {
       kursForside: this.medBooking([
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg' },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg' },
-        { level: 'Event', title: 'Date Night', date: 'fre. 29. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Få plasser', image: 'assets_datenight-1.jpg' },
-        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: 'Ledig', image: 'uploads_workshop4.jpg' },
-      ]),
+        { level: 'Event', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'assets_datenight-1.jpg' },
+        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_workshop4.jpg' },
+      ].map(f => {
+        const full = (this._kursListe || []).find(x => x.title === f.title);
+        return full ? Object.assign({}, full) : f;
+      })),
       produkter: this.medBildeCss([
         { title: 'Kopp, sandglasur', pris: '390 kr', image: FOTO + 'butikken.jpg' },
         { title: 'Bolle, stor', pris: '590 kr', image: FOTO + 'handbygging.jpg' },

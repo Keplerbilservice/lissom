@@ -76,6 +76,7 @@
     @media (max-width: 1250px) {
       .lx-kortgrid { grid-template-columns: repeat(2, 1fr) !important; }
       .lx-split button, .lx-split span { white-space: normal !important; }
+      .lx-split span.lx-pris { white-space: nowrap !important; }
       .lx-split { min-width: 0; }
       .lx-split > * { min-width: 0; }
     }
@@ -726,8 +727,8 @@
             </div>
 
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
-              <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-6);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--text-heading);">{{ bPris }}</span>
+              <div style="display: flex; align-items: baseline; gap: 8px 10px; margin-bottom: var(--space-6); flex-wrap: wrap;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: min(var(--text-4xl), 10vw); color: var(--text-heading); white-space: nowrap;" class="lx-pris">{{ bPris }}</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ bPrisNote }}</span>
               </div>
               <sc-if value="{{ bPrisAntallNote }}" hint-placeholder-val="{{ false }}">
@@ -977,8 +978,8 @@
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: 820px; margin: 0 auto; text-align: center;">
           <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 56px; margin: 0 auto var(--space-6); display: block; opacity: .85;">
-          <blockquote style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 34px); line-height: 1.35; color: var(--text-heading); text-wrap: pretty;">«Jeg kom for å lære å dreie, men det som fikk meg til å bli er folkene. Det er den roligste timen i uka mi.»</blockquote>
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Ingrid · medlem siden 2025</div>
+          <blockquote style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 34px); line-height: 1.35; color: var(--text-heading); text-wrap: pretty;">«Jeg kom for å lære å dreie, men det som fikk meg til å bli var menneskene.»</blockquote>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Anniken · medlem siden 2025</div>
         </div>
       </section>
 
@@ -1049,8 +1050,7 @@
       </section>
 
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
-        <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-6);">
-          <img src="assets_photos_kursrommet.jpg" alt="Kursrommet med dreieskiver" class="lx-foto" style="width: 100%; height: 320px; object-fit: cover; border-radius: var(--radius-lg); display: block;">
+        <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.35fr 1fr; gap: var(--space-6);">
           <img src="uploads_shutterstock_2752346251.jpg" alt="Gruppe som ler rundt langbordet" class="lx-foto" style="width: 100%; height: 320px; object-fit: cover; border-radius: var(--radius-lg); display: block;">
           <img src="assets_photos_handbygging.jpg" alt="Håndbygging rundt langbordet" class="lx-foto" style="width: 100%; height: 320px; object-fit: cover; border-radius: var(--radius-lg); display: block;">
         </div>
@@ -3048,8 +3048,13 @@
 
         <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+              <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
+                <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
+              </sc-for>
+            </div>
             <div style="display: grid; grid-template-columns: 1.8fr 1.2fr 1.3fr 1fr 36px; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
-              <span>Medlem</span><span>Abonnement</span><span>Timer brukt</span><span>Status</span><span></span>
+              <button type="button" onClick="{{ sorterNavn }}" style="{{ sortKnappStil }}">Medlem {{ sortNavnPil }}</button><span>Abonnement</span><button type="button" onClick="{{ sorterTimer }}" style="{{ sortKnappStil }}">Timer brukt {{ sortTimerPil }}</button><span>Status</span><span></span>
             </div>
             <sc-for list="{{ medlemmer }}" as="m" hint-placeholder-count="6">
               <div onClick="{{ m.velg }}" style="display: grid; grid-template-columns: 1.8fr 1.2fr 1.3fr 1fr 36px; min-width: 640px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
@@ -3098,7 +3103,7 @@
             </div>
             <div style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-6);" data-theme="sun">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Dørkode</div>
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); letter-spacing: .08em; color: var(--lissom-brown); margin: var(--space-3) 0;">4 7 1 2</div>
+              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); letter-spacing: .08em; color: var(--lissom-brown); margin: var(--space-3) 0;">{{ dorkode }}</div>
               <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--brown-500);">Synlig for aktive medlemmer på Min side. Byttes 1. september.</p>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ aBytteKode }}" hint-size="auto,40px">Bytt kode nå</x-import>
             </div>
@@ -4177,9 +4182,9 @@
                       <span style="font-size: var(--text-sm); color: var(--text-body);">{{ mStatusTekst }}</span>
                     </div>
                     <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">I verkstedet nå · 5</div>
+                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">I verkstedet nå · {{ antallInne }}</div>
                       <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-                        <sc-for list="{{ inne }}" as="m" hint-placeholder-count="3">
+                        <sc-for list="{{ adminInne }}" as="m" hint-placeholder-count="5">
                           <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500); flex: 0 0 auto;"></span>
                             <span style="font-size: var(--text-sm); color: var(--text-body);">{{ m.navn }}</span>
@@ -4266,7 +4271,7 @@
                       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 10px;">Intern info</div>
                       <div style="display: flex; align-items: baseline; justify-content: space-between;">
                         <span style="font-size: var(--text-sm); color: var(--text-muted);">Dørkode</span>
-                        <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); letter-spacing: .08em; color: var(--text-heading);">4 7 1 2</span>
+                        <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); letter-spacing: .08em; color: var(--text-heading);">{{ dorkode }}</span>
                       </div>
                     </div>
                   </div>
@@ -4637,7 +4642,7 @@
 
 <sc-if value="{{ harKvittering }}" hint-placeholder-val="{{ true }}">
   <div style="position: absolute; right: 24px; top: {{ toastTop }}px; z-index: 500; max-width: 360px;">
-    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="success" title="{{ kvittering }}" description="Kvittering er sendt på e-post. Du finner den også under Min side." on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
+    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="success" title="{{ kvittering }}" description="Lagret. E-postkvittering kobles til ved lansering — du finner det under Min side." on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
   </div>
 </sc-if>
 
@@ -4679,6 +4684,7 @@
         <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Bildene beskjæres automatisk til kvadrat (1:1). Første bilde vises i butikken.</p>
       </div>
       </sc-if>
+      <div id="detalj-skjema" style="display: flex; flex-direction: column; gap: var(--space-2);">
       <sc-for list="{{ detaljFelter }}" as="f" hint-placeholder-count="4">
         <sc-if value="{{ f.vanlig }}" hint-placeholder-val="{{ true }}">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="{{ f.navn }}" default-value="{{ f.verdi }}" hint-size="100%,66px"></x-import>
@@ -4690,6 +4696,7 @@
           </label>
         </sc-if>
       </sc-for>
+      </div>
       <sc-if value="{{ detaljBilder }}" hint-placeholder-val="{{ true }}">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Beskrivelse" rows="3" placeholder="Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin." hint-size="100%,100px"></x-import>
       </sc-if>
@@ -5359,6 +5366,7 @@ class Component extends DCLogic {
     return this.state.rabattNivaer || [
       { min: 3, prosent: 10, gjelder: 'Alle kurs og workshops', aktiv: true },
       { min: 5, prosent: 15, gjelder: 'Alle kurs og workshops', aktiv: true },
+      { min: 3, prosent: 5, gjelder: 'Alle dreiekurs', aktiv: true },
       { min: 6, prosent: 10, gjelder: 'Alle dreiekurs', aktiv: true },
     ];
   }
@@ -5451,6 +5459,17 @@ class Component extends DCLogic {
       this.setState({ kurvApen: false, ordreApen: false, vippsBetaling: null, kvittering: null });
     };
     document.addEventListener('keydown', this._esc);
+    this._pop = () => {
+      this._fraPop = true;
+      const s = (location.hash || '#forside').slice(1);
+      this.setState({ side: s || 'forside' });
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('popstate', this._pop);
+    try {
+      const h = (location.hash || '').slice(1);
+      if (h && h !== this.state.side) { this._fraPop = true; this.setState({ side: h }); }
+    } catch (e) {}
     try {
       const c = JSON.parse(localStorage.getItem('lissom_chat') || '[]');
       if (c.length) this.setState({ chat: c });
@@ -5458,6 +5477,7 @@ class Component extends DCLogic {
   }
 
   componentWillUnmount() {
+    if (this._pop) window.removeEventListener('popstate', this._pop);
     clearInterval(this._karusell);
     clearInterval(this._kurvPuls);
     clearTimeout(this._kvitteringTimer);
@@ -5500,6 +5520,10 @@ class Component extends DCLogic {
 
 
   componentDidUpdate(prevProps, prevState) {
+    if (prevState && prevState.side !== this.state.side) {
+      if (this._fraPop) this._fraPop = false;
+      else { try { history.pushState({ side: this.state.side }, '', '#' + this.state.side); } catch (e) {} }
+    }
     if (this.state.kvittering && (!prevState || this.state.kvittering !== prevState.kvittering)) {
       const toastTop = this.topNaa(60);
       if (this.state.toastTop !== toastTop) this.setState({ toastTop });
@@ -5761,7 +5785,7 @@ class Component extends DCLogic {
       const punkter = o.navn !== 'Prøv Lissom' ? (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']) : (o.punkter || []);
       const oppsigelse = o.navn === 'Prøv Lissom' ? 'Stopper av seg selv etter 30 dager' : o.navn === 'Årsmedlemskap' ? 'Årsavtale — binding i 12 måneder' : 'Måned til måned — si opp når du vil';
       const visMer = () => {
-        const bilde = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2829122279.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'verkstedet.jpg';
+        const bilde = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'verkstedet.jpg';
         const k = {
           level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
           status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
@@ -5787,7 +5811,7 @@ class Component extends DCLogic {
         dempetFarge: m ? 'var(--clay-300)' : 'var(--text-muted)',
         prikkFarge: m ? 'var(--lissom-yellow)' : 'var(--terracotta-500)',
         knapp: m ? 'primary' : 'secondary',
-        bilde: { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2829122279.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'verkstedet.jpg',
+        bilde: { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'verkstedet.jpg',
         kjop: visMer,
         kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },
       }, o, { passer, punkter });
@@ -5949,7 +5973,7 @@ class Component extends DCLogic {
       settNdFra: e => this.setState({ ndFra: e.target.value }),
       ndTil: this.state.ndTil || '21:00',
       settNdTil: e => this.setState({ ndTil: e.target.value }),
-      ndPlasser: this.state.ndPlasser || '8',
+      ndPlasser: this.state.ndPlasser ?? '8',
       settNdPlasser: e => this.setState({ ndPlasser: e.target.value }),
       ndKanLegge: !!this.state.ndDato,
       ndLeggTilStil: { appearance: 'none', cursor: this.state.ndDato ? 'pointer' : 'not-allowed', opacity: this.state.ndDato ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
@@ -6060,10 +6084,10 @@ class Component extends DCLogic {
         { navn: 'Plassering', verdi: 'Nederst, dras deretter på plass' },
       ], 'Legg til'),
       aBytteKode: this.apne('Bytt dørkode', 'Ny kode vises på Min side', [
-        { navn: 'Nåværende kode', verdi: '4 7 1 2' },
+        { navn: 'Nåværende kode', verdi: this.state.dorkode || '4 7 1 2' },
         { navn: 'Ny kode', verdi: 'Genereres automatisk' },
         { navn: 'Varsel', verdi: 'Alle aktive medlemmer får beskjed' },
-      ], 'Bytt kode'),
+      ], 'Bytt kode', null, null, () => this.setState({ dorkode: Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join(' ') })),
       lenkeStil: {
         appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
         padding: 0, textAlign: 'left', font: 'var(--type-body)', fontSize: 'calc(var(--text-base) * 1.5)', color: 'var(--clay-200)',
@@ -6182,7 +6206,7 @@ class Component extends DCLogic {
         },
       })),
       kursAlle: this.medBooking(this.filtrerKurs(this._kursListe = [
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
         { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra 1 490 kr', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
@@ -6400,8 +6424,8 @@ class Component extends DCLogic {
       medlemskurs: this.medBildeCss([
         { title: 'Glasurkveld for medlemmer', date: 'ons 27. aug', duration: '18:00 – 21:00', price: 'Gratis', status: '4 av 10 plasser', image: FOTO + 'verkstedet.jpg', om: 'Vi går gjennom glasurene i skapet, hva de tåler og hvordan de oppfører seg oppå hverandre. Ta med noe du vil glasere.', timer: 'Nei, kvelden er utenom timene dine' },
         { title: 'Store former, viderekomne', date: 'lør 13. sep', duration: '10:00 – 15:00', price: 'Gratis', status: '2 plasser igjen', image: FOTO + 'kurs-dreiing.jpg', om: 'Dagskurs i å dreie store former: sentrering av mye leire, oppbygging i flere ledd og trimming av tunge fat. Krever at du dreier fra før.', timer: 'Nei, kurset kommer i tillegg' },
-        { title: 'Medlemsfrokost', date: 'søn 21. sep', duration: '09:00 – 11:00', price: 'Gratis', status: 'Åpen påmelding', image: FOTO + 'kursrommet.jpg', om: 'Frokost i verkstedet før åpning. Vi spiser, ser på hverandres arbeider og planlegger høsten. Ta med noe å dele.', timer: 'Nei' },
-      ]).map(k => Object.assign(k, {
+        { title: 'Medlemsfrokost', date: 'søn 21. sep', duration: '09:00 – 11:00', price: 'Gratis', status: 'Åpen påmelding', image: 'uploads_shutterstock_2752346251.jpg', om: 'Frokost i verkstedet før åpning. Vi spiser, ser på hverandres arbeider og planlegger høsten. Ta med noe å dele.', timer: 'Nei' },
+      ].concat((this.state.nyeInterne || []).map(n => ({ title: n.navn, date: n.naar, duration: n.gjentas === 'Ikke' ? '' : n.gjentas, price: n.pris, status: 'Åpen påmelding', image: FOTO + 'verkstedet.jpg', om: '' })))).map(k => Object.assign(k, {
         level: 'Kun for medlemmer',
         meld: () => {
           this.setState({ side: 'booking', fra: 'minside', valgtKurs: Object.assign({}, k, { level: 'Kun for medlemmer' }), bookOrdre: false, bDato: null });
@@ -6412,7 +6436,7 @@ class Component extends DCLogic {
         { navn: 'Glasurkveld for medlemmer', naar: 'Onsdag 26. august, 18:00 – 21:00', pris: 'Gratis', pameldte: '4 / 10', gjentas: 'Siste onsdag i måneden' },
         
         { navn: 'Medlemsfrokost', naar: 'Søndag 21. september, 09:00 – 11:00', pris: 'Gratis', pameldte: '12 / 20', gjentas: 'Hver tredje søndag' },
-      ].map(k => Object.assign(k, {
+      ].concat(this.state.nyeInterne || []).map(k => Object.assign(k, {
         velg: this.apne(k.navn, 'Internt · kun for medlemmer', [
           { navn: 'Navn', verdi: k.navn },
           { navn: 'Tidspunkt', verdi: k.naar },
@@ -6428,7 +6452,13 @@ class Component extends DCLogic {
         { navn: 'Pris', verdi: 'Gratis' },
         { navn: 'Plasser', verdi: '10' },
         { navn: 'Gjentas', verdi: 'Ikke' },
-      ], 'Opprett samling', null, true),
+      ], 'Opprett samling', null, true, () => {
+        const omr = document.getElementById('detalj-skjema');
+        const felter = omr ? [...omr.querySelectorAll('input')].filter(i => i.type !== 'checkbox') : [];
+        const verdier = felter.map(i => (i.value || '').trim());
+        const navn = verdier[0]; if (!navn) return;
+        this.setState(s => ({ nyeInterne: (s.nyeInterne || []).concat([{ navn, naar: verdier[1] || 'Ikke satt', pris: verdier[2] || 'Gratis', pameldte: '0 / ' + (verdier[3] || '10'), gjentas: verdier[4] || 'Ikke' }]) }));
+      }),
       aHmsPdf: this.apne('Ordensregler og HMS', 'Åtte punkter, én side', [
         { navn: 'Format', verdi: 'PDF, A4' },
         { navn: 'Innhold', verdi: 'Alle punktene slik de står her' },
@@ -6755,13 +6785,13 @@ class Component extends DCLogic {
                 { dato: 'Torsdag 27. august', tid: '16:00 – 19:00', plasser: '5 plasser' },
               ]
             : [
-                { dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true },
-                { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' },
-              ])
+                { dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true },
+                { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' },
+              ].concat((this.state.ndLagtTil || []).filter(r => r.kurs === ((this.state.valgtKurs || {}).title || '')).map(r => ({ dato: r.dato, tid: r.tid, plasser: r.plasser + ' av ' + r.plasser + ' plasser' }))))
             ).map(d => { const valgtNaa = this.state.bDato ? d.dato === this.state.bDato : !!d.valgt; return Object.assign({}, d, {
         valgt: valgtNaa,
         velg: () => { if (!d.full) this.setState({ bDato: d.dato }); },
-        plasserTekst: d.full ? 'Fullbooket' : ((d.plasser || '').match(/^\d+/) ? (d.plasser.match(/^\d+/)[0] + ' ledige') : (d.plasser || 'Ledig')),
+        plasserTekst: d.full ? 'Fullbooket' : ((d.plasser || '').match(/^\d+( av \d+)?/) ? (d.plasser.match(/^\d+( av \d+)?/)[0] + ' ledige') : (d.plasser || 'Ledig')),
         prikk: d.full ? 'var(--clay-400)' : ((parseInt(d.plasser, 10) || 9) <= 3 ? 'var(--terracotta-500)' : 'var(--sage-500)'),
         stil: {
           appearance: 'none', cursor: d.full ? 'not-allowed' : 'pointer', textAlign: 'left',
@@ -6822,6 +6852,15 @@ class Component extends DCLogic {
         { merke: 'Oppsagt i august', verdi: '2', under: 'Begge på 30 timer' },
       ].map(t => Object.assign(t, { velg: this.go('adminmedlem'), kortStil: KORT_KLIKK })),
       mottakere: ['Alle aktive medlemmer', 'Kun 30 timer', 'Kun fri tilgang', 'Kun på prøve', 'Deltakere på et kurs'],
+      medlemFiltre: ['Alle', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
+        const valgt = (this.state.medlemFilter || 'Alle') === n;
+        return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
+      }),
+      sorterNavn: () => this.setState(s => ({ medlemSort: s.medlemSort === 'navn' ? '' : 'navn' })),
+      sorterTimer: () => this.setState(s => ({ medlemSort: s.medlemSort === 'timer' ? '' : 'timer' })),
+      sortNavnPil: this.state.medlemSort === 'navn' ? '↓' : '',
+      sortTimerPil: this.state.medlemSort === 'timer' ? '↓' : '',
+      sortKnappStil: { appearance: 'none', border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', font: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', textAlign: 'left' },
       medlemmer: [
         { navn: 'Ingrid Hansen', epost: 'ingrid@epost.no', initial: 'IH', abonnement: '30 timer', timer: '11,5 / 30', andel: 38, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Kari Nordbø', epost: 'kari@epost.no', initial: 'KN', abonnement: 'Fri tilgang', timer: '42 t', andel: 100, status: 'Inne nå', tone: 'success', inne: true },
@@ -6829,7 +6868,7 @@ class Component extends DCLogic {
         { navn: 'Silje Bratt', epost: 'silje@epost.no', initial: 'SB', abonnement: '30 timer', timer: '27 / 30', andel: 90, status: 'Aktiv', tone: 'neutral' },
         { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
-      ].map(m => Object.assign(m, {
+      ].filter(m => { const fv = this.state.medlemFilter || 'Alle'; return fv === 'Alle' || (fv === 'Inne nå' ? !!m.inne : m.abonnement === fv); }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
         velg: this.apne(m.navn, m.epost, [
           { navn: 'Abonnement', verdi: m.abonnement },
           { navn: 'Timer brukt', verdi: m.timer },
@@ -6962,7 +7001,8 @@ class Component extends DCLogic {
       npLeggUt: () => {
         const s = this.state;
         if (!s.npNavn || !s.npPris) return;
-        this.setState({ npApen: false, kvittering: s.npRediger ? 'Endringene er lagret' : s.npNavn + ' er lagt ut i butikken' });
+        const vare = { title: s.npNavn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: /kr/.test(s.npPris) ? s.npPris : s.npPris + ' kr', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
+        this.setState(s2 => ({ npApen: false, nyeVarer: s.npRediger ? (s2.nyeVarer || []) : (s2.nyeVarer || []).concat([vare]), kvittering: s.npRediger ? 'Endringene er lagret' : s.npNavn + ' er lagt ut i butikken' }));
       },
       mobMeldDeltakere: this.apne('Melding til deltakere', 'Sendes på e-post og SMS til alle påmeldte på kurset', [
         { navn: 'Kurs', verdi: 'Nybegynner dreiekurs, 19. aug' },
@@ -7168,7 +7208,7 @@ class Component extends DCLogic {
       settNkNavn: e => this.setState({ nkNavn: e.target.value }),
       nkPris: this.state.nkPris || '',
       settNkPris: e => this.setState({ nkPris: e.target.value }),
-      nkPlasser: this.state.nkPlasser || '8',
+      nkPlasser: this.state.nkPlasser ?? '8',
       settNkPlasser: e => this.setState({ nkPlasser: e.target.value }),
       nkBeskrivelse: this.state.nkBeskrivelse || '',
       settNkBeskrivelse: e => this.setState({ nkBeskrivelse: e.target.value }),
@@ -7387,7 +7427,7 @@ class Component extends DCLogic {
           { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: '340 kr', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
           { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: '790 kr', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
           { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
-        ]).map(p => Object.assign({}, p, {
+        ].concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
           velgHandling: p.utsolgt ? (() => {}) : (() => this.leggTil(p.title)),
@@ -7481,7 +7521,7 @@ class Component extends DCLogic {
         },
         metaStil: { fontSize: '11px', color: 'var(--text-muted)' },
       })),
-      dorkode: '4 7 1 2',
+      dorkode: this.state.dorkode || '4 7 1 2',
       inne: ((this.props.visGronnPrikk ?? true) ? [
         { navn: 'Ingrid Hansen (deg)', initial: 'IH', siden: 'Innstemplet 13:42' },
         { navn: 'Kari Nordbø', initial: 'KN', siden: 'Innstemplet 12:10' },
@@ -7493,6 +7533,10 @@ class Component extends DCLogic {
           fontSize: 13, fontWeight: 700, letterSpacing: '.02em',
         },
       })),
+      adminInne: [
+        { navn: 'Ingrid Hansen' }, { navn: 'Kari Nordbø' }, { navn: 'Jonas Five' },
+        { navn: 'Silje Bratt (skjult for medlemmer)' }, { navn: 'Mari Lunde (skjult for medlemmer)' },
+      ],
       beskjeder: [
         { tittel: 'Ovnen går natt til torsdag', tid: 'I dag', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med.', ny: true },
         { tittel: 'Ny leire på lager', tid: '3 dager siden', tekst: 'Grå stengods 2 er tilbake. Ligger under trappa.' },
@@ -7515,7 +7559,7 @@ class Component extends DCLogic {
       })),
       abonnementer: (() => {
         const P = n => this.planer().find(p => p.navn === n) || {};
-        const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2829122279.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };
+        const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };
         return [
           abo({ merke: 'Prøveperiode', navn: 'Prøv Lissom', pris: P('Prøv Lissom').pris, periode: 'for ' + P('Prøv Lissom').periode, beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.', punkter: ['8 verkstedtimer', 'Leire og brenning kjøpes i tillegg', 'Kan kun benyttes én gang', 'Går ikke automatisk over til abonnement'] }),
           abo({ mork: true, merke: 'Mest valgt', navn: '30 timer', pris: P('30 timer').pris, periode: P('30 timer').periode, beskrivelse: 'Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.', punkter: ['30 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Ta med en venn én gang i måneden'] }),
@@ -7594,7 +7638,7 @@ class Component extends DCLogic {
       artIngress: this.state.artIngress || '', settArtIngress: (e) => this.setState({ artIngress: e.target.value }),
       artBilde: this.state.artBilde || '', settArtBilde: (e) => this.setState({ artBilde: e.target.value }),
       artInnhold: this.state.artInnhold || '', settArtInnhold: (e) => this.setState({ artInnhold: e.target.value }),
-      artBildeValg: ['dreiing-naerbilde.jpg', 'handbygging.jpg', 'kurs-dreiing.jpg', 'kursrommet.jpg', 'verkstedet.jpg', 'butikken.jpg', 'plateteknikk-fat.jpg'].map(fil => ({
+      artBildeValg: ['dreiing-naerbilde.jpg', 'handbygging.jpg', 'kurs-dreiing.jpg', 'verkstedet.jpg', 'butikken.jpg', 'plateteknikk-fat.jpg'].map(fil => ({
         navn: fil.replace('.jpg', ''),
         velg: () => this.setState({ artBilde: 'assets_photos_' + fil }),
         stil: { appearance: 'none', cursor: 'pointer', border: (this.state.artBilde === 'assets_photos_' + fil ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)'), borderRadius: 'var(--radius-md)', padding: 0, width: 64, height: 48, backgroundImage: "url('assets_photos_" + fil + "')", backgroundSize: 'cover', backgroundPosition: 'center' },
@@ -7649,7 +7693,7 @@ class Component extends DCLogic {
         const seksjon = (SIDEINNHOLD['Bedrift og event'] || []).findIndex(s => s.navn === 'Tilbudskortene');
         const hent = (l, fb) => il['Bedrift og event/' + seksjon + '/' + l] ?? fb;
         return [
-          { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 690 kr per person'), bilde: 'kursrommet.jpg' },
+          { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 690 kr per person'), bilde: 'uploads_workshop4.jpg' },
           { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 590 kr per person'), bilde: 'uploads_datenight.jpg' },
           { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 490 kr per person'), bilde: 'uploads_barn2.jpg' },
         ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets/photos/' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
@@ -8590,7 +8634,7 @@ class Component extends DCLogic {
       })(),
       bKarusell: (() => {
         const k = this.state.valgtKurs || {};
-        const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'kursrommet.jpg', FOTO + 'verkstedet.jpg']);
+        const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'verkstedet.jpg']);
         const sek = parseFloat(k.sekunder) || 5;
         const fade = k.fade !== false;
         const idx = Math.floor((this.state.karTikk || 0) / sek) % bilder.length;

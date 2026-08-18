@@ -29,6 +29,7 @@
     @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
     button[aria-label="Meny"] { order: 3; }
     [data-screen-label="Admin mobil"] { display: none; }
+    .lx-kunmobil { display: none; }
     @media (max-width: 760px) {
       [data-screen-label^="Admin"] { display: none !important; }
       [data-screen-label="Admin mobil"] { display: block !important; }
@@ -38,6 +39,7 @@
       body { zoom: 1; --width-content: 100%; --width-wide: 100%; --section-y: 64px; }
       section { padding-left: 20px !important; padding-right: 20px !important; }
       .lx-hide-m { display: none !important; }
+      .lx-kunmobil { display: block !important; }
       .lx-hero { min-height: auto !important; overflow: visible !important; }
       .lx-hero-pad { padding: 140px 20px 56px !important; }
       .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
@@ -309,7 +311,7 @@
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goForesporsel }}" hint-size="auto,56px">Book for gruppe</x-import>
             </div>
           </div>
-          <img src="uploads_workshop4.jpg" alt="Paint on Pots hos Lissom" style="width: 100%; height: 460px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
+          <img src="uploads_shutterstock_2830576853.jpg" alt="Paint on Pots hos Lissom" style="width: 100%; height: 460px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
         </div>
       </section>
 
@@ -325,7 +327,33 @@
         </div>
       </section>
 
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
+        <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Paint on Pots</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Noen ganger trenger man ikke et kurs. Man trenger bare en hyggelig pause.</h2>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">På Paint on Pots hos Lissom kan du stikke innom, finne en kopp, skål, vase eller annen keramikkgjenstand, sette deg ned med pensel og farger, og la kreativiteten få spille fritt. Kanskje har du en idé du har tenkt på lenge. Kanskje kommer inspirasjonen mens du sitter der.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det spiller ingen rolle om du er kunstner eller aldri har holdt en pensel før. Her handler det ikke om å prestere. Det handler om å kose seg, slappe av og skape noe som er helt ditt eget.</p>
+            <p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Når du er ferdig, glaserer og brenner vi gjenstanden for deg. Resultatet blir både et minne og en bruksgjenstand du kan ta med hjem og glede deg over i mange år.</p>
+          </div>
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">For dere to</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Date Night med mening</h2>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det er kanskje få aktiviteter som er mer naturlig romantiske enn dette.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Ingen skjermer. Ingen stress. Bare dere to rundt et bord, med noe godt i koppen og tid til å være sammen.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Mens dere maler, oppstår de gode samtalene helt av seg selv. Man senker skuldrene, ler litt mer og får vist sider av seg selv som kanskje ikke kommer frem i en travel hverdag. Det er rolig, ekte og uanstrengt.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Enten dere er på første date eller har vært sammen i mange år, gir Paint on Pots en anledning til å skape noe sammen, samtidig som dere skaper nye minner.</p>
+            <p style="margin: 0; color: var(--text-heading); font-weight: 700; line-height: 1.65; text-wrap: pretty;">Kreativitet, nærvær og kvalitetstid. Det er den perfekte oppskriften på en annerledes date.</p>
+          </div>
+        </div>
+        <div data-theme="sun" style="max-width: var(--width-content); margin: var(--space-10) auto 0; background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Kort versjon</div>
+          <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--lissom-brown);">Mal din egen keramikk. Senk skuldrene. Kos deg.</h3>
+          <p style="margin: 0; color: var(--lissom-brown); line-height: 1.6; max-width: 72ch; text-wrap: pretty;">Velg din favorittgjenstand, finn frem fargene og skap noe unikt. Paint on Pots er en enkel og hyggelig aktivitet for venner, familie, kolleger eller en romantisk date. Ingen forkunnskaper nødvendig, bare lysten til å være kreativ og ha det gøy.</p>
+        </div>
+      </section>
+
+      <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Priser</div>
@@ -383,31 +411,43 @@
     <div data-screen-label="Om oss">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Om oss" cta="Book nå" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
 
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-16); align-items: center;">
-          <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Om Lissom</div>
-            <h1 style="margin: 0 0 var(--space-6); font-size: var(--text-5xl);">Et verksted for glede, kreativitet og fellesskap</h1>
-            <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 54ch; text-wrap: pretty;">Historien om Lissom startet egentlig lenge før verkstedet åpnet dørene på Teie. På begynnelsen av 2000-tallet drev Monica Lissom Café, et lite sted bygget på varme møtesteder, gode opplevelser og mennesker som trives sammen. Mange år senere fikk navnet nytt liv, denne gangen som et keramikkverksted.</p>
-            <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); max-width: 54ch; text-wrap: pretty;">I dag holder Lissom til på Teie, rett utenfor Tønsberg sentrum, på vei mot Tjøme. Her har vi skapt et sted hvor kreativitet, håndverk og skaperglede står i sentrum.</p>
-            <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); max-width: 54ch; text-wrap: pretty;">Monica gikk på Steinerskolen og fant interessen for keramikk allerede på 1990-tallet. Nå har hun tatt opp faget for fullt igjen og er under opplæring hos Arild Kristoffersen og Runa Kristoffersen, samtidig som hun også har gått i lære hos Caroline Sagafoss.</p>
-            <p style="margin: 0; color: var(--text-body); font-size: var(--text-base); max-width: 54ch; text-wrap: pretty;">Hos Lissom ønsker vi å gjøre keramikk tilgjengelig for alle. Enten du aldri har tatt i leire før, eller du ønsker å videreutvikle egne prosjekter, skal du føle deg velkommen hos oss.</p>
-          </div>
-          <div>
-            <img src="assets_photos_kursrommet.jpg" alt="Kursrommet på Teie" style="width: 100%; height: 380px; object-fit: cover; border-radius: var(--radius-lg); display: block; margin-bottom: var(--space-6);">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Vi tilbyr</div>
-              <ul style="list-style: none; margin: 0 0 var(--space-4); padding: 0; display: flex; flex-direction: column; gap: 8px;">
-                <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>Dreiekurs for nybegynnere og viderekomne</span></li>
-                <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>Kurs i plateteknikk og håndbygging</span></li>
-                <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>Paint on Pots</span></li>
-                <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>Datenights og kreative kvelder</span></li>
-                <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>Private arrangementer og events</span></li>
-                <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); margin-top: 8px; flex: 0 0 auto;"></span><span>Medlemskap for deg som ønsker tilgang til verkstedet og mulighet til å utvikle egne prosjekter</span></li>
-              </ul>
-              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lissom handler ikke bare om keramikk. Det handler om å senke skuldrene, være kreativ, lære noe nytt og skape noe med egne hender. Vi ønsker at verkstedet skal være et sted hvor mennesker møtes, finner inspirasjon og opplever gleden ved å lage noe selv.</p>
-              <p style="margin: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-wrap: pretty;">Velkommen til Lissom – et kreativt pusterom på Teie, rett utenfor Tønsberg</p>
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
+        <div style="max-width: var(--width-content); margin: 0 auto;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Om Lissom</div>
+          <h1 style="margin: 0 0 var(--space-10); font-size: var(--text-5xl); max-width: 22ch; text-wrap: balance;">Et verksted for skaperglede, ro og fellesskap</h1>
+          <div class="lx-split" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-8) var(--space-16); align-items: start;">
+            <div>
+              <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Historien om Lissom startet egentlig lenge før keramikkverkstedet åpnet dørene på Teie. På begynnelsen av 2000-tallet drev Monica Lissom Café, et sted hvor mennesker møttes, fant ro og trivdes i godt selskap. Da muligheten senere dukket opp til å skape noe nytt, føltes det naturlig å gi nytt liv til det samme navnet.</p>
+              <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">I dag finner du Lissom på Teie, rett utenfor Tønsberg sentrum, på vei mot Tjøme. Her har vi skapt et varmt og inkluderende verksted hvor mennesker kan koble av fra hverdagen, være kreative og oppleve gleden ved å skape noe med egne hender.</p>
+              <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Monicas interesse for keramikk begynte allerede på 1990-tallet gjennom tiden på Steinerskolen. Mange år senere fant hun tilbake til leiren og oppdaget den samme roen, skapergleden og fascinasjonen som hun husket fra den gangen. I dag videreutvikler hun håndverket sitt gjennom opplæring hos Arild Kristoffersen, Runa Kristoffersen og Caroline Sagafoss.</p>
+              <p style="margin: 0 0 var(--space-5); color: var(--text-heading); font-size: var(--text-base); font-weight: 700; line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Men Lissom handler om mer enn keramikk.</p>
+              <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Det handler om den gode følelsen som oppstår når man senker skuldrene, lar mobilen ligge og gir seg selv tid til å være til stede i øyeblikket. Det handler om å kjenne mestring når noe du har laget med egne hender tar form. Og det handler om å være en del av et miljø hvor det er lov å prøve, feile, lære og utvikle seg i sitt eget tempo.</p>
+              <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Hos oss er alle velkomne. Enten du kommer for ditt aller første dreiekurs, ønsker å utforske plateteknikk, male keramikk eller fordype deg i egne prosjekter, skal du bli møtt med veiledning, varme og et inkluderende fellesskap.</p>
+              <p style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Lissom er ikke bare et keramikkverksted. Det er et sted hvor kreativitet får plass, hvor mennesker møtes, og hvor du kan finne en ro du kanskje ikke visste at du savnet. 🤎</p>
             </div>
+            <figure style="margin: calc(-1 * var(--space-6)) 0 0; position: sticky; top: 116px; width: min(420px, 100%);">
+              <img src="uploads_476463687_590516973787208_1732215863558581964_n-c3b907e3.jpg" alt="Monica, grunnlegger av Lissom" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 20%; border-radius: var(--radius-lg); display: block;">
+              <figcaption style="margin-top: var(--space-3); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Monica — grunnlegger av Lissom</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      <section style="background: var(--clay-100); padding: var(--space-14) var(--space-8);">
+        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Vi tilbyr</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Mer enn keramikk</h2>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; max-width: 44ch; text-wrap: pretty;">Lissom handler ikke bare om keramikk. Det handler om å senke skuldrene, være kreativ, lære noe nytt og skape noe med egne hender. Vi ønsker at verkstedet skal være et sted hvor mennesker møtes, finner inspirasjon og opplever gleden ved å lage noe selv.</p>
+            <p style="margin: 0; font-size: var(--text-base); font-weight: 700; color: var(--text-heading); text-wrap: pretty;">Velkommen til Lissom – et kreativt pusterom på Teie, rett utenfor Tønsberg</p>
+          </div>
+          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+            <sc-for list="{{ tilbudKort }}" as="t" hint-placeholder-count="6">
+              <button type="button" onClick="{{ t.velg }}" style="appearance: none; cursor: pointer; text-align: left; font: inherit; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--text-body); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); transition: all .18s ease;" style-hover="border-color: var(--lissom-brown); box-shadow: var(--shadow-sm);">
+                <span>{{ t.navn }}</span>
+                <span aria-hidden="true" style="color: var(--terracotta-600); font-weight: 700; flex: 0 0 auto;">→</span>
+              </button>
+            </sc-for>
           </div>
         </div>
       </section>
@@ -420,9 +460,9 @@
             <p style="margin: 0 0 var(--space-6); color: var(--text-muted); font-size: var(--text-base); text-wrap: pretty;">Finner du ikke svaret? Ring oss eller send en e-post, vi svarer som regel samme dag.</p>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="mail" hint-size="auto,44px">monica@lissom.no</x-import>
           </div>
-          <div style="display: flex; flex-direction: column;">
+          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--space-10); align-content: start;">
             <sc-for list="{{ sporsmal }}" as="s" hint-placeholder-count="7">
-              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-6) 0;">
+              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-5) 0;">
                 <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ s.q }}</h3>
                 <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ s.a }}</p>
               </div>
@@ -443,7 +483,6 @@
               <span>@lissom_keramikk</span>
             </div>
           </div>
-          <img src="assets_photos_verkstedet.jpg" alt="Verkstedet" style="width: 100%; height: 380px; object-fit: cover; border-radius: var(--radius-lg); display: block;">
         </div>
       </section>
     </div>
@@ -479,6 +518,26 @@
       </section>
       </sc-if>
 
+      <sc-if value="{{ ikkeDropinVisning }}" hint-placeholder-val="{{ true }}">
+        <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
+          <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">
+            <div>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Velkommen til Lissom</div>
+              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Hos Lissom handler keramikk om mye mer enn leire</h2>
+              <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det handler om å senke skuldrene. Om å koble av fra en travel hverdag. Om å oppleve den gode følelsen av å være helt til stede i øyeblikket.</p>
+              <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Når hendene får arbeide med leiren, skjer det noe. Tankene roer seg, tiden går litt saktere, og du får rom til å være kreativ uten prestasjonspress. Mange blir overrasket over hvor avslappende det er. Andre oppdager en skaperglede de ikke visste at de hadde.</p>
+              <p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Enten du velger dreiekurs eller plateteknikk, trenger du ingen forkunnskaper. Vi hjelper deg hele veien, i et trygt og inkluderende miljø hvor det er lov å prøve, feile, lære og le.</p>
+            </div>
+            <div>
+              <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Hos oss møtes mennesker i alle aldre og med ulik erfaring. Noen kommer for å lære et håndverk. Andre kommer for å finne ro. Mange kommer tilbake fordi de finner begge deler.</p>
+              <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Du vil kjenne gleden når leiren tar form mellom hendene dine. Stoltheten når noe du har laget selv står ferdig. Og kanskje viktigst av alt: den sjeldne følelsen av å få være akkurat den du er.</p>
+              <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Lissom er et verksted for kreativitet, mestring og fellesskap. Et sted hvor du kan puste ut, slippe fantasien løs og skape noe helt unikt.</p>
+              <p style="margin: 0; color: var(--text-heading); font-weight: 700; line-height: 1.65;">Vi gleder oss til å ønske deg velkommen.</p>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
       <sc-if value="{{ visIntroRad }}" hint-placeholder-val="{{ true }}">
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
           <div class="lx-cols4" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6);">
@@ -503,9 +562,9 @@
 
       <sc-if value="{{ erDropinVisning }}" hint-placeholder-val="{{ false }}">
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
-          <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-12); align-items: start;">
+          <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr 1.1fr; gap: var(--space-10); align-items: start;">
+            <img src="uploads_shutterstock_2829101699.jpg" alt="Drop-in-registrering i verkstedet" class="lx-foto" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: center 30%; border-radius: var(--radius-lg); display: block;">
             <div>
-              <img src="uploads_shutterstock_2829101699.jpg" alt="Drop-in-registrering i verkstedet" class="lx-foto" style="width: 100%; height: 340px; object-fit: cover; object-position: center 30%; border-radius: var(--radius-xl, 22px); display: block; margin-bottom: var(--space-8);">
               <h2 style="margin: 0 0 var(--space-4);">Verkstedet, på dine premisser</h2>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 52ch; text-wrap: pretty;">Book en økt på to timer og jobb med dine egne prosjekter — uten fast program, i verkstedet på Teie.</p>
               <div style="display: flex; flex-direction: column; gap: var(--space-3);">
@@ -603,46 +662,6 @@
         </section>
       </sc-if>
 
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: var(--space-16); align-items: start;">
-          <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Fant du ikke det du lette etter?</div>
-            <h2 style="margin: 0 0 var(--space-5);">Spør oss, så finner vi ut av det</h2>
-            <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 42ch; text-wrap: pretty;">Vi tar imot grupper, bedrifter, utdrikningslag og bursdager, og setter gjerne opp kurs på andre tidspunkter hvis flere ønsker det samme.</p>
-            <p style="margin: 0; color: var(--text-muted); font-size: var(--text-base);">Vi svarer som regel samme dag. Du kan også ringe <span style="white-space: nowrap;">+47 94 13 46 01</span>.</p>
-          </div>
-          <sc-if value="{{ foresporselSendt }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-10); text-align: center;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">Forespørselen er sendt</div>
-              <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading);">Takk! Vi tar kontakt</h3>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Vi svarer som regel samme dag, på e-posten eller telefonnummeret du oppga.</p>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ nyForesporsel }}" hint-size="auto,44px">Send en ny forespørsel</x-import>
-            </div>
-          </sc-if>
-          <sc-if value="{{ foresporselIkkeSendt }}" hint-placeholder-val="{{ true }}">
-            <div id="foresporsel-skjema" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 460px; width: 100%; justify-self: start;">
-              <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" hint-size="100%,62px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post eller telefon" placeholder="navn@epost.no" hint-size="100%,62px"></x-import>
-              </div>
-              <div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Hva gjelder det?</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <sc-for list="{{ fsTypeValg }}" as="t" hint-placeholder-count="4">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ t.valgt }}" on-click="{{ t.velg }}" hint-size="auto,32px">{{ t.navn }}</x-import>
-                  </sc-for>
-                </div>
-              </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Fortell litt om hva dere ønsker" rows="2" placeholder="Hvor mange er dere, og når passer det?" hint-size="100%,84px"></x-import>
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ sendForesporsel }}" hint-size="auto,44px">Send forespørsel</x-import>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">Uforpliktende — vi svarer samme dag.</span>
-              </div>
-            </div>
-          </sc-if>
-        </div>
-      </section>
-
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8); position: relative; overflow: hidden;">
         <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -110px; bottom: -180px; width: 520px; opacity: 0.1; pointer-events: none;">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: var(--space-16); align-items: start; position: relative;">
@@ -713,6 +732,12 @@
               </div>
               <sc-if value="{{ bPrisAntallNote }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: var(--text-sm); color: var(--text-muted); margin: -14px 0 var(--space-5);">{{ bPrisAntallNote }}</div>
+              </sc-if>
+              <sc-if value="{{ bRabattLinje }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); font-weight: 700; color: var(--sage-600); margin: -8px 0 var(--space-5);">{{ bRabattLinje }}</div>
+              </sc-if>
+              <sc-if value="{{ bRabattTeaser }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600; margin: -8px 0 var(--space-5);">{{ bRabattTeaser }}</div>
               </sc-if>
               <div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">{{ bOppsummering }}</div>
               <sc-if value="{{ harPlasser }}" hint-placeholder-val="{{ true }}">
@@ -857,6 +882,27 @@
           </sc-for>
         </div>
         
+      </section>
+
+      <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
+        <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Fellesskapet</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Hvorfor bli medlem?</h2>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;">Et medlemskap hos Lissom gir deg mer enn bare tilgang til et verksted. Du blir en del av et kreativt, sosialt og faglig fellesskap hvor du kan utvikle deg videre i ditt eget tempo.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;">For mange er medlemskap faktisk rimeligere enn å bygge opp et eget keramikkverksted hjemme. Du slipper investeringer i utstyr, verktøy, brenning og plass, samtidig som du får tilgang til et fullt utstyrt verksted og et inspirerende miljø.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;">Mange opplever at de lærer minst like mye av samtalene rundt arbeidsbordet som av selve kursene. Som medlem blir du en del av et miljø hvor man inspirerer hverandre, deler erfaringer og utvikler seg sammen.</p>
+            <p style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: var(--leading-relaxed, 1.65); text-wrap: pretty;">Enten du har gått kurs hos oss tidligere eller ønsker et sted å dyrke interessen din videre, er medlemskapet en flott måte å få mer tid med leire, flere kreative opplevelser og et fellesskap å høre til i.</p>
+          </div>
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Som medlem får du</div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <sc-for list="{{ medlemFordeler }}" as="f" hint-placeholder-count="7">
+                <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>{{ f }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
@@ -1068,45 +1114,6 @@
         </div>
       </section>
 
-      <section style="background: var(--clay-100); padding: var(--space-12) var(--space-8) var(--section-y);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: var(--space-16); align-items: start;">
-          <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kontakt oss</div>
-            <h2 style="margin: 0 0 var(--space-5);">Fortell oss hva dere ønsker</h2>
-            <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 42ch; text-wrap: pretty;">Vi svarer som regel samme dag med forslag til opplegg og pris.</p>
-            <p style="margin: 0; color: var(--text-muted); font-size: var(--text-base);">Du kan også ringe <span style="white-space: nowrap;">+47 94 13 46 01</span> eller skrive til monica@lissom.no.</p>
-          </div>
-          <sc-if value="{{ foresporselSendt }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-10); text-align: center;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">Forespørselen er sendt</div>
-              <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading);">Takk! Vi tar kontakt</h3>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Vi svarer som regel samme dag, på e-posten eller telefonnummeret du oppga.</p>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ nyForesporsel }}" hint-size="auto,44px">Send en ny forespørsel</x-import>
-            </div>
-          </sc-if>
-          <sc-if value="{{ foresporselIkkeSendt }}" hint-placeholder-val="{{ true }}">
-            <div id="foresporsel-skjema" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); max-width: 460px; width: 100%; justify-self: start;">
-              <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" hint-size="100%,62px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post eller telefon" placeholder="navn@epost.no" hint-size="100%,62px"></x-import>
-              </div>
-              <div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Hva gjelder det?</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                  <sc-for list="{{ fsTypeValg }}" as="t" hint-placeholder-count="4">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ t.valgt }}" on-click="{{ t.velg }}" hint-size="auto,32px">{{ t.navn }}</x-import>
-                  </sc-for>
-                </div>
-              </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Fortell litt om hva dere ønsker" rows="2" placeholder="Hvor mange er dere, og når passer det?" hint-size="100%,84px"></x-import>
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ sendForesporsel }}" hint-size="auto,44px">Send forespørsel</x-import>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">Uforpliktende — vi svarer samme dag.</span>
-              </div>
-            </div>
-          </sc-if>
-        </div>
-      </section>
     </div>
   </sc-if>
 
@@ -1554,6 +1561,20 @@
                   </div>
                 </div>
               </sc-if>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dreieskivene denne uka</div>
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: baseline; gap: var(--space-3); font-size: var(--text-sm);">
+                    <span style="font-weight: 700; color: var(--text-heading); width: 76px; flex: 0 0 auto;">{{ o.dag }}</span>
+                    <span style="color: var(--text-body); flex: 1;">{{ o.hva }}</span>
+                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap;">{{ o.tid }}</span>
+                  </div>
+                </sc-for>
+              </div>
             </div>
             <div id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
@@ -2687,6 +2708,30 @@
               </sc-for>
               <div>
                 <button type="button" onClick="{{ kvLeggTilRegel }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til svar</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
+            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Rabatten trekkes automatisk i kassen når antallet i bestillingen når minimum. Høyeste sats vinner.</p>
+              <sc-for list="{{ grListe }}" as="r" hint-placeholder-count="2">
+                <div style="display: grid; grid-template-columns: 74px 74px 1fr 44px 28px; gap: var(--space-2); align-items: center;">
+                  <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ skFeltStil }}">
+                  <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ skFeltStil }}">
+                  <select value="{{ r.gjelder }}" onChange="{{ r.settGjelder }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
+                    <sc-for list="{{ grGjelderValg }}" as="g" hint-placeholder-count="5">
+                      <option value="{{ g }}">{{ g }}</option>
+                    </sc-for>
+                  </select>
+                  <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
+                  <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                </div>
+              </sc-for>
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ grLeggTil }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Nytt rabattnivå</button>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">Min. antall · % · gjelder · av/på</span>
               </div>
             </div>
           </div>
@@ -3915,7 +3960,7 @@
         <div style="padding-bottom: var(--space-10); border-bottom: 1px solid rgba(244,235,222,.18);">
           <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 3.6vw, 72px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
           <div class="lx-band" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,56px">Send oss en forespørsel</x-import>
+            <button type="button" onClick="{{ ktApne }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 16px 32px; font: var(--type-body); font-size: var(--text-base); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; transition: all .2s var(--ease-clay, ease);" style-hover="background: var(--yellow-500, #E6B800);">Send oss en forespørsel <span aria-hidden="true">→</span></button>
             <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--clay-300); max-width: 42ch; text-wrap: pretty;">Et kreativt fristed for skaperglede, håndverk og fellesskap — på Teie, rett utenfor Tønsberg.</p>
           </div>
         </div>
@@ -4409,6 +4454,74 @@
           <button type="button" onClick="{{ npLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
         </div>
       </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ ktApen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ ktLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin-top: {{ ktTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
+      <button type="button" onClick="{{ ktLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
+      <sc-if value="{{ ktIkkeSendt }}" hint-placeholder-val="{{ true }}">
+        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send oss en forespørsel</h3>
+        <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi svarer som regel samme dag.</p>
+        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ ktNavn }}" on-change="{{ settKtNavn }}" hint-size="100%,66px"></x-import>
+          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" value="{{ ktTlf }}" on-change="{{ settKtTlf }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ ktEpost }}" on-change="{{ settKtEpost }}" hint-size="100%,66px"></x-import>
+          </div>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Hva gjelder det?" placeholder="Fortell kort hva det gjelder" value="{{ ktMelding }}" on-change="{{ settKtMelding }}" rows="{{ tre }}" hint-size="100%,110px"></x-import>
+          <sc-if value="{{ ktFeil }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600;">{{ ktFeil }}</p>
+          </sc-if>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ ktSend }}" hint-size="100%,52px">Send</x-import>
+        </div>
+      </sc-if>
+      <sc-if value="{{ ktSendt }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align: center; padding: var(--space-6) 0 var(--space-4);">
+          <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin-bottom: var(--space-3);">Takk for forespørselen!</div>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Vi har mottatt meldingen din og svarer som regel samme dag.</p>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ fsApen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ fsLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto;">
+    <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin-top: {{ fsTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
+      <button type="button" onClick="{{ fsLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
+      <sc-if value="{{ fsIkkeSendt }}" hint-placeholder-val="{{ true }}">
+        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send en forespørsel</h3>
+        <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Uforpliktende — vi svarer som regel samme dag med forslag til opplegg og pris.</p>
+        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ fsNavn }}" on-change="{{ settFsNavn }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post eller telefon" icon="mail" placeholder="navn@epost.no" value="{{ fsKontakt }}" on-change="{{ settFsKontakt }}" hint-size="100%,66px"></x-import>
+          </div>
+          <div>
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Antall personer</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <sc-for list="{{ fsAntallValg }}" as="a" hint-placeholder-count="4">
+                <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Hva ønsker dere?" placeholder="F.eks. teambuilding for 10 kolleger en torsdag i oktober" value="{{ fsMelding }}" on-change="{{ settFsMelding }}" rows="{{ tre }}" hint-size="100%,110px"></x-import>
+          <sc-if value="{{ fsFeil }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600;">{{ fsFeil }}</p>
+          </sc-if>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ fsSend }}" hint-size="100%,52px">Send forespørsel</x-import>
+        </div>
+      </sc-if>
+      <sc-if value="{{ fsSendt }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align: center; padding: var(--space-6) 0 var(--space-4);">
+          <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin-bottom: var(--space-3);">Takk for forespørselen!</div>
+          <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Vi har mottatt meldingen din og svarer som regel samme dag.</p>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ fsLukk }}" hint-size="auto,44px">Lukk</x-import>
+        </div>
+      </sc-if>
     </div>
   </div>
 </sc-if>
@@ -5224,6 +5337,57 @@ class Component extends DCLogic {
     }));
   }
 
+  tilPublisert(k) {
+    const plasser = ((k.pameldte || '0 / 8').split('/')[1] || '8').trim();
+    return {
+      level: k.type === 'Event' ? 'Event' : k.type === 'Drop-in' ? 'Drop-in' : 'Kurs',
+      title: k.navn,
+      date: k.neste && k.neste !== 'Ikke satt' ? k.neste.split(' 1')[0].replace(/ \d{2}:\d{2}.*$/, '') : 'Dato kommer',
+      duration: (k.neste || '').match(/\d{2}:\d{2}.*$/) ? k.neste.match(/\d{2}:\d{2}.*$/)[0] : 'Se datoer',
+      price: k.pris === 'Gratis' ? 'Gratis' : 'Fra ' + k.pris,
+      status: plasser + ' plasser',
+      image: FOTO + 'handbygging.jpg',
+      tema: k.type === 'Event' ? 'Events' : k.type === 'Drop-in' ? 'Drop-in' : 'Kurs',
+      om: k.beskrivelse || '',
+      punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks ' + plasser + ' deltakere.'],
+      datoer: (k.datoer && k.datoer.length) ? k.datoer.map((d, i) => ({ dato: d, tid: '', plasser: plasser + ' plasser', valgt: i === 0 })) : [{ dato: 'Dato kommer', tid: '', plasser: plasser + ' plasser', valgt: true }],
+      nylig: true,
+    };
+  }
+
+  rabattNivaer() {
+    return this.state.rabattNivaer || [
+      { min: 3, prosent: 10, gjelder: 'Alle kurs og workshops', aktiv: true },
+      { min: 5, prosent: 15, gjelder: 'Alle kurs og workshops', aktiv: true },
+      { min: 6, prosent: 10, gjelder: 'Alle dreiekurs', aktiv: true },
+    ];
+  }
+
+  erDreiekurs(kurs) {
+    return !!kurs && ((kurs.tema === 'Dreiing') || ((kurs.title || '').toLowerCase().indexOf('dreie') >= 0));
+  }
+
+  nivaerFor(kurs) {
+    const dreiing = this.erDreiekurs(kurs);
+    return this.rabattNivaer().filter(r =>
+      r.gjelder === (kurs && kurs.title)
+      || (dreiing ? r.gjelder === 'Alle dreiekurs' : r.gjelder === 'Alle kurs og workshops')
+    );
+  }
+
+  rabattFor(kurs, antall) {
+    const tema = (kurs && kurs.tema) || '';
+    if (tema === 'Medlemskap' || tema === 'Drop-in') return 0;
+    return this.nivaerFor(kurs)
+      .filter(r => r.aktiv && antall >= (parseInt(r.min, 10) || 0))
+      .reduce((m, r) => Math.max(m, parseFloat(r.prosent) || 0), 0);
+  }
+
+  maksRabatt(kurs) {
+    const liste = kurs ? this.nivaerFor(kurs) : this.rabattNivaer();
+    return liste.filter(r => r.aktiv).reduce((m, r) => Math.max(m, parseFloat(r.prosent) || 0), 0);
+  }
+
   flyttPlass(tittel, nyDato) {
     this.setState(s => ({ flyttet: Object.assign({}, s.flyttet, { [tittel]: nyDato }) }));
   }
@@ -5299,6 +5463,8 @@ class Component extends DCLogic {
     clearTimeout(this._kvitteringTimer);
     clearTimeout(this._ventelisteTimer);
     clearTimeout(this._kurvTimer);
+    clearTimeout(this._fsTimer);
+    clearTimeout(this._ktTimer);
     clearInterval(this._kurvIntervall);
     window.removeEventListener('resize', this._resize);
     window.removeEventListener('storage', this._lagring);
@@ -5905,6 +6071,15 @@ class Component extends DCLogic {
       },
       kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
       erKursFilter: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk'].indexOf(this.state.kursFilter || 'Alle') >= 0,
+      medlemFordeler: [
+        'Tilgang til verksted og utstyr',
+        'Mulighet til å jobbe med egne prosjekter',
+        'Gratis veiledning fra oss ved behov',
+        'Læring og erfaringsutveksling med andre medlemmer',
+        'Tilgang til brenning og glasering etter gjeldende ordninger',
+        'Egen hylleplass til pågående arbeider',
+        'Et kreativt og sosialt miljø med mennesker som deler samme interesse',
+      ],
       medlemPasser: [
         'Har tatt kurs og vil fortsette på egen hånd',
         'Vil jobbe selvstendig med egne prosjekter',
@@ -5916,7 +6091,7 @@ class Component extends DCLogic {
         'Bare vil prøve én kveld — da passer drop-in eller Paint on Pots bedre',
       ],
       medlemViktig: [
-        { tittel: 'Én hylleplass', tekst: 'Hvert medlemskap inkluderer én hylle til arbeidene dine. Trenger du mer, avtaler vi det.' },
+        { tittel: 'Én hylleplass', tekst: 'Hvert medlemskap inkluderer én hylle til arbeidene dine.' },
         { tittel: 'Brenning følger planen', tekst: 'Vi brenner etter verkstedets brenningsplan, vanligvis ukentlig. Glasur og leire kjøpes i internbutikken.' },
         { tittel: 'Verkstedets regler', tekst: 'Egne materialer og glasurer må godkjennes, og HMS- og ordensreglene gjelder alle medlemmer.' },
       ],
@@ -5997,19 +6172,80 @@ class Component extends DCLogic {
         { hvem: 'For gjengen', navn: 'Privat event', tekst: 'Utdrikningslag, bursdag eller teambuilding — fra 8 personer, kvelden er deres.', pris: 'Pris på forespørsel', cta: 'Les mer', gjor: () => { this.setState({ side: 'bedrift' }); window.scrollTo(0, 0); } },
       ].map(e => Object.assign(e, { velg: e.gjor })),
       kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
-        navn, valgt: navn === this.state.kursFilter, velg: () => this.setState({ kursFilter: navn }),
+        navn, valgt: navn === this.state.kursFilter,
+        velg: () => {
+          if (navn === 'Drop-in') {
+            const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
+            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); return; }
+          }
+          this.setState({ kursFilter: navn });
+        },
       })),
       kursAlle: this.medBooking(this.filtrerKurs(this._kursListe = [
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom sentrering, oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra 1 490 kr', status: '2 plasser igjen', image: 'uploads_shutterstock_2645499765.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
-        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'assets_datenight-1.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', bilder: ['assets_datenight-1.jpg', 'assets_datenight-3.jpg'], punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
-        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_workshop4.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', bilder: ['uploads_workshop4.jpg', 'uploads_b7012bbb-b81d-4c66-8614-030285ed4d5e.jpg', 'uploads_fd08f232-4d9e-4963-b6af-491ea98f3836.jpg'], punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
+        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra 1 490 kr', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
+        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
         { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: '490 kr', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
-      ])),
-      bedriftTilSkjema: () => {
-        const el = document.getElementById('foresporsel-skjema');
-        if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 120; window.scrollTo({ top: y, behavior: 'smooth' }); }
+      ].concat(this.state.nyeKurs || []))),
+      bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
+      ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
+      ktApen: !!this.state.ktApen,
+      ktLukk: () => this.setState({ ktApen: false }),
+      ktTop: this.state.ktTop ?? 80,
+      ktIkkeSendt: !this.state.ktSendt2,
+      ktSendt: !!this.state.ktSendt2,
+      ktNavn: this.state.ktNavn || '', settKtNavn: e => this.setState({ ktNavn: e.target.value, ktFeil: null }),
+      ktTlf: this.state.ktTlf || '', settKtTlf: e => this.setState({ ktTlf: e.target.value, ktFeil: null }),
+      ktEpost: this.state.ktEpost || '', settKtEpost: e => this.setState({ ktEpost: e.target.value, ktFeil: null }),
+      ktMelding: this.state.ktMelding || '', settKtMelding: e => this.setState({ ktMelding: e.target.value, ktFeil: null }),
+      ktFeil: this.state.ktFeil || '',
+      ktSend: () => {
+        const s = this.state;
+        if (!(s.ktNavn || '').trim() || (!(s.ktTlf || '').trim() && !(s.ktEpost || '').trim())) { this.setState({ ktFeil: 'Fyll inn navn og telefon eller e-post, så kan vi svare deg.' }); return; }
+        this.setState(st => ({
+          ktSendt2: true,
+          nyeForesporsler: (st.nyeForesporsler || []).concat([{
+            navn: s.ktNavn.trim(), hva: 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
+            tekst: (s.ktMelding || '').trim() || 'Ingen detaljer oppgitt', epost: (s.ktEpost || '').trim(), tlf: (s.ktTlf || '').trim(),
+          }]),
+          ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '',
+        }));
+        clearTimeout(this._ktTimer);
+        this._ktTimer = setTimeout(() => this.setState({ ktApen: false }), 3000);
+      },
+      fsApen: !!this.state.fsApen,
+      fsLukk: () => this.setState({ fsApen: false }),
+      fsTop: this.state.fsTop ?? 80,
+      fsIkkeSendt: !this.state.fsSendt2,
+      fsSendt: !!this.state.fsSendt2,
+      fsNavn: this.state.fsNavn || '',
+      settFsNavn: e => this.setState({ fsNavn: e.target.value, fsFeil: null }),
+      fsKontakt: this.state.fsKontakt || '',
+      settFsKontakt: e => this.setState({ fsKontakt: e.target.value, fsFeil: null }),
+      fsMelding: this.state.fsMelding || '',
+      settFsMelding: e => this.setState({ fsMelding: e.target.value, fsFeil: null }),
+      fsFeil: this.state.fsFeil || '',
+      tre: 3,
+      fsAntallValg: ['2–5', '6–10', '11–16'].map(n => ({
+        navn: n + ' personer',
+        velg: () => this.setState({ fsAntall: n, fsFeil: null }),
+        stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: (this.state.fsAntall === n) ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: (this.state.fsAntall === n) ? 'var(--lissom-brown)' : 'var(--surface-card)', color: (this.state.fsAntall === n) ? 'var(--clay-50)' : 'var(--text-heading)' },
+      })),
+      fsSend: () => {
+        const s = this.state;
+        if (!(s.fsNavn || '').trim() || !(s.fsKontakt || '').trim()) { this.setState({ fsFeil: 'Fyll inn navn og e-post eller telefon, så kan vi svare deg.' }); return; }
+        this.setState(st => ({
+          fsSendt2: true,
+          nyeForesporsler: (st.nyeForesporsler || []).concat([{
+            navn: s.fsNavn.trim(), hva: 'Gruppe, ' + (s.fsAntall || 'antall ikke oppgitt') + (s.fsAntall ? ' personer' : ''), tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
+            tekst: (s.fsMelding || '').trim() || 'Ingen detaljer oppgitt', epost: s.fsKontakt.trim(), tlf: '',
+          }]),
+          fsNavn: '', fsKontakt: '', fsMelding: '', fsAntall: null,
+        }));
+        clearTimeout(this._fsTimer);
+        this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
       },
       uke: this.ukeData(this.state.ukeNr ?? 35).map((d, dagIdx) => Object.assign(d, {
         erTom: !(d.poster || []).length,
@@ -6201,7 +6437,7 @@ class Component extends DCLogic {
       erDropinBooking: (this.state.valgtKurs && this.state.valgtKurs.tema) === 'Drop-in',
       erFullbooket: (this.state.valgtKurs && this.state.valgtKurs.status) === 'Fullbooket',
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis',
-      bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : 'per person',
+      bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ('totalt for ' + this.state.bAntallN + ' personer') : 'per person',
       erIntern: (this.state.valgtKurs && this.state.valgtKurs.level) === 'Kun for medlemmer',
       vlNavn: this.state.vlNavn || '',
       settVlNavn: e => this.setState({ vlNavn: e.target.value, vlFeil: null }),
@@ -6480,15 +6716,23 @@ class Component extends DCLogic {
       })),
       bTittel: (this.state.valgtKurs && this.state.valgtKurs.title) || 'Nybegynner dreiekurs',
       bNivaa: (this.state.valgtKurs && this.state.valgtKurs.level) || 'Nybegynner',
-      bPris: (() => {
+      ...(() => {
         const k = this.state.valgtKurs || {};
+        const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr';
         const grunn = this.prisAv(k.title || 'Nybegynner dreiekurs') || 2800;
-        const antall = ((k.tema || '') === 'Medlemskap') ? 1 : (this.state.bAntallN || 1);
-        if (k.price === 'Gratis') return 'Gratis';
-        const sum = grunn * antall;
-        return (antall > 1 ? '' : 'Fra ') + sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr';
+        const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
+        const antall = ((k.tema || '') === 'Medlemskap') ? 1 : Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
+        const rabatt = this.rabattFor(k, antall);
+        const brutto = grunn * antall;
+        const netto = brutto * (1 - rabatt / 100);
+        const maks = this.maksRabatt(k);
+        return {
+          bPris: k.price === 'Gratis' ? 'Gratis' : (antall > 1 ? '' : 'Fra ') + fmt(netto),
+          bPrisAntallNote: (k.tema !== 'Medlemskap' && antall > 1) ? (antall + ' × ' + fmt(grunn) + (rabatt ? ' = ' + fmt(brutto) : '')) : '',
+          bRabattLinje: (rabatt && k.price !== 'Gratis') ? ('Grupperabatt ' + rabatt + ' %: −' + fmt(brutto - netto)) : '',
+          bRabattTeaser: (!rabatt && maks > 0 && k.price !== 'Gratis' && k.tema !== 'Medlemskap' && k.tema !== 'Drop-in') ? ('Ta med venner og få opptil ' + maks + ' % rabatt.') : '',
+        };
       })(),
-      bPrisAntallNote: ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ((this.state.bAntallN) + ' × ' + (this.prisAv((this.state.valgtKurs || {}).title || 'Nybegynner dreiekurs') || 2800).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr') : '',
       bBilde: (this.state.valgtKurs && this.state.valgtKurs.image) || 'uploads_shutterstock_2630283113.jpg',
       bookingPunkter: (this.state.valgtKurs && this.state.valgtKurs.punkter) || ((this.state.valgtKurs || {}).level === 'Event' ? [
         'Ingen erfaring nødvendig — vi viser deg alt underveis.',
@@ -6932,7 +7176,18 @@ class Component extends DCLogic {
       nkLeggUt: () => {
         const s = this.state;
         if (!s.nkNavn || !s.nkPris) return;
-        this.setState({ nkApen: false, kvittering: s.nkNavn + ' er lagt ut' });
+        const rad = {
+          navn: s.nkNavn, type: s.nkType || 'Kurs',
+          pris: /kr/.test(s.nkPris) ? s.nkPris : s.nkPris + ' kr',
+          gjentas: 'Engangs', pameldte: '0 / ' + (s.nkPlasser || '8'), andel: 0,
+          neste: 'Ikke satt', beskrivelse: s.nkBeskrivelse || '',
+        };
+        this.setState(st => ({
+          nkApen: false,
+          adminKursListe: this.kursData().slice().concat([rad]),
+          nyeKurs: (st.nyeKurs || []).filter(k => k.title !== rad.navn).concat([this.tilPublisert(rad)]),
+          kvittering: s.nkNavn + ' er lagt ut',
+        }));
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
@@ -7045,7 +7300,9 @@ class Component extends DCLogic {
           const alle = this.kursData().slice();
           const idx = s.kIndeks ?? -1;
           if (idx >= 0) { nytt.pameldte = alle[idx].pameldte; nytt.andel = alle[idx].andel; alle[idx] = nytt; } else { alle.push(nytt); }
-          return { adminKursListe: alle, kRed: false };
+          const pub = this.tilPublisert(nytt);
+          const nye = (s.nyeKurs || []).filter(k => k.title !== (idx >= 0 ? (this.kursData()[idx] || {}).navn : navn) && k.title !== navn);
+          return { adminKursListe: alle, kRed: false, nyeKurs: nye.concat([pub]), kvittering: navn + ' er lagret og publisert' };
         });
       },
       ...(() => {
@@ -7084,6 +7341,33 @@ class Component extends DCLogic {
         slett: () => this.setState({ kvRegler: this.kvRegler().filter((x, j) => j !== i), kvHva: null }),
       })),
       kvLeggTilRegel: () => this.setState({ kvRegler: this.kvRegler().concat([{ navn: 'Nytt svar', mal: 'Nybegynner dreiekurs', tekst: '' }]) }),
+      grGjelderValg: ['Alle kurs og workshops', 'Alle dreiekurs'].concat(this.kursData().map(k => k.navn)),
+      grListe: this.rabattNivaer().map((r, i) => {
+        const oppdater = endring => this.setState({ rabattNivaer: this.rabattNivaer().map((x, j) => j === i ? Object.assign({}, x, endring) : x) });
+        return {
+          min: r.min, prosent: r.prosent, gjelder: r.gjelder,
+          settMin: e => oppdater({ min: Math.max(2, parseInt(e.target.value, 10) || 2) }),
+          settProsent: e => oppdater({ prosent: Math.min(100, Math.max(1, parseFloat(e.target.value) || 1)) }),
+          settGjelder: e => oppdater({ gjelder: e.target.value }),
+          veksl: () => oppdater({ aktiv: !r.aktiv }),
+          aktivTekst: r.aktiv ? 'På' : 'Av',
+          aktivStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 0', font: 'var(--type-body-sm)', fontWeight: 700, border: '1px solid ' + (r.aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: r.aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)', color: r.aktiv ? 'var(--clay-50)' : 'var(--text-muted)' },
+          slett: () => this.setState({ rabattNivaer: this.rabattNivaer().filter((x, j) => j !== i) }),
+        };
+      }),
+      grLeggTil: () => this.setState({ rabattNivaer: this.rabattNivaer().concat([{ min: 3, prosent: 10, gjelder: 'Alle kurs og workshops', aktiv: true }]) }),
+      skiveOpptatt: (() => {
+        const skiveord = ['dreiekurs', 'kurs boller', 'date night', 'store fat'];
+        const ut = [];
+        this.ukeData(35).forEach(d => (d.poster || []).forEach(p => {
+          const navn = (p.tekst || '').split(' · ')[0];
+          if (skiveord.some(o => navn.toLowerCase().indexOf(o) >= 0)) {
+            const k = (this._kursListe || []).find(x => x.title.toLowerCase().indexOf(navn.toLowerCase()) >= 0 || navn.toLowerCase().indexOf(x.title.toLowerCase()) >= 0);
+            ut.push({ dag: d.dag + ' ' + d.dato + '.', hva: navn, tid: (k && k.duration && /\d/.test(k.duration)) ? k.duration : ((p.tekst || '').split(' · ')[1] || '') });
+          }
+        }));
+        return ut;
+      })(),
       visApentHus: this.state.visApentHus !== false && this.mobilVis('apenthus'),
       vekslApentHus: () => this.setState(s => ({ visApentHus: s.visApentHus === false })),
       visMedlemskolleksjon: this.state.visMedlemskolleksjon !== false,
@@ -7097,12 +7381,12 @@ class Component extends DCLogic {
       butikkvarer: (() => {
         const filter = this.state.butikkFilter || 'Alt';
         const egne = this.medBildeCss([
-          { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: '390 kr', image: FOTO + 'butikken.jpg', badge: 'Matsikret', kategori: 'Kopper' },
-          { title: 'Kopp med hank', detalj: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.', pris: '450 kr', image: FOTO + 'dreiing-naerbilde.jpg', badge: 'Matsikret', kategori: 'Kopper' },
-          { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: '590 kr', image: FOTO + 'handbygging.jpg', badge: 'Matsikret', kategori: 'Boller' },
-          { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: '340 kr', image: FOTO + 'butikken.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
-          { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: '790 kr', image: FOTO + 'plateteknikk-fat.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
-          { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108721.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
+          { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: '390 kr', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
+          { title: 'Kopp med hank', detalj: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.', pris: '450 kr', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
+          { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: '590 kr', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller' },
+          { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: '340 kr', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
+          { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: '790 kr', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
+          { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
         ]).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
@@ -7231,7 +7515,7 @@ class Component extends DCLogic {
       })),
       abonnementer: (() => {
         const P = n => this.planer().find(p => p.navn === n) || {};
-        const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };
+        const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2829122279.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };
         return [
           abo({ merke: 'Prøveperiode', navn: 'Prøv Lissom', pris: P('Prøv Lissom').pris, periode: 'for ' + P('Prøv Lissom').periode, beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.', punkter: ['8 verkstedtimer', 'Leire og brenning kjøpes i tillegg', 'Kan kun benyttes én gang', 'Går ikke automatisk over til abonnement'] }),
           abo({ mork: true, merke: 'Mest valgt', navn: '30 timer', pris: P('30 timer').pris, periode: P('30 timer').periode, beskrivelse: 'Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.', punkter: ['30 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Ta med en venn én gang i måneden'] }),
@@ -7248,6 +7532,17 @@ class Component extends DCLogic {
       erForside: side === 'forside',
       erPop: side === 'paintonpots',
       goPop: this.go('paintonpots'),
+      tilbudKort: [
+        { navn: 'Dreiekurs for nybegynnere og viderekomne', side: 'kurs', filter: 'Dreiing' },
+        { navn: 'Kurs i plateteknikk og håndbygging', side: 'kurs', filter: 'Plateteknikk' },
+        { navn: 'Paint on Pots', side: 'paintonpots' },
+        { navn: 'Datenights og kreative kvelder', side: 'kurs', filter: 'Events' },
+        { navn: 'Private arrangementer og events', side: 'bedrift' },
+        { navn: 'Medlemskap med tilgang til verkstedet og egne prosjekter', side: 'medlemskap' },
+      ].map(t => ({
+        navn: t.navn,
+        velg: () => { this.setState(t.filter ? { side: t.side, kursFilter: t.filter } : { side: t.side }); window.scrollTo(0, 0); },
+      })),
       popTilDatoer: () => {
         if (this.state.side !== 'paintonpots') { this.setState({ side: 'paintonpots' }); }
         setTimeout(() => { const el = document.getElementById('pop-datoer'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); } }, 60);
@@ -7357,7 +7652,7 @@ class Component extends DCLogic {
           { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 690 kr per person'), bilde: 'kursrommet.jpg' },
           { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 590 kr per person'), bilde: 'uploads_datenight.jpg' },
           { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 490 kr per person'), bilde: 'uploads_barn2.jpg' },
-        ].map(t => { const sti = t.bilde.indexOf('_') >= 0 && t.bilde.indexOf('/') < 0 ? t.bilde : t.bilde.indexOf('/') >= 0 ? t.bilde.replace(/\//g, '_') : 'assets_photos_' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
+        ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets/photos/' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
       })(),
       vilkar: [
         { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 342 122 236 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
@@ -7404,7 +7699,8 @@ class Component extends DCLogic {
       ],
       footerOm: [
         { navn: 'Om oss', velg: this.go('omoss') },
-        { navn: 'Kontakt', velg: this.go('kontakt') },
+        { navn: 'monica@lissom.no', velg: () => { window.location.href = 'mailto:monica@lissom.no'; } },
+        { navn: '+47 94 13 46 01', velg: () => { window.location.href = 'tel:+4794134601'; } },
         { navn: 'Spørsmål og svar', velg: this.go('omoss') },
         { navn: 'Bedrift og event', velg: this.go('bedrift') },
         { navn: 'Personvern', velg: this.go('personvern') },
@@ -7431,7 +7727,7 @@ class Component extends DCLogic {
       kurv: [
         { navn: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl', antall: '2', sum: '780 kr', image: FOTO + 'butikken.jpg' },
         { navn: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm', antall: '1', sum: '590 kr', image: FOTO + 'verkstedet.jpg' },
-        { navn: 'Gavekort, 1 000 kr', detalj: 'Sendes på e-post til mottaker', antall: '1', sum: '1 000 kr', image: 'uploads_shutterstock_2829108721.jpg' },
+        { navn: 'Gavekort, 1 000 kr', detalj: 'Sendes på e-post til mottaker', antall: '1', sum: '1 000 kr', image: 'uploads_shutterstock_2829108657.jpg' },
       ],
       kasseLinjer: [
         { navn: 'Varer', sum: '2 370 kr' },
@@ -7897,7 +8193,8 @@ class Component extends DCLogic {
       heroKnapp1: (this.state.innholdLagret || {})['Forside/0/Knapp 1'] ?? 'Se kurs og datoer',
       heroKnapp2: (this.state.innholdLagret || {})['Forside/0/Knapp 2'] ?? 'Paint on Pots',
       heroBildeCss: "url('" + ((this.state.innholdLagret || {})['Forside/0/Hero-bilde'] ?? 'assets_photos_dreiekurs-smil.jpg') + "')",
-      goForesporsel: () => {
+      goForesporsel: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
+      goForesporselGammel: () => {
         this.setState({ side: 'kurs' });
         setTimeout(() => {
           const h = [...document.querySelectorAll('h2')].find(e => e.textContent.indexOf('Spør oss') > -1);
@@ -7910,8 +8207,8 @@ class Component extends DCLogic {
       toggleVilkaar: () => this.setState(s => ({ vilkaarOk: !s.vilkaarOk })),
       goVilkar: this.go('vilkar'),
       goBedrift: this.go('bedrift'),
-      erDropinVisning: side === 'kurs' && this.state.kursFilter === 'Drop-in',
-      ikkeDropinVisning: !(side === 'kurs' && this.state.kursFilter === 'Drop-in'),
+      erDropinVisning: false,
+      ikkeDropinVisning: true,
       dropinBook: () => {
         const k = {
           level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer',
@@ -8293,7 +8590,7 @@ class Component extends DCLogic {
       })(),
       bKarusell: (() => {
         const k = this.state.valgtKurs || {};
-        const bilder = (k.bilder && k.bilder.length ? k.bilder : [FOTO + 'handbygging.jpg', FOTO + 'kursrommet.jpg', FOTO + 'verkstedet.jpg']);
+        const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'kursrommet.jpg', FOTO + 'verkstedet.jpg']);
         const sek = parseFloat(k.sekunder) || 5;
         const fade = k.fade !== false;
         const idx = Math.floor((this.state.karTikk || 0) / sek) % bilder.length;
@@ -8327,7 +8624,12 @@ class Component extends DCLogic {
         el.style.color = 'var(--lissom-brown)'; el.style.webkitTextFillColor = '';
       },
       tjueseks: 26,
-      goDropin: () => { this.setState({ side: 'kurs', kursFilter: 'Drop-in' }); window.scrollTo(0, 0); },
+      goDropin: () => {
+        const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
+        if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); }
+        else { this.setState({ side: 'kurs', kursFilter: 'Drop-in' }); }
+        window.scrollTo(0, 0);
+      },
       ukeNr: this.state.ukeNr ?? 35,
       ukeForrige: () => this.setState(s => ({ ukeNr: Math.max(35, (s.ukeNr ?? 35) - 1) })),
       ukeNeste: () => this.setState(s => ({ ukeNr: Math.min(37, (s.ukeNr ?? 35) + 1) })),
@@ -8340,6 +8642,10 @@ class Component extends DCLogic {
       goNav: (lenke) => {
         if (lenke === 'Handlekurv') { this.apneKurvAuto(40); return; }
         if (lenke === 'Søk') { this.setState({ sokApen: true }); return; }
+        if (lenke === 'Drop-in') {
+          const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
+          if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); return; }
+        }
         const ruter = {
           'Forside': ['forside'],
           'Kurs': ['kurs', 'Kurs'], 'Våre kurs': ['kurs', 'Kurs'], 'Kurskalender': ['kalender'],
@@ -8368,13 +8674,13 @@ class Component extends DCLogic {
       })(),
       nyheter: this.medBildeCss([
         { dato: 'Fra 1. september', tittel: 'Nye høstkurs er lagt ut', tekst: 'Dreiing for nybegynnere går hver tirsdag gjennom hele høsten. Plateteknikk starter i oktober.', image: 'uploads_shutterstock_2829109417.jpg', mal: ['kurs', 'Alle'] },
-        { dato: 'Nyhet', tittel: 'Gavekort til jul og bursdag', tekst: 'Gavekort kan brukes på kurs, events, medlemskap og verkstedtid. Sendes på e-post med en gang.', image: 'uploads_shutterstock_2829108721.jpg', mal: ['butikk'] },
+        { dato: 'Nyhet', tittel: 'Gavekort til jul og bursdag', tekst: 'Gavekort kan brukes på kurs, events, medlemskap og verkstedtid. Sendes på e-post med en gang.', image: 'uploads_shutterstock_2829108657.jpg', mal: ['butikk'] },
         { dato: 'Medlemskap', tittel: 'Ledige plasser i verkstedet', tekst: 'Vi har noen ledige medlemsplasser fra september. Velg mellom prøvemåned, 30 timer eller fri tilgang.', image: 'uploads_shutterstock_2829109201.jpg', mal: ['medlemskap'] },
       ]).map(n => Object.assign(n, { velg: () => { this.setState({ side: n.mal[0], kursFilter: n.mal[1] || 'Alle' }); window.scrollTo(0, 0); } })),
       popDatoer: (() => {
         const liste = this.medBooking([
-          { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '5 plasser igjen', image: 'uploads_workshop4.jpg' },
-          { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: 'Ledig', image: 'uploads_workshop4.jpg' },
+          { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '5 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
+          { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
         ]);
         return liste;
       })(),
@@ -8383,17 +8689,17 @@ class Component extends DCLogic {
       kursForside: this.medBooking([
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg' },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg' },
-        { level: 'Event', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'assets_datenight-1.jpg' },
-        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_workshop4.jpg' },
+        { level: 'Event', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg' },
+        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
       ].map(f => {
         const full = (this._kursListe || []).find(x => x.title === f.title);
         return full ? Object.assign({}, full) : f;
-      })),
+      }).concat(this.state.nyeKurs || [])),
       produkter: this.medBildeCss([
-        { title: 'Kopp, sandglasur', pris: '390 kr', image: FOTO + 'butikken.jpg' },
-        { title: 'Bolle, stor', pris: '590 kr', image: FOTO + 'handbygging.jpg' },
-        { title: 'Fat, 28 cm', pris: '790 kr', image: FOTO + 'plateteknikk-fat.jpg' },
-        { title: 'Gavekort', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108721.jpg' },
+        { title: 'Kopp, sandglasur', pris: '390 kr', image: 'uploads_shutterstock_2830582037.jpg' },
+        { title: 'Bolle, stor', pris: '590 kr', image: 'uploads_shutterstock_2830582659.jpg' },
+        { title: 'Fat, 28 cm', pris: '790 kr', image: 'uploads_shutterstock_2830582925.jpg' },
+        { title: 'Gavekort', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108657.jpg' },
       ]),
     };
   }

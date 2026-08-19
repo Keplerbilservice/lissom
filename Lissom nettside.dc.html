@@ -80,8 +80,11 @@
       .lx-split { min-width: 0; }
       .lx-split > * { min-width: 0; }
     }
+    .lx-bedriftmobil { display: none !important; }
     @media (max-width: 560px) {
       .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
+      .lx-bedriftdesk { display: none !important; }
+      .lx-bedriftmobil { display: flex !important; }
     }
   </style>
 </helmet>
@@ -418,6 +421,17 @@
           <h1 style="margin: 0 0 var(--space-10); font-size: var(--text-5xl); max-width: 22ch; text-wrap: balance;">Et verksted for skaperglede, ro og fellesskap</h1>
           <div class="lx-split" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-8) var(--space-16); align-items: start;">
             <div>
+              <div class="lx-kunmobil" style="display: none;">
+                <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); line-height: 1.65; text-wrap: pretty;">Lissom er et keramikkverksted på Teie, rett utenfor Tønsberg. Navnet kommer fra Lissom Café, som Monica drev på begynnelsen av 2000-tallet.</p>
+                <p style="margin: 0 0 var(--space-4); color: var(--text-heading); font-size: var(--text-base); font-weight: 700;">Men Lissom handler om mer enn keramikk:</p>
+                <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-5);">
+                  <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Ro — legg bort mobilen og vær til stede</span></div>
+                  <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Mestring — kjenn gleden når noe du lager tar form</span></div>
+                  <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Fellesskap — rom for å prøve, feile og lære</span></div>
+                </div>
+                <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; text-wrap: pretty;">Alle er velkomne — enten du kommer for ditt første dreiekurs eller vil fordype deg i egne prosjekter. 🤎</p>
+              </div>
+              <div class="lx-hide-m">
               <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Historien om Lissom startet egentlig lenge før keramikkverkstedet åpnet dørene på Teie. På begynnelsen av 2000-tallet drev Monica Lissom Café, et sted hvor mennesker møttes, fant ro og trivdes i godt selskap. Da muligheten senere dukket opp til å skape noe nytt, føltes det naturlig å gi nytt liv til det samme navnet.</p>
               <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">I dag finner du Lissom på Teie, rett utenfor Tønsberg sentrum, på vei mot Tjøme. Her har vi skapt et varmt og inkluderende verksted hvor mennesker kan koble av fra hverdagen, være kreative og oppleve gleden ved å skape noe med egne hender.</p>
               <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Monicas interesse for keramikk begynte allerede på 1990-tallet gjennom tiden på Steinerskolen. Mange år senere fant hun tilbake til leiren og oppdaget den samme roen, skapergleden og fascinasjonen som hun husket fra den gangen. I dag videreutvikler hun håndverket sitt gjennom opplæring hos Arild Kristoffersen, Runa Kristoffersen og Caroline Sagafoss.</p>
@@ -425,6 +439,7 @@
               <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Det handler om den gode følelsen som oppstår når man senker skuldrene, lar mobilen ligge og gir seg selv tid til å være til stede i øyeblikket. Det handler om å kjenne mestring når noe du har laget med egne hender tar form. Og det handler om å være en del av et miljø hvor det er lov å prøve, feile, lære og utvikle seg i sitt eget tempo.</p>
               <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Hos oss er alle velkomne. Enten du kommer for ditt aller første dreiekurs, ønsker å utforske plateteknikk, male keramikk eller fordype deg i egne prosjekter, skal du bli møtt med veiledning, varme og et inkluderende fellesskap.</p>
               <p style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Lissom er ikke bare et keramikkverksted. Det er et sted hvor kreativitet får plass, hvor mennesker møtes, og hvor du kan finne en ro du kanskje ikke visste at du savnet. 🤎</p>
+              </div>
             </div>
             <figure style="margin: calc(-1 * var(--space-6)) 0 0; position: sticky; top: 116px; width: min(420px, 100%);">
               <img src="uploads_476463687_590516973787208_1732215863558581964_n-c3b907e3.jpg" alt="Monica, grunnlegger av Lissom" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 20%; border-radius: var(--radius-lg); display: block;">
@@ -439,7 +454,8 @@
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Vi tilbyr</div>
             <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Mer enn keramikk</h2>
-            <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; max-width: 44ch; text-wrap: pretty;">Lissom handler ikke bare om keramikk. Det handler om å senke skuldrene, være kreativ, lære noe nytt og skape noe med egne hender. Vi ønsker at verkstedet skal være et sted hvor mennesker møtes, finner inspirasjon og opplever gleden ved å lage noe selv.</p>
+            <p class="lx-hide-m" style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; max-width: 44ch; text-wrap: pretty;">Lissom handler ikke bare om keramikk. Det handler om å senke skuldrene, være kreativ, lære noe nytt og skape noe med egne hender. Vi ønsker at verkstedet skal være et sted hvor mennesker møtes, finner inspirasjon og opplever gleden ved å lage noe selv.</p>
+            <p class="lx-kunmobil" style="display: none; margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Senk skuldrene, lær noe nytt og skap noe med egne hender.</p>
             <p style="margin: 0; font-size: var(--text-base); font-weight: 700; color: var(--text-heading); text-wrap: pretty;">Velkommen til Lissom – et kreativt pusterom på Teie, rett utenfor Tønsberg</p>
           </div>
           <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
@@ -1042,17 +1058,22 @@
       </section>
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
-        <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+        <div class="lx-kortgrid lx-bedriftdesk" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ bedriftTilbud }}" as="t" hint-placeholder-count="3">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ t.navn }}" text="{{ t.tekst }}" price="{{ t.pris }}" image="{{ t.bildeSti }}" cta-label="Send forespørsel" on-book="{{ bedriftTilSkjema }}" hint-size="100%,420px"></x-import>
           </sc-for>
         </div>
-      </section>
-
-      <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
-        <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.35fr 1fr; gap: var(--space-6);">
-          <img src="uploads_shutterstock_2752346251.jpg" alt="Gruppe som ler rundt langbordet" class="lx-foto" style="width: 100%; height: 320px; object-fit: cover; border-radius: var(--radius-lg); display: block;">
-          <img src="assets_photos_handbygging.jpg" alt="Håndbygging rundt langbordet" class="lx-foto" style="width: 100%; height: 320px; object-fit: cover; border-radius: var(--radius-lg); display: block;">
+        <div class="lx-bedriftmobil" style="max-width: var(--width-content); margin: 0 auto; flex-direction: column; gap: var(--space-4);">
+          <sc-for list="{{ bedriftTilbud }}" as="t" hint-placeholder-count="3">
+            <div role="button" tabindex="0" onClick="{{ bedriftTilSkjema }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-sm); cursor: pointer; display: flex; flex-direction: column; gap: var(--space-3);">
+              <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ t.navn }}</h3>
+              <p style="margin: 0; font-size: var(--text-base); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ t.tekst }}</p>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; row-gap: var(--space-2); column-gap: var(--space-4); margin-top: var(--space-1);">
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--lissom-brown); white-space: nowrap;">{{ t.pris }}</span>
+                <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); font-weight: 700; white-space: nowrap;">Send forespørsel →</span>
+              </div>
+            </div>
+          </sc-for>
         </div>
       </section>
 
@@ -1086,7 +1107,7 @@
       </section>
 
       <section style="background: var(--clay-50); padding: var(--space-12) var(--space-8);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-12); align-items: center;">
+        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto;">
           <div>
             <h2 style="margin: 0 0 var(--space-5); font-size: var(--text-3xl);">Alt er inkludert</h2>
             <div style="display: flex; flex-direction: column; gap: var(--space-3);">
@@ -1099,10 +1120,9 @@
             <div style="display: flex; gap: var(--space-6) var(--space-8); flex-wrap: wrap; margin-top: var(--space-8);">
               <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">6–16</div><div style="font-size: var(--text-sm); color: var(--text-muted);">personer</div></div>
               <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Ca. 2 timer</div><div style="font-size: var(--text-sm); color: var(--text-muted);">i verkstedet</div></div>
-              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Fra 490 kr</div><div style="font-size: var(--text-sm); color: var(--text-muted);">per person</div></div>
+              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Fra 990 kr</div><div style="font-size: var(--text-sm); color: var(--text-muted);">per person</div></div>
             </div>
           </div>
-          <img src="assets_photos_dreiekurs.jpg" alt="Veiledning ved dreieskiva" class="lx-foto" style="width: 100%; height: 420px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
         </div>
       </section>
 
@@ -4829,13 +4849,13 @@ const SIDEINNHOLD = {
     { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
       { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
-      { l: 'Kort 1 pris', v: 'Fra 690 kr per person' },
+      { l: 'Kort 1 pris', v: 'Fra 990 kr per person' },
       { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
       { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.', lang: true },
-      { l: 'Kort 2 pris', v: 'Fra 590 kr per person' },
+      { l: 'Kort 2 pris', v: 'Fra 990 kr per person' },
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
-      { l: 'Kort 3 pris', v: 'Fra 490 kr per person' } ] },
+      { l: 'Kort 3 pris', v: 'Fra 990 kr per person' } ] },
   ],
   'Om oss': [
     { navn: 'Om verkstedet', type: 'Tekst og bilde', synlig: 'Publisert', felter: [
@@ -4961,13 +4981,13 @@ const SEO_DEFAULTS = {
     { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
       { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
-      { l: 'Kort 1 pris', v: 'Fra 690 kr per person' },
+      { l: 'Kort 1 pris', v: 'Fra 990 kr per person' },
       { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
       { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.', lang: true },
-      { l: 'Kort 2 pris', v: 'Fra 590 kr per person' },
+      { l: 'Kort 2 pris', v: 'Fra 990 kr per person' },
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
-      { l: 'Kort 3 pris', v: 'Fra 490 kr per person' } ] },
+      { l: 'Kort 3 pris', v: 'Fra 990 kr per person' } ] },
   ],
   'Om oss': ['Om Lissom Keramikk — verkstedet på Teie i Tønsberg', 'Et verksted for glede, kreativitet og fellesskap. Møt Monica og les historien bak Lissom Keramikk — kurs, medlemskap og håndlaget keramikk på Teie i Tønsberg.'],
 };
@@ -7361,8 +7381,8 @@ class Component extends DCLogic {
           piUtsolgt: !!(p && p.utsolgt),
         };
       })(),
-      butikkVelgLissom: () => this.setState({ butikkFilter: 'Alt' }),
-      butikkVelgMedlem: () => this.setState({ butikkFilter: 'Laget av medlemmer' }),
+      butikkVelgLissom: () => this.setState({ butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' }),
+      butikkVelgMedlem: () => this.setState({ butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }),
       visKursvelger: this.state.visKursvelger !== false && this.mobilVis('kursvelger'),
       visNyheterSeksjon: this.mobilVis('nyheter'),
       vekslKursvelger: () => this.setState(s => ({ visKursvelger: s.visKursvelger === false })),
@@ -7411,10 +7431,10 @@ class Component extends DCLogic {
       visApentHus: this.state.visApentHus !== false && this.mobilVis('apenthus'),
       vekslApentHus: () => this.setState(s => ({ visApentHus: s.visApentHus === false })),
       visMedlemskolleksjon: this.state.visMedlemskolleksjon !== false,
-      vekslMedlemskolleksjon: () => this.setState(s => ({ visMedlemskolleksjon: s.visMedlemskolleksjon === false, butikkFilter: s.visMedlemskolleksjon === false ? s.butikkFilter : (s.butikkFilter === 'Laget av medlemmer' ? 'Alt' : s.butikkFilter) })),
-      butikkLissomKant: (this.state.butikkFilter || 'Alt') !== 'Laget av medlemmer' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
-      butikkMedlemKant: (this.state.butikkFilter || 'Alt') === 'Laget av medlemmer' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
-      butikkFiltre: ['Alt', 'Kopper', 'Boller', 'Fat', 'Gavekort'].concat(this.state.visMedlemskolleksjon !== false ? ['Laget av medlemmer'] : []).map(navn => ({
+      vekslMedlemskolleksjon: () => this.setState(s => ({ visMedlemskolleksjon: s.visMedlemskolleksjon === false, butikkKolleksjon: s.visMedlemskolleksjon === false ? s.butikkKolleksjon : 'Lissom', butikkFilter: 'Alt' })),
+      butikkLissomKant: (this.state.butikkKolleksjon || 'Lissom') !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+      butikkMedlemKant: (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+      butikkFiltre: ((this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? ['Alt', 'Kopper', 'Boller', 'Fat'] : ['Alt', 'Kopper', 'Boller', 'Fat', 'Gavekort']).map(navn => ({
         navn, valgt: (this.state.butikkFilter || 'Alt') === navn,
         velg: () => this.setState({ butikkFilter: navn }),
       })),
@@ -7441,9 +7461,8 @@ class Component extends DCLogic {
           cta: 'Se produkt',
           velgHandling: () => this.setState({ salgApen: g.id }),
         }));
-        const alle = egne.concat(medlem);
+        const alle = (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? medlem : egne;
         if (filter === 'Alt') return alle;
-        if (filter === 'Laget av medlemmer') return alle.filter(p => p.erMedlem);
         return alle.filter(p => p.kategori === filter);
       })(),
       butikkFakta: (() => {
@@ -7693,9 +7712,9 @@ class Component extends DCLogic {
         const seksjon = (SIDEINNHOLD['Bedrift og event'] || []).findIndex(s => s.navn === 'Tilbudskortene');
         const hent = (l, fb) => il['Bedrift og event/' + seksjon + '/' + l] ?? fb;
         return [
-          { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 690 kr per person'), bilde: 'uploads_workshop4.jpg' },
-          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 590 kr per person'), bilde: 'uploads_datenight.jpg' },
-          { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 490 kr per person'), bilde: 'uploads_barn2.jpg' },
+          { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 990 kr per person'), bilde: 'uploads_workshop4.jpg' },
+          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 990 kr per person'), bilde: 'uploads_datenight.jpg' },
+          { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 990 kr per person'), bilde: 'uploads_barn2.jpg' },
         ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets/photos/' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
       })(),
       vilkar: [
@@ -8350,7 +8369,7 @@ class Component extends DCLogic {
       settKampanjeTittel: e => this.setState({ kampanjeTittel: e.target.value }),
       settKampanjePeriode: e => this.setState({ kampanjePeriode: e.target.value }),
       settKampanjeTekst: e => this.setState({ kampanjeTekst: e.target.value }),
-      kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkFilter: 'Laget av medlemmer' }); window.scrollTo(0, 0); },
+      kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
       salgSkjemaEtikett: this.state.salgSkjemaAv ? 'Skjult' : 'Synlig',
       salgSkjemaVeksl: () => this.setState(s => ({ salgSkjemaAv: !s.salgSkjemaAv })),
       visSalgSkjema: !this.state.salgSkjemaAv && this.state.visMinSalg !== false,

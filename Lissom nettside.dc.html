@@ -83,6 +83,13 @@
     .lx-bedriftmobil { display: none !important; }
     @media (max-width: 900px) { .lx-omoss-h1 { font-size: clamp(22px, 6.8vw, 44px) !important; } }
     @media (max-width: 560px) {
+      .lx-kurvpopup { padding: var(--space-5) !important; }
+      .lx-kurvrad { flex-wrap: wrap !important; row-gap: 8px !important; }
+      .lx-kurvnavn { flex: 1 1 100% !important; }
+      .lx-kurvsum { width: auto !important; margin-left: auto !important; }
+      .lx-kurvknapper { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 560px) {
       .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
       .lx-bedriftdesk { display: none !important; }
       .lx-bedriftmobil { display: flex !important; }
@@ -1432,8 +1439,8 @@
                   </div>
                 </sc-if>
                 <sc-for list="{{ kurvLinjer }}" as="v" hint-placeholder-count="1">
-                  <div style="display: flex; align-items: center; gap: var(--space-5); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
-                    <div style="flex: 1; min-width: 0;">
+                  <div class="lx-kurvrad" style="display: flex; align-items: center; gap: var(--space-5); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+                    <div class="lx-kurvnavn" style="flex: 1; min-width: 0;">
                       <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ v.navn }}</div>
                       <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ v.pris }}</div>
                     </div>
@@ -1442,7 +1449,7 @@
                       <span style="min-width: 18px; text-align: center; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ v.antall }}</span>
                       <button type="button" onClick="{{ v.pluss }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; color: var(--text-heading); font-size: 18px;">+</button>
                     </div>
-                    <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading); width: 92px; text-align: right;">{{ v.linjesum }}</div>
+                    <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading); width: 92px; text-align: right;">{{ v.linjesum }}</div>
                     <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-sm);">Fjern</button>
                   </div>
                 </sc-for>
@@ -3909,7 +3916,8 @@
 
   <sc-if value="{{ salgApen }}" hint-placeholder-val="{{ false }}">
     <div onClick="{{ lukkSalg }}" style="position: fixed; inset: 0; z-index: 95; background: rgba(45,20,12,.45); display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
-      <div onClick="{{ stoppKlikk }}" style="background: var(--surface-card); border-radius: var(--radius-xl, 22px); width: min(720px, 100%); max-height: 88vh; overflow: auto; box-shadow: var(--shadow-lg);">
+      <div onClick="{{ stoppKlikk }}" style="background: var(--surface-card); border-radius: var(--radius-xl, 22px); width: min(720px, 100%); max-height: 88vh; overflow: auto; box-shadow: var(--shadow-lg); position: relative;">
+        <button type="button" onClick="{{ lukkSalg }}" aria-label="Lukk" style="position: absolute; top: 12px; right: 12px; z-index: 2; appearance: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 999px; background: var(--surface-card); color: var(--text-heading); font-size: 20px; line-height: 1; box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center;">×</button>
         <div style="width: 100%; aspect-ratio: 16/10; background-color: var(--clay-200); background-image: {{ spBildeCss }}; background-size: cover; background-position: {{ spFokus }};" role="img" aria-label="{{ spTittel }}"></div>
         <div style="padding: var(--space-8);">
           <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4);">
@@ -3920,22 +3928,15 @@
             <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); white-space: nowrap;">{{ spPris }}</span>
           </div>
           <p style="margin: var(--space-4) 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ spTekst }}</p>
-          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-5);">
-            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4);">
-              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Levering</div>
-              <div style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ spLevering }}</div>
-            </div>
-            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4);">
-              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Lagerstatus</div>
-              <div style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ spLager }}</div>
-            </div>
+          <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4); margin-bottom: var(--space-5);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Levering</div>
+            <div style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">{{ spLevering }}</div>
           </div>
           <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
             <div>
-              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Betaling skjer direkte til produsent</div>
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">Vipps: {{ spVipps }}</div>
+              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Avtal betaling og utlevering</div>
+              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">Telefon: {{ spTelefon }}</div>
             </div>
-            <div style="font-size: var(--text-sm); color: var(--brown-500);">Kontakt: {{ spKontakt }}</div>
           </div>
           <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted);">Salget er en avtale mellom deg og produsenten. Lissom formidler kun visningen.</p>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ lukkSalg }}" hint-size="auto,44px">Lukk</x-import>
@@ -4317,7 +4318,7 @@
 
 <sc-if value="{{ kurvApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(560px, 94vw);">
-    <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: 0 18px 50px rgba(46,16,2,.35);">
+    <div class="lx-kurvpopup" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: 0 18px 50px rgba(46,16,2,.35);">
       <sc-if value="{{ kurvTellerVises }}" hint-placeholder-val="{{ false }}">
         <div style="text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3);">Lukkes automatisk om {{ kurvNedtelling }} sekunder — klikk for å beholde åpen</div>
       </sc-if>
@@ -4327,8 +4328,8 @@
       </div>
       <div style="display: flex; flex-direction: column;">
         <sc-for list="{{ kurvLinjer }}" as="l" hint-placeholder-count="1">
-          <div style="display: flex; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-            <div style="flex: 1; min-width: 0;">
+          <div class="lx-kurvrad" style="display: flex; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+            <div class="lx-kurvnavn" style="flex: 1; min-width: 0;">
               <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ l.navn }}</div>
               <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.pris }}</div>
             </div>
@@ -4337,7 +4338,7 @@
               <span style="min-width: 18px; text-align: center; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ l.antall }}</span>
               <button type="button" onClick="{{ l.pluss }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 26px; height: 26px; color: var(--text-heading); font-size: 15px;">+</button>
             </div>
-            <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); width: 84px; text-align: right;">{{ l.linjesum }}</div>
+            <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); width: 84px; text-align: right;">{{ l.linjesum }}</div>
             <button type="button" onClick="{{ l.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); text-decoration: underline; text-underline-offset: 2px;">Fjern</button>
           </div>
         </sc-for>
@@ -4346,7 +4347,7 @@
         <span style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading);">Totalt</span>
         <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ kurvSum }}</span>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+      <div class="lx-kurvknapper" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" full-width="{{ sant }}" on-click="{{ lukkKurv }}" hint-size="100%,48px">Fortsett å handle</x-import>
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ tilKasse }}" hint-size="100%,48px">Gå til betaling</x-import>
       </div>
@@ -4886,7 +4887,7 @@ const SIDEINNHOLD = {
       { l: 'Bekreftelse', v: 'Kvittering sendes på e-post med en gang betalingen er gjennomført.', lang: true } ] },
     { navn: 'Ordrekort', type: 'Tekster i kassen', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Din bestilling' },
-      { l: 'Betalingsvalg', v: 'Vipps, Bankkort, Faktura' },
+      { l: 'Betalingsvalg', v: 'Vipps' },
       { l: 'Knapp', v: 'Fullfør bestilling' } ] },
   ],
   'Logg inn': [
@@ -6553,7 +6554,7 @@ class Component extends DCLogic {
         || 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.',
       erBetalt: (this.state.valgtKurs && this.state.valgtKurs.price) !== 'Gratis',
       harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket',
-      betalingsvalg: ['Vipps', 'Bankkort', 'Faktura på e-post'].map(navn => ({
+      betalingsvalg: ['Vipps'].map(navn => ({
         navn,
         valgt: (this.state.betaling || 'Vipps') === navn,
         velg: () => this.setState({ betaling: navn }),
@@ -8367,8 +8368,7 @@ class Component extends DCLogic {
         if (!p) return { spTittel: '', spBildeCss: 'none', spFokus: 'center' };
         return {
           spTittel: p.tittel, spTekst: p.tekst, spLaget: p.laget, spPris: p.pris,
-          spVipps: p.vipps, spKontakt: p.kontakt, spLevering: p.levering,
-          spLager: p.antall > 0 ? p.antall + ' på lager' : 'Utsolgt',
+          spTelefon: p.vipps, spLevering: p.levering,
           spBildeCss: "url('" + p.bilde + "')",
           spFokus: this.fokusFor(p.id),
         };

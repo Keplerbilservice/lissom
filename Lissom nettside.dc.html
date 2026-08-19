@@ -94,6 +94,12 @@
       .lx-bedriftdesk { display: none !important; }
       .lx-bedriftmobil { display: flex !important; }
     }
+    @media (max-width: 760px) {
+      .lx-cone-rad { grid-template-columns: 64px 1fr 96px 1fr 64px !important; }
+      .lx-cone-side { display: none !important; }
+      .lx-plakat-ark { padding: 32px 16px 40px !important; }
+      .lx-plakat-kropp { padding: 40px 24px !important; }
+    }
   </style>
 </helmet>
 
@@ -184,7 +190,7 @@
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center;">
-          <img src="uploads_sipclay.jpg" alt="Sip &amp; Clay hos Lissom" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
+          <img src="uploads_shutterstock_2767913113-1.jpg" alt="Sip &amp; Clay hos Lissom" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Events</div>
             <h2 style="margin: 0 0 var(--space-5);">En kveld de kommer til å snakke om</h2>
@@ -2054,6 +2060,14 @@
         </section>
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
           <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8); align-items: start;">
+            <sc-for list="{{ plakatKort }}" as="p" hint-placeholder-count="3">
+              <div role="button" tabindex="0" onClick="{{ p.velg }}" style="display: flex; flex-direction: column; min-height: 240px; box-sizing: border-box; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-6) var(--space-7); cursor: pointer; box-shadow: var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.eyebrow }}</div>
+                <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: var(--space-2) 0;">{{ p.navn }}</h3>
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-muted); text-wrap: pretty;">{{ p.om }}</p>
+                <span style="margin-top: auto; font-weight: 700; color: var(--lissom-brown); font-size: var(--text-base);">Åpne siden →</span>
+              </div>
+            </sc-for>
             <sc-for list="{{ nyttigArtikler }}" as="a" hint-placeholder-count="1">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ a.dato }}" title="{{ a.tittel }}" text="{{ a.ingress }}" image="{{ a.bilde }}" cta-label="Les artikkelen" on-book="{{ a.velg }}" hint-size="100%,420px"></x-import>
             </sc-for>
@@ -2111,6 +2125,114 @@
           </div>
         </section>
       </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erPlakatCone }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Plakat – Cone til grader">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Book nå" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+      <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
+        <div style="max-width: 940px; margin: 0 auto;">
+          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
+          <div class="lx-plakat-kropp" style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 64px 48px 48px;">
+            <div style="text-align: center; margin-bottom: var(--space-10);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Brennetabell · Orton-coner</div>
+              <h1 style="margin: 0; font-size: clamp(34px, 6vw, 56px);">Cone til grader</h1>
+            </div>
+            <div class="lx-cone-rad" style="display: grid; grid-template-columns: 170px 84px 1fr 124px 1fr 84px 170px; align-items: center; margin-bottom: var(--space-2);">
+              <div class="lx-cone-side"></div>
+              <div style="text-align: right; font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown);">Celsius</div>
+              <div></div>
+              <div style="text-align: center; font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown);">Cone</div>
+              <div></div>
+              <div style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown);">Fahrenheit</div>
+              <div class="lx-cone-side"></div>
+            </div>
+            <div style="display: flex; flex-direction: column;">
+              <sc-for list="{{ coneRader }}" as="r" hint-placeholder-count="8">
+                <div class="lx-cone-rad" style="display: grid; grid-template-columns: 170px 84px 1fr 124px 1fr 84px 170px; align-items: stretch; min-height: 42px;">
+                  <div class="lx-cone-side" style="{{ r.lblLStil }}">{{ r.lblL }}</div>
+                  <div style="display: flex; align-items: center; justify-content: flex-end; font-weight: 700; color: var(--lissom-brown); font-size: 15px;">{{ r.c }}°</div>
+                  <div style="align-self: center; height: 2px; background: var(--clay-200); margin: 0 16px;"></div>
+                  <div style="{{ r.tubeStil }}"><span style="{{ r.coneStil }}">{{ r.cone }}</span></div>
+                  <div style="align-self: center; height: 2px; background: var(--clay-200); margin: 0 16px;"></div>
+                  <div style="display: flex; align-items: center; font-weight: 700; color: var(--lissom-brown); font-size: 15px;">{{ r.f }}°</div>
+                  <div class="lx-cone-side" style="{{ r.lblRStil }}">{{ r.lblR }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="width: 118px; height: 16px; margin: 0 auto; background: var(--lissom-yellow); border-left: 3px solid var(--lissom-brown); border-right: 3px solid var(--lissom-brown); box-sizing: border-box;"></div>
+            <div style="width: 132px; height: 132px; border-radius: 50%; background: var(--lissom-yellow); border: 3px solid var(--lissom-brown); margin: -6px auto 0; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+              <img src="mark-cup.svg" alt="" style="height: 46px;">
+            </div>
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin-top: var(--space-10); flex-wrap: wrap;">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 46ch; text-wrap: pretty;">* Verdiene er omtrentlige og avhenger av brennhastighet og varmearbeid i ovnen.</p>
+              <img src="logo-lockup.svg" alt="lissom" style="height: 44px;">
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erPlakatInfo }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Plakat – Informasjon til medlemmer">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Book nå" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+      <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
+        <div style="max-width: 940px; margin: 0 auto;">
+          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
+          <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
+              <h1 style="margin: 0; color: var(--clay-50); font-size: clamp(30px, 5.4vw, 50px);">Informasjon til medlemmer</h1>
+            </div>
+            <div class="lx-plakat-kropp" style="padding: 64px 72px;">
+              <div style="display: flex; flex-direction: column; gap: var(--space-7); max-width: 64ch; margin: 0 auto;">
+                <sc-for list="{{ medlemsInfoPunkter }}" as="p" hint-placeholder-count="6">
+                  <div style="display: flex; gap: var(--space-4); align-items: baseline;">
+                    <img src="mark-cup.svg" alt="" style="height: 15px; flex: none; transform: translateY(1px);">
+                    <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ p }}</p>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background: var(--lissom-yellow); display: flex; justify-content: center; padding: var(--space-8);">
+              <img src="logo-lockup.svg" alt="lissom" style="height: 60px;">
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erPlakatTrivsel }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Plakat – Trivselsregler">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Book nå" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+      <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
+        <div style="max-width: 940px; margin: 0 auto;">
+          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
+          <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
+            <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
+              <h1 style="margin: 0; color: var(--clay-50); font-size: clamp(30px, 5.4vw, 50px);">Trivselsregler</h1>
+            </div>
+            <div class="lx-plakat-kropp" style="padding: 64px 72px;">
+              <div style="display: flex; flex-direction: column; gap: var(--space-6); max-width: 64ch; margin: 0 auto;">
+                <sc-for list="{{ trivselsPunkter }}" as="t" hint-placeholder-count="9">
+                  <div style="display: flex; gap: var(--space-4); align-items: baseline;">
+                    <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); font-size: var(--text-lg); flex: none; min-width: 26px;">{{ t.nr }}.</span>
+                    <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ t.tekst }}</p>
+                  </div>
+                </sc-for>
+                <p style="margin: var(--space-6) 0 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Og det viktigste av alt – kos deg!</p>
+              </div>
+            </div>
+            <div style="background: var(--lissom-yellow); display: flex; justify-content: center; padding: var(--space-8);">
+              <img src="logo-lockup.svg" alt="lissom" style="height: 60px;">
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </sc-if>
 
@@ -5552,10 +5674,41 @@ class Component extends DCLogic {
   }
 
   artikkelData() {
-    return this.state.adminArtikler || [
-      { tittel: 'Cone-guide for keramikere', dato: 'August 2026', ingress: 'Hva betyr cone-tallene, og hvilken temperatur styrer vi ovnene etter i praksis? Her er verdiene vi bruker i verkstedet.', bilde: '',
-        innhold: '# Temperaturer vi bruker i verkstedet\n| Cone | Temperatur | Brukes til |\n| 06 | 1000°C | Råbrann |\n| 05 | 1030°C | Råbrann, lavbrent glasur |\n| 04 | 1060°C | Lavbrent glasur, engobe |\n| 5 | 1185°C | Steingods, glasurbrann |\n| 6 | 1220°C | Steingods, glasurbrann |\n| 7 | 1240°C | Steingods, høy |\n| 8 | 1250°C | Høybrent steingods |\n| 9 | 1260°C | Høybrent steingods |\n| 10 | 1285°C | Porselen |\n\n## Vanlige brenninger hos oss\nRåbrann:\n- Cone 06 ≈ 1000°C\n\nGlasurbrann steingods:\n- Cone 6 ≈ 1220°C\n\nVerdiene er de praktiske temperaturene vi styrer ovnene etter, ikke eksakte Orton-omregninger. Cone måler varmearbeid (temperatur over tid), så sluttemperaturen kan avvike noe.' },
+    return this.state.adminArtikler || [];
+  }
+
+  coneTabell() {
+    const d = [
+      ['10', 1305, 2381, 'HØYBRENNING'], ['9', 1280, 2336, 'HØYBRENNING'],
+      ['8', 1263, 2305, null], ['7', 1240, 2264, null],
+      ['6', 1222, 2232, 'MELLOMBRENNING'], ['5', 1196, 2185, 'MELLOMBRENNING'],
+      ['4', 1186, 2157, null], ['3', 1168, 2134, null], ['2', 1162, 2124, null], ['1', 1154, 2109, null],
+      ['01', 1137, 2079, null], ['02', 1120, 2048, null], ['03', 1101, 2014, null],
+      ['04', 1060, 1940, 'LAVBRENNING'], ['05', 1046, 1915, 'LAVBRENNING'], ['06', 999, 1830, 'LAVBRENNING'],
+      ['07', 984, 1803, null], ['08', 956, 1751, null], ['09', 923, 1693, null],
+      ['010', 894, 1641, null], ['011', 894, 1641, null], ['012', 884, 1623, null],
+      ['013', 852, 1566, null], ['014', 838, 1540, null], ['015', 804, 1479, null],
+      ['016', 792, 1458, null], ['017', 747, 1377, null],
+      ['018', 717, 1323, 'OVERGLASUR OG LUSTER'], ['019', 683, 1261, 'OVERGLASUR OG LUSTER'],
+      ['020', 635, 1175, 'OVERGLASUR OG LUSTER'], ['021', 614, 1137, 'OVERGLASUR OG LUSTER'],
+      ['022', 600, 1112, 'OVERGLASUR OG LUSTER'],
     ];
+    const lblBase = 'display:flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:var(--tracking-caps);text-transform:uppercase;color:var(--lissom-brown);line-height:1.35;';
+    const grpMidt = {};
+    d.forEach(([cone, , , g], i) => { if (g) (grpMidt[g] = grpMidt[g] || []).push(i); });
+    const midtAv = {}; Object.keys(grpMidt).forEach(g => { const r = grpMidt[g]; midtAv[g] = r[Math.floor((r.length - 1) / 2)]; });
+    return d.map(([cone, c, f, g], i) => {
+      const first = i === 0, last = i === d.length - 1;
+      const lbl = g && midtAv[g] === i ? (g === 'OVERGLASUR OG LUSTER' ? 'Overglasur og luster' : g.charAt(0) + g.slice(1).toLowerCase()) : '';
+      return {
+        cone, c: String(c).replace(/\B(?=(\d{3})+(?!\d))/g, ' '), f: String(f).replace(/\B(?=(\d{3})+(?!\d))/g, ' '),
+        lblL: lbl, lblR: lbl,
+        lblLStil: lblBase + 'justify-content:flex-end;text-align:right;padding-right:16px;' + (g ? 'border-right:2px solid var(--lissom-brown);' : ''),
+        lblRStil: lblBase + 'padding-left:16px;' + (g ? 'border-left:2px solid var(--lissom-brown);' : ''),
+        tubeStil: 'display:flex;align-items:center;justify-content:center;background:var(--lissom-yellow);border-left:3px solid var(--lissom-brown);border-right:3px solid var(--lissom-brown);box-sizing:border-box;' + (first ? 'border-top:3px solid var(--lissom-brown);border-radius:64px 64px 0 0;padding-top:10px;' : ''),
+        coneStil: g ? 'background:var(--lissom-brown);color:var(--clay-50);padding:2px 13px;border-radius:999px;font-family:var(--font-display);font-weight:800;font-size:15px;' : 'font-weight:700;color:var(--lissom-brown);font-size:14px;',
+      };
+    });
   }
 
   lenkeData() {
@@ -7618,6 +7771,34 @@ class Component extends DCLogic {
         { q: 'Kan vi komme som gruppe?', a: 'Ja — send oss en forespørsel, så setter vi opp en egen kveld for dere.' },
       ],
       erNyttig: side === 'nyttig',
+      erPlakatCone: side === 'plakatcone',
+      erPlakatInfo: side === 'plakatinfo',
+      erPlakatTrivsel: side === 'plakattrivsel',
+      coneRader: side === 'plakatcone' ? this.coneTabell() : [],
+      medlemsInfoPunkter: [
+        'Alle må lage egne råbrente plater til å sette under alt som skal glasurbrennes.',
+        'Bruk av verksted, transparent glasur og brenning følger med i alle medlemsskapene.',
+        'Dersom man har mye som skal brennes og ikke vil vente, kan man kjøpe egen brenning kun til sine egne ting.',
+        'Det er kun underglasurer som kan benyttes før råbrenning. Glasurer skal KUN brukes etter råbrenning!',
+        'Leire, farger og andre glasurer holder man selv, og oppbevarer det i sin egen hylle og på eget ansvar.',
+        'Vær klar over at det du har laget kan gå i stykker, enten under brenning eller ved uhell!',
+      ],
+      trivselsPunkter: [
+        'Bruk gjerne innesko, tøfler kan lånes.',
+        'Rydde og vaske etter seg på bord, skiver, vekt og verktøy.',
+        'Vaske opp det man har bruk selv, og legge alt tilbake på plass.',
+        'Slukke alt lys i verkstedet.',
+        'Skru av radio/musikk.',
+        'Slukke alt lys i gangene, unntatt lyset i den lille gangen ved inngangsdøren.',
+        'Sjekke tavlen om det er andre på huset. Er det noen inne, la lyset i gangene stå på.',
+        'Sjekke om bakdøren er låst før du går.',
+        'Låse dørene og legge nøklene tilbake i nøkkelboksene.',
+      ].map((tekst, i) => ({ nr: i + 1, tekst })),
+      plakatKort: [
+        { eyebrow: 'Brennetabell', navn: 'Cone til grader', om: 'Orton-coner omregnet til celsius og fahrenheit — verdiene vi styrer ovnene etter.', side: 'plakatcone' },
+        { eyebrow: 'Medlemmer', navn: 'Informasjon til medlemmer', om: 'Det viktigste å vite om brenning, glasur og oppbevaring i verkstedet.', side: 'plakatinfo' },
+        { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: 'Ni enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
+      ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
       adminNavNyttig: this.adminMeny('Nyttig info'),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },
@@ -7704,7 +7885,7 @@ class Component extends DCLogic {
           { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 990 kr per person'), bilde: 'uploads_workshop4.jpg' },
           { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 990 kr per person'), bilde: 'uploads_datenight.jpg' },
           { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 990 kr per person'), bilde: 'uploads_barn2.jpg' },
-        ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets/photos/' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
+        ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets_photos_' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
       })(),
       vilkar: [
         { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 342 122 236 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
@@ -8244,7 +8425,7 @@ class Component extends DCLogic {
       heroTekst: (this.state.innholdLagret || {})['Forside/0/Brødtekst'] ?? 'Keramikkurs, events og kreative opplevelser på Teie, rett utenfor Tønsberg sentrum. Du trenger ingen forkunnskaper — bare lyst til å lage noe med egne hender.',
       heroKnapp1: (this.state.innholdLagret || {})['Forside/0/Knapp 1'] ?? 'Se kurs og datoer',
       heroKnapp2: (this.state.innholdLagret || {})['Forside/0/Knapp 2'] ?? 'Paint on Pots',
-      heroBildeCss: "url('" + ((this.state.innholdLagret || {})['Forside/0/Hero-bilde'] ?? 'assets_photos_dreiekurs-smil.jpg') + "')",
+      heroBildeCss: "url('" + ((this.state.innholdLagret || {})['Forside/0/Hero-bilde'] ?? 'assets_photos_dreiekurs-smil.png') + "')",
       goForesporsel: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
       goForesporselGammel: () => {
         this.setState({ side: 'kurs' });

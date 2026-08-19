@@ -154,7 +154,7 @@
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goKurs }}" hint-size="auto,56px">{{ heroKnapp1 }}</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goPop }}" hint-size="auto,56px">{{ heroKnapp2 }}</x-import>
             </div>
-            <p class="lx-hero-p" style="margin: calc(var(--space-8) + 40px) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">Er dere en gruppe, eller har spesielle ønsker? <button type="button" onClick="{{ goBedrift }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Les mer</button></p>
+            <p class="lx-hero-p" style="margin: calc(var(--space-8) + 40px) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">Er dere en gruppe, eller har spesielle ønsker? <button type="button" onClick="{{ goForesporsel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Les mer</button></p>
             <sc-if value="{{ visKursvelger }}" hint-placeholder-val="{{ true }}">
               <p class="lx-hero-p" style="margin: var(--space-6) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">Trenger du hjelp til å finne kurset som passer deg? <button type="button" onClick="{{ kvApne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Trykk her</button></p>
             </sc-if>
@@ -1083,82 +1083,7 @@
         </div>
       </section>
 
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
-        <div class="lx-kortgrid lx-bedriftdesk" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
-          <sc-for list="{{ bedriftTilbud }}" as="t" hint-placeholder-count="3">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ t.navn }}" text="{{ t.tekst }}" price="{{ t.pris }}" image="{{ t.bildeSti }}" cta-label="Send forespørsel" on-book="{{ bedriftTilSkjema }}" hint-size="100%,420px"></x-import>
-          </sc-for>
-        </div>
-        <div class="lx-bedriftmobil" style="max-width: var(--width-content); margin: 0 auto; flex-direction: column; gap: var(--space-4);">
-          <sc-for list="{{ bedriftTilbud }}" as="t" hint-placeholder-count="3">
-            <div role="button" tabindex="0" onClick="{{ bedriftTilSkjema }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-sm); cursor: pointer; display: flex; flex-direction: column; gap: var(--space-3);">
-              <h3 style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ t.navn }}</h3>
-              <p style="margin: 0; font-size: var(--text-base); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ t.tekst }}</p>
-              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; row-gap: var(--space-2); column-gap: var(--space-4); margin-top: var(--space-1);">
-                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--lissom-brown); white-space: nowrap;">{{ t.pris }}</span>
-                <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); font-weight: 700; white-space: nowrap;">Send forespørsel →</span>
-              </div>
-            </div>
-          </sc-for>
-        </div>
-      </section>
-
-      <section style="background: var(--clay-100); padding: var(--space-12) var(--space-8);">
-        <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Slik foregår kvelden</div>
-          <h2 style="margin: 0 0 var(--space-8); font-size: var(--text-3xl);">To timer, alt ordnet</h2>
-          <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6);">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--terracotta-500); margin-bottom: var(--space-3);">1</div>
-              <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); margin: 0 0 var(--space-2); color: var(--text-heading);">Velkommen</h3>
-              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi dekker langbordet og gjør verkstedet klart. Dere kan ta med mat og drikke.</p>
-            </div>
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--terracotta-500); margin-bottom: var(--space-3);">2</div>
-              <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); margin: 0 0 var(--space-2); color: var(--text-heading);">Kort innføring</h3>
-              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi viser teknikken — dreiing eller plateteknikk — så alle kommer i gang. Ingen trenger erfaring.</p>
-            </div>
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--terracotta-500); margin-bottom: var(--space-3);">3</div>
-              <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); margin: 0 0 var(--space-2); color: var(--text-heading);">Hendene i leira</h3>
-              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Alle lager sitt eget arbeid, med veiledning hele veien. Latteren pleier å sitte løst.</p>
-            </div>
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--terracotta-500); margin-bottom: var(--space-3);">4</div>
-              <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); margin: 0 0 var(--space-2); color: var(--text-heading);">Vi brenner, dere henter</h3>
-              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Arbeidene glaseres og brennes, og er klare til henting etter 2–3 uker.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style="background: var(--clay-50); padding: var(--space-12) var(--space-8);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto;">
-          <div>
-            <h2 style="margin: 0 0 var(--space-5); font-size: var(--text-3xl);">Alt er inkludert</h2>
-            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-              <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Leire, verktøy, glasur og brenning</span></div>
-              <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Veiledning hele kvelden — vi er der for dere</span></div>
-              <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Forklær og alt utstyr — kom som dere er</span></div>
-              <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Dekket langbord — ta med mat og drikke selv</span></div>
-              <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Ett ferdig arbeid per person, klart etter 2–3 uker</span></div>
-            </div>
-            <div style="display: flex; gap: var(--space-6) var(--space-8); flex-wrap: wrap; margin-top: var(--space-8);">
-              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">6–16</div><div style="font-size: var(--text-sm); color: var(--text-muted);">personer</div></div>
-              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Ca. 2 timer</div><div style="font-size: var(--text-sm); color: var(--text-muted);">i verkstedet</div></div>
-              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Fra kr. 990,-</div><div style="font-size: var(--text-sm); color: var(--text-muted);">per person</div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style="background: var(--clay-50); padding: var(--space-12) var(--space-8);">
-        <div style="max-width: 820px; margin: 0 auto; text-align: center;">
-          <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 56px; margin: 0 auto var(--space-6); display: block; opacity: .85;">
-          <blockquote style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 34px); line-height: 1.35; color: var(--text-heading); text-wrap: pretty;">«Vi hadde utdrikningslag her — alle fikk til noe, og latteren satt løst hele kvelden.»</blockquote>
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Marte · utdrikningslag i mai</div>
-        </div>
-      </section>
+      
 
     </div>
   </sc-if>

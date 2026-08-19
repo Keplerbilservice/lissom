@@ -20,8 +20,30 @@
   <script src="./image-slot.js"></script>
   <style>
     html { background: var(--lissom-brown); overflow-x: clip; max-width: 100%; }
-    body { margin: 0; background: var(--clay-100); zoom: 1.05; overflow-x: clip; --width-content: calc(100vw / 1.05 - 2 * max(40px, (100vw / 1.05 - 1800px) / 4 + 40px)); --width-wide: calc(100vw / 1.05 - 2 * max(40px, (100vw / 1.05 - 1800px) / 4 + 40px)); --section-y: 150px; }
-    h2 { font-size: clamp(40px, 3vw, 60px); letter-spacing: var(--tracking-display); }
+    body { margin: 0; background: var(--clay-100); overflow-x: clip; --section-y: 96px; --text-2xs: 11px; --text-xs: 12px; --text-sm: 14px; --text-base: 15px; --text-lg: 17px; --text-xl: 19px; --text-2xl: 22px; --text-3xl: 27px; --text-4xl: 34px; --text-5xl: 44px; --text-6xl: 56px; --text-7xl: 72px; }
+    h2 { font-size: clamp(30px, 2.4vw, 44px); letter-spacing: var(--tracking-display); }
+    header > div:first-child { min-height: 100px !important; }
+    header span:has(> img[data-logo-cup]) { height: 54px !important; }
+    header img[data-logo-cup] { height: 42px !important; }
+    header img[src$="mark-cup-saucer.svg"] { height: 12px !important; }
+    header img[src*="wordmark-lissom"] { height: 28px !important; }
+    /* Toppmeny: fjern 1.35x-oppskalering av søk + Book nå, stram menypunktene */
+    header [style*="zoom: 1.35"] { zoom: 1 !important; }
+    header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
+    span[style*="radius-pill"][style*="inline-flex"] { white-space: nowrap; }
+    /* Kurskort-bunn: mindre pris og lavere rad, så pris + knapp balanserer i kortet */
+    div[style*="margin-top: auto"][style*="height: 44px"] { height: 36px !important; }
+    div[style*="margin-top: auto"][style*="height: 44px"] > span[style*="white-space: nowrap"] { font-size: var(--text-base) !important; font-weight: 700 !important; }
+    div[role="status"] { white-space: nowrap; }
+    /* Kapasitetsbadge: diskret mini-pill oppe til høyre, dekker ikke motivet */
+    span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] { font-size: 10px !important; padding: 3px 9px !important; top: 10px !important; right: 10px !important; left: auto !important; letter-spacing: 0.05em !important; background: rgba(251,246,238,.94) !important; color: var(--lissom-brown) !important; box-shadow: 0 1px 5px rgba(46,16,2,.2) !important; }
+    span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] > span { display: none !important; }
+    /* Nedskalert: DS-knapper (faste min-høyder) — kun desktop, mobil beholder 44px+ trykkflater */
+    @media (min-width: 761px) {
+      button[style*="min-height: 52px"][style*="text-transform: uppercase"], a[style*="min-height: 52px"][style*="text-transform: uppercase"] { min-height: 42px !important; padding: 10px 22px !important; font-size: var(--text-sm) !important; letter-spacing: 0.08em !important; }
+      button[style*="min-height: 44px"][style*="text-transform: uppercase"], a[style*="min-height: 44px"][style*="text-transform: uppercase"] { min-height: 36px !important; padding: 8px 16px !important; letter-spacing: 0.08em !important; }
+      button[style*="min-height: 34px"][style*="text-transform: uppercase"], a[style*="min-height: 34px"][style*="text-transform: uppercase"] { min-height: 28px !important; padding: 5px 12px !important; font-size: 11px !important; letter-spacing: 0.08em !important; }
+    }
     a { color: var(--lissom-brown); text-decoration: none; }
     a:hover { color: var(--terracotta-500); }
     .lx-kortgrid img { object-position: center 32%; }
@@ -109,7 +131,7 @@
     <div data-screen-label="Forside">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Book nå" asset-base="" on-navigate="{{ goNav }}" overlay="{{ true }}" hint-size="100%,84px"></x-import>
 
-      <section class="lx-hero" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: calc(82vh / 1.05);">
+      <section class="lx-hero" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: 82vh;">
         <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; left: -140px; bottom: -180px; width: 560px; opacity: 0.07; pointer-events: none;">
         <div class="lx-hjertelogo" aria-hidden="true" style="display: none; position: absolute; left: -320px; top: -40px; width: 900px; height: 870px; opacity: 0.12; pointer-events: none; transform: rotate(-8deg); -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);">
           <div style="width: 100%; height: 100%; background: linear-gradient(160deg, var(--terracotta-500) 0%, var(--brown-500) 45%, var(--lissom-brown) 100%); -webkit-mask-image: url('uploads_logo-7df29c0f.png'); mask-image: url('uploads_logo-7df29c0f.png'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></div>
@@ -119,12 +141,12 @@
         </div>
         <div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 38%, rgba(255,207,56,0.75) 54%, rgba(255,207,56,0.35) 72%, transparent 90%); pointer-events: none;"></div>
         <div class="lx-hide-m lx-hero-grad" style="position: absolute; inset: 0; background: linear-gradient(to top left, var(--lissom-yellow) 8%, rgba(255,207,56,0.75) 22%, rgba(255,207,56,0.35) 40%, transparent 58%); pointer-events: none;"></div>
-        <div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 200px var(--space-8) 96px max(var(--space-10), calc((100vw / 1.05 - 1800px) / 4 + 40px)); align-self: safe center;">
+        <div class="lx-hero-pad" style="position: relative; width: 100%; max-width: none; margin: 0; padding: 150px var(--space-8) 80px max(var(--space-10), calc((100vw - var(--width-content)) / 2)); align-self: safe center;">
           <div style="font: var(--type-eyebrow); font-size: var(--text-lg); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-8);">Keramikkverksted på Teie, rett utenfor Tønsberg</div>
 
-          <h1 class="lx-hero-h1" onMouseMove="{{ heroGradientMove }}" onMouseLeave="{{ heroGradientLeave }}" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(48px, 6vw, 100px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-16); max-width: none; text-wrap: balance; cursor: default;">{{ heroTittel }} <em style="font-style: italic; font-weight: 700;">{{ heroAksent }}</em></h1>
+          <h1 class="lx-hero-h1" onMouseMove="{{ heroGradientMove }}" onMouseLeave="{{ heroGradientLeave }}" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 4.6vw, 76px); line-height: 1.12; letter-spacing: var(--tracking-display); color: var(--lissom-brown); margin: 0 0 var(--space-16); max-width: none; text-wrap: balance; cursor: default;">{{ heroTittel }} <em style="font-style: italic; font-weight: 700;">{{ heroAksent }}</em></h1>
           <div style="max-width: 980px;">
-            <p class="lx-hero-p" style="font: var(--type-body); font-size: clamp(19px, 1.5vw, 26px); line-height: 1.55; color: var(--brown-500); margin: 0; text-wrap: pretty;">{{ heroTekst }}</p>
+            <p class="lx-hero-p" style="font: var(--type-body); font-size: clamp(17px, 1.2vw, 21px); line-height: 1.55; color: var(--brown-500); margin: 0; text-wrap: pretty;">{{ heroTekst }}</p>
             <div class="lx-hero-cta" style="display: flex; gap: var(--space-5); margin-top: var(--space-8); flex-wrap: wrap; zoom: 1.15;">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goKurs }}" hint-size="auto,56px">{{ heroKnapp1 }}</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goPop }}" hint-size="auto,56px">{{ heroKnapp2 }}</x-import>
@@ -246,7 +268,7 @@
                 <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">Månedlig abonnement med verkstedtimer du bruker når det passer deg. Du stempler inn på mobilen. Krever kurs eller tidligere erfaring.</p>
                 <div style="margin-top: auto; display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ goMedlemskap }}" hint-size="auto,40px">Se abonnementene</x-import>
-                  <span style="font-size: var(--text-sm); color: var(--text-muted);">Fra 2 590 kr i måneden</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-muted);">Fra kr. 2 590 i måneden</span>
                 </div>
               </div>
               <div onClick="{{ goDropin }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-6) var(--space-7); display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
@@ -514,14 +536,14 @@
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kurs og events</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ kursTittel }}</h1>
-          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du trenger ikke ta med noe annet enn klær som tåler litt leire.</p>
+          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.</p>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <sc-for list="{{ kursFiltre }}" as="f" hint-placeholder-count="6">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ f.valgt }}" on-click="{{ f.velg }}" hint-size="auto,32px">{{ f.navn }}</x-import>
             </sc-for>
           </div>
           <div style="margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: var(--space-2) var(--space-3); flex-wrap: wrap; align-items: center;">
-            <span>Maks 8 deltakere</span><span aria-hidden="true">·</span><span>Leire, glasur og brenning inkludert</span><span aria-hidden="true">·</span><span style="color: var(--text-heading); font-weight: 600;">Snittvurdering 4,8</span><span>av 19 tilbakemeldinger</span>
+            <span>Maks 8 deltakere</span><span aria-hidden="true">·</span><span>Leire, glasur og brenning inkludert</span>
           </div>
         </div>
       </section>
@@ -597,7 +619,7 @@
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Drop-in</div>
               <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-4);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--text-heading);">490 kr</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--text-heading);">kr. 490,-</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">per økt · 2 timer</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-5);">
@@ -887,8 +909,8 @@
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">Verkstedet er ditt, døgnet rundt</h1>
           <p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 54ch; text-wrap: pretty;">Abonnementet løper fra måned til måned og kan sies opp når du vil. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.</p>
           <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-top: var(--space-6); display: flex; align-items: baseline; gap: var(--space-3) var(--space-5); flex-wrap: wrap;">
-            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">30 timer = 86 kr per verkstedtime.</span>
-            <span style="font-size: var(--text-base); color: var(--brown-500);">Drop-in koster ca. 245 kr per time — medlemskapet lønner seg fra andre økt i uka.</span>
+            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">30 timer = kr. 86,- per verkstedtime.</span>
+            <span style="font-size: var(--text-base); color: var(--brown-500);">Drop-in koster ca. kr. 245,- per time — medlemskapet lønner seg fra andre økt i uka.</span>
           </div>
         </div>
       </section>
@@ -916,7 +938,7 @@
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Som medlem får du</div>
             <div style="display: flex; flex-direction: column; gap: 12px;">
               <sc-for list="{{ medlemFordeler }}" as="f" hint-placeholder-count="7">
-                <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>{{ f }}</span></div>
+                <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); line-height: 1.5; color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>{{ f }}</span></div>
               </sc-for>
             </div>
           </div>
@@ -1052,7 +1074,7 @@
         <div class="lx-hide-m" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 46%, rgba(255,207,56,0.85) 56%, rgba(255,207,56,0.25) 76%, transparent 94%); pointer-events: none;"></div>
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Bedrift og event</div>
-          <h1 style="margin: 0 0 var(--space-5); color: var(--lissom-brown); font-size: clamp(44px, 4.5vw, 84px); line-height: 1.05; max-width: 18ch;">Samle gjengen rundt <em style="font-style: italic;">dreieskiven.</em></h1>
+          <h1 style="margin: 0 0 var(--space-5); color: var(--lissom-brown); font-size: clamp(36px, 3.6vw, 60px); line-height: 1.05; max-width: 18ch;">Samle gjengen rundt <em style="font-style: italic;">dreieskiven.</em></h1>
           <p style="margin: 0 0 var(--space-8); color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Private events for 6–16 personer: teambuilding, utdrikningslag, bursdager og venninnekvelder. Alt utstyr, veiledning og brenning er inkludert — dere tar bare med godt humør.</p>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ bedriftTilSkjema }}" hint-size="auto,56px">Send en forespørsel</x-import>
         </div>
@@ -1121,7 +1143,7 @@
             <div style="display: flex; gap: var(--space-6) var(--space-8); flex-wrap: wrap; margin-top: var(--space-8);">
               <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">6–16</div><div style="font-size: var(--text-sm); color: var(--text-muted);">personer</div></div>
               <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Ca. 2 timer</div><div style="font-size: var(--text-sm); color: var(--text-muted);">i verkstedet</div></div>
-              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Fra 990 kr</div><div style="font-size: var(--text-sm); color: var(--text-muted);">per person</div></div>
+              <div><div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Fra kr. 990,-</div><div style="font-size: var(--text-sm); color: var(--text-muted);">per person</div></div>
             </div>
           </div>
         </div>
@@ -1322,7 +1344,7 @@
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Samtykke til månedstrekk</div>
               <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">30 timer</h3>
               <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-6);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">2 590 kr</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">kr. 2 590,-</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">per måned</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: var(--space-7);">
@@ -1358,7 +1380,7 @@
               <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">
                 <div style="display: flex; justify-content: space-between;"><span>Betalt med</span><span style="color: var(--text-heading);">Vipps</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Referanse</span><span style="color: var(--text-heading);">LIS-10482</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>Beløp</span><span style="color: var(--text-heading);">2 800 kr</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>Beløp</span><span style="color: var(--text-heading);">kr. 2 800,-</span></div>
               </div>
               <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ goMinside }}" hint-size="100%,44px">Gå til Min side</x-import>
@@ -1568,7 +1590,7 @@
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">Timer igjen</div>
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ timerMaks }}</span>
               </div>
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: 44px; line-height: 1; color: var(--text-heading); margin-bottom: var(--space-3);">{{ timerIgjen }}</div>
+              <div style="font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; color: var(--text-heading); margin-bottom: var(--space-3);">{{ timerIgjen }}</div>
               <div style="height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden; margin-bottom: var(--space-3);">
                 <div style="{{ timerBarStil }}"></div>
               </div>
@@ -1578,7 +1600,7 @@
                   <div style="font-weight: 700; font-size: var(--text-xs); color: var(--terracotta-600); margin-bottom: 6px;">Timene er brukt opp</div>
                   <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,36px">Forny</x-import>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ aKjopDropin }}" hint-size="auto,36px">Drop-in · 490 kr</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ aKjopDropin }}" hint-size="auto,36px">Drop-in · kr. 490,-</x-import>
                   </div>
                 </div>
               </sc-if>
@@ -2024,7 +2046,7 @@
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-12); align-items: start;">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-4);">Spesialbestillinger</div>
-            <h2 style="color: var(--lissom-brown); margin: 0 0 var(--space-6); font-size: clamp(40px, 3.4vw, 64px); line-height: 1.05; text-wrap: balance;">Vil du gi noe <em style="font-style: italic; font-weight: 700;">helt eget?</em></h2>
+            <h2 style="color: var(--lissom-brown); margin: 0 0 var(--space-6); font-size: clamp(32px, 2.8vw, 48px); line-height: 1.05; text-wrap: balance;">Vil du gi noe <em style="font-style: italic; font-weight: 700;">helt eget?</em></h2>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,56px">Send oss en forespørsel</x-import>
           </div>
           <div style="display: flex; flex-direction: column; gap: var(--space-5); font-size: var(--text-lg); line-height: 1.65; color: var(--brown-500);">
@@ -2137,7 +2159,7 @@
           <div class="lx-plakat-kropp" style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 64px 48px 48px;">
             <div style="text-align: center; margin-bottom: var(--space-10);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Brennetabell · Orton-coner</div>
-              <h1 style="margin: 0; font-size: clamp(34px, 6vw, 56px);">Cone til grader</h1>
+              <h1 style="margin: 0; font-size: clamp(28px, 4.6vw, 44px);">Cone til grader</h1>
             </div>
             <div class="lx-cone-rad" style="display: grid; grid-template-columns: 170px 84px 1fr 124px 1fr 84px 170px; align-items: center; margin-bottom: var(--space-2);">
               <div class="lx-cone-side"></div>
@@ -2184,7 +2206,7 @@
           <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
-              <h1 style="margin: 0; color: var(--clay-50); font-size: clamp(30px, 5.4vw, 50px);">Informasjon til medlemmer</h1>
+              <h1 style="margin: 0; color: var(--clay-50); font-size: clamp(26px, 4.2vw, 40px);">Informasjon til medlemmer</h1>
             </div>
             <div class="lx-plakat-kropp" style="padding: 64px 72px;">
               <div style="display: flex; flex-direction: column; gap: var(--space-7); max-width: 64ch; margin: 0 auto;">
@@ -2214,7 +2236,7 @@
           <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
-              <h1 style="margin: 0; color: var(--clay-50); font-size: clamp(30px, 5.4vw, 50px);">Trivselsregler</h1>
+              <h1 style="margin: 0; color: var(--clay-50); font-size: clamp(26px, 4.2vw, 40px);">Trivselsregler</h1>
             </div>
             <div class="lx-plakat-kropp" style="padding: 64px 72px;">
               <div style="display: flex; flex-direction: column; gap: var(--space-6); max-width: 64ch; margin: 0 auto;">
@@ -3946,7 +3968,7 @@
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8);">
               <div>
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Omsetning hittil i måneden</div>
-                <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; color: var(--text-heading); margin-top: 8px; white-space: nowrap;">182 400 kr</div>
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; color: var(--text-heading); margin-top: 8px; white-space: nowrap;">kr. 182 400,-</div>
               </div>
               <span style="font-size: var(--text-sm); color: var(--sage-600); white-space: nowrap;">+14 % mot juli</span>
             </div>
@@ -4094,7 +4116,7 @@
       <img src="mark-heart.png" alt="" aria-hidden="true" style="position: absolute; right: -160px; top: -80px; width: 1300px; opacity: 0.05; transform: rotate(-8deg); filter: invert(1); pointer-events: none; -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);">
       <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
         <div style="padding-bottom: var(--space-10); border-bottom: 1px solid rgba(244,235,222,.18);">
-          <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(40px, 3.6vw, 72px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
+          <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 2.8vw, 52px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
           <div class="lx-band" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
             <button type="button" onClick="{{ ktApne }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 16px 32px; font: var(--type-body); font-size: var(--text-base); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; transition: all .2s var(--ease-clay, ease);" style-hover="background: var(--yellow-500, #E6B800);">Send oss en forespørsel <span aria-hidden="true">→</span></button>
             <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--clay-300); max-width: 42ch; text-wrap: pretty;">Et kreativt fristed for skaperglede, håndverk og fellesskap — på Teie, rett utenfor Tønsberg.</p>
@@ -4144,7 +4166,7 @@
         <div style="border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
           <div style="display: flex; gap: var(--space-6); flex-wrap: wrap; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400);">
             <span>Lissom Keramikk &amp; Håndverk AS</span>
-            <span>Org. nr. 342 122 236 MVA</span>
+            <span>Org. nr. 938 280 819 MVA</span>
           </div>
           <div style="display: flex; align-items: center; gap: var(--space-3);">
             <button type="button" onClick="{{ goMinSideFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="user" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Min side</button>
@@ -4301,7 +4323,7 @@
                     <div style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5);">
                       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow);">Timer igjen i august</div>
                       <div style="display: flex; align-items: baseline; gap: 8px; margin: 10px 0;">
-                        <span style="font-family: var(--font-display); font-weight: 800; font-size: 52px; line-height: 1; color: var(--clay-50);">18,5</span>
+                        <span style="font-family: var(--font-display); font-weight: 800; font-size: 44px; line-height: 1; color: var(--clay-50);">18,5</span>
                         <span style="font-size: var(--text-sm); color: var(--clay-300);">av 30</span>
                       </div>
                       <div style="height: 8px; border-radius: 999px; background: rgba(244,235,222,.16); overflow: hidden;">
@@ -4409,7 +4431,7 @@
                   <div style="padding: var(--space-4); background: var(--surface-card); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);">
                     <div>
                       <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Denne måneden</div>
-                      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">440 kr</div>
+                      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">kr. 440,-</div>
                     </div>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" hint-size="auto,44px">Betal med Vipps</x-import>
                   </div>
@@ -4894,7 +4916,7 @@ const SIDEINNHOLD = {
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events' },
       { l: 'Overskrift', v: 'Finn en dato som passer' },
-      { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du trenger ikke ta med noe annet enn klær som tåler litt leire.', lang: true } ] },
+      { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true } ] },
     { navn: 'Forespørsel', type: 'Skjema nederst', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Fant du ikke det du lette etter?' },
       { l: 'Overskrift', v: 'Spør oss, så finner vi ut av det' },
@@ -4918,25 +4940,25 @@ const SIDEINNHOLD = {
       { l: 'Punkt 8: Ved uhell', v: 'Førstehjelpsskrin henger ved vasken, brannslukker ved utgangen. Meld fra til Monica på +47 94 13 46 01 ved skade, kutt eller søl av kjemikalier.', lang: true } ] },
     { navn: 'Regler for drop-in', type: 'Punktliste', synlig: 'Publisert', felter: [
       { l: 'Punkt 1', v: 'Drop-in krever godkjenning av oss. Du må ha gått kurs hos oss, eller være sammen med et aktivt medlem som er til stede hele tiden.', lang: true },
-      { l: 'Punkt 2', v: 'Bruk klær som tåler leire. Vi har forklær, men leire setter flekker.', lang: true } ] },
+      { l: 'Punkt 2', v: 'Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true } ] },
   ],
   'Medlemskap': [
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Verkstedet er ditt, døgnet rundt' },
       { l: 'Ingress', v: 'Abonnementet løper fra måned til måned og kan sies opp når du vil. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
     { navn: 'Priser og mva', type: 'Abonnementer', synlig: 'Publisert', felter: [
-      { l: 'Prøv Lissom', v: '990 kr / 30 dager · 25 % mva' },
-      { l: '30 timer', v: '2 590 kr per måned · 25 % mva' },
-      { l: 'Fri tilgang', v: '4 990 kr per måned · 25 % mva' },
+      { l: 'Prøv Lissom', v: 'kr. 990,- / 30 dager · 25 % mva' },
+      { l: '30 timer', v: 'kr. 2 590,- per måned · 25 % mva' },
+      { l: 'Fri tilgang', v: 'kr. 4 990,- per måned · 25 % mva' },
       { l: 'Ingress', v: 'Abonnementet løper fra måned til måned og kan sies opp når du vil.', lang: true } ] },
     { navn: 'Abonnementene', type: 'Tre kort', synlig: 'Publisert', felter: [
-      { l: 'Prøv Lissom', v: '990 kr for 30 dager' },
-      { l: '30 timer', v: '2 590 kr per måned' },
-      { l: 'Fri tilgang', v: '4 990 kr per måned' } ] },
+      { l: 'Prøv Lissom', v: 'kr. 990,- for 30 dager' },
+      { l: '30 timer', v: 'kr. 2 590,- per måned' },
+      { l: 'Fri tilgang', v: 'kr. 4 990,- per måned' } ] },
     { navn: 'Slik fungerer timene', type: 'Fire steg', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Du stempler inn når du kommer' } ] },
     { navn: 'Min side', type: 'Priser og snarveier', synlig: 'Publisert', felter: [
-      { l: 'Drop-in-pris', v: '490 kr' } ] },
+      { l: 'Drop-in-pris', v: 'kr. 490,-' } ] },
     { navn: 'Krav om kurs', type: 'Notis', synlig: 'Publisert', felter: [
       { l: 'Tekst', v: 'Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
   ],
@@ -4960,13 +4982,13 @@ const SIDEINNHOLD = {
     { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
       { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
-      { l: 'Kort 1 pris', v: 'Fra 990 kr per person' },
+      { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
       { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.', lang: true },
-      { l: 'Kort 2 pris', v: 'Fra 990 kr per person' },
+      { l: 'Kort 2 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
-      { l: 'Kort 3 pris', v: 'Fra 990 kr per person' } ] },
+      { l: 'Kort 3 pris', v: 'Fra kr. 990 per person' } ] },
   ],
   'Om oss': [
     { navn: 'Om verkstedet', type: 'Tekst og bilde', synlig: 'Publisert', felter: [
@@ -5028,12 +5050,12 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Ta med en venn' },
       { l: 'Tekst', v: 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.', lang: true } ] },
     { navn: 'Internbutikk', type: 'Priser', synlig: 'Publisert', felter: [
-      { l: 'Leire, stengods', v: '290 kr' },
-      { l: 'Leire, porselen', v: '340 kr' },
-      { l: 'Råbrann', v: '150 kr' },
-      { l: 'Glasurbrann', v: '220 kr' },
-      { l: 'Drop-in-time', v: '490 kr' },
-      { l: 'Gavekort', v: '500 kr' } ] },
+      { l: 'Leire, stengods', v: 'kr. 290,-' },
+      { l: 'Leire, porselen', v: 'kr. 340,-' },
+      { l: 'Råbrann', v: 'kr. 150,-' },
+      { l: 'Glasurbrann', v: 'kr. 220,-' },
+      { l: 'Drop-in-time', v: 'kr. 490,-' },
+      { l: 'Gavekort', v: 'kr. 500,-' } ] },
     { navn: 'Timer brukt opp', type: 'Varsel', synlig: 'Publisert', felter: [
       { l: 'Tekst', v: 'Du kan ikke stemple inn før 1. september. Forny abonnementet, eller kjøp en drop-in-time.', lang: true } ] },
   ],
@@ -5074,7 +5096,7 @@ const SIDEINNHOLD = {
       { l: 'Facebook', v: 'lissomkeramikk' } ] },
     { navn: 'Bunnlinje', type: 'Tekst', synlig: 'Publisert', felter: [
       { l: 'Firmanavn', v: 'Lissom Keramikk & Håndverk AS' },
-      { l: 'Org. nr.', v: '342 122 236 MVA' } ] },
+      { l: 'Org. nr.', v: '938 280 819 MVA' } ] },
   ],
 };
 
@@ -5092,13 +5114,13 @@ const SEO_DEFAULTS = {
     { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
       { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
-      { l: 'Kort 1 pris', v: 'Fra 990 kr per person' },
+      { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
       { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.', lang: true },
-      { l: 'Kort 2 pris', v: 'Fra 990 kr per person' },
+      { l: 'Kort 2 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
-      { l: 'Kort 3 pris', v: 'Fra 990 kr per person' } ] },
+      { l: 'Kort 3 pris', v: 'Fra kr. 990 per person' } ] },
   ],
   'Om oss': ['Om Lissom Keramikk — verkstedet på Teie i Tønsberg', 'Et verksted for glede, kreativitet og fellesskap. Møt Monica og les historien bak Lissom Keramikk — kurs, medlemskap og håndlaget keramikk på Teie i Tønsberg.'],
 };
@@ -5112,44 +5134,44 @@ Object.keys(SIDEINNHOLD).forEach(k => {
 });
 
 const PAMELDTE = [
-  { navn: 'Tom Ødegård', epost: 'tom@epost.no', tlf: '+47 918 22 431', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
-  { navn: 'Hanne Wiik', epost: 'hanne@epost.no', tlf: '+47 926 40 118', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
-  { navn: 'Ida Sørlie', epost: 'ida@epost.no', tlf: '+47 977 51 003', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
-  { navn: 'Live Haugen', epost: 'live@epost.no', tlf: '+47 934 77 210', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: '2 800 kr', maate: '—', status: 'Ubetalt', tone: 'danger' },
-  { navn: 'Trude Holm', epost: 'trude@epost.no', tlf: '+47 951 08 664', kurs: 'Kurs boller', dato: 'man 24. aug 17:00', sum: '1 490 kr', maate: 'Vipps', status: 'Betalt', tone: 'success' },
-  { navn: 'Kaja Berge', epost: 'kaja@epost.no', tlf: '+47 468 12 397', kurs: 'Kurs boller', dato: 'man 24. aug 17:00', sum: '1 490 kr', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
-  { navn: 'Familien Five', epost: 'anne@epost.no', tlf: '+47 913 55 240', kurs: 'Paint on Pots', dato: 'søn 23. aug 12:00', sum: '2 070 kr', maate: 'Vipps', status: 'Betalt · 3 plasser', tone: 'success' },
-  { navn: 'Petter Nes', epost: 'petter@epost.no', tlf: '+47 970 31 882', kurs: 'Date Night', dato: 'fre 28. aug 18:00', sum: '2 380 kr', maate: 'Vipps', status: 'Betalt · 2 plasser', tone: 'success' },
-  { navn: 'Emma Bjørnstad', epost: 'emma@epost.no', tlf: '+47 902 14 887', kurs: 'Drop-in', dato: 'tir 25. aug 10:00', sum: '490 kr', maate: 'Vipps', status: 'Godkjent', tone: 'success' },
-  { navn: 'Line Sørhaug', epost: 'line@epost.no', tlf: '+47 489 60 175', kurs: 'Drop-in', dato: 'tir 25. aug 16:00', sum: '490 kr', maate: 'Vipps', status: 'Med Ingrid Hansen', tone: 'info' },
-  { navn: 'Tuva Aas', epost: 'tuva@epost.no', tlf: '+47 481 30 552', kurs: 'Drop-in', dato: 'tor 28. aug 16:00', sum: '490 kr', maate: '—', status: 'Ikke godkjent', tone: 'danger' },
+  { navn: 'Tom Ødegård', epost: 'tom@epost.no', tlf: '+47 918 22 431', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: 'kr. 2 800,-', maate: 'Vipps', status: 'Betalt', tone: 'success' },
+  { navn: 'Hanne Wiik', epost: 'hanne@epost.no', tlf: '+47 926 40 118', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: 'kr. 2 800,-', maate: 'Vipps', status: 'Betalt', tone: 'success' },
+  { navn: 'Ida Sørlie', epost: 'ida@epost.no', tlf: '+47 977 51 003', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: 'kr. 2 800,-', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
+  { navn: 'Live Haugen', epost: 'live@epost.no', tlf: '+47 934 77 210', kurs: 'Nybegynner dreiekurs', dato: 'ons 19. aug 18:00', sum: 'kr. 2 800,-', maate: '—', status: 'Ubetalt', tone: 'danger' },
+  { navn: 'Trude Holm', epost: 'trude@epost.no', tlf: '+47 951 08 664', kurs: 'Kurs boller', dato: 'man 24. aug 17:00', sum: 'kr. 1 490,-', maate: 'Vipps', status: 'Betalt', tone: 'success' },
+  { navn: 'Kaja Berge', epost: 'kaja@epost.no', tlf: '+47 468 12 397', kurs: 'Kurs boller', dato: 'man 24. aug 17:00', sum: 'kr. 1 490,-', maate: 'Gavekort', status: 'Betalt', tone: 'success' },
+  { navn: 'Familien Five', epost: 'anne@epost.no', tlf: '+47 913 55 240', kurs: 'Paint on Pots', dato: 'søn 23. aug 12:00', sum: 'kr. 2 070,-', maate: 'Vipps', status: 'Betalt · 3 plasser', tone: 'success' },
+  { navn: 'Petter Nes', epost: 'petter@epost.no', tlf: '+47 970 31 882', kurs: 'Date Night', dato: 'fre 28. aug 18:00', sum: 'kr. 2 380,-', maate: 'Vipps', status: 'Betalt · 2 plasser', tone: 'success' },
+  { navn: 'Emma Bjørnstad', epost: 'emma@epost.no', tlf: '+47 902 14 887', kurs: 'Drop-in', dato: 'tir 25. aug 10:00', sum: 'kr. 490,-', maate: 'Vipps', status: 'Godkjent', tone: 'success' },
+  { navn: 'Line Sørhaug', epost: 'line@epost.no', tlf: '+47 489 60 175', kurs: 'Drop-in', dato: 'tir 25. aug 16:00', sum: 'kr. 490,-', maate: 'Vipps', status: 'Med Ingrid Hansen', tone: 'info' },
+  { navn: 'Tuva Aas', epost: 'tuva@epost.no', tlf: '+47 481 30 552', kurs: 'Drop-in', dato: 'tor 28. aug 16:00', sum: 'kr. 490,-', maate: '—', status: 'Ikke godkjent', tone: 'danger' },
 ];
 
 const PERSONER = {
   'Tom Ødegård': { rolle: 'Ny kunde', felter: [
     { navn: 'E-post', verdi: 'tom@epost.no' }, { navn: 'Telefon', verdi: '+47 918 22 431' },
-    { navn: 'Påmeldt', verdi: 'Nybegynner dreiekurs, 19. aug' }, { navn: 'Betalt', verdi: '2 800 kr · Vipps · 24. aug 19:41' },
+    { navn: 'Påmeldt', verdi: 'Nybegynner dreiekurs, 19. aug' }, { navn: 'Betalt', verdi: 'kr. 2 800,- · Vipps · 24. aug 19:41' },
     { navn: 'Tidligere hos oss', verdi: 'Nei, første kurs' }, { navn: 'Allergier og annet', verdi: 'Ingen oppgitt' },
     { navn: 'Nyhetsbrev', verdi: 'Ja' } ] },
   'Live Haugen': { rolle: 'Ubetalt reservasjon', felter: [
     { navn: 'E-post', verdi: 'live@epost.no' }, { navn: 'Telefon', verdi: '+47 934 77 210' },
     { navn: 'Påmeldt', verdi: 'Nybegynner dreiekurs, 19. aug' }, { navn: 'Status', verdi: 'Reservert til i morgen kl. 12' },
-    { navn: 'Beløp', verdi: '2 800 kr' }, { navn: 'Purring sendt', verdi: 'I går 09:00' } ] },
+    { navn: 'Beløp', verdi: 'kr. 2 800,-' }, { navn: 'Purring sendt', verdi: 'I går 09:00' } ] },
   'Ida Sørlie': { rolle: 'Betalt med gavekort', felter: [
     { navn: 'E-post', verdi: 'ida@epost.no' }, { navn: 'Telefon', verdi: '+47 977 51 003' },
-    { navn: 'Påmeldt', verdi: 'Nybegynner dreiekurs, 19. aug' }, { navn: 'Gavekort', verdi: 'GK-2291 · 3 000 kr' },
-    { navn: 'Rest på gavekortet', verdi: '200 kr' } ] },
+    { navn: 'Påmeldt', verdi: 'Nybegynner dreiekurs, 19. aug' }, { navn: 'Gavekort', verdi: 'GK-2291 · kr. 3 000,-' },
+    { navn: 'Rest på gavekortet', verdi: 'kr. 200,-' } ] },
   'Emma Bjørnstad': { rolle: 'Drop-in-gjest', felter: [
     { navn: 'E-post', verdi: 'emma@epost.no' }, { navn: 'Telefon', verdi: '+47 902 14 887' },
     { navn: 'Godkjent', verdi: 'Ja, tok nybegynnerkurs i mai' }, { navn: 'Booket', verdi: 'Tirsdag 10:00 – 12:00' },
-    { navn: 'Betalt', verdi: '490 kr · Vipps' }, { navn: 'Antall drop-in i år', verdi: '4' } ] },
+    { navn: 'Betalt', verdi: 'kr. 490,- · Vipps' }, { navn: 'Antall drop-in i år', verdi: '4' } ] },
   'Tuva Aas': { rolle: 'Ikke godkjent', felter: [
     { navn: 'E-post', verdi: 'tuva@epost.no' }, { navn: 'Telefon', verdi: '+47 481 30 552' },
     { navn: 'Ønsket tid', verdi: 'Torsdag 16:00 – 19:00' }, { navn: 'Mangler', verdi: 'Kurs hos oss, eller navn på medlem' },
     { navn: 'Betalt', verdi: 'Nei, ikke belastet' } ] },
   'Line Sørhaug': { rolle: 'Drop-in med medlem', felter: [
     { navn: 'E-post', verdi: 'line@epost.no' }, { navn: 'Kommer med', verdi: 'Ingrid Hansen' },
-    { navn: 'Booket', verdi: 'Tirsdag 16:00 – 18:00' }, { navn: 'Betalt', verdi: '490 kr · Vipps' } ] },
+    { navn: 'Booket', verdi: 'Tirsdag 16:00 – 18:00' }, { navn: 'Betalt', verdi: 'kr. 490,- · Vipps' } ] },
 };
 
 const KORT_KLIKK = { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)', cursor: 'pointer' };
@@ -5164,29 +5186,29 @@ const TALLMAAL = {
 const TALLDETALJER = {
   'Påmeldte denne uka': [
     { navn: 'NYBEGYNNER DREIEKURS · ONS 19. AUG 18:00 · 7 AV 8', verdi: '' },
-    { navn: 'Tom Ødegård', verdi: 'Betalt 2 800 kr · Vipps' },
-    { navn: 'Hanne Wiik', verdi: 'Betalt 2 800 kr · Vipps' },
-    { navn: 'Jonas Lie', verdi: 'Betalt 2 800 kr · Vipps' },
-    { navn: 'Ida Sørlie', verdi: 'Betalt 2 800 kr · gavekort' },
-    { navn: 'Marte Grøn', verdi: 'Betalt 2 800 kr · Vipps' },
-    { navn: 'Sindre Vik', verdi: 'Betalt 2 800 kr · Vipps' },
+    { navn: 'Tom Ødegård', verdi: 'Betalt kr. 2 800,- · Vipps' },
+    { navn: 'Hanne Wiik', verdi: 'Betalt kr. 2 800,- · Vipps' },
+    { navn: 'Jonas Lie', verdi: 'Betalt kr. 2 800,- · Vipps' },
+    { navn: 'Ida Sørlie', verdi: 'Betalt kr. 2 800,- · gavekort' },
+    { navn: 'Marte Grøn', verdi: 'Betalt kr. 2 800,- · Vipps' },
+    { navn: 'Sindre Vik', verdi: 'Betalt kr. 2 800,- · Vipps' },
     { navn: 'Live Haugen', verdi: 'Ubetalt · reservert til i morgen' },
     { navn: 'KURS BOLLER · MAN 24. AUG 17:00 · 5 AV 8', verdi: '' },
-    { navn: 'Trude Holm', verdi: 'Betalt 1 490 kr · Vipps' },
-    { navn: 'Bjørn Ask', verdi: 'Betalt 1 490 kr · Vipps' },
-    { navn: 'Nina Ruud', verdi: 'Betalt 1 490 kr · Vipps' },
-    { navn: 'Kaja Berge', verdi: 'Betalt 1 490 kr · gavekort' },
-    { navn: 'Erik Dahl', verdi: 'Betalt 1 490 kr · Vipps' },
+    { navn: 'Trude Holm', verdi: 'Betalt kr. 1 490,- · Vipps' },
+    { navn: 'Bjørn Ask', verdi: 'Betalt kr. 1 490,- · Vipps' },
+    { navn: 'Nina Ruud', verdi: 'Betalt kr. 1 490,- · Vipps' },
+    { navn: 'Kaja Berge', verdi: 'Betalt kr. 1 490,- · gavekort' },
+    { navn: 'Erik Dahl', verdi: 'Betalt kr. 1 490,- · Vipps' },
     { navn: 'PAINT ON POTS · SØN 23. AUG 12:00 · 3 AV 10', verdi: '' },
-    { navn: 'Familien Five (3 stk)', verdi: 'Betalt 2 070 kr · Vipps' },
+    { navn: 'Familien Five (3 stk)', verdi: 'Betalt kr. 2 070,- · Vipps' },
     { navn: 'DATE NIGHT · FRE 28. AUG 18:00 · FULLBOOKET', verdi: '' },
-    { navn: 'Petter Nes', verdi: '2 plasser · betalt 2 380 kr' },
-    { navn: 'Silje Bratt', verdi: '2 plasser · betalt 2 380 kr' },
-    { navn: 'Anne Five', verdi: '2 plasser · betalt 2 380 kr' },
+    { navn: 'Petter Nes', verdi: '2 plasser · betalt kr. 2 380,-' },
+    { navn: 'Silje Bratt', verdi: '2 plasser · betalt kr. 2 380,-' },
+    { navn: 'Anne Five', verdi: '2 plasser · betalt kr. 2 380,-' },
     { navn: 'Fem øvrige par', verdi: 'Alle betalt' },
     { navn: 'DROP-IN · HELE UKA · 7 GJESTER', verdi: '' },
-    { navn: 'Emma Bjørnstad', verdi: 'Tir 10:00 · godkjent · 490 kr' },
-    { navn: 'Håkon Five', verdi: 'Tir 10:00 · godkjent · 490 kr' },
+    { navn: 'Emma Bjørnstad', verdi: 'Tir 10:00 · godkjent · kr. 490,-' },
+    { navn: 'Håkon Five', verdi: 'Tir 10:00 · godkjent · kr. 490,-' },
     { navn: 'Line Sørhaug', verdi: 'Tir 16:00 · med Ingrid Hansen' },
     { navn: 'Aksel Berg', verdi: 'Ons 10:00 · med Silje Bratt' },
     { navn: 'Tuva Aas', verdi: 'Tor 16:00 · ikke godkjent ennå' },
@@ -5202,14 +5224,14 @@ const TALLDETALJER = {
     { navn: 'Nye siste 30 dager', verdi: '+3' },
     { navn: 'Oppsagt i august', verdi: '2' },
     { navn: 'Snitt timeforbruk', verdi: '13 timer per medlem' },
-    { navn: 'Månedlig inntekt', verdi: '61 400 kr' },
+    { navn: 'Månedlig inntekt', verdi: 'kr. 61 400,-' },
   ],
   'Omsetning i august': [
-    { navn: 'Kurs og events', verdi: '96 200 kr' },
-    { navn: 'Medlemskap', verdi: '61 400 kr' },
-    { navn: 'Butikk', verdi: '17 300 kr' },
-    { navn: 'Leire og brenning', verdi: '7 500 kr' },
-    { navn: 'Totalt', verdi: '182 400 kr' },
+    { navn: 'Kurs og events', verdi: 'kr. 96 200,-' },
+    { navn: 'Medlemskap', verdi: 'kr. 61 400,-' },
+    { navn: 'Butikk', verdi: 'kr. 17 300,-' },
+    { navn: 'Leire og brenning', verdi: 'kr. 7 500,-' },
+    { navn: 'Totalt', verdi: 'kr. 182 400,-' },
     { navn: 'Mot juli', verdi: '+14 %' },
     { navn: 'Neste Vipps-oppgjør', verdi: 'Mandag 1. september' },
   ],
@@ -5285,7 +5307,7 @@ class Component extends DCLogic {
   regelNaa() {
     return this.state.dropinRegel || {
       tekst: 'Drop-in krever godkjenning: gjesten må ha gått kurs hos oss, eller være sammen med et aktivt medlem. Er gjesten med et medlem, oppgis medlemmets navn ved booking. Leire, materialer, brenning og ett ferdig arbeid opptil 20 × 20 cm er inkludert.',
-      pris: '490 kr',
+      pris: 'kr. 490,-',
       plasser: '6',
     };
   }
@@ -5360,7 +5382,7 @@ class Component extends DCLogic {
   }
 
   prisAv(navn) {
-    const gk = navn.match(/^Gavekort (\d[\d ]*) kr$/);
+    const gk = navn.match(/^Gavekort kr\. (\d[\d ]*),-$/);
     if (gk) return parseInt(gk[1].replace(/ /g, ''), 10);
     const p = this.priser();
     if (p[navn] != null) return p[navn];
@@ -5455,10 +5477,10 @@ class Component extends DCLogic {
 
   planer() {
     return [
-      { navn: 'Prøv Lissom', pris: '990 kr', periode: '30 dager', detalj: 'Kan kun benyttes én gang', timer: 30, brukt: true },
-      { navn: '30 timer', pris: '2 590 kr', periode: 'per måned', detalj: '30 timer i måneden', timer: 30 },
-      { navn: 'Årsmedlemskap', pris: '1 990 kr', periode: 'per måned', detalj: '35 timer i måneden · årsavtale', timer: 35 },
-      { navn: 'Fri tilgang', pris: '4 990 kr', periode: 'per måned', detalj: 'Ingen timebegrensning', timer: null },
+      { navn: 'Prøv Lissom', pris: 'kr. 990,-', periode: '30 dager', detalj: 'Kan kun benyttes én gang', timer: 30, brukt: true },
+      { navn: '30 timer', pris: 'kr. 2 590,-', periode: 'per måned', detalj: '30 timer i måneden', timer: 30 },
+      { navn: 'Årsmedlemskap', pris: 'kr. 1 990,-', periode: 'per måned', detalj: '35 timer i måneden · årsavtale', timer: 35 },
+      { navn: 'Fri tilgang', pris: 'kr. 4 990,-', periode: 'per måned', detalj: 'Ingen timebegrensning', timer: null },
     ];
   }
 
@@ -5668,8 +5690,8 @@ class Component extends DCLogic {
 
   kursData() {
     return this.state.adminKursListe || [
-      { navn: 'Nybegynner dreiekurs', type: 'Kurs', pris: '2 800 kr', gjentas: 'Ukentlig', pameldte: '3 / 8', andel: 38, neste: 'tir 1. sep 18:00 – 21:00', beskrivelse: 'To økter over to dager. Leire, verktøy, glasur og brenning er inkludert.', datoer: ['tir 1. sep 18:00 – 21:00', 'tir 8. sep 18:00 – 21:00'], okter: [{ dato: '2026-09-01', fra: '18:00', til: '21:00' }, { dato: '2026-09-08', fra: '18:00', til: '21:00' }] },
-      { navn: 'Paint on Pots', type: 'Event', pris: '690 kr', gjentas: 'Månedlig', pameldte: '5 / 10', andel: 50, neste: 'søn 6. sep 12:00 – 15:00', beskrivelse: 'Mal på ferdigbrent keramikk. Én gjenstand per person.', datoer: ['søn 6. sep 12:00 – 15:00'], okter: [{ dato: '2026-09-06', fra: '12:00', til: '15:00' }] },
+      { navn: 'Nybegynner dreiekurs', type: 'Kurs', pris: 'kr. 2 800,-', gjentas: 'Ukentlig', pameldte: '3 / 8', andel: 38, neste: 'tir 1. sep 18:00 – 21:00', beskrivelse: 'To økter over to dager. Leire, verktøy, glasur og brenning er inkludert.', datoer: ['tir 1. sep 18:00 – 21:00', 'tir 8. sep 18:00 – 21:00'], okter: [{ dato: '2026-09-01', fra: '18:00', til: '21:00' }, { dato: '2026-09-08', fra: '18:00', til: '21:00' }] },
+      { navn: 'Paint on Pots', type: 'Event', pris: 'kr. 690,-', gjentas: 'Månedlig', pameldte: '5 / 10', andel: 50, neste: 'søn 6. sep 12:00 – 15:00', beskrivelse: 'Mal på ferdigbrent keramikk. Én gjenstand per person.', datoer: ['søn 6. sep 12:00 – 15:00'], okter: [{ dato: '2026-09-06', fra: '12:00', til: '15:00' }] },
     ];
   }
 
@@ -5701,7 +5723,7 @@ class Component extends DCLogic {
       const first = i === 0, last = i === d.length - 1;
       const lbl = g && midtAv[g] === i ? (g === 'OVERGLASUR OG LUSTER' ? 'Overglasur og luster' : g.charAt(0) + g.slice(1).toLowerCase()) : '';
       return {
-        cone, c: String(c).replace(/\B(?=(\d{3})+(?!\d))/g, ' '), f: String(f).replace(/\B(?=(\d{3})+(?!\d))/g, ' '),
+        cone, c: String(c).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'), f: String(f).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0'),
         lblL: lbl, lblR: lbl,
         lblLStil: lblBase + 'justify-content:flex-end;text-align:right;padding-right:16px;' + (g ? 'border-right:2px solid var(--lissom-brown);' : ''),
         lblRStil: lblBase + 'padding-left:16px;' + (g ? 'border-left:2px solid var(--lissom-brown);' : ''),
@@ -5869,11 +5891,11 @@ class Component extends DCLogic {
 
   galleriListe() {
     const basis = [
-      { id: 'g1', status: 'publisert', tittel: 'Kopp i steingods', tekst: 'Dreid i verkstedet, glasert med sandglasur. Tåler oppvaskmaskin.', laget: 'Laget av Ingrid', bilde: 'assets_photos_butikken.jpg', pris: '350 kr', vipps: '412 34 567', kontakt: 'ingrid@epost.no', levering: 'Leveres etter avtale', antall: 2, kategori: 'Kopper' },
-      { id: 'g2', status: 'publisert', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter i verkstedet. Ett unikt eksemplar.', laget: 'Laget av Jonas', bilde: 'assets_photos_handbygging.jpg', pris: '650 kr', vipps: '923 45 678', kontakt: 'jonas@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
-      { id: 'g3', status: 'publisert', tittel: 'Fat i plateteknikk', tekst: 'Dekorfat laget på plateteknikk-kurs. Ikke matsikret — ment som pyntefat.', laget: 'Laget av Silje', bilde: 'assets_photos_plateteknikk-fat.jpg', pris: '520 kr', vipps: '901 23 456', kontakt: 'silje@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
-      { id: 'g4', status: 'publisert', tittel: 'Boller i sett', tekst: 'Tre små boller, dreid og trimmet i verkstedet. Selges samlet.', laget: 'Laget av et medlem', bilde: 'assets_photos_dreiing-naerbilde.jpg', pris: '480 kr', vipps: '456 78 901', kontakt: '940 12 345', levering: 'Leveres etter avtale', antall: 1, kategori: 'Boller' },
-      { id: 'g5', status: 'venter', tittel: 'Mugge med hank', tekst: 'Første forsøk på hank — ett unikt eksemplar.', laget: 'Laget av Emma', bilde: 'assets_photos_verkstedet.jpg', pris: '300 kr', vipps: '478 90 123', kontakt: 'emma@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Kopper' },
+      { id: 'g1', status: 'publisert', tittel: 'Kopp i steingods', tekst: 'Dreid i verkstedet, glasert med sandglasur. Tåler oppvaskmaskin.', laget: 'Laget av Ingrid', bilde: 'assets_photos_butikken.jpg', pris: 'kr. 350,-', vipps: '412 34 567', kontakt: 'ingrid@epost.no', levering: 'Leveres etter avtale', antall: 2, kategori: 'Kopper' },
+      { id: 'g2', status: 'publisert', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter i verkstedet. Ett unikt eksemplar.', laget: 'Laget av Jonas', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'jonas@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
+      { id: 'g3', status: 'publisert', tittel: 'Fat i plateteknikk', tekst: 'Dekorfat laget på plateteknikk-kurs. Ikke matsikret — ment som pyntefat.', laget: 'Laget av Silje', bilde: 'assets_photos_plateteknikk-fat.jpg', pris: 'kr. 520,-', vipps: '901 23 456', kontakt: 'silje@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
+      { id: 'g4', status: 'publisert', tittel: 'Boller i sett', tekst: 'Tre små boller, dreid og trimmet i verkstedet. Selges samlet.', laget: 'Laget av et medlem', bilde: 'assets_photos_dreiing-naerbilde.jpg', pris: 'kr. 480,-', vipps: '456 78 901', kontakt: '940 12 345', levering: 'Leveres etter avtale', antall: 1, kategori: 'Boller' },
+      { id: 'g5', status: 'venter', tittel: 'Mugge med hank', tekst: 'Første forsøk på hank — ett unikt eksemplar.', laget: 'Laget av Emma', bilde: 'assets_photos_verkstedet.jpg', pris: 'kr. 300,-', vipps: '478 90 123', kontakt: 'emma@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Kopper' },
     ];
     const endringer = this.state.galleriEndringer || [];
     const overstyrt = {};
@@ -6005,10 +6027,10 @@ class Component extends DCLogic {
     }
 
     const fh = this.state.kjop || [
-      { navn: 'Leire, stengods grå', detalj: '10 kg pose', sum: '290 kr', tid: '22. august 14:12', ref: 'LIS-10488' },
-      { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', sum: '220 kr', tid: '18. august 09:40', ref: 'LIS-10471' },
-      { navn: 'Kurs boller', detalj: 'Betalt', sum: '1 490 kr', tid: '2. august 11:30', ref: 'LIS-10402' },
-      { navn: 'Leire, hvit porselen', detalj: '5 kg pose', sum: '340 kr', tid: '28. juli 15:20', ref: 'LIS-10388' },
+      { navn: 'Leire, stengods grå', detalj: '10 kg pose', sum: 'kr. 290,-', tid: '22. august 14:12', ref: 'LIS-10488' },
+      { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', sum: 'kr. 220,-', tid: '18. august 09:40', ref: 'LIS-10471' },
+      { navn: 'Kurs boller', detalj: 'Betalt', sum: 'kr. 1 490,-', tid: '2. august 11:30', ref: 'LIS-10402' },
+      { navn: 'Leire, hvit porselen', detalj: '5 kg pose', sum: 'kr. 340,-', tid: '28. juli 15:20', ref: 'LIS-10388' },
     ];
 
     return {
@@ -6099,7 +6121,7 @@ class Component extends DCLogic {
       gTekst: this.state.gTekst ?? '', settGTekst: (e) => this.setState({ gTekst: e.target.value }),
       gOppsummering: (() => {
         const type = this.state.gType || 'Ta med en venn';
-        const gave = type === 'Ekstra timer' ? (this.state.gTimer ?? '2') + ' ekstra timer' : type === 'Gavekort' ? 'gavekort på ' + (this.state.gBelop ?? '500') + ' kr' : '«Ta med en venn»';
+        const gave = type === 'Ekstra timer' ? (this.state.gTimer ?? '2') + ' ekstra timer' : type === 'Gavekort' ? 'gavekort på kr. ' + (this.state.gBelop ?? '500') + ',-' : '«Ta med en venn»';
         const til = (this.state.gMottaker || 'Alle medlemmer') === 'Ett medlem' ? (this.state.gMedlem || 'velg medlem under') : 'alle medlemmer';
         return 'Du gir ' + gave + ' til ' + til + '.';
       })(),
@@ -6189,10 +6211,10 @@ class Component extends DCLogic {
         { navn: 'Mva', verdi: 'Uten mva' },
       ], 'Legg til vare', null, 'produkt'),
       internkjop: [
-        { navn: 'Ingrid Hansen', hva: 'Leire, stengods grå · 10 kg', tid: '22. aug 14:12', sum: '290 kr', ref: 'LIS-10488' },
-        { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug 16:03', sum: '220 kr', ref: 'LIS-10479' },
-        { navn: 'Jonas Five', hva: 'Leire, hvit porselen · 5 kg', tid: '20. aug 11:20', sum: '340 kr', ref: 'LIS-10474' },
-        { navn: 'Silje Bratt', hva: 'Ekstra råbrann', tid: '18. aug 09:40', sum: '150 kr', ref: 'LIS-10471' },
+        { navn: 'Ingrid Hansen', hva: 'Leire, stengods grå · 10 kg', tid: '22. aug 14:12', sum: 'kr. 290,-', ref: 'LIS-10488' },
+        { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug 16:03', sum: 'kr. 220,-', ref: 'LIS-10479' },
+        { navn: 'Jonas Five', hva: 'Leire, hvit porselen · 5 kg', tid: '20. aug 11:20', sum: 'kr. 340,-', ref: 'LIS-10474' },
+        { navn: 'Silje Bratt', hva: 'Ekstra råbrann', tid: '18. aug 09:40', sum: 'kr. 150,-', ref: 'LIS-10471' },
       ].map(k => Object.assign(k, {
         velg: this.apne(k.navn, k.hva, [
           { navn: 'Beløp', verdi: k.sum },
@@ -6202,10 +6224,10 @@ class Component extends DCLogic {
         ], 'Se kvittering'),
       })),
       internvarerAdmin: [
-        { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: '290 kr', lager: '14 poser' },
-        { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: '340 kr', lager: '6 poser' },
-        { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: '150 kr', lager: 'Etter kapasitet' },
-        { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: '220 kr', lager: 'Etter kapasitet' },
+        { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-', lager: '14 poser' },
+        { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-', lager: '6 poser' },
+        { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-', lager: 'Etter kapasitet' },
+        { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-', lager: 'Etter kapasitet' },
       ].map(v => Object.assign({}, v, {
         velg: this.apne(v.navn, 'Vare i internbutikken', [
           { navn: 'Navn', verdi: v.navn },
@@ -6219,8 +6241,8 @@ class Component extends DCLogic {
         const w = window.open('', '_blank', 'width=520,height=680');
         if (!w) return;
         w.document.write('<html><head><title>Månedsrapport august 2026</title></head><body style="margin:0;padding:36px;font-family:Georgia,serif;color:#4D1D12;"><div style="font-size:11px;letter-spacing:.14em;">LISSOM · MÅNEDSRAPPORT</div><h1 style="font-size:26px;margin:10px 0 24px;">August 2026</h1><table style="width:100%;border-collapse:collapse;font-size:14px;">'
-          + [['Omsetning totalt', '182 400 kr'], ['— Kurs og events', '96 200 kr'], ['— Medlemskap', '61 400 kr'], ['— Butikk og gavekort', '10 950 kr'], ['— Drop-in', '14 850 kr'], ['— Leire og brenning', '9 000 kr'], ['Aktive medlemmer', '47 (+3)'], ['Timer brukt i verkstedet', '612'], ['Belegg på kurs', '84 %'], ['Drop-in-besøk', '33'], ['Neste Vipps-oppgjør', '1. september']].map(r => '<tr><td style="padding:8px 0;border-bottom:1px solid #E8DCC8;">' + r[0] + '</td><td style="text-align:right;font-weight:700;border-bottom:1px solid #E8DCC8;">' + r[1] + '</td></tr>').join('')
-          + '</table><p style="font-size:11px;color:#8a6f5f;margin-top:24px;">Generert ' + new Date().toLocaleDateString('nb-NO') + ' · Lissom Keramikk & Håndverk AS · Org.nr. 342 122 236 MVA</p><scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
+          + [['Omsetning totalt', 'kr. 182 400,-'], ['— Kurs og events', 'kr. 96 200,-'], ['— Medlemskap', 'kr. 61 400,-'], ['— Butikk og gavekort', 'kr. 10 950,-'], ['— Drop-in', 'kr. 14 850,-'], ['— Leire og brenning', 'kr. 9 000,-'], ['Aktive medlemmer', '47 (+3)'], ['Timer brukt i verkstedet', '612'], ['Belegg på kurs', '84 %'], ['Drop-in-besøk', '33'], ['Neste Vipps-oppgjør', '1. september']].map(r => '<tr><td style="padding:8px 0;border-bottom:1px solid #E8DCC8;">' + r[0] + '</td><td style="text-align:right;font-weight:700;border-bottom:1px solid #E8DCC8;">' + r[1] + '</td></tr>').join('')
+          + '</table><p style="font-size:11px;color:#8a6f5f;margin-top:24px;">Generert ' + new Date().toLocaleDateString('nb-NO') + ' · Lissom Keramikk & Håndverk AS · Org.nr. 938 280 819 MVA</p><scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
         w.document.close();
       },
       aEksport: this.apne('Eksporter til regnskap', 'Alle transaksjoner i perioden', [
@@ -6341,7 +6363,7 @@ class Component extends DCLogic {
             const k = (this._kursListe || []).find(x => x.title === (rec.kurs || rec.navn));
             if (k) return k.price + ' · Neste: ' + k.date + ' · ' + k.status;
             if (rec.gaTil === 'bedrift') return 'Pris på forespørsel · dere velger kvelden';
-            if (rec.gaTil === 'paintonpots') return 'Fra 690 kr · flere datoer hver måned';
+            if (rec.gaTil === 'paintonpots') return 'Fra kr. 690 · flere datoer hver måned';
             return '';
           })(),
           kvGaTil: () => {
@@ -6353,8 +6375,8 @@ class Component extends DCLogic {
         };
       })(),
       eventVelger: [
-        { hvem: 'For dere to', navn: 'Date Night', tekst: 'En kveld ved dreieskiva med noe godt i glasset. Dere lager hver deres ting.', pris: 'Fra 1 190 kr', cta: 'Se datoer', gjor: () => this.setState({ kursFilter: 'Events' }) },
-        { hvem: 'Den enkleste', navn: 'Paint on Pots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.', pris: 'Fra 690 kr', cta: 'Les mer', gjor: () => { this.setState({ side: 'paintonpots' }); window.scrollTo(0, 0); } },
+        { hvem: 'For dere to', navn: 'Date Night', tekst: 'En kveld ved dreieskiva med noe godt i glasset. Dere lager hver deres ting.', pris: 'Fra kr. 1 190,-', cta: 'Se datoer', gjor: () => this.setState({ kursFilter: 'Events' }) },
+        { hvem: 'Den enkleste', navn: 'Paint on Pots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.', pris: 'Fra kr. 690,-', cta: 'Les mer', gjor: () => { this.setState({ side: 'paintonpots' }); window.scrollTo(0, 0); } },
         { hvem: 'For gjengen', navn: 'Privat event', tekst: 'Utdrikningslag, bursdag eller teambuilding — fra 8 personer, kvelden er deres.', pris: 'Pris på forespørsel', cta: 'Les mer', gjor: () => { this.setState({ side: 'bedrift' }); window.scrollTo(0, 0); } },
       ].map(e => Object.assign(e, { velg: e.gjor })),
       kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
@@ -6368,12 +6390,12 @@ class Component extends DCLogic {
         },
       })),
       kursAlle: this.medBooking(this.filtrerKurs(this._kursListe = [
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra 1 490 kr', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
-        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
-        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
-        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: '490 kr', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
+        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
+        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
       ].concat(this.state.nyeKurs || []))),
       bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
       ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
@@ -6575,8 +6597,8 @@ class Component extends DCLogic {
         },
       })),
       paafyll: [
-        { navn: 'Drop-in-time', detalj: 'Én økt på 2 timer', pris: '490 kr' },
-        { navn: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid', pris: '500 kr' },
+        { navn: 'Drop-in-time', detalj: 'Én økt på 2 timer', pris: 'kr. 490,-' },
+        { navn: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid', pris: 'kr. 500,-' },
       ].map(v => Object.assign(v, {
         kjop: () => this.leggTil(v.navn),
       })),
@@ -6671,14 +6693,14 @@ class Component extends DCLogic {
       gaTilOrdre: () => this.setState({ bookOrdre: true }),
       bookOrdreTittel: (this.state.valgtKurs && (this.state.valgtKurs.title || this.state.valgtKurs.tittel)) || 'Nybegynner dreiekurs',
       bookOrdreDato: (this.state.bDato) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
-      bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra 2 800 kr').replace('Fra ', ''),
+      bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
       bookTilKurv: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs' };
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || k.date || '';
         this.leggTil((k.title || k.tittel || 'Kurs') + (dato ? ' — ' + dato : ''));
       },
       bekreftBooking: () => {
-        const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra 2 800 kr', date: 'Onsdag 2. september, 17:30' };
+        const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra kr. 2 800,-', date: 'Onsdag 2. september, 17:30' };
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || (k.date + (k.duration ? ', ' + k.duration : ''));
         const erMedlem = k.level === 'Kun for medlemmer' || k.price === 'Gratis';
         if (erMedlem) {
@@ -6730,8 +6752,8 @@ class Component extends DCLogic {
         const pris = this.prisAv(navn);
         const antall = this.state.kurv[navn];
         return {
-          navn, antall: String(antall), pris: pris.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
-          linjesum: (pris * antall).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
+          navn, antall: String(antall), pris: pris.toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+          linjesum: (pris * antall).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
           pluss: () => this.iKurv(navn, 1),
           minus: () => this.iKurv(navn, -1),
           fjern: () => this.iKurv(navn, -999),
@@ -6741,7 +6763,7 @@ class Component extends DCLogic {
       lukkKurv: () => this.setState({ kurvApen: false }),
       tilKasse: () => { this.setState({ side: 'kasse', kurvApen: false }); window.scrollTo(0, 0); },
       kasseForslag: ['Gavekort', 'Leire, stengods grå', 'Drop-in-time'].filter(n => !(this.state.kurv || {})[n]).map(n => ({
-        navn: n, pris: this.prisAv(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
+        navn: n, pris: this.prisAv(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
         leggTil: () => this.iKurv(n, 1),
       })),
       harKurv: Object.keys(this.state.kurv || {}).length > 0,
@@ -6772,19 +6794,19 @@ class Component extends DCLogic {
       stoppKlikk: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       kurvTom: Object.keys(this.state.kurv || {}).length === 0,
       kurvSum: (Object.keys(this.state.kurv || {}).reduce((n, navn) => n + this.prisAv(navn) * this.state.kurv[navn], 0)
-        + ((this.state.levValg === 'Send som pakke (89 kr)' && Object.keys(this.state.kurv || {}).length > 0) ? 89 : 0)
-      ).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
-      kurvFraktLinje: this.state.levValg === 'Send som pakke (89 kr)' ? 'Inkludert frakt 89 kr' : '',
+        + ((this.state.levValg === 'Send som pakke (kr. 89,-)' && Object.keys(this.state.kurv || {}).length > 0) ? 89 : 0)
+      ).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+      kurvFraktLinje: this.state.levValg === 'Send som pakke (kr. 89,-)' ? 'Inkludert frakt kr. 89,-' : '',
       betalKurv: () => {
         const k = this.state.kurv || {};
         const linjer = Object.keys(k).map(navn => ({
-          navn, antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
-          linjesum: (this.prisAv(navn) * k[navn]).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr',
+          navn, antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+          linjesum: (this.prisAv(navn) * k[navn]).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
         }));
         if (!linjer.length) return;
         if ((this.state.betaling || 'Vipps') === 'Vipps') {
           const sum = Object.keys(k).reduce((n, navn) => n + this.prisAv(navn) * k[navn], 0);
-          this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr', kurvApen: false, popupTop: this.topNaa(120) });
+          this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-', kurvApen: false, popupTop: this.topNaa(120) });
         } else {
           this.betalKurv(linjer);
         }
@@ -6820,9 +6842,9 @@ class Component extends DCLogic {
         'Nybegynner dreiekurs', 'Date Night', 'Paint on Pots',
       ].filter(t => (this.state.avbestilt || []).indexOf(t) === -1).length + (this.state.nyePaameldt || []).length) > 0,
       minePameldinger: [
-        { tittel: 'Nybegynner dreiekurs', nyDato: 'onsdag 2. september, 18:00', naar: 'Onsdag 19. august, 18:00', sum: '2 800 kr', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 5. august, 50 % til 12. august', kanAvbestille: true },
-        { tittel: 'Date Night', nyDato: 'fredag 25. september, 18:00', naar: 'Fredag 28. august, 18:00', sum: '2 380 kr · 2 plasser', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 15. august, 50 % til 22. august', kanAvbestille: true },
-        { tittel: 'Paint on Pots', nyDato: 'søndag 6. september, 12:00', naar: 'Søndag 23. august, 12:00', sum: '690 kr', status: 'Venteliste, nr. 2', tone: 'info', frist: 'Du belastes først når en plass blir ledig', kanAvbestille: false },
+        { tittel: 'Nybegynner dreiekurs', nyDato: 'onsdag 2. september, 18:00', naar: 'Onsdag 19. august, 18:00', sum: 'kr. 2 800,-', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 5. august, 50 % til 12. august', kanAvbestille: true },
+        { tittel: 'Date Night', nyDato: 'fredag 25. september, 18:00', naar: 'Fredag 28. august, 18:00', sum: 'kr. 2 380,- · 2 plasser', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 15. august, 50 % til 22. august', kanAvbestille: true },
+        { tittel: 'Paint on Pots', nyDato: 'søndag 6. september, 12:00', naar: 'Søndag 23. august, 12:00', sum: 'kr. 690,-', status: 'Venteliste, nr. 2', tone: 'info', frist: 'Du belastes først når en plass blir ledig', kanAvbestille: false },
       ].concat((this.state.nyePaameldt || []).map(n => Object.assign({}, n, { tone: n.intern ? 'info' : 'success', status: n.intern ? 'Intern samling' : 'Bekreftet', frist: 'Gratis avmelding inntil 24 timer før', kanAvbestille: true, nyDato: n.naar }))).filter(p => (this.state.avbestilt || []).indexOf(p.tittel) === -1).map(p => Object.assign(p, {
         naar: ((this.state.flyttet || {})[p.tittel]) ? ((this.state.flyttet || {})[p.tittel]).charAt(0).toUpperCase() + ((this.state.flyttet || {})[p.tittel]).slice(1) : p.naar,
         status: ((this.state.flyttet || {})[p.tittel]) ? 'Flyttet' : p.status,
@@ -6851,7 +6873,7 @@ class Component extends DCLogic {
           bAntPlus: () => this.setState({ bAntallN: Math.min(maks, n + 1) }),
         };
       })(),
-      levValg: ['Hent i butikken på Teie', 'Send som pakke (89 kr)'].map(navn => ({
+      levValg: ['Hent i butikken på Teie', 'Send som pakke (kr. 89,-)'].map(navn => ({
         navn, valgt: (this.state.levValg || 'Hent i butikken på Teie') === navn, velg: () => this.setState({ levValg: navn }),
       })),
       motValg: ['Alle aktive medlemmer', 'Kun 30 timer', 'Kun fri tilgang', 'Kun på prøve', 'Deltakere på et kurs'].map(navn => ({
@@ -6910,7 +6932,7 @@ class Component extends DCLogic {
       bNivaa: (this.state.valgtKurs && this.state.valgtKurs.level) || 'Nybegynner',
       ...(() => {
         const k = this.state.valgtKurs || {};
-        const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ' kr';
+        const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-';
         const grunn = this.prisAv(k.title || 'Nybegynner dreiekurs') || 2800;
         const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
         const antall = ((k.tema || '') === 'Medlemskap') ? 1 : Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
@@ -6995,8 +7017,8 @@ class Component extends DCLogic {
       ],
       mobilFiltre: ['Alle', 'Kurs', 'Events', 'Drop-in'].map((navn, i) => ({ navn, valgt: i === 0 })),
       mobilKurs: this.medBildeCss([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: '19. aug', price: 'fra 2 800 kr', image: FOTO + 'kurs-dreiing.jpg' },
-        { level: 'Event', title: 'Date Night', date: '29. aug', price: 'fra 1 190 kr', image: FOTO + 'handbygging.jpg' },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: '19. aug', price: 'fra kr. 2 800,-', image: FOTO + 'kurs-dreiing.jpg' },
+        { level: 'Event', title: 'Date Night', date: '29. aug', price: 'fra kr. 1 190,-', image: FOTO + 'handbygging.jpg' },
       ]),
       mobilNav: [
         { value: 'kurs', label: 'Kurs', icon: 'calendar' },
@@ -7105,31 +7127,31 @@ class Component extends DCLogic {
         { navn: 'Merk', verdi: 'Test og produksjon har hver sine nøkler. Del dem aldri på e-post.' },
       ], 'Lagre nøkler', null, true),
       okonomiKilder: this.klikkbar([
-        { navn: 'Kurs og events', sum: '96 200 kr' },
-        { navn: 'Medlemskap', sum: '61 400 kr' },
-        { navn: 'Butikk', sum: '17 300 kr' },
-        { navn: 'Leire og brenning', sum: '7 500 kr' },
+        { navn: 'Kurs og events', sum: 'kr. 96 200,-' },
+        { navn: 'Medlemskap', sum: 'kr. 61 400,-' },
+        { navn: 'Butikk', sum: 'kr. 17 300,-' },
+        { navn: 'Leire og brenning', sum: 'kr. 7 500,-' },
       ], k => [k.navn, 'Omsetning i august', [{ navn: 'Sum', verdi: k.sum }, { navn: 'Andel av total', verdi: 'Se rapport' }], 'Se transaksjoner', 'adminokonomi']),
       betalinger: this.klikkbar([
-        { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: 'I dag 08:02', sum: '2 590 kr' },
-        { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs', tid: 'I går 19:41', sum: '2 800 kr' },
-        { navn: 'Anne Five', hva: 'Gavekort', tid: 'I går 14:20', sum: '1 000 kr' },
-        { navn: 'Ingrid Hansen', hva: 'Leire, 10 kg', tid: '22. aug', sum: '290 kr' },
-        { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug', sum: '2 380 kr' },
-        { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug', sum: '220 kr' },
+        { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: 'I dag 08:02', sum: 'kr. 2 590,-' },
+        { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs', tid: 'I går 19:41', sum: 'kr. 2 800,-' },
+        { navn: 'Anne Five', hva: 'Gavekort', tid: 'I går 14:20', sum: 'kr. 1 000,-' },
+        { navn: 'Ingrid Hansen', hva: 'Leire, 10 kg', tid: '22. aug', sum: 'kr. 290,-' },
+        { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug', sum: 'kr. 2 380,-' },
+        { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug', sum: 'kr. 220,-' },
       ], b => [b.navn, b.hva, [{ navn: 'Beløp', verdi: b.sum }, { navn: 'Tidspunkt', verdi: b.tid }, { navn: 'Betalt med', verdi: 'Vipps' }], 'Se kvittering']),
       adminTall: [
         { merke: 'Påmeldte denne uka', verdi: '34', under: '4 kurs, 2 events' },
         { merke: 'Aktive medlemmer', verdi: '47', under: '+3 siste 30 dager' },
-        { merke: 'Omsetning i august', verdi: '182 400 kr', under: 'Vipps, oppgjør hver mandag' },
+        { merke: 'Omsetning i august', verdi: 'kr. 182 400,-', under: 'Vipps, oppgjør hver mandag' },
         { merke: 'Ubesvarte meldinger', verdi: '4', under: '2 forespørsler, 2 fra medlemmer' },
       ].map(t => Object.assign(t, { velg: this.go(TALLMAAL[t.merke] || 'admin'), kortStil: KORT_KLIKK })),
       adminTyper: ['Kurs', 'Event', 'Drop-in', 'Workshop'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],
       adminKurs: this.kursData().map((k, i) => Object.assign({}, k, {
-        velg: () => this.setState({ kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: k.pris.replace(' kr', ''), kPlasser: (k.pameldte.split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kSekunder: String(k.sekunder || 5), kFade: k.fade !== false, kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40, kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) }),
-        rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: k.pris.replace(' kr', ''), kPlasser: (k.pameldte.split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kSekunder: String(k.sekunder || 5), kFade: k.fade !== false, kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40, kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) }); },
+        velg: () => this.setState({ kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: k.pris.replace(/[^\d ]/g, '').trim(), kPlasser: (k.pameldte.split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kSekunder: String(k.sekunder || 5), kFade: k.fade !== false, kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40, kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) }),
+        rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: k.pris.replace(/[^\d ]/g, '').trim(), kPlasser: (k.pameldte.split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kSekunder: String(k.sekunder || 5), kFade: k.fade !== false, kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40, kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) }); },
         slett: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ adminKursListe: this.kursData().filter((_, j) => j !== i), kRed: s.kIndeks === i ? false : s.kRed })); },
         barStil: {
           width: k.andel + '%', height: '100%', borderRadius: 999,
@@ -7137,13 +7159,13 @@ class Component extends DCLogic {
         },
       })),
       mobButikkVarer: [
-        { navn: 'Kopp, sandglasur', pris: '390 kr', antall: '8', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.' },
-        { navn: 'Kopp med hank', pris: '450 kr', antall: '3', tekst: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.' },
-        { navn: 'Bolle, stor', pris: '590 kr', antall: '5', tekst: 'Dreid stengods, 22 cm. Fin til servering.' },
-        { navn: 'Bolle, liten', pris: '340 kr', antall: '0', tekst: 'Dreid stengods, 14 cm. Selges enkeltvis.' },
-        { navn: 'Fat, 28 cm', pris: '790 kr', antall: '2', tekst: 'Dekorglasur. Ikke matsikret, ment som pyntefat.' },
+        { navn: 'Kopp, sandglasur', pris: 'kr. 390,-', antall: '8', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.' },
+        { navn: 'Kopp med hank', pris: 'kr. 450,-', antall: '3', tekst: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.' },
+        { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: '5', tekst: 'Dreid stengods, 22 cm. Fin til servering.' },
+        { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: '0', tekst: 'Dreid stengods, 14 cm. Selges enkeltvis.' },
+        { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: '2', tekst: 'Dekorglasur. Ikke matsikret, ment som pyntefat.' },
       ].map(v => Object.assign({}, v, {
-        velg: () => this.setState({ npApen: true, npRediger: true, npNavn: v.navn, npPris: v.pris.replace(' kr', ''), npAntall: v.antall, npBeskrivelse: v.tekst }),
+        velg: () => this.setState({ npApen: true, npRediger: true, npNavn: v.navn, npPris: v.pris.replace(/[^\d ]/g, '').trim(), npAntall: v.antall, npBeskrivelse: v.tekst }),
       })),
       npApen: !!this.state.npApen,
       npLukk: () => this.setState({ npApen: false }),
@@ -7163,7 +7185,7 @@ class Component extends DCLogic {
       npLeggUt: () => {
         const s = this.state;
         if (!s.npNavn || !s.npPris) return;
-        const vare = { title: s.npNavn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: /kr/.test(s.npPris) ? s.npPris : s.npPris + ' kr', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
+        const vare = { title: s.npNavn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr. ' + s.npPris.replace(/[^\d ]/g, '').trim() + ',-', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
         this.setState(s2 => ({ npApen: false, nyeVarer: s.npRediger ? (s2.nyeVarer || []) : (s2.nyeVarer || []).concat([vare]), kvittering: s.npRediger ? 'Endringene er lagret' : s.npNavn + ' er lagt ut i butikken' }));
       },
       mobMeldDeltakere: this.apne('Melding til deltakere', 'Sendes på e-post og SMS til alle påmeldte på kurset', [
@@ -7274,7 +7296,7 @@ class Component extends DCLogic {
           { navn: 'Navn', verdi: h.navn },
           { navn: 'E-post', verdi: h.navn.split(' ')[0].toLowerCase() + '@lissom.no' },
           { navn: 'Holder kursene', verdi: h.kurs.split(' · ').join(', ') },
-          { navn: 'Timesats', verdi: '350 kr' },
+          { navn: 'Timesats', verdi: 'kr. 350,-' },
           { navn: 'Vises på nettsiden', verdi: 'Ja' },
         ], 'Lagre', null, true),
       })),
@@ -7299,24 +7321,24 @@ class Component extends DCLogic {
       })),
       ovOmsListe: (this.state.ovOms || 'I dag') === 'I dag'
         ? [
-            { navn: 'Kurs og events', verdi: '4 800 kr' },
-            { navn: 'Butikk', verdi: '1 240 kr' },
-            { navn: 'Drop-in', verdi: '980 kr' },
-            { navn: 'Leire og brenning', verdi: '450 kr' },
+            { navn: 'Kurs og events', verdi: 'kr. 4 800,-' },
+            { navn: 'Butikk', verdi: 'kr. 1 240,-' },
+            { navn: 'Drop-in', verdi: 'kr. 980,-' },
+            { navn: 'Leire og brenning', verdi: 'kr. 450,-' },
           ]
         : [
-            { navn: 'Kurs og events', verdi: '96 200 kr' },
-            { navn: 'Medlemskap', verdi: '61 400 kr' },
-            { navn: 'Butikk', verdi: '17 300 kr' },
-            { navn: 'Leire og brenning', verdi: '7 500 kr' },
+            { navn: 'Kurs og events', verdi: 'kr. 96 200,-' },
+            { navn: 'Medlemskap', verdi: 'kr. 61 400,-' },
+            { navn: 'Butikk', verdi: 'kr. 17 300,-' },
+            { navn: 'Leire og brenning', verdi: 'kr. 7 500,-' },
           ],
-      ovOmsSum: (this.state.ovOms || 'I dag') === 'I dag' ? '7 470 kr' : '182 400 kr',
+      ovOmsSum: (this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-',
       aDagsoppgjor: this.apne('Dagsoppgjør', 'Mandag 24. august · alt betalt med Vipps', [
-        { navn: 'Kurs og events', verdi: '4 800 kr' },
-        { navn: 'Butikk', verdi: '1 240 kr' },
-        { navn: 'Drop-in', verdi: '980 kr' },
-        { navn: 'Leire og brenning', verdi: '450 kr' },
-        { navn: 'Sum', verdi: '7 470 kr' },
+        { navn: 'Kurs og events', verdi: 'kr. 4 800,-' },
+        { navn: 'Butikk', verdi: 'kr. 1 240,-' },
+        { navn: 'Drop-in', verdi: 'kr. 980,-' },
+        { navn: 'Leire og brenning', verdi: 'kr. 450,-' },
+        { navn: 'Sum', verdi: 'kr. 7 470,-' },
         { navn: 'Oppgjør fra Vipps', verdi: 'Utbetales mandag' },
       ], 'Last ned PDF'),
       ovGaBeskjeder: this.go('adminbeskjeder'),
@@ -7380,7 +7402,7 @@ class Component extends DCLogic {
         if (!s.nkNavn || !s.nkPris) return;
         const rad = {
           navn: s.nkNavn, type: s.nkType || 'Kurs',
-          pris: /kr/.test(s.nkPris) ? s.nkPris : s.nkPris + ' kr',
+          pris: 'kr. ' + s.nkPris.replace(/[^\d ]/g, '').trim() + ',-',
           gjentas: 'Engangs', pameldte: '0 / ' + (s.nkPlasser || '8'), andel: 0,
           neste: 'Ikke satt', beskrivelse: s.nkBeskrivelse || '',
         };
@@ -7491,7 +7513,7 @@ class Component extends DCLogic {
         const prisRaa = (this.state.kPris || '').trim();
         const nytt = {
           navn, type: this.state.kType || 'Kurs',
-          pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : (/kr/.test(prisRaa) ? prisRaa : prisRaa + ' kr'),
+          pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
           gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
           pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
           neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '', bekreftelse: this.state.kBekreftelse || '', mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms !== false, datoer, okter,
@@ -7583,12 +7605,12 @@ class Component extends DCLogic {
       butikkvarer: (() => {
         const filter = this.state.butikkFilter || 'Alt';
         const egne = this.medBildeCss([
-          { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: '390 kr', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
-          { title: 'Kopp med hank', detalj: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.', pris: '450 kr', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
-          { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: '590 kr', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller' },
-          { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: '340 kr', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
-          { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: '790 kr', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
-          { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
+          { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
+          { title: 'Kopp med hank', detalj: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.', pris: 'kr. 450,-', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
+          { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller' },
+          { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: 'kr. 340,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
+          { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
+          { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra kr. 500,-', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
         ].concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
@@ -7651,7 +7673,7 @@ class Component extends DCLogic {
         { navn: 'Dato', verdi: '' },
       ], 'Send invitasjon', null, true, () => this.setState({ vennBrukt: true })),
       harVennegave: !this.state.vennBrukt && this.state.visMinGave !== false,
-      gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på ' + (g.belop || '500') + ' kr' : 'Ta med en venn'; })(),
+      gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på kr. ' + (g.belop || '500') + ',-' : 'Ta med en venn'; })(),
       gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.'; })(),
       aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || '30 timer')),
       aKjopDropin: () => this.leggTil('Drop-in-time'),
@@ -7709,10 +7731,10 @@ class Component extends DCLogic {
         },
       })),
       internvarer: [
-        { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: '290 kr' },
-        { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: '340 kr' },
-        { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: '150 kr' },
-        { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: '220 kr' },
+        { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-' },
+        { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-' },
+        { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-' },
+        { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-' },
       ].map(v => Object.assign(v, {
         knappetekst: 'Kjøp · ' + v.pris,
         knappetekst: 'Legg til',
@@ -7759,10 +7781,10 @@ class Component extends DCLogic {
         { nr: '4', tittel: 'Hent den ferdig', tekst: 'Klar til henting i verkstedet etter ca. to uker.' },
       ],
       popPriser: [
-        { navn: 'Kopp', pris: 'fra 290 kr' },
-        { navn: 'Bolle', pris: 'fra 340 kr' },
-        { navn: 'Fat', pris: 'fra 390 kr' },
-        { navn: 'Figurer og annet', pris: 'fra 190 kr' },
+        { navn: 'Kopp', pris: 'fra kr. 290,-' },
+        { navn: 'Bolle', pris: 'fra kr. 340,-' },
+        { navn: 'Fat', pris: 'fra kr. 390,-' },
+        { navn: 'Figurer og annet', pris: 'fra kr. 190,-' },
       ],
       popFaq: [
         { q: 'Må jeg kunne male?', a: 'Nei. Vi viser deg teknikkene, og det er lov å holde det enkelt.' },
@@ -7882,13 +7904,13 @@ class Component extends DCLogic {
         const seksjon = (SIDEINNHOLD['Bedrift og event'] || []).findIndex(s => s.navn === 'Tilbudskortene');
         const hent = (l, fb) => il['Bedrift og event/' + seksjon + '/' + l] ?? fb;
         return [
-          { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra 990 kr per person'), bilde: 'uploads_workshop4.jpg' },
-          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra 990 kr per person'), bilde: 'uploads_datenight.jpg' },
-          { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra 990 kr per person'), bilde: 'uploads_barn2.jpg' },
+          { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra kr. 990 per person'), bilde: 'uploads_workshop4.jpg' },
+          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra kr. 990 per person'), bilde: 'uploads_datenight.jpg' },
+          { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra kr. 990 per person'), bilde: 'uploads_barn2.jpg' },
         ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets_photos_' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
       })(),
       vilkar: [
-        { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 342 122 236 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
+        { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 938 280 819 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
         { h: 'Priser og betaling', p: 'Alle priser vises i norske kroner og er inkl. mva der mva gjelder (kurs og undervisning er mva-fritt). Betaling skjer med Vipps ved bestilling. Medlemskap trekkes månedlig via Vipps Recurring.' },
         { h: 'Angrerett', p: 'Du har 14 dagers angrerett etter angrerettloven på varer kjøpt i nettbutikken. Angreretten gjelder ikke kurs og events med fastsatt dato når du har samtykket til at tjenesten starter — men våre avbestillingsregler under gjelder alltid.' },
         { h: 'Avbestilling av kurs og events', p: 'Full refusjon ved avbestilling mer enn 14 dager før kursstart, 50 % inntil 7 dager før. Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen. Refusjon skjer til Vipps innen 3 virkedager.' },
@@ -7909,7 +7931,7 @@ class Component extends DCLogic {
       ],
       dropinRegler: [
         'Drop-in krever godkjenning av oss. Du må ha gått kurs hos oss, eller være sammen med et aktivt medlem som er til stede hele tiden. Er du med et medlem, oppgir du medlemmets navn når du booker.',
-        'Bruk klær som tåler leire. Vi har forklær, men leire setter flekker.',
+        'Du får låne forkle av oss, men regn med å bli litt skitten.',
         'Ta av ringer og armbånd, og sett opp langt hår før du setter deg ved dreieskiva.',
         'Ikke spis eller drikk ved arbeidsbenkene. Kaffen tar du i sofakroken.',
         'Alt tørkes vått. Aldri kost eller blås bort leirestøv — det inneholder kvarts.',
@@ -7958,16 +7980,16 @@ class Component extends DCLogic {
       goOmOss: this.go('omoss'),
       goKasse: this.go('kasse'),
       kurv: [
-        { navn: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl', antall: '2', sum: '780 kr', image: FOTO + 'butikken.jpg' },
-        { navn: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm', antall: '1', sum: '590 kr', image: FOTO + 'verkstedet.jpg' },
-        { navn: 'Gavekort, 1 000 kr', detalj: 'Sendes på e-post til mottaker', antall: '1', sum: '1 000 kr', image: 'uploads_shutterstock_2829108657.jpg' },
+        { navn: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl', antall: '2', sum: 'kr. 780,-', image: FOTO + 'butikken.jpg' },
+        { navn: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm', antall: '1', sum: 'kr. 590,-', image: FOTO + 'verkstedet.jpg' },
+        { navn: 'Gavekort, kr. 1 000,-', detalj: 'Sendes på e-post til mottaker', antall: '1', sum: 'kr. 1 000,-', image: 'uploads_shutterstock_2829108657.jpg' },
       ],
       kasseLinjer: [
-        { navn: 'Varer', sum: '2 370 kr' },
-        { navn: 'Frakt', sum: '0 kr' },
-        { navn: 'Herav mva.', sum: '474 kr' },
+        { navn: 'Varer', sum: 'kr. 2 370,-' },
+        { navn: 'Frakt', sum: 'kr. 0,-' },
+        { navn: 'Herav mva.', sum: 'kr. 474,-' },
       ],
-      levering: ['Hent i butikken på Teie', 'Send som pakke (89 kr)'],
+      levering: ['Hent i butikken på Teie', 'Send som pakke (kr. 89,-)'],
       sporsmal: (() => {
         const il = this.state.innholdLagret || {};
         const seksjon = (SIDEINNHOLD['Om oss'] || []).findIndex(s => s.navn === 'Spørsmål og svar');
@@ -7997,7 +8019,7 @@ class Component extends DCLogic {
       erAdminPameldte: side === 'adminpameldte',
       pameldteTall: [
         { merke: 'Påmeldte denne uka', verdi: '34', under: 'Fordelt på 5 kurs og events' },
-        { merke: 'Betalt', verdi: '32', under: '89 620 kr innbetalt', filter: 'Betalt' },
+        { merke: 'Betalt', verdi: '32', under: 'kr. 89 620,- innbetalt', filter: 'Betalt' },
         { merke: 'Venter på betaling', verdi: '1', under: 'Reservert til i morgen', filter: 'Ubetalt' },
         { merke: 'Ikke godkjent', verdi: '1', under: 'Drop-in uten kurs eller medlem', filter: 'Ikke godkjent' },
         { merke: 'På venteliste', verdi: String(3 + (this.state.nyVenteliste || []).length), under: 'Ingen belastet ennå', maal: 'admin' },
@@ -8241,7 +8263,7 @@ class Component extends DCLogic {
       erAdminBeskjeder: side === 'adminbeskjeder',
       epostMaler: [
         { navn: 'Ordrebekreftelse', kanal: 'E-post', emne: 'Takk for bestillingen hos Lissom!', tekst: 'Hei {navn}! Vi har mottatt bestillingen din ({ordre}). Du finner kvitteringen vedlagt. Velkommen til verkstedet!' },
-        { navn: 'Kurspåminnelse', kanal: 'E-post + SMS', emne: 'I morgen: {kurs} kl. {tid}', tekst: 'Hei {navn}! Vi gleder oss til å se deg i morgen. Husk klær som tåler leire. Adresse: Nordre Løkkevei 15, Teie.' },
+        { navn: 'Kurspåminnelse', kanal: 'E-post + SMS', emne: 'I morgen: {kurs} kl. {tid}', tekst: 'Hei {navn}! Vi gleder oss til å se deg i morgen. Du får låne forkle av oss, men regn med å bli litt skitten. Adresse: Nordre Løkkevei 15, Teie.' },
         { navn: 'Avbestilling bekreftet', kanal: 'E-post', emne: 'Avbestillingen din er registrert', tekst: 'Hei {navn}. Vi har avbestilt {kurs}. Eventuell refusjon ({belop}) er på vei til Vipps innen 3 virkedager.' },
         { navn: 'Medlemskap fornyet', kanal: 'E-post', emne: 'Medlemskapet ditt er fornyet', tekst: 'Hei {navn}! {abonnement} er fornyet for en ny måned, og timene dine er fylt opp. God skapelyst!' },
         { navn: 'Betaling feilet', kanal: 'E-post + SMS', emne: 'Vi fikk ikke trukket betalingen', tekst: 'Hei {navn}. Månedstrekket for {abonnement} feilet. Åpne Vipps og godkjenn betalingen innen 5 dager for å beholde tilgangen.' },
@@ -8258,7 +8280,7 @@ class Component extends DCLogic {
       dropinTall: [
         { merke: 'Booket i dag', verdi: '2 / 6', under: 'Begge er godkjent' },
         { merke: 'Denne uka', verdi: '11', under: '6 alene, 5 med medlem' },
-        { merke: 'Omsetning i august', verdi: '14 850 kr', under: '33 drop-in totalt' },
+        { merke: 'Omsetning i august', verdi: 'kr. 14 850,-', under: '33 drop-in totalt' },
         { merke: 'Snittvurdering', verdi: '4,8', under: '19 tilbakemeldinger' },
       ].map(t => Object.assign(t, { velg: this.go('admindropin'), kortStil: KORT_KLIKK })),
       dropinBookinger: this.klikkbar([
@@ -8311,15 +8333,15 @@ class Component extends DCLogic {
         },
       })),
       lager: this.klikkbar([
-        { navn: 'Kopp, sandglasur', pris: '390 kr', antall: 8, status: 'På lager', tone: 'success' },
-        { navn: 'Kopp med hank', pris: '450 kr', antall: 3, status: 'Få igjen', tone: 'warning' },
-        { navn: 'Bolle, stor', pris: '590 kr', antall: 5, status: 'På lager', tone: 'success' },
-        { navn: 'Bolle, liten', pris: '340 kr', antall: 0, status: 'Utsolgt', tone: 'danger' },
-        { navn: 'Fat, 28 cm', pris: '790 kr', antall: 2, status: 'Få igjen', tone: 'warning' },
-        { navn: 'Gavekort', pris: 'Fra 500 kr', antall: null, status: 'Digitalt', tone: 'neutral' },
+        { navn: 'Kopp, sandglasur', pris: 'kr. 390,-', antall: 8, status: 'På lager', tone: 'success' },
+        { navn: 'Kopp med hank', pris: 'kr. 450,-', antall: 3, status: 'Få igjen', tone: 'warning' },
+        { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: 5, status: 'På lager', tone: 'success' },
+        { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: 0, status: 'Utsolgt', tone: 'danger' },
+        { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: 2, status: 'Få igjen', tone: 'warning' },
+        { navn: 'Gavekort', pris: 'Fra kr. 500,-', antall: null, status: 'Digitalt', tone: 'neutral' },
       ].map(v => Object.assign(v, { antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk' })), v => [v.navn, 'Produkt i butikken', [{ navn: 'Navn', verdi: v.navn }, { navn: 'Pris', verdi: v.pris }, { navn: 'Mva', verdi: 'Uten mva' }, { navn: 'På lager', verdi: v.antall === null ? 'Ubegrenset' : String(v.antall) }, { navn: 'Status', verdi: v.status }], 'Lagre produkt', null, 'produkt']),
       ordrer: this.klikkbar([
-        { nr: '#1042', navn: 'Anne Five', hva: 'Gavekort 1 000 kr', status: 'Sendt på e-post', tone: 'success' },
+        { nr: '#1042', navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', status: 'Sendt på e-post', tone: 'success' },
         { nr: '#1041', navn: 'Trude Holm', hva: '2 kopper · henting', status: 'Klar til henting', tone: 'info' },
         { nr: '#1040', navn: 'Erik Dahl', hva: 'Bolle stor · pakke', status: 'Skal pakkes', tone: 'warning' },
         { nr: '#1039', navn: 'Nina Ruud', hva: 'Fat 28 cm · henting', status: 'Hentet', tone: 'neutral' },
@@ -8364,9 +8386,9 @@ class Component extends DCLogic {
       })),
       ikonStr: 22,
       oppfolging: [
-        { navn: 'Mari Lunde', grunn: 'Betaling feilet — 30 timer · 2 590 kr', status: 'Ubetalt', tone: 'danger', knapp: 'Send purring', gjortStatus: 'Purring sendt', gjortMelding: 'Purring sendt til Mari Lunde på e-post og SMS', epost: 'mari@epost.no', tlf: '+47 938 11 402', sum: '2 590 kr' },
-        { navn: 'Petter Nes', grunn: 'Ubetalt reservasjon — Kurs boller · 1 490 kr', status: 'Ubetalt', tone: 'danger', knapp: 'Send purring', gjortStatus: 'Purring sendt', gjortMelding: 'Purring sendt til Petter Nes på e-post og SMS', epost: 'petter@epost.no', tlf: '+47 976 25 310', sum: '1 490 kr' },
-        { navn: 'Ole Aarseth', grunn: 'Prøv Lissom utløper 3. sep — bør fornye', status: 'Venter fornyelse', tone: 'warning', knapp: 'Send tilbud', gjortStatus: 'Tilbud sendt', gjortMelding: 'Fornyelsestilbud sendt til Ole Aarseth', epost: 'ole@epost.no', tlf: '+47 900 41 118', sum: '990 kr' },
+        { navn: 'Mari Lunde', grunn: 'Betaling feilet — 30 timer · kr. 2 590,-', status: 'Ubetalt', tone: 'danger', knapp: 'Send purring', gjortStatus: 'Purring sendt', gjortMelding: 'Purring sendt til Mari Lunde på e-post og SMS', epost: 'mari@epost.no', tlf: '+47 938 11 402', sum: 'kr. 2 590,-' },
+        { navn: 'Petter Nes', grunn: 'Ubetalt reservasjon — Kurs boller · kr. 1 490,-', status: 'Ubetalt', tone: 'danger', knapp: 'Send purring', gjortStatus: 'Purring sendt', gjortMelding: 'Purring sendt til Petter Nes på e-post og SMS', epost: 'petter@epost.no', tlf: '+47 976 25 310', sum: 'kr. 1 490,-' },
+        { navn: 'Ole Aarseth', grunn: 'Prøv Lissom utløper 3. sep — bør fornye', status: 'Venter fornyelse', tone: 'warning', knapp: 'Send tilbud', gjortStatus: 'Tilbud sendt', gjortMelding: 'Fornyelsestilbud sendt til Ole Aarseth', epost: 'ole@epost.no', tlf: '+47 900 41 118', sum: 'kr. 990,-' },
         { navn: 'Silje Bratt', grunn: 'Har brukt opp timene sine i august', status: 'Kan oppgradere', tone: 'warning', knapp: 'Tilby oppgradering', gjortStatus: 'Tilbud sendt', gjortMelding: 'Oppgraderingstilbud sendt til Silje Bratt', epost: 'silje@epost.no', tlf: '+47 971 22 508', sum: '—' },
         { navn: 'Ubesvarte meldinger', grunn: '2 meldinger fra medlemmer venter på svar', status: 'Venter', tone: 'info', knapp: 'Svar', maal: 'adminbeskjeder' },
         { navn: 'Åpen dag 6. september', grunn: 'Er ikke lagt ut på nettsiden ennå', status: 'Upublisert', tone: 'neutral', knapp: 'Publiser', maal: 'admininnhold' },
@@ -8415,7 +8437,7 @@ class Component extends DCLogic {
       nyePameldinger: this.klikkbar([
         { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs, 19. aug', tid: 'I går 19:41' },
         { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug' },
-        { navn: 'Anne Five', hva: 'Gavekort 1 000 kr', tid: '21. aug' },
+        { navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', tid: '21. aug' },
         { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: '20. aug' },
       ], n => [n.navn, n.hva, [{ navn: 'Tidspunkt', verdi: n.tid }, { navn: 'Betalt med', verdi: 'Vipps' }], 'Se kvittering']),
       erAdminOkonomi: side === 'adminokonomi',
@@ -8445,7 +8467,7 @@ class Component extends DCLogic {
       dropinBook: () => {
         const k = {
           level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer',
-          price: '490 kr', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in',
+          price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in',
           om: 'To timer i verkstedet med dine egne prosjekter. Leire, verktøy, glasur, brenning og ett ferdig arbeid opptil 20 × 20 cm er inkludert.',
         };
         this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
@@ -8505,13 +8527,13 @@ class Component extends DCLogic {
         'Nybegynnere — etter et kurs, eller sammen med et medlem',
       ],
       diPraktisk: [
-        { tittel: '490 kr per økt · 2 timer', tekst: 'Leire, verktøy, glasur, brenning og ett ferdig arbeid er inkludert. Book i kurskalenderen og betal med Vipps. Timene kan ikke overføres eller spares opp.' },
+        { tittel: 'kr. 490,- per økt · 2 timer', tekst: 'Leire, verktøy, glasur, brenning og ett ferdig arbeid er inkludert. Book i kurskalenderen og betal med Vipps. Timene kan ikke overføres eller spares opp.' },
         { tittel: 'Hva får jeg?', tekst: 'Tilgang til verkstedet, dreieskiver og håndbyggingsplass, hjelp ved behov — og et sosialt miljø rundt langbordet.' },
         { tittel: 'Praktisk', tekst: 'Brenning følger verkstedets brenningsplan. Glasering gjør du på en ny økt. Én hylleplass til tørking er inkludert.' },
         { tittel: 'Viktig å vite', tekst: 'Drop-in er ikke privatkurs. Ferdige arbeider hentes innen tre uker. Egne regler gjelder for eksterne materialer. Reserver ved fullt.' },
       ],
       diSteg: [
-        { nr: '1', tittel: 'Book en økt', tekst: 'Velg en ledig tid i kurskalenderen og betal 490 kr med Vipps.' },
+        { nr: '1', tittel: 'Book en økt', tekst: 'Velg en ledig tid i kurskalenderen og betal kr. 490,- med Vipps.' },
         { nr: '2', tittel: 'Kom og stemple inn', tekst: 'Oppgi navnet ditt — eller medlemmet du kommer med — så finner vi plassen din.' },
         { nr: '3', tittel: 'Jobb med leira', tekst: 'Dreieskiver, håndbyggingsplass, verktøy og glasurer står klare. Vi hjelper ved behov.' },
         { nr: '4', tittel: 'Vi brenner, du henter', tekst: 'Ferdige arbeider glaseres og brennes. Hent innen tre uker — vi sier fra når de er klare.' },
@@ -8602,7 +8624,7 @@ class Component extends DCLogic {
           skFeil: null, gDelSendt: true,
           galleriEndringer: (st.galleriEndringer || []).concat([{
             id: 'ny-' + Date.now(), status: 'venter',
-            tittel: st.skNavn, tekst: st.skTekst, pris: st.skPris + ' kr',
+            tittel: st.skNavn, tekst: st.skTekst, pris: 'kr. ' + st.skPris + ',-',
             laget: 'Laget av ' + st.skProdusent, vipps: st.skVipps, kontakt: st.skKontakt,
             levering: 'Leveres etter avtale', antall: parseInt(st.skAntall, 10) || 1, kategori: st.skKategori,
             bilde: 'assets_photos_handbygging.jpg',
@@ -8653,7 +8675,7 @@ class Component extends DCLogic {
         { sp: 'Kan jeg få gavekortet fysisk?', sv: 'Gavekortet kommer på e-post og kan skrives ut. Vil du ha et trykket kort, kom innom butikken på Teie.' },
       ],
       gvBelop: [500, 1000, 1490, 2800].map(b => ({
-        navn: b + ' kr',
+        navn: 'kr. ' + b + ',-',
         velg: () => this.setState({ gvValgt: b }),
         stil: {
           appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '10px 18px',
@@ -8663,8 +8685,8 @@ class Component extends DCLogic {
           color: (this.state.gvValgt || 1490) === b ? 'var(--clay-50)' : 'var(--lissom-brown)',
         },
       })),
-      gvValgt: (this.state.gvValgt || 1490) + ' kr',
-      gvKjop: () => { this.leggTil('Gavekort ' + (this.state.gvValgt || 1490) + ' kr'); this.setState({ side: 'kasse' }); window.scrollTo(0, 0); },
+      gvValgt: 'kr. ' + (this.state.gvValgt || 1490) + ',-',
+      gvKjop: () => { this.leggTil('Gavekort kr. ' + (this.state.gvValgt || 1490) + ',-'); this.setState({ side: 'kasse' }); window.scrollTo(0, 0); },
       erAdminSeo: side === 'adminseo',
       adminNavSeo: this.adminMeny('SEO'),
       erAdminMobilvis: side === 'adminmobilvis',
@@ -8911,27 +8933,27 @@ class Component extends DCLogic {
       ]).map(n => Object.assign(n, { velg: () => { this.setState({ side: n.mal[0], kursFilter: n.mal[1] || 'Alle' }); window.scrollTo(0, 0); } })),
       popDatoer: (() => {
         const liste = this.medBooking([
-          { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '5 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
-          { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
+          { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: '5 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
+          { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
         ]);
         return liste;
       })(),
       popHarDatoer: true,
       popManglerDatoer: false,
       kursForside: this.medBooking([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra 2 800 kr', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg' },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra 1 490 kr', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg' },
-        { level: 'Event', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra 1 190 kr', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg' },
-        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra 690 kr', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg' },
+        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg' },
+        { level: 'Event', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg' },
+        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
       ].map(f => {
         const full = (this._kursListe || []).find(x => x.title === f.title);
         return full ? Object.assign({}, full) : f;
       }).concat(this.state.nyeKurs || [])),
       produkter: this.medBildeCss([
-        { title: 'Kopp, sandglasur', pris: '390 kr', image: 'uploads_shutterstock_2830582037.jpg' },
-        { title: 'Bolle, stor', pris: '590 kr', image: 'uploads_shutterstock_2830582659.jpg' },
-        { title: 'Fat, 28 cm', pris: '790 kr', image: 'uploads_shutterstock_2830582925.jpg' },
-        { title: 'Gavekort', pris: 'Fra 500 kr', image: 'uploads_shutterstock_2829108657.jpg' },
+        { title: 'Kopp, sandglasur', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
+        { title: 'Bolle, stor', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
+        { title: 'Fat, 28 cm', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
+        { title: 'Gavekort', pris: 'Fra kr. 500,-', image: 'uploads_shutterstock_2829108657.jpg' },
       ]),
     };
   }

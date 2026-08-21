@@ -5772,6 +5772,7 @@ class Component extends DCLogic {
     document.addEventListener('click', this._klikk, true);
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
+    this._resize(); // startverdi — ellers vet vi ikke om vi er paa mobil for forste rotasjon
     this._lagring = () => this.setState({ mobilSkjulLokal: null, mobilTikk: (this.state.mobilTikk || 0) + 1 });
     window.addEventListener('storage', this._lagring);
     this._kurvPuls = setInterval(() => {
@@ -9246,7 +9247,17 @@ class Component extends DCLogic {
               React.createElement(DS.Icon, { name: 'shopping-cart', size: 36 }),
               antall ? React.createElement('span', { key: 'n' + antall, style: { background: 'var(--lissom-brown)', color: 'var(--clay-50)', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '16px', display: 'inline-block', animation: 'lissomPuls .45s var(--ease-clay, ease)' } }, antall) : null) }
           : 'Handlekurv';
-        return ['Forside', 'Kurs', 'Events', 'Drop-in', 'Medlemskap', 'Butikk', 'Om oss', { value: 'Kurskalender', label: 'Kalender' }, vogn];
+        const lenker = ['Forside', 'Kurs', 'Events', 'Drop-in', 'Medlemskap', 'Butikk', 'Om oss',
+          { value: 'Kurskalender', label: 'Kalender' }];
+
+        // Paa mobil er hamburgermenyen eneste vei inn til Min side — paa
+        // desktop ligger den i toppen fra for, og en niende lenke der ville
+        // bare presset de andre sammen.
+        if ((this.state.vw || 1400) < 761) {
+          lenker.push({ value: 'Min side', label: this.state.innlogget ? 'Min side' : 'Logg inn' });
+        }
+
+        return lenker.concat([vogn]);
       })(),
       kursNavAktiv: this.state.kursFilter === 'Events' ? 'Events' : (this.state.kursFilter === 'Drop-in' ? 'Drop-in' : 'Kurs'),
       bGradientStil: (() => {

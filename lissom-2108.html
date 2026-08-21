@@ -6986,6 +6986,44 @@ class Component extends DCLogic {
         const epost = (this.state.vlEpost || '').trim();
         if (!navn || !epost || epost.indexOf('@') < 1) { this.setState({ vlFeil: 'Fyll inn navn og gyldig e-post, så kan vi kontakte deg.' }); return; }
         const k = this.state.valgtKurs || {};
+
+        // Paa den publiserte siden lagres ventelisten i databasen. I
+        // forhandsvisningen finnes ingen server, og simuleringen under staar.
+        if (this.erPublisert()) {
+          const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel));
+          if (!kat) {
+            this.setState({ vlFeil: 'Vi fant ikke kurset. Prøv å laste siden på nytt.' });
+            return;
+          }
+          this.setState({ vlFeil: null });
+          fetch('/api/venteliste.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              kursId: kat.id,
+              oktId: this.state.bOktId || 0,
+              navn: navn,
+              epost: epost,
+              telefon: (this.state.vlTlf || '').trim(),
+            }),
+          })
+            .then(r => r.json())
+            .then(d => {
+              if (!d || !d.ok) {
+                this.setState({ vlFeil: (d && d.feil) || 'Noe gikk galt. Prøv igjen.' });
+                return;
+              }
+              this.setState({
+                vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null,
+                kvittering: d.gjentakelse ? 'Du står allerede på ventelisten' : 'Du står nå på ventelisten',
+                kvitteringDetalj: 'Plass nummer ' + d.posisjon + '. Vi gir beskjed på e-post og SMS hvis det blir ledig. Du betaler ingenting før plassen er din.',
+              });
+            })
+            .catch(() => this.setState({ vlFeil: 'Fikk ikke kontakt med serveren. Prøv igjen.' }));
+          return;
+        }
+
         const kursNavn = (k.title || k.tittel || 'Kurs') + (this.state.bDato ? ', ' + this.state.bDato : k.date ? ', ' + k.date : '');
         const plassNr = 3 + (this.state.nyVenteliste || []).length;
         this.setState(s => ({

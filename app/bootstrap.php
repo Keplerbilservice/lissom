@@ -53,12 +53,17 @@ require APP_DIR . '/lib/ratelimit.php';
 require APP_DIR . '/lib/varsler.php';
 require APP_DIR . '/lib/vipps.php';
 require APP_DIR . '/lib/booking.php';
+require APP_DIR . '/lib/tikk.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i
 // feilloggen på webhotellet i stedet.
 error_reporting(E_ALL);
 ini_set('display_errors', Config::erUtvikling() ? '1' : '0');
 ini_set('log_errors', '1');
+
+// Bakgrunnsarbeid uten cron: forste forespoersel i hvert minuttvindu tommer
+// varselkoen og sjekker betalinger som henger. Kjorer etter at svaret er sendt.
+Tikk::planlegg();
 
 set_exception_handler(static function (Throwable $e): void {
     logg_feil('Ubehandlet feil', $e);

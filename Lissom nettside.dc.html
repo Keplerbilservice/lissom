@@ -5517,12 +5517,14 @@ class Component extends DCLogic {
   componentDidMount() {
     // Retur fra Vipps-innlogging (backend redirecter til #minside med profil-cookie)
     if (window.location.hash === '#minside') {
-      let vn = '';
-      try {
-        const m = document.cookie.match(/lissom_bruker=([^;]+)/);
-        if (m) vn = (JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))).navn || '');
-      } catch (e) {}
-      this.setState({ side: 'minside', vippsNavn: vn, innlogget: true });
+      const m = document.cookie.match(/lissom_bruker=([^;]+)/);
+      if (m) {
+        let vn = '';
+        try { vn = (JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))).navn || ''); } catch (e) {}
+        this.setState({ side: 'minside', vippsNavn: vn, innlogget: true });
+      } else {
+        this.setState({ side: 'login' });
+      }
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     this._karusell = setInterval(() => {
@@ -5908,7 +5910,7 @@ class Component extends DCLogic {
     const side = this.state.side;
     const sider = [
       ['forside', 'Forside'], ['kurs', 'Kurs'], ['medlemskap', 'Medlemskap'],
-      ['butikk', 'Butikk'], ['omoss', 'Om oss'], ['minside', 'Min side'], ['adminoversikt', 'Admin'],
+      ['butikk', 'Butikk'], ['omoss', 'Om oss'], ['login', 'Min side'], ['adminoversikt', 'Admin'],
     ].map(([id, navn]) => ({
       navn, velg: this.go(id),
       stil: {
@@ -8889,7 +8891,7 @@ class Component extends DCLogic {
           'Kurs': ['kurs', 'Kurs'], 'Våre kurs': ['kurs', 'Kurs'], 'Kurskalender': ['kalender'],
           'Events': ['kurs', 'Events'], 'Drop-in': ['kurs', 'Drop-in'],
           'Medlemskap': ['medlemskap'], 'Butikk': ['butikk'],
-          'Min side': ['login'], 'Internbutikk': ['minside'], 'Om oss': ['omoss'], 'Nyttig info': ['nyttig'], 'Handlekurv': ['kasse'],
+          'Min side': [this.state.innlogget ? 'minside' : 'login'], 'Internbutikk': ['minside'], 'Om oss': ['omoss'], 'Nyttig info': ['nyttig'], 'Handlekurv': ['kasse'],
           'Bedrift og event': ['bedrift'],
           'Book nå': ['kurs', 'Alle'], 'Book': ['kurs', 'Alle'],
         };

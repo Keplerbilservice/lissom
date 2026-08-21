@@ -1540,15 +1540,18 @@
               </sc-if>
             </div>
 
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dreieskivene denne uka</div>
               <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
-                  <div style="display: flex; align-items: baseline; gap: var(--space-3); font-size: var(--text-sm);">
-                    <span style="font-weight: 700; color: var(--text-heading); width: 76px; flex: 0 0 auto;">{{ o.dag }}</span>
-                    <span style="color: var(--text-body); flex: 1;">{{ o.hva }}</span>
-                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap;">{{ o.tid }}</span>
+                  <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--space-3); font-size: var(--text-sm);">
+                    <span style="font-weight: 700; color: var(--text-heading); flex: 0 0 auto; min-width: 52px;">{{ o.dag }}</span>
+                    <!-- min-width: 0 er det som lar teksten bryte i stedet for
+                         aa presse raden bredere enn kortet. Uten den nekter et
+                         flex-element aa bli smalere enn innholdet sitt. -->
+                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;">{{ o.hva }}</span>
+                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; margin-left: auto;">{{ o.tid }}</span>
                   </div>
                 </sc-for>
               </div>

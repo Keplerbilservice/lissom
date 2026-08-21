@@ -64,6 +64,28 @@ Start med Vipps sitt **testmiljø**:
 
 ---
 
+## 3b. Opprett underdomenet den nye siden skal ligge på
+
+`public_html` inneholder en WordPress-installasjon fra før. Den nye siden skal
+ikke blandes inn der — to nettsteder i samme mappe gir uforutsigbar oppførsel,
+og WordPress' `.htaccess` ville kollidert med vår.
+
+cPanel → **Domains** → **Create A New Domain**:
+
+| Felt | Verdi |
+|---|---|
+| Domain | `ny.lissom.no` |
+| Document Root | `~/ny.lissom.no` |
+
+Document Root må ligge **utenfor** `public_html`. cPanel foreslår som regel
+`public_html/ny`; det må endres. En mappe inne i `public_html` arver WordPress'
+omskrivingsregler, og da havner forespørsler til den nye siden hos WordPress.
+
+Når siden er ferdig testet, peker vi `lissom.no` hit. Det er en DNS-endring, og
+den kan reverseres umiddelbart hvis noe skulle vise seg å mangle.
+
+---
+
 ## 4. Koble GitHub til webhotellet
 
 Publiseringen skjer over FTPS fra GitHub. Du trenger en FTP-konto — den finnes
@@ -148,7 +170,10 @@ portal.vipps.no → **Utvikler** → testsalgsenheten.
 
 | Hva | Adresse |
 |---|---|
-| Redirect-URI (Login) | `https://lissom.no/api/vipps-callback.php` |
+| Redirect-URI (Login) | `https://ny.lissom.no/api/vipps-callback.php` |
+
+Bruk `ny.lissom.no` mens vi tester. Adressen byttes til `lissom.no` samtidig
+med DNS-omleggingen, og må da også oppdateres i portalen.
 | Vilkår | `https://lissom.no/vilkar.html` |
 | Personvern | `https://lissom.no/personvern.html` |
 

@@ -29,12 +29,18 @@ $medlemmer = DB::alle(
     $param
 );
 
+// Nodluke-numrene i secrets.php gir admin ved kjoring uten at kolonnen
+// nodvendigvis er satt. Uten dette ville eieren sett seg selv som vanlig
+// medlem i lista, mens hen faktisk har admin-tilgang.
+$nodluker = Config::adminNumre();
+
 Svar::json(['medlemmer' => array_map(static fn($m) => [
     'id'         => (int) $m['id'],
     'navn'       => $m['navn'],
     'epost'      => $m['epost'],
     'telefon'    => $m['telefon'],
-    'erAdmin'    => $m['rolle'] === 'admin',
+    'erAdmin'    => $m['rolle'] === 'admin'
+                    || ($m['telefon'] !== null && in_array(normaliser_telefon((string) $m['telefon']), $nodluker, true)),
     'medlemskap' => $m['medlemskap_type'],
     'status'     => $m['status'],
     'startDato'  => $m['start_dato'],

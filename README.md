@@ -67,3 +67,18 @@ Førstegangsoppsett er beskrevet steg for steg i
 | 2 | Gavekort, butikk, drop-in | Ikke startet |
 | 3 | Medlemskap med månedstrekk | Ikke startet |
 | 4 | Admin koblet til ekte data | Ikke startet |
+
+## Teste backend lokalt
+
+Krever MariaDB eller MySQL. Opprett en tom database, legg inn tilgangen i
+`app/secrets.php`, og kjør:
+
+```
+php bin/migrate.php      # oppretter tabellene
+php tests/backend.php    # 26 sjekker mot ekte database
+```
+
+Testene dekker kapasitetsberegning, at siste plass ikke kan bookes to ganger,
+at en betaling bare kvitteres én gang uansett hvor mange ganger Vipps melder
+fra, at utløpte reservasjoner frigir plassen, tidssonehåndtering og
+ratebegrensning.

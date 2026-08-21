@@ -6205,8 +6205,7 @@ class Component extends DCLogic {
       lagRapport: () => {
         const w = window.open('', '_blank', 'width=520,height=680');
         if (!w) return;
-        w.document.write('<html><head><!-- LISSOM BUILD 21.08 kl 13:25 -->
-<title>Månedsrapport august 2026</title></head><body style="margin:0;padding:36px;font-family:Georgia,serif;color:#4D1D12;"><div style="font-size:11px;letter-spacing:.14em;">LISSOM · MÅNEDSRAPPORT</div><h1 style="font-size:26px;margin:10px 0 24px;">August 2026</h1><table style="width:100%;border-collapse:collapse;font-size:14px;">'
+        w.document.write('<html><head><!-- LISSOM BUILD 21.08 kl 13:25 --><title>Månedsrapport august 2026</title></head><body style="margin:0;padding:36px;font-family:Georgia,serif;color:#4D1D12;"><div style="font-size:11px;letter-spacing:.14em;">LISSOM · MÅNEDSRAPPORT</div><h1 style="font-size:26px;margin:10px 0 24px;">August 2026</h1><table style="width:100%;border-collapse:collapse;font-size:14px;">'
           + [['Omsetning totalt', 'kr. 182 400,-'], ['— Kurs og events', 'kr. 96 200,-'], ['— Medlemskap', 'kr. 61 400,-'], ['— Butikk og gavekort', 'kr. 10 950,-'], ['— Drop-in', 'kr. 14 850,-'], ['— Leire og brenning', 'kr. 9 000,-'], ['Aktive medlemmer', '47 (+3)'], ['Timer brukt i verkstedet', '612'], ['Belegg på kurs', '84 %'], ['Drop-in-besøk', '33'], ['Neste Vipps-oppgjør', '1. september']].map(r => '<tr><td style="padding:8px 0;border-bottom:1px solid #E8DCC8;">' + r[0] + '</td><td style="text-align:right;font-weight:700;border-bottom:1px solid #E8DCC8;">' + r[1] + '</td></tr>').join('')
           + '</table><p style="font-size:11px;color:#8a6f5f;margin-top:24px;">Generert ' + new Date().toLocaleDateString('nb-NO') + ' · Lissom Keramikk & Håndverk AS · Org.nr. 938 280 819 MVA</p><scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
         w.document.close();

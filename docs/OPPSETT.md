@@ -72,14 +72,29 @@ og WordPress' `.htaccess` ville kollidert med vår.
 
 cPanel → **Domains** → **Create A New Domain**:
 
+cPanel → **Domains** → **Create A New Domain** → **Registered Domain**:
+
 | Felt | Verdi |
 |---|---|
 | Domain | `ny.lissom.no` |
-| Document Root | `~/ny.lissom.no` |
+| Share document root | **ikke** huket av |
 
-Document Root må ligge **utenfor** `public_html`. cPanel foreslår som regel
-`public_html/ny`; det må endres. En mappe inne i `public_html` arver WordPress'
-omskrivingsregler, og da havner forespørsler til den nye siden hos WordPress.
+Dokumentroten ble `~/public_html/ny.lissom.no`. cPanel tillot ikke en sti
+utenfor `public_html` for underdomener.
+
+Det fungerer: Apache leser bare `.htaccess` fra dokumentroten og nedover, aldri
+over, så WordPress' omskrivingsregler i `public_html` treffer ikke underdomenet.
+
+Men det gir én felle å huske på, se neste avsnitt.
+
+### Når WordPress skal fjernes
+
+`public_html` inneholder en gammel WordPress-installasjon som bør slettes når
+den nye siden er verifisert — en WordPress som står uten oppdateringer er en
+vanlig vei inn for angripere, og her ville den delt konto med betalingsdata.
+
+**Mappa `public_html/ny.lissom.no` må da spares.** Den inneholder den nye,
+levende nettsiden. Ta sikkerhetskopi av `public_html` før noe slettes.
 
 Når siden er ferdig testet, peker vi `lissom.no` hit. Det er en DNS-endring, og
 den kan reverseres umiddelbart hvis noe skulle vise seg å mangle.

@@ -4747,7 +4747,7 @@
 </sc-if>
 
 <sc-if value="{{ harKvittering }}" hint-placeholder-val="{{ true }}">
-  <div style="position: absolute; right: 24px; top: {{ toastTop }}px; z-index: 500; max-width: 360px;">
+  <div style="position: fixed; left: 50%; transform: translateX(-50%); top: 110px; z-index: 500; width: min(400px, calc(100vw - 32px));">
     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="success" title="{{ kvittering }}" description="Lagret. E-postkvittering kobles til ved lansering — du finner det under Min side." on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
   </div>
 </sc-if>

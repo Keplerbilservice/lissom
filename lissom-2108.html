@@ -6099,18 +6099,45 @@ class Component extends DCLogic {
   hentAdmin() {
     if (!this.erPublisert() || this._adminHentes) return;
     this._adminHentes = true;
+    const hent = (sti) => fetch(sti, { credentials: 'same-origin' })
+      .then(r => r.json())
+      .catch(() => null);
+
     Promise.all([
-      fetch('/api/admin/oversikt.php', { credentials: 'same-origin' }).then(r => r.json()),
-      fetch('/api/admin/pameldte.php', { credentials: 'same-origin' }).then(r => r.json()),
+      hent('/api/admin/oversikt.php'),
+      hent('/api/admin/pameldte.php'),
+      hent('/api/admin/medlemmer.php'),
+      hent('/api/admin/betalinger.php'),
     ])
-      .then(([oversikt, pameldte]) => {
+      .then(([oversikt, pameldte, medlemmer, betalinger]) => {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
+        if (medlemmer && medlemmer.medlemmer) ny.adminMedlemmer = medlemmer.medlemmer;
+        if (betalinger && betalinger.betalinger) ny.adminBetalinger = betalinger.betalinger;
         if (Object.keys(ny).length) this.setState(ny);
       })
       .catch(() => {})
       .then(() => { this._adminHentes = false; });
+  }
+
+  // Serverens medlemsrader oversatt til feltene admin-siden tegner.
+  medlemsrader() {
+    const tone = { aktiv: 'success', prove: 'warning', pause: 'neutral', oppsagt: 'neutral', ingen: 'neutral' };
+    const tekst = { aktiv: 'Aktiv', prove: 'Proveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
+
+    return (this.state.adminMedlemmer || []).map(m => ({
+      navn: m.navn || '(uten navn)',
+      epost: m.epost || m.telefon || '',
+      initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
+      abonnement: m.medlemskap || 'Ingen',
+      // Timeforbruk foeres ikke ennaa — innstempling er ikke koblet opp.
+      timer: m.timer ? ('0 / ' + m.timer) : '—',
+      andel: 0,
+      status: tekst[m.status] || m.status,
+      tone: tone[m.status] || 'neutral',
+      inne: false,
+    }));
   }
 
   renderVals() {
@@ -7238,14 +7265,14 @@ class Component extends DCLogic {
       sortNavnPil: this.state.medlemSort === 'navn' ? '↓' : '',
       sortTimerPil: this.state.medlemSort === 'timer' ? '↓' : '',
       sortKnappStil: { appearance: 'none', border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', font: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', textAlign: 'left' },
-      medlemmer: [
+      medlemmer: (this.state.adminMedlemmer ? this.medlemsrader() : (this.erPublisert() ? [] : [
         { navn: 'Ingrid Hansen', epost: 'ingrid@epost.no', initial: 'IH', abonnement: '30 timer', timer: '11,5 / 30', andel: 38, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Kari Nordbø', epost: 'kari@epost.no', initial: 'KN', abonnement: 'Fri tilgang', timer: '42 t', andel: 100, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Jonas Five', epost: 'jonas@epost.no', initial: 'JF', abonnement: 'Fri tilgang', timer: '38 t', andel: 90, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Silje Bratt', epost: 'silje@epost.no', initial: 'SB', abonnement: '30 timer', timer: '27 / 30', andel: 90, status: 'Aktiv', tone: 'neutral' },
         { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
-      ].filter(m => { const fv = this.state.medlemFilter || 'Alle'; return fv === 'Alle' || (fv === 'Inne nå' ? !!m.inne : m.abonnement === fv); }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
+      ])).filter(m => { const fv = this.state.medlemFilter || 'Alle'; return fv === 'Alle' || (fv === 'Inne nå' ? !!m.inne : m.abonnement === fv); }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
         velg: this.apne(m.navn, m.epost, [
           { navn: 'Abonnement', verdi: m.abonnement },
           { navn: 'Timer brukt', verdi: m.timer },
@@ -7325,20 +7352,49 @@ class Component extends DCLogic {
         { navn: 'Butikk', sum: 'kr. 17 300,-' },
         { navn: 'Leire og brenning', sum: 'kr. 7 500,-' },
       ], k => [k.navn, 'Omsetning i august', [{ navn: 'Sum', verdi: k.sum }, { navn: 'Andel av total', verdi: 'Se rapport' }], 'Se transaksjoner', 'adminokonomi']),
-      betalinger: this.klikkbar([
+      betalinger: this.klikkbar(
+        (this.state.adminBetalinger || []).map(b => ({
+          navn: b.medlem || 'Gjest',
+          hva: ({ booking: 'Kursbooking', dropin: 'Drop-in', gavekort: 'Gavekort',
+                  ordre: 'Butikkordre', medlemskap: 'Medlemskap' })[b.formal] || b.formal,
+          tid: b.tidspunkt,
+          sum: b.belop,
+          status: b.status,
+          referanse: b.referanse,
+        })).concat((this.state.adminBetalinger || this.erPublisert()) ? [] : [
         { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: 'I dag 08:02', sum: 'kr. 2 590,-' },
         { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs', tid: 'I går 19:41', sum: 'kr. 2 800,-' },
         { navn: 'Anne Five', hva: 'Gavekort', tid: 'I går 14:20', sum: 'kr. 1 000,-' },
         { navn: 'Ingrid Hansen', hva: 'Leire, 10 kg', tid: '22. aug', sum: 'kr. 290,-' },
         { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug', sum: 'kr. 2 380,-' },
         { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug', sum: 'kr. 220,-' },
-      ], b => [b.navn, b.hva, [{ navn: 'Beløp', verdi: b.sum }, { navn: 'Tidspunkt', verdi: b.tid }, { navn: 'Betalt med', verdi: 'Vipps' }], 'Se kvittering']),
-      adminTall: [
+      ]), b => [b.navn, b.hva, [
+        { navn: 'Beløp', verdi: b.sum },
+        { navn: 'Tidspunkt', verdi: b.tid },
+        { navn: 'Status', verdi: b.status || 'Betalt' },
+        { navn: 'Referanse', verdi: b.referanse || '' },
+      ], 'Lukk']),
+      adminTall: ((d) => d ? [
+        // Ekte tall fra databasen.
+        { merke: 'Påmeldte denne uka', verdi: String(d.bookinger.sisteUke),
+          under: d.bookinger.ubetalte > 0 ? d.bookinger.ubetalte + ' ubetalte reservasjoner' : 'Alle betalt' },
+        { merke: 'Aktive medlemmer', verdi: String(d.medlemmer.aktive),
+          under: d.medlemmer.totalt + ' registrerte totalt' },
+        { merke: 'Omsetning denne måneden', verdi: d.omsetning.maned,
+          under: d.omsetning.idag + ' i dag' },
+        { merke: 'Trenger oppmerksomhet', verdi: String(d.varsler.length),
+          under: d.varsler.length ? d.varsler[0] : 'Ingenting å følge opp' },
+      ] : (this.erPublisert() ? [
+        { merke: 'Påmeldte denne uka', verdi: '–', under: 'Henter …' },
+        { merke: 'Aktive medlemmer', verdi: '–', under: 'Henter …' },
+        { merke: 'Omsetning denne måneden', verdi: '–', under: 'Henter …' },
+        { merke: 'Trenger oppmerksomhet', verdi: '–', under: 'Henter …' },
+      ] : [
         { merke: 'Påmeldte denne uka', verdi: '34', under: '4 kurs, 2 events' },
         { merke: 'Aktive medlemmer', verdi: '47', under: '+3 siste 30 dager' },
         { merke: 'Omsetning i august', verdi: 'kr. 182 400,-', under: 'Vipps, oppgjør hver mandag' },
         { merke: 'Ubesvarte meldinger', verdi: '4', under: '2 forespørsler, 2 fra medlemmer' },
-      ].map(t => Object.assign(t, { velg: this.go(TALLMAAL[t.merke] || 'admin'), kortStil: KORT_KLIKK })),
+      ]))(this.state.adminData).map(t => Object.assign(t, { velg: this.go(TALLMAAL[t.merke] || 'admin'), kortStil: KORT_KLIKK })),
       adminTyper: ['Kurs', 'Event', 'Drop-in', 'Workshop'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],

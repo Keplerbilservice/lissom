@@ -10,20 +10,24 @@ Webhotellet er **Web15 med cPanel**, PHP 8.4. Alt vi trenger er med i pakken.
 
 cPanel → **MySQL Databases**.
 
-1. Opprett database, f.eks. `lissom`. cPanel setter på et prefiks selv, så den
-   heter noe som `bruker_lissom` når den er laget. Skriv ned hele navnet.
-2. Opprett en bruker under **Add New User**. Bruk passordgeneratoren — passordet
-   skal du aldri skrive selv, og aldri gjenbruke.
-3. Under **Add User To Database**: legg brukeren til databasen med
-   **ALL PRIVILEGES**.
+1. Opprett databasen. cPanel setter på kontoens prefiks selv, så den ender opp
+   med et navn som `abcdefgh_lissom`. Skriv ned hele navnet.
+2. Opprett en bruker under **Add New User**, med passordgeneratoren.
+3. Under **Add User To Database**: legg brukeren til med **ALL PRIVILEGES**.
+   Uten det får ikke migrasjonene laget tabeller.
 
-Noter navn, bruker og passord. De skal inn i `secrets.php` i steg 3.
+Navn, bruker og passord skal inn i `secrets.php` i steg 3 — ikke i dette
+repoet.
+
+Passordet bør byttes når oppsettet er ferdig, siden det har vært sendt i
+klartekst under utviklingen. Det gjøres samme sted, og så oppdaterer du
+`db_passord` i `secrets.php`.
 
 ---
 
 ## 2. Lag mappene utenfor webroten
 
-cPanel → **File Manager**, stå i hjemmemappa (`/home/DIN_BRUKER`), altså ett nivå
+cPanel → **File Manager**, stå i hjemmemappa (`~`), altså ett nivå
 **over** `public_html`.
 
 Opprett to mapper:
@@ -45,7 +49,7 @@ Kopier [`app/secrets.example.php`](../app/secrets.example.php), fyll den ut, og
 last den opp som:
 
 ```
-/home/DIN_BRUKER/lissom-secrets/secrets.php
+~/lissom-secrets/secrets.php
 ```
 
 Sett rettighetene til **600** (høyreklikk → Change Permissions, huk av kun for

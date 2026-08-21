@@ -4755,8 +4755,8 @@
 </sc-if>
 
 <div style="{{ dialogWrapStil }}">
-<x-import component-from-global-scope="LissomDesignSystem_8402ac.Dialog" open="{{ detaljApen }}" title="{{ detaljTittel }}" on-close="{{ lukkDetalj }}" width="{{ 560 }}" style="{{ dialogKortStil }}" hint-size="560px,auto">
-  <div style="display: flex; flex-direction: column; gap: var(--space-4); max-height: min(68vh, 640px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
+<x-import component-from-global-scope="LissomDesignSystem_8402ac.Dialog" open="{{ detaljApen }}" title="{{ detaljTittel }}" on-close="{{ lukkDetalj }}" width="{{ 430 }}" style="{{ dialogKortStil }}" hint-size="430px,auto">
+  <div style="display: flex; flex-direction: column; gap: var(--space-4); max-height: min(62vh, 520px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
     <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ detaljUnder }}</div>
     <sc-if value="{{ detaljTilbake }}" hint-placeholder-val="{{ true }}">
       <button type="button" onClick="{{ gaaTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">← Tilbake til listen</button>
@@ -5307,8 +5307,37 @@ class Component extends DCLogic {
     return () => this.setState({ detalj: { tittel, undertittel, felter, handling, maal, skjema, gjor }, detaljMva: null, popupTop: this.topNaa(160) });
   }
 
+  // Bekreftelsesbokser som paastaar noe om penger.
+  //
+  // Teksten ble laget ut fra hva knappen het: «Betal ...» ga «Betalingen er
+  // gjennomfort», «Opprett avtale ...» ga «Avtalen er opprettet i Vipps»,
+  // «Avbestill ...» ga «pengene tilbakefores». Ingenting av det skjedde.
+  //
+  // Bare kursbooking gaar mot Vipps i dag. Resten maa ikke pastaa at penger
+  // har flyttet seg — en kunde som tror hen har betalt, oppdager det forst
+  // naar varene ikke kommer.
+  pengeHandling(h) {
+    if (!h) return null;
+    if (h.indexOf('Betal') === 0) return 'betaling';
+    if (h.indexOf('Opprett avtale') === 0) return 'avtale';
+    if (h.indexOf('Avbestill') === 0) return 'avbestilling';
+    return null;
+  }
+
   utforDetalj() {
     const d = this.state.detalj;
+
+    const slag = this.erPublisert() ? this.pengeHandling(d && d.handling) : null;
+    if (slag) {
+      const melding = {
+        betaling: ['Betaling kommer snart', 'Vi tar ikke imot betaling for dette ennaa. Ta kontakt paa post@lissom.no, saa ordner vi det.'],
+        avtale: ['Medlemsavtale kommer snart', 'Vipps-avtalen er ikke koblet opp ennaa. Ta kontakt paa post@lissom.no, saa setter vi den opp for deg.'],
+        avbestilling: ['Ta kontakt for avbestilling', 'Send oss en e-post paa post@lissom.no, saa avbestiller vi og ordner refusjonen.'],
+      }[slag];
+      this.setState({ detalj: null, kvittering: melding[0], kvitteringDetalj: melding[1] });
+      return;
+    }
+
     const tekst = (h) => h && h.indexOf('Betal') === 0 ? 'Betalingen er gjennomført' : h && h.indexOf('Opprett avtale') === 0 ? 'Avtalen er opprettet i Vipps' : h && h.indexOf('Avbestill') === 0 ? 'Avbestilt — pengene tilbakeføres til Vipps' : h === 'Legg i handlekurven' ? 'Lagt i handlekurven' : h;
     if (d && d.gjor) { d.gjor(); this.setState({ detalj: null, kvittering: tekst(d.handling) }); return; }
     if (d && d.maal) { this.setState({ side: d.maal, detalj: null }); window.scrollTo(0, 0); }

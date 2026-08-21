@@ -5977,9 +5977,17 @@ class Component extends DCLogic {
   // ingen felter for navn, e-post og telefon — Vipps Login gir oss dem, og de
   // blir riktige uten at noen maa skrive dem inn.
   bookOgBetal() {
-    const oktId = this.state.bOktId;
+    // Den forste datoen staar forhandsvalgt i grensesnittet, men bOktId settes
+    // forst naar noen faktisk klikker. Uten dette fikk den som godtok det
+    // forhandsvalgte «Velg en dato forst» — datoen sto jo rett foran dem.
+    const datoer = this.ekteDatoer() || [];
+    const oktId = this.state.bOktId || (datoer.find(d => !d.full) || {}).oktId;
+
     if (!oktId) {
-      this.setState({ kvittering: 'Velg en dato forst.' });
+      this.setState({
+        kvittering: 'Denne datoen kan ikke bookes.',
+        kvitteringDetalj: 'Velg en annen dato, eller ta kontakt saa hjelper vi deg.',
+      });
       return;
     }
     if (!this.state.innlogget) {

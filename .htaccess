@@ -23,4 +23,12 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
     RedirectMatch 404 /\.(?!well-known)
 </IfModule>
 
-ErrorDocument 404 /index.html
+# Ingen ErrorDocument for 404 her.
+#
+# Tidligere sto det «ErrorDocument 404 /index.html». Det ga en lukket sløyfe:
+# index.html videresender til nettsiden, så en manglende fil sendte brukeren
+# tilbake til starten i stedet for å si fra. Symptomet var en side som lastet
+# i ring, og den ekte feilen var usynlig.
+#
+# Apache sin egen 404 er stygg, men ærlig. Den erstattes med en pen side når
+# nettstedet er ferdig — ikke med en som lyver om hva som skjedde.

@@ -76,9 +76,15 @@ Krever MariaDB eller MySQL. Opprett en tom database, legg inn tilgangen i
 ```
 php bin/migrate.php      # oppretter tabellene
 php tests/backend.php    # 26 sjekker mot ekte database
+tests/flyt.sh            # hele betalingskjeden, ende til ende
 ```
 
 Testene dekker kapasitetsberegning, at siste plass ikke kan bookes to ganger,
 at en betaling bare kvitteres én gang uansett hvor mange ganger Vipps melder
 fra, at utløpte reservasjoner frigir plassen, tidssonehåndtering og
 ratebegrensning.
+
+`tests/flyt.sh` bygger opp samme mappestruktur som webhotellet, starter en
+webserver og en stubbet Vipps, og kjører gjennom booking, webhook og
+signaturkontroll. Betalingskjeden er den delen som ellers krever ekte penger,
+en godkjent salgsenhet og en telefon for å prøve.

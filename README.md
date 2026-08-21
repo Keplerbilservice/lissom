@@ -1,25 +1,31 @@
-# Lissom Keramikk — klikkbar prototype
+# Vipps Login + betaling — backend-pakke for Lissom
 
-Komplett prototype av lissom.no med kundesider, Min side (medlem), admin (PC og mobil) og mobilvisning.
+Serverless-funksjoner for Vercel (gratisnivå holder). Kjører mot Vipps TESTMILJØ
+(apitest.vipps.no) — bytt til api.vipps.no ved lansering (se nederst).
 
-## Kjøre lokalt
-Åpne `Lissom nettside.dc.html` i en nettleser, eller start en enkel server (`npx serve .`).
-`Mobilvisning.dc.html` viser siden i 390 px mobilramme.
+## Utrulling (én gang, ca. 10 min)
 
-## GitHub Pages
-Repoet er klart for Pages: Settings → Pages → Deploy from branch → main / root.
-`index.html` videresender til hovedfilen.
+1. Opprett gratis konto på vercel.com (logg inn med GitHub-kontoen Keplerbilservice).
+2. Opprett nytt prosjekt fra denne mappen (`vipps-backend/`).
+3. Under Settings → Environment Variables, legg inn:
+   - `VIPPS_CLIENT_ID` = test-client_id fra portalen
+   - `VIPPS_CLIENT_SECRET` = test-client_secret
+   - `VIPPS_SUB_KEY` = Ocp-Apim-Subscription-Key (primary, test)
+   - `VIPPS_BASE` = `https://apitest.vipps.no`
+   - `FRONTEND_URL` = `https://keplerbilservice.github.io/lissom/`
+4. Deploy. Du får en adresse, f.eks. `https://lissom-backend.vercel.app`.
+5. I Vipps-portalen (testsalgsenheten): legg til redirect-URI
+   `https://lissom-backend.vercel.app/api/callback`
+6. I nettsiden: sett `VIPPS_BACKEND` til Vercel-adressen (jeg gjør dette når adressen finnes).
 
-## Struktur
-- `Lissom nettside.dc.html` — hele nettsiden: markup (template) + logikk (script nederst i filen). All demodata ligger her.
-- `support.js` — runtime som rendrer templaten (React-basert).
-- `_ds/` — Lissom designsystem (tokens + komponentbundle: Button, CourseCard, NavBar, Dialog m.m.).
-- `komprimert/` — bilder i nettstørrelse. `assets/` — logo og grafikk.
+## Filer
 
-## Til utvikleren — hva som er demo
-- Betaling: Vipps-flyten er simulert (ePayment for engangskjøp, Recurring for medlemskap er intensjonen).
-- Booking: i dag bruker Lissom Understory (lissom-kurs/-events/-medlemskap.understory.io).
-- Data: kurs, medlemmer, ordrer og innstillinger er hardkodet i hovedfilen — trenger backend/DB i ekte løsning.
-- SEO-titler/beskrivelser ligger i admin → SEO og i `SEO_DEFAULTS` i koden.
+- `api/login.js` — starter innloggingen, sender bruker til Vipps
+- `api/callback.js` — mottar koden fra Vipps, bytter til token, henter profil, sender bruker tilbake til Min side
+- `vercel.json` — ruteoppsett
 
-Kontakt: monica@lissom.no · lissom.no
+## Ved lansering (test → prod)
+
+- Bytt alle fire miljøvariablene til prod-verdiene (`VIPPS_BASE` = `https://api.vipps.no`)
+- Legg prod-redirect-URI-en inn på prod-salgsenheten i portalen
+- Ingen kodeendringer.

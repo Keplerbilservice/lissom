@@ -26,6 +26,9 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Avbestilling med refusjon | Ekte, regner ut beløp etter vilkårene |
 | Min side: dine plasser | Ekte |
 | Innholdsredigering i admin | Lagres og vises for alle |
+| Butikk med bestilling | Ekte, server regner ut summen |
+| Internbutikk for medlemmer | Ekte, nektet for gjester |
+| Gavekort | Ekte, kode først ved betaling |
 | Ekte adresser (/kurs, /medlemskap) | Virker |
 | Favicon | Hjertemerket |
 | Sesjon utløper etter 3 timer | Virker |
@@ -33,12 +36,12 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 
 ## Det som fortsatt er simulering
 
-Butikk-kassen, gavekort og medlemskap. De ser ekte ut, men flytter ingen
-penger. Knappene sier nå fra om det i stedet for å påstå at noe er betalt —
-tidligere svarte de «Betalingen er gjennomført» uten at noe skjedde.
+**Medlemskap.** Månedstrekk krever Vipps Recurring, som er et eget produkt og
+en egen godkjenning. Knappen sier nå fra i stedet for å påstå at en avtale er
+opprettet.
 
-Admin-sidene for innhold, drop-in, butikk, beskjeder, oppskrifter og SEO
-viser fortsatt designdata.
+Admin-sidene for drop-in, beskjeder, oppskrifter og SEO viser fortsatt
+designdata.
 
 Timeforbruk på Min side står som «—». Innstempling er ikke koblet opp, og et
 tall der ville vært oppspinn.
@@ -99,8 +102,9 @@ og telefon. Alternativet er å bygge de feltene. Vipps-veien gir riktigere data
 og færre feilkilder; egne felter senker terskelen for de som ikke vil logge
 inn.
 
-**3. Butikken.** Skal den kobles til ekte betaling, eller skjules til den er
-klar? Den viser i dag varer man ikke kan kjøpe.
+**3. Butikkens varebeholdning.** Varene er lagt inn med prisene fra designet,
+uten lagerstyring — det går an å bestille flere enn dere har. Skal lager
+telles, eller holder det å følge med på ordrene?
 
 **4. Kurs boller.** Flyttet fra Dreiing til Plateteknikk, og beskrivelsen
 skrevet om, etter beskjed. Verdt en ny lesning — jeg skrev den uten å kjenne
@@ -108,6 +112,7 @@ kurset.
 
 **5. Datoene i katalogen** er satt av meg ut fra designet. De må erstattes med
 de faktiske kursdatoene deres, enten i admin eller ved at jeg legger dem inn.
+Det samme gjelder varene i butikken og prisene på dem.
 
 **6. WordPress i `public_html`.** En gammel installasjon som ikke oppdateres
 er en vanlig vei inn for angripere, og den deler konto med betalingsdataene.

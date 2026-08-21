@@ -1,0 +1,12 @@
+# Hemmeligheter skal aldri i git.
+app/secrets.php
+secrets.php
+*.env
+.env*
+
+# Lokale hjelpefiler
+.DS_Store
+Thumbs.db
+*.log
+/tmp/
+.ftp-deploy-sync-state.json

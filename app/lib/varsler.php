@@ -1,0 +1,230 @@
+<?php
+/**
+ * Varsling på e-post og SMS.
+ *
+ * Ingenting sendes direkte fra et endepunkt. Alt legges i kø i `notifications`,
+ * og bin/cron.php tømmer køen. Det gir tre ting: kunden venter aldri på at SMTP
+ * svarer, et mislykket forsøk kan gjentas, og du kan alltid slå opp om en
+ * kvittering faktisk gikk ut.
+ */
+
+declare(strict_types=1);
+
+final class Varsel
+{
+    /** Legger en e-post i kø. */
+    public static function epost(string $mottaker, string $emne, string $tekst, ?string $refType = null, ?int $refId = null): int
+    {
+        $mottaker = trim($mottaker);
+        if (!filter_var($mottaker, FILTER_VALIDATE_EMAIL)) {
+            logg('Hoppet over e-post til ugyldig adresse', ['mottaker' => $mottaker]);
+            return 0;
+        }
+        return self::iKo('epost', $mottaker, $emne, $tekst, null, $refType, $refId);
+    }
+
+    /** Legger en SMS i kø. */
+    public static function sms(string $mottaker, string $tekst, ?string $refType = null, ?int $refId = null): int
+    {
+        $tlf = normaliser_telefon($mottaker);
+        if ($tlf === '') {
+            logg('Hoppet over SMS til ugyldig nummer', ['mottaker' => $mottaker]);
+            return 0;
+        }
+        return self::iKo('sms', $tlf, null, $tekst, null, $refType, $refId);
+    }
+
+    /**
+     * Sender en av malene fra `notification_templates`, med {navn}-plassholdere
+     * fylt ut. Malen bestemmer selv om det blir e-post, SMS eller begge.
+     *
+     * @param array<string,string> $felter
+     */
+    public static function mal(string $malNavn, array $mottaker, array $felter = [], ?string $refType = null, ?int $refId = null): void
+    {
+        $mal = DB::en('SELECT * FROM notification_templates WHERE navn = :n AND aktiv = 1', ['n' => $malNavn]);
+        if ($mal === null) {
+            logg_feil("Varselmal «{$malNavn}» finnes ikke eller er slått av");
+            return;
+        }
+
+        $emne = self::flett((string) ($mal['emne'] ?? ''), $felter);
+        $tekst = self::flett((string) $mal['tekst'], $felter);
+        $kanal = (string) $mal['kanal'];
+
+        if ($kanal === 'epost' || $kanal === 'epost_sms') {
+            if (!empty($mottaker['epost'])) {
+                self::iKo('epost', (string) $mottaker['epost'], $emne, $tekst, $malNavn, $refType, $refId);
+            }
+        }
+        if ($kanal === 'sms' || $kanal === 'epost_sms') {
+            if (!empty($mottaker['telefon'])) {
+                $tlf = normaliser_telefon((string) $mottaker['telefon']);
+                if ($tlf !== '') {
+                    self::iKo('sms', $tlf, null, self::tilSmsTekst($tekst), $malNavn, $refType, $refId);
+                }
+            }
+        }
+    }
+
+    /** @param array<string,string> $felter */
+    public static function flett(string $tekst, array $felter): string
+    {
+        foreach ($felter as $nokkel => $verdi) {
+            $tekst = str_replace('{' . $nokkel . '}', (string) $verdi, $tekst);
+        }
+        // Plassholdere vi ikke har verdi for fjernes, så kunden slipper å lese «{navn}».
+        return preg_replace('/\{[a-zA-Z_][a-zA-Z0-9_]*\}/', '', $tekst) ?? $tekst;
+    }
+
+    /** SMS tåler ikke HTML, og lange meldinger koster flere segmenter. */
+    private static function tilSmsTekst(string $tekst): string
+    {
+        $ren = trim(html_entity_decode(strip_tags($tekst), ENT_QUOTES, 'UTF-8'));
+        $ren = preg_replace("/\n{3,}/", "\n\n", $ren) ?? $ren;
+        return mb_substr($ren, 0, 900);
+    }
+
+    private static function iKo(
+        string $kanal,
+        string $mottaker,
+        ?string $emne,
+        string $tekst,
+        ?string $mal = null,
+        ?string $refType = null,
+        ?int $refId = null
+    ): int {
+        return DB::settInn('notifications', [
+            'mal'      => $mal,
+            'kanal'    => $kanal,
+            'mottaker' => mb_substr($mottaker, 0, 191),
+            'emne'     => $emne === null ? null : mb_substr($emne, 0, 191),
+            'tekst'    => $tekst,
+            'ref_type' => $refType,
+            'ref_id'   => $refId,
+        ]);
+    }
+}
+
+/**
+ * Selve sendingen. Kalles kun fra cron.
+ *
+ * E-post går via SMTP hos Domene.no, der SPF og DKIM for lissom.no allerede er
+ * satt opp riktig siden e-posten hører hjemme hos samme leverandør. Vil du
+ * senere bytte til Resend eller Brevo, er det denne klassen som endres — resten
+ * av koden merker ingenting.
+ */
+final class Utsending
+{
+    /** Tømmer køen. Returnerer [sendt, feilet]. */
+    public static function tomKo(int $maks = 50): array
+    {
+        $rader = DB::alle(
+            "SELECT * FROM notifications
+              WHERE status = 'ko'
+                AND send_etter <= UTC_TIMESTAMP()
+                AND forsok < 5
+              ORDER BY id
+              LIMIT {$maks}"
+        );
+
+        $sendt = 0;
+        $feilet = 0;
+
+        foreach ($rader as $n) {
+            try {
+                $ok = $n['kanal'] === 'sms'
+                    ? self::sendSms((string) $n['mottaker'], (string) $n['tekst'])
+                    : self::sendEpost((string) $n['mottaker'], (string) ($n['emne'] ?? ''), (string) $n['tekst']);
+
+                if ($ok) {
+                    DB::oppdater('notifications', [
+                        'status'   => 'sendt',
+                        'sendt_at' => gmdate('Y-m-d H:i:s'),
+                        'forsok'   => (int) $n['forsok'] + 1,
+                    ], ['id' => $n['id']]);
+                    $sendt++;
+                } else {
+                    self::merkFeilet($n, 'Leverandøren svarte med feil');
+                    $feilet++;
+                }
+            } catch (Throwable $e) {
+                self::merkFeilet($n, $e->getMessage());
+                $feilet++;
+            }
+
+            // Delte webhotell har sendegrense per time. Litt pust mellom hver.
+            usleep(200_000);
+        }
+
+        return [$sendt, $feilet];
+    }
+
+    private static function merkFeilet(array $n, string $grunn): void
+    {
+        $forsok = (int) $n['forsok'] + 1;
+        DB::oppdater('notifications', [
+            // Under fem forsøk: legg tilbake i køen med økende ventetid.
+            'status'      => $forsok >= 5 ? 'feilet' : 'ko',
+            'forsok'      => $forsok,
+            'feilmelding' => mb_substr($grunn, 0, 255),
+            'send_etter'  => gmdate('Y-m-d H:i:s', time() + (60 * (2 ** $forsok))),
+        ], ['id' => $n['id']]);
+        logg_feil('Varsel feilet', new RuntimeException($grunn . ' (varsel ' . $n['id'] . ')'));
+    }
+
+    private static function sendEpost(string $til, string $emne, string $tekst): bool
+    {
+        $fra     = Config::hent('epost_fra', 'post@lissom.no');
+        $fraNavn = Config::hent('epost_fra_navn', 'Lissom Keramikk');
+        $svarTil = Config::hent('epost_svar_til', $fra);
+
+        $headere = [
+            'From'                      => sprintf('=?UTF-8?B?%s?= <%s>', base64_encode((string) $fraNavn), $fra),
+            'Reply-To'                  => (string) $svarTil,
+            'MIME-Version'              => '1.0',
+            'Content-Type'              => 'text/plain; charset=UTF-8',
+            'Content-Transfer-Encoding' => '8bit',
+            'X-Mailer'                  => 'lissom.no',
+        ];
+
+        $emneKodet = '=?UTF-8?B?' . base64_encode($emne) . '?=';
+        $kropp = str_replace("\r\n", "\n", $tekst);
+
+        return mail($til, $emneKodet, $kropp, $headere, '-f' . $fra);
+    }
+
+    /**
+     * SMS via Sveve. Norsk leverandør, ingen månedsavgift, betaling per melding.
+     * Avsender vises som «Lissom» i stedet for et nummer.
+     */
+    private static function sendSms(string $til, string $tekst): bool
+    {
+        $bruker = (string) Config::hent('sveve_bruker', '');
+        $passord = (string) Config::hent('sveve_passord', '');
+
+        if ($bruker === '' || $passord === '') {
+            logg('SMS ikke sendt — Sveve-nøkler mangler i secrets.php', ['til' => $til]);
+            return false;
+        }
+
+        $svar = http_post_form('https://sveve.no/SMS/SendMessage', [
+            'user'  => $bruker,
+            'passwd'=> $passord,
+            'to'    => $til,
+            'msg'   => $tekst,
+            'from'  => (string) Config::hent('sms_avsender', 'Lissom'),
+            'f'     => 'json',
+        ]);
+
+        if ($svar['status'] !== 200) {
+            return false;
+        }
+        $d = json_decode($svar['kropp'], true);
+        $ok = (int) ($d['response']['msgOkCount'] ?? 0) > 0;
+        if (!$ok) {
+            logg_feil('Sveve avviste SMS: ' . $svar['kropp']);
+        }
+        return $ok;
+    }
+}

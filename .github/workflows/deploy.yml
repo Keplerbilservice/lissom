@@ -1,0 +1,79 @@
+name: Publiser til lissom.no
+
+# Hver push til main oppdaterer nettsiden automatisk. Du fortsetter altså å
+# laste opp filer på github.com akkurat som før — resten skjer av seg selv.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: publiser
+  cancel-in-progress: false
+
+jobs:
+  publiser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sjekk PHP-syntaks før noe legges ut
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq php-cli
+          find api app bin -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      # 1) Nettsiden: alt som skal være offentlig tilgjengelig.
+      - name: Legg ut nettsiden
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_BRUKER }}
+          password: ${{ secrets.FTP_PASSORD }}
+          protocol: ftps
+          local-dir: ./
+          server-dir: public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            app/**
+            bin/**
+            db/**
+            docs/**
+            .github/**
+            *.md
+            **/.DS_Store
+
+      # 2) Koden som IKKE skal være offentlig. Legges utenfor public_html, der
+      #    ingen kan laste den ned ved å gjette adressen.
+      - name: Legg ut backend-koden
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_BRUKER }}
+          password: ${{ secrets.FTP_PASSORD }}
+          protocol: ftps
+          local-dir: ./app/
+          server-dir: lissom-app/app/
+          exclude: |
+            **/secrets.php
+            **/.DS_Store
+
+      - name: Legg ut cron-skript og migrasjoner
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_BRUKER }}
+          password: ${{ secrets.FTP_PASSORD }}
+          protocol: ftps
+          local-dir: ./bin/
+          server-dir: lissom-app/bin/
+
+      - name: Legg ut databasemigrasjoner
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_BRUKER }}
+          password: ${{ secrets.FTP_PASSORD }}
+          protocol: ftps
+          local-dir: ./db/migrations/
+          server-dir: lissom-app/migrations/

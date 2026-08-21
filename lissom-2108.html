@@ -110,7 +110,7 @@
     .lx-bedriftmobil { display: none !important; }
     @media (max-width: 900px) { .lx-omoss-h1 { font-size: clamp(22px, 6.8vw, 44px) !important; } }
     @media (max-width: 560px) {
-      .lx-kurvpopup { padding: var(--space-5) !important; }
+      .lx-kurvpopup { padding: var(--space-4) !important; }
       .lx-kurvrad { flex-wrap: wrap !important; row-gap: 8px !important; }
       .lx-kurvnavn { flex: 1 1 100% !important; }
       .lx-kurvsum { width: auto !important; margin-left: auto !important; }
@@ -4394,8 +4394,8 @@
 </div>
 
 <sc-if value="{{ kurvApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(560px, 94vw);">
-    <div class="lx-kurvpopup" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: 0 18px 50px rgba(46,16,2,.35);">
+  <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(300px, 92vw);">
+    <div class="lx-kurvpopup" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: 0 18px 50px rgba(46,16,2,.35);">
       <sc-if value="{{ kurvTellerVises }}" hint-placeholder-val="{{ false }}">
         <div style="text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3);">Lukkes automatisk om {{ kurvNedtelling }} sekunder — klikk for å beholde åpen</div>
       </sc-if>
@@ -5201,9 +5201,36 @@ class Component extends DCLogic {
   go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s }); window.scrollTo(0, 0); }; }
 
   medBooking(liste) {
-    return liste.map(k => Object.assign({}, k, {
-      book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
-    }));
+    return liste.map(k0 => {
+      const k = this.medServerdata(k0);
+      return Object.assign({}, k, {
+        book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
+      });
+    });
+  }
+
+  // Pris og ledige plasser fra databasen.
+  //
+  // Listene i denne fila er designdata, og de bestemmer fortsatt bilde og
+  // brodtekst. Men prisen skal aldri komme derfra: serveren slaar opp belopet
+  // ved betaling, og et kort som viser 690 mens Vipps ber om noe annet er en
+  // feil kunden merker.
+  medServerdata(k) {
+    const tittel = k.title || k.tittel || '';
+    const kat = (this.state.katalog || []).find(x => x.tittel === tittel);
+    if (!kat) return k;
+
+    const datoer = kat.datoer || [];
+    const ledige = datoer.reduce((n, d) => n + d.ledige, 0);
+
+    return Object.assign({}, k, {
+      price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
+      status: datoer.length === 0 ? 'Ingen datoer ennå'
+            : ledige <= 0 ? 'Fullbooket'
+            : ledige + (ledige === 1 ? ' plass igjen' : ' plasser igjen'),
+      date: (datoer[0] || {}).dato || k.date,
+      om: kat.om || k.om,
+    });
   }
 
   ukeData(nr) {
@@ -6072,9 +6099,16 @@ class Component extends DCLogic {
   hentAdmin() {
     if (!this.erPublisert() || this._adminHentes) return;
     this._adminHentes = true;
-    fetch('/api/admin/oversikt.php', { credentials: 'same-origin' })
-      .then(r => r.json())
-      .then(d => { if (d && d.nyeste) this.setState({ adminData: d }); })
+    Promise.all([
+      fetch('/api/admin/oversikt.php', { credentials: 'same-origin' }).then(r => r.json()),
+      fetch('/api/admin/pameldte.php', { credentials: 'same-origin' }).then(r => r.json()),
+    ])
+      .then(([oversikt, pameldte]) => {
+        const ny = {};
+        if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
+        if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
+        if (Object.keys(ny).length) this.setState(ny);
+      })
       .catch(() => {})
       .then(() => { this._adminHentes = false; });
   }
@@ -6546,7 +6580,7 @@ class Component extends DCLogic {
       })),
       kursAlle: this.medBooking(this.filtrerKurs(this._kursListe = [
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Dreiing', om: 'En kveld der du dreier boller i flere størrelser. Vi går gjennom oppbygging av veggen og hvordan du får en jevn kant. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
+        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
         { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
         { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
@@ -8194,7 +8228,11 @@ class Component extends DCLogic {
       pameldtFilterNavn: this.state.pameldtFilter || 'Alle',
       nullstillFilter: () => this.setState({ pameldtFilter: 'Alle' }),
       harPameldtFilter: (this.state.pameldtFilter || 'Alle') !== 'Alle',
-      pameldte: this.filtrerPameldte(PAMELDTE).map(p => Object.assign({}, p, {
+      // Ekte paameldte naar serveren har svart. PAMELDTE er designdata og
+      // brukes bare i forhandsvisningen, der det ikke finnes noen server.
+      pameldte: this.filtrerPameldte(
+        this.state.adminDeltakere || (this.erPublisert() ? [] : PAMELDTE)
+      ).map(p => Object.assign({}, p, {
         velg: () => this.setState({
           detalj: {
             tittel: p.navn,

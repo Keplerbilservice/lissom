@@ -5431,6 +5431,13 @@ class Component extends DCLogic {
   prisAv(navn) {
     const gk = navn.match(/^Gavekort kr\. (\d[\d ]*),-$/);
     if (gk) return parseInt(gk[1].replace(/ /g, ''), 10);
+
+    // Serverens pris gaar foran designdataene. Summen kunden ser i
+    // handlekurven maa vaere den serveren regner ut ved betaling — ellers
+    // staar det ett belop paa skjermen og et annet i Vipps.
+    const vare = (this.state.butikkvarer || []).find(v => v.tittel === navn);
+    if (vare) return Math.round(vare.prisOre / 100);
+
     const p = this.priser();
     if (p[navn] != null) return p[navn];
     const k = Object.keys(p).find(x => navn.indexOf(x) === 0);
@@ -5472,16 +5479,11 @@ class Component extends DCLogic {
   }
 
   betalKurv(linjer) {
-    // Butikkens kasse er ikke koblet til betaling ennaa. Paa den publiserte
-    // siden maa den derfor ikke late som: den tomte handlekurven, sa
-    // «Betalingen er gjennomfort» og diktet opp et ordrenummer — kunden gikk
-    // derfra i den tro at varene var kjopt. En falsk kvittering er verre enn
-    // ingen kasse.
+    // Paa den publiserte siden gaar kjopet mot serveren. Simuleringen under
+    // staar igjen for designverktoyets forhandsvisning, der det ikke finnes
+    // noen server aa bestille fra.
     if (this.erPublisert()) {
-      this.setState({
-        kvittering: 'Nettbutikken aapner snart',
-        kvitteringDetalj: 'Vi tar ikke imot bestillinger her ennaa. Ta kontakt paa post@lissom.no eller kom innom verkstedet, saa ordner vi det.',
-      });
+      this.kjopKurv();
       return;
     }
 
@@ -5711,6 +5713,69 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // Varene i butikken. Vi trenger dem for aa oversette et varenavn i
+  // handlekurven til den id-en serveren kjenner igjen — handlekurven i denne
+  // fila er bygget rundt navn, og navn er ikke noe aa handle paa.
+  hentButikk() {
+    if (!this.erPublisert()) return;
+    fetch('/api/butikk.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => { if (d && d.varer) this.setState({ butikkvarer: d.varer }); })
+      .catch(() => {});
+  }
+
+  // Ekte butikkjop: oppretter ordren og sender kunden til Vipps.
+  kjopKurv() {
+    const kurv = this.state.kurv || {};
+    const varer = this.state.butikkvarer || [];
+
+    const linjer = [];
+    const ukjente = [];
+    Object.keys(kurv).forEach(navn => {
+      const v = varer.find(x => x.tittel === navn);
+      if (v) linjer.push({ id: v.id, antall: kurv[navn] });
+      else ukjente.push(navn);
+    });
+
+    if (ukjente.length) {
+      this.setState({
+        kvittering: 'Kan ikke bestille alt',
+        kvitteringDetalj: ukjente.join(', ') + ' finnes ikke i butikken lenger. Ta dem ut av handlekurven, eller last siden på nytt.',
+      });
+      return;
+    }
+    if (!linjer.length) return;
+
+    // Kassen i designet har ingen felter for navn, e-post og telefon.
+    // Vipps-innloggingen gir oss dem, og de blir riktige uten skrivefeil.
+    if (!this.state.innlogget) {
+      window.location.href = '/api/vipps-login.php?retur=/kasse';
+      return;
+    }
+    if (this._kjopPagaar) return;
+    this._kjopPagaar = true;
+
+    fetch('/api/ordre.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ linjer: linjer }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        this._kjopPagaar = false;
+        if (!d || !d.ok) {
+          this.setState({ kvittering: 'Kunne ikke bestille', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+          return;
+        }
+        window.location.href = d.url; // her overtar Vipps
+      })
+      .catch(() => {
+        this._kjopPagaar = false;
+        this.setState({ kvittering: 'Kunne ikke bestille', kvitteringDetalj: 'Fikk ikke kontakt med serveren. Prøv igjen.' });
+      });
+  }
+
   // Tekster eieren har endret i admin. Aapent endepunkt: dette er innholdet
   // paa nettsiden, og det skal alle se — ikke bare den som er logget inn.
   hentInnhold() {
@@ -5812,6 +5877,7 @@ class Component extends DCLogic {
     this.hentInnlogget(kommerFraVipps);
     this.hentKatalog();
     this.hentInnhold();
+    this.hentButikk();
     this.visBetalingsutfall();
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));

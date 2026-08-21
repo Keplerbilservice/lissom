@@ -181,18 +181,27 @@ final class Booking
 
             DB::oppdater('payments', ['status' => 'betalt'], ['id' => $betaling['id']]);
 
+            // En betaling hoerer enten til en booking eller en butikkordre.
+            // Begge kommer inn her, fra webhook og fra returen.
             $booking = DB::en('SELECT id FROM bookings WHERE payment_id = :p', ['p' => $betaling['id']]);
-            if ($booking === null) {
-                return false;
+            if ($booking !== null) {
+                DB::oppdater('bookings', [
+                    'status'        => 'betalt',
+                    'reservert_til' => null,
+                ], ['id' => $booking['id']]);
+
+                self::sendBekreftelse((int) $booking['id']);
+                return true;
             }
 
-            DB::oppdater('bookings', [
-                'status'        => 'betalt',
-                'reservert_til' => null,
-            ], ['id' => $booking['id']]);
+            $ordre = DB::en('SELECT id FROM orders WHERE payment_id = :p', ['p' => $betaling['id']]);
+            if ($ordre !== null) {
+                DB::oppdater('orders', ['status' => 'betalt'], ['id' => $ordre['id']]);
+                self::sendOrdrebekreftelse((int) $ordre['id']);
+                return true;
+            }
 
-            self::sendBekreftelse((int) $booking['id']);
-            return true;
+            return false;
         });
     }
 
@@ -221,6 +230,41 @@ final class Booking
             'ordre' => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . self::norskDato((string) $b['start_tid']) : ''),
             'belop' => self::kroner((int) $b['belop_ore']),
         ], 'booking', $bookingId);
+    }
+
+    /** Kvittering for butikkjop, med beskjed om henting. */
+    public static function sendOrdrebekreftelse(int $ordreId): void
+    {
+        $o = DB::en('SELECT * FROM orders WHERE id = :i', ['i' => $ordreId]);
+        if ($o === null) {
+            return;
+        }
+
+        $linjer = DB::alle(
+            'SELECT tittel, antall, pris_ore FROM order_lines WHERE order_id = :o ORDER BY id',
+            ['o' => $ordreId]
+        );
+
+        $liste = [];
+        foreach ($linjer as $l) {
+            $liste[] = sprintf('%d × %s — %s', $l['antall'], $l['tittel'],
+                self::kroner((int) $l['pris_ore'] * (int) $l['antall']));
+        }
+
+        Varsel::epost(
+            (string) $o['kunde_epost'],
+            'Takk for bestillingen hos Lissom!',
+            "Hei " . $o['kunde_navn'] . "!\n\n"
+            . "Vi har mottatt bestillingen din ({$o['ordrenr']}).\n\n"
+            . implode("\n", $liste) . "\n\n"
+            . 'Til sammen: ' . self::kroner((int) $o['sum_ore']) . "\n\n"
+            . "Varene er klare til henting i verkstedet innen to virkedager. "
+            . "Vi gir beskjed naar de staar klare.\n\n"
+            . "Nordre Lokkevei 15, 3120 Notteroy\n\n"
+            . 'Hilsen Lissom Keramikk',
+            'order',
+            $ordreId
+        );
     }
 
     public static function kroner(int $ore): string

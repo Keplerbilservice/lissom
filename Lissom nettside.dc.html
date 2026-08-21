@@ -1358,7 +1358,7 @@
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Husk meg" checked="{{ sant }}" hint-size="auto,24px"></x-import>
               <a href="#">Glemt passord?</a>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ goMinside }}" hint-size="100%,52px">Logg inn</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ loggInnEpost }}" hint-size="100%,52px">Logg inn</x-import>
           </div>
 
           <div style="height: 1px; background: var(--border-subtle); margin: var(--space-8) 0;"></div>
@@ -5522,7 +5522,7 @@ class Component extends DCLogic {
         const m = document.cookie.match(/lissom_bruker=([^;]+)/);
         if (m) vn = (JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))).navn || '');
       } catch (e) {}
-      this.setState({ side: 'minside', vippsNavn: vn });
+      this.setState({ side: 'minside', vippsNavn: vn, innlogget: true });
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     this._karusell = setInterval(() => {
@@ -7924,7 +7924,7 @@ class Component extends DCLogic {
         { navn: 'Personvern', velg: this.go('personvern') },
         { navn: 'Vilkår og angrerett', velg: this.go('vilkar') },
       ],
-      goMinSideFooter: this.go('login'),
+      goMinSideFooter: () => { this.setState({ side: this.state.innlogget ? 'minside' : 'login' }); window.scrollTo(0, 0); },
       goAdminFooter: this.go('adminoversikt'),
       tjue: 20,
       fjorten: 14,
@@ -8786,7 +8786,11 @@ class Component extends DCLogic {
       erMobil: side === 'mobil',
       goMedlemskap: this.go('medlemskap'),
       goButikk: this.go('butikk'),
-      goMinside: this.go('minside'),
+      goMinside: () => {
+        this.setState({ side: this.state.innlogget ? 'minside' : 'login' });
+        window.scrollTo(0, 0);
+      },
+      loggInnEpost: () => { this.setState({ innlogget: true, side: 'minside' }); window.scrollTo(0, 0); },
       vippsSteg: this.state.vippsSteg || null,
       vippsStart: () => {
         // På den publiserte siden: ekte Vipps Login via backend. I forhåndsvisning: simulert flyt.
@@ -8798,7 +8802,7 @@ class Component extends DCLogic {
         clearTimeout(this._vippsTimer);
         this._vippsTimer = setTimeout(() => this.setState({ vippsSteg: 'godkjent' }), 2200);
         clearTimeout(this._vippsTimer2);
-        this._vippsTimer2 = setTimeout(() => this.setState({ vippsSteg: null, side: 'minside' }), 3400);
+        this._vippsTimer2 = setTimeout(() => this.setState({ vippsSteg: null, innlogget: true, side: 'minside' }), 3400);
       },
       vippsAvbryt: () => { clearTimeout(this._vippsTimer); clearTimeout(this._vippsTimer2); this.setState({ vippsSteg: null }); },
       vippsVenter: this.state.vippsSteg === 'venter',

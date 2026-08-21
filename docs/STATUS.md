@@ -29,6 +29,7 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Butikk med bestilling | Ekte, server regner ut summen |
 | Internbutikk for medlemmer | Ekte, nektet for gjester |
 | Gavekort | Ekte, kode først ved betaling |
+| Beskjed til deltakere og medlemmer | Ekte, e-post og SMS |
 | Ekte adresser (/kurs, /medlemskap) | Virker |
 | Favicon | Hjertemerket |
 | Sesjon utløper etter 3 timer | Virker |
@@ -128,7 +129,11 @@ setter den tilbake til 690 og avlyser testkurset — flytt den til
 standard. Det finnes ingen måte å laste opp bilde i admin ennå — si fra om det
 skal bygges.
 
-**9. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
+**9. Beskjed-knappene i admin** sender nå på ordentlig, men skjemaet der man
+skriver meldingen er ikke koblet til ennå — endepunktet er klart og testet, men
+teksten fra dialogboksen når ikke fram. Det står igjen.
+
+**10. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
 ikke — trafikk på nettsiden gjør den jobben. `paaminnelser` og `vedlikehold`
 bør stå.
 

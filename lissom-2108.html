@@ -5216,6 +5216,36 @@ class Component extends DCLogic {
     });
   }
 
+  // Kurs som bare finnes i databasen.
+  //
+  // Lista i denne fila er designdata. Uten dette ville et kurs opprettet i
+  // admin havnet i katalogen, men aldri dukket opp paa nettsiden — og
+  // kursadministrasjonen vaert en blindvei.
+  serverKurs(designListe) {
+    const kjente = (designListe || []).map(k => (k.title || k.tittel || '').toLowerCase());
+
+    return (this.state.katalog || [])
+      .filter(k => kjente.indexOf(k.tittel.toLowerCase()) === -1)
+      .filter(k => (k.datoer || []).length > 0)
+      .map(k => {
+        const ledige = k.datoer.reduce((n, d) => n + d.ledige, 0);
+        return {
+          level: k.tema || (k.type === 'event' ? 'Event' : k.type === 'dropin' ? 'Drop-in' : 'Kurs'),
+          tema: k.tema || 'Kurs',
+          title: k.tittel,
+          date: k.datoer[0].dato,
+          duration: '',
+          price: k.prisOre === 0 ? 'Gratis' : k.pris,
+          status: ledige <= 0 ? 'Fullbooket'
+                : ledige + (ledige === 1 ? ' plass igjen' : ' plasser igjen'),
+          // Uten eget bilde faar kurset verkstedbildet framfor et tomt felt.
+          image: FOTO + 'verkstedet.jpg',
+          om: k.om || '',
+          punkter: [],
+        };
+      });
+  }
+
   // Pris og ledige plasser fra databasen.
   //
   // Listene i denne fila er designdata, og de bestemmer fortsatt bilde og
@@ -6771,14 +6801,14 @@ class Component extends DCLogic {
           this.setState({ kursFilter: navn });
         },
       })),
-      kursAlle: this.medBooking(this.filtrerKurs(this._kursListe = [
+      kursAlle: this.medBooking(this.filtrerKurs((this._kursListe = [
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
         { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
         { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
         { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
-      ].concat(this.state.nyeKurs || []))),
+      ]).concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe)))),
       bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
       ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
       ktApen: !!this.state.ktApen,

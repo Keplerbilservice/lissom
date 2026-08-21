@@ -8,6 +8,60 @@ function sjekk(string $hva, bool $stemmer, string $detalj = ''): void {
     else { $feil[] = $hva . ($detalj ? " — $detalj" : ''); echo "  ✗ $hva" . ($detalj ? " — $detalj" : '') . "\n"; }
 }
 
+/**
+ * Rydd bort spor fra forrige kjoring.
+ *
+ * Uten dette gikk testen bare én gang: andre gjennomkjoring stoppet paa at
+ * testmedlemmet allerede fantes. En test man ikke kan kjore om igjen, er ikke
+ * en test.
+ *
+ * Rekkefolgen folger fremmednoklene — det som peker paa noe, maa vekk forst.
+ */
+function nullstill(): void
+{
+    $medlemmer = array_column(
+        DB::alle("SELECT id FROM members WHERE vipps_sub LIKE 'test-%'"),
+        'id'
+    );
+
+    DB::kjor("DELETE FROM notifications WHERE mottaker LIKE '%@example.com'");
+    DB::kjor("DELETE FROM waitlist WHERE epost LIKE '%@example.com'");
+
+    $bookinger = array_column(DB::alle(
+        "SELECT b.id FROM bookings b
+      LEFT JOIN courses c ON c.id = b.course_id
+          WHERE c.slug = 'testliten'
+             OR b.gjest_epost LIKE '%@example.com'
+             OR b.gjest_navn IN ('Test', 'Utlopt', 'Forste', 'Andre')"
+        . ($medlemmer ? ' OR b.member_id IN (' . implode(',', $medlemmer) . ')' : '')
+    ), 'id');
+
+    $betalinger = $bookinger
+        ? array_column(DB::alle('SELECT payment_id FROM bookings WHERE id IN ('
+            . implode(',', $bookinger) . ') AND payment_id IS NOT NULL'), 'payment_id')
+        : [];
+
+    if ($bookinger) {
+        DB::kjor('DELETE FROM bookings WHERE id IN (' . implode(',', $bookinger) . ')');
+    }
+    if ($betalinger) {
+        DB::kjor('DELETE FROM payments WHERE id IN (' . implode(',', $betalinger) . ')');
+    }
+    if ($medlemmer) {
+        DB::kjor('DELETE FROM payments WHERE member_id IN (' . implode(',', $medlemmer) . ')');
+    }
+
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug = 'testliten')");
+    DB::kjor("DELETE FROM courses WHERE slug = 'testliten'");
+    DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'proev:%'");
+
+    if ($medlemmer) {
+        DB::kjor('DELETE FROM members WHERE id IN (' . implode(',', $medlemmer) . ')');
+    }
+}
+
+nullstill();
+
 echo "\n== Katalog ==\n";
 $kurs = DB::alle("SELECT * FROM courses WHERE status='publisert'");
 sjekk('kurs er publisert', count($kurs) >= 9, count($kurs) . ' stk');

@@ -52,6 +52,7 @@ require APP_DIR . '/lib/auth.php';
 require APP_DIR . '/lib/ratelimit.php';
 require APP_DIR . '/lib/varsler.php';
 require APP_DIR . '/lib/vipps.php';
+require APP_DIR . '/lib/booking.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i
 // feilloggen på webhotellet i stedet.

@@ -34,7 +34,9 @@
     /* Kurskort-bunn: mindre pris og lavere rad, så pris + knapp balanserer i kortet */
     div[style*="margin-top: auto"][style*="height: 44px"] { height: 36px !important; }
     div[style*="margin-top: auto"][style*="height: 44px"] > span[style*="white-space: nowrap"] { font-size: var(--text-base) !important; font-weight: 700 !important; }
-    div[role="status"] { white-space: nowrap; }
+    /* Kvitteringsboksen: teksten maa faa bryte. Med nowrap stakk lange
+       meldinger ut av boksen i stedet for aa gaa over flere linjer. */
+    div[role="status"] { white-space: normal; max-width: min(92vw, 420px); }
     /* Kapasitetsbadge: diskret mini-pill oppe til høyre, dekker ikke motivet */
     span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] { font-size: 10px !important; padding: 3px 9px !important; top: 10px !important; right: 10px !important; left: auto !important; letter-spacing: 0.05em !important; background: rgba(251,246,238,.94) !important; color: var(--lissom-brown) !important; box-shadow: 0 1px 5px rgba(46,16,2,.2) !important; }
     span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] > span { display: none !important; }
@@ -4748,7 +4750,7 @@
 
 <sc-if value="{{ harKvittering }}" hint-placeholder-val="{{ true }}">
   <div style="position: fixed; left: 50%; transform: translateX(-50%); top: 110px; z-index: 500; width: min(400px, calc(100vw - 32px));">
-    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="success" title="{{ kvittering }}" description="Lagret. E-postkvittering kobles til ved lansering — du finner det under Min side." on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
+    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="success" title="{{ kvittering }}" description="{{ kvitteringDetalj }}" on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
   </div>
 </sc-if>
 
@@ -5508,19 +5510,88 @@ class Component extends DCLogic {
     return this.state.oppskrifter || [];
   }
 
+  // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
+  // I forhandsvisning finnes ingen server, og simuleringen maa staa igjen.
+  erPublisert() {
+    const h = window.location.hostname;
+    return h.endsWith('lissom.no') || h.endsWith('github.io');
+  }
+
+  // Hvem er innlogget? Sesjonscookien er HttpOnly og utilgjengelig for
+  // JavaScript med vilje, saa vi spor serveren i stedet for aa lese den selv.
+  // Den forrige losningen leste en cookie hvem som helst kunne skrive.
+  hentInnlogget(kommerFraVipps) {
+    if (!this.erPublisert()) return;
+    fetch('/api/meg.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => {
+        const inne = !!d.innlogget;
+        this.setState({
+          innlogget: inne,
+          erAdminBruker: !!d.erAdmin,
+          vippsNavn: (d.medlem && d.medlem.navn) || '',
+          side: kommerFraVipps ? (inne ? 'minside' : 'login') : this.state.side,
+        });
+      })
+      .catch(() => {});
+  }
+
+  // Kurs, priser og ledige plasser kommer fra serveren. Listene i denne fila
+  // er designdata, og de vet ingenting om hvor mange plasser som faktisk er
+  // igjen.
+  hentKatalog() {
+    if (!this.erPublisert()) return;
+    fetch('/api/kurs.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => { if (d && d.kurs) this.setState({ katalog: d.kurs }); })
+      .catch(() => {});
+  }
+
+  // Datoene for kurset som bookes, hentet fra serveren. Hver dato baerer med
+  // seg hvilken oekt den er, slik at bookingen ikke maa gjette ut fra teksten.
+  ekteDatoer() {
+    const k = this.state.valgtKurs || {};
+    const tittel = k.title || k.tittel || '';
+    const kat = (this.state.katalog || []).find(x => x.tittel === tittel);
+    if (!kat) return null;
+    return kat.datoer.map((d, i) => ({
+      dato: d.dato,
+      oktId: d.oktId,
+      tid: '',
+      plasser: String(d.ledige),
+      full: d.ledige <= 0,
+      valgt: i === 0,
+    }));
+  }
+
+  // Retur fra Vipps: #betaling=ok / avbrutt / venter
+  visBetalingsutfall() {
+    const m = String(window.location.hash || '').match(/betaling=([a-z]+)/);
+    if (!m) return;
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    const tekst = {
+      ok: 'Betalingen er gjennomfort — kvittering kommer paa e-post',
+      avbrutt: 'Betalingen ble avbrutt. Plassen er ikke reservert.',
+      venter: 'Vi venter paa svar fra Vipps. Du faar kvittering saa snart betalingen er bekreftet.',
+      ukjent: 'Fant ikke betalingen. Ta kontakt hvis belopet er trukket.',
+    }[m[1]] || '';
+    const detalj = {
+      ok: 'Kvitteringen sendes til e-postadressen din. Plassen din er registrert.',
+      avbrutt: 'Ingen penger er trukket. Du kan prove igjen naar du vil.',
+      venter: 'Du trenger ikke gjore noe. Vi gir beskjed saa snart Vipps svarer.',
+      ukjent: 'Ta kontakt paa post@lissom.no, saa finner vi ut av det.',
+    }[m[1]] || '';
+    if (tekst) this.setState({ kvittering: tekst, kvitteringDetalj: detalj });
+  }
+
   componentDidMount() {
-    // Retur fra Vipps-innlogging (backend redirecter til #minside med profil-cookie)
-    if (window.location.hash === '#minside') {
-      const m = document.cookie.match(/lissom_bruker=([^;]+)/);
-      if (m) {
-        let vn = '';
-        try { vn = (JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))).navn || ''); } catch (e) {}
-        this.setState({ side: 'minside', vippsNavn: vn, innlogget: true });
-      } else {
-        this.setState({ side: 'login' });
-      }
+    const kommerFraVipps = window.location.hash === '#minside';
+    if (kommerFraVipps) {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
+    this.hentInnlogget(kommerFraVipps);
+    this.hentKatalog();
+    this.visBetalingsutfall();
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
     }, 1000);
@@ -5898,6 +5969,49 @@ class Component extends DCLogic {
         color: navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-200)',
       },
     }));
+  }
+
+  // Ekte booking: reserverer plassen og sender brukeren til Vipps.
+  //
+  // Er du ikke innlogget, sendes du dit forst. Bookingskjemaet i designet har
+  // ingen felter for navn, e-post og telefon — Vipps Login gir oss dem, og de
+  // blir riktige uten at noen maa skrive dem inn.
+  bookOgBetal() {
+    const oktId = this.state.bOktId;
+    if (!oktId) {
+      this.setState({ kvittering: 'Velg en dato forst.' });
+      return;
+    }
+    if (!this.state.innlogget) {
+      window.location.href = '/api/vipps-login.php?retur=/';
+      return;
+    }
+    if (this.state.bookJobber) return;
+
+    this.setState({ bookJobber: true });
+
+    fetch('/api/book.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oktId: oktId, antall: 1 }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d || !d.ok) {
+          this.setState({ bookJobber: false, kvittering: (d && d.feil) || 'Noe gikk galt. Prov igjen.' });
+          return;
+        }
+        if (d.betaling) {
+          window.location.href = d.url; // her overtar Vipps
+          return;
+        }
+        // Gratis medlemsarrangement — ingen betaling.
+        this.setState({ bookJobber: false, bookKvittert: true, bookOrdre: false });
+      })
+      .catch(() => {
+        this.setState({ bookJobber: false, kvittering: 'Fikk ikke kontakt med serveren. Prov igjen.' });
+      });
   }
 
   renderVals() {
@@ -6675,8 +6789,11 @@ class Component extends DCLogic {
             kvittering: k.price === 'Gratis' ? 'Du er påmeldt' : 'Betalingen er gjennomført',
           }));
           window.scrollTo(0, 0);
-        } else {
+        } else if (!this.erPublisert()) {
+          // Forhandsvisning i designverktoyet: behold simuleringen.
           this.setState({ bookKvittert: true, bookOrdre: false });
+        } else {
+          this.bookOgBetal();
         }
       },
       bookBekreftelse: (() => {
@@ -6918,7 +7035,8 @@ class Component extends DCLogic {
         'Ingen forkunnskaper nødvendig.',
       ]),
       bookingDatoer: (
-        (this.state.valgtKurs && this.state.valgtKurs.datoer)
+        this.ekteDatoer()
+        || (this.state.valgtKurs && this.state.valgtKurs.datoer)
         || (this.state.valgtKurs && this.state.valgtKurs.price === 'Gratis'
           ? [{ dato: this.state.valgtKurs.date, tid: this.state.valgtKurs.duration, plasser: this.state.valgtKurs.status, valgt: true }]
           : this.state.valgtKurs && this.state.valgtKurs.tema === 'Drop-in'
@@ -6933,7 +7051,7 @@ class Component extends DCLogic {
               ].concat((this.state.ndLagtTil || []).filter(r => r.kurs === ((this.state.valgtKurs || {}).title || '')).map(r => ({ dato: r.dato, tid: r.tid, plasser: r.plasser + ' av ' + r.plasser + ' plasser' }))))
             ).map(d => { const valgtNaa = this.state.bDato ? d.dato === this.state.bDato : !!d.valgt; return Object.assign({}, d, {
         valgt: valgtNaa,
-        velg: () => { if (!d.full) this.setState({ bDato: d.dato }); },
+        velg: () => { if (!d.full) this.setState({ bDato: d.dato, bOktId: d.oktId || null }); },
         plasserTekst: d.full ? 'Fullbooket' : ((d.plasser || '').match(/^\d+( av \d+)?/) ? (d.plasser.match(/^\d+( av \d+)?/)[0] + ' ledige') : (d.plasser || 'Ledig')),
         prikk: d.full ? 'var(--clay-400)' : ((parseInt(d.plasser, 10) || 9) <= 3 ? 'var(--terracotta-500)' : 'var(--sage-500)'),
         stil: {
@@ -8786,12 +8904,32 @@ class Component extends DCLogic {
         this.setState({ side: this.state.innlogget ? 'minside' : 'login' });
         window.scrollTo(0, 0);
       },
-      loggInnEpost: () => { this.setState({ innlogget: true, side: 'minside' }); window.scrollTo(0, 0); },
+      loggInnEpost: () => {
+        // Innlogging med e-post og passord finnes ikke. Feltet satte tidligere
+        // bare innlogget = true uten aa sjekke noe som helst — hvem som helst
+        // kunne skrive hva som helst og komme inn paa Min side.
+        if (this.erPublisert()) {
+          this.setState({ loginBeskjed: 'Vi bruker Vipps til innlogging. Trykk «Fortsett med Vipps» over.' });
+          return;
+        }
+        this.setState({ innlogget: true, side: 'minside' });
+        window.scrollTo(0, 0);
+      },
+      loginBeskjed: this.state.loginBeskjed || '',
+      kvitteringDetalj: this.state.kvitteringDetalj || 'Du finner det igjen under Min side.',
+      loggUt: () => {
+        if (!this.erPublisert()) { this.setState({ innlogget: false, side: 'forside' }); return; }
+        fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
+          .then(() => { this.setState({ innlogget: false, erAdminBruker: false, vippsNavn: '', side: 'forside' }); window.scrollTo(0, 0); })
+          .catch(() => {});
+      },
       vippsSteg: this.state.vippsSteg || null,
       vippsStart: () => {
-        // På den publiserte siden: ekte Vipps Login via backend. I forhåndsvisning: simulert flyt.
-        if (window.location.hostname.endsWith('github.io') || window.location.hostname.endsWith('lissom.no')) {
-          window.location.href = 'https://lissom-backend.vercel.app/api/login';
+        // Paa den publiserte siden: ekte Vipps Login mot vaar egen backend.
+        // I designverktoyets forhandsvisning: simulert flyt, siden det ikke
+        // finnes noen server der.
+        if (this.erPublisert()) {
+          window.location.href = '/api/vipps-login.php?retur=/';
           return;
         }
         this.setState({ vippsSteg: 'venter' });

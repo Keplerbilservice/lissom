@@ -30,6 +30,19 @@ AddDefaultCharset UTF-8
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 </IfModule>
 
+# Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
+#
+# Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle
+# sider hatt samme adresse — umulig å dele en lenke til et kurs, og usynlig
+# for søkemotorer. Finnes ikke fila som etterspørres, serveres nettsiden, og
+# den finner selv ut hvilken skjerm adressen peker på.
+#
+# Ekte filer, mapper og /api går uendret gjennom.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteRule ^ /lissom-2108.html [L]
+
 # Skjulte filer og oppsettfiler skal ikke kunne lastes ned.
 <FilesMatch "^\.|(\.(ya?ml|md|sql|json|lock|example\.php))$">
     Require all denied

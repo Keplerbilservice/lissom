@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/mark-heart.png">
+<link rel="mask-icon" href="/favicon.svg" color="#4D1D12">
+<meta name="theme-color" content="#FBF6EE">
 <script src="./support.js"></script>
 </head>
 <body>
@@ -5582,6 +5586,70 @@ class Component extends DCLogic {
     return this.state.oppskrifter || [];
   }
 
+  // Adressekartet: hvilken sti hoerer til hvilken skjerm.
+  //
+  // Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alt
+  // ligget paa samme adresse — ingen kunne dele en lenke til et kurs, og
+  // sokemotorer ville sett én eneste side.
+  static get STIER() {
+    return {
+      '/': 'forside',
+      '/kurs': 'kurs',
+      '/medlemskap': 'medlemskap',
+      '/butikk': 'butikk',
+      '/om-oss': 'omoss',
+      '/kontakt': 'kontakt',
+      '/gavekort': 'gavekortside',
+      '/bedrift': 'bedrift',
+      '/paint-on-pots': 'paintonpots',
+      '/kalender': 'kalender',
+      '/nyttig-info': 'nyttig',
+      '/booking': 'booking',
+      '/kasse': 'kasse',
+      '/logg-inn': 'login',
+      '/min-side': 'minside',
+      '/admin': 'adminoversikt',
+      '/admin/innhold': 'admininnhold',
+      '/admin/kurs': 'admin',
+      '/admin/pameldte': 'adminpameldte',
+      '/admin/medlemmer': 'adminmedlem',
+      '/admin/drop-in': 'admindropin',
+      '/admin/butikk': 'adminbutikk',
+      '/admin/okonomi': 'adminokonomi',
+      '/admin/beskjeder': 'adminbeskjeder',
+      '/admin/oppskrifter': 'adminoppskrifter',
+      '/admin/seo': 'adminseo',
+      '/admin/nyttig': 'adminnyttig',
+      '/admin/mobilvisning': 'adminmobilvis',
+    };
+  }
+
+  stiForSide(s) {
+    const kart = Component.STIER;
+    return Object.keys(kart).find(k => kart[k] === s) || null;
+  }
+
+  // Setter skjermen ut fra adressen i feltet. Kalles ved oppstart og naar
+  // noen bruker tilbakeknappen.
+  sideFraAdresse() {
+    const sti = window.location.pathname.replace(/\/+$/, '') || '/';
+    return Component.STIER[sti] || null;
+  }
+
+  // Skriver adressen naar skjermen har byttet. Gaar gjennom renderVals fordi
+  // skjermen byttes mange steder i denne fila — ikke bare via go().
+  synkAdresse() {
+    if (!this.erPublisert()) return;
+    // Vent til oppstarten har lest adressen. renderVals kjorer for
+    // componentDidMount, og uten dette ville forste tegning skrevet «/» over
+    // en dyplenke som /kurs for vi rakk aa lese den.
+    if (!this._adresseKlar) return;
+    const sti = this.stiForSide(this.state.side);
+    if (!sti) return;
+    if (window.location.pathname.replace(/\/+$/, '') === sti.replace(/\/+$/, '')) return;
+    history.pushState({ side: this.state.side }, '', sti + window.location.search);
+  }
+
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
   // I forhandsvisning finnes ingen server, og simuleringen maa staa igjen.
   erPublisert() {
@@ -5661,6 +5729,17 @@ class Component extends DCLogic {
     if (kommerFraVipps) {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
+    const fraAdresse = this.sideFraAdresse();
+    if (fraAdresse && !kommerFraVipps) {
+      this.setState({ side: fraAdresse });
+    }
+    this._popstate = () => {
+      const s2 = this.sideFraAdresse();
+      if (s2) { this.setState({ side: s2 }); window.scrollTo(0, 0); }
+    };
+    window.addEventListener('popstate', this._popstate);
+    this._adresseKlar = true;
+
     this.hentInnlogget(kommerFraVipps);
     this.hentKatalog();
     this.visBetalingsutfall();
@@ -6147,6 +6226,8 @@ class Component extends DCLogic {
     if (side.indexOf('admin') === 0 && !this.state.adminData) {
       this.hentAdmin();
     }
+
+    this.synkAdresse();
 
 
     // Kvitteringsboksen lukker seg selv etter tre sekunder. Den ble tidligere

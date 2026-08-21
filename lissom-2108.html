@@ -5356,7 +5356,10 @@ class Component extends DCLogic {
     if (!h) return null;
     if (h.indexOf('Betal') === 0) return 'betaling';
     if (h.indexOf('Opprett avtale') === 0) return 'avtale';
-    if (h.indexOf('Avbestill') === 0) return 'avbestilling';
+    // Avbestilling gaar mot serveren naar plassen er en ekte booking, og
+    // haandteres av gjor()-tilbakekallet. Bare knapper uten en slik kobling
+    // faanges her.
+    if (h.indexOf('Avbestill') === 0 && !(this.state.detalj || {}).gjor) return 'avbestilling';
     return null;
   }
 
@@ -6158,6 +6161,40 @@ class Component extends DCLogic {
         color: navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-200)',
       },
     }));
+  }
+
+  // Avbestilling. Serveren regner ut refusjonen etter vilkaarene og utforer
+  // den mot Vipps — nettleseren sender bare hvilken plass det gjelder.
+  avbestillEkte(p) {
+    if (!this.erPublisert() || !p.id) {
+      this.avbestillPlass(p.tittel);
+      return;
+    }
+    fetch('/api/avbestill.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId: p.id }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d || !d.ok) {
+          this.setState({
+            kvittering: 'Kunne ikke avbestille',
+            kvitteringDetalj: (d && d.feil) || 'Ta kontakt på post@lissom.no, så ordner vi det.',
+          });
+          return;
+        }
+        this.setState({
+          minePlasser: null, // hentes på nytt, så lista stemmer
+          kvittering: 'Plassen er avbestilt',
+          kvitteringDetalj: d.beskjed,
+        });
+      })
+      .catch(() => this.setState({
+        kvittering: 'Kunne ikke avbestille',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren. Prøv igjen, eller ta kontakt på post@lissom.no.',
+      }));
   }
 
   // Ekte booking: reserverer plassen og sender brukeren til Vipps.
@@ -7243,7 +7280,7 @@ class Component extends DCLogic {
           { navn: 'Refusjon', verdi: p.kanAvbestille ? 'Etter vilkårene: full refusjon mer enn 14 dager før, 50 % inntil 7 dager før. Tilbake på Vipps innen 3 virkedager.' : 'Ingenting er belastet' },
           { navn: 'Frist', verdi: p.frist },
           { navn: 'Etter fristen', verdi: 'Du kan gi plassen videre til noen andre, eller flytte til en senere dato én gang.' },
-        ], p.kanAvbestille ? 'Avbestill og få pengene tilbake' : 'Meld meg av ventelisten', null, false, () => this.avbestillPlass(p.tittel)),
+        ], p.kanAvbestille ? 'Avbestill og få pengene tilbake' : 'Meld meg av ventelisten', null, false, () => this.avbestillEkte(p)),
       })),
       foresporselTyper: ['Privat gruppe eller bedrift', 'Utdrikningslag', 'Barnebursdag', 'Kurs på et annet tidspunkt', 'Noe annet'],
       fsTypeValg: ['Privat gruppe eller bedrift', 'Utdrikningslag', 'Barnebursdag', 'Annet tidspunkt', 'Noe annet'].map(navn => ({

@@ -4096,8 +4096,9 @@
 
         <div style="border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
           <div style="display: flex; gap: var(--space-6); flex-wrap: wrap; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400);">
-            <span>Lissom Keramikk &amp; Håndverk AS</span>
+            <span>&copy; {{ aarstall }} Lissom Keramikk &amp; Håndverk AS — alle rettigheter forbeholdt</span>
             <span>Org. nr. 938 280 819 MVA</span>
+            <span style="text-transform: none; letter-spacing: 0; opacity: .62;">Web utført av Joika Design</span>
           </div>
           <div style="display: flex; align-items: center; gap: var(--space-3);">
             <button type="button" onClick="{{ goMinSideFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="user" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Min side</button>
@@ -8212,6 +8213,9 @@ class Component extends DCLogic {
       ],
       goMinSideFooter: () => { this.setState({ side: this.state.innlogget ? 'minside' : 'login' }); window.scrollTo(0, 0); },
       goAdminFooter: this.go('adminoversikt'),
+      // Aarstallet i bunnteksten hentes fra klokka, saa det ikke blir staaende
+      // og bli feil ved nyttaar.
+      aarstall: String(new Date().getFullYear()),
       // Admin-lenka i bunnteksten sto aapen for alle. Naa vises den bare for
       // den serveren har bekreftet er admin. I designverktoyets forhandsvisning
       // staar den framme, ellers kunne den ikke redigeres.

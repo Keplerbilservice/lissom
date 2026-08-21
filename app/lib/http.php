@@ -125,9 +125,15 @@ final class Foresporsel
         if ($opphav === '') {
             return; // Ingen nettleser sender forespørselen — f.eks. Vipps sin webhook.
         }
+        // Adressen siden faktisk kjorer paa er alltid tillatt. Uten dette maa
+        // lista i secrets.php holdes i takt med hvor nettstedet ligger, og da
+        // avviser serveren sin egen nettside den dagen den flytter.
         $tillatte = array_map(
             static fn($u) => rtrim((string) $u, '/'),
-            (array) Config::hent('tillatte_opphav', [Config::nettsted()])
+            array_merge(
+                [Config::nettsted()],
+                (array) Config::hent('tillatte_opphav', [])
+            )
         );
         if (!in_array(rtrim($opphav, '/'), $tillatte, true)) {
             logg('Avviste forespørsel fra ukjent opphav', ['opphav' => $opphav]);

@@ -6250,6 +6250,15 @@ class Component extends DCLogic {
       this.hentAdmin();
     }
 
+    if (side === 'minside' && this.state.innlogget && !this.state.minePlasser && !this._plasserHentes) {
+      this._plasserHentes = true;
+      fetch('/api/mine-plasser.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => { if (d && d.plasser) this.setState({ minePlasser: d.plasser }); })
+        .catch(() => {})
+        .then(() => { this._plasserHentes = false; });
+    }
+
     this.synkAdresse();
 
 
@@ -7200,14 +7209,18 @@ class Component extends DCLogic {
       harMerHistorikk: !this.state.allHistorikk && fh.length > 3,
       harKjop: true,
 
-      harPameldinger: ([
-        'Nybegynner dreiekurs', 'Date Night', 'Paint on Pots',
-      ].filter(t => (this.state.avbestilt || []).indexOf(t) === -1).length + (this.state.nyePaameldt || []).length) > 0,
-      minePameldinger: [
+      harPameldinger: this.state.minePlasser
+        ? this.state.minePlasser.length > 0
+        : (this.erPublisert()
+            ? (this.state.nyePaameldt || []).length > 0
+            : ([
+                'Nybegynner dreiekurs', 'Date Night', 'Paint on Pots',
+              ].filter(t => (this.state.avbestilt || []).indexOf(t) === -1).length + (this.state.nyePaameldt || []).length) > 0),
+      minePameldinger: (this.state.minePlasser || (this.erPublisert() ? [] : [
         { tittel: 'Nybegynner dreiekurs', nyDato: 'onsdag 2. september, 18:00', naar: 'Onsdag 19. august, 18:00', sum: 'kr. 2 800,-', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 5. august, 50 % til 12. august', kanAvbestille: true },
         { tittel: 'Date Night', nyDato: 'fredag 25. september, 18:00', naar: 'Fredag 28. august, 18:00', sum: 'kr. 2 380,- · 2 plasser', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 15. august, 50 % til 22. august', kanAvbestille: true },
         { tittel: 'Paint on Pots', nyDato: 'søndag 6. september, 12:00', naar: 'Søndag 23. august, 12:00', sum: 'kr. 690,-', status: 'Venteliste, nr. 2', tone: 'info', frist: 'Du belastes først når en plass blir ledig', kanAvbestille: false },
-      ].concat((this.state.nyePaameldt || []).map(n => Object.assign({}, n, { tone: n.intern ? 'info' : 'success', status: n.intern ? 'Intern samling' : 'Bekreftet', frist: 'Gratis avmelding inntil 24 timer før', kanAvbestille: true, nyDato: n.naar }))).filter(p => (this.state.avbestilt || []).indexOf(p.tittel) === -1).map(p => Object.assign(p, {
+      ])).concat((this.state.nyePaameldt || []).map(n => Object.assign({}, n, { tone: n.intern ? 'info' : 'success', status: n.intern ? 'Intern samling' : 'Bekreftet', frist: 'Gratis avmelding inntil 24 timer før', kanAvbestille: true, nyDato: n.naar }))).filter(p => (this.state.avbestilt || []).indexOf(p.tittel) === -1).map(p => Object.assign(p, {
         naar: ((this.state.flyttet || {})[p.tittel]) ? ((this.state.flyttet || {})[p.tittel]).charAt(0).toUpperCase() + ((this.state.flyttet || {})[p.tittel]).slice(1) : p.naar,
         status: ((this.state.flyttet || {})[p.tittel]) ? 'Flyttet' : p.status,
         avbestill: this.apne('Avbestille ' + p.tittel + '?', p.naar, [

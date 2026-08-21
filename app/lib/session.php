@@ -14,7 +14,13 @@ declare(strict_types=1);
 final class Sesjon
 {
     public const COOKIE = 'lissom_sesjon';
-    private const VARIGHET_DAGER = 30;
+    // Tre timer uten aktivitet, saa er du ute. Min side viser betalinger,
+    // kontaktopplysninger og medlemskap, og verkstedet har maskiner flere
+    // deler paa. En sesjon som varer i ukevis paa en felles nettleser er en
+    // reell risiko, ikke en teoretisk.
+    //
+    // Klokka nullstilles ved bruk: er du aktiv, blir du sittende.
+    private const VARIGHET_TIMER = 3;
 
     /** @var array<string,mixed>|null|false false = ikke slått opp ennå */
     private static array|null|false $medlem = false;
@@ -23,7 +29,7 @@ final class Sesjon
     public static function opprett(int $medlemId): string
     {
         $token = bin2hex(random_bytes(32));
-        $utloper = new DateTimeImmutable('+' . self::VARIGHET_DAGER . ' days', new DateTimeZone('UTC'));
+        $utloper = new DateTimeImmutable('+' . self::VARIGHET_TIMER . ' hours', new DateTimeZone('UTC'));
 
         DB::settInn('sessions', [
             'token_hash' => hash('sha256', $token),
@@ -70,15 +76,16 @@ final class Sesjon
             return self::$medlem = null;
         }
 
-        // Skyv utløpet framover, men høyst én gang i timen — ellers skriver vi
-        // til databasen ved hvert eneste sidevisning.
+        // Skyv utløpet framover, men høyst hvert femte minutt — ellers skriver
+        // vi til databasen ved hvert eneste sidevisning. Fem minutter er kort
+        // nok til at en aktiv bruker aldri faller ut av en tretimersfrist.
         DB::kjor(
             'UPDATE sessions
                 SET siste_bruk = UTC_TIMESTAMP(),
-                    expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL :d DAY)
+                    expires_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL :t HOUR)
               WHERE token_hash = :h
-                AND siste_bruk < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)',
-            ['d' => self::VARIGHET_DAGER, 'h' => $rad['token_hash']]
+                AND siste_bruk < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE)',
+            ['t' => self::VARIGHET_TIMER, 'h' => $rad['token_hash']]
         );
 
         unset($rad['token_hash']);

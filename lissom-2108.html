@@ -5739,6 +5739,26 @@ class Component extends DCLogic {
     window.addEventListener('popstate', this._popstate);
     this._adresseKlar = true;
 
+    // Sesjonen varer tre timer uten aktivitet. Sitter noen med Min side aapen
+    // paa en delt maskin, skal skjermen folge med naar den utloper — ikke
+    // staa og vise navn og betalinger til noen tilfeldigvis klikker.
+    this._sesjonsvakt = setInterval(() => {
+      if (!this.state.innlogget) return;
+      fetch('/api/meg.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+          if (d && !d.innlogget) {
+            this.setState({
+              innlogget: false, erAdminBruker: false, vippsNavn: '',
+              side: 'login',
+              kvittering: 'Du er logget ut',
+              kvitteringDetalj: 'Av sikkerhetsgrunner logges du ut etter tre timer. Logg inn med Vipps for aa fortsette.',
+            });
+          }
+        })
+        .catch(() => {});
+    }, 5 * 60 * 1000);
+
     this.hentInnlogget(kommerFraVipps);
     this.hentKatalog();
     this.visBetalingsutfall();

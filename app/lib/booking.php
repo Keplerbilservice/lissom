@@ -201,6 +201,12 @@ final class Booking
                 return true;
             }
 
+            $kort = DB::en('SELECT id FROM gift_cards WHERE payment_id = :p', ['p' => $betaling['id']]);
+            if ($kort !== null) {
+                self::aktiverGavekort((int) $kort['id']);
+                return true;
+            }
+
             return false;
         });
     }
@@ -230,6 +236,75 @@ final class Booking
             'ordre' => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . self::norskDato((string) $b['start_tid']) : ''),
             'belop' => self::kroner((int) $b['belop_ore']),
         ], 'booking', $bookingId);
+    }
+
+    /**
+     * Gir gavekortet en kode og gjor det gyldig.
+     *
+     * Koden settes forst her, ikke ved kjop: ellers kunne noen faatt en
+     * gyldig kode ved aa starte en betaling og avbryte den.
+     */
+    public static function aktiverGavekort(int $kortId): void
+    {
+        $k = DB::en('SELECT * FROM gift_cards WHERE id = :i', ['i' => $kortId]);
+        if ($k === null || $k['status'] !== 'ubetalt') {
+            return; // allerede aktivert, eller ukjent
+        }
+
+        // Koden skal kunne leses opp over telefon. Derfor ingen tegn som
+        // forveksles: verken 0/O, 1/I/L eller 5/S.
+        $tegn = 'ABCDEFGHJKMNPQRTUVWXYZ2346789';
+        do {
+            $kode = 'LIS-';
+            for ($i = 0; $i < 9; $i++) {
+                if ($i > 0 && $i % 3 === 0) {
+                    $kode .= '-';
+                }
+                $kode .= $tegn[random_int(0, strlen($tegn) - 1)];
+            }
+        } while (DB::en('SELECT id FROM gift_cards WHERE kode = :k', ['k' => $kode]) !== null);
+
+        DB::oppdater('gift_cards', [
+            'kode'      => $kode,
+            'saldo_ore' => (int) $k['opprinnelig_ore'],
+            'status'    => 'aktivt',
+        ], ['id' => $kortId]);
+
+        $belop = self::kroner((int) $k['opprinnelig_ore']);
+        $gyldig = self::norskDatoKort((string) $k['gyldig_til']);
+
+        // Til mottakeren, om det er oppgitt en. Ellers til kjoperen.
+        $til = $k['mottaker_epost'] ?: $k['kjoper_epost'];
+        $hilsen = $k['hilsen'] ? "\n\n«" . $k['hilsen'] . "»\n— " . $k['kjoper_navn'] : '';
+
+        Varsel::epost(
+            (string) $til,
+            'Gavekort til Lissom Keramikk',
+            "Hei!\n\n"
+            . "Du har faatt et gavekort paa {$belop} til Lissom Keramikk."
+            . $hilsen . "\n\n"
+            . "Koden er: {$kode}\n"
+            . "Gyldig til {$gyldig}.\n\n"
+            . "Gavekortet kan brukes paa kurs, events, medlemskap og verkstedtid. "
+            . "Oppgi koden naar du bestiller, eller ta den med i verkstedet.\n\n"
+            . 'Hilsen Lissom Keramikk',
+            'gift_card',
+            $kortId
+        );
+
+        // Kjoperen far ogsaa beskjed om at kortet er sendt.
+        if ($k['mottaker_epost'] && $k['kjoper_epost'] && $k['mottaker_epost'] !== $k['kjoper_epost']) {
+            Varsel::epost(
+                (string) $k['kjoper_epost'],
+                'Gavekortet er sendt',
+                "Hei " . $k['kjoper_navn'] . "!\n\n"
+                . "Gavekortet paa {$belop} er sendt til {$k['mottaker_epost']}.\n"
+                . "Koden er {$kode}, gyldig til {$gyldig}.\n\n"
+                . 'Hilsen Lissom Keramikk',
+                'gift_card',
+                $kortId
+            );
+        }
     }
 
     /** Kvittering for butikkjop, med beskjed om henting. */
@@ -270,6 +345,21 @@ final class Booking
     public static function kroner(int $ore): string
     {
         return 'kr. ' . number_format($ore / 100, 0, ',', ' ') . ',-';
+    }
+
+    /**
+     * 2029-08-21 → «21. august 2029».
+     *
+     * PHPs date() gir engelske maanedsnavn uansett hva serveren staar til, og
+     * «21. August 2029» paa et norsk gavekort ser ut som en feil.
+     */
+    public static function norskDatoKort(string $dato): string
+    {
+        $d = new DateTimeImmutable($dato);
+        $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
+                'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+
+        return sprintf('%d. %s %d', (int) $d->format('j'), $mnd[(int) $d->format('n') - 1], (int) $d->format('Y'));
     }
 
     /** 2026-09-02 15:30:00 UTC → «onsdag 2. september, 17:30» */

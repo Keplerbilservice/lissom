@@ -1191,9 +1191,9 @@
               </sc-for>
             </div>
             <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-6);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens navn" placeholder="Fornavn Etternavn" hint-size="100%,66px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens e-post" icon="mail" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på gavekortet" placeholder="F.eks. «Gratulerer med dagen!»" hint-size="100%,66px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens navn" placeholder="Fornavn Etternavn" value="{{ gvNavn }}" on-change="{{ settGvNavn }}" hint-size="100%,66px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens e-post" icon="mail" placeholder="navn@epost.no" value="{{ gvEpost }}" on-change="{{ settGvEpost }}" hint-size="100%,66px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på gavekortet" placeholder="F.eks. «Gratulerer med dagen!»" value="{{ gvHilsen }}" on-change="{{ settGvHilsen }}" hint-size="100%,66px"></x-import>
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ gvKjop }}" hint-size="100%,52px">Kjøp gavekort · {{ gvValgt }}</x-import>
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du betaler med Vipps i kassen. Gavekortet er gyldig i tre år.</p>
@@ -5724,6 +5724,52 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // Ekte gavekortkjop.
+  //
+  // Feltene for mottaker var ren dekorasjon i designet — de hadde ingen
+  // kobling, saa det man skrev inn forsvant. Naa folger de med til serveren,
+  // og gavekortet sendes til mottakeren naar betalingen er bekreftet.
+  kjopGavekort() {
+    const belop = this.state.gvValgt || 1490;
+    const epost = (this.state.gvEpost || '').trim();
+
+    if (epost && epost.indexOf('@') < 1) {
+      this.setState({ kvittering: 'Sjekk e-postadressen', kvitteringDetalj: 'Adressen til mottakeren ser ikke riktig ut.' });
+      return;
+    }
+    if (!this.state.innlogget) {
+      window.location.href = '/api/vipps-login.php?retur=/gavekort';
+      return;
+    }
+    if (this._gavekortPagaar) return;
+    this._gavekortPagaar = true;
+
+    fetch('/api/gavekort.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        belop: belop,
+        mottakerNavn: (this.state.gvNavn || '').trim(),
+        mottakerEpost: epost,
+        hilsen: (this.state.gvHilsen || '').trim(),
+      }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        this._gavekortPagaar = false;
+        if (!d || !d.ok) {
+          this.setState({ kvittering: 'Kunne ikke kjøpe gavekort', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+          return;
+        }
+        window.location.href = d.url;
+      })
+      .catch(() => {
+        this._gavekortPagaar = false;
+        this.setState({ kvittering: 'Kunne ikke kjøpe gavekort', kvitteringDetalj: 'Fikk ikke kontakt med serveren. Prøv igjen.' });
+      });
+  }
+
   // Ekte butikkjop: oppretter ordren og sender kunden til Vipps.
   kjopKurv() {
     const kurv = this.state.kurv || {};
@@ -9280,7 +9326,18 @@ class Component extends DCLogic {
         },
       })),
       gvValgt: 'kr. ' + (this.state.gvValgt || 1490) + ',-',
-      gvKjop: () => { this.leggTil('Gavekort kr. ' + (this.state.gvValgt || 1490) + ',-'); this.setState({ side: 'kasse' }); window.scrollTo(0, 0); },
+      gvNavn: this.state.gvNavn || '',
+      settGvNavn: e => this.setState({ gvNavn: e.target.value }),
+      gvEpost: this.state.gvEpost || '',
+      settGvEpost: e => this.setState({ gvEpost: e.target.value }),
+      gvHilsen: this.state.gvHilsen || '',
+      settGvHilsen: e => this.setState({ gvHilsen: e.target.value }),
+      gvKjop: () => {
+        if (this.erPublisert()) { this.kjopGavekort(); return; }
+        this.leggTil('Gavekort kr. ' + (this.state.gvValgt || 1490) + ',-');
+        this.setState({ side: 'kasse' });
+        window.scrollTo(0, 0);
+      },
       erAdminSeo: side === 'adminseo',
       adminNavSeo: this.adminMeny('SEO'),
       erAdminMobilvis: side === 'adminmobilvis',

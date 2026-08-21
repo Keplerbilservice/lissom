@@ -4579,14 +4579,14 @@
 
 <sc-if value="{{ vippsApen }}" hint-placeholder-val="{{ false }}">
   <div style="position: fixed; inset: 0; z-index: 98; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: 24px;">
-    <div style="width: min(400px, 100%); background: #FFFFFF; border-radius: var(--radius-xl, 22px); padding: var(--space-10) var(--space-8); text-align: center; box-shadow: var(--shadow-lg);">
-      <div style="display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; border-radius: 50%; background: #FF5B24; margin-bottom: var(--space-6);">
-        <span style="color: #FFFFFF; font-weight: 800; font-style: italic; font-size: 20px; font-family: var(--font-ui);">Vipps</span>
+    <div style="width: min(330px, 100%); background: #FFFFFF; border-radius: var(--radius-xl, 22px); padding: var(--space-7) var(--space-6); text-align: center; box-shadow: var(--shadow-lg);">
+      <div style="display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: 50%; background: #FF5B24; margin-bottom: var(--space-4);">
+        <span style="color: #FFFFFF; font-weight: 800; font-style: italic; font-size: 15px; font-family: var(--font-ui);">Vipps</span>
       </div>
       <sc-if value="{{ vippsVenter }}" hint-placeholder-val="{{ true }}">
-        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Åpne Vipps-appen</h3>
-        <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi har sendt en forespørsel til telefonen din. Godkjenn innloggingen i Vipps for å fortsette.</p>
-        <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-6);">
+        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Åpne Vipps-appen</h3>
+        <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi har sendt en forespørsel til telefonen din. Godkjenn innloggingen i Vipps for å fortsette.</p>
+        <div style="display: flex; justify-content: center; gap: 6px; margin-bottom: var(--space-4);">
           <span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5B24; animation: lissomPuls 1.2s infinite;"></span>
           <span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5B24; animation: lissomPuls 1.2s .2s infinite;"></span>
           <span style="width: 8px; height: 8px; border-radius: 50%; background: #FF5B24; animation: lissomPuls 1.2s .4s infinite;"></span>
@@ -4594,7 +4594,7 @@
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ vippsAvbryt }}" hint-size="auto,40px">Avbryt</x-import>
       </sc-if>
       <sc-if value="{{ vippsGodkjent }}" hint-placeholder-val="{{ false }}">
-        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Innlogging godkjent</h3>
+        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Innlogging godkjent</h3>
         <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Velkommen tilbake! Sender deg til Min side …</p>
       </sc-if>
     </div>
@@ -5374,6 +5374,19 @@ class Component extends DCLogic {
   }
 
   betalKurv(linjer) {
+    // Butikkens kasse er ikke koblet til betaling ennaa. Paa den publiserte
+    // siden maa den derfor ikke late som: den tomte handlekurven, sa
+    // «Betalingen er gjennomfort» og diktet opp et ordrenummer — kunden gikk
+    // derfra i den tro at varene var kjopt. En falsk kvittering er verre enn
+    // ingen kasse.
+    if (this.erPublisert()) {
+      this.setState({
+        kvittering: 'Nettbutikken aapner snart',
+        kvitteringDetalj: 'Vi tar ikke imot bestillinger her ennaa. Ta kontakt paa post@lissom.no eller kom innom verkstedet, saa ordner vi det.',
+      });
+      return;
+    }
+
     const naa = new Date();
     const tid = 'I dag ' + naa.getHours() + ':' + String(naa.getMinutes()).padStart(2, '0');
     const abo = linjer.map(l => l.navn).filter(n2 => n2.indexOf('Abonnement: ') === 0)[0];

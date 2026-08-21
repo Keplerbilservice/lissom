@@ -5,6 +5,23 @@ RewriteEngine On
 RewriteCond %{HTTPS} !=on
 RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
+# Tegnkoding.
+#
+# Nettsiden er UTF-8, og sier det selv i <meta charset>. Men en Content-Type-
+# header fra serveren overstyrer meta-taggen. Sier Apache «iso-8859-1», leser
+# nettleseren æ, ø og å feil — og et ødelagt tegn inne i en JavaScript-streng
+# gir «Invalid or unexpected token», som er akkurat feilen vi fikk.
+#
+# GitHub Pages sender UTF-8 av seg selv. Apache maa faa beskjed.
+AddDefaultCharset UTF-8
+<IfModule mod_mime.c>
+    AddCharset UTF-8 .html .htm .js .css .svg .json
+    AddType "text/html; charset=UTF-8"              .html .htm
+    AddType "application/javascript; charset=UTF-8" .js
+    AddType "text/css; charset=UTF-8"               .css
+    AddType "image/svg+xml"                          .svg
+</IfModule>
+
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"

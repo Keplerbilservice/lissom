@@ -5678,6 +5678,20 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // Tekster eieren har endret i admin. Aapent endepunkt: dette er innholdet
+  // paa nettsiden, og det skal alle se — ikke bare den som er logget inn.
+  hentInnhold() {
+    if (!this.erPublisert()) return;
+    fetch('/api/innhold.php')
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.innhold) {
+          this.setState(s => ({ innholdLagret: Object.assign({}, d.innhold, s.innholdLagret) }));
+        }
+      })
+      .catch(() => {});
+  }
+
   // Kurs, priser og ledige plasser kommer fra serveren. Listene i denne fila
   // er designdata, og de vet ingenting om hvor mange plasser som faktisk er
   // igjen.
@@ -5764,6 +5778,7 @@ class Component extends DCLogic {
 
     this.hentInnlogget(kommerFraVipps);
     this.hentKatalog();
+    this.hentInnhold();
     this.visBetalingsutfall();
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
@@ -8515,7 +8530,28 @@ class Component extends DCLogic {
           toggleSynlig: () => this.setState(s => ({ innholdSynlig: Object.assign({}, s.innholdSynlig, { [nokkel]: synlig === 'Publisert' ? 'Skjult' : 'Publisert' }) })),
           startRediger: () => this.setState({ innholdRed: nokkel, innholdKladd: {} }),
           avbryt: () => this.setState({ innholdRed: null, innholdKladd: {} }),
-          lagre: () => this.setState(s => ({ innholdLagret: Object.assign({}, s.innholdLagret, s.innholdKladd), innholdRed: null, innholdKladd: {} })),
+          lagre: () => {
+            const kladd = this.state.innholdKladd || {};
+            this.setState(s => ({ innholdLagret: Object.assign({}, s.innholdLagret, s.innholdKladd), innholdRed: null, innholdKladd: {} }));
+            if (!this.erPublisert() || !Object.keys(kladd).length) return;
+            fetch('/api/admin/innhold.php', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ endringer: kladd }),
+            })
+              .then(r => r.json())
+              .then(d => this.setState({
+                kvittering: (d && d.ok) ? 'Lagret' : 'Kunne ikke lagre',
+                kvitteringDetalj: (d && d.ok)
+                  ? 'Endringen er lagret og synlig for alle.'
+                  : ((d && d.feil) || 'Prøv igjen, eller last siden på nytt.'),
+              }))
+              .catch(() => this.setState({
+                kvittering: 'Kunne ikke lagre',
+                kvitteringDetalj: 'Fikk ikke kontakt med serveren. Endringen ligger fortsatt i skjermbildet, men er ikke lagret.',
+              }));
+          },
           slett: () => this.setState(s => ({ innholdSlettet: Object.assign({}, s.innholdSlettet, { [nokkel]: true }), innholdRed: s.innholdRed === nokkel ? null : s.innholdRed })),
           felter: (b.felter || []).map(f => {
             const fk = nokkel + '/' + f.l;

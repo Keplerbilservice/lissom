@@ -8,13 +8,20 @@ declare(strict_types=1);
 
 final class Svar
 {
-    /** @param array<string,mixed>|list<mixed> $data */
-    public static function json(array $data, int $status = 200): never
+    /**
+     * @param array<string,mixed>|list<mixed> $data
+     * @param int|null $mellomlagreSekunder Antall sekunder svaret kan mellomlagres.
+     *   Standard er null — ingen mellomlagring, som er riktig for alt som
+     *   avhenger av hvem som spor. Kun aapne, upersonlige svar bor sette det.
+     */
+    public static function json(array $data, int $status = 200, ?int $mellomlagreSekunder = null): never
     {
         if (!headers_sent()) {
             http_response_code($status);
             header('Content-Type: application/json; charset=utf-8');
-            header('Cache-Control: no-store');
+            header($mellomlagreSekunder === null
+                ? 'Cache-Control: no-store'
+                : 'Cache-Control: public, max-age=' . $mellomlagreSekunder);
             header('X-Content-Type-Options: nosniff');
             header('Referrer-Policy: same-origin');
         }

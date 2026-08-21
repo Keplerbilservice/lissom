@@ -4101,7 +4101,9 @@
           </div>
           <div style="display: flex; align-items: center; gap: var(--space-3);">
             <button type="button" onClick="{{ goMinSideFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="user" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Min side</button>
+            <sc-if value="{{ visAdminLenke }}" hint-placeholder-val="{{ true }}">
             <button type="button" onClick="{{ goAdminFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="lock" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Admin</button>
+            </sc-if>
           </div>
         </div>
       </div>
@@ -6064,8 +6066,38 @@ class Component extends DCLogic {
       });
   }
 
+  // Admin-tallene hentes fra serveren, som krever admin-sesjon. Er du ikke
+  // admin, svarer den 404 og lista blir staaende tom — det er ikke frontenden
+  // som avgjor hvem som far se hva.
+  hentAdmin() {
+    if (!this.erPublisert() || this._adminHentes) return;
+    this._adminHentes = true;
+    fetch('/api/admin/oversikt.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => { if (d && d.nyeste) this.setState({ adminData: d }); })
+      .catch(() => {})
+      .then(() => { this._adminHentes = false; });
+  }
+
   renderVals() {
     const side = this.state.side;
+
+    if (side.indexOf('admin') === 0 && !this.state.adminData) {
+      this.hentAdmin();
+    }
+
+
+    // Kvitteringsboksen lukker seg selv etter tre sekunder. Den ble tidligere
+    // staaende til noen trykket paa krysset.
+    if (this.state.kvittering && this._sisteKvittering !== this.state.kvittering) {
+      this._sisteKvittering = this.state.kvittering;
+      clearTimeout(this._kvitteringTimer);
+      this._kvitteringTimer = setTimeout(() => {
+        this._sisteKvittering = null;
+        this.setState({ kvittering: '', kvitteringDetalj: '' });
+      }, 3000);
+    }
+
     const sider = [
       ['forside', 'Forside'], ['kurs', 'Kurs'], ['medlemskap', 'Medlemskap'],
       ['butikk', 'Butikk'], ['omoss', 'Om oss'], ['login', 'Min side'], ['adminoversikt', 'Admin'],
@@ -8090,6 +8122,10 @@ class Component extends DCLogic {
       ],
       goMinSideFooter: () => { this.setState({ side: this.state.innlogget ? 'minside' : 'login' }); window.scrollTo(0, 0); },
       goAdminFooter: this.go('adminoversikt'),
+      // Admin-lenka i bunnteksten sto aapen for alle. Naa vises den bare for
+      // den serveren har bekreftet er admin. I designverktoyets forhandsvisning
+      // staar den framme, ellers kunne den ikke redigeres.
+      visAdminLenke: !this.erPublisert() || !!this.state.erAdminBruker,
       tjue: 20,
       fjorten: 14,
       goPersonvern: this.go('personvern'),
@@ -8561,12 +8597,21 @@ class Component extends DCLogic {
         { tekst: '2 ubesvarte meldinger fra medlemmer', merke: 'Svar', tone: 'info' },
         { tekst: 'Åpen dag 6. september er ikke lagt ut på nett', merke: 'Publiser', tone: 'neutral' },
       ], o => [o.merke, o.tekst, [{ navn: 'Prioritet', verdi: o.tone === 'danger' ? 'Haster' : o.tone === 'warning' ? 'Snart' : 'Når du har tid' }], o.merke, 'adminmedlem']),
-      nyePameldinger: this.klikkbar([
-        { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs, 19. aug', tid: 'I går 19:41' },
-        { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug' },
-        { navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', tid: '21. aug' },
-        { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: '20. aug' },
-      ], n => [n.navn, n.hva, [{ navn: 'Tidspunkt', verdi: n.tid }, { navn: 'Betalt med', verdi: 'Vipps' }], 'Se kvittering']),
+      nyePameldinger: this.klikkbar(
+        // Ekte paameldinger naar serveren har svart. Lista under er designdata
+        // og vises kun i forhandsvisningen, der det ikke finnes noen server.
+        ((this.state.adminData || {}).nyeste || (this.erPublisert() ? [] : [
+          { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs, 19. aug', tid: 'I går 19:41' },
+          { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug' },
+          { navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', tid: '21. aug' },
+          { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: '20. aug' },
+        ])),
+        n => [n.navn, n.hva, [
+          { navn: 'Tidspunkt', verdi: n.tid },
+          { navn: 'Belop', verdi: n.belop || '' },
+          { navn: 'Status', verdi: n.status || '' },
+          { navn: 'Referanse', verdi: n.referanse || '' },
+        ], 'Lukk']),
       erAdminOkonomi: side === 'adminokonomi',
       goKurs: this.go('kurs'),
       heroTittel: (this.state.innholdLagret || {})['Forside/0/Overskrift'] ?? 'Skap noe',

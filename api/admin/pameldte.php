@@ -1,0 +1,85 @@
+<?php
+/**
+ * Hvem som er paameldt. Den siden dere kommer til aa bruke oftest.
+ *
+ *   ?oktId=5   deltakerne paa en bestemt dato
+ *   uten       alle kommende okter med antall paameldte
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/../_boot.php';
+
+Foresporsel::krevMetode('GET');
+krev_admin();
+
+$oktId = Foresporsel::heltall('oktId');
+
+if ($oktId <= 0) {
+    $okter = DB::alle(
+        "SELECT cs.id, cs.start_tid, c.tittel,
+                COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
+                (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
+                  WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS betalt,
+                (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
+                  WHERE b.course_session_id = cs.id AND b.status = 'reservert'
+                    AND b.reservert_til > UTC_TIMESTAMP()) AS reservert
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.status <> 'avlyst' AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
+          ORDER BY cs.start_tid"
+    );
+
+    Svar::json(['okter' => array_map(static fn($o) => [
+        'oktId'     => (int) $o['id'],
+        'tittel'    => $o['tittel'],
+        'naar'      => Booking::norskDato((string) $o['start_tid']),
+        'betalt'    => (int) $o['betalt'],
+        'reservert' => (int) $o['reservert'],
+        'kapasitet' => (int) $o['kapasitet'],
+        'ledige'    => Booking::ledigePlasser((int) $o['id']),
+    ], $okter)]);
+}
+
+$okt = DB::en(
+    'SELECT cs.id, cs.start_tid, c.tittel FROM course_sessions cs
+       JOIN courses c ON c.id = cs.course_id WHERE cs.id = :id',
+    ['id' => $oktId]
+);
+if ($okt === null) {
+    Svar::feil('Fant ikke datoen.', 404);
+}
+
+$deltakere = DB::alle(
+    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, b.folge_medlem,
+            COALESCE(m.navn, b.gjest_navn) AS navn,
+            COALESCE(m.epost, b.gjest_epost) AS epost,
+            COALESCE(m.telefon, b.gjest_telefon) AS telefon,
+            p.vipps_reference, p.status AS betalingsstatus
+       FROM bookings b
+  LEFT JOIN members m ON m.id = b.member_id
+  LEFT JOIN payments p ON p.id = b.payment_id
+      WHERE b.course_session_id = :id
+        AND b.status <> 'avbestilt'
+      ORDER BY b.created_at",
+    ['id' => $oktId]
+);
+
+Svar::json([
+    'okt' => [
+        'oktId'  => (int) $okt['id'],
+        'tittel' => $okt['tittel'],
+        'naar'   => Booking::norskDato((string) $okt['start_tid']),
+    ],
+    'deltakere' => array_map(static fn($d) => [
+        'id'        => (int) $d['id'],
+        'navn'      => $d['navn'],
+        'epost'     => $d['epost'],
+        'telefon'   => $d['telefon'],
+        'antall'    => (int) $d['antall'],
+        'status'    => $d['status'],
+        'belop'     => Booking::kroner((int) $d['belop_ore']),
+        'referanse' => $d['vipps_reference'],
+        'folge'     => $d['folge_medlem'],
+    ], $deltakere),
+]);

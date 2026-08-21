@@ -1,7 +1,12 @@
-# Status — 21. august 2026
+# Status — 22. august 2026, natt
 
-Skrevet ved slutten av første arbeidsøkt. Dette er hva som virker, hva som
-ikke gjør det, og hva som venter på en avgjørelse.
+Oppdatert gjennom natta. Dette er hva som virker, hva som ikke gjør det, og
+hva som venter på en avgjørelse.
+
+**Kort sagt:** backend er nå testet mot en ekte database — det var den ikke da
+du gikk. Booking, betaling, venteliste, avbestilling, admin og innholds-
+redigering er koblet opp og verifisert. Det eneste som står igjen som ekte
+hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 
 ---
 
@@ -16,9 +21,15 @@ ikke gjør det, og hva som venter på en avgjørelse.
 | Betaling med Vipps | **Blokkert — se under** |
 | Kvittering på e-post | Bygget, går i kø til betaling virker |
 | Admin: oversikt, påmeldte, medlemmer, økonomi | Ekte data |
-| Admin: kurs og datoer | Kan opprettes og endres |
-| Vilkår og personvern | Publisert som egne sider |
+| Admin: kurs og datoer | Kan opprettes og endres, og vises på siden |
+| Venteliste | Ekte, med dublettvern og bekreftelse |
+| Avbestilling med refusjon | Ekte, regner ut beløp etter vilkårene |
+| Min side: dine plasser | Ekte |
+| Innholdsredigering i admin | Lagres og vises for alle |
 | Ekte adresser (/kurs, /medlemskap) | Virker |
+| Favicon | Hjertemerket |
+| Sesjon utløper etter 3 timer | Virker |
+| Vilkår og personvern | Publisert som egne sider |
 
 ## Det som fortsatt er simulering
 
@@ -31,6 +42,26 @@ viser fortsatt designdata.
 
 Timeforbruk på Min side står som «—». Innstempling er ikke koblet opp, og et
 tall der ville vært oppspinn.
+
+---
+
+## Testdekning
+
+Backend kjører nå mot en ekte MariaDB 10.11 — samme versjon som webhotellet.
+
+```
+php tests/backend.php    26 sjekker, alle grønne
+tests/flyt.sh            10 sjekker, alle grønne
+```
+
+`backend.php` dekker kapasitetsberegning, at siste plass ikke kan bookes to
+ganger, at en betaling kvitteres nøyaktig én gang uansett hvor mange ganger
+Vipps melder fra, at utløpte reservasjoner frigir plassen, tidssoner og
+ratebegrensning.
+
+`flyt.sh` kjører hele betalingskjeden mot en stubbet Vipps: booking, webhook
+med signaturkontroll begge veier, og duplikatvern. Alle cron-jobbene er også
+kjørt, og kurspåminnelser er verifisert med en økt som starter dagen etter.
 
 ---
 
@@ -88,7 +119,11 @@ til én krone for å kunne teste betaling. `docs/006_etter_test.sql.venter`
 setter den tilbake til 690 og avlyser testkurset — flytt den til
 `db/migrations/` og kjør migrering når testen er gjennomført.
 
-**8. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
+**8. Nytt kurs uten bilde.** Kurs opprettet i admin får verkstedbildet som
+standard. Det finnes ingen måte å laste opp bilde i admin ennå — si fra om det
+skal bygges.
+
+**9. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
 ikke — trafikk på nettsiden gjør den jobben. `paaminnelser` og `vedlikehold`
 bør stå.
 

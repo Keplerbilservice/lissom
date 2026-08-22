@@ -413,22 +413,12 @@ window.__resources = {
         </section>
       </sc-if>
 
-      <sc-if value="{{ visNyheterSeksjon }}" hint-placeholder-val="{{ true }}">
+      <!-- «Verkstedet / Dette skjer nå» er tatt bort etter onske fra eieren.
+           Kortene sto med tekst fra designet — hostkurs, gavekort og ledige
+           medlemsplasser — som ingen kunne redigere noe sted. Seksjonen under
+           startet med padding 0 fordi denne laa over; den maa ha topp-padding
+           tilbake naa som den er borte. -->
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Verkstedet</div>
-          <h2 style="margin: 0 0 var(--space-8);">Dette skjer nå</h2>
-          <div class="lx-kortgrid lx-karusell" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="Søndag 6. september" title="Åpen dag i verkstedet" text="Kom innom mellom 11 og 16, prøv dreieskiva og se hva medlemmene har laget. Gratis, ingen påmelding." image="uploads_shutterstock_2829102169.jpg" cta-label="Les mer" on-book="{{ goEvents }}" hint-size="100%,420px"></x-import>
-            <sc-for list="{{ nyheter }}" as="n" hint-placeholder-count="3">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ n.dato }}" title="{{ n.tittel }}" text="{{ n.tekst }}" image="{{ n.image }}" cta-label="Les mer" on-book="{{ n.velg }}" hint-size="100%,420px"></x-import>
-            </sc-for>
-          </div>
-        </div>
-      </section>
-      </sc-if>
-
-      <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
             <div>
@@ -5014,12 +5004,6 @@ const SIDEINNHOLD = {
       { l: 'Knapp 1', v: 'Finn ditt kurs' },
       { l: 'Knapp 2', v: 'Bli medlem' },
       { l: 'Hero-bilde', v: 'assets_photos_dreiing-naerbilde.jpg' } ] },
-    { navn: 'Dette skjer nå', type: 'Nyheter, 3 kort', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Nytt fra verkstedet' },
-      { l: 'Overskrift', v: 'Dette skjer nå' },
-      { l: 'Hovedsak', v: 'Åpen dag i verkstedet' },
-      { l: 'Dato', v: 'Søndag 6. september' },
-      { l: 'Tekst', v: 'Kom innom mellom 11 og 16, prøv dreieskiva og se hva medlemmene har laget. Gratis, ingen påmelding.', lang: true } ] },
     { navn: 'Kommende datoer', type: 'Kurs, automatisk', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events' },
       { l: 'Overskrift', v: 'Kommende datoer' },
@@ -8993,7 +8977,6 @@ class Component extends DCLogic {
       butikkVelgLissom: () => this.setState({ butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' }),
       butikkVelgMedlem: () => this.setState({ butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }),
       visKursvelger: this.state.visKursvelger !== false && this.mobilVis('kursvelger'),
-      visNyheterSeksjon: this.mobilVis('nyheter'),
       vekslKursvelger: () => this.setState(s => ({ visKursvelger: s.visKursvelger === false })),
       kvAdminMaal: [
         { verdi: 'Nybegynner dreiekurs', navn: 'Nybegynner dreiekurs' },
@@ -10273,7 +10256,6 @@ class Component extends DCLogic {
         { nokkel: 'apenthus', navn: 'Åpent hus-banneret' },
         { nokkel: 'salgsuke', navn: 'Salgsuke-kampanjen' },
         { nokkel: 'kursvelger', navn: 'Kursvelger-lenken i toppen' },
-        { nokkel: 'nyheter', navn: 'Dette skjer nå (nyhetskortene)' },
       ].map(v => ({
         navn: v.navn,
         paa: !(this.mobilSkjul())[v.nokkel],
@@ -10598,11 +10580,6 @@ class Component extends DCLogic {
           someFacebook: 'https://facebook.com/' + fb,
         };
       })(),
-      nyheter: this.medBildeCss([
-        { dato: 'Fra 1. september', tittel: 'Nye høstkurs er lagt ut', tekst: 'Dreiing for nybegynnere går hver tirsdag gjennom hele høsten. Plateteknikk starter i oktober.', image: 'uploads_shutterstock_2829109417.jpg', mal: ['kurs', 'Alle'] },
-        { dato: 'Nyhet', tittel: 'Gavekort til jul og bursdag', tekst: 'Gavekort kan brukes på kurs, events, medlemskap og verkstedtid. Sendes på e-post med en gang.', image: 'uploads_shutterstock_2829108657.jpg', mal: ['butikk'] },
-        { dato: 'Medlemskap', tittel: 'Ledige plasser i verkstedet', tekst: 'Vi har noen ledige medlemsplasser fra september. Velg mellom prøvemåned, 30 timer eller fri tilgang.', image: 'uploads_shutterstock_2829109201.jpg', mal: ['medlemskap'] },
-      ]).map(n => Object.assign(n, { velg: () => { this.setState({ side: n.mal[0], kursFilter: n.mal[1] || 'Alle' }); window.scrollTo(0, 0); } })),
       popDatoer: (() => {
         const liste = this.medBooking([
           { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: '5 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },

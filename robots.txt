@@ -1,0 +1,16 @@
+# Lissom Keramikk & Håndverk AS
+
+User-agent: *
+
+# Admin, Min side og API-et har ingenting å gjøre i et søkeresultat.
+# Sidene krever innlogging uansett, men en søkemotor skal ikke bruke tid
+# på dem — og en halvlastet adminskjerm skal ikke kunne dukke opp på Google.
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+
+Allow: /
+
+Sitemap: https://lissom.no/sitemap.xml

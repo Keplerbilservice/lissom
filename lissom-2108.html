@@ -1968,6 +1968,9 @@ window.__resources = {
                   <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ antallInne }} inne</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                  <sc-if value="{{ ingenInne }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen er innstemplet nå.</div>
+                  </sc-if>
                   <sc-for list="{{ inne }}" as="m" hint-placeholder-count="3">
                     <div style="display: flex; align-items: center; gap: var(--space-3);">
                       <div style="position: relative; flex: 0 0 auto;">
@@ -4176,10 +4179,11 @@ window.__resources = {
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8);">
               <div>
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Omsetning hittil i måneden</div>
-                <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; color: var(--text-heading); margin-top: 8px; white-space: nowrap;">kr. 182 400,-</div>
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; color: var(--text-heading); margin-top: 8px; white-space: nowrap;">{{ okOmsetning }}</div>
               </div>
               <span style="font-size: var(--text-sm); color: var(--sage-600); white-space: nowrap;">+14 % mot juli</span>
             </div>
+            <sc-if value="{{ visOkonomiGraf }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: flex-end; gap: 10px; height: 180px;">
               <sc-for list="{{ okonomiStolper }}" as="s" hint-placeholder-count="8">
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
@@ -4188,6 +4192,10 @@ window.__resources = {
                 </div>
               </sc-for>
             </div>
+            </sc-if>
+            <sc-if value="{{ ingenOkonomiGraf }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ukesfordelingen kommer når det har gått noen uker med betalinger.</p>
+            </sc-if>
             <div style="height: 1px; background: var(--border-subtle); margin: var(--space-8) 0 var(--space-6);"></div>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5);">
               <sc-for list="{{ okonomiKilder }}" as="k" hint-placeholder-count="4">
@@ -7146,7 +7154,11 @@ class Component extends DCLogic {
         stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: (this.state.gMottaker || 'Alle medlemmer') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.gMottaker || 'Alle medlemmer') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
       })),
       gEttMedlem: (this.state.gMottaker || 'Alle medlemmer') === 'Ett medlem',
-      gMedlemValg: ['Ingrid Hansen', 'Kari Nordbø', 'Jonas Five', 'Silje Bratt', 'Ole Aarseth', 'Mari Lunde'].map(navn => {
+      // Mottakerne hentes fra medlemslista naar den er lastet. Sto tidligere
+      // med seks oppdiktede navn, ogsaa paa den ekte siden.
+      gMedlemValg: ((this.state.adminMedlemmer || []).map(m => m.navn).filter(Boolean).slice(0, 40)
+        .concat(this.erPublisert() ? [] : ['Ingrid Hansen', 'Kari Nordbø', 'Jonas Five', 'Silje Bratt', 'Ole Aarseth', 'Mari Lunde'])
+      ).map(navn => {
         const valgt = this.state.gMedlem === navn;
         return {
           navn, velg: () => this.setState({ gMedlem: navn }),
@@ -7249,12 +7261,12 @@ class Component extends DCLogic {
         { navn: 'Pris', verdi: '' },
         { navn: 'Mva', verdi: 'Uten mva' },
       ], 'Legg til vare', null, 'produkt'),
-      internkjop: [
+      internkjop: (this.erPublisert() ? [] : [
         { navn: 'Ingrid Hansen', hva: 'Leire, stengods grå · 10 kg', tid: '22. aug 14:12', sum: 'kr. 290,-', ref: 'LIS-10488' },
         { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug 16:03', sum: 'kr. 220,-', ref: 'LIS-10479' },
         { navn: 'Jonas Five', hva: 'Leire, hvit porselen · 5 kg', tid: '20. aug 11:20', sum: 'kr. 340,-', ref: 'LIS-10474' },
         { navn: 'Silje Bratt', hva: 'Ekstra råbrann', tid: '18. aug 09:40', sum: 'kr. 150,-', ref: 'LIS-10471' },
-      ].map(k => Object.assign(k, {
+      ]).map(k => Object.assign(k, {
         velg: this.apne(k.navn, k.hva, [
           { navn: 'Beløp', verdi: k.sum },
           { navn: 'Betalt', verdi: 'Ja, med Vipps' },
@@ -8017,7 +8029,7 @@ class Component extends DCLogic {
       })),
       harForesporsler: (this.state.adminForesporsler || []).length > 0,
       ingenForesporsler: this.erPublisert() && (this.state.adminForesporsler || []).length === 0,
-      venteliste: ((this.state.nyVenteliste || []).slice().reverse()).concat([
+      venteliste: ((this.state.nyVenteliste || []).slice().reverse()).concat(this.erPublisert() ? [] : [
         { navn: 'Marte Grøn', kurs: 'Date Night, 28. aug', plass: 'Nr. 1', tid: 'Meldte seg 21. aug', epost: 'marte@epost.no' },
         { navn: 'Jonas Lie', kurs: 'Date Night, 28. aug', plass: 'Nr. 2', tid: 'Meldte seg 22. aug', epost: 'jonas@epost.no' },
         { navn: 'Kaja Berge', kurs: 'Nybegynner dreiekurs, 19. aug', plass: 'Nr. 1', tid: 'Meldte seg 20. aug', epost: 'kaja@epost.no' },
@@ -8243,7 +8255,9 @@ class Component extends DCLogic {
         { navn: 'Miljø', verdi: 'Produksjon' },
         { navn: 'Merk', verdi: 'Test og produksjon har hver sine nøkler. Del dem aldri på e-post.' },
       ], 'Lagre nøkler', null, true),
-      okonomiKilder: this.klikkbar([
+      // Fordelingen per kilde finnes ikke i databasen ennaa. Tomt framfor
+      // oppdiktet — eieren skal ikke kunne lese av tall som ikke stemmer.
+      okonomiKilder: this.klikkbar(this.erPublisert() ? [] : [
         { navn: 'Kurs og events', sum: 'kr. 96 200,-' },
         { navn: 'Medlemskap', sum: 'kr. 61 400,-' },
         { navn: 'Butikk', sum: 'kr. 17 300,-' },
@@ -8459,13 +8473,27 @@ class Component extends DCLogic {
             { navn: 'Drop-in', verdi: 'kr. 980,-' },
             { navn: 'Leire og brenning', verdi: 'kr. 450,-' },
           ]
-        : [
+        : (this.erPublisert() ? [] : [
             { navn: 'Kurs og events', verdi: 'kr. 96 200,-' },
             { navn: 'Medlemskap', verdi: 'kr. 61 400,-' },
             { navn: 'Butikk', verdi: 'kr. 17 300,-' },
             { navn: 'Leire og brenning', verdi: 'kr. 7 500,-' },
-          ],
-      ovOmsSum: (this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-',
+          ]),
+      // Ekte omsetning fra serveren. Sto tidligere som faste tall, og eieren
+      // hadde ingen maate aa se at de var oppdiktet.
+      ovOmsSum: (() => {
+        const o = (this.state.adminData || {}).omsetning;
+        if (o) return (this.state.ovOms || 'I dag') === 'I dag' ? o.idag : o.maned;
+        return this.erPublisert() ? '–' : ((this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
+      })(),
+      okOmsetning: (() => {
+        const o = (this.state.adminData || {}).omsetning;
+        return o ? o.maned : (this.erPublisert() ? '–' : 'kr. 182 400,-');
+      })(),
+      // Ukesfordelingen finnes ikke i databasen ennaa. Heller ingen stolper
+      // enn aatte oppdiktede.
+      visOkonomiGraf: !this.erPublisert(),
+      ingenOkonomiGraf: this.erPublisert(),
       aDagsoppgjor: this.apne('Dagsoppgjør', 'Mandag 24. august · alt betalt med Vipps', [
         { navn: 'Kurs og events', verdi: 'kr. 4 800,-' },
         { navn: 'Butikk', verdi: 'kr. 1 240,-' },
@@ -8816,7 +8844,8 @@ class Component extends DCLogic {
       ], 'Stemple inn', null, true),
       synlig: this.state.synlig,
       vekslSynlig: (e) => this.setState({ synlig: e && e.target ? e.target.checked : !this.state.synlig }),
-      antallInne: 5,
+      antallInne: this.erPublisert() ? 0 : 5,
+      ingenInne: this.erPublisert(),
       visHandlevogn: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'omoss', 'personvern', 'vipps', 'kasse'].indexOf(side) >= 0,
       handlevognAntall: 3 + ((this.state.nyePaameldt || []).length),
       chatTekst: this.state.chatTekst ?? '',
@@ -8838,18 +8867,22 @@ class Component extends DCLogic {
         metaStil: { fontSize: '11px', color: 'var(--text-muted)' },
       })),
       dorkode: this.state.dorkode || '4 7 1 2',
-      inne: ((this.props.visGronnPrikk ?? true) ? [
+      // «I verkstedet naa» krever innstempling, og den er ikke koblet opp.
+      // Paa den ekte nettsiden staar lista derfor tom framfor aa vise
+      // oppdiktede folk — et medlem som logger inn skal ikke tro at det er
+      // tre andre i verkstedet naar det ikke er noen.
+      inne: ((this.erPublisert() || !(this.props.visGronnPrikk ?? true)) ? [] : [
         { navn: 'Ingrid Hansen (deg)', initial: 'IH', siden: 'Innstemplet 13:42' },
         { navn: 'Kari Nordbø', initial: 'KN', siden: 'Innstemplet 12:10' },
         { navn: 'Jonas Five', initial: 'JF', siden: 'Innstemplet 09:55' },
-      ] : []).map(m => Object.assign(m, {
+      ]).map(m => Object.assign(m, {
         avatarStil: {
           width: 36, height: 36, borderRadius: '50%', background: 'var(--clay-200)',
           color: 'var(--brown-500)', display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 13, fontWeight: 700, letterSpacing: '.02em',
         },
       })),
-      adminInne: [
+      adminInne: this.erPublisert() ? [] : [
         { navn: 'Ingrid Hansen' }, { navn: 'Kari Nordbø' }, { navn: 'Jonas Five' },
         { navn: 'Silje Bratt (skjult for medlemmer)' }, { navn: 'Mari Lunde (skjult for medlemmer)' },
       ],
@@ -9164,9 +9197,11 @@ class Component extends DCLogic {
         { q: 'Kan jeg spise og drikke av keramikken?', a: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.' },
         ].map((s, i) => ({ q: hent('Spørsmål ' + (i + 1), s.q), a: hent('Svar ' + (i + 1), s.a) }));
       })(),
+      // «47 medlemmer» var et oppdiktet tall paa en offentlig side. Byttet med
+      // noe som stemmer. Skal det ekte antallet staa her, ma det fylles inn.
       omTall: [
         { verdi: '2019', merke: 'Startet på Teie' },
-        { verdi: '47', merke: 'Medlemmer i verkstedet' },
+        { verdi: '5 min', merke: 'Fra Tønsberg sentrum' },
         { verdi: '24/7', merke: 'Åpent for medlemmer' },
       ],
       adminNavOversikt: this.adminMeny('Oversikt'),
@@ -9464,8 +9499,8 @@ class Component extends DCLogic {
         { merke: 'Denne uka', verdi: '11', under: '6 alene, 5 med medlem' },
         { merke: 'Omsetning i august', verdi: 'kr. 14 850,-', under: '33 drop-in totalt' },
         { merke: 'Snittvurdering', verdi: '4,8', under: '19 tilbakemeldinger' },
-      ].map(t => Object.assign(t, { velg: this.go('admindropin'), kortStil: KORT_KLIKK })),
-      dropinBookinger: this.klikkbar([
+      ].map(t => this.erPublisert() ? Object.assign({}, t, { verdi: '–', under: 'Ikke koblet opp ennå' }) : t).map(t => Object.assign(t, { velg: this.go('admindropin'), kortStil: KORT_KLIKK })),
+      dropinBookinger: this.klikkbar(this.erPublisert() ? [] : [
         { navn: 'Emma Bjørnstad', vert: 'Alene · godkjent', tid: 'I dag 10:00 – 13:00', status: 'Bekreftet', tone: 'success' },
         { navn: 'Håkon Five', vert: 'Jonas Five', tid: 'I dag 10:00 – 13:00', status: 'Bekreftet', tone: 'success' },
         { navn: 'Line Sørhaug', vert: 'Ingrid Hansen', tid: 'Tirsdag 16:00 – 19:00', status: 'Venter på vert', tone: 'warning' },
@@ -9547,7 +9582,7 @@ class Component extends DCLogic {
       settMedlemsBeskjed: (e) => this.setState({ medlemsBeskjed: e.target.value }),
       sendTilMonica: () => this.sendTilMonicaNaa(),
       monicaEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendTilMonicaNaa(); } },
-      innboks: ((this.state.nyInnboks || []).slice().reverse()).concat([
+      innboks: ((this.state.nyInnboks || []).slice().reverse()).concat(this.erPublisert() ? [] : [
         { navn: 'Ole Aarseth', tekst: 'Kan jeg forlenge prøvemedlemskapet en uke? Jeg rakk ikke å bruke alle timene i august.', tid: '2 timer siden', ny: true, epost: 'ole@epost.no', tlf: '+47 900 41 226', abonnement: 'Prøv Lissom, utløper 3. sep' },
         { navn: 'Emma Bjørnstad', tekst: 'Er koppene mine ferdig brent? Jeg var på drop-in for tre uker siden.', tid: 'I går', ny: true, epost: 'emma@epost.no', tlf: '+47 902 14 887', abonnement: 'Ikke medlem, drop-in-gjest' },
         { navn: 'Silje Bratt', tekst: 'Takk for sist, kjempefin kveld! Kommer tilbake på tirsdag.', tid: '20. aug', epost: 'silje@epost.no', tlf: '+47 971 22 508', abonnement: '30 timer' },
@@ -9609,7 +9644,7 @@ class Component extends DCLogic {
           background: p.tone === 'brun' ? 'var(--lissom-brown)' : p.tone === 'gul' ? 'var(--lissom-yellow)' : 'var(--clay-300)',
         },
       })),
-      oppgaver: this.klikkbar([
+      oppgaver: this.klikkbar(this.erPublisert() ? [] : [
         { tekst: 'Mari Lunde: betaling feilet 22. august', merke: 'Følg opp', tone: 'danger' },
         { tekst: 'Silje Bratt har brukt opp timene sine i august', merke: 'Tilby oppgradering', tone: 'warning' },
         { tekst: '4 prøvemedlemskap utløper denne uka', merke: 'Send tilbud', tone: 'warning' },

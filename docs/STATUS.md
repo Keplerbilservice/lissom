@@ -38,6 +38,9 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Handlekurv synlig på mobil | Virker |
 | Gavekort med valgfritt beløp | Virker |
 | Kursbevis på Min side og i admin | Virker |
+| Forespørsler fra nettsiden | Lagres, varsles, følges opp i admin |
+| Brukernavn og passord for verkstedet | Virker, med brukeradministrasjon |
+| E-post over SMTP | Bygget — krever oppsett, se OPPSETT.md |
 | Ingen sporing, ingen tredjeparter | Verifisert i nettleser |
 | Workshop og Sip & Clay som kategori | Virker |
 | Vilkår og personvern | Publisert som egne sider |
@@ -64,9 +67,14 @@ tall der ville vært oppspinn.
 Backend kjører nå mot en ekte MariaDB 10.11 — samme versjon som webhotellet.
 
 ```
-php tests/backend.php    46 sjekker, alle grønne
+php tests/backend.php    56 sjekker, alle grønne
 tests/flyt.sh            10 sjekker, alle grønne
 ```
+
+Fra 22. august kjøres nettsiden også mot den ekte backend-en lokalt, med
+`ny.lissom.no` pekt på en lokal PHP-server. Det er slik forespørselsskjemaet,
+innloggingen og admin-sidene er verifisert — ikke bare at koden er
+syntaktisk riktig, men at flyten faktisk virker fra skjerm til database.
 
 `backend.php` dekker kapasitetsberegning, at siste plass ikke kan bookes to
 ganger, at en betaling kvitteres nøyaktig én gang uansett hvor mange ganger
@@ -167,17 +175,23 @@ Migreringen kjøres fra `/api/migrer.php?kjor=ja` når du er innlogget som
 admin. Nøkkelen fra secrets.php virker fortsatt, som reserve for den dagen
 innloggingen er ødelagt.
 
-**11. Ordensreglene om mat og drikke.** Du ba meg fjerne «ikke spis eller
+**11. E-post og SMS må settes opp.** E-post går nå gjennom serverens egen
+`mail()`, som ikke sier fra når noe blir avvist. Sett opp SMTP og Sveve etter
+oppskriften i `docs/OPPSETT.md`, og sjekk med
+`/api/test-varsel.php?epost=din@adresse.no`. Uten dette går ingen
+kvitteringer, påminnelser eller varsler ut.
+
+**12. Ordensreglene om mat og drikke.** Du ba meg fjerne «ikke spis eller
 drikk ved arbeidsbenkene» og sofakroken. Det er gjort. Punktet «bruk hansker
 ved glasering, ikke spis eller drikk i glasurrommet» står fortsatt — det
 handler om kjemikalier og ikke om benkene, så jeg lot det stå. Si fra hvis
 det også skal ut.
 
-**12. «Store former, viderekomne»** sier fortsatt «for deg som allerede
+**13. «Store former, viderekomne»** sier fortsatt «for deg som allerede
 dreier stødig». Det er et internkurs for medlemmer, så jeg tolket «gjelder
 alle våre kurs» som de åpne kursene. Skal den også endres, sier du fra.
 
-**13. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
+**14. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
 ikke — trafikk på nettsiden gjør den jobben. `paaminnelser` og `vedlikehold`
 bør stå.
 

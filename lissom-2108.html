@@ -338,27 +338,9 @@ window.__resources = {
         </div>
       </section>
 
-      <section style="background: var(--clay-100); padding: var(--section-y) var(--space-8);">
-        <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-4);">
-            <div>
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Paint on Pots</div>
-              <h2 style="margin: 0;">Mal din egen keramikk</h2>
-            </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ goPop }}" hint-size="auto,48px">Book Paint on Pots</x-import>
-          </div>
-          <p style="margin: 0 0 var(--space-8); font-size: var(--text-lg); color: var(--text-body); max-width: 56ch; text-wrap: pretty;">Den enkleste måten å prøve keramikk på. Kom som du er — hyggelig, sosialt og helt uten krav til erfaring.</p>
-          <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6);">
-            <sc-for list="{{ popSteg }}" as="s" hint-placeholder-count="4">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ s.nr }}</div>
-                <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ s.tittel }}</h3>
-                <p style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ s.tekst }}</p>
-              </div>
-            </sc-for>
-          </div>
-        </div>
-      </section>
+      <!-- Paint on Pots-seksjonen «Mal din egen keramikk» er tatt bort fra
+           forsiden etter onske fra eieren. Siden /paint-on-pots og lenken fra
+           Events staar som for, og popSteg brukes fortsatt der. -->
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: var(--width-content); margin: 0 auto;">

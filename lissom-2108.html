@@ -1218,6 +1218,7 @@ window.__resources = {
               <button type="button" onClick="{{ ukeForrige }}" aria-label="Forrige uke" style="{{ ukePilStilV }}">‹</button>
               <button type="button" onClick="{{ ukeNeste }}" aria-label="Neste uke" style="{{ ukePilStilH }}">›</button>
             </div>
+            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ ukeAntall }}</span>
           </div>
           <!-- En tom uke sa «Ingen kurs i dag» sju ganger og ga ingen vei
                videre. Naa staar det hvor det neste faktisk er. -->
@@ -13398,20 +13399,23 @@ class Component extends DCLogic {
 
         return {
           ukeNr: vist,
-          ukeForrige: () => this.setState({ ukeNr: forrige ?? Math.max(this.ukeNaa(), vist - 1) }),
-          ukeNeste: () => this.setState({ ukeNr: neste ?? Math.min(this.ukeNaa() + 52, vist + 1) }),
-          ukePilStilV: this.ukePil(vist > this.ukeNaa()),
-          ukePilStilH: this.ukePil(vist < this.ukeNaa() + 52),
+          // Pilene gaar mellom uker som har noe. Fra uke 35 skal «forrige»
+          // ikke ta deg til uke 34 der det ikke staar noe — den uka finnes
+          // ikke i kalenderen i praksis.
+          ukeForrige: () => { if (forrige) this.setState({ ukeNr: forrige }); },
+          ukeNeste: () => { if (neste) this.setState({ ukeNr: neste }); },
+          ukePilStilV: this.ukePil(!!forrige),
+          ukePilStilH: this.ukePil(!!neste),
           // Er uka tom, sier vi hvor det neste faktisk er — framfor sju
           // «Ingen kurs i dag» paa rad og ingen vei videre.
-          ukeTom: this.erPublisert() && !this.ukeData(vist).some(d => (d.poster || []).length),
-          ukeTomTekst: neste
-            ? 'Ingenting denne uka. Neste kurs er i uke ' + neste + '.'
-            : (medNoe.length
-                ? 'Ingenting denne uka.'
-                : 'Ingen kursdatoer er lagt ut ennå. Ta kontakt, så finner vi en tid.'),
-          ukeTomKnapp: neste ? 'Gå til uke ' + neste : 'Se alle kurs',
-          ukeTomGaa: neste ? () => this.setState({ ukeNr: neste }) : this.go('kurs'),
+          // Naar kalenderen bare viser uker som har noe, staar det bare igjen
+          // ett tomt tilfelle: ingen datoer er lagt ut i det hele tatt.
+          ukeTom: this.erPublisert() && medNoe.length === 0,
+          ukeTomTekst: 'Ingen kursdatoer er lagt ut ennå. Ta kontakt, så finner vi en tid.',
+          ukeTomKnapp: 'Se alle kurs',
+          ukeTomGaa: this.go('kurs'),
+          // Hvilke uker som finnes, saa man ser at det er flere.
+          ukeAntall: medNoe.length > 1 ? medNoe.length + ' uker med kurs framover' : '',
         };
       })(),
       hoppTilKursliste: () => {

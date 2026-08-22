@@ -342,45 +342,9 @@ window.__resources = {
            forsiden etter onske fra eieren. Siden /paint-on-pots og lenken fra
            Events staar som for, og popSteg brukes fortsatt der. -->
 
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="margin-bottom: var(--space-8);">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Neste steg</div>
-            <h2 style="margin: 0;">Fått keramikkdilla?</h2>
-          </div>
-          <div class="lx-split" style="display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-8); align-items: stretch;">
-            <div class="lx-foto" onClick="{{ goKurs }}" style="border-radius: var(--radius-xl, 22px); overflow: hidden; height: 477px; background-image: url('assets_photos_handbygging.jpg'); background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end; cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
-              <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(43,20,12,0.72) 0%, rgba(43,20,12,0.25) 42%, transparent 65%); pointer-events: none;"></div>
-              <p style="position: relative; margin: 0; padding: var(--space-8); font-family: var(--font-display); font-weight: 700; font-size: clamp(18px, 1.3vw, 23px); line-height: 1.45; color: var(--clay-50); width: 100%; text-wrap: pretty;">Her får du tid, veiledning og rom til å prøve. Kom alene, ta med en venn eller finn din faste plass i et raust fellesskap.</p>
-            </div>
-            <div class="lx-fotokol" style="display: flex; flex-direction: column; gap: var(--space-8); height: 477px;">
-              <div onClick="{{ goMedlemskap }}" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-xl, 22px); padding: var(--space-6) var(--space-7); display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
-                <div style="display: flex; align-items: baseline; gap: var(--space-4); white-space: nowrap;">
-                  <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--terracotta-600);">01</span>
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Medlemskap</div>
-                </div>
-                <h3 style="font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 1.3vw, 23px); color: var(--text-heading); margin: var(--space-3) 0 var(--space-2);">Fast plass i verkstedet</h3>
-                <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">Månedlig abonnement med verkstedtimer du bruker når det passer deg. Du stempler inn på mobilen. Krever kurs eller tidligere erfaring.</p>
-                <div style="margin-top: auto; display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ goMedlemskap }}" hint-size="auto,40px">Se abonnementene</x-import>
-                  <span style="font-size: var(--text-sm); color: var(--text-muted);">Fra kr. 2 590 i måneden</span>
-                </div>
-              </div>
-              <div onClick="{{ goDropin }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-xl, 22px); padding: var(--space-6) var(--space-7); display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; overflow: hidden; cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
-                <div style="display: flex; align-items: baseline; gap: var(--space-4); white-space: nowrap;">
-                  <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--terracotta-600);">02</span>
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Drop-in</div>
-                </div>
-                <h3 style="font-family: var(--font-display); font-weight: 800; font-size: clamp(20px, 1.3vw, 23px); color: var(--text-heading); margin: var(--space-3) 0 var(--space-2);">Jobb videre på egen hånd</h3>
-                <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">Krever godkjenning: kurs hos oss eller følge av et aktivt medlem. Leire, materialer, brenning og ett ferdig arbeid er inkludert.</p>
-                <div style="margin-top: auto;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ goDropin }}" hint-size="auto,40px">Book drop-in</x-import>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <!-- «Neste steg — Faatt keramikkdilla?» er tatt bort fra forsiden etter
+           onske fra eieren. Medlemskap og drop-in naas fortsatt fra
+           toppmenyen og fra sine egne sider. -->
 
       <sc-if value="{{ kampanjeVis }}" hint-placeholder-val="{{ false }}">
         <section data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-12) var(--space-8);">

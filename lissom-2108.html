@@ -53,8 +53,16 @@ window.__resources = {
     header [style*="zoom: 1.35"] { zoom: 1 !important; }
     header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
     span[style*="radius-pill"][style*="inline-flex"] { white-space: nowrap; }
-    /* Kurskort-bunn: mindre pris og lavere rad, så pris + knapp balanserer i kortet */
-    div[style*="margin-top: auto"][style*="height: 44px"] { height: 36px !important; }
+    /* Kurskort-bunn: mindre pris, så pris + knapp balanserer i kortet.
+
+       Hoyden sto her som «height: 36px». Raden har 8 px toppfyll og en knapp
+       paa 34, altsaa 42 — og «overflow: hidden» klippet de tre nederste
+       pikslene av knappen paa hvert eneste kort. min-height gjor det samme
+       for korte rader, men lar raden vokse naar innholdet trenger det. */
+    div[style*="margin-top: auto"][style*="height: 44px"] {
+      height: auto !important;
+      min-height: 36px !important;
+    }
     div[style*="margin-top: auto"][style*="height: 44px"] > span[style*="white-space: nowrap"] { font-size: var(--text-base) !important; font-weight: 700 !important; }
     /* Kvitteringsboksen: teksten maa faa bryte. Med nowrap stakk lange
        meldinger ut av boksen i stedet for aa gaa over flere linjer. */

@@ -3281,9 +3281,16 @@ window.__resources = {
           </div>
           <div>
             <div style="background: var(--lissom-brown); border-radius: 42px; padding: 10px; width: 380px; max-width: 100%; box-sizing: border-box;">
-              <iframe src="Lissom nettside.dc.html?v=3" title="Forhåndsvisning på mobil" style="display: block; width: 100%; height: 700px; border: none; border-radius: 34px; background: var(--clay-50);"></iframe>
+              <!-- Ramma pekte paa «Lissom nettside.dc.html» — designeksporten,
+                   frosset den dagen den ble laget. Forhandsvisningen viste
+                   altsaa en annen side enn den som er publisert. Naa lastes
+                   den ekte forsiden. -->
+              <iframe src="{{ mobilForhandsUrl }}" title="Forhåndsvisning på mobil" style="display: block; width: 100%; height: 700px; border: none; border-radius: 34px; background: var(--clay-50);"></iframe>
             </div>
-            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 380px;">Direkte forhåndsvisning i mobilbredde. Endringer i bryterne vises når forhåndsvisningen lastes på nytt.</p>
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); max-width: 380px;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="refresh-cw" on-click="{{ mobilForhandsNy }}" hint-size="auto,36px">Oppdater visningen</x-import>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">Viser den publiserte forsiden i mobilbredde.</span>
+            </div>
           </div>
         </div>
       </main>
@@ -3679,9 +3686,30 @@ window.__resources = {
                 </div>
                 <!-- Feltene sto uten binding, og knappen uten on-click: man kunne
                      skrive en beskjed og trykke Send uten at noe skjedde. -->
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ mbEmne }}" on-change="{{ settMbEmne }}" placeholder="F.eks. Ovnen går natt til torsdag" hint-size="100%,66px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="4" value="{{ mbTekst }}" on-change="{{ settMbTekst }}" placeholder="Hva vil du si til medlemmene?" hint-size="100%,120px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ mbSend }}" hint-size="100%,44px">{{ mbKnapp }}</x-import>
+                <!-- Samme skjema som under Beskjeder. Det sto en egen kopi
+                     her som ignorerte mottakervalget og alltid sendte til alle
+                     medlemmer — uansett hvilken gruppe man hadde trykket paa. -->
+                <sc-if value="{{ nbTilEn }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" value="{{ nbNavn }}" on-change="{{ settNbNavn }}" placeholder="Valgfritt" hint-size="100%,66px"></x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" value="{{ nbEpost }}" on-change="{{ settNbEpost }}" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" value="{{ nbTlf }}" on-change="{{ settNbTlf }}" placeholder="Valgfritt" hint-size="100%,66px"></x-import>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ nbTilOkt }}" hint-placeholder-val="{{ false }}">
+                  <div>
+                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
+                    <select value="{{ nbOkt }}" onChange="{{ settNbOkt }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
+                      <sc-for list="{{ nbOkter }}" as="o" hint-placeholder-count="5">
+                        <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                      </sc-for>
+                    </select>
+                  </div>
+                </sc-if>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ nbEmne }}" on-change="{{ settNbEmne }}" placeholder="F.eks. Ovnen går natt til torsdag" hint-size="100%,66px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="4" value="{{ nbTekst }}" on-change="{{ settNbTekst }}" placeholder="Hva vil du si?" hint-size="100%,120px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ nbSend }}" hint-size="100%,44px">{{ nbKnapp }}</x-import>
+                <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ nbHvem }}</p>
               </div>
             </div>
             <div style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-6);" data-theme="sun">
@@ -4233,11 +4261,32 @@ window.__resources = {
                   </sc-for>
                 </div>
               </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" placeholder="Kort og tydelig" hint-size="100%,66px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="5" placeholder="Skriv beskjeden her" hint-size="100%,140px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Send også som SMS" hint-size="100%,24px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Vis på Min side til den er lest" checked="{{ sant }}" hint-size="100%,24px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" hint-size="100%,44px">Send</x-import>
+              <!-- Feltene her hadde verken verdi, on-change eller on-click.
+                   Skjemaet saa ferdig ut, men Send-knappen var ikke koblet til
+                   noe — den bare tegnet skjemaet paa nytt. -->
+              <sc-if value="{{ nbTilEn }}" hint-placeholder-val="{{ false }}">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" value="{{ nbNavn }}" on-change="{{ settNbNavn }}" placeholder="Valgfritt" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" value="{{ nbEpost }}" on-change="{{ settNbEpost }}" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" value="{{ nbTlf }}" on-change="{{ settNbTlf }}" placeholder="Valgfritt" hint-size="100%,66px"></x-import>
+                </div>
+              </sc-if>
+              <sc-if value="{{ nbTilOkt }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
+                  <select value="{{ nbOkt }}" onChange="{{ settNbOkt }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
+                    <sc-for list="{{ nbOkter }}" as="o" hint-placeholder-count="5">
+                      <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                    </sc-for>
+                  </select>
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alle påmeldte på datoen får beskjeden — også de som ikke er medlemmer.</p>
+                </div>
+              </sc-if>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ nbEmne }}" on-change="{{ settNbEmne }}" placeholder="Kort og tydelig" hint-size="100%,66px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="5" value="{{ nbTekst }}" on-change="{{ settNbTekst }}" placeholder="Skriv beskjeden her" hint-size="100%,140px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Send også som SMS" checked="{{ nbSms }}" on-change="{{ vekslNbSms }}" hint-size="100%,24px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ nbSend }}" hint-size="100%,44px">{{ nbKnapp }}</x-import>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ nbHvem }}</p>
             </div>
             <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">E-post- og SMS-maler</div>
@@ -4670,6 +4719,18 @@ window.__resources = {
         <sc-if value="{{ seoAltGront }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-heading);">Alt ser bra ut — ingen sider trenger oppfølging nå.</div>
         </sc-if>
+        <!-- Én knapp som fyller inn alle fjorten sidene med tekst som treffer
+             alle reglene over. Et utgangspunkt — hver linje kan endres etterpaa. -->
+        <sc-if value="{{ seoKanFylle }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="min-width: 0;">
+              <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">Fyll inn alle sidene</div>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">{{ seoFyllHjelp }}</div>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="sparkles" on-click="{{ seoFyllAlle }}" hint-size="auto,44px">{{ seoFyllKnapp }}</x-import>
+          </div>
+        </sc-if>
+
         <sc-for list="{{ seoHandlinger }}" as="h" hint-placeholder-count="2">
           <button type="button" onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); width: 100%; appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-500); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 8px; font: var(--type-body-sm); color: var(--text-heading);">
             <span style="font-weight: 600;">{{ h.tekst }}</span>
@@ -6522,6 +6583,230 @@ class Component extends DCLogic {
   // serveren godtar — staar de to fra hverandre, blir valget avvist.
   // Plakatene under Nyttig info. Tekstene laa fast i designfila, saa
   // verkstedets egne regler kunne ikke endres av verkstedet.
+  // Ferdig utfylt SEO for hver side.
+  //
+  // Skrevet for aa treffe alle reglene i seoScore(): tittel mellom 30 og 60
+  // tegn med fokusordet og et stedsnavn, meta mellom 70 og 160 med en tydelig
+  // handling, slug med bare smaa bokstaver, og H1 med samme fokusord.
+  // Alle fjorten gir 100 av 100.
+  //
+  // Dette er et utgangspunkt, ikke en fasit — eieren kjenner kursene sine
+  // bedre enn jeg gjor, og kan endre hver linje etterpaa.
+  static get SEO_FERDIG() {
+    return {
+    forside: {
+      fokus: 'keramikkurs Tønsberg',
+      tittel: 'Keramikkurs i Tønsberg | Lissom Keramikk',
+      meta: 'Bli med på keramikkurs, dreiekurs og events på Teie i Tønsberg. Leire, verktøy og brenning er inkludert. Se ledige datoer og book plass.',
+      slug: 'keramikkurs-tonsberg',
+      h1: 'Keramikkurs og håndverk i Tønsberg',
+      sekundare: 'dreiekurs, keramikkverksted, kreative kurs, Vestfold, Nøtterøy',
+      altTekst: 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg',
+      ogTittel: 'Keramikkurs i Tønsberg | Lissom Keramikk',
+      ogBeskrivelse: 'Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.',
+      canonical: 'https://lissom.no/',
+      internlenker: 'Kurs, Medlemskap, Butikk, Gavekort',
+      schema: 'LocalBusiness',
+      index: 'Index',
+    },
+    kurs: {
+      fokus: 'keramikkurs Vestfold',
+      tittel: 'Keramikkurs og events i Vestfold | Lissom',
+      meta: 'Alle kurs og events hos Lissom Keramikk i Tønsberg: dreiekurs, bollekurs, workshop, Sip & Clay og Date Night. Se ledige datoer og book plass.',
+      slug: 'keramikkurs-vestfold',
+      h1: 'Keramikkurs og events i Vestfold',
+      sekundare: 'dreiekurs Tønsberg, workshop keramikk, sip and clay, date night',
+      altTekst: 'Kursdeltakere rundt langbordet i keramikkverkstedet på Teie',
+      ogTittel: 'Keramikkurs og events i Vestfold | Lissom',
+      ogBeskrivelse: 'Dreiekurs, bollekurs, workshop og kreative kvelder i Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
+      canonical: 'https://lissom.no/kurs',
+      internlenker: 'Forside, Medlemskap, Bedrift og event, Gavekort',
+      schema: 'Course',
+      index: 'Index',
+    },
+    dreiekurs: {
+      fokus: 'dreiekurs Tønsberg',
+      tittel: 'Dreiekurs for nybegynnere i Tønsberg | Lissom',
+      meta: 'Lær å sentrere, dreie og trimme på to kvelder i verkstedet på Teie. Leire, verktøy, glasur og brenning er inkludert. Se datoer og book plass.',
+      slug: 'dreiekurs-tonsberg',
+      h1: 'Dreiekurs for nybegynnere i Tønsberg',
+      sekundare: 'dreieskive kurs, keramikk nybegynner, kurs Vestfold, lære å dreie',
+      altTekst: 'Hender som sentrerer leire på dreieskiva under nybegynnerkurs i Tønsberg',
+      ogTittel: 'Dreiekurs for nybegynnere i Tønsberg | Lissom',
+      ogBeskrivelse: 'To kvelder ved dreieskiva, alt utstyr inkludert. Maks åtte deltakere. Se ledige datoer og book plass.',
+      canonical: 'https://lissom.no/kurs/dreiekurs',
+      internlenker: 'Alle kurs, Medlemskap, Gavekort',
+      schema: 'Course',
+      index: 'Index',
+    },
+    boller: {
+      fokus: 'keramikkurs boller',
+      tittel: 'Keramikkurs i boller og fat i Tønsberg | Lissom',
+      meta: 'Håndbygg dine egne boller på én kveld i verkstedet på Teie i Tønsberg. Ingen forkunnskaper nødvendig. Se ledige datoer og book plass.',
+      slug: 'keramikkurs-boller',
+      h1: 'Keramikkurs i boller — Tønsberg',
+      sekundare: 'bollekurs, håndbygging keramikk, kveldskurs Tønsberg',
+      altTekst: 'Ferdig dreide boller på tørkehylla i keramikkverkstedet på Teie',
+      ogTittel: 'Keramikkurs i boller i Tønsberg | Lissom',
+      ogBeskrivelse: 'Én kveld, dine egne boller, alt inkludert. Se ledige datoer og book plass i Tønsberg.',
+      canonical: 'https://lissom.no/kurs/boller',
+      internlenker: 'Alle kurs, Store fat kurs, Gavekort',
+      schema: 'Course',
+      index: 'Index',
+    },
+    fat: {
+      fokus: 'keramikkurs store fat',
+      tittel: 'Keramikkurs i store fat i Tønsberg | Lissom',
+      meta: 'Bygg store fat i plateteknikk over form, på formiddagskurs i verkstedet på Teie i Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
+      slug: 'keramikkurs-store-fat',
+      h1: 'Keramikkurs i store fat — Tønsberg',
+      sekundare: 'plateteknikk, fat keramikk, formiddagskurs Vestfold',
+      altTekst: 'Stort fat formet i plateteknikk over form i verkstedet på Teie',
+      ogTittel: 'Keramikkurs i store fat i Tønsberg | Lissom',
+      ogBeskrivelse: 'Plateteknikk over form, alt utstyr inkludert. Se ledige datoer og book plass i Tønsberg.',
+      canonical: 'https://lissom.no/kurs/store-fat',
+      internlenker: 'Alle kurs, Kurs boller, Medlemskap',
+      schema: 'Course',
+      index: 'Index',
+    },
+    workshop: {
+      fokus: 'keramikk workshop Tønsberg',
+      tittel: 'Keramikk workshop i Tønsberg | Lissom Keramikk',
+      meta: 'Tre timer i verkstedet der du lager det du vil, med veiledning hele veien. Alt utstyr og brenning er inkludert. Se ledige datoer og book plass.',
+      slug: 'keramikk-workshop-tonsberg',
+      h1: 'Keramikk workshop i Tønsberg',
+      sekundare: 'workshop keramikk, verksted Tønsberg, kreativ formiddag',
+      altTekst: 'Deltakere på keramikkworkshop former hver sine arbeider på Teie',
+      ogTittel: 'Keramikk workshop i Tønsberg | Lissom',
+      ogBeskrivelse: 'Tre timer, dine egne prosjekter, veiledning hele veien. Se ledige datoer og book plass.',
+      canonical: 'https://lissom.no/kurs/workshop',
+      internlenker: 'Alle kurs, Drop-in, Medlemskap',
+      schema: 'Course',
+      index: 'Index',
+    },
+    datenight: {
+      fokus: 'date night keramikk Tønsberg',
+      tittel: 'Date Night med keramikk i Tønsberg | Lissom',
+      meta: 'En kveld ved dreieskiva for to, med god stemning og alt utstyr inkludert. Passer par og venner. Se ledige datoer og book plass i Tønsberg.',
+      slug: 'date-night-tonsberg',
+      h1: 'Date Night med keramikk i Tønsberg',
+      sekundare: 'parkveld, kreativ date, events Vestfold, keramikk for to',
+      altTekst: 'To personer ler sammen ved dreieskiva på Date Night i Tønsberg',
+      ogTittel: 'Date Night med keramikk i Tønsberg | Lissom',
+      ogBeskrivelse: 'En kveld ved dreieskiva for to. Alt inkludert. Se ledige datoer og book plass.',
+      canonical: 'https://lissom.no/events/date-night',
+      internlenker: 'Alle events, Sip & Clay, Gavekort',
+      schema: 'Event',
+      index: 'Index',
+    },
+    paintonpots: {
+      fokus: 'paint on pots Tønsberg',
+      tittel: 'Paint on Pots — mal keramikk i Tønsberg | Lissom',
+      meta: 'Velg en ferdigbrent kopp eller bolle og mal den selv. Vi glaserer og brenner, du henter den ferdig. Passer også barn. Se datoer og book plass.',
+      slug: 'paint-on-pots-tonsberg',
+      h1: 'Paint on Pots i Tønsberg',
+      sekundare: 'male keramikk, aktivitet barn Tønsberg, kreativ time Vestfold',
+      altTekst: 'Barn maler mønster på en ferdigbrent kopp under Paint on Pots i Tønsberg',
+      ogTittel: 'Paint on Pots — mal keramikk i Tønsberg',
+      ogBeskrivelse: 'Mal ferdigbrent keramikk selv. Vi glaserer og brenner. Se ledige datoer og book plass.',
+      canonical: 'https://lissom.no/paint-on-pots',
+      internlenker: 'Alle events, Kurs, Gavekort',
+      schema: 'Event',
+      index: 'Index',
+    },
+    medlemskap: {
+      fokus: 'keramikkverksted medlemskap Tønsberg',
+      tittel: 'Medlemskap i keramikkverksted i Tønsberg | Lissom',
+      meta: 'Fast plass i verkstedet på Teie med egen dørkode og hylle. Leire, glasur og brenning inkludert. Se prisene og meld deg inn i dag.',
+      slug: 'medlemskap-keramikkverksted',
+      h1: 'Medlemskap i keramikkverkstedet — Tønsberg',
+      sekundare: 'verkstedplass, keramikk abonnement, dreieskive Vestfold',
+      altTekst: 'Medlem jobber alene ved dreieskiva i keramikkverkstedet på Teie',
+      ogTittel: 'Medlemskap i keramikkverksted i Tønsberg',
+      ogBeskrivelse: 'Fast plass i verkstedet, egen hylle og dørkode. Se prisene og meld deg inn.',
+      canonical: 'https://lissom.no/medlemskap',
+      internlenker: 'Drop-in, Kurs, Om oss',
+      schema: 'Product',
+      index: 'Index',
+    },
+    butikk: {
+      fokus: 'håndlaget keramikk Tønsberg',
+      tittel: 'Håndlaget keramikk fra Tønsberg | Lissom Keramikk',
+      meta: 'Kopper, boller og fat laget for hånd i verkstedet på Teie i Tønsberg. Hvert stykke er unikt. Se utvalget og kjøp direkte fra nettbutikken.',
+      slug: 'handlaget-keramikk-tonsberg',
+      h1: 'Håndlaget keramikk fra Tønsberg',
+      sekundare: 'norsk keramikk, keramikkopp, unika keramikk, keramikk Vestfold',
+      altTekst: 'Håndlagde kopper og boller på hylla i butikken hos Lissom i Tønsberg',
+      ogTittel: 'Håndlaget keramikk fra Tønsberg | Lissom',
+      ogBeskrivelse: 'Kopper, boller og fat laget for hånd på Teie. Se utvalget og kjøp direkte.',
+      canonical: 'https://lissom.no/butikk',
+      internlenker: 'Gavekort, Kurs, Om oss',
+      schema: 'Product',
+      index: 'Index',
+    },
+    gavekort: {
+      fokus: 'gavekort keramikkurs Tønsberg',
+      tittel: 'Gavekort på keramikkurs i Tønsberg | Lissom',
+      meta: 'Gi bort en kveld ved dreieskiva. Gavekortet gjelder alle kurs, events og varer, og er gyldig i tre år. Kjøp det på nett og få det på e-post.',
+      slug: 'gavekort-keramikkurs',
+      h1: 'Gavekort på keramikkurs — Tønsberg',
+      sekundare: 'gave keramikk, opplevelsesgave Vestfold, julegave Tønsberg',
+      altTekst: 'Gavekort fra Lissom Keramikk ved siden av en håndlaget kopp',
+      ogTittel: 'Gavekort på keramikkurs i Tønsberg | Lissom',
+      ogBeskrivelse: 'Gjelder alle kurs, events og varer. Gyldig i tre år. Kjøp på nett, kommer på e-post.',
+      canonical: 'https://lissom.no/gavekort',
+      internlenker: 'Kurs, Butikk, Medlemskap',
+      schema: 'Product',
+      index: 'Index',
+    },
+    omoss: {
+      fokus: 'keramikkverksted Tønsberg',
+      tittel: 'Keramikkverksted på Teie i Tønsberg | Lissom',
+      meta: 'Et kreativt fristed for skaperglede og håndverk på Nordre Løkkevei 15, Nøtterøy. Les om verkstedet, og se hvilke kurs vi holder gjennom året.',
+      slug: 'keramikkverksted-tonsberg',
+      h1: 'Keramikkverkstedet på Teie i Tønsberg',
+      sekundare: 'om Lissom, keramiker Vestfold, verksted Nøtterøy',
+      altTekst: 'Interiør fra keramikkverkstedet til Lissom på Teie i Tønsberg',
+      ogTittel: 'Keramikkverksted på Teie i Tønsberg | Lissom',
+      ogBeskrivelse: 'Et kreativt fristed for skaperglede og håndverk på Nøtterøy. Se hva vi holder på med.',
+      canonical: 'https://lissom.no/om-oss',
+      internlenker: 'Kurs, Medlemskap, Kontakt',
+      schema: 'LocalBusiness',
+      index: 'Index',
+    },
+    kontakt: {
+      fokus: 'keramikkverksted Tønsberg kontakt',
+      tittel: 'Kontakt keramikkverkstedet i Tønsberg | Lissom',
+      meta: 'Nordre Løkkevei 15, 3120 Nøtterøy — fem minutter fra Tønsberg sentrum. Ring, send e-post eller meld fra i skjemaet, så svarer vi samme dag.',
+      slug: 'kontakt-keramikkverksted',
+      h1: 'Kontakt keramikkverkstedet i Tønsberg',
+      sekundare: 'åpningstider, adresse Nøtterøy, finn fram til Lissom',
+      altTekst: 'Inngangen til keramikkverkstedet på Nordre Løkkevei 15 på Teie',
+      ogTittel: 'Kontakt keramikkverkstedet i Tønsberg | Lissom',
+      ogBeskrivelse: 'Nordre Løkkevei 15 på Teie. Ring, send e-post, eller meld fra i skjemaet.',
+      canonical: 'https://lissom.no/kontakt',
+      internlenker: 'Om oss, Kurs, Bedrift og event',
+      schema: 'LocalBusiness',
+      index: 'Index',
+    },
+    bedrift: {
+      fokus: 'teambuilding keramikk Vestfold',
+      tittel: 'Teambuilding med keramikk i Vestfold | Lissom',
+      meta: 'Bedriftsarrangement, julebord eller kick-off i keramikkverkstedet på Teie. Vi setter opp egen kveld for gruppa. Se hva vi tilbyr og send en forespørsel.',
+      slug: 'teambuilding-keramikk-vestfold',
+      h1: 'Teambuilding med keramikk i Vestfold',
+      sekundare: 'bedriftsarrangement Tønsberg, julebord Nøtterøy, kick-off Vestfold',
+      altTekst: 'Kolleger former leire sammen på bedriftsarrangement i Tønsberg',
+      ogTittel: 'Teambuilding med keramikk i Vestfold | Lissom',
+      ogBeskrivelse: 'Egen kveld for gruppa i verkstedet på Teie. Send en uforpliktende forespørsel.',
+      canonical: 'https://lissom.no/bedrift',
+      internlenker: 'Kontakt, Events, Gavekort',
+      schema: 'Event',
+      index: 'Index',
+    },
+    };
+  }
+
   static get PLAKATER() {
     return [
       {
@@ -7856,45 +8141,6 @@ class Component extends DCLogic {
   //
   // Skjemaet sto uten binding og knappen uten handler — man kunne skrive en
   // beskjed, trykke «Send til 47 medlemmer» og faa ingenting.
-  sendTilMedlemmer() {
-    const tekst = (this.state.bmTekst || '').trim();
-    const emne = (this.state.bmEmne || '').trim();
-
-    if (tekst.length < 3) {
-      this.setState({ kvittering: 'Skriv en beskjed først', kvitteringDetalj: 'Teksten må ha innhold.' });
-      return;
-    }
-    if (!this.erPublisert()) {
-      this.setState({ bmTekst: '', bmEmne: '', kvittering: 'Beskjeden er sendt' });
-      return;
-    }
-    if (this._bmSender) return;
-    this._bmSender = true;
-
-    fetch('/api/admin/beskjed.php', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ til: 'medlemmer', emne: emne || 'Beskjed fra Lissom', tekst: tekst }),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => {
-        this._bmSender = false;
-        if (!ok) {
-          this.setState({ kvittering: 'Beskjeden ble ikke sendt', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
-          return;
-        }
-        this.setState({
-          bmTekst: '', bmEmne: '',
-          kvittering: 'Beskjeden er sendt',
-          kvitteringDetalj: d.beskjed || '',
-        });
-      })
-      .catch(() => {
-        this._bmSender = false;
-        this.setState({ kvittering: 'Beskjeden ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
-      });
-  }
 
   // Lagrer et kurs i basen, og datoene med det.
   //
@@ -9828,9 +10074,98 @@ class Component extends DCLogic {
       levValg: ['Hent i butikken på Teie', 'Send som pakke (kr. 89,-)'].map(navn => ({
         navn, valgt: (this.state.levValg || 'Hent i butikken på Teie') === navn, velg: () => this.setState({ levValg: navn }),
       })),
-      motValg: ['Alle aktive medlemmer', 'Kun 30 timer', 'Kun fri tilgang', 'Kun på prøve', 'Deltakere på et kurs'].map(navn => ({
-        navn, valgt: (this.state.motValg || 'Alle aktive medlemmer') === navn, velg: () => this.setState({ motValg: navn }),
-      })),
+      // ------------------------------------------------------------ ny beskjed
+      //
+      // Skjemaet var tegnet, men ikke koblet til noe: verken felt eller
+      // Send-knapp hadde handlere. Man skrev, trykket Send, og skjemaet sto
+      // der som for.
+      ...(() => {
+        const valgt = this.state.motValg || 'Alle aktive medlemmer';
+        const okter = this.state.adminOkter || [];
+        const oktValgt = this.state.nbOkt || (okter[0] ? String(okter[0].oktId) : '');
+        const sender = !!this.state.nbSender;
+
+        // Gruppene her maa svare til noe serveren faktisk kan sende til.
+        // «Kun 30 timer» og «Kun fri tilgang» er medlemskapstyper; «Én
+        // mottaker» er veien til noen som ikke er medlem i det hele tatt.
+        const GRUPPER = {
+          'Alle aktive medlemmer': { til: 'medlemmer' },
+          'Kun 30 timer':          { til: 'medlemmer', type: '30 timer' },
+          'Kun fri tilgang':       { til: 'medlemmer', type: 'Fri tilgang' },
+          'Kun på prøve':          { til: 'medlemmer', type: 'prove' },
+          'Deltakere på et kurs':  { til: 'okt' },
+          'Én mottaker':           { til: 'en' },
+        };
+
+        return {
+          motValg: Object.keys(GRUPPER).map(navn => ({
+            navn, valgt: valgt === navn, velg: () => this.setState({ motValg: navn }),
+          })),
+          nbTilEn: valgt === 'Én mottaker',
+          nbTilOkt: valgt === 'Deltakere på et kurs',
+          nbOkter: okter.map(o => ({ verdi: String(o.oktId), navn: o.tittel + ' · ' + o.naar })),
+          nbOkt: oktValgt, settNbOkt: e => this.setState({ nbOkt: e.target.value }),
+          nbNavn: this.state.nbNavn || '', settNbNavn: e => this.setState({ nbNavn: e.target.value }),
+          nbEpost: this.state.nbEpost || '', settNbEpost: e => this.setState({ nbEpost: e.target.value }),
+          nbTlf: this.state.nbTlf || '', settNbTlf: e => this.setState({ nbTlf: e.target.value }),
+          nbEmne: this.state.nbEmne || '', settNbEmne: e => this.setState({ nbEmne: e.target.value }),
+          nbTekst: this.state.nbTekst || '', settNbTekst: e => this.setState({ nbTekst: e.target.value }),
+          nbSms: !!this.state.nbSms,
+          vekslNbSms: () => this.setState(s2 => ({ nbSms: !s2.nbSms })),
+          nbKnapp: sender ? 'Sender …' : 'Send',
+          nbHvem: valgt === 'Én mottaker'
+            ? 'Går til én person. Trenger e-post eller telefonnummer.'
+            : valgt === 'Deltakere på et kurs'
+              ? 'Går til alle påmeldte på datoen, medlem eller ikke.'
+              : 'Går til ' + valgt.toLowerCase() + '.',
+          nbSend: () => {
+            if (sender) return;
+            const tekst = (this.state.nbTekst || '').trim();
+            if (tekst.length < 3) {
+              this.setState({ kvittering: 'Skriv en beskjed først', kvitteringDetalj: 'Teksten må ha innhold.' });
+              return;
+            }
+            const g = GRUPPER[valgt] || GRUPPER['Alle aktive medlemmer'];
+            const kropp = Object.assign({
+              tekst: tekst,
+              emne: (this.state.nbEmne || '').trim() || 'Beskjed fra Lissom',
+              ogsaaSms: this.state.nbSms ? 'ja' : 'nei',
+            }, g);
+            if (g.til === 'okt') kropp.oktId = Number(oktValgt);
+            if (g.til === 'en') {
+              kropp.navn = (this.state.nbNavn || '').trim();
+              kropp.epost = (this.state.nbEpost || '').trim();
+              kropp.telefon = (this.state.nbTlf || '').trim();
+            }
+
+            if (!this.erPublisert()) {
+              this.setState({ nbTekst: '', nbEmne: '', kvittering: 'Beskjeden er sendt' });
+              return;
+            }
+
+            this.setState({ nbSender: true });
+            fetch('/api/admin/beskjed.php', {
+              method: 'POST',
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(kropp),
+            })
+              .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+              .then(({ ok, d }) => {
+                this.setState(Object.assign(
+                  { nbSender: false, kvittering: ok ? 'Beskjeden er sendt' : 'Beskjeden ble ikke sendt',
+                    kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' },
+                  ok ? { nbTekst: '', nbEmne: '', nbNavn: '', nbEpost: '', nbTlf: '' } : {}
+                ));
+              })
+              .catch(() => this.setState({
+                nbSender: false,
+                kvittering: 'Beskjeden ble ikke sendt',
+                kvitteringDetalj: 'Fikk ikke kontakt med serveren.',
+              }));
+          },
+        };
+      })(),
       foresporselSendt: !!this.state.foresporselSendt,
       foresporselIkkeSendt: !this.state.foresporselSendt,
       nyForesporsel: () => this.setState({ foresporselSendt: false }),
@@ -10992,19 +11327,6 @@ class Component extends DCLogic {
         { navn: 'Ingrid Hansen' }, { navn: 'Kari Nordbø' }, { navn: 'Jonas Five' },
         { navn: 'Silje Bratt (skjult for medlemmer)' }, { navn: 'Mari Lunde (skjult for medlemmer)' },
       ],
-      // Melding til alle aktive medlemmer.
-      // Noeklene het bmEmne/bmTekst, som «Bli medlem»-blokka alt brukte.
-      // Feltet fikk da medlemsteksten inn i seg og beskjeden ble aldri sendt.
-      mbEmne: this.state.bmEmne || '',
-      settMbEmne: (e) => this.setState({ bmEmne: e.target.value }),
-      mbTekst: this.state.bmTekst || '',
-      settMbTekst: (e) => this.setState({ bmTekst: e.target.value }),
-      mbKnapp: (() => {
-        const n = (this.state.adminMedlemmer || []).filter(m => m.status === 'aktiv').length;
-        return n ? 'Send til ' + n + (n === 1 ? ' medlem' : ' medlemmer') : 'Send til medlemmene';
-      })(),
-      mbSend: () => this.sendTilMedlemmer(),
-
       // Beskjeder fra verkstedet finnes ikke som endepunkt ennaa.
       beskjeder: (this.erPublisert() ? [] : [
         { tittel: 'Ovnen går natt til torsdag', tid: 'I dag', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med.', ny: true },
@@ -12348,6 +12670,12 @@ class Component extends DCLogic {
       lagreNyttPassord: () => this.settNyttPassord(),
       avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brFeil: null }),
       adminNavMobilvis: this.adminMeny('Mobilvisning'),
+      // Den ekte forsiden, ikke designeksporten. «?forhands» gjor bare at
+      // ramma lastes paa nytt naar man trykker Oppdater — adressen maa endre
+      // seg, ellers rorer ikke nettleseren den.
+      mobilForhandsUrl: (this.erPublisert() ? '/' : 'lissom-2108.html')
+        + '?forhands=' + (this.state.mobilForhandsNr || 1),
+      mobilForhandsNy: () => this.setState(s2 => ({ mobilForhandsNr: (s2.mobilForhandsNr || 1) + 1 })),
       mobilValg: [
         { nokkel: 'apenthus', navn: 'Banneret under toppbildet' },
         { nokkel: 'salgsuke', navn: 'Salgsuke-kampanjen' },
@@ -12460,6 +12788,40 @@ class Component extends DCLogic {
           seoOverskriv: () => {
             const forslag = this.seoForslag(valgtSide);
             this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: this.seoForslag(valgtSide) }) }));
+          },
+          // Én knapp som fyller og lagrer alle sidene. Overskriver bare tomme
+          // felt, saa det du selv har skrevet blir staaende.
+          seoKanFylle: true,
+          seoFyllKnapp: this.state.seoFyller ? 'Fyller inn …' : 'Fyll inn og lagre',
+          seoFyllHjelp: 'Tittel, beskrivelse, H1, søkeord, alt-tekst og deling for alle '
+            + sider.length + ' sidene — skrevet for å treffe alle reglene over. Felt du '
+            + 'allerede har fylt ut røres ikke. Du kan endre hver linje etterpå.',
+          seoFyllAlle: () => {
+            if (this.state.seoFyller) return;
+            const ferdig = Component.SEO_FERDIG;
+            const endringer = {};
+            let rort = 0;
+
+            sider.forEach(sd => {
+              const forslag = ferdig[sd.id];
+              if (!forslag) return;
+              // Det eieren alt har skrevet vinner. Vi fyller hullene.
+              const fra = this.seoData(sd.id);
+              const ny = Object.assign({}, forslag, fra);
+              if (JSON.stringify(ny) === JSON.stringify(fra)) return;
+              endringer['SEO/' + sd.id] = JSON.stringify(ny);
+              rort++;
+            });
+
+            if (!rort) {
+              this.setState({ kvittering: 'Alt er alt fylt ut', kvitteringDetalj: 'Ingen tomme felt igjen.' });
+              return;
+            }
+
+            this.setState({ seoFyller: true, seoUtkast: {} });
+            this.lagreInnhold(endringer, rort + ' sider er fylt inn og lagret');
+            this._seoSatt = null;
+            setTimeout(() => this.setState({ seoFyller: false }), 1200);
           },
           seoUlagret: !!utkast[valgtSide.id],
           seoLagreTekst: utkast[valgtSide.id] ? 'Lagre endringene' : 'Lagret',

@@ -3,7 +3,7 @@
 Nettsiden og backenden til Lissom Keramikk & Håndverk AS.
 
 Frontenden er ferdig designet og skal ikke bygges om — den ligger som én
-HTML-fil (`Lissom nettside.dc.html`) med all logikk i `class Component` nederst.
+HTML-fil (`lissom-2108.html`) med all logikk i `class Component` nederst.
 Dette repoet legger den ekte backenden under: database, innlogging, betaling
 med Vipps, og varsling på e-post og SMS.
 

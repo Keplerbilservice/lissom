@@ -1,9 +1,11 @@
 <?php
 /**
- * Beskjed til deltakere eller medlemmer.
+ * Beskjed til deltakere, medlemmer eller én enkelt person.
  *
  *   POST { til: "okt", oktId, tekst, ogsaaSms }     alle paameldte paa en dato
  *   POST { til: "medlemmer", tekst, ogsaaSms }      alle aktive medlemmer
+ *   POST { til: "medlemmer", type: "30 timer" }     bare den medlemskapstypen
+ *   POST { til: "en", navn, epost, telefon }        én mottaker, ogsaa uten medlemskap
  *
  * Meldingene legges i varselkoen som alt annet, saa de taaler at e-posten er
  * treg og kan forsokes paa nytt. Admin ser i oversikten om noe ikke kom fram.
@@ -56,18 +58,59 @@ if ($til === 'okt') {
     $hvem = $okt['tittel'] . ' — ' . Booking::norskDato((string) $okt['start_tid']);
 
 } elseif ($til === 'medlemmer') {
-    $mottakere = DB::alle(
-        "SELECT navn, epost, telefon FROM members
-          WHERE status IN ('aktiv','prove') AND anonymisert_at IS NULL"
-    );
-    $hvem = 'alle aktive medlemmer';
+    // Uten type: alle aktive. Med type: bare den ene medlemskapstypen, eller
+    // «prove» for dem som er paa proeve.
+    $type = Foresporsel::tekst('type');
+
+    if ($type === 'prove') {
+        $mottakere = DB::alle(
+            "SELECT navn, epost, telefon FROM members
+              WHERE status = 'prove' AND anonymisert_at IS NULL"
+        );
+        $hvem = 'medlemmer på prøve';
+    } elseif ($type !== '') {
+        $mottakere = DB::alle(
+            "SELECT navn, epost, telefon FROM members
+              WHERE status IN ('aktiv','prove') AND anonymisert_at IS NULL
+                AND medlemskap_type = :t",
+            ['t' => $type]
+        );
+        $hvem = 'medlemmer med ' . $type;
+    } else {
+        $mottakere = DB::alle(
+            "SELECT navn, epost, telefon FROM members
+              WHERE status IN ('aktiv','prove') AND anonymisert_at IS NULL"
+        );
+        $hvem = 'alle aktive medlemmer';
+    }
+
+} elseif ($til === 'en') {
+    // Én mottaker, skrevet inn for haand. Trengs for aa svare noen som ikke er
+    // medlem — en som har spurt om et kurs, eller staar paa venteliste.
+    $navn    = mb_substr(Foresporsel::tekst('navn'), 0, 191);
+    $epostTil = mb_substr(Foresporsel::tekst('epost'), 0, 191);
+    $tlfTil  = normaliser_telefon(Foresporsel::tekst('telefon'));
+
+    if ($epostTil === '' && $tlfTil === '') {
+        Svar::feil('Skriv inn e-post eller telefonnummer til den du vil sende til.');
+    }
+    if ($epostTil !== '' && !filter_var($epostTil, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('E-postadressen ser ikke riktig ut.');
+    }
+
+    $mottakere = [[
+        'navn'    => $navn !== '' ? $navn : 'der',
+        'epost'   => $epostTil !== '' ? $epostTil : null,
+        'telefon' => $tlfTil !== '' ? $tlfTil : null,
+    ]];
+    $hvem = $navn !== '' ? $navn : ($epostTil !== '' ? $epostTil : $tlfTil);
 
 } else {
     Svar::feil('Ukjent mottakergruppe.');
 }
 
 if ($mottakere === []) {
-    Svar::feil('Ingen aa sende til.', 409);
+    Svar::feil('Ingen aa sende til i denne gruppa.', 409);
 }
 
 $epost = 0;
@@ -87,6 +130,16 @@ foreach ($mottakere as $m) {
 }
 
 revider('beskjed_sendt', null, null, ['til' => $hvem, 'epost' => $epost, 'sms' => $antallSms]);
+
+// Mottakere uten e-post og telefon gir ingenting aa sende. «Lagt i ko: 0
+// e-post» leses som at det gikk bra — det gjorde det ikke.
+if ($epost === 0 && $antallSms === 0) {
+    Svar::feil(
+        count($mottakere) . ' mottakere i ' . $hvem
+        . ', men ingen av dem har e-post eller telefonnummer registrert.',
+        409
+    );
+}
 
 Svar::ok([
     'hvem'    => $hvem,

@@ -121,6 +121,32 @@
     }
     @media (max-width: 560px) {
       .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
+
+      /* Nyheter og produkter som karusell paa mobil.
+         Bygget paa scroll-snap framfor JavaScript: det gir ekte
+         fingerbevegelse med treghet, virker med tastatur og skjermleser, og
+         staar seg om skriptet skulle feile.
+         Kortene er 82 % brede med vilje — det neste stikker saa vidt fram i
+         kanten, og det er den eneste maaten aa vise at det finnes mer uten
+         aa maatte skrive det. */
+      .lx-karusell {
+        display: flex !important;
+        grid-template-columns: none !important;
+        gap: var(--space-4) !important;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        /* Strekk ut til skjermkanten, saa kortene ikke stopper midt i luften */
+        margin-inline: calc(var(--space-5) * -1);
+        padding-inline: var(--space-5);
+        scroll-padding-inline: var(--space-5);
+      }
+      .lx-karusell::-webkit-scrollbar { display: none; }
+      .lx-karusell > * {
+        flex: 0 0 82%;
+        scroll-snap-align: center;
+      }
       .lx-bedriftdesk { display: none !important; }
       .lx-bedriftmobil { display: flex !important; }
     }
@@ -313,7 +339,7 @@
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Verkstedet</div>
           <h2 style="margin: 0 0 var(--space-8);">Dette skjer nå</h2>
-          <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+          <div class="lx-kortgrid lx-karusell" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="Søndag 6. september" title="Åpen dag i verkstedet" text="Kom innom mellom 11 og 16, prøv dreieskiva og se hva medlemmene har laget. Gratis, ingen påmelding." image="uploads_shutterstock_2829102169.jpg" cta-label="Les mer" on-book="{{ goEvents }}" hint-size="100%,420px"></x-import>
             <sc-for list="{{ nyheter }}" as="n" hint-placeholder-count="3">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ n.dato }}" title="{{ n.tittel }}" text="{{ n.tekst }}" image="{{ n.image }}" cta-label="Les mer" on-book="{{ n.velg }}" hint-size="100%,420px"></x-import>
@@ -332,7 +358,7 @@
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goButikk }}" hint-size="auto,40px">Til butikken</x-import>
           </div>
-          <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+          <div class="lx-kortgrid lx-karusell" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ produkter }}" as="p" hint-placeholder-count="4">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="Se i butikken" on-book="{{ goButikk }}" hint-size="100%,420px"></x-import>
             </sc-for>
@@ -5669,6 +5695,17 @@ class Component extends DCLogic {
     ];
   }
 
+  /**
+   * Adressen brukeren staar paa naa, til bruk som retursti etter innlogging.
+   *
+   * Er man allerede paa innloggingsskjermen, gir det ingen mening aa komme
+   * tilbake dit — da er Min side det man var ute etter.
+   */
+  naaSti() {
+    const sti = this.stiForSide() || window.location.pathname || '/';
+    return (sti === '/logg-inn' || sti === '/') ? '/min-side' : sti;
+  }
+
   /** Er kurset som bookes drop-in? Da fortjener det sin egen adresse. */
   bookerDropin() {
     const k = this.state.valgtKurs || {};
@@ -5755,12 +5792,29 @@ class Component extends DCLogic {
       .then(r => r.json())
       .then(d => {
         const inne = !!d.innlogget;
-        this.setState({
+        const ny = {
           innlogget: inne,
           erAdminBruker: !!d.erAdmin,
           vippsNavn: (d.medlem && d.medlem.navn) || '',
-          side: kommerFraVipps ? (inne ? 'minside' : 'login') : this.state.side,
-        });
+          vippsSteg: null, // lukk en eventuell innloggingsboks
+        };
+
+        if (kommerFraVipps) {
+          // Adressen bestemmer hvor vi havner — den peker dit brukeren var da
+          // hen trykket logg inn. Vi tvinger ikke Min side lenger.
+          // Gikk innloggingen likevel galt, maa innloggingsskjermen fram.
+          if (!inne) {
+            ny.side = 'login';
+          } else if (this.state.side === 'login') {
+            ny.side = 'minside';
+          }
+          ny.kvittering = inne ? 'Du er logget inn' : 'Innloggingen ble ikke fullført';
+          ny.kvitteringDetalj = inne
+            ? 'Velkommen tilbake, ' + ((d.medlem && d.medlem.navn) || '') + '.'
+            : 'Prøv igjen, eller ta kontakt på post@lissom.no.';
+        }
+
+        this.setState(ny);
       })
       .catch(() => {});
   }
@@ -5937,12 +5991,16 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
-    const kommerFraVipps = window.location.hash === '#minside';
+    // #innlogget settes av vipps-callback.php ved retur fra Vipps. Den sier
+    // bare at vi skal hente profilen — hvilken side man skal til, staar i
+    // adressen, som callbacken har satt til der man var da man logget inn.
+    const kommerFraVipps = window.location.hash === '#innlogget'
+      || window.location.hash === '#minside'; // gammel markor, kan komme fra en fane som sto aapen
     if (kommerFraVipps) {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     const rute = this.ruteFraAdresse();
-    if (rute && !kommerFraVipps) {
+    if (rute) {
       this.folgRute(rute);
     }
     this._popstate = () => {
@@ -6411,7 +6469,8 @@ class Component extends DCLogic {
       return;
     }
     if (!this.state.innlogget) {
-      window.location.href = '/api/vipps-login.php?retur=/';
+      // Tilbake til bookingen etterpaa, ikke til forsiden.
+      window.location.href = '/api/vipps-login.php?retur=' + encodeURIComponent(this.naaSti());
       return;
     }
     if (this.state.bookJobber) return;
@@ -9555,7 +9614,7 @@ class Component extends DCLogic {
         // I designverktoyets forhandsvisning: simulert flyt, siden det ikke
         // finnes noen server der.
         if (this.erPublisert()) {
-          window.location.href = '/api/vipps-login.php?retur=/';
+          window.location.href = '/api/vipps-login.php?retur=' + encodeURIComponent(this.naaSti());
           return;
         }
         this.setState({ vippsSteg: 'venter' });

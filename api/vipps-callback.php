@@ -90,5 +90,11 @@ $medlemId = DB::iTransaksjon(static function () use ($profil): int {
 Sesjon::opprett($medlemId);
 revider('logg_inn', 'member', $medlemId, ['kilde' => 'vipps']);
 
+// Tilbake dit brukeren kom fra. Markoren #innlogget forteller frontenden at
+// dette er en retur fra Vipps, saa den kan hente profilen og fjerne
+// innloggingsskjermen — uten aa overstyre hvilken side man skal til.
+//
+// Tidligere sto det #minside her, og da havnet alle paa Min side uansett hva
+// de holdt paa med da de logget inn.
 $retur = (string) $lagret['retur_url'];
-Svar::omdiriger(Config::nettsted() . (str_starts_with($retur, '/') ? $retur : '/') . '#minside');
+Svar::omdiriger(Config::nettsted() . (str_starts_with($retur, '/') ? $retur : '/') . '#innlogget');

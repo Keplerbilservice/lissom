@@ -26,8 +26,19 @@ $soknad = DB::en(
     ['m' => $m['id']]
 );
 
+// Dorkoden og wifi-passordet vises bare for den som faktisk er medlem.
+// De laa som fast tekst i designfila — «4 7 1 2» — og var dermed enten feil,
+// eller den ekte koden aapent i kildekoden til nettsiden.
+$internInfo = [];
+if (er_aktivt_medlem($m)) {
+    foreach (DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'Privat/%'") as $r) {
+        $internInfo[substr((string) $r['nokkel'], 7)] = (string) $r['verdi'];
+    }
+}
+
 Svar::json([
     'innlogget'      => true,
+    'internInfo'     => (object) $internInfo,
     'erAdmin'        => Sesjon::erAdmin(),
     'erMedlem'       => er_aktivt_medlem($m),
     'soknadStatus'   => $soknad ? (string) $soknad['status'] : null,

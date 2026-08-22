@@ -15,10 +15,22 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
+// Noen tekster hoerer hjemme bak innlogging: dorkoden og wifi-passordet til
+// verkstedet staar under «Min side» i innholdsredigeringen, og de skal ikke
+// ut av dette endepunktet — det er aapent, og maa vaere det.
+//
+// Sperren staar her, ikke i admin: skriver eieren noe internt i et felt vi
+// ikke har tenkt paa, er det bedre at det blir liggende enn at det gaar ut.
+$internt = static fn(string $n): bool =>
+    str_starts_with($n, 'Min side/') || str_starts_with($n, 'Privat/');
+
 $rader = DB::alle('SELECT nokkel, verdi FROM content_blocks');
 
 $ut = [];
 foreach ($rader as $r) {
+    if ($internt((string) $r['nokkel'])) {
+        continue;
+    }
     $ut[$r['nokkel']] = $r['verdi'];
 }
 

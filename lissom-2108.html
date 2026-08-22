@@ -298,9 +298,11 @@ window.__resources = {
           <div class="lx-hide-m" style="{{ bannerBildeStil }}"></div>
           <div class="lx-band" style="max-width: var(--width-content); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6) var(--space-10); flex-wrap: wrap; position: relative;">
             <div style="min-width: 0;">
-              <div style="display: flex; align-items: baseline; gap: var(--space-3) var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                <span style="font: var(--type-eyebrow); font-size: var(--text-base); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); white-space: nowrap;">{{ bannerStikk }}</span>
-                <span class="lx-wrapm" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(24px, 2vw, 34px); color: var(--clay-50); white-space: nowrap;">{{ bannerTittel }}</span>
+              <!-- Merkelappen sto foran overskriften og gjentok den bare:
+                   «GAVEKORT  Gi et gavekort». Overskriften alene, lengst til
+                   venstre, gjelder alle bannere som legges ut. -->
+              <div style="margin-bottom: var(--space-2);">
+                <span class="lx-wrapm" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(24px, 2vw, 34px); color: var(--clay-50);">{{ bannerTittel }}</span>
               </div>
               <p style="margin: 0; font-size: var(--text-lg); color: var(--clay-300); text-wrap: pretty;">{{ bannerTekst }}</p>
             </div>
@@ -1709,7 +1711,7 @@ window.__resources = {
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">Dørkode</span>
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); letter-spacing: .08em; color: var(--text-heading);">{{ dorkode }}</span>
               </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Koden byttes 1. i hver måned. Ikke del den med andre enn medlemmer.</p>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Ikke del koden med andre enn medlemmer.</p>
               <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: var(--space-3); cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Nyttig info — guider og tips →</button>
             </div>
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;">
@@ -3015,15 +3017,9 @@ window.__resources = {
           </div>
 
           <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); max-width: 780px;">
-            <div style="display: grid; grid-template-columns: minmax(140px, 0.6fr) minmax(0, 1.4fr); gap: var(--space-4);">
-              <div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Merkelapp</label>
-                <input value="{{ bnStikk }}" onChange="{{ settBnStikk }}" placeholder="F.eks. Jul" style="{{ bnFeltStil }}">
-              </div>
-              <div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Overskrift</label>
-                <input value="{{ bnTittel }}" onChange="{{ settBnTittel }}" placeholder="F.eks. Gi et gavekort" style="{{ bnFeltStil }}">
-              </div>
+            <div>
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Overskrift</label>
+              <input value="{{ bnTittel }}" onChange="{{ settBnTittel }}" placeholder="F.eks. Gi et gavekort" style="{{ bnFeltStil }}">
             </div>
 
             <div>
@@ -3561,8 +3557,16 @@ window.__resources = {
             <div style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-6);" data-theme="sun">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Dørkode</div>
               <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); letter-spacing: .08em; color: var(--lissom-brown); margin: var(--space-3) 0;">{{ dorkode }}</div>
-              <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--brown-500);">Synlig for aktive medlemmer på Min side. Byttes 1. september.</p>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ aBytteKode }}" hint-size="auto,40px">Bytt kode nå</x-import>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--brown-500);">Skriv inn koden som står på låsen. Den vises bare for aktive medlemmer, på Min side.</p>
+              <!-- Knappen her lagde tidligere en tilfeldig kode. Laasen bryr
+                   seg ikke om hva nettsiden finner paa — koden maa skrives
+                   inn slik den faktisk er. -->
+              <input value="{{ dkNy }}" onChange="{{ settDkNy }}" placeholder="F.eks. 4471#" style="width: 100%; box-sizing: border-box; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: var(--space-3); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); letter-spacing: .08em; color: var(--lissom-brown); background: var(--clay-50);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ dkLagre }}" hint-size="auto,40px">{{ dkKnapp }}</x-import>
+              <div style="margin-top: var(--space-4); border-top: 1px solid rgba(77,29,18,.18); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: 6px;">Wifi</div>
+                <input value="{{ dkWifi }}" onChange="{{ settDkWifi }}" placeholder="Nett / passord" style="width: 100%; box-sizing: border-box; border: 1px solid rgba(77,29,18,.35); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); color: var(--lissom-brown); background: var(--clay-50);">
+              </div>
             </div>
           </div>
         </div>
@@ -5244,9 +5248,6 @@ const SIDEINNHOLD = {
       { l: 'Alternativ', v: 'Logg inn med e-post' } ] },
   ],
   'Min side': [
-    { navn: 'Intern info', type: 'Kort til medlemmer', synlig: 'Publisert', felter: [
-      { l: 'Dørkode', v: '4471# — byttes den 1. hver måned' },
-      { l: 'Wifi', v: 'Lissom Gjest / brentleire' } ] },
     { navn: 'Ta med en venn', type: 'Gavekort', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Ta med en venn' },
       { l: 'Tekst', v: 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.', lang: true } ] },
@@ -6148,6 +6149,18 @@ class Component extends DCLogic {
 
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
   // I forhandsvisning finnes ingen server, og simuleringen maa staa igjen.
+  // Intern info til medlemmer: dorkode og wifi. Kommer fra api/meg.php, som
+  // bare gir dem ut til den som er aktivt medlem. Det som nettopp er lagret
+  // i admin ligger i internInfoLokal, saa eieren ser endringen med en gang
+  // uten aa vente paa neste oppslag.
+  internInfo() {
+    return Object.assign({}, this.state.internInfo || {}, this.state.internInfoLokal || {});
+  }
+
+  dorkodeNaa() {
+    return this.internInfo().dorkode || '';
+  }
+
   erPublisert() {
     const h = window.location.hostname;
     return h.endsWith('lissom.no') || h.endsWith('github.io');
@@ -6253,7 +6266,6 @@ class Component extends DCLogic {
   // «Aapent hus 6. september» ville staatt der i desember.
   static get BANNER_STANDARD() {
     return {
-      stikk:  'Gavekort',
       tittel: 'Gi et gavekort',
       tekst:  'Kan brukes på alle våre tjenester og produkter. Sendes på e-post, eller hentes i verkstedet.',
       knapp:  'Kjøp gavekort',
@@ -6304,7 +6316,7 @@ class Component extends DCLogic {
   // Lagrer tekster i content_blocks. Skjermbildet oppdateres med en gang, og
   // rettes opp igjen om serveren sier nei — ellers ville eieren sittet og
   // ventet paa nettverket for hvert tastetrykk.
-  lagreInnhold(endringer, kvittering) {
+  lagreInnhold(endringer, kvittering, detalj) {
     const forrige = Object.assign({}, this.state.innholdLagret);
     this.setState(s => ({ innholdLagret: Object.assign({}, s.innholdLagret, endringer) }));
 
@@ -6319,7 +6331,7 @@ class Component extends DCLogic {
       .then(r => r.json())
       .then(d => {
         if (d && d.ok) {
-          this.setState({ kvittering: kvittering || 'Lagret', kvitteringDetalj: 'Endringen er lagret og synlig for alle.' });
+          this.setState({ kvittering: kvittering || 'Lagret', kvitteringDetalj: detalj || 'Endringen er lagret og synlig for alle.' });
           return;
         }
         this.setState({
@@ -6655,6 +6667,7 @@ class Component extends DCLogic {
           soknadStatus: d.soknadStatus || null,
           medlemEpost: (d.medlem && d.medlem.epost) || '',
           vippsNavn: (d.medlem && d.medlem.navn) || '',
+          internInfo: d.internInfo || {},
           vippsSteg: null, // lukk en eventuell innloggingsboks
         };
 
@@ -8089,18 +8102,53 @@ class Component extends DCLogic {
   mobilVis(nokkel) { return !(this.erSmal() && (this.mobilSkjul())[nokkel]); }
 
   adminMeny(aktiv) {
+    // Menyen var én flat liste paa elleve punkter, og tre skjermer sto ikke
+    // i den i det hele tatt — Oppskrifter, Nyttig info og SEO fantes bare for
+    // den som kjente adressen. Naa er alt med, gruppert etter hva man holder
+    // paa med: det man gjor daglig, verkstedet, og nettsiden utad.
     const ruter = { 'Oversikt': 'adminoversikt', 'Innhold': 'admininnhold', 'Kurs og events': 'admin', 'Påmeldte': 'adminpameldte', 'Medlemmer': 'adminmedlem', 'Drop-in': 'admindropin', 'Butikk': 'adminbutikk', 'Økonomi': 'adminokonomi', 'Mobilvisning': 'adminmobilvis', 'Oppskrifter': 'adminoppskrifter', 'Nyttig info': 'adminnyttig', 'SEO': 'adminseo', 'Beskjeder': 'adminbeskjeder', 'Brukere': 'adminbrukere' };
-    return ['Oversikt', 'Innhold', 'Kurs og events', 'Påmeldte', 'Medlemmer', 'Beskjeder', 'Drop-in', 'Butikk', 'Økonomi', 'Brukere', 'Mobilvisning'].map(navn => ({
+
+    const grupper = [
+      ['Daglig',    ['Oversikt', 'Påmeldte', 'Kurs og events', 'Drop-in', 'Beskjeder', 'Økonomi']],
+      ['Verkstedet', ['Medlemmer', 'Oppskrifter', 'Brukere']],
+      ['Nettsiden',  ['Innhold', 'Nyttig info', 'SEO', 'Butikk', 'Mobilvisning']],
+    ];
+
+    // Paa mobil ligger menyen som en vannrett rad man drar i. Da tar
+    // overskriftene bare plass uten aa hjelpe, saa der utelates de.
+    const smal = (this.state.vw || 1400) < 980;
+
+    const punkt = navn => ({
       navn,
       velg: ruter[navn] ? this.go(ruter[navn]) : () => {},
       stil: {
         appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-        padding: '10px 14px', borderRadius: 'var(--radius-md)',
+        padding: '9px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
         font: 'var(--type-body-sm)', fontWeight: navn === aktiv ? 700 : 500,
         background: navn === aktiv ? 'var(--lissom-yellow)' : 'transparent',
         color: navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-200)',
       },
-    })).concat([
+    });
+
+    const overskrift = (tekst, forste) => ({
+      navn: tekst,
+      velg: () => {},
+      stil: {
+        appearance: 'none', border: 'none', background: 'transparent', textAlign: 'left',
+        padding: '0 14px 4px', marginTop: forste ? 0 : 'var(--space-4)',
+        font: 'var(--type-eyebrow)', fontSize: 11, fontWeight: 700,
+        letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+        color: 'var(--clay-400)', cursor: 'default', pointerEvents: 'none',
+      },
+    });
+
+    const rader = [];
+    grupper.forEach(([tittel, navn], i) => {
+      if (!smal) rader.push(overskrift(tittel, i === 0));
+      navn.forEach(n => rader.push(punkt(n)));
+    });
+
+    return rader.concat([
       // Ut av admin. To ting man vil ha for haanden hele tida, og som ikke
       // fantes: veien tilbake til nettsiden, og veien ut.
       {
@@ -8720,11 +8768,29 @@ class Component extends DCLogic {
         { navn: 'Typer', verdi: 'Tekst, bilde, kurs, produkter, sitat, kontakt' },
         { navn: 'Plassering', verdi: 'Nederst, dras deretter på plass' },
       ], 'Legg til'),
-      aBytteKode: this.apne('Bytt dørkode', 'Ny kode vises på Min side', [
-        { navn: 'Nåværende kode', verdi: this.state.dorkode || '4 7 1 2' },
-        { navn: 'Ny kode', verdi: 'Genereres automatisk' },
-        { navn: 'Varsel', verdi: 'Alle aktive medlemmer får beskjed' },
-      ], 'Bytt kode', null, null, () => this.setState({ dorkode: Array.from({ length: 4 }, () => Math.floor(Math.random() * 10)).join(' ') })),
+      // Dorkoden og wifi skrives inn for haand og lagres som intern tekst.
+      // Noeklene ligger under «Privat/», og api/innhold.php slipper dem ikke
+      // ut — de gaar bare til den som er innlogget som aktivt medlem.
+      dkNy: this.state.dkNy ?? this.dorkodeNaa(),
+      settDkNy: e => this.setState({ dkNy: e.target.value }),
+      dkWifi: this.state.dkWifi ?? this.internInfo().wifi ?? '',
+      settDkWifi: e => this.setState({ dkWifi: e.target.value }),
+      dkKnapp: (this.state.dkNy != null && this.state.dkNy !== this.dorkodeNaa())
+            || (this.state.dkWifi != null && this.state.dkWifi !== (this.internInfo().wifi ?? ''))
+        ? 'Lagre' : 'Lagret',
+      dkLagre: () => {
+        const kode = (this.state.dkNy ?? this.dorkodeNaa()).trim();
+        const wifi = (this.state.dkWifi ?? this.internInfo().wifi ?? '').trim();
+        this.lagreInnhold(
+          { 'Privat/dorkode': kode, 'Privat/wifi': wifi },
+          'Dørkoden er lagret',
+          'Vises bare for aktive medlemmer, på Min side.'
+        );
+        this.setState(s2 => ({
+          internInfoLokal: Object.assign({}, s2.internInfoLokal, { dorkode: kode, wifi: wifi }),
+          dkNy: kode, dkWifi: wifi,
+        }));
+      },
       lenkeStil: {
         appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
         padding: 0, textAlign: 'left', font: 'var(--type-body)', fontSize: 'calc(var(--text-base) * 1.5)', color: 'var(--clay-200)',
@@ -9852,7 +9918,6 @@ class Component extends DCLogic {
         const endret = Object.keys(kladd).some(f => kladd[f] !== naa[f]);
 
         return {
-          bnStikk: felt('stikk'), settBnStikk: sett('stikk'),
           bnTittel: felt('tittel'), settBnTittel: sett('tittel'),
           bnTekst: felt('tekst'), settBnTekst: sett('tekst'),
           bnKnapp: felt('knapp'), settBnKnapp: sett('knapp'),
@@ -10275,7 +10340,6 @@ class Component extends DCLogic {
       ...(() => {
         const b = this.bannerNaa();
         return {
-          bannerStikk: b.stikk,
           bannerTittel: b.tittel,
           bannerTekst: b.tekst,
           bannerKnapp: b.knapp,
@@ -10502,7 +10566,8 @@ class Component extends DCLogic {
           skjulteInneTekst: n === 1 ? 'ett medlem er skjult' : n + ' medlemmer er skjult',
         };
       })(),
-      dorkode: this.state.dorkode || (this.erPublisert() ? '— — — —' : '4 7 1 2'),
+      dorkode: this.dorkodeNaa() || (this.erPublisert() ? 'Ikke satt' : '4 7 1 2'),
+      internWifi: this.internInfo().wifi || '',
       // «I verkstedet naa» krever innstempling, og den er ikke koblet opp.
       // Paa den ekte nettsiden staar lista derfor tom framfor aa vise
       // oppdiktede folk — et medlem som logger inn skal ikke tro at det er

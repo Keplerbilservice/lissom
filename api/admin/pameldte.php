@@ -38,7 +38,7 @@ if ($oktId <= 0) {
                   WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS betalt,
                 (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
                   WHERE b.course_session_id = cs.id AND b.status = 'reservert'
-                    AND b.reservert_til > UTC_TIMESTAMP()) AS reservert
+                    AND (b.reservert_til IS NULL OR b.reservert_til > UTC_TIMESTAMP())) AS reservert
            FROM course_sessions cs
            JOIN courses c ON c.id = cs.course_id
           WHERE cs.status <> 'avlyst' AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
@@ -48,6 +48,7 @@ if ($oktId <= 0) {
     // Flat liste over alle deltakere framover — det admin-siden viser.
     $alle = DB::alle(
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.folge_medlem,
+                b.betalt_maate, b.notat, b.lagt_inn_av,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
                 COALESCE(m.telefon, b.gjest_telefon) AS telefon,
@@ -72,7 +73,11 @@ if ($oktId <= 0) {
             'kurs'    => $d['tittel'],
             'dato'    => $d['start_tid'] ? Booking::norskDato((string) $d['start_tid']) : 'Uten dato',
             'sum'     => Booking::kroner((int) $d['belop_ore']),
-            'maate'   => $d['vipps_reference'] ? 'Vipps' : '—',
+            // Hvordan den ble gjort opp. Manuelle paameldinger har det
+            // skrevet i klartekst; nettbestillinger gikk gjennom Vipps.
+            'maate'   => $d['vipps_reference'] ? 'Vipps' : ($d['betalt_maate'] ?: '—'),
+            'manuell' => $d['lagt_inn_av'] !== null,
+            'notat'   => $d['notat'],
             'status'  => $d['status'] === 'betalt' ? 'Betalt' : 'Ubetalt',
             'antall'  => (int) $d['antall'],
             'folge'   => $d['folge_medlem'],
@@ -104,6 +109,7 @@ if ($okt === null) {
 
 $deltakere = DB::alle(
     "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, b.folge_medlem,
+            b.betalt_maate, b.notat, b.lagt_inn_av,
             COALESCE(m.navn, b.gjest_navn) AS navn,
             COALESCE(m.epost, b.gjest_epost) AS epost,
             COALESCE(m.telefon, b.gjest_telefon) AS telefon,
@@ -132,6 +138,9 @@ Svar::json([
         'status'    => $d['status'],
         'belop'     => Booking::kroner((int) $d['belop_ore']),
         'referanse' => $d['vipps_reference'],
+        'maate'     => $d['vipps_reference'] ? 'Vipps' : ($d['betalt_maate'] ?: '—'),
+        'manuell'   => $d['lagt_inn_av'] !== null,
+        'notat'     => $d['notat'],
         'folge'     => $d['folge_medlem'],
     ], $deltakere),
 ]);

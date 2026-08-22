@@ -33,12 +33,16 @@ final class Booking
             return 0;
         }
 
+        // En reservasjon som er lagt inn for haand har ingen frist — den
+        // frigis ikke av seg selv. Uten «reservert_til IS NULL» ville
+        // nettsiden solgt plassen til noen som staar i verkstedets egen bok.
         $opptatt = (int) DB::verdi(
             "SELECT COALESCE(SUM(antall), 0)
                FROM bookings
               WHERE course_session_id = :id
                 AND (status = 'betalt'
-                     OR (status = 'reservert' AND reservert_til > UTC_TIMESTAMP()))",
+                     OR (status = 'reservert'
+                         AND (reservert_til IS NULL OR reservert_til > UTC_TIMESTAMP())))",
             ['id' => $oktId]
         );
 

@@ -45,10 +45,12 @@ window.__resources = {
     body { margin: 0; background: var(--clay-100); overflow-x: clip; --section-y: 96px; --text-2xs: 11px; --text-xs: 12px; --text-sm: 14px; --text-base: 15px; --text-lg: 17px; --text-xl: 19px; --text-2xl: 22px; --text-3xl: 27px; --text-4xl: 34px; --text-5xl: 44px; --text-6xl: 56px; --text-7xl: 72px; }
     h2 { font-size: clamp(30px, 2.4vw, 44px); letter-spacing: var(--tracking-display); }
     header > div:first-child { min-height: 100px !important; }
-    header span:has(> img[data-logo-cup]) { height: 54px !important; }
-    header img[data-logo-cup] { height: 42px !important; }
-    header img[src$="mark-cup-saucer.svg"] { height: 12px !important; }
-    header img[src*="wordmark-lissom"] { height: 28px !important; }
+    /* Logoen i toppmenyen, 35 % mindre. Alle fire maalene skaleres med
+       samme faktor — ellers glir koppen fra ordmerket. */
+    header span:has(> img[data-logo-cup]) { height: 35px !important; }
+    header img[data-logo-cup] { height: 27px !important; }
+    header img[src$="mark-cup-saucer.svg"] { height: 8px !important; }
+    header img[src*="wordmark-lissom"] { height: 18px !important; }
     /* Toppmeny: fjern 1.35x-oppskalering av søk + Book nå, stram menypunktene */
     header [style*="zoom: 1.35"] { zoom: 1 !important; }
     header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
@@ -3245,8 +3247,8 @@ window.__resources = {
           </sc-for>
         </nav>
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
-          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Uke 35</div>
-          <div style="color: var(--clay-100); font-size: var(--text-sm);">34 påmeldte</div>
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">{{ sidepanelUke }}</div>
+          <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ sidepanelPameldte }}</div>
         </div>
       </aside>
 
@@ -3258,9 +3260,84 @@ window.__resources = {
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ aDeltakerliste }}" hint-size="auto,44px">Last ned liste</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mpApne }}" hint-size="auto,44px">Legg til deltaker</x-import>
           </div>
         </div>
+
+        <!-- Paamelding lagt inn for haand. Ikke alle bestiller paa nett —
+             noen ringer, noen staar i doera. Uten dette matte verkstedet
+             fore en liste ved siden av, og den ene stemmer aldri. -->
+        <sc-if value="{{ mpApen }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Legg til deltaker</h2>
+              <button type="button" onClick="{{ mpLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 780px;">
+              <div>
+                <label style="{{ mpEtikett }}">Dato</label>
+                <select value="{{ mpOkt }}" onChange="{{ settMpOkt }}" style="{{ mpValgStil }}">
+                  <sc-for list="{{ mpOkter }}" as="o" hint-placeholder-count="6">
+                    <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                  </sc-for>
+                </select>
+                <sc-if value="{{ mpIngenOkter }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">Ingen kommende datoer. Legg inn en kursdato først, under Kurs og events.</p>
+                </sc-if>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ mpEtikett }}">Navn</label>
+                  <input value="{{ mpNavn }}" onChange="{{ settMpNavn }}" placeholder="Fornavn Etternavn" style="{{ mpFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ mpEtikett }}">Telefon</label>
+                  <input value="{{ mpTlf }}" onChange="{{ settMpTlf }}" placeholder="Valgfritt" style="{{ mpFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ mpEtikett }}">E-post</label>
+                  <input value="{{ mpEpost }}" onChange="{{ settMpEpost }}" placeholder="Valgfritt" style="{{ mpFeltStil }}">
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ mpEtikett }}">Antall plasser</label>
+                  <input value="{{ mpAntall }}" onChange="{{ settMpAntall }}" placeholder="1" style="{{ mpFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ mpEtikett }}">Betalt med</label>
+                  <select value="{{ mpMaate }}" onChange="{{ settMpMaate }}" style="{{ mpValgStil }}">
+                    <sc-for list="{{ mpMaater }}" as="m" hint-placeholder-count="5">
+                      <option value="{{ m }}">{{ m }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+                <div>
+                  <label style="{{ mpEtikett }}">Beløp i kroner</label>
+                  <input value="{{ mpBelop }}" onChange="{{ settMpBelop }}" placeholder="{{ mpBelopHint }}" style="{{ mpFeltStil }}">
+                </div>
+              </div>
+
+              <div>
+                <label style="{{ mpEtikett }}">Notat</label>
+                <input value="{{ mpNotat }}" onChange="{{ settMpNotat }}" placeholder="Valgfritt — f.eks. «betaler ved oppmøte»" style="{{ mpFeltStil }}">
+              </div>
+
+              <sc-if value="{{ mpKanVarsle }}" hint-placeholder-val="{{ false }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Send bekreftelse på e-post" checked="{{ mpVarsle }}" on-change="{{ vekslMpVarsle }}" hint-size="100%,28px"></x-import>
+              </sc-if>
+
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mpLagre }}" hint-size="auto,44px">Legg til</x-import>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mpLedigTekst }}</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-8);">
           <sc-for list="{{ pameldteTall }}" as="t" hint-placeholder-count="4">
@@ -6264,6 +6341,12 @@ class Component extends DCLogic {
   // Alt i det ligger i content_blocks, som resten av tekstene eieren kan
   // endre. Sto det i fila, kunne banneret bare brukes til én ting — og
   // «Aapent hus 6. september» ville staatt der i desember.
+  // Hvordan en paamelding lagt inn for haand ble gjort opp. Samme liste som
+  // serveren godtar — staar de to fra hverandre, blir valget avvist.
+  static get BETALT_MAATER() {
+    return ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
+  }
+
   static get BANNER_STANDARD() {
     return {
       tittel: 'Gi et gavekort',
@@ -7346,6 +7429,37 @@ class Component extends DCLogic {
       .catch(() => { this._nyttigHentes = false; });
   }
 
+  // Legger inn, fjerner eller endrer en paamelding. Deltakerlista hentes paa
+  // nytt etterpaa — antallet ledige plasser er endret, og det skal vises med
+  // en gang.
+  pameldingKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._pameldingLagrer) return Promise.resolve(false);
+    this._pameldingLagrer = true;
+
+    return fetch('/api/admin/pamelding.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._pameldingLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); }
+        return ok;
+      })
+      .catch(() => {
+        this._pameldingLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
   verkstedKall(kropp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._verkstedLagrer) return Promise.resolve(false);
@@ -8300,6 +8414,9 @@ class Component extends DCLogic {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
+        // Oktene med ledige plasser. Trengs for aa kunne legge inn en
+        // deltaker for haand paa riktig dato.
+        if (pameldte && pameldte.okter) ny.adminOkter = pameldte.okter;
         if (medlemmer && medlemmer.medlemmer) ny.adminMedlemmer = medlemmer.medlemmer;
         if (betalinger && betalinger.betalinger) ny.adminBetalinger = betalinger.betalinger;
         if (soknader && soknader.soknader) ny.adminSoknader = soknader.soknader;
@@ -10972,13 +11089,119 @@ class Component extends DCLogic {
       adminNavInnhold: this.adminMeny('Innhold'),
       adminNavPameldte: this.adminMeny('Påmeldte'),
       erAdminPameldte: side === 'adminpameldte',
-      pameldteTall: (this.erPublisert() ? [] : [
-        { merke: 'Påmeldte denne uka', verdi: '34', under: 'Fordelt på 5 kurs og events' },
-        { merke: 'Betalt', verdi: '32', under: 'kr. 89 620,- innbetalt', filter: 'Betalt' },
-        { merke: 'Venter på betaling', verdi: '1', under: 'Reservert til i morgen', filter: 'Ubetalt' },
-        { merke: 'Ikke godkjent', verdi: '1', under: 'Drop-in uten kurs eller medlem', filter: 'Ikke godkjent' },
-        { merke: 'På venteliste', verdi: String(3 + (this.state.nyVenteliste || []).length), under: 'Ingen belastet ennå', maal: 'admin' },
-      ]).map(t => Object.assign(t, {
+      // Sto som «Uke 35 · 34 paameldte», fast, uansett uke og uansett tall.
+      sidepanelUke: 'Uke ' + this.ukeNaa(),
+      sidepanelPameldte: (() => {
+        const alle = this.state.adminDeltakere || (this.erPublisert() ? [] : PAMELDTE);
+        const n = alle.reduce((sum, p) => sum + (p.antall || 1), 0);
+        return n === 1 ? '1 påmeldt framover' : n + ' påmeldte framover';
+      })(),
+
+      // ------------------------------------------------- manuell paamelding
+      //
+      // Deltakeren blir en helt vanlig booking uten betaling knyttet til seg.
+      // Den opptar en plass, teller i kapasiteten, og kommer med paa
+      // deltakerlista og i beskjedene — som alle andre.
+      ...(() => {
+        const okter = this.state.adminOkter || [];
+        const valgt = this.state.mpOkt || (okter[0] ? String(okter[0].oktId) : '');
+        const okt = okter.find(o => String(o.oktId) === String(valgt));
+        const feltStil = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px',
+          font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: 'var(--surface-card)',
+        };
+        const epost = (this.state.mpEpost || '').trim();
+
+        return {
+          mpApen: !!this.state.mpApen,
+          mpApne: () => this.setState({ mpApen: true }),
+          mpLukk: () => this.setState({ mpApen: false }),
+          mpEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
+          mpFeltStil: feltStil,
+          mpValgStil: Object.assign({}, feltStil, { cursor: 'pointer' }),
+          mpOkter: okter.map(o => ({
+            verdi: String(o.oktId),
+            navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
+          })),
+          mpIngenOkter: okter.length === 0,
+          mpOkt: valgt, settMpOkt: e => this.setState({ mpOkt: e.target.value }),
+          mpNavn: this.state.mpNavn || '', settMpNavn: e => this.setState({ mpNavn: e.target.value }),
+          mpTlf: this.state.mpTlf || '', settMpTlf: e => this.setState({ mpTlf: e.target.value }),
+          mpEpost: this.state.mpEpost || '', settMpEpost: e => this.setState({ mpEpost: e.target.value }),
+          mpAntall: this.state.mpAntall || '', settMpAntall: e => this.setState({ mpAntall: e.target.value }),
+          mpNotat: this.state.mpNotat || '', settMpNotat: e => this.setState({ mpNotat: e.target.value }),
+          mpMaater: Component.BETALT_MAATER,
+          mpMaate: this.state.mpMaate || Component.BETALT_MAATER[0],
+          settMpMaate: e => this.setState({ mpMaate: e.target.value }),
+          mpBelop: this.state.mpBelop || '', settMpBelop: e => this.setState({ mpBelop: e.target.value }),
+          mpBelopHint: 'Tomt = kursets pris',
+          // Bekreftelse kan bare sendes til noen vi har adressen til.
+          mpKanVarsle: epost.indexOf('@') > 0,
+          mpVarsle: !!this.state.mpVarsle,
+          vekslMpVarsle: () => this.setState(s2 => ({ mpVarsle: !s2.mpVarsle })),
+          mpLedigTekst: okt
+            ? (okt.ledige > 0 ? okt.ledige + ' ledige plasser på denne datoen' : 'Datoen er full — legger du til én, blir den overbooket')
+            : '',
+          mpLagre: () => {
+            if (!(this.state.mpNavn || '').trim() || !valgt) return;
+            this.pameldingKall({
+              handling: 'legg-til',
+              oktId: Number(valgt),
+              navn: (this.state.mpNavn || '').trim(),
+              epost: epost,
+              telefon: (this.state.mpTlf || '').trim(),
+              antall: Number(this.state.mpAntall) || 1,
+              betaltMaate: this.state.mpMaate || Component.BETALT_MAATER[0],
+              belop: (this.state.mpBelop || '').trim(),
+              notat: (this.state.mpNotat || '').trim(),
+              varsle: this.state.mpVarsle ? 'ja' : 'nei',
+            }).then(ok => {
+              if (ok) this.setState({ mpNavn: '', mpTlf: '', mpEpost: '', mpAntall: '', mpBelop: '', mpNotat: '', mpVarsle: false });
+            });
+          },
+        };
+      })(),
+
+      // Tallene over lista. Sto som fast tekst — «34 paameldte, kr. 89 620,-
+      // innbetalt» — og var det samme uansett hvem som faktisk var paameldt.
+      // Paa den ekte siden sto de tomme. Naa telles de fra deltakerlista.
+      pameldteTall: (() => {
+        if (!this.erPublisert()) {
+          return [
+            { merke: 'Påmeldte denne uka', verdi: '34', under: 'Fordelt på 5 kurs og events' },
+            { merke: 'Betalt', verdi: '32', under: 'kr. 89 620,- innbetalt', filter: 'Betalt' },
+            { merke: 'Venter på betaling', verdi: '1', under: 'Reservert til i morgen', filter: 'Ubetalt' },
+            { merke: 'Ikke godkjent', verdi: '1', under: 'Drop-in uten kurs eller medlem', filter: 'Ikke godkjent' },
+            { merke: 'På venteliste', verdi: String(3 + (this.state.nyVenteliste || []).length), under: 'Ingen belastet ennå', maal: 'admin' },
+          ];
+        }
+
+        const alle = this.state.adminDeltakere || [];
+        const plasser = alle.reduce((n, p) => n + (p.antall || 1), 0);
+        const betalte = alle.filter(p => p.status === 'Betalt');
+        const ubetalte = alle.filter(p => p.status !== 'Betalt');
+        const manuelle = alle.filter(p => p.manuell);
+        // Beloepene kommer som «kr. 1 490,-». Vi trekker ut sifrene framfor
+        // aa be serveren om en sum til.
+        const ore = t => Number(String(t || '').replace(/[^\d]/g, '')) || 0;
+        const sum = betalte.reduce((n, p) => n + ore(p.sum), 0);
+        const kurs = new Set(alle.map(p => p.kurs)).size;
+        const venteliste = (this.state.adminVenteliste || []).length;
+
+        return [
+          { merke: 'Påmeldte framover', verdi: String(plasser),
+            under: kurs === 1 ? 'På ett kurs' : 'Fordelt på ' + kurs + ' kurs og events' },
+          { merke: 'Betalt', verdi: String(betalte.length),
+            under: 'kr. ' + sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',- innbetalt', filter: 'Betalt' },
+          { merke: 'Venter på betaling', verdi: String(ubetalte.length),
+            under: ubetalte.length ? 'Ikke gjort opp ennå' : 'Alt er gjort opp', filter: 'Ubetalt' },
+          { merke: 'Lagt inn manuelt', verdi: String(manuelle.length),
+            under: 'Meldt på utenom nettsiden' },
+          { merke: 'På venteliste', verdi: String(venteliste),
+            under: 'Ingen belastet ennå', maal: 'admin' },
+        ];
+      })().map(t => Object.assign(t, {
         velg: t.maal ? this.go(t.maal) : () => this.setState({ side: 'adminpameldte', pameldtFilter: t.filter || 'Alle' }),
         kortStil: Object.assign({}, KORT_KLIKK, (this.state.pameldtFilter || 'Alle') === (t.filter || 'Alle')
           ? { border: '2px solid var(--lissom-brown)' } : {}),
@@ -11003,8 +11226,18 @@ class Component extends DCLogic {
               { navn: 'Beløp', verdi: p.sum },
               { navn: 'Betalt med', verdi: p.maate },
               { navn: 'Status', verdi: p.status },
-            ],
-            handling: p.status === 'Ubetalt' ? 'Send betalingslenke' : 'Avbestill og refunder',
+            ].concat(p.notat ? [{ navn: 'Notat', verdi: p.notat }] : []),
+            // Paameldinger lagt inn for haand har ingen Vipps-betaling aa
+            // refundere. Der er handlingen enten aa markere den som betalt,
+            // eller aa ta deltakeren av lista igjen.
+            handling: p.manuell
+              ? (p.status === 'Ubetalt' ? 'Marker som betalt' : 'Fjern fra lista')
+              : (p.status === 'Ubetalt' ? 'Send betalingslenke' : 'Avbestill og refunder'),
+            gjor: p.manuell
+              ? () => this.pameldingKall(p.status === 'Ubetalt'
+                  ? { handling: 'status', id: p.id, status: 'betalt' }
+                  : { handling: 'fjern', id: p.id })
+              : undefined,
             kursbevis: p.kursbevis || null,
           },
         }),

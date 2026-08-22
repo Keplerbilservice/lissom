@@ -3882,7 +3882,7 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Synlighet på nettsiden</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Åpent hus-banner på forsiden" checked="{{ visApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken på forsiden" checked="{{ visKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Gjelder forsiden og butikken med en gang du skrur av eller på.</p>
@@ -5979,12 +5979,12 @@ class Component extends DCLogic {
   // «Aapent hus 6. september» ville staatt der i desember.
   static get BANNER_STANDARD() {
     return {
-      stikk:  'Åpent hus',
-      tittel: 'Søndag 6. september · 11–16',
-      tekst:  'Prøv dreieskiva, se verkstedet — og kjøp keramikk laget av medlemmene. Gratis, ingen påmelding.',
-      knapp:  'Se medlemmenes keramikk',
-      lenke:  'butikk',
-      bilde:  'uploads_shutterstock_2829102169.jpg',
+      stikk:  'Gavekort',
+      tittel: 'Gi et gavekort',
+      tekst:  'Kan brukes på alle våre tjenester og produkter. Sendes på e-post, eller hentes i verkstedet.',
+      knapp:  'Kjøp gavekort',
+      lenke:  'gavekort',
+      bilde:  'assets_photos_butikken.jpg',
     };
   }
 
@@ -8891,11 +8891,11 @@ class Component extends DCLogic {
           background: 'var(--clay-50)', color: 'var(--text-heading)',
         };
         const BILDER = [
+          { fil: 'assets_photos_butikken.jpg', navn: 'Butikken' },
           { fil: 'uploads_shutterstock_2829102169.jpg', navn: 'Verkstedet, åpent hus' },
           { fil: 'assets_photos_kursrommet.jpg', navn: 'Kursrommet' },
           { fil: 'assets_photos_dreiekurs-smil.jpg', navn: 'Ved dreieskiva' },
           { fil: 'assets_photos_plateteknikk-fat.jpg', navn: 'Plateteknikk' },
-          { fil: 'assets_photos_butikken.jpg', navn: 'Butikken' },
           { fil: 'uploads_shutterstock_2830582037.jpg', navn: 'Kopper' },
         ];
         const endret = Object.keys(kladd).some(f => kladd[f] !== naa[f]);
@@ -10561,7 +10561,7 @@ class Component extends DCLogic {
       avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brFeil: null }),
       adminNavMobilvis: this.adminMeny('Mobilvisning'),
       mobilValg: [
-        { nokkel: 'apenthus', navn: 'Åpent hus-banneret' },
+        { nokkel: 'apenthus', navn: 'Banneret under toppbildet' },
         { nokkel: 'salgsuke', navn: 'Salgsuke-kampanjen' },
         { nokkel: 'kursvelger', navn: 'Kursvelger-lenken i toppen' },
       ].map(v => ({

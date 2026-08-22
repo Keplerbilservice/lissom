@@ -11,16 +11,16 @@
     borte, saa lua ligger bak uten aa slaass med teksten. Toppen av spissene
     baerer merket.
 
-    currentColor hele veien, saa merket folger fargen paa teksten rundt seg.
+    #F4EBDE hele veien, saa merket folger fargen paa teksten rundt seg.
     Det forutsetter at svg-en ligger inne i sida — en <img> er sitt eget
     dokument og arver ingen farge utenfra.
   -->
   <defs>
     <linearGradient id="jdToning" gradientUnits="userSpaceOnUse" x1="160" y1="4" x2="160" y2="124">
-      <stop offset="0"   stop-color="currentColor" stop-opacity=".82"/>
-      <stop offset=".38" stop-color="currentColor" stop-opacity=".40"/>
-      <stop offset=".62" stop-color="currentColor" stop-opacity=".13"/>
-      <stop offset="1"   stop-color="currentColor" stop-opacity=".06"/>
+      <stop offset="0"   stop-color="#F4EBDE" stop-opacity=".82"/>
+      <stop offset=".38" stop-color="#F4EBDE" stop-opacity=".40"/>
+      <stop offset=".62" stop-color="#F4EBDE" stop-opacity=".13"/>
+      <stop offset="1"   stop-color="#F4EBDE" stop-opacity=".06"/>
     </linearGradient>
   </defs>
 
@@ -32,5 +32,5 @@
   <text x="145" y="96" text-anchor="middle"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="35" font-weight="700" letter-spacing="0.4"
-        fill="currentColor">Joika Design</text>
+        fill="#F4EBDE">Joika Design</text>
 </svg>

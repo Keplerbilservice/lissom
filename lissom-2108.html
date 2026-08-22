@@ -4464,11 +4464,13 @@ window.__resources = {
           <div style="display: flex; gap: var(--space-6); flex-wrap: wrap; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400);">
             <span>&copy; {{ aarstall }} Lissom Keramikk &amp; Håndverk AS — alle rettigheter forbeholdt</span>
             <span>Org. nr. 938 280 819 MVA</span>
-            <!-- Joika Design-merket. Svg-en ligger her i sida, ikke som <img>:
-                 fargen er currentColor, og en <img> er sitt eget dokument som
-                 ikke arver farge utenfra. Fila joika-design.svg er den samme,
-                 for bruk andre steder. -->
-            <span style="text-transform: none; letter-spacing: 0; opacity: .62; display: inline-flex; align-items: center; gap: 7px;">Web utført av<svg viewBox="0 0 344 62" width="112" height="20" role="img" aria-label="Joika Design" style="display: block; overflow: visible;"><g fill="currentColor"><path d="M9 45 L2.5 25 L21 38 L16 12 L35.5 33 L53 2 L57.5 45 Z"></path><rect x="5.5" y="43" width="51" height="11" rx="5.5"></rect></g><text x="76" y="44" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" letter-spacing="0.3" fill="currentColor">Joika Design</text></svg></span>
+            <!-- Joika Design-merket. Lua ligger bak navnet som strektegning,
+                 med en gradient som tynnes ut nedover — der navnet staar er
+                 streken nesten borte, saa de to ikke slaass om plassen.
+                 Svg-en ligger her i sida og ikke som <img>: fargen er
+                 currentColor, og en <img> arver ingen farge utenfra.
+                 joika-design.svg er samme merke som egen fil. -->
+            <span style="text-transform: none; letter-spacing: 0; opacity: .62; display: inline-flex; align-items: center; gap: 6px;">EDB system av<svg viewBox="0 0 320 138" width="132" height="57" role="img" aria-label="Joika Design" style="display: block;"><defs><linearGradient id="jdToning" gradientUnits="userSpaceOnUse" x1="160" y1="4" x2="160" y2="124"><stop offset="0" stop-color="currentColor" stop-opacity=".82"></stop><stop offset=".38" stop-color="currentColor" stop-opacity=".40"></stop><stop offset=".62" stop-color="currentColor" stop-opacity=".13"></stop><stop offset="1" stop-color="currentColor" stop-opacity=".06"></stop></linearGradient></defs><g fill="none" stroke="url(#jdToning)" stroke-linejoin="round" stroke-linecap="round"><path stroke-width="3.2" d="M74 104 L54 46 L110 82 L97 14 L150 70 L204 4 L226 104"></path><rect x="70" y="102" width="160" height="22" rx="11" stroke-width="3.2"></rect></g><text x="145" y="96" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="35" font-weight="700" letter-spacing="0.4" fill="currentColor">Joika Design</text></svg></span>
           </div>
           <div style="display: flex; align-items: center; gap: var(--space-3);">
             <button type="button" onClick="{{ goMinSideFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="user" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Min side</button>

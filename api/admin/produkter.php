@@ -97,10 +97,10 @@ $tittel = mb_substr(Foresporsel::tekst('tittel'), 0, 191);
 $pris   = Foresporsel::heltall('pris');           // kroner
 
 if ($tittel === '') {
-    Svar::feil('Varen maa ha et navn.');
+    Svar::feil('Varen må ha et navn.');
 }
 if ($pris < 0 || $pris > 100000) {
-    Svar::feil('Prisen maa vaere mellom 0 og 100 000 kroner.');
+    Svar::feil('Prisen må være mellom 0 og 100 000 kroner.');
 }
 
 $lagerRaa = Foresporsel::tekst('lager');

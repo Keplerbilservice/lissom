@@ -79,10 +79,10 @@ switch ($handling) {
         $pris   = Foresporsel::heltall('pris');           // kroner
 
         if ($tittel === '') {
-            Svar::feil('Kurset maa ha en tittel.');
+            Svar::feil('Kurset må ha en tittel.');
         }
         if ($pris < 0) {
-            Svar::feil('Prisen kan ikke vaere negativ.');
+            Svar::feil('Prisen kan ikke være negativ.');
         }
 
         $data = [
@@ -158,7 +158,7 @@ switch ($handling) {
         Svar::ok([
             'betalte' => $antall,
             'beskjed' => $antall > 0
-                ? "Datoen er avlyst. {$antall} har betalt og maa refunderes manuelt under Okonomi."
+                ? "Datoen er avlyst. {$antall} har betalt og må refunderes manuelt under Økonomi."
                 : 'Datoen er avlyst.',
         ]);
 

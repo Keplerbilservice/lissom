@@ -301,7 +301,7 @@ final class Utsending
                 // server mail.<domenet>, ikke leverandorens egen smtp-adresse.
                 self::$sisteFeil = 'Innloggingen ble avvist av ' . $vert . ': ' . trim($svarAuth)
                     . ' — sjekk smtp_bruker og smtp_passord, og at smtp_vert er riktig server'
-                    . ' (staar under kontodetaljer for e-postkontoen, ofte mail.dittdomene.no).';
+                    . ' (står under kontodetaljer for e-postkontoen, ofte mail.dittdomene.no).';
                 logg('SMTP: innlogging avvist', ['vert' => $vert, 'bruker' => $bruker, 'svar' => trim($svarAuth)]);
                 fclose($sokk);
                 return false;
@@ -309,7 +309,7 @@ final class Utsending
         }
 
         if (!$ok($si('MAIL FROM:<' . $fra . '>'), '250')) {
-            self::$sisteFeil = 'Avsenderadressen ' . $fra . ' ble avvist. Den ma vaere en konto du har hos leverandoren.';
+            self::$sisteFeil = 'Avsenderadressen ' . $fra . ' ble avvist. Den må være en konto du har hos leverandøren.';
             logg('SMTP: avsenderadressen ble avvist', ['fra' => $fra]);
             fclose($sokk);
             return false;

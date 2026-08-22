@@ -53,7 +53,7 @@ $onsket = Foresporsel::heltall('belop') * 100;   // kroner inn, ore ut
 $belop = $onsket > 0 ? min($onsket, $maks) : $maks;
 
 if ($belop <= 0) {
-    Svar::feil('Hele belopet er allerede refundert.', 409);
+    Svar::feil('Hele beløpet er allerede refundert.', 409);
 }
 
 try {

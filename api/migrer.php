@@ -72,7 +72,7 @@ foreach ([APP_DIR . '/../migrations', APP_DIR . '/../db/migrations'] as $m) {
     if (is_dir($m)) { $mappe = $m; break; }
 }
 if ($mappe === null) {
-    Svar::feil('Fant ikke migrasjonsmappa paa serveren.', 500);
+    Svar::feil('Fant ikke migrasjonsmappa på serveren.', 500);
 }
 
 DB::kjor('CREATE TABLE IF NOT EXISTS migrations (
@@ -91,8 +91,8 @@ if (Foresporsel::tekst('kjor') !== 'ja') {
         'kjort'   => $kjort,
         'mangler' => array_map('basename', $mangler),
         'hvordan' => $mangler === []
-            ? 'Databasen er oppdatert. Ingenting aa gjore.'
-            : 'Legg til &kjor=ja i adressen for aa kjore dem.',
+            ? 'Databasen er oppdatert. Ingenting å gjøre.'
+            : 'Legg til &kjor=ja i adressen for å kjøre dem.',
     ]);
 }
 

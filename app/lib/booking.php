@@ -348,11 +348,11 @@ final class Booking
             (string) $til,
             'Gavekort til Lissom Keramikk',
             "Hei!\n\n"
-            . "Du har faatt et gavekort paa {$belop} til Lissom Keramikk."
+            . "Du har fått et gavekort på {$belop} til Lissom Keramikk."
             . $hilsen . "\n\n"
             . "Koden er: {$kode}\n"
             . "Gyldig til {$gyldig}.\n\n"
-            . "Gavekortet kan brukes paa kurs, events, medlemskap og verkstedtid. "
+            . "Gavekortet kan brukes på kurs, events, medlemskap og verkstedtid. "
             . "Oppgi koden naar du bestiller, eller ta den med i verkstedet.\n\n"
             . 'Hilsen Lissom Keramikk',
             'gift_card',

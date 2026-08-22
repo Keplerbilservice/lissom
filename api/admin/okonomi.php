@@ -155,7 +155,12 @@ $vippsProdukter = [
 
 Svar::json([
     'maaned'    => $MAANEDER[(int) $naa->format('n') - 1],
+    // Maskinlesbar utgave av samme maaned. Eksporten og maanedsrapporten
+    // trenger den for aa be om riktig periode.
+    'periode'   => $mndStart->format('Y-m'),
+    'aar'       => (int) $mndStart->format('Y'),
     'omsetning' => Booking::kroner($naaSum),
+    'omsetningOre' => $naaSum,
     'endring'   => $endring,
     'uker'      => array_map(static fn($u) => [
         'uke'   => $u['uke'],

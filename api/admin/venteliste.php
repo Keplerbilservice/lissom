@@ -76,8 +76,8 @@ switch (Foresporsel::tekst('handling')) {
         revider('venteliste_varslet', 'waitlist', $id, ['kurs' => $rad['tittel']]);
 
         Svar::ok([
-            'beskjed' => 'Beskjed lagt i ko til ' . $rad['navn']
-                . '. Plassen holdes ikke av automatisk — forste som booker, faar den.',
+            'beskjed' => 'Beskjed lagt i kø til ' . $rad['navn']
+                . '. Plassen holdes ikke av automatisk — første som booker, får den.',
         ]);
 
     case 'fjern':

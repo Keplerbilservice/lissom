@@ -85,10 +85,10 @@ switch ($type) {
         $raa  = Foresporsel::kropp()['raavarer'] ?? null;
 
         if ($navn === '') {
-            Svar::feil('Oppskriften maa ha et navn.');
+            Svar::feil('Oppskriften må ha et navn.');
         }
         if (!is_array($raa) || $raa === []) {
-            Svar::feil('Legg inn minst én raavare.');
+            Svar::feil('Legg inn minst én råvare.');
         }
 
         // [["Kvarts", 25], ...]. Vi tar bare rader med navn og et tall over
@@ -105,10 +105,10 @@ switch ($type) {
             }
         }
         if ($rene === []) {
-            Svar::feil('Legg inn minst én raavare med mengde.');
+            Svar::feil('Legg inn minst én råvare med mengde.');
         }
         if (count($rene) > 60) {
-            Svar::feil('For mange raavarer i én oppskrift.');
+            Svar::feil('For mange råvarer i én oppskrift.');
         }
 
         $data = [
@@ -124,7 +124,7 @@ switch ($type) {
     case 'artikkel':
         $tittel = mb_substr(Foresporsel::tekst('tittel'), 0, 191);
         if ($tittel === '') {
-            Svar::feil('Artikkelen maa ha en tittel.');
+            Svar::feil('Artikkelen må ha en tittel.');
         }
         $data = [
             'tittel'  => $tittel,
@@ -142,12 +142,12 @@ switch ($type) {
         $url  = mb_substr(Foresporsel::tekst('url'), 0, 500);
 
         if ($navn === '' || $url === '') {
-            Svar::feil('Lenka maa ha navn og adresse.');
+            Svar::feil('Lenka må ha navn og adresse.');
         }
         // Bare http og https. Uten dette kunne en lenke peke paa javascript:
         // og kjore kode i nettleseren til den som trykker.
         if (!preg_match('~^https?://~i', $url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-            Svar::feil('Adressen maa begynne med http:// eller https://.');
+            Svar::feil('Adressen må begynne med http:// eller https://.');
         }
         $data = [
             'navn' => $navn,

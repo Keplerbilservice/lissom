@@ -67,7 +67,7 @@ switch (Foresporsel::tekst('handling')) {
     case 'godkjenn':
         DB::oppdater('member_sales', ['status' => 'publisert', 'avvist_grunn' => null], ['id' => $id]);
         $si($rad, '«' . $rad['tittel'] . '» er ute i butikken',
-            'Hei ' . $rad['navn'] . "!\n\n«" . $rad['tittel'] . '» er godkjent og ligger naa i butikken paa lissom.no.'
+            'Hei ' . $rad['navn'] . "!\n\n«" . $rad['tittel'] . '» er godkjent og ligger nå i butikken på lissom.no.'
             . "\n\nKjoperen betaler direkte til Vippsnummeret ditt, og tar kontakt for aa avtale overlevering.");
         revider('medlemssalg_godkjent', 'member_sale', $id, ['tittel' => $rad['tittel']]);
         Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er ute i butikken.']);
@@ -82,7 +82,7 @@ switch (Foresporsel::tekst('handling')) {
             . ($grunn !== '' ? "\n\nGrunn: " . $grunn : '')
             . "\n\nDu kan legge den ut paa nytt fra Min side naar du vil.");
         revider('medlemssalg_avvist', 'member_sale', $id, ['tittel' => $rad['tittel'], 'grunn' => $grunn]);
-        Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er avvist, og selgeren har faatt beskjed.']);
+        Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er avvist, og selgeren har fått beskjed.']);
 
     case 'skjul':
         DB::oppdater('member_sales', ['status' => 'skjult'], ['id' => $id]);

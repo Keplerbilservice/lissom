@@ -63,7 +63,7 @@ final class Medlemskap
         // siden av den nye. Da ville de blitt trukket to ganger.
         $fra = self::avtale((int) $medlem['id']);
         if ($fra !== null && $fra['status'] === 'aktiv') {
-            throw new RuntimeException('Du har alt et medlemskap. Si det opp forst, eller bytt fra Min side.');
+            throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
         }
 
         $vipps = Vipps::opprettAvtale(
@@ -258,7 +258,7 @@ final class Medlemskap
                 'Hei ' . $avtale['navn'] . "!\n\n"
                 . Booking::kroner((int) $avtale['pris_ore']) . ' for medlemskapet «' . $avtale['plan']
                 . '» trekkes i Vipps ' . self::norskDag($forfall) . ".\n\n"
-                . "Du kan si opp naar som helst fra Min side, eller i Vipps-appen.",
+                . "Du kan si opp når som helst fra Min side, eller i Vipps-appen.",
                 'medlemskap',
                 $betalingId
             );

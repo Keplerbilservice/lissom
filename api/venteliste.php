@@ -57,7 +57,7 @@ if ($finnes !== null) {
     Svar::ok([
         'posisjon' => (int) $finnes['posisjon'],
         'gjentakelse' => true,
-        'beskjed' => 'Du staar allerede paa ventelisten for dette kurset.',
+        'beskjed' => 'Du står allerede på ventelisten for dette kurset.',
     ]);
 }
 
@@ -80,10 +80,10 @@ $kurs = DB::en('SELECT tittel FROM courses WHERE id = :i', ['i' => $kursId]);
 // Bekreftelse med en gang, saa ingen lurer paa om det gikk gjennom.
 Varsel::epost(
     $epost,
-    'Du staar paa ventelisten hos Lissom',
+    'Du står på ventelisten hos Lissom',
     "Hei {$navn}!\n\n"
     . "Du er satt paa ventelisten for {$kurs['tittel']}, som plass nummer {$posisjon}.\n\n"
-    . "Blir det ledig, gir vi beskjed paa e-post og SMS. Du betaler ingenting "
+    . "Blir det ledig, gir vi beskjed på e-post og SMS. Du betaler ingenting "
     . "for plassen er bekreftet.\n\n"
     . "Hilsen Lissom Keramikk",
     'waitlist',

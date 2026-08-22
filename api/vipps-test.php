@@ -59,7 +59,7 @@ $svar['token'] = [
 if ($raa['status'] !== 200) {
     // Svaret her inneholder ingen hemmeligheter — kun hvorfor det ble avvist.
     $svar['token']['svar'] = mb_substr($raa['kropp'], 0, 600);
-    $svar['tolkning'] = 'Noklene godtas ikke. Sjekk at alle fire hoerer til '
+    $svar['tolkning'] = 'Nøklene godtas ikke. Sjekk at alle fire hører til '
         . 'samme salgsenhet, og at miljoet stemmer: produksjonsnokler virker '
         . 'bare mot api.vipps.no, testnokler bare mot apitest.vipps.no.';
     Svar::json($svar);
@@ -118,10 +118,10 @@ try {
             . 'eller abonnementsnokkelen gjelder et annet produkt.';
     } elseif ($direkte['status'] === 401) {
         $svar['tolkning'] = 'Tokenet godtas ikke for ePayment. Sjekk at '
-            . 'Ocp-Apim-Subscription-Key hoerer til samme salgsenhet som MSN.';
+            . 'Ocp-Apim-Subscription-Key hører til samme salgsenhet som MSN.';
     } elseif ($direkte['status'] === 400) {
         $svar['tolkning'] = 'Vipps avviste innholdet i forespoerselen. '
-            . 'Feltet som klages paa staar i svaret over.';
+            . 'Feltet som klages på står i svaret over.';
     }
 }
 

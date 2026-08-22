@@ -25,7 +25,7 @@ $sms   = Foresporsel::tekst('ogsaaSms') === 'ja';
 $emne  = mb_substr(Foresporsel::tekst('emne', 'Beskjed fra Lissom'), 0, 191);
 
 if (mb_strlen($tekst) < 3) {
-    Svar::feil('Skriv en melding forst.');
+    Svar::feil('Skriv en melding først.');
 }
 if (mb_strlen($tekst) > 4000) {
     Svar::feil('Meldingen er for lang.');
@@ -110,7 +110,7 @@ if ($til === 'okt') {
 }
 
 if ($mottakere === []) {
-    Svar::feil('Ingen aa sende til i denne gruppa.', 409);
+    Svar::feil('Ingen å sende til i denne gruppa.', 409);
 }
 
 $epost = 0;
@@ -146,7 +146,7 @@ Svar::ok([
     'epost'   => $epost,
     'sms'     => $antallSms,
     'beskjed' => sprintf(
-        'Lagt i ko: %d e-post%s til %s. De sendes i lopet av et minutt eller to.',
+        'Lagt i kø: %d e-post%s til %s. De sendes i løpet av et minutt eller to.',
         $epost,
         $antallSms > 0 ? " og {$antallSms} SMS" : '',
         $hvem

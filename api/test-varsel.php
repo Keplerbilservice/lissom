@@ -109,7 +109,7 @@ if ($tilEpost !== '') {
     $id = Varsel::epost(
         $tilEpost,
         'Testmelding fra lissom.no',
-        "Dette er en testmelding sendt fra oppsettet paa " . Config::nettsted() . ".\n\n"
+        "Dette er en testmelding sendt fra oppsettet på " . Config::nettsted() . ".\n\n"
         . "Kom den fram, virker e-postutsendingen.\n\n"
         . "Sendt " . gmdate('c') . " UTC."
     );
@@ -162,7 +162,7 @@ $svar['siste_feil'] = array_map(static fn(array $r): array => [
               WHERE feilmelding IS NOT NULL ORDER BY id DESC LIMIT 5"));
 
 if ($tilEpost === '' && $tilSms === '') {
-    $svar['hvordan'] = 'Legg til &epost=meg for aa sende en test til din egen adresse, eller &sms=+4790000000 for SMS.';
+    $svar['hvordan'] = 'Legg til &epost=meg for å sende en test til din egen adresse, eller &sms=+4790000000 for SMS.';
 }
 
 Svar::json($svar);

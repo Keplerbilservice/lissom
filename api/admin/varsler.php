@@ -45,7 +45,7 @@ if (Foresporsel::tekst('stopp') === 'ja') {
     revider('varselko_stoppet', null, null, ['antall' => $antall]);
     $svar['stoppet'] = $antall;
     $svar['beskjed'] = $antall === 0
-        ? 'Koen var allerede tom.'
+        ? 'Køen var allerede tom.'
         : $antall . ' melding' . ($antall === 1 ? '' : 'er') . ' ble avbrutt og sendes ikke.';
 }
 
@@ -64,7 +64,7 @@ $svar['venter_naa'] = array_map(static fn(array $r): array => [
               WHERE status = 'ko' ORDER BY id LIMIT 20"));
 
 if (!isset($svar['stoppet'])) {
-    $svar['hvordan'] = 'Legg til ?stopp=ja for aa avbryte alt som ligger i koen.';
+    $svar['hvordan'] = 'Legg til ?stopp=ja for å avbryte alt som ligger i køen.';
 }
 
 Svar::json($svar);

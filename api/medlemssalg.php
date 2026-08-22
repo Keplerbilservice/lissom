@@ -33,7 +33,11 @@ $ut = static fn(array $r, bool $eier): array => [
     'kategori'  => $r['kategori'] ?: 'Annet',
     'antall'    => (int) $r['antall'],
     'vipps'     => $r['vippsnummer'],
-    'kontakt'   => $r['kontakt'],
+    // Kontaktfeltet vises ikke i butikken — der staar Vippsnummeret, og
+    // handelen avtales derfra. Da har det ingenting aa gjore i et svar alle
+    // kan hente: det ville vaert en liste over medlemmenes e-postadresser,
+    // fritt tilgjengelig for hvem som helst. Selgeren og admin ser sitt eget.
+    'kontakt'   => $eier ? $r['kontakt'] : null,
     'levering'  => 'Leveres etter avtale',
     'status'    => $r['status'],
     // Grunnen til at noe ble avvist skal bare selgeren se.
@@ -93,11 +97,11 @@ $pris      = (int) preg_replace('/\D+/', '', $felt('pris'));
 $antall    = max(1, min(99, (int) $felt('antall') ?: 1));
 
 foreach ([
-    'et navn paa varen'      => $tittel,
+    'et navn på varen'      => $tittel,
     'en beskrivelse'         => $tekst,
     'navnet som skal vises'  => $produsent,
     'et Vippsnummer'         => $vipps,
-    'en maate aa naa deg paa' => $kontakt,
+    'en måte å nå deg på' => $kontakt,
 ] as $hva => $verdi) {
     if ($verdi === '') {
         Svar::feil('Vi mangler ' . $hva . '.');
@@ -110,10 +114,10 @@ if (strlen($vipps) === 10 && str_starts_with($vipps, '47')) {
     $vipps = substr($vipps, 2);
 }
 if (!preg_match('/^[49]\d{7}$/', $vipps)) {
-    Svar::feil('Vippsnummeret maa vaere et norsk mobilnummer paa aatte siffer.');
+    Svar::feil('Vippsnummeret må være et norsk mobilnummer på åtte siffer.');
 }
 if ($pris < 1 || $pris > 100000) {
-    Svar::feil('Prisen maa vaere mellom 1 og 100 000 kroner.');
+    Svar::feil('Prisen må være mellom 1 og 100 000 kroner.');
 }
 
 $antallMine = (int) DB::verdi(

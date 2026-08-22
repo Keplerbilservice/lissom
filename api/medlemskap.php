@@ -69,10 +69,10 @@ switch (Foresporsel::tekst('handling')) {
     case 'siOpp':
         $a = Medlemskap::avtale((int) $medlem['id']);
         if ($a === null) {
-            Svar::feil('Du har ingen loepende avtale.');
+            Svar::feil('Du har ingen løpende avtale.');
         }
         if ($a['binding_til'] !== null && $a['binding_til'] >= gmdate('Y-m-d')) {
-            Svar::feil('Aarsavtalen loeper til ' . Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00')
+            Svar::feil('Årsavtalen løper til ' . Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00')
                 . '. Ta kontakt om noe har endret seg, saa finner vi ut av det.');
         }
         try {
@@ -88,7 +88,7 @@ switch (Foresporsel::tekst('handling')) {
     case 'sjekk':
         $a = Medlemskap::avtale((int) $medlem['id']);
         if ($a === null) {
-            Svar::feil('Du har ingen avtale aa sjekke.');
+            Svar::feil('Du har ingen avtale å sjekke.');
         }
         $status = Medlemskap::oppdaterFraVipps($a);
         Svar::ok(['status' => $status]);

@@ -24,6 +24,20 @@ $type    = mb_substr(Foresporsel::tekst('type'), 0, 64);
 $antall  = mb_substr(Foresporsel::tekst('antall'), 0, 32);
 $melding = mb_substr(Foresporsel::tekst('melding'), 0, 2000);
 
+// Er avsenderen innlogget, vet vi hvem det er. Da skal vi ikke be dem skrive
+// inn navn og e-post én gang til — og et medlem som sender beskjed fra Min
+// side har ikke noe kontaktfelt aa fylle ut i det hele tatt. Uten dette ble
+// hver eneste beskjed fra Min side avvist med «fyll inn navn og e-post».
+$avsender = Sesjon::medlem();
+if ($avsender !== null) {
+    if ($navn === '') {
+        $navn = (string) $avsender['navn'];
+    }
+    if ($kontakt === '') {
+        $kontakt = (string) ($avsender['epost'] ?: $avsender['telefon'] ?: '');
+    }
+}
+
 if ($navn === '' || $kontakt === '') {
     Svar::feil('Fyll inn navn og e-post eller telefon, så kan vi svare deg.');
 }

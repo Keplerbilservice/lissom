@@ -41,7 +41,7 @@ $ut = static function (array $d): never {
 
 if ($fil === null) {
     http_response_code(500);
-    $ut(['ok' => false, 'problem' => 'Fant ikke secrets.php paa serveren.']);
+    $ut(['ok' => false, 'problem' => 'Fant ikke secrets.php på serveren.']);
 }
 
 $kilde = file_get_contents($fil);
@@ -62,7 +62,7 @@ try {
         'hva'     => $e->getMessage(),
         'sjekk'   => [
             'Mangler det en fnutt rundt verdien?',
-            'Mangler det komma paa slutten av linja?',
+            'Mangler det komma på slutten av linja?',
             'Er det to komma etter hverandre?',
             'Er det en fnutt inni selve verdien?',
         ],

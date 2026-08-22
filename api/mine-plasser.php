@@ -21,7 +21,7 @@ $medlem = krev_medlem();
  */
 $frist = static function (?string $startUtc): array {
     if ($startUtc === null) {
-        return ['Ta kontakt om du maa avbestille.', true];
+        return ['Ta kontakt om du må avbestille.', true];
     }
     $dager = (strtotime($startUtc) - time()) / 86400;
 
@@ -107,7 +107,7 @@ foreach ($venteliste as $v) {
         'naar'          => 'Ingen dato ennaa',
         'sum'           => 'Ingenting belastet',
         'status'        => $v['status'] === 'varslet'
-                            ? 'Ledig plass — book naa'
+                            ? 'Ledig plass — book nå'
                             : 'Venteliste, nr. ' . $v['posisjon'],
         'tone'          => 'info',
         'frist'         => 'Du belastes forst naar en plass blir din.',

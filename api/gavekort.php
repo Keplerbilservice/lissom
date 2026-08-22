@@ -25,7 +25,7 @@ $mEpost = mb_substr(Foresporsel::tekst('mottakerEpost'), 0, 191);
 $hilsen = mb_substr(Foresporsel::tekst('hilsen'), 0, 500);
 
 if ($belop < 100 || $belop > 20000) {
-    Svar::feil('Velg et belop mellom 100 og 20 000 kroner.');
+    Svar::feil('Velg et beløp mellom 100 og 20 000 kroner.');
 }
 if ($mEpost !== '' && !filter_var($mEpost, FILTER_VALIDATE_EMAIL)) {
     Svar::feil('Adressen til mottakeren ser ikke riktig ut.');

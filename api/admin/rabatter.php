@@ -45,10 +45,10 @@ Foresporsel::krevSammeOpphav();
 
 $inn = Foresporsel::kropp()['nivaer'] ?? null;
 if (!is_array($inn)) {
-    Svar::feil('Mangler nivaaene.');
+    Svar::feil('Mangler nivåene.');
 }
 if (count($inn) > 40) {
-    Svar::feil('For mange rabattnivaaer.');
+    Svar::feil('For mange rabattnivåer.');
 }
 
 $rene = [];
@@ -62,7 +62,7 @@ foreach ($inn as $n) {
         continue;
     }
     if ($pst <= 0 || $pst > 90) {
-        Svar::feil('Rabatten maa vaere mellom 1 og 90 prosent.');
+        Svar::feil('Rabatten må være mellom 1 og 90 prosent.');
     }
 
     $rene[] = [

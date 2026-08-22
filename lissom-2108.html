@@ -3767,8 +3767,8 @@ window.__resources = {
           </sc-for>
         </nav>
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
-          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Sist publisert</div>
-          <div style="color: var(--clay-100); font-size: var(--text-sm);">I dag 07:40</div>
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Sist endret</div>
+          <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ innholdSistEndret }}</div>
         </div>
       </aside>
 
@@ -3779,9 +3779,8 @@ window.__resources = {
             <h1 style="margin: 0; font-size: var(--text-4xl);">Innhold</h1>
           </div>
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4);">
-            <span style="font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap;">3 endringer ikke publisert</span>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="eye" on-click="{{ aForhandsvis }}" hint-size="auto,44px">Forhåndsvis</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ aPubliser }}" hint-size="auto,44px">Publiser</x-import>
+            <span style="font-size: var(--text-sm); color: var(--text-muted); white-space: nowrap;">Alt du lagrer her er ute med én gang</span>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="eye" on-click="{{ aForhandsvis }}" hint-size="auto,44px">Se nettsiden</x-import>
           </div>
         </div>
 
@@ -3883,7 +3882,7 @@ window.__resources = {
             </div>
 
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="plus" on-click="{{ aNySeksjon }}" hint-size="auto,44px">Legg til seksjon</x-import>
-            <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Endringer lagres som kladd. Ingenting vises på nettsiden før du trykker Publiser.</p>
+            <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Endringene lagres med én gang du trykker Lagre, og er ute på nettsiden med det samme. Det finnes ingen kladd å publisere etterpå.</p>
           </div>
         </div>
       </main>
@@ -6331,6 +6330,12 @@ class Component extends DCLogic {
       { sti: '/booking',       side: 'booking' },
       { sti: '/kasse',         side: 'kasse' },
       { sti: '/logg-inn',      side: 'login' },
+      // Personvern og vilkaar hadde ingen adresse. Skjermene fantes, men den
+      // som fikk en lenke til /personvern havnet paa forsiden — og en
+      // kvittering med «se vilkaarene» pekte ingen steder.
+      { sti: '/personvern',    side: 'personvern' },
+      { sti: '/vilkar',        side: 'vilkar' },
+      { sti: '/betaling',      side: 'vipps' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin',              side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
@@ -7759,6 +7764,20 @@ class Component extends DCLogic {
 
   // Tekster eieren har endret i admin. Aapent endepunkt: dette er innholdet
   // paa nettsiden, og det skal alle se — ikke bare den som er logget inn.
+  // Naar innholdsskjermen aapnes hentes ogsaa tidspunktet for siste endring.
+  // Det staar i sidemenyen, der det for sto «I dag 07:40» uansett.
+  hentSistEndret() {
+    if (!this.erPublisert() || this._sistHentes) return;
+    this._sistHentes = true;
+    fetch('/api/admin/innhold.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._sistHentes = false;
+        if (d && d.sistEndret) this.setState({ innholdSistEndret: d.sistEndret });
+      })
+      .catch(() => { this._sistHentes = false; });
+  }
+
   hentInnhold() {
     if (!this.erPublisert()) return;
     // «no-store»: nettleseren skal ikke svare fra sitt eget lager her.
@@ -8374,7 +8393,9 @@ class Component extends DCLogic {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         navn: (this.state.vippsNavn || '').trim() || 'Medlem',
-        kontakt: '',
+        // Serveren fyller inn fra sesjonen om dette staar tomt, men vi sender
+        // det vi har: verkstedet skal kunne svare uten aa slaa opp.
+        kontakt: (this.state.medlemEpost || '').trim(),
         type: 'Beskjed fra medlem',
         antall: '',
         melding: tekst,
@@ -9179,6 +9200,9 @@ class Component extends DCLogic {
     if (side.indexOf('admin') === 0 && !this.state.adminSalg) {
       this.hentAdminSalg();
     }
+    if (side === 'admininnhold' && !this.state.innholdSistEndret) {
+      this.hentSistEndret();
+    }
     if (side === 'adminokonomi' && !this.state.okonomi) {
       this.hentOkonomi();
     }
@@ -9543,28 +9567,56 @@ class Component extends DCLogic {
       })),
       ingenInternvarerAdmin: this.erPublisert()
         && !(this.state.adminProdukter || []).some(v => v.kunMedlemmer),
+      // Maanedsrapporten skrev ut «kr. 182 400,-», «47 aktive medlemmer» og
+      // «84 % belegg» — tall som aldri kom fra noe sted. Arket bar org.nr., saa
+      // det saa ut som et regnskapsbilag. Naa skrives bare det vi faktisk vet:
+      // omsetningen fra api/admin/okonomi.php, fordelt paa kildene den kjenner.
       lagRapport: () => {
-        const w = window.open('', '_blank', 'width=520,height=680');
-        if (!w) return;
-        w.document.write('<html><head><!-- LISSOM BUILD 21.08 kl 13:25 --><title>Månedsrapport august 2026</title></head><body style="margin:0;padding:36px;font-family:Georgia,serif;color:#4D1D12;"><div style="font-size:11px;letter-spacing:.14em;">LISSOM · MÅNEDSRAPPORT</div><h1 style="font-size:26px;margin:10px 0 24px;">August 2026</h1><table style="width:100%;border-collapse:collapse;font-size:14px;">'
-          + [['Omsetning totalt', 'kr. 182 400,-'], ['— Kurs og events', 'kr. 96 200,-'], ['— Medlemskap', 'kr. 61 400,-'], ['— Butikk og gavekort', 'kr. 10 950,-'], ['— Drop-in', 'kr. 14 850,-'], ['— Leire og brenning', 'kr. 9 000,-'], ['Aktive medlemmer', '47 (+3)'], ['Timer brukt i verkstedet', '612'], ['Belegg på kurs', '84 %'], ['Drop-in-besøk', '33'], ['Neste Vipps-oppgjør', '1. september']].map(r => '<tr><td style="padding:8px 0;border-bottom:1px solid #E8DCC8;">' + r[0] + '</td><td style="text-align:right;font-weight:700;border-bottom:1px solid #E8DCC8;">' + r[1] + '</td></tr>').join('')
-          + '</table><p style="font-size:11px;color:#8a6f5f;margin-top:24px;">Generert ' + new Date().toLocaleDateString('nb-NO') + ' · Lissom Keramikk & Håndverk AS · Org.nr. 938 280 819 MVA</p><scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
+        const ok = this.state.okonomi;
+        if (!ok) {
+          this.setState({ kvittering: 'Ingen tall ennå', kvitteringDetalj: 'Tallene hentes fra serveren. Prøv igjen om et øyeblikk.' });
+          return;
+        }
+        const w = window.open('', '_blank', 'width=560,height=720');
+        if (!w) { this.setState({ kvittering: 'Blokkert av nettleseren', kvitteringDetalj: 'Tillat sprettoppvinduer for lissom.no, så åpner rapporten seg.' }); return; }
+        const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const mnd = esc((ok.maaned || '').replace(/^./, c => c.toUpperCase()) + ' ' + (ok.aar || ''));
+        const rad = (n, v, sterk) => '<tr><td style="padding:8px 0;border-bottom:1px solid #E8DCC8;' + (sterk ? 'font-weight:700;' : '') + '">' + esc(n)
+          + '</td><td style="text-align:right;font-weight:700;border-bottom:1px solid #E8DCC8;">' + esc(v) + '</td></tr>';
+        const rader = [rad('Omsetning totalt', ok.omsetning, true)]
+          .concat((ok.kilder || []).map(k => rad('— ' + k.navn, k.sum)))
+          .concat(ok.endring ? [rad('Endring', ok.endring)] : [])
+          .join('');
+        const ingen = (ok.kilder || []).length === 0
+          ? '<p style="font-size:13px;color:#8a6f5f;">Det er ikke registrert betalinger i denne måneden ennå.</p>' : '';
+        w.document.write('<html><head><meta charset="utf-8"><title>Månedsrapport ' + mnd + '</title></head>'
+          + '<body style="margin:0;padding:36px;font-family:Georgia,serif;color:#4D1D12;">'
+          + '<div style="font-size:11px;letter-spacing:.14em;">LISSOM · MÅNEDSRAPPORT</div>'
+          + '<h1 style="font-size:26px;margin:10px 0 24px;">' + mnd + '</h1>'
+          + '<table style="width:100%;border-collapse:collapse;font-size:14px;">' + rader + '</table>' + ingen
+          + '<p style="font-size:11px;color:#8a6f5f;margin-top:24px;">Generert ' + esc(new Date().toLocaleDateString('nb-NO'))
+          + ' · Lissom Keramikk &amp; Håndverk AS · Org.nr. 938 280 819 MVA<br>'
+          + 'Tallene er betalinger gjennom Vipps i perioden. Rapporten er en oversikt, ikke et regnskapsbilag.</p>'
+          + '<scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
         w.document.close();
       },
-      aEksport: this.apne('Eksporter til regnskap', 'Alle transaksjoner i perioden', [
-        { navn: 'Periode', verdi: 'August 2026' },
-        { navn: 'Format', verdi: 'SAF-T, CSV eller PDF' },
-        { navn: 'Inkluderer', verdi: 'Kurs, medlemskap, butikk, leire og brenning' },
-      ], 'Eksporter'),
-      aPubliser: this.apne('Publiser endringer', '3 endringer ligger som kladd', [
-        { navn: 'Forside', verdi: 'Hero, ny tekst' },
-        { navn: 'Forside', verdi: 'Nytt bilde i Butikken' },
-        { navn: 'Om oss', verdi: 'Nytt avsnitt' },
-      ], 'Publiser nå'),
-      aForhandsvis: this.apne('Forhåndsvis', 'Åpner siden slik den blir seende ut', [
-        { navn: 'Visning', verdi: 'Desktop og mobil' },
-        { navn: 'Innhold', verdi: 'Kladd, ikke publisert' },
-      ], 'Åpne forhåndsvisning'),
+      // «Eksporter til regnskap» og «Last ned transaksjoner» aapnet en boks
+      // som sa «SAF-T, CSV eller PDF» og lukket seg igjen. Ingen fil kom ut.
+      // Naa lastes en ekte CSV med betalingene i maaneden ned.
+      aEksport: () => {
+        if (!this.erPublisert()) { this.setState({ kvittering: 'Eksport', kvitteringDetalj: 'Fila lages naar sida kjorer paa serveren.' }); return; }
+        const mnd = (this.state.okonomi && this.state.okonomi.periode) || '';
+        window.location.href = '/api/admin/transaksjoner.php' + (mnd ? '?maaned=' + mnd : '');
+        this.setState({ kvittering: 'Lastes ned', kvitteringDetalj: 'Transaksjonene kommer som CSV — åpne den i Excel eller send den til regnskapsføreren.' });
+      },
+      // «Publiser» og «Forhåndsvis» hoerte til en kladdeordning som ikke
+      // finnes: alt som lagres i Innhold gaar rett i content_blocks og er ute
+      // med én gang. Knappen som lovte en publisering er derfor borte, og
+      // «Forhåndsvis» aapner nettsida slik den faktisk staar naa.
+      aForhandsvis: () => {
+        window.open('/', '_blank', 'noopener');
+      },
+      innholdSistEndret: this.state.innholdSistEndret || (this.erPublisert() ? 'Ikke endret ennå' : 'Vises når siden kjører'),
       aNySide: this.apne('Ny side', 'Legges til i menyen når den publiseres', [
         { navn: 'Mal', verdi: 'Tom side, tekstside eller landingsside' },
         { navn: 'Adresse', verdi: 'lissom.no/…' },
@@ -10127,12 +10179,16 @@ class Component extends DCLogic {
         ? 'Opprett avtale i Vipps'
         : 'Book plass · ' + ((() => {
             const k = this.state.valgtKurs || {};
+            if (k.price === 'Gratis') return 'Gratis';
             const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
             const antall = Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
-            const grunn = this.prisAv(k.title || '') || 0;
+            // Prisen fra katalogen forst. Finner vi den ikke, bruker vi den
+            // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
+            // enn ingen sum i det hele tatt.
+            const grunn = this.prisAv(k.title || k.tittel || '') || 0;
+            if (!grunn) return (k.price || '').replace('Fra ', '') || 'se pris';
             const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
-            return k.price === 'Gratis' ? 'Gratis'
-              : 'kr. ' + Math.round(netto).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-';
+            return 'kr. ' + Math.round(netto).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-';
           })()),
       bekreftBooking: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra kr. 2 800,-', date: 'Onsdag 2. september, 17:30' };
@@ -10260,7 +10316,15 @@ class Component extends DCLogic {
           navn, antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
           linjesum: (this.prisAv(navn) * k[navn]).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
         }));
-        if (!linjer.length) return;
+        // Tom kurv: knappen gjorde ingenting i det hele tatt. Da tror man at
+        // noe er i stykker, ikke at man har glemt aa legge noe i den.
+        if (!linjer.length) {
+          this.setState({
+            kvittering: 'Handlekurven er tom',
+            kvitteringDetalj: 'Legg til et kurs eller en vare før du går til betaling.',
+          });
+          return;
+        }
         if ((this.state.betaling || 'Vipps') === 'Vipps') {
           const sum = Object.keys(k).reduce((n, navn) => n + this.prisAv(navn) * k[navn], 0);
           this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-', kurvApen: false, popupTop: this.topNaa(120) });
@@ -13490,15 +13554,44 @@ class Component extends DCLogic {
           someFacebook: 'https://facebook.com/' + fb,
         };
       })(),
-      popDatoer: (() => {
-        const liste = this.medBooking([
-          { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: '5 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
-          { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
-        ]);
-        return liste;
+      // Datoene sto som to faste oppforinger. Begge ble koblet mot det samme
+      // kurset i basen, saa siden viste den samme datoen to ganger — og en
+      // dato som ikke fantes ble staaende som om den gjaldt.
+      //
+      // Naa: én oppforing per okt som faktisk er satt opp.
+      ...(() => {
+        const kat = (this.state.katalog || []).find(k => k.tittel === 'Paint on Pots');
+        const okter = (kat && kat.datoer) || [];
+
+        const fra = this.erPublisert()
+          ? okter.map(o => ({
+              level: 'Event', title: 'Paint on Pots',
+              date: o.dato, duration: '', price: kat.pris,
+              status: o.ledige > 0 ? o.ledige + ' plasser igjen' : 'Fullt',
+              image: 'uploads_shutterstock_2830576853.jpg',
+              oktId: o.oktId, tema: 'Paint on pots', slug: kat.slug,
+              full: o.ledige <= 0,
+            }))
+          : [
+              { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: '5 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
+              { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
+            ];
+
+        return {
+          popDatoer: fra.map(k => Object.assign({}, k, {
+            book: () => {
+              this.setState({
+                side: 'booking', fra: 'paintonpots', valgtKurs: k,
+                bookOrdre: false, bookKvittert: false,
+                bDato: k.date || null, bOktId: k.oktId || null, ventelisteBekreftet: null,
+              });
+              window.scrollTo(0, 0);
+            },
+          })),
+          popHarDatoer: fra.length > 0,
+          popManglerDatoer: fra.length === 0,
+        };
       })(),
-      popHarDatoer: true,
-      popManglerDatoer: false,
       // Linja over knappen paa mobil. En knapp alene sier ikke hvor mye som
       // ligger bak den; dette er hentet fra katalogen, ikke gjettet.
       kursTeller: (() => {

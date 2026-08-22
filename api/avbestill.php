@@ -111,8 +111,8 @@ Svar::ok([
     'refunderes' => Booking::kroner($refunderes),
     'manuelt'    => $manuelt,
     'beskjed'    => $manuelt
-        ? 'Plassen er avbestilt. Refusjonen maatte vi ta manuelt — du hoerer fra oss i lopet av kort tid.'
+        ? 'Plassen er avbestilt. Refusjonen måtte vi ta manuelt — du hører fra oss i løpet av kort tid.'
         : ($refunderes > 0
-            ? 'Plassen er avbestilt. Pengene er paa vei tilbake til Vipps, vanligvis innen tre virkedager.'
+            ? 'Plassen er avbestilt. Pengene er på vei tilbake til Vipps, vanligvis innen tre virkedager.'
             : 'Plassen er avbestilt.'),
 ]);

@@ -25,7 +25,7 @@ const DROPIN_REGEL = 'Dropin/regel';
 
 $kurs = DB::en("SELECT * FROM courses WHERE slug = :s", ['s' => DROPIN_SLUG]);
 if ($kurs === null) {
-    Svar::feil('Fant ikke drop-in-kurset. Kjor databaseoppdateringen forst.', 500);
+    Svar::feil('Fant ikke drop-in-kurset. Kjør databaseoppdateringen først.', 500);
 }
 
 $hentTider = static fn(): array => array_map(static fn($t) => [
@@ -63,7 +63,7 @@ switch (Foresporsel::tekst('handling')) {
             Svar::feil('Mangler tidene.');
         }
         if (count($inn) > 40) {
-            Svar::feil('For mange aapningstider.');
+            Svar::feil('For mange åpningstider.');
         }
 
         $rene = [];
@@ -79,7 +79,7 @@ switch (Foresporsel::tekst('handling')) {
                 continue;
             }
             if ($til <= $fra) {
-                Svar::feil('«Til» maa vaere etter «fra» — sjekk ' . $fra . '–' . $til . '.');
+                Svar::feil('«Til» må være etter «fra» — sjekk ' . $fra . '–' . $til . '.');
             }
             $rene[] = [
                 'ukedag'    => $dag,
@@ -114,7 +114,7 @@ switch (Foresporsel::tekst('handling')) {
         $plass = Foresporsel::heltall('plasser');
 
         if ($pris < 0 || $pris > 20000) {
-            Svar::feil('Prisen maa vaere mellom 0 og 20 000 kroner.');
+            Svar::feil('Prisen må være mellom 0 og 20 000 kroner.');
         }
 
         DB::kjor(
@@ -140,7 +140,7 @@ switch (Foresporsel::tekst('handling')) {
         $uker = max(1, min(26, Foresporsel::heltall('uker', 8)));
         $tider = DB::alle('SELECT * FROM dropin_tider WHERE aktiv = 1 ORDER BY ukedag, fra');
         if ($tider === []) {
-            Svar::feil('Sett opp aapningstider forst.');
+            Svar::feil('Sett opp åpningstider først.');
         }
 
         $oslo = new DateTimeZone('Europe/Oslo');

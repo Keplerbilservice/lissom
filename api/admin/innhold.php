@@ -22,7 +22,22 @@ if (Foresporsel::metode() === 'GET') {
     foreach ($rader as $r) {
         $ut[$r['nokkel']] = $r['verdi'];
     }
-    Svar::json(['innhold' => (object) $ut]);
+    // Naar noe sist ble endret. Sidemenyen skrev «Sist publisert: I dag 07:40»
+    // som fast tekst — samme klokkeslett uansett naar du saa etter.
+    $sist = DB::verdi('SELECT MAX(updated_at) FROM content_blocks');
+    $sistTekst = null;
+    if ($sist !== null && $sist !== false) {
+        $oslo = new DateTimeZone('Europe/Oslo');
+        $tid  = (new DateTimeImmutable((string) $sist, new DateTimeZone('UTC')))->setTimezone($oslo);
+        $naa  = new DateTimeImmutable('now', $oslo);
+        $dag  = $tid->format('Y-m-d');
+        $sistTekst = match (true) {
+            $dag === $naa->format('Y-m-d')                  => 'I dag ' . $tid->format('H:i'),
+            $dag === $naa->modify('-1 day')->format('Y-m-d') => 'I går ' . $tid->format('H:i'),
+            default                                          => $tid->format('j.n.Y') . ' ' . $tid->format('H:i'),
+        };
+    }
+    Svar::json(['innhold' => (object) $ut, 'sistEndret' => $sistTekst]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -31,7 +46,7 @@ $admin = Sesjon::medlem();
 
 $endringer = Foresporsel::kropp()['endringer'] ?? null;
 if (!is_array($endringer) || $endringer === []) {
-    Svar::feil('Ingen endringer aa lagre.');
+    Svar::feil('Ingen endringer å lagre.');
 }
 if (count($endringer) > 200) {
     Svar::feil('For mange endringer i én omgang.');

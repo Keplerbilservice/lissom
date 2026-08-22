@@ -36,7 +36,7 @@ $id       = Foresporsel::heltall('id');
 if ($handling === 'fjern') {
     $b = DB::en('SELECT id, gjest_navn, member_id, payment_id FROM bookings WHERE id = :i', ['i' => $id]);
     if ($b === null) {
-        Svar::feil('Fant ikke paameldingen.');
+        Svar::feil('Fant ikke påmeldingen.');
     }
     if ($b['payment_id'] !== null) {
         Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke sletting.');
@@ -58,7 +58,7 @@ if ($handling === 'status') {
         Svar::feil('Ukjent status.');
     }
     if (DB::en('SELECT id FROM bookings WHERE id = :i', ['i' => $id]) === null) {
-        Svar::feil('Fant ikke paameldingen.');
+        Svar::feil('Fant ikke påmeldingen.');
     }
 
     DB::oppdater('bookings', [
@@ -78,7 +78,7 @@ $navn   = mb_substr(Foresporsel::tekst('navn'), 0, 191);
 $antall = max(1, min(20, Foresporsel::heltall('antall', 1)));
 
 if ($navn === '') {
-    Svar::feil('Deltakeren maa ha et navn.');
+    Svar::feil('Deltakeren må ha et navn.');
 }
 
 $okt = DB::en(
@@ -112,7 +112,7 @@ $belop = $maate === 'Gratis'
     ? 0
     : ($belopRaa === '' ? (int) $okt['pris_ore'] * $antall : Foresporsel::heltall('belop') * 100);
 if ($belop < 0 || $belop > 10000000) {
-    Svar::feil('Belopet maa vaere mellom 0 og 100 000 kroner.');
+    Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
 }
 
 // «Betaler ved oppmote» er ikke betalt enda. Resten er gjort opp.
@@ -126,7 +126,7 @@ $fra = DB::en(
     ['o' => $oktId, 'n' => $navn]
 );
 if ($fra !== null) {
-    Svar::feil($navn . ' staar alt paa denne datoen.');
+    Svar::feil($navn . ' står alt på denne datoen.');
 }
 
 $ledige = Booking::ledigePlasser($oktId);

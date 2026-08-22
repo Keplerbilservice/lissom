@@ -49,7 +49,7 @@ final class Bilder
         if (!isset($fil['error']) || $fil['error'] !== UPLOAD_ERR_OK) {
             throw new RuntimeException(match ($fil['error'] ?? -1) {
                 UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Bildet er for stort.',
-                UPLOAD_ERR_NO_FILE => 'Du maa velge et bilde.',
+                UPLOAD_ERR_NO_FILE => 'Du må velge et bilde.',
                 default => 'Bildet kom ikke fram. Prov igjen.',
             });
         }
@@ -66,7 +66,7 @@ final class Bilder
         // klarer ikke GD det, er det ikke et bilde.
         $info = @getimagesize($sti);
         if ($info === false || !isset(self::TYPER[$info[2]])) {
-            throw new RuntimeException('Filen maa vaere JPG, PNG eller WEBP.');
+            throw new RuntimeException('Filen må være JPG, PNG eller WEBP.');
         }
 
         // Et bilde paa 20 000 × 20 000 piksler er 1,2 GB i minnet uansett hvor

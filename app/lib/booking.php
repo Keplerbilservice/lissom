@@ -355,7 +355,10 @@ final class Booking
      */
     public static function norskDatoKort(string $dato): string
     {
-        $d = new DateTimeImmutable($dato);
+        // Tidspunkt lagres i UTC. Uten omregningen ville et kurs som slutter
+        // like for midnatt norsk tid faatt gaarsdagens dato paa kursbeviset.
+        $d = (new DateTimeImmutable($dato, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'));
         $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
                 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 

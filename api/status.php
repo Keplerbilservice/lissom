@@ -58,7 +58,27 @@ try {
             'gift_cards', 'gift_card_uses', 'products', 'orders', 'order_lines',
             'member_sales', 'checkins', 'hour_usage', 'content_blocks',
             'notification_templates', 'notifications', 'audit_log', 'rate_limits',
+            'membership_applications',
         ], $navn)),
+    ];
+
+    // Kolonner som kom med senere migrasjoner. Mangler de, er migreringen
+    // ikke kjort ferdig — og da virker ikke det de horer til.
+    $kolonne = static function (string $tabell, string $kolonne): bool {
+        return (int) DB::verdi(
+            'SELECT COUNT(*) FROM information_schema.columns
+              WHERE table_schema = DATABASE() AND table_name = :t AND column_name = :k',
+            ['t' => $tabell, 'k' => $kolonne]
+        ) === 1;
+    };
+    $svar['database']['kolonner'] = [
+        'courses.instruktor' => $kolonne('courses', 'instruktor'),
+        'courses.type_har_workshop' => str_contains(
+            (string) DB::verdi("SELECT column_type FROM information_schema.columns
+                                 WHERE table_schema = DATABASE() AND table_name = 'courses'
+                                   AND column_name = 'type'"),
+            'workshop'
+        ),
     ];
 
     if (in_array('notification_templates', $navn, true)) {
@@ -82,12 +102,30 @@ $svar['nokler'] = [
     'sveve_sms'           => $fylt('sveve_bruker'),
 ];
 
+// --- Filer som ma ligge paa plass -----------------------------------------
+// Deployen har lagt dem ut, men det er verdt aa kunne se det uten aa gjette.
+$rot = dirname(__DIR__);
+$svar['filer'] = [];
+foreach ([
+    'assets_kursbevis-bunn.jpg', 'signatur-monica.png',
+    'favicon.ico', 'favicon.svg', 'ds-fonts.css',
+    'vendor/react-18.3.1.min.js', 'icons/shopping-cart.svg',
+    'fonts/bitter-latin-700-normal.woff2',
+] as $f) {
+    $svar['filer'][$f] = is_file($rot . '/' . $f);
+}
+
 $svar['klar_for'] = [
     'innlogging' => ($svar['database']['kontakt'] ?? false)
         && $svar['nokler']['vipps_client_id']
         && $svar['nokler']['vipps_client_secret']
         && $svar['nokler']['vipps_sub_key'],
     'admin' => $svar['nokler']['admin_telefon'],
+    'medlemssoknad' => ($svar['database']['mangler'] ?? ['x']) === []
+        || !in_array('membership_applications', $svar['database']['mangler'] ?? [], true),
+    'kursbevis' => ($svar['database']['kolonner']['courses.instruktor'] ?? false)
+        && ($svar['filer']['assets_kursbevis-bunn.jpg'] ?? false)
+        && ($svar['filer']['signatur-monica.png'] ?? false),
 ];
 
 Svar::json($svar);

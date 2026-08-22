@@ -128,6 +128,9 @@ echo "\n== Norsk dato og kroner ==\n";
 sjekk('UTC blir norsk tid', Booking::norskDato('2026-09-02 15:30:00') === 'onsdag 2. september, 17:30', Booking::norskDato('2026-09-02 15:30:00'));
 sjekk('kronebelop formateres', Booking::kroner(280000) === 'kr. 2 800,-', Booking::kroner(280000));
 sjekk('null kroner', Booking::kroner(0) === 'kr. 0,-', Booking::kroner(0));
+sjekk('kort dato regnes om til norsk tid',
+    Booking::norskDatoKort('2026-08-19 22:30:00') === '20. august 2026',
+    Booking::norskDatoKort('2026-08-19 22:30:00'));
 
 echo "\n== Ratebegrensning ==\n";
 for ($i = 0; $i < 3; $i++) { Rate::tillat('proev', 3, 60, 'x'); }

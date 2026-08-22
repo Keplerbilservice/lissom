@@ -18,9 +18,19 @@ if ($m === null) {
     Svar::json(['innlogget' => false]);
 }
 
+// Innlogget er ikke det samme som medlem. Vipps Login sier hvem noen er;
+// medlemskapet er noe verkstedet godkjenner. Frontenden trenger begge deler
+// for aa vite hva den skal vise paa Min side.
+$soknad = DB::en(
+    'SELECT status FROM membership_applications WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+    ['m' => $m['id']]
+);
+
 Svar::json([
-    'innlogget' => true,
-    'erAdmin'   => Sesjon::erAdmin(),
+    'innlogget'      => true,
+    'erAdmin'        => Sesjon::erAdmin(),
+    'erMedlem'       => er_aktivt_medlem($m),
+    'soknadStatus'   => $soknad ? (string) $soknad['status'] : null,
     'medlem'    => [
         'id'        => (int) $m['id'],
         'navn'      => (string) $m['navn'],

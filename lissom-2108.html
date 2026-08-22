@@ -1624,6 +1624,13 @@ window.__resources = {
             </sc-for>
           </div>
 
+          <!-- Medlemsdelen.
+               Vipps Login sier hvem noen er — ikke at de skal ha tilgang til
+               verkstedet. Timer, dorkode, abonnement, interne kurs og salg
+               vises bare for den som verkstedet har godkjent som medlem.
+               Alle andre far «Bli medlem» i stedet, og beholder sine egne
+               plasser og kvitteringer lenger nede. -->
+          <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
           <div style="{{ timerVarselStil }}">{{ timerVarsel }}</div>
 
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: var(--space-5); align-items: stretch;">
@@ -1730,6 +1737,38 @@ window.__resources = {
               <p style="margin: auto 0 0; padding-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted);">Betales med Vipps.</p>
             </div>
           </div>
+          </sc-if>
+
+          <sc-if value="{{ visBliMedlem }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Medlemskap</div>
+              <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">{{ bmTittel }}</h2>
+              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ bmTekst }}</p>
+
+              <sc-if value="{{ bmSkjema }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 520px;">
+                  <div>
+                    <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">Hvilket medlemskap ønsker du?</div>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <sc-for list="{{ bmTyper }}" as="t" hint-placeholder-count="4">
+                        <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}" hint-size="100%,64px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Har du jobbet med leire før?" rows="2" placeholder="F.eks. «Gikk nybegynnerkurs hos dere i vår», eller «helt fersk»." value="{{ bmErfaring }}" on-change="{{ settBmErfaring }}" hint-size="100%,96px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Noe du vil si oss? (valgfritt)" rows="2" placeholder="Når du helst vil bruke verkstedet, hva du vil lage …" value="{{ bmMelding }}" on-change="{{ settBmMelding }}" hint-size="100%,96px"></x-import>
+                  <sc-if value="{{ bmFeil }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ bmFeil }}</div>
+                  </sc-if>
+                  <div>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bmSend }}" hint-size="auto,52px">Send søknad</x-import>
+                  </div>
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Vi ser på søknaden og svarer på e-post. Medlemskapet starter først når vi har snakket sammen.</p>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
 
 
           <sc-if value="{{ harVennegave }}" hint-placeholder-val="{{ true }}">
@@ -3194,6 +3233,33 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
           </div>
         </div>
+
+        <!-- Soknader om medlemskap.
+             Ingen blir medlem av aa logge inn med Vipps — de sender en soknad,
+             og den staar her til den er behandlet. -->
+        <sc-if value="{{ harSoknader }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-bottom: var(--space-8);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Til behandling</div>
+            <h2 style="margin: 0 0 var(--space-5); font-size: var(--text-2xl);">Søknader om medlemskap · {{ soknaderAntall }}</h2>
+            <sc-for list="{{ soknader }}" as="s" hint-placeholder-count="2">
+              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-5) 0; display: flex; gap: var(--space-6); flex-wrap: wrap; align-items: flex-start; justify-content: space-between;">
+                <div style="min-width: 240px; flex: 1 1 320px;">
+                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ s.navn }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-2);">{{ s.kontakt }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-body);"><strong>Ønsker:</strong> {{ s.type }} · <strong>Sendt:</strong> {{ s.sendt }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-body); margin-top: 4px;"><strong>Erfaring:</strong> {{ s.erfaring }}</div>
+                  <sc-if value="{{ s.harMelding }}" hint-placeholder-val="{{ true }}">
+                    <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ s.melding }}</p>
+                  </sc-if>
+                </div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ s.godkjenn }}" hint-size="auto,40px">Godkjenn</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ s.avsla }}" hint-size="auto,40px">Avslå</x-import>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <sc-if value="{{ gRed }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6); max-width: 680px;">
@@ -5742,6 +5808,11 @@ class Component extends DCLogic {
         const ny = {
           innlogget: inne,
           erAdminBruker: !!d.erAdmin,
+          // Innlogget er ikke medlem. Vipps forteller hvem noen er;
+          // medlemskapet er noe verkstedet godkjenner.
+          erMedlemBruker: !!d.erMedlem,
+          soknadStatus: d.soknadStatus || null,
+          medlemEpost: (d.medlem && d.medlem.epost) || '',
           vippsNavn: (d.medlem && d.medlem.navn) || '',
           vippsSteg: null, // lukk en eventuell innloggingsboks
         };
@@ -5775,6 +5846,50 @@ class Component extends DCLogic {
       .then(r => r.json())
       .then(d => { if (d && d.varer) this.setState({ butikkvarer: d.varer }); })
       .catch(() => {});
+  }
+
+  // Soknad om medlemskap.
+  //
+  // Den som logger inn med Vipps er en kunde. Medlem blir man naar
+  // verkstedet har sagt ja — ellers ville alle med Vipps hatt dorkode.
+  sendMedlemssoknad() {
+    const epost = (this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost).trim();
+    if (!epost || epost.indexOf('@') < 1) {
+      this.setState({ bmFeil: 'Vi trenger en e-postadresse vi kan svare på.' });
+      return;
+    }
+    if (this._soknadPagaar) return;
+    this._soknadPagaar = true;
+
+    fetch('/api/bli-medlem.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: this.state.bmType || '',
+        epost: epost,
+        erfaring: (this.state.bmErfaring || '').trim(),
+        melding: (this.state.bmMelding || '').trim(),
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._soknadPagaar = false;
+        if (!ok) {
+          this.setState({ bmFeil: d.feil || 'Fikk ikke sendt søknaden. Prøv igjen om litt.' });
+          return;
+        }
+        this.setState({
+          soknadStatus: 'venter',
+          bmFeil: null,
+          kvittering: 'Søknaden er sendt',
+          kvitteringDetalj: 'Vi ser på den og svarer deg på e-post.',
+        });
+      })
+      .catch(() => {
+        this._soknadPagaar = false;
+        this.setState({ bmFeil: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
   }
 
   // Ekte gavekortkjop.
@@ -5974,7 +6089,7 @@ class Component extends DCLogic {
         .then(d => {
           if (d && !d.innlogget) {
             this.setState({
-              innlogget: false, erAdminBruker: false, vippsNavn: '',
+              innlogget: false, erAdminBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '',
               side: 'login',
               kvittering: 'Du er logget ut',
               kvitteringDetalj: 'Av sikkerhetsgrunner logges du ut etter tre timer. Logg inn med Vipps for aa fortsette.',
@@ -6474,17 +6589,57 @@ class Component extends DCLogic {
       hent('/api/admin/pameldte.php'),
       hent('/api/admin/medlemmer.php'),
       hent('/api/admin/betalinger.php'),
+      hent('/api/admin/soknader.php?status=venter'),
     ])
-      .then(([oversikt, pameldte, medlemmer, betalinger]) => {
+      .then(([oversikt, pameldte, medlemmer, betalinger, soknader]) => {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
         if (medlemmer && medlemmer.medlemmer) ny.adminMedlemmer = medlemmer.medlemmer;
         if (betalinger && betalinger.betalinger) ny.adminBetalinger = betalinger.betalinger;
+        if (soknader && soknader.soknader) ny.adminSoknader = soknader.soknader;
         if (Object.keys(ny).length) this.setState(ny);
       })
       .catch(() => {})
       .then(() => { this._adminHentes = false; });
+  }
+
+  // Godkjenn eller avslaa en medlemssoknad.
+  //
+  // Ingen kommer inn i medlemsdelen for dette er gjort — det er hele poenget
+  // med soknaden. Raden fjernes fra lista med en gang, og medlemslista hentes
+  // paa nytt saa den nye statusen vises.
+  behandleSoknad(id, vedtak) {
+    if (this._soknadBehandles) return;
+    this._soknadBehandles = true;
+
+    fetch('/api/admin/soknader.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, vedtak: vedtak }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._soknadBehandles = false;
+        if (!ok) {
+          this.setState({ kvittering: 'Fikk ikke behandlet søknaden', kvitteringDetalj: d.feil || 'Prøv igjen om litt.' });
+          return;
+        }
+        this.setState({
+          adminSoknader: (this.state.adminSoknader || []).filter(s => s.id !== id),
+          kvittering: vedtak === 'godkjent' ? 'Søknaden er godkjent' : 'Søknaden er avslått',
+          kvitteringDetalj: vedtak === 'godkjent'
+            ? 'Medlemmet har fått beskjed på e-post og SMS.'
+            : 'Søkeren har fått beskjed på e-post.',
+        });
+        this._adminHentes = false;
+        this.hentAdmin();
+      })
+      .catch(() => {
+        this._soknadBehandles = false;
+        this.setState({ kvittering: 'Fikk ikke kontakt med serveren', kvitteringDetalj: 'Prøv igjen om litt.' });
+      });
   }
 
   // Serverens medlemsrader oversatt til feltene admin-siden tegner.
@@ -7195,7 +7350,7 @@ class Component extends DCLogic {
       ].map(v => Object.assign(v, {
         kjop: () => this.leggTil(v.navn),
       })),
-      harMedlemskurs: this.state.visMinInternkurs !== false,
+      harMedlemskurs: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.state.visMinInternkurs !== false,
       visMinInternbutikk: this.state.visMinInternbutikk !== false,
       visMinSalg: this.state.visMinSalg !== false,
       medlemskurs: this.medBildeCss([
@@ -7695,6 +7850,20 @@ class Component extends DCLogic {
       sortNavnPil: this.state.medlemSort === 'navn' ? '↓' : '',
       sortTimerPil: this.state.medlemSort === 'timer' ? '↓' : '',
       sortKnappStil: { appearance: 'none', border: 'none', background: 'transparent', padding: 0, cursor: 'pointer', font: 'inherit', fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', color: 'inherit', textAlign: 'left' },
+      soknader: (this.state.adminSoknader || []).map(sk => ({
+        id: sk.id,
+        navn: sk.navn,
+        type: sk.type || 'Ikke valgt',
+        kontakt: [sk.epost, sk.telefon].filter(Boolean).join(' · '),
+        erfaring: sk.erfaring || 'Ikke oppgitt',
+        melding: sk.melding || '',
+        harMelding: !!sk.melding,
+        sendt: sk.sendt,
+        godkjenn: () => this.behandleSoknad(sk.id, 'godkjent'),
+        avsla: () => this.behandleSoknad(sk.id, 'avslatt'),
+      })),
+      harSoknader: (this.state.adminSoknader || []).length > 0,
+      soknaderAntall: (this.state.adminSoknader || []).length,
       medlemmer: (this.state.adminMedlemmer ? this.medlemsrader() : (this.erPublisert() ? [] : [
         { navn: 'Ingrid Hansen', epost: 'ingrid@epost.no', initial: 'IH', abonnement: '30 timer', timer: '11,5 / 30', andel: 38, status: 'Inne nå', tone: 'success', inne: true },
         { navn: 'Kari Nordbø', epost: 'kari@epost.no', initial: 'KN', abonnement: 'Fri tilgang', timer: '42 t', andel: 100, status: 'Inne nå', tone: 'success', inne: true },
@@ -7902,7 +8071,7 @@ class Component extends DCLogic {
           { navn: 'Virkning', verdi: 'Ingen trekk og ingen timer i perioden. Neste trekk utsettes to uker.' },
         ], 'Godkjenn frysen', null, false, () => this.setState({ frysStatus: 'godkjent' })),
       }] : []),
-      visMinFrys: this.state.visMinFrys !== false,
+      visMinFrys: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.state.visMinFrys !== false,
       bryterMinFrys: this.state.visMinFrys !== false,
       vekslMinFrys: () => this.setState(s => ({ visMinFrys: s.visMinFrys === false })),
       frysIkkeSokt: !this.state.frysStatus,
@@ -8339,8 +8508,8 @@ class Component extends DCLogic {
       timerBrukt: t.brukt,
       timerVarsel: t.varsel,
       timerVarselStil: t.varselStil,
-      harTimer: t.igjen === '∞' || t.igjen > 0,
-      erTom: t.igjen === 0,
+      harTimer: (!this.erPublisert() || !!this.state.erMedlemBruker) && (t.igjen === '∞' || t.igjen > 0),
+      erTom: (!this.erPublisert() || !!this.state.erMedlemBruker) && t.igjen === 0,
       timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
       stemplingKnapp: this.state.innstemplet ? 'Stemple ut' : 'Stemple inn',
       stemplingVariant: this.state.innstemplet ? 'secondary' : 'primary',
@@ -8351,7 +8520,7 @@ class Component extends DCLogic {
         { navn: 'Vennens e-post', verdi: '' },
         { navn: 'Dato', verdi: '' },
       ], 'Send invitasjon', null, true, () => this.setState({ vennBrukt: true })),
-      harVennegave: !this.state.vennBrukt && this.state.visMinGave !== false,
+      harVennegave: (!this.erPublisert() || !!this.state.erMedlemBruker) && !this.state.vennBrukt && this.state.visMinGave !== false,
       gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på kr. ' + (g.belop || '500') + ',-' : 'Ta med en venn'; })(),
       gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.'; })(),
       aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || '30 timer')),
@@ -9284,7 +9453,7 @@ class Component extends DCLogic {
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
       salgSkjemaEtikett: this.state.salgSkjemaAv ? 'Skjult' : 'Synlig',
       salgSkjemaVeksl: () => this.setState(s => ({ salgSkjemaAv: !s.salgSkjemaAv })),
-      visSalgSkjema: !this.state.salgSkjemaAv && this.state.visMinSalg !== false,
+      visSalgSkjema: (!this.erPublisert() || !!this.state.erMedlemBruker) && !this.state.salgSkjemaAv && this.state.visMinSalg !== false,
       lukkSalg: () => this.setState({ salgApen: null }),
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);
@@ -9546,6 +9715,42 @@ class Component extends DCLogic {
       erMedlemskap: side === 'medlemskap',
       erButikk: side === 'butikk',
       erMinside: side === 'minside',
+
+      // Medlemsdelen av Min side.
+      //
+      // I designverktoyets forhandsvisning finnes ingen server, og da skal
+      // hele siden vises slik den er tegnet. Paa den ekte nettsiden er det
+      // serveren som avgjor: bare den som er godkjent som medlem slipper inn.
+      erMedlem: !this.erPublisert() || !!this.state.erMedlemBruker,
+      visBliMedlem: this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker,
+      bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',
+      bmTittel: this.state.soknadStatus === 'venter'
+        ? 'Søknaden din er til behandling'
+        : this.state.soknadStatus === 'avslatt'
+          ? 'Du kan søke på nytt'
+          : 'Bli medlem i verkstedet',
+      bmTekst: this.state.soknadStatus === 'venter'
+        ? 'Vi ser på søknaden din og svarer på e-post. Plassene dine på kurs finner du som vanlig lenger nede på siden.'
+        : 'Som medlem får du dørkode, egen hylle og verkstedtid — og du kan legge ut egne arbeider for salg i nettbutikken. Vi tar en prat før du starter, så vi vet at du er trygg på utstyret.',
+      bmTyper: ['Prøv Lissom', '30 timer', 'Årsmedlemskap', 'Fri tilgang'].map(navn => ({
+        navn,
+        velg: () => this.setState({ bmType: navn, bmFeil: null }),
+        stil: {
+          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '10px 18px',
+          font: 'var(--type-body-sm)', fontWeight: 700,
+          border: '2px solid var(--lissom-brown)',
+          background: this.state.bmType === navn ? 'var(--lissom-brown)' : 'transparent',
+          color: this.state.bmType === navn ? 'var(--clay-50)' : 'var(--lissom-brown)',
+        },
+      })),
+      bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,
+      settBmEpost: e => this.setState({ bmEpost: e.target.value, bmFeil: null }),
+      bmErfaring: this.state.bmErfaring || '',
+      settBmErfaring: e => this.setState({ bmErfaring: e.target.value, bmFeil: null }),
+      bmMelding: this.state.bmMelding || '',
+      settBmMelding: e => this.setState({ bmMelding: e.target.value, bmFeil: null }),
+      bmFeil: this.state.bmFeil || '',
+      bmSend: () => this.sendMedlemssoknad(),
       // Sto som «Hei, Ingrid» for alle. Fornavnet holder — etternavnet gjor
       // bare overskriften lang, og man vet hvem man selv er.
       minsideHilsen: (() => {
@@ -9576,7 +9781,7 @@ class Component extends DCLogic {
       loggUt: () => {
         if (!this.erPublisert()) { this.setState({ innlogget: false, side: 'forside' }); return; }
         fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
-          .then(() => { this.setState({ innlogget: false, erAdminBruker: false, vippsNavn: '', side: 'forside' }); window.scrollTo(0, 0); })
+          .then(() => { this.setState({ innlogget: false, erAdminBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', side: 'forside' }); window.scrollTo(0, 0); })
           .catch(() => {});
       },
       vippsSteg: this.state.vippsSteg || null,

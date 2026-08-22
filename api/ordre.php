@@ -59,7 +59,8 @@ foreach ($linjer as $l) {
     if ($vare === null) {
         Svar::feil('En av varene finnes ikke lenger. Last siden paa nytt.', 409);
     }
-    if ((int) $vare['kun_medlemmer'] === 1 && $medlem === null) {
+    // «Kun for medlemmer» betyr godkjent medlem — ikke bare innlogget.
+    if ((int) $vare['kun_medlemmer'] === 1 && ($medlem === null || !er_aktivt_medlem($medlem))) {
         Svar::feil('En av varene er kun for medlemmer.', 403);
     }
     if ($vare['lager'] !== null && (int) $vare['lager'] < $antall) {

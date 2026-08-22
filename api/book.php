@@ -43,6 +43,23 @@ if (normaliser_telefon($telefon) === '') {
     Svar::feil('Vi trenger et mobilnummer.');
 }
 
+// Medlemsarrangementer er gratis og bare for medlemmer. Uten denne sjekken
+// kunne hvem som helst booket dem ved aa sende okt-id-en rett til serveren —
+// de vises ikke i den offentlige lista, men skjult er ikke det samme som
+// stengt.
+$tema = DB::verdi(
+    'SELECT c.tema FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :id',
+    ['id' => $oktId]
+);
+if ((string) $tema === 'Kun for medlemmer') {
+    if ($medlem === null) {
+        Svar::feil('Dette arrangementet er for medlemmer. Logg inn for å melde deg på.', 401, ['loggInn' => true]);
+    }
+    if (!er_aktivt_medlem($medlem)) {
+        Svar::feil('Dette arrangementet er for medlemmer. Søk om medlemskap fra Min side.', 403, ['ikkeMedlem' => true]);
+    }
+}
+
 try {
     $r = Booking::reserverOgBetal(
         $oktId,

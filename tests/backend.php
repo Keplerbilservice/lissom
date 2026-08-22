@@ -56,6 +56,7 @@ function nullstill(): void
     DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'proev:%'");
 
     if ($medlemmer) {
+        DB::kjor('DELETE FROM membership_applications WHERE member_id IN (' . implode(',', $medlemmer) . ')');
         DB::kjor('DELETE FROM members WHERE id IN (' . implode(',', $medlemmer) . ')');
     }
 }
@@ -131,6 +132,65 @@ sjekk('null kroner', Booking::kroner(0) === 'kr. 0,-', Booking::kroner(0));
 echo "\n== Ratebegrensning ==\n";
 for ($i = 0; $i < 3; $i++) { Rate::tillat('proev', 3, 60, 'x'); }
 sjekk('grensen slaar inn ved fjerde forsok', Rate::tillat('proev', 3, 60, 'x') === false);
+
+echo "\n== Medlemskap er ikke det samme som innlogging ==\n";
+
+// Vipps Login gir en rad i members med status «ingen». Uten dette skillet
+// ville alle med Vipps hatt dorkode og interne kurs.
+$kundeId = DB::settInn('members', [
+    'vipps_sub' => 'test-kunde-' . bin2hex(random_bytes(4)),
+    'navn'      => 'Test Kunde',
+    'epost'     => 'kunde@example.com',
+    'telefon'   => '+4790000001',
+    'status'    => 'ingen',
+]);
+$hent = static fn(): array => DB::en('SELECT * FROM members WHERE id = :id', ['id' => $GLOBALS['kundeId']]);
+$GLOBALS['kundeId'] = $kundeId;
+sjekk('innlogget kunde er ikke medlem', er_aktivt_medlem($hent()) === false, $hent()['status']);
+
+foreach (['prove', 'aktiv', 'pause'] as $st) {
+    DB::oppdater('members', ['status' => $st], ['id' => $kundeId]);
+    sjekk("status «{$st}» gir tilgang", er_aktivt_medlem($hent()) === true);
+}
+
+DB::oppdater('members', ['status' => 'oppsagt'], ['id' => $kundeId]);
+sjekk('oppsagt medlem mister tilgangen', er_aktivt_medlem($hent()) === false);
+
+DB::oppdater('members', ['status' => 'ingen', 'rolle' => 'admin'], ['id' => $kundeId]);
+sjekk('admin slipper inn uansett status', er_aktivt_medlem($hent()) === true);
+DB::oppdater('members', ['rolle' => 'medlem', 'status' => 'ingen'], ['id' => $kundeId]);
+
+// Soknaden er selve porten: den skal kunne staa til behandling, og det er
+// godkjenningen — ikke soknaden — som apner medlemsdelen.
+$soknadId = DB::settInn('membership_applications', [
+    'member_id'   => $kundeId,
+    'onsket_type' => '30 timer',
+    'navn'        => 'Test Kunde',
+    'epost'       => 'kunde@example.com',
+    'status'      => 'venter',
+]);
+sjekk('soknaden ligger til behandling',
+    DB::verdi('SELECT status FROM membership_applications WHERE id = :id', ['id' => $soknadId]) === 'venter');
+sjekk('soknad apner ikke medlemsdelen i seg selv', er_aktivt_medlem($hent()) === false);
+
+DB::oppdater('membership_applications', ['status' => 'godkjent'], ['id' => $soknadId]);
+DB::oppdater('members', ['status' => 'prove', 'medlemskap_type' => '30 timer'], ['id' => $kundeId]);
+sjekk('godkjenning apner medlemsdelen', er_aktivt_medlem($hent()) === true);
+
+// Medlemsarrangementene er gratis og skjult fra den offentlige lista. Skjult
+// er ikke stengt — book.php slaar opp temaet, og det oppslaget testes her.
+$internOkt = DB::verdi(
+    "SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+      WHERE c.tema = 'Kun for medlemmer' LIMIT 1"
+);
+sjekk('det finnes et medlemsarrangement aa sjekke mot', !empty($internOkt));
+if ($internOkt) {
+    sjekk('okt-oppslaget finner temaet book.php sjekker',
+        (string) DB::verdi(
+            'SELECT c.tema FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :id',
+            ['id' => $internOkt]
+        ) === 'Kun for medlemmer');
+}
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

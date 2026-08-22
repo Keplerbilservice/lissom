@@ -17,7 +17,11 @@ declare(strict_types=1);
 
 require __DIR__ . '/_boot.php';
 
-Foresporsel::krevMetode('GET');
+// Bade GET (adressefeltet) og POST (knappen i admin). Metoden avgjor hvilken
+// sperre som gjelder — se lenger ned.
+if (!in_array(Foresporsel::metode(), ['GET', 'POST'], true)) {
+    Svar::feil('Feil metode.', 405);
+}
 
 // To veier inn.
 //
@@ -38,8 +42,28 @@ $medNokkel = $nokkel !== '' && $oppgitt !== '' && hash_equals($nokkel, $oppgitt)
 
 $fraEgenHand = in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '', ['none', 'same-origin'], true);
 
-if (!$medNokkel && !(Sesjon::erAdmin() && $fraEgenHand)) {
+// Uten noekkel maa du vaere admin. Punktum.
+if (!$medNokkel && !Sesjon::erAdmin()) {
     Svar::feil('Fant ikke siden.', 404);
+}
+
+// Aa lese hva som mangler endrer ingenting, og trenger ingen ekstra sperre.
+// Aa kjore dem gjor det, og da maa vi vite at kallet kom fra oss:
+//
+//   POST      — Origin eller Referer sjekkes, som paa alle andre skjemaer.
+//               Dette er veien knappen i admin gaar.
+//   GET       — Sec-Fetch-Site maa si «none» (adressen skrevet inn selv) eller
+//               «same-origin». Dette er veien adressefeltet gaar.
+//
+// Sec-Fetch-headerne sendes bare i sikker kontekst. Over HTTPS er de der; over
+// vanlig http er de ikke det, og da faller GET-veien bort. Derfor bruker
+// knappen POST — den virker uansett.
+if (Foresporsel::tekst('kjor') === 'ja' && !$medNokkel) {
+    if (Foresporsel::metode() === 'POST') {
+        Foresporsel::krevSammeOpphav();
+    } elseif (!$fraEgenHand) {
+        Svar::feil('Fant ikke siden.', 404);
+    }
 }
 
 // Migrasjonene legges ved siden av app/ av deploy-jobben.

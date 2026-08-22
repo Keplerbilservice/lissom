@@ -3170,6 +3170,22 @@ window.__resources = {
           </div>
         </div>
 
+        <!-- Databaseoppdateringer.
+             De maatte for kjores ved aa lime en adresse inn i feltet, og den
+             svarte «Fant ikke siden» hvis nettleseren ikke hadde en gyldig
+             admin-okt. Herfra gaar kallet fra sida man alt er innlogget paa. -->
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Vedlikehold</div>
+        <div style="max-width: 560px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Databasen</div>
+          <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vedlikeholdTekst }}</p>
+            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ vedlikeholdKjor }}" hint-size="auto,40px">{{ vedlikeholdKnapp }}</x-import>
+              <button type="button" onClick="{{ vedlikeholdSjekk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk på nytt</button>
+            </div>
+          </div>
+        </div>
+
       </main>
     </div>
   </sc-if>
@@ -6038,6 +6054,72 @@ class Component extends DCLogic {
     return fornavn ? tid + ', ' + fornavn : tid;
   }
 
+  // Databaseoppdateringer, kjort fra admin.
+  //
+  // Endepunktet slipper bare gjennom kall med gyldig admin-okt og
+  // Sec-Fetch-Site «none» eller «same-origin». Et fetch herfra er
+  // same-origin, saa det er ingenting aa huske paa.
+  hentMigrasjoner() {
+    if (!this.erPublisert() || this._migHentes) return;
+    this._migHentes = true;
+
+    fetch('/api/migrer.php', { credentials: 'same-origin' })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._migHentes = false;
+        this.setState({ migStatus: ok && d ? d : { feil: (d && d.feil) || 'Fikk ikke svar.' } });
+      })
+      .catch(() => {
+        this._migHentes = false;
+        this.setState({ migStatus: { feil: 'Fikk ikke kontakt med serveren.' } });
+      });
+  }
+
+  kjorMigrasjoner() {
+    if (!this.erPublisert() || this._migKjorer) return;
+    this._migKjorer = true;
+    this.setState({ kvittering: 'Oppdaterer databasen …', kvitteringDetalj: 'Det tar noen sekunder.' });
+
+    // POST, ikke GET: da sjekkes opphavet paa vanlig maate, og kallet virker
+    // ogsaa der nettleseren ikke sender Sec-Fetch-headerne.
+    fetch('/api/migrer.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kjor: 'ja' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._migKjorer = false;
+        const kjort = (d && d.kjort_naa) || [];
+        const feilet = kjort.filter(x => x.status !== 'ok');
+
+        if (!ok || feilet.length) {
+          this.setState({
+            kvittering: 'Oppdateringen stoppet',
+            kvitteringDetalj: feilet.length
+              ? feilet[0].fil + ': ' + (feilet[0].feil || feilet[0].status)
+              : ((d && d.feil) || 'Prøv igjen, eller ta kontakt.'),
+          });
+        } else {
+          this.setState({
+            kvittering: kjort.length ? 'Databasen er oppdatert' : 'Alt var oppdatert fra før',
+            kvitteringDetalj: kjort.length ? kjort.length + ' endring' + (kjort.length === 1 ? '' : 'er') + ' kjørt.' : '',
+          });
+        }
+        // Hent status og katalog paa nytt, saa skjermen viser det som naa staar.
+        this._migHentes = false;
+        this.hentMigrasjoner();
+        this.hentKatalog();
+        this._adminHentes = false;
+        this.hentAdmin();
+      })
+      .catch(() => {
+        this._migKjorer = false;
+        this.setState({ kvittering: 'Oppdateringen stoppet', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   // Banneret under heroen.
   //
   // Alt i det ligger i content_blocks, som resten av tekstene eieren kan
@@ -6156,6 +6238,9 @@ class Component extends DCLogic {
   // sted gitt et halvtonet bytte.
   static get ROT_TONING() { return 800; }
   static get ROT_OPPHOLD() { return 12000; }
+  // Produktene er ett bilde og to linjer tekst — raskere aa lese enn feltet
+  // over, og de bytter deretter.
+  static get BUT_OPPHOLD() { return 6000; }
 
   // De to som deler plassen paa forsiden: events og medlemskap.
   //
@@ -6919,13 +7004,19 @@ class Component extends DCLogic {
     }, 1000);
     // Events og medlemskap bytter paa forsiden. Har noen trykket paa en av
     // prikkene, slutter den aa bytte av seg selv — da har de valgt.
+    const kanBytte = () => this.state.side === 'forside' && !document.hidden && !this.roligBevegelse();
+
     this._rotasjon = setInterval(() => {
-      if (this.state.side !== 'forside' || document.hidden || this.roligBevegelse()) return;
-      if (!this._pauserot) this.tonBytt('rot', this.rotasjonene().length);
-      // Produktene i butikkfeltet bytter bare paa mobil; paa desktop staar de
-      // alle fire ved siden av hverandre.
-      if (!this._pausebut && this.erSmal()) this.tonBytt('but', this.forsideProdukter().length);
+      if (kanBytte() && !this._pauserot) this.tonBytt('rot', this.rotasjonene().length);
     }, Component.ROT_OPPHOLD);
+
+    // Produktene i butikkfeltet bytter bare paa mobil, og raskere — paa
+    // desktop staar alle fire ved siden av hverandre.
+    this._rotasjonBut = setInterval(() => {
+      if (kanBytte() && !this._pausebut && this.erSmal()) {
+        this.tonBytt('but', this.forsideProdukter().length);
+      }
+    }, Component.BUT_OPPHOLD);
     this._klikk = (e) => { this._klikkY = e.pageY; };
     document.addEventListener('click', this._klikk, true);
     this._resize = () => this.setState({ vw: window.innerWidth });
@@ -6995,6 +7086,7 @@ class Component extends DCLogic {
     if (this._pop) window.removeEventListener('popstate', this._pop);
     clearInterval(this._karusell);
     clearInterval(this._rotasjon);
+    clearInterval(this._rotasjonBut);
     clearTimeout(this._timerrot);
     clearTimeout(this._timerbut);
     clearInterval(this._kurvPuls);
@@ -7536,6 +7628,9 @@ class Component extends DCLogic {
   renderVals() {
     const side = this.state.side;
 
+    if (side.indexOf('admin') === 0 && !this.state.migStatus) {
+      this.hentMigrasjoner();
+    }
     if (side.indexOf('admin') === 0 && !this.state.adminData) {
       this.hentAdmin();
     }
@@ -8978,6 +9073,25 @@ class Component extends DCLogic {
       })),
       ingenOvUbesvarte: this.erPublisert()
         && (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length === 0,
+      ...(() => {
+        const m = this.state.migStatus;
+        const mangler = (m && m.mangler) || [];
+        return {
+          vedlikeholdTekst: !this.erPublisert()
+            ? 'Databaseoppdateringer kjøres herfra når siden er publisert.'
+            : m
+              ? (m.feil ? 'Fikk ikke lest status: ' + m.feil
+                 : mangler.length
+                   ? mangler.length + ' endring' + (mangler.length === 1 ? '' : 'er') + ' venter: ' + mangler.join(', ')
+                   : 'Databasen er oppdatert. Ingenting å gjøre.')
+              : 'Henter status …',
+          vedlikeholdKnapp: mangler.length
+            ? 'Kjør ' + mangler.length + ' oppdatering' + (mangler.length === 1 ? '' : 'er')
+            : 'Kjør oppdateringer',
+          vedlikeholdKjor: () => this.kjorMigrasjoner(),
+          vedlikeholdSjekk: () => { this._migHentes = false; this.setState({ migStatus: null }); this.hentMigrasjoner(); },
+        };
+      })(),
       bryterApentHus: (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',
       ...(() => {
         // Kladden ligger i skjermbildet til den lagres. Da kan eieren skrive
@@ -11060,7 +11174,7 @@ class Component extends DCLogic {
           butTekst: v.tekst,
           butPris: v.pris,
           butBilde: v.image,
-          butCta: v.gavekort ? 'Kjøp' : 'Se i butikken',
+          butCta: v.cta,
           butVelg: v.gavekort ? this.go('gavekortside') : this.go('butikk'),
           butKortStil: this.toneStil('but', {}),
           butPrikker: this.tonePrikker('but', liste.map(x => x.title)),
@@ -11079,9 +11193,11 @@ class Component extends DCLogic {
       { title: 'Fat, 28 cm', tekst: 'Dekorglasur. Ment som pyntefat, ikke matsikret.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
       { title: 'Gavekort', tekst: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
     ]).map(p => Object.assign({}, p, {
-      // «Valgfritt beløp» er en lang pristekst. Med «Kjøp gavekort» ved siden
-      // av sprengte raden kortet, og knappen ble klippet midt i ordet.
-      cta: p.gavekort ? 'Kjøp' : 'Se i butikken',
+      // Én tekst paa alle kortene. To ulike tekster hoppet naar kortene byttet
+      // paa mobil, og «Se i butikken» stemmer ikke for gavekortet, som har sin
+      // egen side. «Se mer» passer begge veier og faar plass ved siden av
+      // prisen — ogsaa ved «Valgfritt beløp», som er lang.
+      cta: 'Se mer',
       velg: p.gavekort ? this.go('gavekortside') : this.go('butikk'),
     }));
   }

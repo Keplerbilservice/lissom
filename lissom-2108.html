@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
@@ -8815,14 +8816,28 @@ class Component extends DCLogic {
         { navn: 'Vilkår og angrerett', velg: this.go('vilkar') },
       ],
       goMinSideFooter: () => { this.setState({ side: this.state.innlogget ? 'minside' : 'login' }); window.scrollTo(0, 0); },
-      goAdminFooter: this.go('adminoversikt'),
+      // Admin-inngangen i bunnteksten.
+      //
+      // Den sto bare framme for den som allerede var logget inn som admin —
+      // altsaa ubrukelig som vei inn. Aa skjule den er uansett ikke sikkerhet:
+      // alle admin-endepunkter krever admin-sesjon og svarer 404 til andre.
+      // Naa er den alltid der, diskret, og sender deg gjennom Vipps forst.
+      goAdminFooter: () => {
+        if (!this.erPublisert()) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
+        if (this.state.erAdminBruker) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
+        if (!this.state.innlogget) { window.location.href = '/api/vipps-login.php?retur=/admin'; return; }
+        this.setState({
+          kvittering: 'Denne siden er for verkstedet',
+          kvitteringDetalj: 'Kontoen din har ikke admin-tilgang. Er det feil, si fra til Monica.',
+        });
+      },
       // Aarstallet i bunnteksten hentes fra klokka, saa det ikke blir staaende
       // og bli feil ved nyttaar.
       aarstall: String(new Date().getFullYear()),
       // Admin-lenka i bunnteksten sto aapen for alle. Naa vises den bare for
       // den serveren har bekreftet er admin. I designverktoyets forhandsvisning
       // staar den framme, ellers kunne den ikke redigeres.
-      visAdminLenke: !this.erPublisert() || !!this.state.erAdminBruker,
+      visAdminLenke: true,
       tjue: 20,
       fjorten: 14,
       goPersonvern: this.go('personvern'),

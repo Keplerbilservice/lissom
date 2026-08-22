@@ -20,13 +20,22 @@ final class Booking
      * Reserverte plasser teller med — ellers kunne to personer betalt for den
      * siste plassen samtidig.
      */
-    public static function ledigePlasser(int $oktId): int
+    public static function ledigePlasser(int $oktId, bool $medLaas = false): int
     {
+        // Med $medLaas laases okta for resten av transaksjonen. Uten den leser
+        // to samtidige bookinger det samme oyeblikksbildet — begge ser den
+        // siste plassen ledig, og begge far den. Kontrollen inne i
+        // transaksjonen hjelper ikke naar lesningen ikke tar laas.
+        //
+        // Utenfor en transaksjon gir FOR UPDATE ingen mening; visningen av
+        // «3 plasser igjen» skal heller ikke laase noe.
+        $laas = $medLaas && DB::kobling()->inTransaction() ? ' FOR UPDATE' : '';
+
         $okt = DB::en(
             'SELECT cs.id, cs.manuelt_opptatt, COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
-              WHERE cs.id = :id AND cs.status = \'planlagt\'',
+              WHERE cs.id = :id AND cs.status = \'planlagt\'' . $laas,
             ['id' => $oktId]
         );
         if ($okt === null) {
@@ -162,7 +171,7 @@ final class Booking
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
-            if (self::ledigePlasser($oktId) < $antall) {
+            if (self::ledigePlasser($oktId, true) < $antall) {
                 throw new RuntimeException('Plassen ble tatt mens du fylte ut skjemaet.');
             }
 
@@ -215,11 +224,15 @@ final class Booking
                 $telefon
             );
         } catch (Throwable $e) {
-            // Reservasjonen staar igjen som ubetalt og frigis av cron etter
-            // tjue minutter. Vi trenger ikke rydde her.
+            // Betalingen kom aldri i gang, saa plassen frigis med det samme.
+            // For sto den som reservert til cron ryddet etter tjue minutter —
+            // og i de tjue minuttene sa sida «utsolgt» til alle andre, for en
+            // betaling som aldri fantes. Er dette den siste plassen paa et
+            // populaert kurs, er det tjue minutter for mye.
             DB::oppdater('payments', ['status' => 'feilet'], ['id' => $reservasjon['paymentId']]);
+            DB::oppdater('bookings', ['status' => 'avbestilt'], ['id' => $reservasjon['bookingId']]);
             logg_feil('Kunne ikke starte betaling for booking ' . $reservasjon['bookingId'], $e);
-            throw new RuntimeException('Fikk ikke startet betalingen. Prov igjen om litt.');
+            throw new RuntimeException('Fikk ikke startet betalingen. Prøv igjen om litt.');
         }
 
         DB::oppdater('payments', ['status' => 'venter'], ['id' => $reservasjon['paymentId']]);

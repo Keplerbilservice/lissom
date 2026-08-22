@@ -60,7 +60,7 @@ try {
     Vipps::refunder($referanse, $belop);
 } catch (Throwable $e) {
     logg_feil('Refusjon feilet for ' . $referanse, $e);
-    Svar::feil('Vipps godtok ikke refusjonen. Prov igjen, eller sjekk i portalen.', 502);
+    Svar::feil('Vipps godtok ikke refusjonen. Prøv igjen, eller sjekk i portalen.', 502);
 }
 
 $nyRefundert = (int) $betaling['refundert_ore'] + $belop;

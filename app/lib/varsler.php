@@ -269,7 +269,7 @@ final class Utsending
         if ($sikker === 'starttls') {
             if (!$ok($si('STARTTLS'), '220')
                 || !stream_socket_enable_crypto($sokk, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                self::$sisteFeil = 'STARTTLS feilet mot ' . $vert . '. Prov smtp_sikkerhet => \'ssl\' og'
+                self::$sisteFeil = 'STARTTLS feilet mot ' . $vert . '. Prøv smtp_sikkerhet => \'ssl\' og'
                     . ' smtp_port => 465. Holder det fram, kan sertifikatet gjelde et annet navn enn '
                     . $vert . '.';
                 logg('SMTP: STARTTLS feilet', ['vert' => $vert]);

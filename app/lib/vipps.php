@@ -266,7 +266,7 @@ final class Vipps
 
         if ($svar['status'] !== 201 || !is_array($svar['json'])) {
             logg_feil('Kunne ikke opprette Vipps-avtale: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
-            throw new RuntimeException('Fikk ikke opprettet avtalen. Prov igjen om litt.');
+            throw new RuntimeException('Fikk ikke opprettet avtalen. Prøv igjen om litt.');
         }
 
         return [

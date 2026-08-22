@@ -50,7 +50,7 @@ final class Bilder
             throw new RuntimeException(match ($fil['error'] ?? -1) {
                 UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Bildet er for stort.',
                 UPLOAD_ERR_NO_FILE => 'Du må velge et bilde.',
-                default => 'Bildet kom ikke fram. Prov igjen.',
+                default => 'Bildet kom ikke fram. Prøv igjen.',
             });
         }
         if (($fil['size'] ?? 0) > self::MAKS_BYTES) {

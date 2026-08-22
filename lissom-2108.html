@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html>
+<!-- Sidespraaket. Uten lang leser skjermlesere norsk med engelsk
+     uttale, og Google mangler et signal om hvem sida er skrevet for. -->
+<html lang="nb">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -2418,7 +2420,7 @@ window.__resources = {
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde</label>
             <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-4);">
               <sc-for list="{{ artBildeValg }}" as="v" hint-placeholder-count="7">
-                <button type="button" onClick="{{ v.velg }}" title="{{ v.navn }}" style="{{ v.stil }}"></button>
+                <button type="button" onClick="{{ v.velg }}" title="{{ v.navn }}" aria-label="{{ v.navn }}" style="{{ v.stil }}"></button>
               </sc-for>
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Innhold</label>
@@ -9589,7 +9591,7 @@ class Component extends DCLogic {
           .join('');
         const ingen = (ok.kilder || []).length === 0
           ? '<p style="font-size:13px;color:#8a6f5f;">Det er ikke registrert betalinger i denne måneden ennå.</p>' : '';
-        w.document.write('<html><head><meta charset="utf-8"><title>Månedsrapport ' + mnd + '</title></head>'
+        w.document.write('<html lang="nb"><head><meta charset="utf-8"><title>Månedsrapport ' + mnd + '</title></head>'
           + '<body style="margin:0;padding:36px;font-family:Georgia,serif;color:#4D1D12;">'
           + '<div style="font-size:11px;letter-spacing:.14em;">LISSOM · MÅNEDSRAPPORT</div>'
           + '<h1 style="font-size:26px;margin:10px 0 24px;">' + mnd + '</h1>'
@@ -12381,7 +12383,7 @@ class Component extends DCLogic {
         const dato = new Date().toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' });
         const w = window.open('', '_blank', 'width=420,height=320');
         if (!w) return;
-        w.document.write('<html><head><title>Glasurlapp</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:Georgia,serif;"><div style="border:2px solid #4D1D12;border-radius:10px;padding:20px 24px;width:300px;color:#4D1D12;"><div style="font-size:10px;letter-spacing:.14em;">LISSOM · GLASUR</div><div style="font-size:19px;font-weight:700;margin:8px 0 10px;">' + navn + '</div><div style="font-size:12px;">Dato: ' + dato + '</div><div style="font-size:12px;">Batch: ' + batch + '</div></div><scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
+        w.document.write('<html lang="nb"><head><meta charset="utf-8"><title>Glasurlapp</title></head><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;font-family:Georgia,serif;"><div style="border:2px solid #4D1D12;border-radius:10px;padding:20px 24px;width:300px;color:#4D1D12;"><div style="font-size:10px;letter-spacing:.14em;">LISSOM · GLASUR</div><div style="font-size:19px;font-weight:700;margin:8px 0 10px;">' + navn + '</div><div style="font-size:12px;">Dato: ' + dato + '</div><div style="font-size:12px;">Batch: ' + batch + '</div></div><scr' + 'ipt>window.print()</scr' + 'ipt></body></html>');
         w.document.close();
         this.setState(s => ({ batchTeller: (s.batchTeller ?? 14) + 1 }));
       },

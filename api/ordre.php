@@ -129,7 +129,7 @@ try {
     DB::oppdater('payments', ['status' => 'feilet'], ['id' => $opprettet['paymentId']]);
     DB::oppdater('orders', ['status' => 'kansellert'], ['id' => $opprettet['ordreId']]);
     logg_feil('Kunne ikke starte betaling for ordre ' . $ordrenr, $e);
-    Svar::feil('Fikk ikke startet betalingen. Prov igjen om litt.', 502);
+    Svar::feil('Fikk ikke startet betalingen. Prøv igjen om litt.', 502);
 }
 
 DB::oppdater('payments', ['status' => 'venter'], ['id' => $opprettet['paymentId']]);

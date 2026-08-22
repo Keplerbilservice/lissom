@@ -442,6 +442,59 @@ DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $avtaleId]);
 DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $avtaleMedlem]);
 
 
+// ── Samtidige bookinger og betaling som ikke kom i gang ────────────────────
+//
+// To ting som bare viser seg naar noe gaar galt paa akkurat riktig tidspunkt,
+// og som derfor er lette aa miste igjen ved en senere endring.
+
+echo "\n== Plassen paa den siste stolen ==\n";
+
+$popKurs = DB::en("SELECT id, pris_ore FROM courses WHERE slug = 'paint-on-pots'");
+$enPlass = DB::settInn('course_sessions', [
+    'course_id' => $popKurs['id'],
+    'start_tid' => gmdate('Y-m-d H:i:s', time() + 86400 * 40),
+    'slutt_tid' => gmdate('Y-m-d H:i:s', time() + 86400 * 40 + 7200),
+    'kapasitet' => 1,
+    'status'    => 'planlagt',
+]);
+
+sjekk('okta har én plass', Booking::ledigePlasser($enPlass) === 1);
+
+// Lesningen inne i en transaksjon skal ta laas. Uten den ser to samtidige
+// bookinger den samme siste plassen, og begge far den.
+$laastLest = DB::iTransaksjon(static fn(): int => Booking::ledigePlasser($enPlass, true));
+sjekk('laast lesning gir samme svar', $laastLest === 1, (string) $laastLest);
+sjekk('laas utenfor transaksjon er ufarlig', Booking::ledigePlasser($enPlass, true) === 1);
+
+// Betalingen kommer ikke i gang (ingen Vipps-noekler i testen), og da skal
+// plassen frigis med det samme — ikke staa reservert i tjue minutter.
+$fikkFeil = false;
+try {
+    Booking::reserverOgBetal($enPlass, 1, 'Testkunde', 'test@lissom.test', '90000000', null);
+} catch (Throwable $e) {
+    $fikkFeil = true;
+}
+if ($fikkFeil) {
+    sjekk('plassen er ledig igjen etter mislykket betaling',
+        Booking::ledigePlasser($enPlass) === 1, Booking::ledigePlasser($enPlass) . ' ledige');
+    sjekk('bookingen staar som avbestilt', (int) DB::verdi(
+        "SELECT COUNT(*) FROM bookings WHERE course_session_id = :i AND status = 'avbestilt'",
+        ['i' => $enPlass]) === 1);
+} else {
+    // Med gyldige noekler gaar betalingen gjennom, og da er plassen opptatt.
+    sjekk('plassen er opptatt naar betalingen kom i gang', Booking::ledigePlasser($enPlass) === 0);
+}
+
+// Bookingene forst — betalingene de peker paa kan ikke slettes for.
+$betalinger = array_column(DB::alle(
+    'SELECT payment_id FROM bookings WHERE course_session_id = :i AND payment_id IS NOT NULL',
+    ['i' => $enPlass]), 'payment_id');
+DB::kjor('DELETE FROM bookings WHERE course_session_id = :i', ['i' => $enPlass]);
+foreach ($betalinger as $pid) {
+    DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pid]);
+}
+DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $enPlass]);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

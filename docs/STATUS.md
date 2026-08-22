@@ -37,6 +37,8 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Medlemskap krever godkjenning | Virker — søknad i admin |
 | Handlekurv synlig på mobil | Virker |
 | Gavekort med valgfritt beløp | Virker |
+| Kursbevis på Min side og i admin | Virker |
+| Ingen sporing, ingen tredjeparter | Verifisert i nettleser |
 | Workshop og Sip & Clay som kategori | Virker |
 | Vilkår og personvern | Publisert som egne sider |
 | Favicon i fane, adresselinje og hjemskjerm | Ekte ikonsett, 16–512 px |
@@ -62,7 +64,7 @@ tall der ville vært oppspinn.
 Backend kjører nå mot en ekte MariaDB 10.11 — samme versjon som webhotellet.
 
 ```
-php tests/backend.php    38 sjekker, alle grønne
+php tests/backend.php    46 sjekker, alle grønne
 tests/flyt.sh            10 sjekker, alle grønne
 ```
 
@@ -155,10 +157,15 @@ skal bygges.
 skriver meldingen er ikke koblet til ennå — endepunktet er klart og testet, men
 teksten fra dialogboksen når ikke fram. Det står igjen.
 
-**10. Migrasjon 009 og 010 må kjøres.** Kurstekstene og den nye tabellen
-for medlemssøknader ligger i databasen, ikke i fila. Åpne
-`/api/migrer.php?nokkel=<cron_nokkel>&kjor=ja` én gang. Medlemsdelen av Min
-side virker ikke før 010 er kjørt.
+**10. Migreringen er ajour.** 007 til 011 ble kjørt 22. august. Fram til da
+hadde databasen stått på 006 siden dagen før — det betyr at Paint on Pots
+sto til én krone i produksjon i mellomtiden, og at butikken var tom.
+Lærdommen er tatt inn i migrasjonene: 007, 010 og 011 tåler nå å kjøres om
+igjen, slik en migrering som stopper halvveis må gjøre.
+
+Migreringen kjøres fra `/api/migrer.php?kjor=ja` når du er innlogget som
+admin. Nøkkelen fra secrets.php virker fortsatt, som reserve for den dagen
+innloggingen er ødelagt.
 
 **11. Ordensreglene om mat og drikke.** Du ba meg fjerne «ikke spis eller
 drikk ved arbeidsbenkene» og sofakroken. Det er gjort. Punktet «bruk hansker

@@ -64,9 +64,11 @@ $svar = [
         'passord_form'    => $form('smtp_passord'),
     ],
     'sms_oppsett' => [
-        'sveve_bruker'  => $fylt('sveve_bruker'),
-        'sveve_passord' => $fylt('sveve_passord'),
-        'avsender'      => (string) Config::hent('sveve_avsender', 'Lissom'),
+        'leverandor'        => mb_strtolower((string) Config::hent('sms_leverandor', 'sveve')),
+        'sveve_bruker'      => $fylt('sveve_bruker'),
+        'sveve_passord'     => $fylt('sveve_passord'),
+        'gatewayapi_token'  => $fylt('gatewayapi_token'),
+        'avsender'          => (string) Config::hent('sms_avsender', 'Lissom'),
     ],
 ];
 

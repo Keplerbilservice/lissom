@@ -277,13 +277,31 @@ Avsenderadressen maa ligge paa lissom.no. Sender du fra en gmail-adresse,
 blir meldingene avvist eller havner i sokkelen — SPF sier at Domene.no ikke
 har lov til aa sende paa vegne av Gmail.
 
-SMS gaar gjennom Sveve. Ingen maanedsavgift, betaling per melding:
+### SMS
+
+To leverandorer er stottet. Begge tar betaling per melding uten
+maanedsavgift, og begge er enkle HTTP-kall — aa bytte er en linje i
+oppsettet, ikke en jobb.
+
+**Sveve** (norsk):
 
 ```php
+'sms_leverandor' => 'sveve',
 'sveve_bruker'   => 'brukernavnet hos Sveve',
 'sveve_passord'  => 'passordet',
-'sveve_avsender' => 'Lissom',
+'sms_avsender'   => 'Lissom',
 ```
+
+**GatewayAPI** (dansk, ofte rimeligere til norske numre):
+
+```php
+'sms_leverandor'   => 'gatewayapi',
+'gatewayapi_token' => 'API-token fra gatewayapi.com',
+'sms_avsender'     => 'Lissom',
+```
+
+Avsendernavnet kan vaere inntil 11 tegn. Meldinger med navn som avsender
+kan ikke besvares — det er greit her, for vi ber aldri om svar paa SMS.
 
 ### Sjekk at det virker
 

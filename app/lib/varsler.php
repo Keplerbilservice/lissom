@@ -349,7 +349,25 @@ final class Utsending
      * SMS via Sveve. Norsk leverandør, ingen månedsavgift, betaling per melding.
      * Avsender vises som «Lissom» i stedet for et nummer.
      */
+    /**
+     * SMS. Leverandoren velges med sms_leverandor i secrets.php.
+     *
+     * Begge tar betalt per melding uten maanedsavgift, og begge er enkle
+     * HTTP-kall. Aa bytte er derfor en linje i oppsettet, ikke en jobb —
+     * poenget her er at prisen ikke skal laase oss til noen.
+     */
     private static function sendSms(string $til, string $tekst): bool
+    {
+        $leverandor = mb_strtolower((string) Config::hent('sms_leverandor', 'sveve'));
+
+        return match ($leverandor) {
+            'gatewayapi' => self::smsGatewayApi($til, $tekst),
+            default      => self::smsSveve($til, $tekst),
+        };
+    }
+
+    /** Sveve.no — norsk, betaling per melding. */
+    private static function smsSveve(string $til, string $tekst): bool
     {
         $bruker = (string) Config::hent('sveve_bruker', '');
         $passord = (string) Config::hent('sveve_passord', '');
@@ -370,6 +388,7 @@ final class Utsending
         ]);
 
         if ($svar['status'] !== 200) {
+            self::$sisteFeil = 'Sveve svarte HTTP ' . $svar['status'] . '.';
             return false;
         }
         $d = json_decode($svar['kropp'], true);
@@ -380,5 +399,41 @@ final class Utsending
             logg_feil('Sveve avviste SMS: ' . $svar['kropp']);
         }
         return $ok;
+    }
+
+    /**
+     * GatewayAPI — dansk, ofte rimeligere til norske numre, ingen
+     * maanedsavgift. Autentisering med en token som Bearer.
+     */
+    private static function smsGatewayApi(string $til, string $tekst): bool
+    {
+        $token = (string) Config::hent('gatewayapi_token', '');
+        if ($token === '') {
+            self::$sisteFeil = 'gatewayapi_token mangler i secrets.php.';
+            logg('SMS ikke sendt — GatewayAPI-token mangler', ['til' => $til]);
+            return false;
+        }
+
+        // Numrene sendes uten pluss, som E.164-siffer.
+        $nummer = ltrim(normaliser_telefon($til), '+');
+        if ($nummer === '') {
+            self::$sisteFeil = 'Nummeret kunne ikke tolkes.';
+            return false;
+        }
+
+        $svar = http_post_json('https://gatewayapi.com/rest/mtsms', [
+            'sender'     => (string) Config::hent('sms_avsender', 'Lissom'),
+            'message'    => $tekst,
+            'recipients' => [['msisdn' => (int) $nummer]],
+        ], ['Authorization: Bearer ' . $token]);
+
+        if ($svar['status'] >= 200 && $svar['status'] < 300) {
+            return true;
+        }
+
+        $grunn = (string) ($svar['json']['message'] ?? $svar['kropp']);
+        self::$sisteFeil = 'GatewayAPI avviste meldingen (HTTP ' . $svar['status'] . '): ' . mb_substr($grunn, 0, 160);
+        logg_feil('GatewayAPI avviste SMS: ' . $svar['kropp']);
+        return false;
     }
 }

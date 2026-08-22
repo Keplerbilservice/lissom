@@ -1967,10 +1967,14 @@ window.__resources = {
                       </div>
                     </div>
                   </sc-for>
+                  <!-- Sto som fast tekst utenfor sperren: «2 · to medlemmer er
+                       skjult» dukket opp rett under «Ingen er innstemplet nå». -->
+                  <sc-if value="{{ harSkjulteInne }}" hint-placeholder-val="{{ true }}">
                   <div style="display: flex; align-items: center; gap: var(--space-3); opacity: .75;">
                     <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--clay-200); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); flex: 0 0 auto;">2</div>
                     <div style="font-size: var(--text-sm); color: var(--text-muted);">to medlemmer er skjult</div>
                   </div>
+                  </sc-if>
                 </div>
                 <div style="height: 1px; background: var(--border-subtle); margin: var(--space-5) 0 var(--space-4);"></div>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis meg for andre medlemmer" checked="{{ synlig }}" on-change="{{ vekslSynlig }}" hint-size="100%,28px"></x-import>
@@ -5525,7 +5529,12 @@ class Component extends DCLogic {
     });
   }
 
+  // Kalenderuka.
+  //
+  // Sto som tre faste uker med kurs som ikke fantes, paa datoer som var
+  // passert. Bygges naa av katalogen: hver okt legges paa sin ukedag.
   ukeData(nr) {
+    if (this.erPublisert()) return this.ukeFraKatalog(nr);
     const uker = {
       35: [
         { dag: 'Man', dato: '24', poster: [{ tekst: 'Kurs boller · 17:00' }] },
@@ -5556,6 +5565,70 @@ class Component extends DCLogic {
       ],
     };
     return uker[nr] || [];
+  }
+
+  // Oktene i uke «nr», fordelt paa ukedager. Uketall regnes etter ISO, som
+  // er det norske: uke 1 er den med forste torsdag i januar.
+  ukeFraKatalog(nr) {
+    const DAG = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
+    const iOslo = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+
+    const isoUke = (d) => {
+      const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+      const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+      return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
+    };
+
+    const dager = DAG.map(d => ({ dag: d, dato: '', poster: [] }));
+
+    (this.state.katalog || []).forEach(k => {
+      if (k.tema === 'Kun for medlemmer') return;
+      (k.datoer || []).forEach(o => {
+        if (!o.startUtc) return;
+        const d = iOslo(new Date(String(o.startUtc).replace(' ', 'T') + 'Z'));
+        if (isoUke(d) !== nr) return;
+        const i = (d.getDay() + 6) % 7;
+        const pad = (n) => String(n).padStart(2, '0');
+        dager[i].dato = String(d.getDate());
+        dager[i].poster.push({
+          tekst: k.tittel + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes()),
+          full: o.ledige <= 0,
+          rolig: k.type === 'dropin',
+        });
+      });
+    });
+
+    // Datoer ogsaa paa de tomme dagene, ellers staar halve uka uten tall.
+    const mandag = this.mandagIUke(nr);
+    if (mandag) {
+      dager.forEach((d, i) => {
+        const dd = new Date(mandag);
+        dd.setDate(mandag.getDate() + i);
+        d.dato = String(dd.getDate());
+      });
+    }
+    return dager;
+  }
+
+  /** Uketallet for i dag, etter ISO. */
+  ukeNaa() {
+    if (!this.erPublisert()) return 35;
+    const naa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const t = new Date(Date.UTC(naa.getFullYear(), naa.getMonth(), naa.getDate()));
+    t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+    const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
+  }
+
+  mandagIUke(nr) {
+    const naa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const jan4 = new Date(naa.getFullYear(), 0, 4);
+    const mandagUke1 = new Date(jan4);
+    mandagUke1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+    const m = new Date(mandagUke1);
+    m.setDate(mandagUke1.getDate() + (nr - 1) * 7);
+    return m;
   }
 
   ukePil(aktiv) {
@@ -5721,7 +5794,7 @@ class Component extends DCLogic {
     // Serverens pris gaar foran designdataene. Summen kunden ser i
     // handlekurven maa vaere den serveren regner ut ved betaling — ellers
     // staar det ett belop paa skjermen og et annet i Vipps.
-    const vare = (this.state.butikkvarer || []).find(v => v.tittel === navn);
+    const vare = (this.state.butikkvareListe || []).find(v => v.tittel === navn);
     if (vare) return Math.round(vare.prisOre / 100);
 
     const p = this.priser();
@@ -6574,7 +6647,9 @@ class Component extends DCLogic {
     if (!this.erPublisert()) return;
     fetch('/api/butikk.php', { credentials: 'same-origin' })
       .then(r => r.json())
-      .then(d => { if (d && d.varer) this.setState({ butikkvarer: d.varer }); })
+      // Eget statsnavn: «butikkvarer» er ogsaa en renderVals-noekkel, og der
+      // ble serversvaret overskrevet i samme rendring som det kom inn.
+      .then(d => { if (d && d.varer) this.setState({ butikkvareListe: d.varer }); })
       .catch(() => {});
   }
 
@@ -6603,6 +6678,67 @@ class Component extends DCLogic {
   }
 
   // Foresporsel fra nettsiden — «Send oss en foresporsel».
+  // Kontaktskjemaet paa /kontakt.
+  //
+  // Dette la beskjeden i en lokal liste og viste «sendt». Ingenting kom fram
+  // til verkstedet. Skjemaet ved siden av — «Send oss en foresporsel» — har
+  // gaatt mot serveren hele tida; dette gjor det samme naa.
+  sendKontakt() {
+    const s = this.state;
+    const navn = (s.ktNavn || '').trim();
+    const tlf = (s.ktTlf || '').trim();
+    const epost = (s.ktEpost || '').trim();
+
+    if (!navn || (!tlf && !epost)) {
+      this.setState({ ktFeil: 'Fyll inn navn og telefon eller e-post, så kan vi svare deg.' });
+      return;
+    }
+
+    const ferdig = () => {
+      clearTimeout(this._ktTimer);
+      this._ktTimer = setTimeout(() => this.setState({ ktApen: false }), 3000);
+    };
+
+    if (!this.erPublisert()) {
+      this.setState(st => ({
+        ktSendt2: true, ktFeil: null,
+        nyeForesporsler: (st.nyeForesporsler || []).concat([{
+          navn, hva: 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
+          tekst: (s.ktMelding || '').trim() || 'Ingen detaljer oppgitt', epost, tlf,
+        }]),
+        ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '',
+      }));
+      ferdig();
+      return;
+    }
+    if (this._ktPagaar) return;
+    this._ktPagaar = true;
+
+    fetch('/api/foresporsel.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        navn: navn,
+        kontakt: epost || tlf,
+        type: 'Kontaktskjema',
+        antall: '',
+        melding: (s.ktMelding || '').trim(),
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._ktPagaar = false;
+        if (!ok) { this.setState({ ktFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
+        this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '' });
+        ferdig();
+      })
+      .catch(() => {
+        this._ktPagaar = false;
+        this.setState({ ktFeil: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
   sendForesporsel() {
     const s = this.state;
     if (this._fsPagaar) return;
@@ -6858,7 +6994,7 @@ class Component extends DCLogic {
   // Ekte butikkjop: oppretter ordren og sender kunden til Vipps.
   kjopKurv() {
     const kurv = this.state.kurv || {};
-    const varer = this.state.butikkvarer || [];
+    const varer = this.state.butikkvareListe || [];
 
     const linjer = [];
     const ukjente = [];
@@ -7133,13 +7269,51 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
   }
 
+  // Beskjed fra et medlem til verkstedet.
+  //
+  // Denne la beskjeden i en lokal liste og sa «sendt» — den kom aldri fram.
+  // Verre: avsenderen sto som «Ingrid Hansen / ingrid@epost.no / 415 22 890»,
+  // uansett hvem som var innlogget. Naa gaar den samme vei som forespørsler
+  // fra nettsiden, med navnet til den som faktisk er innlogget.
   sendTilMonicaNaa() {
     const tekst = (this.state.medlemsBeskjed || '').trim();
     if (!tekst) return;
-    this.setState(s => ({
-      nyInnboks: (s.nyInnboks || []).concat([{ navn: 'Ingrid Hansen', tekst, tid: 'Nå nettopp', ny: true, epost: 'ingrid@epost.no', tlf: '+47 415 22 890', abonnement: '30 timer' }]),
-      medlemsBeskjed: '', kvittering: 'Beskjeden er sendt til Monica',
-    }));
+
+    if (!this.erPublisert()) {
+      this.setState(s => ({
+        nyInnboks: (s.nyInnboks || []).concat([{ navn: s.vippsNavn || 'Medlem', tekst, tid: 'Nå nettopp', ny: true }]),
+        medlemsBeskjed: '', kvittering: 'Beskjeden er sendt til Monica',
+      }));
+      return;
+    }
+    if (this._beskjedPagaar) return;
+    this._beskjedPagaar = true;
+
+    fetch('/api/foresporsel.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        navn: (this.state.vippsNavn || '').trim() || 'Medlem',
+        kontakt: '',
+        type: 'Beskjed fra medlem',
+        antall: '',
+        melding: tekst,
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._beskjedPagaar = false;
+        this.setState({
+          medlemsBeskjed: ok ? '' : this.state.medlemsBeskjed,
+          kvittering: ok ? 'Beskjeden er sendt til Monica' : 'Beskjeden ble ikke sendt',
+          kvitteringDetalj: ok ? 'Du får svar på e-post.' : ((d && d.feil) || 'Prøv igjen om litt.'),
+        });
+      })
+      .catch(() => {
+        this._beskjedPagaar = false;
+        this.setState({ kvittering: 'Beskjeden ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
   }
 
 
@@ -7364,7 +7538,13 @@ class Component extends DCLogic {
   }
 
   galleriListe() {
-    const basis = [
+    // Medlemskolleksjonen. Fem oppdiktede selgere med oppdiktede telefonnumre
+    // og e-postadresser sto her og ble vist offentlig i butikken — nummer som
+    // enten ikke finnes, eller tilhorer noen som ikke aner noe om det.
+    //
+    // Medlemmene kan legge ut arbeider fra Min side, men det gaar ikke mot
+    // basen ennaa. Til det er paa plass viser vi ingen.
+    const basis = this.erPublisert() ? [] : [
       { id: 'g1', status: 'publisert', tittel: 'Kopp i steingods', tekst: 'Dreid i verkstedet, glasert med sandglasur. Tåler oppvaskmaskin.', laget: 'Laget av Ingrid', bilde: 'assets_photos_butikken.jpg', pris: 'kr. 350,-', vipps: '412 34 567', kontakt: 'ingrid@epost.no', levering: 'Leveres etter avtale', antall: 2, kategori: 'Kopper' },
       { id: 'g2', status: 'publisert', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter i verkstedet. Ett unikt eksemplar.', laget: 'Laget av Jonas', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'jonas@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
       { id: 'g3', status: 'publisert', tittel: 'Fat i plateteknikk', tekst: 'Dekorfat laget på plateteknikk-kurs. Ikke matsikret — ment som pyntefat.', laget: 'Laget av Silje', bilde: 'assets_photos_plateteknikk-fat.jpg', pris: 'kr. 520,-', vipps: '901 23 456', kontakt: 'silje@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
@@ -7739,12 +7919,17 @@ class Component extends DCLogic {
       padding: 'var(--space-5) var(--space-6)', marginBottom: 'var(--space-6)',
       fontSize: 'var(--text-base)', color: 'var(--text-body)',
     });
+    // Timeforbruket er ikke koblet opp. Innstempling finnes ikke i basen, saa
+    // ingen vet hvor mange timer noen har brukt. Tallet «11,5» sto som fast
+    // verdi og ble vist til hvert eneste medlem — den er null paa den ekte
+    // siden, og seksjonen skjules helt (se harTimer lenger ned).
+    const fastBrukt = this.erPublisert() ? 0 : 11.5;
     let t;
     if (plan.timer == null) {
-      t = { igjen: '∞', maks: 'ingen timebegrensning', brukt: this.state.aboKjopt ? '0' : '11,5', andel: 100, varsel: '', varselStil: { display: 'none' } };
+      t = { igjen: '∞', maks: 'ingen timebegrensning', brukt: (this.state.aboKjopt || this.erPublisert()) ? '0' : '11,5', andel: 100, varsel: '', varselStil: { display: 'none' } };
     } else {
       const maksT = plan.timer;
-      let brukt = this.state.aboKjopt ? 0 : status === 'Tom' ? maksT : status === 'Nesten tom' ? maksT - 4 : 11.5;
+      let brukt = this.state.aboKjopt ? 0 : status === 'Tom' ? maksT : status === 'Nesten tom' ? maksT - 4 : fastBrukt;
       if (brukt > maksT) brukt = maksT;
       const igjen = Math.round((maksT - brukt) * 10) / 10;
       t = {
@@ -7756,12 +7941,14 @@ class Component extends DCLogic {
       };
     }
 
-    const fh = this.state.kjop || [
+    // Kjopshistorikken finnes ikke som endepunkt ennaa. Fire oppdiktede kjop
+    // med kvitteringsnummer sto her og ble vist til alle.
+    const fh = this.state.kjop || (this.erPublisert() ? [] : [
       { navn: 'Leire, stengods grå', detalj: '10 kg pose', sum: 'kr. 290,-', tid: '22. august 14:12', ref: 'LIS-10488' },
       { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', sum: 'kr. 220,-', tid: '18. august 09:40', ref: 'LIS-10471' },
       { navn: 'Kurs boller', detalj: 'Betalt', sum: 'kr. 1 490,-', tid: '2. august 11:30', ref: 'LIS-10402' },
       { navn: 'Leire, hvit porselen', detalj: '5 kg pose', sum: 'kr. 340,-', tid: '28. juli 15:20', ref: 'LIS-10388' },
-    ];
+    ]);
 
     return {
       sider,
@@ -7961,12 +8148,12 @@ class Component extends DCLogic {
           { navn: 'Referanse', verdi: k.ref },
         ], 'Se kvittering'),
       })),
-      internvarerAdmin: [
+      internvarerAdmin: (this.erPublisert() ? [] : [
         { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-', lager: '14 poser' },
         { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-', lager: '6 poser' },
         { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-', lager: 'Etter kapasitet' },
         { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-', lager: 'Etter kapasitet' },
-      ].map(v => Object.assign({}, v, {
+      ]).map(v => Object.assign({}, v, {
         velg: this.apne(v.navn, 'Vare i internbutikken', [
           { navn: 'Navn', verdi: v.navn },
           { navn: 'Detalj', verdi: v.detalj },
@@ -8149,20 +8336,7 @@ class Component extends DCLogic {
       ktEpost: this.state.ktEpost || '', settKtEpost: e => this.setState({ ktEpost: e.target.value, ktFeil: null }),
       ktMelding: this.state.ktMelding || '', settKtMelding: e => this.setState({ ktMelding: e.target.value, ktFeil: null }),
       ktFeil: this.state.ktFeil || '',
-      ktSend: () => {
-        const s = this.state;
-        if (!(s.ktNavn || '').trim() || (!(s.ktTlf || '').trim() && !(s.ktEpost || '').trim())) { this.setState({ ktFeil: 'Fyll inn navn og telefon eller e-post, så kan vi svare deg.' }); return; }
-        this.setState(st => ({
-          ktSendt2: true,
-          nyeForesporsler: (st.nyeForesporsler || []).concat([{
-            navn: s.ktNavn.trim(), hva: 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
-            tekst: (s.ktMelding || '').trim() || 'Ingen detaljer oppgitt', epost: (s.ktEpost || '').trim(), tlf: (s.ktTlf || '').trim(),
-          }]),
-          ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '',
-        }));
-        clearTimeout(this._ktTimer);
-        this._ktTimer = setTimeout(() => this.setState({ ktApen: false }), 3000);
-      },
+      ktSend: () => this.sendKontakt(),
       fsApen: !!this.state.fsApen,
       fsLukk: () => this.setState({ fsApen: false }),
       fsTop: this.state.fsTop ?? 80,
@@ -8199,7 +8373,7 @@ class Component extends DCLogic {
         clearTimeout(this._fsTimer);
         this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
       },
-      uke: this.ukeData(this.state.ukeNr ?? 35).map((d, dagIdx) => Object.assign(d, {
+      uke: this.ukeData(this.state.ukeNr ?? this.ukeNaa()).map((d, dagIdx) => Object.assign(d, {
         erTom: !(d.poster || []).length,
         tomTekst: 'Ingen kurs i dag',
         velgDag: (d.poster || []).length
@@ -8227,7 +8401,10 @@ class Component extends DCLogic {
       })),
       mittAbo: aboNavn,
       mittAboPris: plan.pris + ' ' + plan.periode,
-      aboStatus: this.state.oppsagt ? 'Sagt opp, løper ut august' : 'Fornyes 1. september · kan sies opp når du vil',
+      // Medlemskapsbetaling gaar ikke gjennom noe system ennaa. «Fornyes 1.
+      // september» var en paastand om et trekk som ikke finnes.
+      aboStatus: this.state.oppsagt ? 'Sagt opp, løper ut august'
+        : (this.erPublisert() ? 'Avtalen gjøres opp direkte med verkstedet' : 'Fornyes 1. september · kan sies opp når du vil'),
       erOppsagt: !!this.state.oppsagt,
       aboBadge: this.state.oppsagt ? 'Sagt opp' : 'Aktivt',
       aboBadgeStil: {
@@ -8769,8 +8946,12 @@ class Component extends DCLogic {
         'Maks åtte deltakere.',
         'Ingen forkunnskaper nødvendig.',
       ]),
+      // Ingen datoer fra serveren betyr ingen datoer. Fallet tilbake paa
+      // designlista viste «Onsdag 19. august · 3 av 8 plasser» — en dato som
+      // var passert, med plasser som ikke fantes, og en knapp som booket dem.
       bookingDatoer: (
         this.ekteDatoer()
+        || (this.erPublisert() ? [] : null)
         || (this.state.valgtKurs && this.state.valgtKurs.datoer)
         || (this.state.valgtKurs && this.state.valgtKurs.price === 'Gratis'
           ? [{ dato: this.state.valgtKurs.date, tid: this.state.valgtKurs.duration, plasser: this.state.valgtKurs.status, valgt: true }]
@@ -8841,12 +9022,12 @@ class Component extends DCLogic {
       adminNav: this.adminMeny('Kurs og events'),
       adminNavMedlem: this.adminMeny('Medlemmer'),
       adminNavOkonomi: this.adminMeny('Økonomi'),
-      medlemTall: [
+      medlemTall: (this.erPublisert() ? [] : [
         { merke: 'Aktive medlemmer', verdi: '47', under: '+3 siste 30 dager' },
         { merke: 'På prøve', verdi: '6', under: '4 utløper denne måneden' },
         { merke: 'Timer brukt i august', verdi: '612', under: 'Snitt 13 per medlem' },
         { merke: 'Oppsagt i august', verdi: '2', under: 'Begge på 30 timer' },
-      ].map(t => Object.assign(t, { velg: this.go('adminmedlem'), kortStil: KORT_KLIKK })),
+      ]).map(t => Object.assign(t, { velg: this.go('adminmedlem'), kortStil: KORT_KLIKK })),
       mottakere: ['Alle aktive medlemmer', 'Kun 30 timer', 'Kun fri tilgang', 'Kun på prøve', 'Deltakere på et kurs'],
       medlemFiltre: ['Alle', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
         const valgt = (this.state.medlemFilter || 'Alle') === n;
@@ -8900,34 +9081,34 @@ class Component extends DCLogic {
           background: m.andel >= 90 ? 'var(--sage-500)' : 'var(--terracotta-500)',
         },
       })),
-      okonomiStolper: [
+      okonomiStolper: (this.erPublisert() ? [] : [
         { uke: 'U27', h: 42 }, { uke: 'U28', h: 55 }, { uke: 'U29', h: 48 }, { uke: 'U30', h: 63 },
         { uke: 'U31', h: 71 }, { uke: 'U32', h: 58 }, { uke: 'U33', h: 88 }, { uke: 'U34', h: 100 },
-      ].map((s, i, arr) => Object.assign(s, {
+      ]).map((s, i, arr) => Object.assign(s, {
         stil: {
           width: '100%', height: s.h + '%', minHeight: 8, borderRadius: 'var(--radius-sm)',
           background: i === arr.length - 1 ? 'var(--lissom-yellow)' : 'var(--clay-300)',
         },
       })),
-      vippsProdukter: [
+      vippsProdukter: (this.erPublisert() ? [] : [
         { navn: 'ePayment', hva: 'Kurs, events, drop-in, butikk og gavekort', status: 'Aktivt', tone: 'success' },
         { navn: 'Recurring', hva: 'Månedstrekk for medlemskap', status: 'Aktivt', tone: 'success' },
         { navn: 'Login', hva: 'Logg inn med Vipps', status: 'Aktivt', tone: 'success' },
         { navn: 'QR', hva: 'Innstemplingskode ved døra', status: 'Ikke bestilt', tone: 'neutral' },
-      ].map(p => Object.assign(p, {
+      ]).map(p => Object.assign(p, {
         velg: this.apne('Vipps ' + p.navn, p.hva, [
           { navn: 'Status', verdi: p.status },
           { navn: 'Bestilles i', verdi: 'portal.vipps.no' },
           { navn: 'Miljø', verdi: 'Produksjon' },
         ], p.status === 'Aktivt' ? 'Se innstillinger' : 'Bestill produktet'),
       })),
-      tripletexFelter: [
+      tripletexFelter: (this.erPublisert() ? [] : [
         { navn: 'Consumer token', verdi: '••••••••••••••••c2e1' },
         { navn: 'Employee token', verdi: '••••••••••••••••8b40' },
         { navn: 'Miljø', verdi: 'Produksjon' },
         { navn: 'Bokføringskonto salg', verdi: '3000 · Salgsinntekt, avgiftspliktig' },
         { navn: 'Synk', verdi: 'Daglig kl. 03:00' },
-      ],
+      ]),
       aTripletex: this.apne('Tripletex-oppsett', 'API-nøkkel opprettes i Tripletex under Selskap → API-tilgang', [
         { navn: 'Consumer token', verdi: '••••••••••••••••c2e1' },
         { navn: 'Employee token', verdi: '••••••••••••••••8b40' },
@@ -8936,14 +9117,14 @@ class Component extends DCLogic {
         { navn: 'Bokføringskonto gavekort', verdi: '2900' },
         { navn: 'Synk', verdi: 'Daglig kl. 03:00' },
       ], 'Lagre', null, true),
-      vippsFelter: [
+      vippsFelter: (this.erPublisert() ? [] : [
         { navn: 'Salgsenhet (MSN)', verdi: '284 719' },
         { navn: 'Client ID', verdi: 'fb492b5e-…-a10c' },
         { navn: 'Subscription key', verdi: '••••••••••••••••3f7a' },
         { navn: 'Webhook-adresse', verdi: 'lissom.no/api/vipps/hendelser' },
         { navn: 'Oppgjørskonto', verdi: '3201 •• ••127' },
         { navn: 'Oppgjør', verdi: 'Hver mandag' },
-      ],
+      ]),
       aVippsNokler: this.apne('Vipps-nøkler', 'Hentes i portal.vipps.no under Utvikler', [
         { navn: 'Salgsenhet (MSN)', verdi: '284 719' },
         { navn: 'Client ID', verdi: 'fb492b5e-…-a10c' },
@@ -9015,13 +9196,13 @@ class Component extends DCLogic {
           background: k.andel === 100 ? 'var(--sage-500)' : 'var(--terracotta-500)',
         },
       })),
-      mobButikkVarer: [
+      mobButikkVarer: (this.erPublisert() ? [] : [
         { navn: 'Kopp, sandglasur', pris: 'kr. 390,-', antall: '8', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.' },
         { navn: 'Kopp med hank', pris: 'kr. 450,-', antall: '3', tekst: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.' },
         { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: '5', tekst: 'Dreid stengods, 22 cm. Fin til servering.' },
         { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: '0', tekst: 'Dreid stengods, 14 cm. Selges enkeltvis.' },
         { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: '2', tekst: 'Dekorglasur. Ikke matsikret, ment som pyntefat.' },
-      ].map(v => Object.assign({}, v, {
+      ]).map(v => Object.assign({}, v, {
         velg: () => this.setState({ npApen: true, npRediger: true, npNavn: v.navn, npPris: v.pris.replace(/[^\d ]/g, '').trim(), npAntall: v.antall, npBeskrivelse: v.tekst }),
       })),
       npApen: !!this.state.npApen,
@@ -9573,14 +9754,26 @@ class Component extends DCLogic {
       })),
       butikkvarer: (() => {
         const filter = this.state.butikkFilter || 'Alt';
-        const egne = this.medBildeCss([
+        // Varene kommer fra basen. Lista under er designdata, og den lever
+        // videre bare i designmodus — den overstyrte serveren, saa nye varer
+        // aldri dukket opp og «Bolle, liten» sto som utsolgt for alltid.
+        const fraBasen = (this.state.butikkvareListe || [])
+          .filter(v => !v.kunMedlemmer)
+          .map(v => ({
+            title: v.tittel, detalj: v.detalj || '', pris: v.pris,
+            image: v.bilde || FOTO + 'butikken.jpg',
+            badge: v.kategori || '', kategori: v.kategori || 'Annet',
+            utsolgt: !!v.utsolgt,
+          }));
+
+        const egne = this.medBildeCss((this.erPublisert() ? fraBasen : [
           { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
           { title: 'Kopp med hank', detalj: 'Dreid stengods, ca. 4 dl. Hver kopp er litt ulik.', pris: 'kr. 450,-', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },
           { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller' },
           { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: 'kr. 340,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
           { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
           { title: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
-        ].concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
+        ]).concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
           velgHandling: p.utsolgt ? (() => {}) : (() => this.leggTil(p.title)),
@@ -9629,12 +9822,19 @@ class Component extends DCLogic {
       timerBrukt: t.brukt,
       timerVarsel: t.varsel,
       timerVarselStil: t.varselStil,
-      harTimer: (!this.erPublisert() || !!this.state.erMedlemBruker) && (t.igjen === '∞' || t.igjen > 0),
-      erTom: (!this.erPublisert() || !!this.state.erMedlemBruker) && t.igjen === 0,
+      // Timeteljinga finnes ikke ennaa. Framfor aa vise «du har 30 av 30
+      // timer igjen» — som er like usant som 11,5 — skjules kortet helt paa
+      // den ekte siden.
+      harTimer: !this.erPublisert() && (t.igjen === '∞' || t.igjen > 0),
+      erTom: !this.erPublisert() && t.igjen === 0,
       timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
       stemplingKnapp: this.state.innstemplet ? 'Stemple ut' : 'Stemple inn',
       stemplingVariant: this.state.innstemplet ? 'secondary' : 'primary',
-      stemplingTekst: this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet',
+      // Innstempling er ikke koblet opp. Klokkeslettet «13:42» og «1 t 20 min»
+      // sto som faste verdier og ble vist til alle, uansett naar de var der.
+      stemplingTekst: this.erPublisert()
+        ? 'Innstempling kommer'
+        : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet'),
       vekslStempling: () => this.setState(s => ({ innstemplet: !s.innstemplet })),
       aInvitasjon: this.apne('Ta med en venn', 'Én gratis drop-in for en venn i august', [
         { navn: 'Vennens navn', verdi: '' },
@@ -9673,10 +9873,12 @@ class Component extends DCLogic {
       settChatTekst: (e) => this.setState({ chatTekst: e.target.value }),
       sendChat: () => this.sendChatNaa(),
       chatEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendChatNaa(); } },
-      chatMeldinger: [
+      // Chatten ligger bare i denne nettleseren (localStorage). To oppdiktede
+      // meldinger fra «Kari» og «Jonas» var lagt inn som startinnhold.
+      chatMeldinger: (this.erPublisert() ? [] : [
         { navn: 'Kari', tekst: 'Noen som vet om det er ledig plass ved vinduet?', tid: '11:02', egen: false },
         { navn: 'Jonas', tekst: 'Jepp, jeg går om en halvtime — ta plassen min!', tid: '11:05', egen: false },
-      ].concat((this.state.chat || []).map((m, i) => Object.assign({}, m, { indeks: i }))).map(m => Object.assign({}, m, {
+      ]).concat((this.state.chat || []).map((m, i) => Object.assign({}, m, { indeks: i }))).map(m => Object.assign({}, m, {
         kanAngre: !!m.egen,
         angre: () => this.setState(s => ({ chat: (s.chat || []).filter((_, j) => j !== m.indeks) }), () => this.lagreChat()),
         boble: {
@@ -9687,7 +9889,10 @@ class Component extends DCLogic {
         },
         metaStil: { fontSize: '11px', color: 'var(--text-muted)' },
       })),
-      dorkode: this.state.dorkode || '4 7 1 2',
+      // Dorkoden ligger ikke i basen. «4 7 1 2» sto som fast verdi — en kode
+      // som enten er feil, eller er den ekte og staar aapent i kildekoden.
+      harSkjulteInne: !this.erPublisert(),
+      dorkode: this.state.dorkode || (this.erPublisert() ? '— — — —' : '4 7 1 2'),
       // «I verkstedet naa» krever innstempling, og den er ikke koblet opp.
       // Paa den ekte nettsiden staar lista derfor tom framfor aa vise
       // oppdiktede folk — et medlem som logger inn skal ikke tro at det er
@@ -9707,22 +9912,25 @@ class Component extends DCLogic {
         { navn: 'Ingrid Hansen' }, { navn: 'Kari Nordbø' }, { navn: 'Jonas Five' },
         { navn: 'Silje Bratt (skjult for medlemmer)' }, { navn: 'Mari Lunde (skjult for medlemmer)' },
       ],
-      beskjeder: [
+      // Beskjeder fra verkstedet finnes ikke som endepunkt ennaa.
+      beskjeder: (this.erPublisert() ? [] : [
         { tittel: 'Ovnen går natt til torsdag', tid: 'I dag', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med.', ny: true },
         { tittel: 'Ny leire på lager', tid: '3 dager siden', tekst: 'Grå stengods 2 er tilbake. Ligger under trappa.' },
         { tittel: 'Åpen dag 6. september', tid: '1 uke siden', tekst: 'Verkstedet er åpent for publikum 11–16. Medlemmer kan gjerne stå på stand.' },
-      ].map(b => Object.assign(b, {
+      ]).map(b => Object.assign(b, {
         stil: {
           borderLeft: b.ny ? '3px solid var(--lissom-yellow)' : '3px solid var(--clay-200)',
           paddingLeft: 'var(--space-4)',
         },
       })),
-      internvarer: [
+      // Internbutikken har ekte varer i basen (kun_medlemmer), men denne lista
+      // er en kopi i fila. Den vises ikke paa den ekte siden.
+      internvarer: (this.erPublisert() ? [] : [
         { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-' },
         { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-' },
         { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-' },
         { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-' },
-      ].map(v => Object.assign(v, {
+      ]).map(v => Object.assign(v, {
         knappetekst: 'Kjøp · ' + v.pris,
         knappetekst: 'Legg til',
         kjopNaa: () => this.leggTil(v.navn),
@@ -9882,7 +10090,10 @@ class Component extends DCLogic {
         'Du kan si opp når som helst, i Vipps eller på Min side.',
         'Endrer vi prisen, får du beskjed minst én måned i forveien.',
       ],
-      erLogin: side === 'login',
+      // Innloggingsskjermen vises ogsaa naar noen ber om Min side uten aa
+      // vaere innlogget. Adressen blir staaende, saa man havner riktig sted
+      // etter innlogging.
+      erLogin: side === 'login' || (side === 'minside' && this.erPublisert() && !this.state.innlogget),
       erPersonvern: side === 'personvern',
       erVilkar: side === 'vilkar',
       erBedrift: side === 'bedrift',
@@ -10029,13 +10240,13 @@ class Component extends DCLogic {
       adminNavInnhold: this.adminMeny('Innhold'),
       adminNavPameldte: this.adminMeny('Påmeldte'),
       erAdminPameldte: side === 'adminpameldte',
-      pameldteTall: [
+      pameldteTall: (this.erPublisert() ? [] : [
         { merke: 'Påmeldte denne uka', verdi: '34', under: 'Fordelt på 5 kurs og events' },
         { merke: 'Betalt', verdi: '32', under: 'kr. 89 620,- innbetalt', filter: 'Betalt' },
         { merke: 'Venter på betaling', verdi: '1', under: 'Reservert til i morgen', filter: 'Ubetalt' },
         { merke: 'Ikke godkjent', verdi: '1', under: 'Drop-in uten kurs eller medlem', filter: 'Ikke godkjent' },
         { merke: 'På venteliste', verdi: String(3 + (this.state.nyVenteliste || []).length), under: 'Ingen belastet ennå', maal: 'admin' },
-      ].map(t => Object.assign(t, {
+      ]).map(t => Object.assign(t, {
         velg: t.maal ? this.go(t.maal) : () => this.setState({ side: 'adminpameldte', pameldtFilter: t.filter || 'Alle' }),
         kortStil: Object.assign({}, KORT_KLIKK, (this.state.pameldtFilter || 'Alle') === (t.filter || 'Alle')
           ? { border: '2px solid var(--lissom-brown)' } : {}),
@@ -10299,7 +10510,7 @@ class Component extends DCLogic {
       erAdminDropin: side === 'admindropin',
       erAdminButikk: side === 'adminbutikk',
       erAdminBeskjeder: side === 'adminbeskjeder',
-      epostMaler: [
+      epostMaler: (this.erPublisert() ? [] : [
         { navn: 'Ordrebekreftelse', kanal: 'E-post', emne: 'Takk for bestillingen hos Lissom!', tekst: 'Hei {navn}! Vi har mottatt bestillingen din ({ordre}). Du finner kvitteringen vedlagt. Velkommen til verkstedet!' },
         { navn: 'Kurspåminnelse', kanal: 'E-post + SMS', emne: 'I morgen: {kurs} kl. {tid}', tekst: 'Hei {navn}! Vi gleder oss til å se deg i morgen. Du får låne forkle av oss, men regn med å bli litt skitten. Adresse: Nordre Løkkevei 15, Teie.' },
         { navn: 'Avbestilling bekreftet', kanal: 'E-post', emne: 'Avbestillingen din er registrert', tekst: 'Hei {navn}. Vi har avbestilt {kurs}. Eventuell refusjon ({belop}) er på vei til Vipps innen 3 virkedager.' },
@@ -10307,7 +10518,7 @@ class Component extends DCLogic {
         { navn: 'Betaling feilet', kanal: 'E-post + SMS', emne: 'Vi fikk ikke trukket betalingen', tekst: 'Hei {navn}. Månedstrekket for {abonnement} feilet. Åpne Vipps og godkjenn betalingen innen 5 dager for å beholde tilgangen.' },
         { navn: 'Venteliste — plass ledig', kanal: 'SMS', emne: '', tekst: 'Hei {navn}! Det ble ledig plass på {kurs} {dato}. Plassen er din i 24 timer: {lenke}' },
         { navn: 'Arbeidene er ferdig brent', kanal: 'SMS', emne: '', tekst: 'Hei {navn}! Keramikken din fra {kurs} er ferdig og klar til henting. Vi holder av den i to uker.' },
-      ].map(m => Object.assign(m, {
+      ]).map(m => Object.assign(m, {
         velg: this.apne(m.navn, 'Sendes automatisk · ' + m.kanal, m.emne ? [
           { navn: 'Emne', verdi: m.emne },
           { navn: 'Tekst', verdi: m.tekst },
@@ -10370,26 +10581,26 @@ class Component extends DCLogic {
           background: 'var(--surface-card)',
         },
       })),
-      lager: this.klikkbar([
+      lager: this.klikkbar((this.erPublisert() ? [] : [
         { navn: 'Kopp, sandglasur', pris: 'kr. 390,-', antall: 8, status: 'På lager', tone: 'success' },
         { navn: 'Kopp med hank', pris: 'kr. 450,-', antall: 3, status: 'Få igjen', tone: 'warning' },
         { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: 5, status: 'På lager', tone: 'success' },
         { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: 0, status: 'Utsolgt', tone: 'danger' },
         { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: 2, status: 'Få igjen', tone: 'warning' },
         { navn: 'Gavekort', pris: 'Valgfritt beløp', antall: null, status: 'Digitalt', tone: 'neutral' },
-      ].map(v => Object.assign(v, { antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk' })), v => [v.navn, 'Produkt i butikken', [{ navn: 'Navn', verdi: v.navn }, { navn: 'Pris', verdi: v.pris }, { navn: 'Mva', verdi: 'Uten mva' }, { navn: 'På lager', verdi: v.antall === null ? 'Ubegrenset' : String(v.antall) }, { navn: 'Status', verdi: v.status }], 'Lagre produkt', null, 'produkt']),
-      ordrer: this.klikkbar([
+      ]).map(v => Object.assign(v, { antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk' })), v => [v.navn, 'Produkt i butikken', [{ navn: 'Navn', verdi: v.navn }, { navn: 'Pris', verdi: v.pris }, { navn: 'Mva', verdi: 'Uten mva' }, { navn: 'På lager', verdi: v.antall === null ? 'Ubegrenset' : String(v.antall) }, { navn: 'Status', verdi: v.status }], 'Lagre produkt', null, 'produkt']),
+      ordrer: this.klikkbar((this.erPublisert() ? [] : [
         { nr: '#1042', navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', status: 'Sendt på e-post', tone: 'success' },
         { nr: '#1041', navn: 'Trude Holm', hva: '2 kopper · henting', status: 'Klar til henting', tone: 'info' },
         { nr: '#1040', navn: 'Erik Dahl', hva: 'Bolle stor · pakke', status: 'Skal pakkes', tone: 'warning' },
         { nr: '#1039', navn: 'Nina Ruud', hva: 'Fat 28 cm · henting', status: 'Hentet', tone: 'neutral' },
-      ], o => [o.nr + ' · ' + o.navn, o.hva, [{ navn: 'Status', verdi: o.status }, { navn: 'Ordrenummer', verdi: o.nr }], 'Marker som hentet']),
-      sendteBeskjeder: this.klikkbar([
+      ]), o => [o.nr + ' · ' + o.navn, o.hva, [{ navn: 'Status', verdi: o.status }, { navn: 'Ordrenummer', verdi: o.nr }], 'Marker som hentet']),
+      sendteBeskjeder: this.klikkbar((this.erPublisert() ? [] : [
         { tittel: 'Ovnen går natt til torsdag', til: 'Alle aktive medlemmer', tid: 'I dag 07:40', apnet: '31 av 47', ulest: '16 medlemmer', kanal: 'Min side og e-post', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med. Ovnen står på til fredag morgen, og skal ikke åpnes før den er under 100 grader.' },
         { tittel: 'Ny leire på lager', til: 'Alle aktive medlemmer', tid: '22. aug', apnet: '44 av 47', ulest: '3 medlemmer', kanal: 'Min side', tekst: 'Grå stengods 2 er tilbake. Ligger under trappa. Husk å registrere posene i internbutikken så det blir riktig på månedsoppgjøret.' },
         { tittel: 'Åpen dag 6. september', til: 'Alle aktive medlemmer', tid: '18. aug', apnet: '46 av 47', ulest: '1 medlem', kanal: 'Min side, e-post og SMS', tekst: 'Verkstedet er åpent for publikum 11–16. Medlemmer kan gjerne stå på stand og vise fram arbeider. Si fra til meg hvis du vil bidra.' },
         { tittel: 'Ta med en venn i august', til: 'Kun 30 timer', tid: '1. aug', apnet: '28 av 31', ulest: '3 medlemmer', kanal: 'Min side', tekst: 'I august kan du ta med en venn på drop-in gratis, én gang. Vennen må være med deg hele tiden. Gaven ligger på Min side.' },
-      ], b => [b.tittel, b.til + ' · ' + b.tid, [
+      ]), b => [b.tittel, b.til + ' · ' + b.tid, [
         { navn: 'MELDING', verdi: '' },
         { navn: b.tekst, verdi: ' ' },
         { navn: 'LEVERING', verdi: '' },
@@ -10452,12 +10663,12 @@ class Component extends DCLogic {
           ], 'Send beskjed', 'adminbeskjeder') : () => { this.setState({ side: o.maal }); window.scrollTo(0, 0); },
         });
       }),
-      idag: [
+      idag: (this.erPublisert() ? [] : [
         { tid: '10:00', hva: 'Drop-in', detalj: '2 av 6 plasser · begge godkjent', tone: 'rolig' },
         { tid: '17:00', hva: 'Kurs boller', detalj: '5 av 8 påmeldte · kursrom 1', tone: 'gul' },
         { tid: '18:00', hva: 'Nybegynner dreiekurs, økt 2', detalj: '7 av 8 påmeldte · kursrom 2', tone: 'gul' },
         { tid: '22:00', hva: 'Glasurbrann starter', detalj: '14 arbeider i ovnen', tone: 'brun' },
-      ].map(p => Object.assign(p, {
+      ]).map(p => Object.assign(p, {
         velg: this.apne(p.hva, p.tid + ' i dag', [{ navn: 'Detaljer', verdi: p.detalj }], 'Åpne', 'admin'),
         stil: {
           display: 'flex', gap: 'var(--space-5)', alignItems: 'flex-start', cursor: 'pointer',
@@ -10918,7 +11129,14 @@ class Component extends DCLogic {
       tilbakeTekst: this.state.fra === 'minside' ? 'Tilbake til Min side' : this.state.fra === 'medlemskap' ? 'Tilbake til medlemskap' : 'Alle kurs',
       erMedlemskap: side === 'medlemskap',
       erButikk: side === 'butikk',
-      erMinside: side === 'minside',
+      // Min side krever innlogging paa den ekte siden.
+      //
+      // Skjermen har én sperre rundt medlemsdelen, men alt under den —
+      // beskjeder, medlemschatten, internbutikken, kjopshistorikken,
+      // dorkoden — laa utenfor. En hvilken som helst besokende kunne aapne
+      // /min-side og lese det. Naa vises innloggingen i stedet.
+      erMinside: side === 'minside' && (!this.erPublisert() || !!this.state.innlogget),
+      erLoginKrevd: side === 'minside' && this.erPublisert() && !this.state.innlogget,
 
       // Medlemsdelen av Min side.
       //
@@ -11068,11 +11286,13 @@ class Component extends DCLogic {
       },
       tjueseks: 26,
       goDropin: () => this.goDropinNaa(),
-      ukeNr: this.state.ukeNr ?? 35,
-      ukeForrige: () => this.setState(s => ({ ukeNr: Math.max(35, (s.ukeNr ?? 35) - 1) })),
-      ukeNeste: () => this.setState(s => ({ ukeNr: Math.min(37, (s.ukeNr ?? 35) + 1) })),
-      ukePilStilV: this.ukePil((this.state.ukeNr ?? 35) > 35),
-      ukePilStilH: this.ukePil((this.state.ukeNr ?? 35) < 37),
+      // Kalenderen starter paa denne uka og lar deg bla ett aar framover.
+      // Grensene sto paa 35–37, som var de tre ukene designdataene dekket.
+      ukeNr: this.state.ukeNr ?? this.ukeNaa(),
+      ukeForrige: () => this.setState(s => ({ ukeNr: Math.max(this.ukeNaa(), (s.ukeNr ?? this.ukeNaa()) - 1) })),
+      ukeNeste: () => this.setState(s => ({ ukeNr: Math.min(this.ukeNaa() + 52, (s.ukeNr ?? this.ukeNaa()) + 1) })),
+      ukePilStilV: this.ukePil((this.state.ukeNr ?? this.ukeNaa()) > this.ukeNaa()),
+      ukePilStilH: this.ukePil((this.state.ukeNr ?? this.ukeNaa()) < this.ukeNaa() + 52),
       hoppTilKursliste: () => {
         const el = document.getElementById('kursliste');
         if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 110; window.scrollTo({ top: y, behavior: 'smooth' }); }

@@ -40,8 +40,11 @@ foreach ($kurs as $k) {
         'om'      => $k['beskrivelse'],
         'datoer'  => array_map(static fn($o) => [
             'oktId'  => (int) $o['id'],
-            'dato'   => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
-            'ledige' => Booking::ledigePlasser((int) $o['id']),
+            'dato'     => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
+            // Raa starttid slik den staar i basen. Kalenderen trenger den for
+            // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
+            'startUtc' => $o['start_tid'],
+            'ledige'   => Booking::ledigePlasser((int) $o['id']),
         ], $okter),
     ];
 }

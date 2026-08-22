@@ -2,6 +2,10 @@
 /**
  * Kurskatalogen med ledige plasser. Aapent endepunkt — dette er offentlig
  * informasjon, det samme som staar paa kurssiden.
+ *
+ * Med ett unntak: samlinger merket «Kun for medlemmer» sendes bare til den
+ * som er innlogget som medlem. De sto tidligere i den offentlige lista, saa
+ * en medlemsfrokost var synlig for alle — bookbar var den riktignok ikke.
  */
 
 declare(strict_types=1);
@@ -10,10 +14,13 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
+$erMedlem = ($m = Sesjon::medlem()) !== null && er_aktivt_medlem($m);
+$hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
+
 $kurs = DB::alle(
     "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse
        FROM courses
-      WHERE status = 'publisert'
+      WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
 );
 

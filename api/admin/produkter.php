@@ -24,7 +24,31 @@ krev_admin();
 if (Foresporsel::metode() === 'GET') {
     $varer = DB::alle('SELECT * FROM products ORDER BY kun_medlemmer, kategori, tittel');
 
-    Svar::json(['varer' => array_map(static fn($v) => [
+    // Siste kjop av medlemsvarer — leire og ekstra brenning. Sto som fire
+    // oppdiktede kjop med navn og kvitteringsnummer, ogsaa paa den ekte siden.
+    $internkjop = DB::alle(
+        "SELECT o.ordrenr, o.created_at, o.sum_ore,
+                COALESCE(m.navn, o.kunde_navn) AS navn,
+                GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel) ORDER BY ol.id SEPARATOR ', ') AS hva
+           FROM orders o
+           JOIN order_lines ol ON ol.order_id = o.id
+           JOIN products pr ON pr.id = ol.product_id AND pr.kun_medlemmer = 1
+      LEFT JOIN members m ON m.id = o.member_id
+           JOIN payments p ON p.id = o.payment_id AND p.status = 'betalt'
+          GROUP BY o.id
+          ORDER BY o.id DESC
+          LIMIT 20"
+    );
+
+    Svar::json([
+        'internkjop' => array_map(static fn($k) => [
+            'navn' => $k['navn'] ?: 'Gjest',
+            'hva'  => $k['hva'],
+            'tid'  => Booking::norskDato((string) $k['created_at']),
+            'sum'  => Booking::kroner((int) $k['sum_ore']),
+            'ref'  => $k['ordrenr'],
+        ], $internkjop),
+        'varer' => array_map(static fn($v) => [
         'id'           => (int) $v['id'],
         'tittel'       => $v['tittel'],
         'beskrivelse'  => $v['beskrivelse'],

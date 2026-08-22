@@ -2014,7 +2014,7 @@ window.__resources = {
                 </div>
               </div>
 
-              <sc-if value="{{ visMinInternbutikk }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
                   <div>
@@ -4137,6 +4137,9 @@ window.__resources = {
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Uttak i internbutikken</div>
+            <sc-if value="{{ ingenInternkjop }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen medlemskjøp ennå.</div>
+            </sc-if>
             <sc-for list="{{ internkjop }}" as="k" hint-placeholder-count="4">
               <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="min-width: 0;">
@@ -4151,6 +4154,9 @@ window.__resources = {
             </sc-for>
 
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-top: 1px solid var(--border-subtle);">Varer i internbutikken</div>
+            <sc-if value="{{ ingenInternvarerAdmin }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen varer er merket «kun medlemmer». Legg dem inn under Butikk, og huk av for kun medlemmer.</div>
+            </sc-if>
             <sc-for list="{{ internvarerAdmin }}" as="v" hint-placeholder-count="4">
               <div onClick="{{ v.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="min-width: 0;">
@@ -7144,6 +7150,9 @@ class Component extends DCLogic {
   // Serverens kurs → raden admin-tabellen tegner.
   kursTilRad(k) {
     const TYPE = { kurs: 'Kurs', event: 'Event', workshop: 'Workshop', dropin: 'Drop-in' };
+    // Temaet gaar foran typen der de sier forskjellige ting: en medlemssamling
+    // er lagret som «event», men det er ikke det den er i admin-lista.
+    const FRA_TEMA = { 'Kun for medlemmer': 'Kun medlemmer', 'Sip & Clay': 'Sip & Clay', 'Workshop': 'Workshop', 'Drop-in': 'Drop-in' };
     const datoer = (k.datoer || []).filter(d => d.status !== 'avlyst');
     const neste = datoer.find(d => new Date(d.startUtc.replace(' ', 'T') + 'Z') > new Date()) || datoer[0];
     const kapasitet = k.kapasitet || 8;
@@ -7152,7 +7161,8 @@ class Component extends DCLogic {
     return {
       id: k.id,
       navn: k.tittel,
-      type: TYPE[k.type] || 'Kurs',
+      type: FRA_TEMA[k.tema] || TYPE[k.type] || 'Kurs',
+      tema: k.tema || '',
       pris: 'kr. ' + String(k.pris || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
       gjentas: datoer.length > 1 ? datoer.length + ' datoer' : 'Engangs',
       pameldte: pameldte + ' / ' + kapasitet,
@@ -8150,8 +8160,10 @@ class Component extends DCLogic {
     if (this._kursLagres) return;
     this._kursLagres = true;
 
-    const TYPE = { 'Kurs': 'kurs', 'Event': 'event', 'Workshop': 'workshop', 'Sip & Clay': 'event', 'Drop-in': 'dropin' };
-    const TEMA = { 'Sip & Clay': 'Sip & Clay', 'Workshop': 'Workshop', 'Drop-in': 'Drop-in', 'Event': 'Events' };
+    const TYPE = { 'Kurs': 'kurs', 'Event': 'event', 'Workshop': 'workshop', 'Sip & Clay': 'event', 'Drop-in': 'dropin', 'Kun medlemmer': 'event' };
+    // «Kun medlemmer» manglet her, saa en medlemssamling ble lagret som et
+    // vanlig kurs — og dukket opp i den offentlige kurslista.
+    const TEMA = { 'Sip & Clay': 'Sip & Clay', 'Workshop': 'Workshop', 'Drop-in': 'Drop-in', 'Event': 'Events', 'Kun medlemmer': 'Kun for medlemmer' };
     const eksisterende = (this.state.adminKursRaa || []).find(k => k.tittel === rad.navn);
 
     fetch('/api/admin/kurs.php', {
@@ -8910,6 +8922,7 @@ class Component extends DCLogic {
         // og «Ny kursdato» tilbod datoer paa kurs som ikke fantes.
         if (venteliste && venteliste.venteliste) ny.adminVenteliste = venteliste.venteliste;
         if (produkter && produkter.varer) ny.adminProdukter = produkter.varer;
+        if (produkter && produkter.internkjop) ny.adminInternkjop = produkter.internkjop;
         if (kurs && kurs.kurs) {
           ny.adminKursRaa = kurs.kurs;
           ny.adminKursListe = kurs.kurs.map(k => this.kursTilRad(k));
@@ -9323,33 +9336,39 @@ class Component extends DCLogic {
         { navn: 'Pris', verdi: '' },
         { navn: 'Mva', verdi: 'Uten mva' },
       ], 'Legg til vare', null, 'produkt'),
-      internkjop: (this.erPublisert() ? [] : [
-        { navn: 'Ingrid Hansen', hva: 'Leire, stengods grå · 10 kg', tid: '22. aug 14:12', sum: 'kr. 290,-', ref: 'LIS-10488' },
-        { navn: 'Kari Nordbø', hva: 'Ekstra glasurbrann', tid: '21. aug 16:03', sum: 'kr. 220,-', ref: 'LIS-10479' },
-        { navn: 'Jonas Five', hva: 'Leire, hvit porselen · 5 kg', tid: '20. aug 11:20', sum: 'kr. 340,-', ref: 'LIS-10474' },
-        { navn: 'Silje Bratt', hva: 'Ekstra råbrann', tid: '18. aug 09:40', sum: 'kr. 150,-', ref: 'LIS-10471' },
-      ]).map(k => Object.assign(k, {
+      // Siste kjop av medlemsvarer. Fire oppdiktede kjop med navn og
+      // kvitteringsnummer sto her — ogsaa paa den ekte siden.
+      internkjop: (this.state.adminInternkjop || (this.erPublisert() ? [] : [
+        { navn: 'Ingrid Hansen', hva: '1 × Leire, stengods grå', tid: '22. august, 14:12', sum: 'kr. 290,-', ref: 'B-260822-A1' },
+        { navn: 'Kari Nordbø', hva: '1 × Ekstra glasurbrann', tid: '21. august, 16:03', sum: 'kr. 220,-', ref: 'B-260821-C4' },
+      ])).map(k => Object.assign({}, k, {
         velg: this.apne(k.navn, k.hva, [
           { navn: 'Beløp', verdi: k.sum },
           { navn: 'Betalt', verdi: 'Ja, med Vipps' },
           { navn: 'Tidspunkt', verdi: k.tid },
-          { navn: 'Referanse', verdi: k.ref },
-        ], 'Se kvittering'),
+          { navn: 'Ordrenummer', verdi: k.ref },
+        ], 'Lukk'),
       })),
-      internvarerAdmin: (this.erPublisert() ? [] : [
-        { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-', lager: '14 poser' },
-        { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-', lager: '6 poser' },
-        { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-', lager: 'Etter kapasitet' },
-        { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-', lager: 'Etter kapasitet' },
-      ]).map(v => Object.assign({}, v, {
-        velg: this.apne(v.navn, 'Vare i internbutikken', [
-          { navn: 'Navn', verdi: v.navn },
-          { navn: 'Detalj', verdi: v.detalj },
-          { navn: 'Pris', verdi: v.pris },
-          { navn: 'Mva', verdi: 'Uten mva' },
-          { navn: 'På lager', verdi: v.lager },
-        ], 'Lagre vare', null, 'produkt'),
+      ingenInternkjop: this.erPublisert() && (this.state.adminInternkjop || []).length === 0,
+      // Varene i internbutikken er vanlige varer merket «kun medlemmer», og
+      // redigeres under Butikk. Her vises de bare, med veien dit.
+      internvarerAdmin: ((this.state.adminProdukter || []).filter(v => v.kunMedlemmer)
+        .map(v => ({
+          navn: v.tittel,
+          detalj: v.beskrivelse || v.kategori || '',
+          pris: 'kr. ' + Number(v.pris).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-',
+          lager: v.lager === null ? 'Ikke lagerstyrt' : v.lager + ' igjen',
+          id: v.id,
+        }))
+        .concat(this.erPublisert() ? [] : [
+          { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-', lager: '14 poser' },
+          { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-', lager: 'Ikke lagerstyrt' },
+        ])
+      ).map(v => Object.assign({}, v, {
+        velg: this.go('adminbutikk'),
       })),
+      ingenInternvarerAdmin: this.erPublisert()
+        && !(this.state.adminProdukter || []).some(v => v.kunMedlemmer),
       lagRapport: () => {
         const w = window.open('', '_blank', 'width=520,height=680');
         if (!w) return;
@@ -9736,51 +9755,84 @@ class Component extends DCLogic {
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
       harMedlemskurs: (!this.erPublisert() || !!this.state.erMedlemBruker)
         && this.bryterPaa('internkurs')
-        && (!this.erPublisert() || (this.state.nyeInterne || []).length > 0),
+        && (!this.erPublisert() || (this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer')),
       visMinInternbutikk: this.bryterPaa('internbutikk'),
+      // Bryteren maa vaere paa, og det maa finnes noe aa selge.
+      visInternbutikk: this.bryterPaa('internbutikk')
+        && (!this.erPublisert() || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer)),
       visMinSalg: this.bryterPaa('medlemssalg'),
       // Interne samlinger finnes ikke i basen ennaa. Paa den ekte siden viser
       // vi derfor ingen — bedre enn tre oppdiktede kvelder et medlem kan
       // forsoke aa melde seg paa.
-      medlemskurs: this.medBildeCss((this.erPublisert() ? [] : [
-        { title: 'Glasurkveld for medlemmer', date: 'ons 27. aug', duration: '18:00 – 21:00', price: 'Gratis', status: '4 av 10 plasser', image: FOTO + 'handbygging.jpg', om: 'Vi går gjennom glasurene i skapet, hva de tåler og hvordan de oppfører seg oppå hverandre. Ta med noe du vil glasere.', timer: 'Nei, kvelden er utenom timene dine' },
-        { title: 'Store former, viderekomne', date: 'lør 13. sep', duration: '10:00 – 15:00', price: 'Gratis', status: '2 plasser igjen', image: FOTO + 'dreiing-naerbilde.jpg', om: 'Dagskurs i å dreie store former: sentrering av mye leire, oppbygging i flere ledd og trimming av tunge fat. Krever at du dreier fra før.', timer: 'Nei, kurset kommer i tillegg' },
-        { title: 'Medlemsfrokost', date: 'søn 21. sep', duration: '09:00 – 11:00', price: 'Gratis', status: 'Åpen påmelding', image: 'uploads_shutterstock_2752346251.jpg', om: 'Frokost i verkstedet før åpning. Vi spiser, ser på hverandres arbeider og planlegger høsten. Ta med noe å dele.', timer: 'Nei' },
-      ]).concat((this.state.nyeInterne || []).map(n => ({ title: n.navn, date: n.naar, duration: n.gjentas === 'Ikke' ? '' : n.gjentas, price: n.pris, status: 'Åpen påmelding', image: FOTO + 'handbygging.jpg', om: '' })))).map(k => Object.assign(k, {
+      // Interne samlinger: vanlige kurs merket «Kun for medlemmer». De laa
+      // som tre faste oppforinger her, og var tomme paa den ekte siden.
+      medlemskurs: this.medBildeCss(
+        (this.state.katalog
+          ? this.state.katalog
+              .filter(k => (k.tema || '') === 'Kun for medlemmer')
+              .map(k => {
+                const d = (k.datoer || [])[0];
+                return {
+                  title: k.tittel,
+                  date: d ? d.dato : 'Dato kommer',
+                  duration: '',
+                  price: k.prisOre === 0 ? 'Gratis' : k.pris,
+                  status: d ? (d.ledige > 0 ? d.ledige + ' plasser igjen' : 'Fullt') : 'Åpen påmelding',
+                  image: FOTO + 'handbygging.jpg',
+                  om: k.om || '',
+                  timer: 'Nei, samlingen kommer i tillegg til timene dine',
+                  tema: 'Kun for medlemmer',
+                  slug: k.slug,
+                };
+              })
+          : (this.erPublisert() ? [] : [
+              { title: 'Glasurkveld for medlemmer', date: 'ons 27. aug', duration: '18:00 – 21:00', price: 'Gratis', status: '4 av 10 plasser', image: FOTO + 'handbygging.jpg', om: 'Vi går gjennom glasurene i skapet, hva de tåler og hvordan de oppfører seg oppå hverandre.', timer: 'Nei, kvelden er utenom timene dine' },
+              { title: 'Medlemsfrokost', date: 'søn 21. sep', duration: '09:00 – 11:00', price: 'Gratis', status: 'Åpen påmelding', image: 'uploads_shutterstock_2752346251.jpg', om: 'Frokost i verkstedet før åpning.', timer: 'Nei' },
+            ]))
+      ).map(k => Object.assign({}, k, {
         level: 'Kun for medlemmer',
         meld: () => {
           this.setState({ side: 'booking', fra: 'minside', valgtKurs: Object.assign({}, k, { level: 'Kun for medlemmer' }), bookOrdre: false, bDato: null });
           window.scrollTo(0, 0);
         },
       })),
-      ingenInterne: this.erPublisert() && (this.state.nyeInterne || []).length === 0,
+      ingenInterne: this.erPublisert()
+        && !(this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer'),
       ingenKursholdere: this.erPublisert() && (this.state.nyeKursholdere || []).length === 0,
-      internkursAdmin: (this.erPublisert() ? [] : [
-        { navn: 'Glasurkveld for medlemmer', naar: 'Onsdag 26. august, 18:00 – 21:00', pris: 'Gratis', pameldte: '4 / 10', gjentas: 'Siste onsdag i måneden' },
-        { navn: 'Medlemsfrokost', naar: 'Søndag 21. september, 09:00 – 11:00', pris: 'Gratis', pameldte: '12 / 20', gjentas: 'Hver tredje søndag' },
-      ]).concat(this.state.nyeInterne || []).map(k => Object.assign(k, {
-        velg: this.apne(k.navn, 'Internt · kun for medlemmer', [
-          { navn: 'Navn', verdi: k.navn },
-          { navn: 'Tidspunkt', verdi: k.naar },
-          { navn: 'Pris', verdi: k.pris },
-          { navn: 'Plasser', verdi: k.pameldte },
-          { navn: 'Gjentas', verdi: k.gjentas },
-          { navn: 'Synlighet', verdi: 'Kun for medlemmer' },
-        ], 'Lagre samling', null, true),
+      // Admin-lista over interne samlinger. Samme kurs, samme editor —
+      // de er vanlige kurs merket «Kun for medlemmer».
+      internkursAdmin: ((this.state.adminKursListe || [])
+        .filter(k => (k.tema || '') === 'Kun for medlemmer' || k.type === 'Kun for medlemmer')
+        .map(k => ({
+          navn: k.navn,
+          naar: k.neste || 'Ingen dato satt',
+          pris: k.pris,
+          pameldte: k.pameldte,
+          gjentas: k.gjentas || 'Ikke',
+        }))
+        .concat(this.erPublisert() ? [] : [
+          { navn: 'Glasurkveld for medlemmer', naar: 'Onsdag 26. august, 18:00 – 21:00', pris: 'Gratis', pameldte: '4 / 10', gjentas: 'Siste onsdag i måneden' },
+        ])
+      ).map(k => Object.assign({}, k, {
+        velg: this.go('admin'),
       })),
-      aNyIntern: this.apne('Ny intern samling', 'Vises kun på Min side, ikke på nettsiden', [
-        { navn: 'Navn', verdi: '' },
-        { navn: 'Tidspunkt', verdi: '' },
-        { navn: 'Pris', verdi: 'Gratis' },
-        { navn: 'Plasser', verdi: '10' },
-        { navn: 'Gjentas', verdi: 'Ikke' },
-      ], 'Opprett samling', null, true, () => {
-        const omr = document.getElementById('detalj-skjema');
-        const felter = omr ? [...omr.querySelectorAll('input')].filter(i => i.type !== 'checkbox') : [];
-        const verdier = felter.map(i => (i.value || '').trim());
-        const navn = verdier[0]; if (!navn) return;
-        this.setState(s => ({ nyeInterne: (s.nyeInterne || []).concat([{ navn, naar: verdier[1] || 'Ikke satt', pris: verdier[2] || 'Gratis', pameldte: '0 / ' + (verdier[3] || '10'), gjentas: verdier[4] || 'Ikke' }]) }));
-      }),
+      // Aapner det vanlige kursskjemaet, forhaandsutfylt som medlemssamling.
+      // Popup-en her lagde bare en linje i skjermbildet som forsvant ved neste
+      // sidelasting.
+      aNyIntern: () => {
+        this.setState({
+          side: 'admin',
+          kRed: true, kSteg: 1, kIndeks: -1,
+          kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10',
+          kBeskrivelse: '', kBekreftelse: '', kMva: false,
+          kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+          kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
+          kDatoer: [{ dato: '', fra: '', til: '' }],
+          kvittering: 'Fyll ut samlingen',
+          kvitteringDetalj: 'Den lagres som «Kun medlemmer», og vises bare for medlemmer — ikke i den offentlige kurslista.',
+        });
+        window.scrollTo(0, 0);
+      },
       aHmsPdf: this.apne('Ordensregler og HMS', 'Åtte punkter, én side', [
         { navn: 'Format', verdi: 'PDF, A4' },
         { navn: 'Innhold', verdi: 'Alle punktene slik de står her' },
@@ -11340,16 +11392,27 @@ class Component extends DCLogic {
       })),
       // Internbutikken har ekte varer i basen (kun_medlemmer), men denne lista
       // er en kopi i fila. Den vises ikke paa den ekte siden.
-      internvarer: (this.erPublisert() ? [] : [
-        { navn: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-' },
-        { navn: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-' },
-        { navn: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-' },
-        { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-' },
-      ]).map(v => Object.assign(v, {
-        knappetekst: 'Kjøp · ' + v.pris,
-        knappetekst: 'Legg til',
-        kjopNaa: () => this.leggTil(v.navn),
+      // Internbutikken. Varene sto som fast tekst her og var tomme paa den
+      // ekte siden. De ligger alt i basen, merket «kun medlemmer», og
+      // api/butikk.php sender dem bare til den som er innlogget som medlem.
+      internvarer: (this.state.butikkvareListe
+        ? this.state.butikkvareListe.filter(v => v.kunMedlemmer)
+        : (this.erPublisert() ? [] : [
+            { tittel: 'Leire, stengods grå', detalj: '10 kg pose', pris: 'kr. 290,-' },
+            { tittel: 'Leire, hvit porselen', detalj: '5 kg pose', pris: 'kr. 340,-' },
+            { tittel: 'Ekstra råbrann', detalj: 'Per hylle', pris: 'kr. 150,-' },
+            { tittel: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-' },
+          ])
+      ).map(v => ({
+        navn: v.tittel,
+        detalj: [v.detalj, v.pris].filter(Boolean).join(' · '),
+        knappetekst: v.utsolgt ? 'Tomt' : 'Legg til',
+        kjopNaa: v.utsolgt ? () => {} : () => this.leggTil(v.tittel),
       })),
+      // Tom seksjon er verre enn ingen: et medlem som ser «Internbutikk» over
+      // et tomt felt tror noe er i stykker.
+      harInternvarer: !this.erPublisert()
+        || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer),
       abonnementer: (() => {
         const P = n => this.planer().find(p => p.navn === n) || {};
         const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };

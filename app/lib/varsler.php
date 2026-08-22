@@ -117,6 +117,15 @@ final class Varsel
 final class Utsending
 {
     /** Tømmer køen. Returnerer [sendt, feilet]. */
+    /**
+     * Siste grunn til at en utsending feilet, satt av sendSmtp() og sendSms().
+     *
+     * «Leverandoren svarte med feil» hjelper ingen. Serverens eget svar —
+     * «550 relaying denied», «535 authentication failed» — sier hva som er
+     * galt, og det er det som skal staa i koen.
+     */
+    private static string $sisteFeil = '';
+
     public static function tomKo(int $maks = 50): array
     {
         $rader = DB::alle(
@@ -133,6 +142,7 @@ final class Utsending
 
         foreach ($rader as $n) {
             try {
+                self::$sisteFeil = '';
                 $ok = $n['kanal'] === 'sms'
                     ? self::sendSms((string) $n['mottaker'], (string) $n['tekst'])
                     : self::sendEpost((string) $n['mottaker'], (string) ($n['emne'] ?? ''), (string) $n['tekst']);
@@ -145,7 +155,7 @@ final class Utsending
                     ], ['id' => $n['id']]);
                     $sendt++;
                 } else {
-                    self::merkFeilet($n, 'Leverandøren svarte med feil');
+                    self::merkFeilet($n, self::$sisteFeil !== '' ? self::$sisteFeil : 'Leverandøren svarte med feil');
                     $feilet++;
                 }
             } catch (Throwable $e) {
@@ -222,6 +232,7 @@ final class Utsending
         $adresse = ($sikker === 'ssl' ? 'ssl://' : '') . $vert . ':' . $port;
         $sokk = @stream_socket_client($adresse, $eno, $estr, 15);
         if (!$sokk) {
+            self::$sisteFeil = 'Fikk ikke kontakt med ' . $vert . ':' . $port . ' — ' . $estr;
             logg('SMTP: fikk ikke kontakt', ['vert' => $vert, 'feil' => $estr]);
             return false;
         }
@@ -246,6 +257,7 @@ final class Utsending
 
         $velkomst = $les();
         if (!$ok($velkomst, '220')) {
+            self::$sisteFeil = 'Serveren svarte uventet ved oppkobling: ' . trim($velkomst);
             logg('SMTP: uventet velkomst', ['svar' => trim($velkomst)]);
             fclose($sokk);
             return false;
@@ -257,6 +269,7 @@ final class Utsending
         if ($sikker === 'starttls') {
             if (!$ok($si('STARTTLS'), '220')
                 || !stream_socket_enable_crypto($sokk, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                self::$sisteFeil = 'STARTTLS feilet. Prov smtp_sikkerhet => \'ssl\' og smtp_port => 465.';
                 logg('SMTP: STARTTLS feilet', ['vert' => $vert]);
                 fclose($sokk);
                 return false;
@@ -268,6 +281,7 @@ final class Utsending
             $si('AUTH LOGIN');
             $si(base64_encode($bruker));
             if (!$ok($si(base64_encode($passord)), '235')) {
+                self::$sisteFeil = 'Innloggingen ble avvist. Sjekk smtp_bruker og smtp_passord.';
                 logg('SMTP: innlogging avvist', ['vert' => $vert, 'bruker' => $bruker]);
                 fclose($sokk);
                 return false;
@@ -275,11 +289,13 @@ final class Utsending
         }
 
         if (!$ok($si('MAIL FROM:<' . $fra . '>'), '250')) {
+            self::$sisteFeil = 'Avsenderadressen ' . $fra . ' ble avvist. Den ma vaere en konto du har hos leverandoren.';
             logg('SMTP: avsenderadressen ble avvist', ['fra' => $fra]);
             fclose($sokk);
             return false;
         }
         if (!$ok($si('RCPT TO:<' . $til . '>'), '250')) {
+            self::$sisteFeil = 'Mottakeren ' . $til . ' ble avvist av serveren.';
             logg('SMTP: mottakeren ble avvist', ['til' => $til]);
             fclose($sokk);
             return false;
@@ -300,6 +316,7 @@ final class Utsending
         $svar = $si(implode("\r\n", $linjer) . "\r\n\r\n" . $tekst . "\r\n.");
         $godtatt = $ok($svar, '250');
         if (!$godtatt) {
+            self::$sisteFeil = 'Meldingen ble avvist: ' . trim($svar);
             logg('SMTP: meldingen ble avvist', ['til' => $til, 'svar' => trim($svar)]);
         }
 
@@ -318,6 +335,7 @@ final class Utsending
         $passord = (string) Config::hent('sveve_passord', '');
 
         if ($bruker === '' || $passord === '') {
+            self::$sisteFeil = 'Sveve-noklene mangler i secrets.php.';
             logg('SMS ikke sendt — Sveve-nøkler mangler i secrets.php', ['til' => $til]);
             return false;
         }
@@ -337,6 +355,8 @@ final class Utsending
         $d = json_decode($svar['kropp'], true);
         $ok = (int) ($d['response']['msgOkCount'] ?? 0) > 0;
         if (!$ok) {
+            $grunn = (string) ($d['response']['errors'][0]['errorMessage'] ?? $svar['kropp']);
+            self::$sisteFeil = 'Sveve avviste meldingen: ' . mb_substr($grunn, 0, 180);
             logg_feil('Sveve avviste SMS: ' . $svar['kropp']);
         }
         return $ok;

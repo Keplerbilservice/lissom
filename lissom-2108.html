@@ -5923,6 +5923,14 @@ class Component extends DCLogic {
     this.goNaa('kurs', 'Drop-in');
   }
 
+  // Hvor lenge hver av dem staar, og hvor lang toningen er.
+  //
+  // De tre stedene som bruker tiden — CSS-overgangen, pausen for byttet og
+  // klokka — maa lese samme tall. Sto de hver for seg, ville en endring ett
+  // sted gitt et halvtonet bytte.
+  static get ROT_TONING() { return 800; }
+  static get ROT_OPPHOLD() { return 12000; }
+
   // De to som deler plassen paa forsiden: events og medlemskap.
   //
   // Teksten om medlemskap er den samme som staar paa medlemskapssiden — ett
@@ -5945,8 +5953,8 @@ class Component extends DCLogic {
         stikktittel: 'Medlemskap',
         tittel: 'Verkstedet, når det passer deg',
         tekst: 'Fast plass i verkstedet med egen dørkode. Du stempler inn på mobilen og jobber videre når du vil — leire, glasur og brenning er en del av medlemskapet. Krever kurs eller erfaring fra før.',
-        bilde: 'assets_photos_kursrommet.jpg',
-        alt: 'Medlemmer som jobber ved dreieskivene i verkstedet',
+        bilde: 'assets_photos_plateteknikk-fat.jpg',
+        alt: 'Et medlem som jobber alene med et fat i verkstedet',
         knappA: 'Se medlemskap',
         knappB: 'Book drop-in',
       },
@@ -5973,7 +5981,7 @@ class Component extends DCLogic {
     this._rotTimer = setTimeout(() => {
       this.setState({ rotNr: neste, rotUte: false });
       this._rotBytter = false;
-    }, 420);
+    }, Component.ROT_TONING);
   }
 
   roligBevegelse() {
@@ -6656,7 +6664,7 @@ class Component extends DCLogic {
       if (this.state.side !== 'forside' || this._rotPause) return;
       if (document.hidden || this.roligBevegelse()) return;
       this.rotasjonTil();
-    }, 8000);
+    }, Component.ROT_OPPHOLD);
     this._klikk = (e) => { this._klikkY = e.pageY; };
     document.addEventListener('click', this._klikk, true);
     this._resize = () => this.setState({ vw: window.innerWidth });
@@ -10633,7 +10641,7 @@ class Component extends DCLogic {
             maxWidth: 'var(--width-content)', margin: '0 auto', display: 'grid',
             gridTemplateColumns: '0.75fr 1.25fr', gap: 'var(--space-16)', alignItems: 'center',
             opacity: this.state.rotUte ? 0 : 1,
-            transition: 'opacity .42s var(--ease-clay, ease)',
+            transition: 'opacity ' + (Component.ROT_TONING / 1000) + 's var(--ease-clay, ease)',
           },
           rotPrikker: alle.map((x, i) => ({
             merke: 'Vis ' + x.merke,

@@ -3857,7 +3857,13 @@ window.__resources = {
               </sc-for>
               <div style="height: var(--space-5);"></div>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ leggTilTid }}" hint-size="100%,40px">Legg til tid</x-import>
-              <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Dager uten tider er stengt for drop-in. Endringer gjelder fra neste uke.</p>
+              <div style="height: var(--space-4);"></div>
+              <!-- Tidene sto bare i nettleseren og forsvant ved omlasting.
+                   Naa lagres de, og «Legg ut» lager de bookbare oktene. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" full-width="{{ sant }}" on-click="{{ lagreTider }}" hint-size="100%,40px">Lagre åpningstidene</x-import>
+              <div style="height: var(--space-3);"></div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" full-width="{{ sant }}" on-click="{{ lagUtDropin }}" hint-size="100%,40px">Legg ut tider for de neste 8 ukene</x-import>
+              <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ dropinOkterTekst }}</p>
             </div>
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Regler</div>
@@ -3872,7 +3878,9 @@ window.__resources = {
                   <input type="text" value="{{ regelPlasser }}" onChange="{{ settRegelPlasser }}" style="{{ regelFeltStil }}">
                 </div>
               </div>
-              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Teksten vises på kurssiden og i bookingen.</p>
+              <div style="height: var(--space-4);"></div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" full-width="{{ sant }}" on-click="{{ lagreRegel }}" hint-size="100%,40px">Lagre regler og pris</x-import>
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Teksten vises på kurssiden og i bookingen. Prisen er den kunden faktisk trekkes.</p>
             </div>
           </div>
         </div>
@@ -5680,6 +5688,14 @@ class Component extends DCLogic {
   }
 
   regelNaa() {
+    if (!this.state.dropinRegel && this.state.dropinOppsett) {
+      const o = this.state.dropinOppsett;
+      return {
+        tekst: o.regel || 'Drop-in krever godkjenning: gjesten må ha gått kurs hos oss, eller være sammen med et aktivt medlem.',
+        pris: 'kr. ' + String(o.pris).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
+        plasser: String(o.kapasitet),
+      };
+    }
     return this.state.dropinRegel || {
       tekst: 'Drop-in krever godkjenning: gjesten må ha gått kurs hos oss, eller være sammen med et aktivt medlem. Er gjesten med et medlem, oppgis medlemmets navn ved booking. Leire, materialer, brenning og ett ferdig arbeid opptil 20 × 20 cm er inkludert.',
       pris: 'kr. 490,-',
@@ -5692,6 +5708,14 @@ class Component extends DCLogic {
   }
 
   tiderNaa() {
+    // Tidene fra basen, oversatt til radene skjermen tegner.
+    if (!this.state.tider && this.state.dropinOppsett) {
+      const DAG = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+      return this.state.dropinOppsett.tider.map(t => ({
+        id: t.id, dag: DAG[t.ukedag - 1], fra: t.fra, til: t.til,
+      }));
+    }
+    if (!this.state.tider && this.erPublisert()) return [];
     return this.state.tider || [
       { id: 1, dag: 'Mandag', fra: '', til: '', stengt: true },
       { id: 2, dag: 'Tirsdag', fra: '10:00', til: '13:00' },
@@ -7270,6 +7294,52 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
   }
 
+  hentDropin() {
+    if (!this.erPublisert() || this._dropinHentes) return;
+    this._dropinHentes = true;
+    fetch('/api/admin/dropin.php', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._dropinHentes = false;
+        if (d && d.tider) this.setState({ dropinOppsett: d, tider: null, dropinRegel: null });
+      })
+      .catch(() => { this._dropinHentes = false; });
+  }
+
+  dropinKall(kropp) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Lagret' });
+      return;
+    }
+    if (this._dropinLagrer) return;
+    this._dropinLagrer = true;
+
+    fetch('/api/admin/dropin.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._dropinLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) {
+          this._dropinHentes = false;
+          this.setState({ dropinOppsett: null });
+          this.hentDropin();
+          this.hentKatalog();
+        }
+      })
+      .catch(() => {
+        this._dropinLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   // Lagrer en vare i butikken.
   //
   // «Legg ut i butikken» viste kvittering og skrev ingenting. Nye varer
@@ -8100,6 +8170,10 @@ class Component extends DCLogic {
     // medlemmet selv, og admin-sidene for «i verkstedet naa».
     if ((side === 'minside' || side.indexOf('admin') === 0) && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
+    }
+
+    if (side === 'admindropin' && !this.state.dropinOppsett) {
+      this.hentDropin();
     }
 
     if (side.indexOf('admin') === 0 && !this.state.migStatus) {
@@ -10936,6 +11010,29 @@ class Component extends DCLogic {
         background: 'var(--surface-card)', lineHeight: 1.5, resize: 'vertical',
       },
       leggTilTid: () => this.nyTid(),
+      lagreTider: () => {
+        const DAG = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
+        const tider = this.tiderNaa()
+          .filter(t => !t.stengt && t.fra && t.til)
+          .map(t => ({ ukedag: DAG.indexOf(t.dag) + 1, fra: t.fra, til: t.til }))
+          .filter(t => t.ukedag > 0);
+        this.dropinKall({ handling: 'lagreTider', tider: tider });
+      },
+      lagUtDropin: () => this.dropinKall({ handling: 'lagUtOkter', uker: 8 }),
+      lagreRegel: () => {
+        const r = this.regelNaa();
+        this.dropinKall({
+          handling: 'lagreRegel',
+          tekst: r.tekst || '',
+          pris: parseInt(String(r.pris).replace(/[^\d]/g, ''), 10) || 0,
+          plasser: parseInt(String(r.plasser).replace(/[^\d]/g, ''), 10) || 0,
+        });
+      },
+      dropinOkterTekst: this.state.dropinOppsett
+        ? (this.state.dropinOppsett.okter
+            ? this.state.dropinOppsett.okter + ' drop-in-tider ligger ute framover.'
+            : 'Ingen drop-in-tider ligger ute. Legg dem ut for at folk skal kunne booke.')
+        : 'Dager uten tider er stengt for drop-in.',
       dropinTider: this.tiderNaa().map(t => ({
         id: t.id,
         dag: t.dag,

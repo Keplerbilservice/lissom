@@ -60,11 +60,11 @@ AddDefaultCharset UTF-8
     <FilesMatch "\.(jpg|jpeg|png|gif|webp|avif|svg|ico|woff2?|ttf|otf)$">
         Header set Cache-Control "public, max-age=2592000"
     </FilesMatch>
-    # Svar fra API-et skal aldri mellomlagres. Innholdet eieren nettopp
-    # lagret ville ellers kommet tilbake i sin gamle utgave.
-    <FilesMatch "\.php$">
-        Header set Cache-Control "no-store"
-    </FilesMatch>
+    # Ingen regel for .php her med vilje. API-et setter sine egne headere:
+    # «no-store» der eieren nettopp har lagret noe, og sju dagers
+    # mellomlagring paa api/bilde.php, som serverer medlemmenes bilder. En
+    # regel her ville overstyrt begge — og bildene ville blitt lastet ned paa
+    # nytt ved hvert sidebesok.
 </IfModule>
 
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...

@@ -30,6 +30,24 @@ if (!$medNokkel && !(Sesjon::erAdmin() && $fraEgenHand)) {
 
 $fylt = static fn(string $n): bool => trim((string) Config::hent($n, '')) !== '';
 
+/**
+ * Fortell om formen paa en hemmelighet, aldri hva den er.
+ *
+ * «Passordet er riktig» og «passordet i fila er riktig» er to forskjellige
+ * ting. Lengden avslorer en avkuttet innliming, mellomrom i kanten avslorer
+ * en kopiering som tok med for mye, og apostrof eller bakoverstrek avslorer
+ * et passord som maa skrives annerledes i PHP.
+ */
+$form = static function (string $nokkel): array {
+    $v = (string) Config::hent($nokkel, '');
+    return [
+        'lengde'            => mb_strlen($v),
+        'mellomrom_i_kant'  => $v !== trim($v),
+        'trenger_escaping'  => preg_match('/[\\\\\']/', $v) === 1,
+        'kontrolltegn'      => preg_match('/[\x00-\x1F]/', $v) === 1,
+    ];
+};
+
 $svar = [
     'epost_oppsett' => [
         'maate'          => $fylt('smtp_vert') ? 'SMTP' : 'serverens mail()',
@@ -40,6 +58,10 @@ $svar = [
         'smtp_sikkerhet' => (string) Config::hent('smtp_sikkerhet', 'starttls'),
         'avsender'       => (string) Config::hent('epost_fra', 'post@lissom.no'),
         'svar_til'       => (string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no')),
+        // Form, ikke innhold. Stemmer ikke lengden med det du tastet, er det
+        // fila som er feil — ikke passordet ditt.
+        'brukernavn_form' => $form('smtp_bruker'),
+        'passord_form'    => $form('smtp_passord'),
     ],
     'sms_oppsett' => [
         'sveve_bruker'  => $fylt('sveve_bruker'),

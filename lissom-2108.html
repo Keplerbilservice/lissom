@@ -439,7 +439,7 @@ window.__resources = {
           </div>
           <div class="lx-kortgrid lx-karusell" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ produkter }}" as="p" hint-placeholder-count="4">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="Se i butikken" on-book="{{ goButikk }}" hint-size="100%,420px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="{{ p.cta }}" on-book="{{ p.velg }}" hint-size="100%,420px"></x-import>
             </sc-for>
           </div>
         </div>
@@ -10258,12 +10258,17 @@ class Component extends DCLogic {
         const full = (this._kursListe || []).find(x => x.title === f.title);
         return full ? Object.assign({}, full) : f;
       }).concat(this.state.nyeKurs || [])),
+      // Gavekortet ligger ikke i butikken — det har sin egen side. Knappen sa
+      // «Se i butikken», og der var det ingenting aa finne.
       produkter: this.medBildeCss([
         { title: 'Kopp, sandglasur', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
         { title: 'Bolle, stor', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
         { title: 'Fat, 28 cm', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
-        { title: 'Gavekort', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg' },
-      ]),
+        { title: 'Gavekort', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
+      ]).map(p => Object.assign({}, p, {
+        cta: p.gavekort ? 'Kjøp gavekort' : 'Se i butikken',
+        velg: p.gavekort ? this.go('gavekortside') : this.go('butikk'),
+      })),
     };
   }
 }

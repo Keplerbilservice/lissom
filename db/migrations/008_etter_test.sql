@@ -1,6 +1,7 @@
--- Kjøres NÅR testbetalingen er verifisert. Flyttes da til db/migrations/.
-
--- Paint on Pots tilbake til ordinær pris
+-- Rydder opp etter betalingstesten.
+--
+-- Paint on Pots sto midlertidig til én krone for å kunne prøve betaling mot
+-- ekte Vipps. Testkurset fra 004 tas ut av sirkulasjon.
 UPDATE courses SET pris_ore = 69000 WHERE slug = 'paint-on-pots';
 
 -- Testkurset fra 004 tas ut av sirkulasjon. Avlyses framfor å slettes:

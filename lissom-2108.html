@@ -5227,6 +5227,10 @@ class Component extends DCLogic {
     return (this.state.katalog || [])
       .filter(k => kjente.indexOf(k.tittel.toLowerCase()) === -1)
       .filter(k => (k.datoer || []).length > 0)
+      // Interne kurs hoerer hjemme paa Min side, ikke i den offentlige lista.
+      // Da denne metoden ble skrevet, tok den med alt fra katalogen — og
+      // medlemsarrangementene dukket opp for alle.
+      .filter(k => k.tema !== 'Kun for medlemmer')
       .map(k => {
         const ledige = k.datoer.reduce((n, d) => n + d.ledige, 0);
         return {

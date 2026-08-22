@@ -19,9 +19,16 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
+// Noekkelen eller en innlogget admin — samme ordning som helsesjekken.
+// Denne oppretter en betaling paa 1 ore mot ekte Vipps, saa den skal ikke
+// kunne utloses av en lenke noen andre lager: kallet maa komme fra en adresse
+// du selv har aapnet.
 $nokkel = (string) Config::hent('cron_nokkel', '');
 $oppgitt = Foresporsel::tekst('nokkel');
-if ($nokkel === '' || $oppgitt === '' || !hash_equals($nokkel, $oppgitt)) {
+$medNokkel = $nokkel !== '' && $oppgitt !== '' && hash_equals($nokkel, $oppgitt);
+$fraEgenHand = in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '', ['none', 'same-origin'], true);
+
+if (!$medNokkel && !(Sesjon::erAdmin() && $fraEgenHand)) {
     Svar::feil('Fant ikke siden.', 404);
 }
 

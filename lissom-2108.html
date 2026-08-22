@@ -1458,12 +1458,12 @@ window.__resources = {
           </div>
 
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Passord" type="password" placeholder="••••••••" hint-size="100%,66px"></x-import>
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Husk meg" checked="{{ sant }}" hint-size="auto,24px"></x-import>
-              <a href="#">Glemt passord?</a>
-            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Brukernavn" icon="user" placeholder="fornavn" value="{{ liBruker }}" on-change="{{ settLiBruker }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Passord" type="password" placeholder="••••••••" value="{{ liPassord }}" on-change="{{ settLiPassord }}" hint-size="100%,66px"></x-import>
+            <sc-if value="{{ liFeil }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ liFeil }}</div>
+            </sc-if>
+            <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Konto for verkstedet. Har du glemt passordet, si fra til Monica — hun setter et nytt.</p>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ loggInnEpost }}" hint-size="100%,52px">Logg inn</x-import>
           </div>
 
@@ -3205,6 +3205,84 @@ window.__resources = {
           </sc-for>
         </div>
         <p style="margin: var(--space-5) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Klikk på en rad for full kontaktinfo, betalingshistorikk og mulighet til å sende beskjed.</p>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminBrukere }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – brukere" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Tilgang</div>
+        <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Brukere</h1>
+        <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-base); max-width: 64ch; text-wrap: pretty;">Kontoer som kan logge inn i admin. Kundene bruker Vipps og trenger ingenting her. Gi passordet muntlig — ikke på e-post eller SMS.</p>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-bottom: var(--space-8);">
+          <h2 style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Hvem har tilgang</h2>
+          <sc-if value="{{ harBrukere }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ brukere }}" as="b" hint-placeholder-count="3">
+              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-5) 0; display: flex; gap: var(--space-5); flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                <div style="min-width: 200px; flex: 1 1 260px;">
+                  <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ b.navn }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ b.brukernavn }} · {{ b.epost }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ b.maate }} · Sist inne: {{ b.sist }}</div>
+                  <sc-if value="{{ b.harMerknad }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 4px;">{{ b.merknad }}</div>
+                  </sc-if>
+                </div>
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ b.tone }}" hint-size="auto,24px">{{ b.rolle }}</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="lock" on-click="{{ b.settPassord }}" hint-size="auto,36px">Nytt passord</x-import>
+                  <sc-if value="{{ b.kanSlettes }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="trash-2" on-click="{{ b.slett }}" hint-size="auto,36px">Fjern</x-import>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ ingenBrukere }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kontoer ennå. Lag den første under — da slipper du å være avhengig av Vipps for å komme inn i admin.</p>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ visNyttPassord }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-bottom: var(--space-8); max-width: 520px;">
+            <h2 style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Sett nytt passord</h2>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Nytt passord" type="password" placeholder="Minst 12 tegn" value="{{ brPassord2 }}" on-change="{{ settBrPassord2 }}" hint-size="100%,66px"></x-import>
+            <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagreNyttPassord }}" hint-size="auto,40px">Lagre</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ avbrytNyttPassord }}" hint-size="auto,40px">Avbryt</x-import>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); max-width: 560px;">
+          <h2 style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ny bruker</h2>
+          <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Brukernavn" icon="user" placeholder="fornavn" value="{{ brNyBruker }}" on-change="{{ settBrNyBruker }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ brNyNavn }}" on-change="{{ settBrNyNavn }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ brNyEpost }}" on-change="{{ settBrNyEpost }}" hint-size="100%,66px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Passord" type="password" placeholder="Minst 12 tegn" value="{{ brNyPassord }}" on-change="{{ settBrNyPassord }}" hint-size="100%,66px"></x-import>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+              <input type="checkbox" checked="{{ brNyAdmin }}" onChange="{{ vekslBrNyAdmin }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+              Skal ha admin-tilgang
+            </label>
+            <sc-if value="{{ brFeil }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ brFeil }}</div>
+            </sc-if>
+            <div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="plus" on-click="{{ brOppretter }}" hint-size="auto,52px">Opprett bruker</x-import>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   </sc-if>
@@ -5704,6 +5782,7 @@ class Component extends DCLogic {
       { sti: '/admin/kurs',         side: 'admin' },
       { sti: '/admin/pameldte',     side: 'adminpameldte' },
       { sti: '/admin/medlemmer',    side: 'adminmedlem' },
+      { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/butikk',       side: 'adminbutikk' },
       { sti: '/admin/okonomi',      side: 'adminokonomi' },
@@ -5853,6 +5932,127 @@ class Component extends DCLogic {
       .then(r => r.json())
       .then(d => { if (d && d.varer) this.setState({ butikkvarer: d.varer }); })
       .catch(() => {});
+  }
+
+  // --- Brukere med innlogging til verkstedet ------------------------------
+
+  hentBrukere() {
+    if (!this.erPublisert()) return;
+    fetch('/api/admin/brukere.php', { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(d => { if (d && d.brukere) this.setState({ adminBrukere: d.brukere }); })
+      .catch(() => {});
+  }
+
+  brukerKall(kropp, etterpaa) {
+    if (this._brukerKall) return;
+    this._brukerKall = true;
+    fetch('/api/admin/brukere.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._brukerKall = false;
+        if (!ok) { this.setState({ brFeil: d.feil || 'Det gikk ikke.' }); return; }
+        etterpaa(d);
+        this.hentBrukere();
+      })
+      .catch(() => {
+        this._brukerKall = false;
+        this.setState({ brFeil: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
+  opprettBruker() {
+    this.brukerKall({
+      handling: 'opprett',
+      brukernavn: (this.state.brNyBruker || '').trim(),
+      navn: (this.state.brNyNavn || '').trim(),
+      epost: (this.state.brNyEpost || '').trim(),
+      rolle: this.state.brNyAdmin === false ? 'medlem' : 'admin',
+      passord: this.state.brNyPassord || '',
+    }, () => this.setState({
+      // Passordet skal ikke bli staaende i skjemaet etterpaa.
+      brNyBruker: '', brNyNavn: '', brNyEpost: '', brNyPassord: '', brFeil: null,
+      kvittering: 'Brukeren er opprettet',
+      kvitteringDetalj: 'Gi vedkommende passordet muntlig, ikke på e-post.',
+    }));
+  }
+
+  settNyttPassord() {
+    this.brukerKall({
+      handling: 'endre',
+      id: this.state.brNyttPassordFor,
+      passord: this.state.brPassord2 || '',
+    }, () => this.setState({
+      brNyttPassordFor: null, brPassord2: '', brFeil: null,
+      kvittering: 'Passordet er endret',
+      kvitteringDetalj: 'Den gamle innloggingen virker ikke lenger.',
+    }));
+  }
+
+  slettBruker(id, navn) {
+    // Sletting av folk skal ikke skje paa ett klikk ved et uhell.
+    if (!window.confirm('Fjerne tilgangen til ' + navn + '?')) return;
+    this.brukerKall({ handling: 'slett', id: id }, (d) => this.setState({
+      kvittering: d.slettet ? 'Brukeren er slettet' : 'Tilgangen er fjernet',
+      kvitteringDetalj: d.beskjed || 'Vedkommende kommer ikke lenger inn.',
+    }));
+  }
+
+  // Innlogging med brukernavn og passord.
+  //
+  // For verkstedet. Kundene bruker Vipps — der slipper de aa finne paa enda
+  // et passord, og vi slipper aa oppbevare det. Serveren sier aldri om det
+  // var brukernavnet eller passordet som var feil.
+  loggInnPassord() {
+    const bruker = (this.state.liBruker || '').trim();
+    const passord = this.state.liPassord || '';
+
+    if (!this.erPublisert()) {
+      this.setState({ innlogget: true, erAdminBruker: true, side: 'adminoversikt', liPassord: '' });
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (!bruker || !passord) {
+      this.setState({ liFeil: 'Fyll inn både brukernavn og passord.' });
+      return;
+    }
+    if (this._loggerInn) return;
+    this._loggerInn = true;
+
+    fetch('/api/logg-inn.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brukernavn: bruker, passord: passord }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._loggerInn = false;
+        if (!ok) {
+          this.setState({ liFeil: d.feil || 'Innloggingen gikk ikke gjennom.', liPassord: '' });
+          return;
+        }
+        // Passordet skal ikke bli liggende i minnet lenger enn nodvendig.
+        this.setState({
+          liPassord: '', liFeil: null,
+          innlogget: true, erAdminBruker: !!d.erAdmin,
+          vippsNavn: d.navn || '',
+          side: d.erAdmin ? 'adminoversikt' : 'minside',
+          kvittering: 'Du er logget inn',
+          kvitteringDetalj: 'Velkommen tilbake, ' + (d.navn || '') + '.',
+        });
+        window.scrollTo(0, 0);
+        this.hentInnlogget();
+      })
+      .catch(() => {
+        this._loggerInn = false;
+        this.setState({ liFeil: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
   }
 
   // Soknad om medlemskap.
@@ -6481,8 +6681,8 @@ class Component extends DCLogic {
   mobilVis(nokkel) { return !(this.erSmal() && (this.mobilSkjul())[nokkel]); }
 
   adminMeny(aktiv) {
-    const ruter = { 'Oversikt': 'adminoversikt', 'Innhold': 'admininnhold', 'Kurs og events': 'admin', 'Påmeldte': 'adminpameldte', 'Medlemmer': 'adminmedlem', 'Drop-in': 'admindropin', 'Butikk': 'adminbutikk', 'Økonomi': 'adminokonomi', 'Mobilvisning': 'adminmobilvis', 'Oppskrifter': 'adminoppskrifter', 'Nyttig info': 'adminnyttig', 'SEO': 'adminseo', 'Beskjeder': 'adminbeskjeder' };
-    return ['Oversikt', 'Innhold', 'Kurs og events', 'Påmeldte', 'Medlemmer', 'Drop-in', 'Butikk', 'Økonomi', 'Mobilvisning'].map(navn => ({
+    const ruter = { 'Oversikt': 'adminoversikt', 'Innhold': 'admininnhold', 'Kurs og events': 'admin', 'Påmeldte': 'adminpameldte', 'Medlemmer': 'adminmedlem', 'Drop-in': 'admindropin', 'Butikk': 'adminbutikk', 'Økonomi': 'adminokonomi', 'Mobilvisning': 'adminmobilvis', 'Oppskrifter': 'adminoppskrifter', 'Nyttig info': 'adminnyttig', 'SEO': 'adminseo', 'Beskjeder': 'adminbeskjeder', 'Brukere': 'adminbrukere' };
+    return ['Oversikt', 'Innhold', 'Kurs og events', 'Påmeldte', 'Medlemmer', 'Drop-in', 'Butikk', 'Økonomi', 'Brukere', 'Mobilvisning'].map(navn => ({
       navn,
       velg: ruter[navn] ? this.go(ruter[navn]) : () => {},
       stil: {
@@ -6597,14 +6797,16 @@ class Component extends DCLogic {
       hent('/api/admin/medlemmer.php'),
       hent('/api/admin/betalinger.php'),
       hent('/api/admin/soknader.php?status=venter'),
+      hent('/api/admin/brukere.php'),
     ])
-      .then(([oversikt, pameldte, medlemmer, betalinger, soknader]) => {
+      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere]) => {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
         if (medlemmer && medlemmer.medlemmer) ny.adminMedlemmer = medlemmer.medlemmer;
         if (betalinger && betalinger.betalinger) ny.adminBetalinger = betalinger.betalinger;
         if (soknader && soknader.soknader) ny.adminSoknader = soknader.soknader;
+        if (brukere && brukere.brukere) ny.adminBrukere = brukere.brukere;
         if (Object.keys(ny).length) this.setState(ny);
       })
       .catch(() => {})
@@ -9620,6 +9822,50 @@ class Component extends DCLogic {
       erAdminSeo: side === 'adminseo',
       adminNavSeo: this.adminMeny('SEO'),
       erAdminMobilvis: side === 'adminmobilvis',
+
+      // --- Brukere med innlogging til verkstedet ---------------------------
+      erAdminBrukere: side === 'adminbrukere',
+      adminNavBrukere: this.adminMeny('Brukere'),
+      brukere: (this.state.adminBrukere || []).map(b => ({
+        id: b.id,
+        navn: b.navn,
+        brukernavn: b.brukernavn || '—',
+        epost: b.epost || '—',
+        rolle: b.rolle === 'admin' ? 'Admin' : 'Medlem',
+        tone: b.rolle === 'admin' ? 'success' : 'neutral',
+        maate: b.harPassord && b.harVipps ? 'Passord og Vipps'
+             : b.harPassord ? 'Passord'
+             : b.harVipps ? 'Vipps'
+             : 'Ingen innlogging',
+        sist: b.sist,
+        erDeg: b.erDeg,
+        kanSlettes: !b.erDeg,
+        merknad: b.fraNodluke ? 'Admin via nødluke-nummer i secrets.php' : '',
+        harMerknad: !!b.fraNodluke,
+        settPassord: () => this.setState({ brNyttPassordFor: b.id, brPassord2: '', brFeil: null }),
+        slett: () => this.slettBruker(b.id, b.navn),
+      })),
+      harBrukere: (this.state.adminBrukere || []).length > 0,
+      ingenBrukere: (this.state.adminBrukere || []).length === 0,
+
+      brNyBruker: this.state.brNyBruker || '',
+      settBrNyBruker: e => this.setState({ brNyBruker: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''), brFeil: null }),
+      brNyNavn: this.state.brNyNavn || '',
+      settBrNyNavn: e => this.setState({ brNyNavn: e.target.value, brFeil: null }),
+      brNyEpost: this.state.brNyEpost || '',
+      settBrNyEpost: e => this.setState({ brNyEpost: e.target.value, brFeil: null }),
+      brNyPassord: this.state.brNyPassord || '',
+      settBrNyPassord: e => this.setState({ brNyPassord: e.target.value, brFeil: null }),
+      brNyAdmin: this.state.brNyAdmin !== false,
+      vekslBrNyAdmin: () => this.setState({ brNyAdmin: this.state.brNyAdmin === false }),
+      brFeil: this.state.brFeil || '',
+      brOppretter: () => this.opprettBruker(),
+
+      visNyttPassord: !!this.state.brNyttPassordFor,
+      brPassord2: this.state.brPassord2 || '',
+      settBrPassord2: e => this.setState({ brPassord2: e.target.value, brFeil: null }),
+      lagreNyttPassord: () => this.settNyttPassord(),
+      avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brFeil: null }),
       adminNavMobilvis: this.adminMeny('Mobilvisning'),
       mobilValg: [
         { nokkel: 'apenthus', navn: 'Åpent hus-banneret' },
@@ -9798,17 +10044,12 @@ class Component extends DCLogic {
         this.setState({ side: this.state.innlogget ? 'minside' : 'login' });
         window.scrollTo(0, 0);
       },
-      loggInnEpost: () => {
-        // Innlogging med e-post og passord finnes ikke. Feltet satte tidligere
-        // bare innlogget = true uten aa sjekke noe som helst — hvem som helst
-        // kunne skrive hva som helst og komme inn paa Min side.
-        if (this.erPublisert()) {
-          this.setState({ loginBeskjed: 'Vi bruker Vipps til innlogging. Trykk «Fortsett med Vipps» over.' });
-          return;
-        }
-        this.setState({ innlogget: true, side: 'minside' });
-        window.scrollTo(0, 0);
-      },
+      liBruker: this.state.liBruker || '',
+      settLiBruker: e => this.setState({ liBruker: e.target.value, liFeil: null }),
+      liPassord: this.state.liPassord || '',
+      settLiPassord: e => this.setState({ liPassord: e.target.value, liFeil: null }),
+      liFeil: this.state.liFeil || '',
+      loggInnEpost: () => this.loggInnPassord(),
       loginBeskjed: this.state.loginBeskjed || '',
       kvitteringDetalj: this.state.kvitteringDetalj || 'Du finner det igjen under Min side.',
       loggUt: () => {

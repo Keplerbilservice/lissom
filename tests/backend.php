@@ -230,6 +230,31 @@ sjekk('type godtar workshop',
     strpos((string) DB::verdi("SELECT column_type FROM information_schema.columns
              WHERE table_schema = DATABASE() AND table_name = 'courses' AND column_name = 'type'"), 'workshop') !== false);
 
+echo "\n== Brukernavn og passord ==\n";
+
+// Passordet skal aldri kunne leses tilbake, bare bekreftes.
+$hash = password_hash('riktigHestBatteriStift', PASSWORD_DEFAULT);
+sjekk('hashen er ikke passordet', strpos($hash, 'riktigHestBatteriStift') === false);
+sjekk('riktig passord godtas', password_verify('riktigHestBatteriStift', $hash));
+sjekk('feil passord avvises', password_verify('riktigHestBatteriStif', $hash) === false);
+
+// Regelen for brukernavn er den samme i api/admin/brukere.php.
+$gyldig = static fn(string $b): bool => (bool) preg_match('/^[a-z0-9._-]{3,64}$/', $b);
+sjekk('vanlig brukernavn godtas', $gyldig('monica'));
+sjekk('punktum og bindestrek godtas', $gyldig('monica.v-l'));
+sjekk('mellomrom avvises', $gyldig('mo nica') === false);
+sjekk('store bokstaver avvises', $gyldig('Monica') === false);
+sjekk('for kort avvises', $gyldig('mo') === false);
+
+sjekk('brukernavn er unikt i databasen',
+    (int) DB::verdi("SELECT COUNT(*) FROM information_schema.statistics
+                      WHERE table_schema = DATABASE() AND table_name = 'members'
+                        AND index_name = 'uq_members_brukernavn'") > 0);
+sjekk('passord_hash-kolonnen finnes',
+    (int) DB::verdi("SELECT COUNT(*) FROM information_schema.columns
+                      WHERE table_schema = DATABASE() AND table_name = 'members'
+                        AND column_name = 'passord_hash'") === 1);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

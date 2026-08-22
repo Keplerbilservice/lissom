@@ -73,7 +73,10 @@ sjekk('testkurset er ute av sirkulasjon', $test === null || $test['status'] === 
 $boller = DB::en("SELECT tema FROM courses WHERE slug='kurs-boller'");
 sjekk('Kurs boller har tema Plateteknikk', $boller['tema'] === 'Plateteknikk', $boller['tema']);
 $dropin = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='drop-in'");
-sjekk('drop-in har datoer', (int)$dropin === 4, $dropin . ' okter');
+// Antallet varierer: apningstidene i admin lager nye okter framover, og
+// «lag ut okter» rydder bort gamle uten paameldte. Det som betyr noe er at
+// drop-in har datoer i det hele tatt — uten dem kan ingen booke.
+sjekk('drop-in har datoer', (int) $dropin > 0, $dropin . ' okter');
 
 echo "\n== Kapasitet ==\n";
 $okt = DB::en("SELECT cs.id, COALESCE(cs.kapasitet,c.kapasitet) kap FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='paint-on-pots' ORDER BY cs.start_tid LIMIT 1");

@@ -272,7 +272,7 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" overlay="{{ true }}" hint-size="100%,84px"></x-import>
 
       <section class="lx-hero" data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: clip; display: grid; min-height: 82vh;">
-        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; left: -140px; bottom: -180px; width: 560px; opacity: 0.07; pointer-events: none;">
+        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; left: -140px; bottom: -180px; width: 560px; opacity: 0.07; pointer-events: none;" loading="lazy" decoding="async">
         <div class="lx-hjertelogo" aria-hidden="true" style="display: none; position: absolute; left: -320px; top: -40px; width: 900px; height: 870px; opacity: 0.12; pointer-events: none; transform: rotate(-8deg); -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);">
           <div style="width: 100%; height: 100%; background: linear-gradient(160deg, var(--terracotta-500) 0%, var(--brown-500) 45%, var(--lissom-brown) 100%); -webkit-mask-image: url('uploads_logo-7df29c0f.png'); mask-image: url('uploads_logo-7df29c0f.png'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></div>
         </div>
@@ -371,7 +371,7 @@ window.__resources = {
            lengde. -->
       <section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="{{ rotSplitStil }}">
-          <img src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
+          <img src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ rotStikktittel }}</div>
             <h2 style="margin: 0 0 var(--space-5);">{{ rotTittel }}</h2>
@@ -464,7 +464,7 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goForesporsel }}" hint-size="auto,56px">Book for gruppe</x-import>
             </div>
           </div>
-          <img src="uploads_shutterstock_2830576853.jpg" alt="Paint on Pots hos Lissom" style="width: 100%; height: 460px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
+          <img src="uploads_shutterstock_2830576853.jpg" alt="Paint on Pots hos Lissom" style="width: 100%; height: 460px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" loading="lazy" decoding="async">
         </div>
       </section>
 
@@ -579,7 +579,7 @@ window.__resources = {
               <p style="margin: 0; color: var(--text-body); font-size: var(--text-base); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Lissom er ikke bare et keramikkverksted. Det er et sted hvor kreativitet får plass, hvor mennesker møtes, og hvor du kan finne en ro du kanskje ikke visste at du savnet. 🤎</p>
             </div>
             <figure style="margin: calc(-1 * var(--space-6)) 0 0; position: sticky; top: 116px; width: min(420px, 100%);">
-              <img src="uploads_476463687_590516973787208_1732215863558581964_n-c3b907e3.jpg" alt="Monica, grunnlegger av Lissom" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 20%; border-radius: var(--radius-lg); display: block;">
+              <img src="uploads_476463687_590516973787208_1732215863558581964_n-c3b907e3.jpg" alt="Monica, grunnlegger av Lissom" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 20%; border-radius: var(--radius-lg); display: block;" loading="lazy" decoding="async">
               <figcaption style="margin-top: var(--space-3); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Monica — grunnlegger av Lissom</figcaption>
             </figure>
           </div>
@@ -716,7 +716,7 @@ window.__resources = {
       <sc-if value="{{ erDropinVisning }}" hint-placeholder-val="{{ false }}">
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
           <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr 1.1fr; gap: var(--space-10); align-items: start;">
-            <img src="uploads_shutterstock_2829101699.jpg" alt="Drop-in-registrering i verkstedet" class="lx-foto" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: center 30%; border-radius: var(--radius-lg); display: block;">
+            <img src="uploads_shutterstock_2829101699.jpg" alt="Drop-in-registrering i verkstedet" class="lx-foto" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: center 30%; border-radius: var(--radius-lg); display: block;" loading="lazy" decoding="async">
             <div>
               <h2 style="margin: 0 0 var(--space-4);">Verkstedet, på dine premisser</h2>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 52ch; text-wrap: pretty;">Book en økt på to timer og jobb med dine egne prosjekter — uten fast program, i verkstedet på Teie.</p>
@@ -820,7 +820,7 @@ window.__resources = {
       </sc-if>
 
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8); position: relative; overflow: hidden;">
-        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -110px; bottom: -180px; width: 520px; opacity: 0.1; pointer-events: none;">
+        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -110px; bottom: -180px; width: 520px; opacity: 0.1; pointer-events: none;" loading="lazy" decoding="async">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: var(--space-16); align-items: start; position: relative;">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Før du kommer</div>
@@ -1133,7 +1133,7 @@ window.__resources = {
       </section>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: 820px; margin: 0 auto; text-align: center;">
-          <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 56px; margin: 0 auto var(--space-6); display: block; opacity: .85;">
+          <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 56px; margin: 0 auto var(--space-6); display: block; opacity: .85;" loading="lazy" decoding="async">
           <blockquote style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 34px); line-height: 1.35; color: var(--text-heading); text-wrap: pretty;">«Jeg kom for å lære å dreie, men det som fikk meg til å bli var menneskene.»</blockquote>
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Anniken · medlem siden 2025</div>
         </div>
@@ -1186,7 +1186,7 @@ window.__resources = {
     <div data-screen-label="Bedrift og event">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8); position: relative; overflow: hidden;">
-        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -120px; bottom: -160px; width: 520px; opacity: 0.09; pointer-events: none;">
+        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -120px; bottom: -160px; width: 520px; opacity: 0.09; pointer-events: none;" loading="lazy" decoding="async">
         <div class="lx-hide-m" style="position: absolute; top: 0; bottom: 0; right: 0; width: 52%; background-image: url('uploads_shutterstock_2752346251.jpg'); background-size: cover; background-position: center 30%;" role="img" aria-label="Gruppe som ler rundt langbordet i verkstedet"></div>
         <div class="lx-hide-m" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 46%, rgba(255,207,56,0.85) 56%, rgba(255,207,56,0.25) 76%, transparent 94%); pointer-events: none;"></div>
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
@@ -1271,7 +1271,7 @@ window.__resources = {
     <div data-screen-label="Gavekort">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8); position: relative; overflow: hidden;">
-        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -120px; bottom: -160px; width: 520px; opacity: 0.09; pointer-events: none;">
+        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -120px; bottom: -160px; width: 520px; opacity: 0.09; pointer-events: none;" loading="lazy" decoding="async">
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Gavekort</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl); color: var(--lissom-brown);">Gavekort på keramikkurs</h1>
@@ -1416,7 +1416,7 @@ window.__resources = {
             <div style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); text-align: center; min-height: 420px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-6);">Venter på Vipps</div>
               <div style="width: 168px; height: 168px; border-radius: var(--radius-md); background: var(--clay-50); display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-6);">
-                <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 84px; opacity: .18;">
+                <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 84px; opacity: .18;" loading="lazy" decoding="async">
               </div>
               <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--clay-50);">Godkjenn i appen</h3>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--clay-300); max-width: 30ch; text-wrap: pretty;">Skann koden med Vipps, eller åpne appen på telefonen. Vi venter her til du er ferdig.</p>
@@ -1454,8 +1454,8 @@ window.__resources = {
   <sc-if value="{{ erLogin }}" hint-placeholder-val="{{ true }}">
     <div class="lx-split" data-screen-label="Logg inn" style="display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh;">
       <div data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: hidden; padding: var(--space-12) var(--space-10); display: flex; flex-direction: column; justify-content: space-between;">
-        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -140px; bottom: -180px; width: 620px; opacity: 0.12; pointer-events: none;">
-        <img src="logo-lockup.svg" alt="lissom" style="height: 72px; align-self: flex-start; position: relative;">
+        <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -140px; bottom: -180px; width: 620px; opacity: 0.12; pointer-events: none;" loading="lazy" decoding="async">
+        <img src="logo-lockup.svg" alt="lissom" style="height: 72px; align-self: flex-start; position: relative;" loading="lazy" decoding="async">
         <div style="position: relative;">
           <h2 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--lissom-brown); margin: 0 0 var(--space-5);">Verkstedet ditt, døgnet rundt</h2>
           <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 38ch; text-wrap: pretty;">Logg inn for å stemple inn, se timene dine, lese beskjeder og bestille leire og brenning.</p>
@@ -2311,11 +2311,11 @@ window.__resources = {
             </div>
             <div style="width: 118px; height: 16px; margin: 0 auto; background: var(--lissom-yellow); border-left: 3px solid var(--lissom-brown); border-right: 3px solid var(--lissom-brown); box-sizing: border-box;"></div>
             <div style="width: 132px; height: 132px; border-radius: 50%; background: var(--lissom-yellow); border: 3px solid var(--lissom-brown); margin: -6px auto 0; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-              <img src="mark-cup.svg" alt="" style="height: 46px;">
+              <img src="mark-cup.svg" alt="" style="height: 46px;" loading="lazy" decoding="async">
             </div>
             <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin-top: var(--space-10); flex-wrap: wrap;">
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 46ch; text-wrap: pretty;">* Verdiene er omtrentlige og avhenger av brennhastighet og varmearbeid i ovnen.</p>
-              <img src="logo-lockup.svg" alt="lissom" style="height: 44px;">
+              <img src="logo-lockup.svg" alt="lissom" style="height: 44px;" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -2338,14 +2338,14 @@ window.__resources = {
               <div style="display: flex; flex-direction: column; gap: var(--space-7); max-width: 64ch; margin: 0 auto;">
                 <sc-for list="{{ medlemsInfoPunkter }}" as="p" hint-placeholder-count="6">
                   <div style="display: flex; gap: var(--space-4); align-items: baseline;">
-                    <img src="mark-cup.svg" alt="" style="height: 15px; flex: none; transform: translateY(1px);">
+                    <img src="mark-cup.svg" alt="" style="height: 15px; flex: none; transform: translateY(1px);" loading="lazy" decoding="async">
                     <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--text-body); text-wrap: pretty;">{{ p }}</p>
                   </div>
                 </sc-for>
               </div>
             </div>
             <div style="background: var(--lissom-yellow); display: flex; justify-content: center; padding: var(--space-8);">
-              <img src="logo-lockup.svg" alt="lissom" style="height: 60px;">
+              <img src="logo-lockup.svg" alt="lissom" style="height: 60px;" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -2376,7 +2376,7 @@ window.__resources = {
               </div>
             </div>
             <div style="background: var(--lissom-yellow); display: flex; justify-content: center; padding: var(--space-8);">
-              <img src="logo-lockup.svg" alt="lissom" style="height: 60px;">
+              <img src="logo-lockup.svg" alt="lissom" style="height: 60px;" loading="lazy" decoding="async">
             </div>
           </div>
         </div>
@@ -2387,7 +2387,7 @@ window.__resources = {
   <sc-if value="{{ erAdminNyttig }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – nyttig info" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -2649,7 +2649,7 @@ window.__resources = {
     <div data-screen-label="Admin" style="{{ adminGridStil }}">
 
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -2902,7 +2902,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOversikt }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – oversikt" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -3283,7 +3283,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMobilvis }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – mobilvisning" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -3327,7 +3327,7 @@ window.__resources = {
   <sc-if value="{{ erAdminPameldte }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – påmeldte" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -3476,7 +3476,7 @@ window.__resources = {
   <sc-if value="{{ erAdminBrukere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – brukere" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -3554,7 +3554,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMedlem }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – medlemmer" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -3762,7 +3762,7 @@ window.__resources = {
   <sc-if value="{{ erAdminInnhold }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – innhold" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -3894,7 +3894,7 @@ window.__resources = {
   <sc-if value="{{ erAdminDropin }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – drop-in" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavDropin }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4025,7 +4025,7 @@ window.__resources = {
   <sc-if value="{{ erAdminButikk }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – butikk" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4218,7 +4218,7 @@ window.__resources = {
   <sc-if value="{{ erAdminBeskjeder }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – beskjeder" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4341,7 +4341,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOppskrifter }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – oppskrifter" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4467,7 +4467,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOkonomi }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – økonomi" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4646,7 +4646,7 @@ window.__resources = {
 
   <sc-if value="{{ visFooter }}" hint-placeholder-val="{{ true }}">
     <footer data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-14) var(--space-8) var(--space-6); position: relative; overflow: hidden;">
-      <img src="mark-heart.png" alt="" aria-hidden="true" style="position: absolute; right: -160px; top: -80px; width: 1300px; opacity: 0.05; transform: rotate(-8deg); filter: invert(1); pointer-events: none; -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);">
+      <img src="mark-heart.png" alt="" aria-hidden="true" style="position: absolute; right: -160px; top: -80px; width: 1300px; opacity: 0.05; transform: rotate(-8deg); filter: invert(1); pointer-events: none; -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);" loading="lazy" decoding="async">
       <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
         <div style="padding-bottom: var(--space-10); border-bottom: 1px solid rgba(244,235,222,.18);">
           <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 2.8vw, 52px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
@@ -4687,11 +4687,11 @@ window.__resources = {
           </div>
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Følg oss</div>
-            <img src="logo-lockup-yellow.svg" alt="lissom — keramikk &amp; håndverk" style="height: 44px; display: block; margin-bottom: var(--space-5);">
+            <img src="logo-lockup-yellow.svg" alt="lissom — keramikk &amp; håndverk" style="height: 44px; display: block; margin-bottom: var(--space-5);" loading="lazy" decoding="async">
             <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-5);">
               <a href="{{ someInstagram }}" target="_blank" rel="noopener" aria-label="Instagram" title="@lissom_keramikk" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(244,235,222,.35); display: inline-flex; align-items: center; justify-content: center; color: var(--clay-100); text-decoration: none; transition: background .18s ease, color .18s ease, border-color .18s ease;" style-hover="background: var(--lissom-yellow); color: var(--lissom-brown); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="instagram" size="{{ tjue }}" hint-size="20px,20px"></x-import></a>
             </div>
-            <div style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);"><img src="mark-heart.png" alt="" style="height: 15px; width: auto; filter: invert(0.92) sepia(0.14) saturate(1.4) hue-rotate(-15deg);">100% håndlaget med kjærlighet</div>
+            <div style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);"><img src="mark-heart.png" alt="" style="height: 15px; width: auto; filter: invert(0.92) sepia(0.14) saturate(1.4) hue-rotate(-15deg);" loading="lazy" decoding="async">100% håndlaget med kjærlighet</div>
           </div>
         </div>
 
@@ -4703,8 +4703,8 @@ window.__resources = {
                  Den fulle logoen er naer kvadratisk og gjorde raden 57 px hoy
                  mot 15 for teksten ved siden av. Her er lua trykt sammen i
                  hoyden, saa merket staar paa linje med resten.
-                 Svg-en ligger i sida og ikke som <img>: fargen er
-                 currentColor, og en <img> arver ingen farge utenfra.
+                 Svg-en ligger i sida og ikke som <img loading="lazy" decoding="async">: fargen er
+                 currentColor, og en <img loading="lazy" decoding="async"> arver ingen farge utenfra.
                  joika-design.svg er den fulle logoen som egen fil. -->
             <span style="text-transform: none; letter-spacing: 0; opacity: .62; display: inline-flex; align-items: center; gap: 6px;">EDB system av<svg viewBox="0 0 290 74" width="100" height="26" role="img" aria-label="Joika Design" style="display: block;"><defs><linearGradient id="jdToning" gradientUnits="userSpaceOnUse" x1="150" y1="4" x2="150" y2="70"><stop offset="0" stop-color="currentColor" stop-opacity=".82"></stop><stop offset=".42" stop-color="currentColor" stop-opacity=".38"></stop><stop offset=".66" stop-color="currentColor" stop-opacity=".12"></stop><stop offset="1" stop-color="currentColor" stop-opacity=".05"></stop></linearGradient></defs><g fill="none" stroke="url(#jdToning)" stroke-linejoin="round" stroke-linecap="round"><path stroke-width="3.4" d="M74 59 L54 27 L110 47 L97 9 L150 40 L204 4 L226 59"></path><rect x="70" y="57" width="160" height="13" rx="6.5" stroke-width="3.4"></rect></g><text x="145" y="54" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="31" font-weight="700" letter-spacing="0.4" fill="currentColor">Joika Design</text></svg></span>
           </div>
@@ -4722,7 +4722,7 @@ window.__resources = {
   <sc-if value="{{ erAdminSeo }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – SEO" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12750,7 +12750,7 @@ class Component extends DCLogic {
       heroTekst: (this.state.innholdLagret || {})['Forside/0/Brødtekst'] ?? 'Keramikkurs, events og kreative opplevelser på Teie, rett utenfor Tønsberg sentrum. Du trenger ingen forkunnskaper — bare lyst til å lage noe med egne hender.',
       heroKnapp1: (this.state.innholdLagret || {})['Forside/0/Knapp 1'] ?? 'Se kurs og datoer',
       heroKnapp2: (this.state.innholdLagret || {})['Forside/0/Knapp 2'] ?? 'Paint on Pots',
-      heroBildeCss: "url('" + ((this.state.innholdLagret || {})['Forside/0/Hero-bilde'] ?? 'assets_photos_dreiekurs-smil.png') + "')",
+      heroBildeCss: "url('" + ((this.state.innholdLagret || {})['Forside/0/Hero-bilde'] ?? 'assets_photos_dreiekurs-smil.jpg') + "')",
       goForesporsel: () => this.apneForesporsel(),
       goForesporselGammel: () => {
         this.setState({ side: 'kurs' });

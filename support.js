@@ -1140,9 +1140,13 @@
   }
 
   // src/cdn.ts
-  var REACT_URL = "https://unpkg.com/react@18.3.1/umd/react.production.min.js";
+  // Endret fra unpkg.com til lokale filer. Nettstedet skal ikke vaere avhengig
+  // av at et fremmed CDN er oppe, og besokendes IP-adresse skal ikke sendes dit
+  // uten grunn. window.__resources i lissom-2108.html gjor det samme, men den
+  // kroken traff ikke alle kodeveier — derfor staar adressene her ogsaa.
+  var REACT_URL = "/vendor/react-18.3.1.min.js";
   var REACT_SRI = "sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z";
-  var REACT_DOM_URL = "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js";
+  var REACT_DOM_URL = "/vendor/react-dom-18.3.1.min.js";
   var REACT_DOM_SRI = "sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1";
   var BABEL_URL = "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js";
   var BABEL_SRI = "sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y";
@@ -1838,8 +1842,8 @@
   function loadReactUmd() {
     const w = window;
     if (w.React && w.ReactDOM) return Promise.resolve();
-    const react = cdnScriptFor(REACT_URL, REACT_SRI);
-    const reactDom = cdnScriptFor(REACT_DOM_URL, REACT_DOM_SRI);
+    const react = cdnScriptFor(REACT_URL, null);
+    const reactDom = cdnScriptFor(REACT_DOM_URL, null);
     return Promise.all([
       loadScript(react.src, react.integrity),
       loadScript(reactDom.src, reactDom.integrity)

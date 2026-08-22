@@ -2981,6 +2981,16 @@ window.__resources = {
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Rabatten trekkes automatisk i kassen når antallet i bestillingen når minimum. Høyeste sats vinner.</p>
+              <!-- Overskrifter over kolonnene. Uten dem sto det to like tallfelt
+                   ved siden av hverandre, og det var ikke til aa se hvilket som
+                   var antall og hvilket som var prosent. -->
+              <div style="display: grid; grid-template-columns: 74px 74px 1fr 44px 28px; gap: var(--space-2); align-items: end; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
+                <span>Fra antall</span>
+                <span>Rabatt %</span>
+                <span>Gjelder</span>
+                <span>På</span>
+                <span></span>
+              </div>
               <sc-for list="{{ grListe }}" as="r" hint-placeholder-count="2">
                 <div style="display: grid; grid-template-columns: 74px 74px 1fr 44px 28px; gap: var(--space-2); align-items: center;">
                   <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ skFeltStil }}">
@@ -2996,7 +3006,7 @@ window.__resources = {
               </sc-for>
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                 <button type="button" onClick="{{ grLeggTil }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Nytt rabattnivå</button>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">Min. antall · % · gjelder · av/på</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">Eksempel: fra 3 deltakere, 10 % avslag.</span>
               </div>
             </div>
           </div>
@@ -8438,6 +8448,10 @@ class Component extends DCLogic {
       vekslMinSalg: () => this.setState(s => ({ visMinSalg: s.visMinSalg === false })),
       bryterMinGave: this.state.visMinGave !== false,
       vekslMinGave: () => this.setState(s => ({ visMinGave: s.visMinGave === false })),
+      // Bryteren for frys sto uten kobling — den var tegnet, men verken
+      // «checked» eller «on-change» pekte paa noe. Da gjorde den ingenting.
+      bryterMinFrys: this.state.visMinFrys !== false,
+      vekslMinFrys: () => this.setState(s => ({ visMinFrys: s.visMinFrys === false })),
       ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovProgram: n }),
@@ -9652,14 +9666,17 @@ class Component extends DCLogic {
         },
       })),
       ikonStr: 22,
-      oppfolging: [
+      // «Ikke fornyet — minn dem paa» sto med seks oppdiktede saker. Ubetalte
+      // reservasjoner og feilede betalinger finnes i databasen, men lista som
+      // helhet er ikke koblet opp — da er tomt riktigere enn paafunn.
+      oppfolging: (this.erPublisert() ? [] : [
         { navn: 'Mari Lunde', grunn: 'Betaling feilet — 30 timer · kr. 2 590,-', status: 'Ubetalt', tone: 'danger', knapp: 'Send purring', gjortStatus: 'Purring sendt', gjortMelding: 'Purring sendt til Mari Lunde på e-post og SMS', epost: 'mari@epost.no', tlf: '+47 938 11 402', sum: 'kr. 2 590,-' },
         { navn: 'Petter Nes', grunn: 'Ubetalt reservasjon — Kurs boller · kr. 1 490,-', status: 'Ubetalt', tone: 'danger', knapp: 'Send purring', gjortStatus: 'Purring sendt', gjortMelding: 'Purring sendt til Petter Nes på e-post og SMS', epost: 'petter@epost.no', tlf: '+47 976 25 310', sum: 'kr. 1 490,-' },
         { navn: 'Ole Aarseth', grunn: 'Prøv Lissom utløper 3. sep — bør fornye', status: 'Venter fornyelse', tone: 'warning', knapp: 'Send tilbud', gjortStatus: 'Tilbud sendt', gjortMelding: 'Fornyelsestilbud sendt til Ole Aarseth', epost: 'ole@epost.no', tlf: '+47 900 41 118', sum: 'kr. 990,-' },
         { navn: 'Silje Bratt', grunn: 'Har brukt opp timene sine i august', status: 'Kan oppgradere', tone: 'warning', knapp: 'Tilby oppgradering', gjortStatus: 'Tilbud sendt', gjortMelding: 'Oppgraderingstilbud sendt til Silje Bratt', epost: 'silje@epost.no', tlf: '+47 971 22 508', sum: '—' },
         { navn: 'Ubesvarte meldinger', grunn: '2 meldinger fra medlemmer venter på svar', status: 'Venter', tone: 'info', knapp: 'Svar', maal: 'adminbeskjeder' },
         { navn: 'Åpen dag 6. september', grunn: 'Er ikke lagt ut på nettsiden ennå', status: 'Upublisert', tone: 'neutral', knapp: 'Publiser', maal: 'admininnhold' },
-      ].map(o => {
+      ]).map(o => {
         const gjort = (this.state.purret || {})[o.navn];
         return Object.assign({}, o, {
           linje: o.grunn + (o.sum ? ' · ' + o.sum : ''),

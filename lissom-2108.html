@@ -6789,6 +6789,51 @@ class Component extends DCLogic {
       schema: 'Event',
       index: 'Index',
     },
+    dropin: {
+      fokus: 'drop-in keramikk Tønsberg',
+      tittel: 'Drop-in keramikk i Tønsberg | Lissom',
+      meta: 'Kom innom verkstedet på Teie og jobb med leire i ditt eget tempo. Ingen påmelding over flere uker — book én økt, så er alt utstyr klart.',
+      slug: 'drop-in-keramikk-tonsberg',
+      h1: 'Drop-in i verkstedet',
+      sekundare: 'keramikk uten kurs, leire Tønsberg, verkstedtid, Nøtterøy',
+      altTekst: 'Hender som former leire ved arbeidsbenken under en drop-in hos Lissom',
+      ogTittel: 'Drop-in keramikk i Tønsberg | Lissom',
+      ogBeskrivelse: 'Book en enkelt økt i keramikkverkstedet på Teie. Leire, verktøy og brenning er inkludert.',
+      canonical: 'https://lissom.no/drop-in',
+      internlenker: 'Kurs, Medlemskap, Kalender',
+      schema: 'Event',
+      index: 'Index',
+    },
+    kalender: {
+      fokus: 'kurskalender keramikk Tønsberg',
+      tittel: 'Kurskalender | Lissom Keramikk i Tønsberg',
+      meta: 'Alt som skjer i keramikkverkstedet på Teie, uke for uke: kurs, events og drop-in. Se hvilke datoer som har ledige plasser og book direkte.',
+      slug: 'kurskalender-keramikk',
+      h1: 'Alt som skjer, uke for uke',
+      sekundare: 'ledige datoer, keramikkurs når, kalender Vestfold',
+      altTekst: 'Ukeoversikt over kurs og drop-in hos Lissom Keramikk',
+      ogTittel: 'Kurskalender | Lissom Keramikk',
+      ogBeskrivelse: 'Kurs, events og drop-in samlet uke for uke. Trykk på en oppføring for å booke.',
+      canonical: 'https://lissom.no/kalender',
+      internlenker: 'Kurs, Drop-in, Medlemskap',
+      schema: 'Event',
+      index: 'Index',
+    },
+    nyttig: {
+      fokus: 'brennetabell keramikk',
+      tittel: 'Nyttig info om keramikk | Lissom',
+      meta: 'Brennetabell, cone-temperaturer, ordensregler og guider fra verkstedet på Teie. Skrevet for deg som jobber med leire, nybegynner som medlem.',
+      slug: 'nyttig-info-keramikk',
+      h1: 'Nyttig å vite om keramikk',
+      sekundare: 'cone temperatur, glasur, råbrenning, keramikkguide',
+      altTekst: 'Oppslag med brennetabell og cone-temperaturer på verkstedveggen',
+      ogTittel: 'Nyttig info om keramikk | Lissom',
+      ogBeskrivelse: 'Brennetabell, cone-temperaturer og guider fra keramikkverkstedet på Teie.',
+      canonical: 'https://lissom.no/nyttig-info',
+      internlenker: 'Kurs, Medlemskap, Om oss',
+      schema: 'Article',
+      index: 'Index',
+    },
     medlemskap: {
       fokus: 'keramikkverksted medlemskap Tønsberg',
       tittel: 'Medlemskap i keramikkverksted i Tønsberg | Lissom',
@@ -8551,6 +8596,9 @@ class Component extends DCLogic {
       { id: 'omoss', navn: 'Om oss', type: 'side', fokus: 'keramikkverksted Tønsberg' },
       { id: 'kontakt', navn: 'Kontakt', type: 'side', fokus: 'keramikkverksted Tønsberg kontakt' },
       { id: 'bedrift', navn: 'Bedrift og event', type: 'side', fokus: 'teambuilding keramikk Vestfold' },
+      { id: 'dropin', navn: 'Drop-in', type: 'side', fokus: 'drop-in keramikk Tønsberg' },
+      { id: 'kalender', navn: 'Kalender', type: 'side', fokus: 'kurskalender keramikk Tønsberg' },
+      { id: 'nyttig', navn: 'Nyttig info', type: 'side', fokus: 'brennetabell keramikk' },
     ];
   }
 
@@ -8572,10 +8620,20 @@ class Component extends DCLogic {
   // faktisk har en egen adresse — kurssidene deler skjerm og faar sitt fra
   // kurset som er valgt.
   seoIdForSide(side) {
+    // «/drop-in» og «/booking» er samme skjerm i koden. Adressen er det eneste
+    // som skiller dem, og de skal ha hver sin oppforing: drop-in er en side
+    // folk soker etter, bookingskjemaet er ikke det.
+    if (side === 'booking') {
+      return (typeof location !== 'undefined' && location.pathname === '/drop-in') ? 'dropin' : null;
+    }
     return {
       forside: 'forside', kurs: 'kurs', medlemskap: 'medlemskap', butikk: 'butikk',
       gavekortside: 'gavekort', omoss: 'omoss', kontakt: 'kontakt', bedrift: 'bedrift',
       paintonpots: 'paintonpots',
+      // Drop-in, kalenderen og «Nyttig info» er offentlige sider folk soker
+      // etter, men de manglet oppforing: ingen beskrivelse, ingen canonical,
+      // og en generisk fanetittel.
+      dropin: 'dropin', kalender: 'kalender', nyttig: 'nyttig',
     }[side] || null;
   }
 

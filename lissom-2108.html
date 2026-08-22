@@ -4554,9 +4554,14 @@ window.__resources = {
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ seoValgtType }}</div>
                 <h2 style="margin: 4px 0 0; font-size: var(--text-2xl); letter-spacing: 0;">{{ seoValgtNavn }}</h2>
               </div>
-              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <sc-if value="{{ seoUlagret }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ seoForkast }}" hint-size="auto,36px">Forkast</x-import>
+                </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ seoOverskriv }}" hint-size="auto,36px">Erstatt alt med forslag</x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="sparkles" on-click="{{ seoForeslaa }}" hint-size="auto,36px">Foreslå SEO</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ seoForeslaa }}" hint-size="auto,36px">Foreslå SEO</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ seoLagre }}" hint-size="auto,36px">{{ seoLagreTekst }}</x-import>
               </div>
             </div>
 
@@ -4601,7 +4606,7 @@ window.__resources = {
         <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); display: flex; justify-content: space-between; gap: var(--space-4); align-items: baseline;">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Forslag til lokale landingssider</span>
-            <span style="font-size: var(--text-xs); color: var(--text-muted);">Opprettes som utkast under Innhold</span>
+            <span style="font-size: var(--text-xs); color: var(--text-muted);">Huk av det du har tatt — listen lagres</span>
           </div>
           <sc-for list="{{ landingsForslag }}" as="l" hint-placeholder-count="5">
             <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: 10px var(--space-5); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
@@ -4612,7 +4617,7 @@ window.__resources = {
               <div style="display: flex; align-items: center; gap: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ l.tone }}" hint-size="auto,24px">{{ l.status }}</x-import>
                 <sc-if value="{{ l.kanOpprette }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ l.opprett }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px 12px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">Opprett utkast</button>
+                  <button type="button" onClick="{{ l.opprett }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px 12px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">Marker som planlagt</button>
                 </sc-if>
               </div>
             </div>
@@ -6006,6 +6011,14 @@ class Component extends DCLogic {
   }
 
   oppskriftData() {
+    // Fra basen naar den er hentet. Sto som state.oppskrifter alene, og den
+    // ble aldri fylt fra noe sted — lista var tom ved hver sidelasting.
+    if (this.state.verksted) {
+      return this.state.verksted.oppskrifter.map(o => ({
+        id: o.id, navn: o.navn, type: o.temperatur || o.type,
+        oppskriftType: o.type, base: o.raavarer, notat: o.notat || '',
+      }));
+    }
     return this.state.oppskrifter || [];
   }
 
@@ -7294,6 +7307,59 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
   }
 
+  // Oppskrifter, artikler og lenker.
+  hentVerksted() {
+    if (!this.erPublisert() || this._verkstedHentes) return;
+    this._verkstedHentes = true;
+    fetch('/api/admin/verksted.php', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._verkstedHentes = false;
+        if (d && d.oppskrifter) this.setState({ verksted: d, oppskrifter: null, adminArtikler: null, adminLenker: null });
+      })
+      .catch(() => { this._verkstedHentes = false; });
+  }
+
+  // Artiklene og lenkene slik en besokende ser dem.
+  hentNyttig() {
+    if (!this.erPublisert() || this._nyttigHentes) return;
+    this._nyttigHentes = true;
+    fetch('/api/nyttig.php')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._nyttigHentes = false;
+        if (d && d.artikler) this.setState({ offentligNyttig: d });
+      })
+      .catch(() => { this._nyttigHentes = false; });
+  }
+
+  verkstedKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._verkstedLagrer) return Promise.resolve(false);
+    this._verkstedLagrer = true;
+
+    return fetch('/api/admin/verksted.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._verkstedLagrer = false;
+        this.setState(Object.assign(
+          { kvittering: ok ? 'Lagret' : 'Ble ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' },
+          ok && d.oppskrifter ? { verksted: d } : {}
+        ));
+        return ok;
+      })
+      .catch(() => {
+        this._verkstedLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
   hentDropin() {
     if (!this.erPublisert() || this._dropinHentes) return;
     this._dropinHentes = true;
@@ -7682,6 +7748,13 @@ class Component extends DCLogic {
   }
 
   artikkelData() {
+    const fra = this.state.verksted || this.state.offentligNyttig;
+    if (fra && fra.artikler) {
+      return fra.artikler.map(a => ({
+        id: a.id, tittel: a.tittel, dato: a.dato || '', ingress: a.ingress || '',
+        bilde: a.bilde || FOTO + 'butikken.jpg', innhold: a.innhold || '',
+      }));
+    }
     return this.state.adminArtikler || [];
   }
 
@@ -7720,6 +7793,8 @@ class Component extends DCLogic {
   }
 
   lenkeData() {
+    if (this.state.verksted) return this.state.verksted.lenker;
+    if (this.state.offentligNyttig) return this.state.offentligNyttig.lenker;
     return this.state.adminLenker || [
       { navn: 'Mayco Glasurkombinasjoner', url: 'https://www.maycocolors.com/glaze-combinations/', om: 'Ferdige glasurkombinasjoner med bilder og cone-angivelser.' },
     ];
@@ -7779,6 +7854,97 @@ class Component extends DCLogic {
       { id: 'kontakt', navn: 'Kontakt', type: 'side', fokus: 'keramikkverksted Tønsberg kontakt' },
       { id: 'bedrift', navn: 'Bedrift og event', type: 'side', fokus: 'teambuilding keramikk Vestfold' },
     ];
+  }
+
+  // SEO-tekstene ligger i content_blocks, én noekkel per side, som resten av
+  // det eieren redigerer. state.seoUtkast er det som er skrevet men ikke
+  // lagret enda — det holdes utenfor til eieren trykker Lagre, saa halve
+  // setninger ikke gaar ut paa nettsiden mens de skrives.
+  seoLagret(id) {
+    const raa = (this.state.innholdLagret || {})['SEO/' + id];
+    if (!raa) return {};
+    try { return JSON.parse(raa) || {}; } catch (e) { return {}; }
+  }
+
+  seoData(id) {
+    return Object.assign({}, this.seoLagret(id), (this.state.seoUtkast || {})[id] || {});
+  }
+
+  // Hvilken SEO-side hoerer til skjermen man staar paa. Bare de sidene som
+  // faktisk har en egen adresse — kurssidene deler skjerm og faar sitt fra
+  // kurset som er valgt.
+  seoIdForSide(side) {
+    return {
+      forside: 'forside', kurs: 'kurs', medlemskap: 'medlemskap', butikk: 'butikk',
+      gavekortside: 'gavekort', omoss: 'omoss', kontakt: 'kontakt', bedrift: 'bedrift',
+      paintonpots: 'paintonpots',
+    }[side] || null;
+  }
+
+  // Fanenavn for sidene som ikke har egen SEO-oppforing. Uten dette ville
+  // tittelen blitt staaende fra forrige side man var innom.
+  seoStandardTittel(side) {
+    const n = {
+      booking: 'Book plass', kalender: 'Kalender', nyttig: 'Nyttig info',
+      kasse: 'Kasse', login: 'Logg inn', minside: 'Min side',
+      personvern: 'Personvern', vilkar: 'Vilkår', vipps: 'Betaling med Vipps',
+    }[side];
+    if (n) return n + ' | Lissom Keramikk & Håndverk';
+    if (side.indexOf('admin') === 0) return 'Admin | Lissom Keramikk';
+    return 'Lissom Keramikk & Håndverk';
+  }
+
+  // Setter tittel og metatagger paa den ekte siden. Uten dette ville feltene
+  // i SEO-skjermen vaert tekst ingen leser: Google ser <head>, ikke skjemaet.
+  seoTilHodet(side) {
+    const id = this.seoIdForSide(side);
+    const d = id ? this.seoData(id) : {};
+    const std = (id && this.seoSider().find(x => x.id === id)) || null;
+    const tittel = d.tittel
+      || (std ? std.navn + ' | Lissom Keramikk & Håndverk' : this.seoStandardTittel(side));
+    if (this._seoSatt === side + '|' + tittel) return;
+    this._seoSatt = side + '|' + tittel;
+
+    document.title = tittel;
+
+    const tagg = (velger, lag) => {
+      let el = document.head.querySelector(velger);
+      if (!el) { el = lag(); document.head.appendChild(el); }
+      return el;
+    };
+    // Tom verdi fjerner taggen. Uten det ville beskrivelsen fra forrige side
+    // blitt staaende paa en side som ikke har sin egen.
+    const meta = (navn, verdi, attributt) => {
+      const a = attributt || 'name';
+      const velger = 'meta[' + a + '="' + navn + '"]';
+      if (!verdi) {
+        const gammel = document.head.querySelector(velger);
+        if (gammel) gammel.remove();
+        return;
+      }
+      tagg(velger, () => {
+        const m = document.createElement('meta'); m.setAttribute(a, navn); return m;
+      }).setAttribute('content', verdi);
+    };
+
+    meta('description', d.meta);
+    // Kasse, Min side, innlogging og admin skal ikke i sokemotorene.
+    const privat = ['kasse', 'minside', 'login', 'vipps'].indexOf(side) !== -1 || side.indexOf('admin') === 0;
+    meta('robots', privat || (d.index || '').toLowerCase() === 'noindex' ? 'noindex,nofollow' : 'index,follow');
+    meta('og:title', d.ogTittel || tittel, 'property');
+    meta('og:description', d.ogBeskrivelse || d.meta, 'property');
+    meta('og:image', d.delingsbilde, 'property');
+    meta('og:url', d.canonical, 'property');
+    meta('og:type', 'website', 'property');
+
+    if (d.canonical) {
+      tagg('link[rel="canonical"]', () => {
+        const l = document.createElement('link'); l.rel = 'canonical'; return l;
+      }).setAttribute('href', d.canonical);
+    } else {
+      const gammel = document.head.querySelector('link[rel="canonical"]');
+      if (gammel) gammel.remove();
+    }
   }
 
   seoSlug(t) {
@@ -8166,6 +8332,9 @@ class Component extends DCLogic {
   renderVals() {
     const side = this.state.side;
 
+    // Tittel og metatagger folger siden man staar paa.
+    this.seoTilHodet(side);
+
     // Innstemplingsstatus hentes naar man er der den vises: Min side for
     // medlemmet selv, og admin-sidene for «i verkstedet naa».
     if ((side === 'minside' || side.indexOf('admin') === 0) && this.state.innlogget && !this.state.stempling) {
@@ -8174,6 +8343,12 @@ class Component extends DCLogic {
 
     if (side === 'admindropin' && !this.state.dropinOppsett) {
       this.hentDropin();
+    }
+    if ((side === 'adminoppskrifter' || side === 'adminnyttig') && !this.state.verksted) {
+      this.hentVerksted();
+    }
+    if (side === 'nyttig' && !this.state.offentligNyttig) {
+      this.hentNyttig();
     }
 
     if (side.indexOf('admin') === 0 && !this.state.migStatus) {
@@ -10492,7 +10667,15 @@ class Component extends DCLogic {
       adminArtRader: this.artikkelData().map((a, i) => ({
         tittel: a.tittel, dato: a.dato, ingress: a.ingress,
         rediger: () => this.setState({ artRed: true, artIndeks: i, artTittel: a.tittel, artDato: a.dato, artIngress: a.ingress, artBilde: a.bilde, artInnhold: a.innhold }),
-        slett: () => this.setState({ adminArtikler: this.artikkelData().filter((_, j) => j !== i), artRed: false }),
+        slett: () => {
+          if (this.erPublisert() && a.id) {
+            if (!window.confirm('Slette «' + a.tittel + '»?')) return;
+            this.verkstedKall({ type: 'artikkel', handling: 'slett', id: a.id })
+              .then(() => { this._verkstedHentes = false; this.setState({ artRed: false, verksted: null }); this.hentVerksted(); this._nyttigHentes = false; this.hentNyttig(); });
+            return;
+          }
+          this.setState({ adminArtikler: this.artikkelData().filter((_, j) => j !== i), artRed: false });
+        },
       })),
       aNyArtikkel: () => this.setState({ artRed: true, artIndeks: -1, artTittel: '', artDato: 'August 2026', artIngress: '', artBilde: 'assets_photos_dreiing-naerbilde.jpg', artInnhold: '' }),
       artRed: !!this.state.artRed,
@@ -10509,6 +10692,16 @@ class Component extends DCLogic {
       artLagre: () => {
         if (!(this.state.artTittel || '').trim()) return;
         const ny = { tittel: this.state.artTittel.trim(), dato: this.state.artDato || '', ingress: this.state.artIngress || '', bilde: this.state.artBilde || 'assets_photos_butikken.jpg', innhold: this.state.artInnhold || '' };
+        if (this.erPublisert()) {
+          const fra = this.artikkelData()[this.state.artIndeks ?? -1];
+          this.verkstedKall({
+            type: 'artikkel', handling: 'lagre',
+            id: fra ? fra.id : 0,
+            tittel: ny.tittel, dato: ny.dato, ingress: ny.ingress,
+            bilde: ny.bilde, innhold: ny.innhold, status: 'publisert',
+          }).then(ok => { if (ok) { this.setState({ artRed: false }); this._nyttigHentes = false; this.hentNyttig(); } });
+          return;
+        }
         this.setState(s => {
           const alle = this.artikkelData().slice();
           if ((s.artIndeks ?? -1) >= 0) alle[s.artIndeks] = ny; else alle.push(ny);
@@ -10518,14 +10711,31 @@ class Component extends DCLogic {
       artAvbryt: () => this.setState({ artRed: false }),
       adminLenkeRader: this.lenkeData().map((l, i) => ({
         navn: l.navn, url: l.url, om: l.om || '',
-        slett: () => this.setState({ adminLenker: this.lenkeData().filter((_, j) => j !== i) }),
+        slett: () => {
+          if (this.erPublisert() && l.id) {
+            if (!window.confirm('Slette lenka «' + l.navn + '»?')) return;
+            this.verkstedKall({ type: 'lenke', handling: 'slett', id: l.id })
+              .then(() => { this._verkstedHentes = false; this.setState({ verksted: null }); this.hentVerksted(); this._nyttigHentes = false; this.hentNyttig(); });
+            return;
+          }
+          this.setState({ adminLenker: this.lenkeData().filter((_, j) => j !== i) });
+        },
       })),
       nyLenkeNavn: this.state.nyLenkeNavn || '', settNyLenkeNavn: (e) => this.setState({ nyLenkeNavn: e.target.value }),
       nyLenkeUrl: this.state.nyLenkeUrl || '', settNyLenkeUrl: (e) => this.setState({ nyLenkeUrl: e.target.value }),
       nyLenkeOm: this.state.nyLenkeOm || '', settNyLenkeOm: (e) => this.setState({ nyLenkeOm: e.target.value }),
       lenkeLeggTil: () => {
-        if (!(this.state.nyLenkeNavn || '').trim() || !(this.state.nyLenkeUrl || '').trim()) return;
-        this.setState({ adminLenker: this.lenkeData().concat([{ navn: this.state.nyLenkeNavn.trim(), url: this.state.nyLenkeUrl.trim(), om: (this.state.nyLenkeOm || '').trim() }]), nyLenkeNavn: '', nyLenkeUrl: '', nyLenkeOm: '' });
+        const navn = (this.state.nyLenkeNavn || '').trim();
+        const url = (this.state.nyLenkeUrl || '').trim();
+        const om = (this.state.nyLenkeOm || '').trim();
+        if (!navn || !url) return;
+
+        if (this.erPublisert()) {
+          this.verkstedKall({ type: 'lenke', handling: 'lagre', navn: navn, url: url, om: om })
+            .then(ok => { if (ok) this.setState({ nyLenkeNavn: '', nyLenkeUrl: '', nyLenkeOm: '' }); });
+          return;
+        }
+        this.setState({ adminLenker: this.lenkeData().concat([{ navn: navn, url: url, om: om }]), nyLenkeNavn: '', nyLenkeUrl: '', nyLenkeOm: '' });
       },
       erKurs: side === 'kurs',
       erBooking: side === 'booking',
@@ -10949,6 +11159,19 @@ class Component extends DCLogic {
         if (!(this.state.redNavn || '').trim() || !linjer.length) return;
         const temp = this.state.redType === 'Engobe' ? 'Engobe · lærhard' : 'Blank glasur · 1240 °C';
         const ny = { navn: this.state.redNavn.trim(), type: temp, base: linjer, notat: this.state.redNotat || '' };
+        if (this.erPublisert()) {
+          const fra = this.oppskriftData()[this.state.redIndeks ?? -1];
+          this.verkstedKall({
+            type: 'oppskrift', handling: 'lagre',
+            id: fra ? fra.id : 0,
+            navn: ny.navn,
+            oppskriftType: this.state.redType === 'Engobe' ? 'Engobe' : 'Glasur',
+            temperatur: temp,
+            raavarer: linjer,
+            notat: ny.notat,
+          }).then(ok => { if (ok) this.setState({ redigerer: false }); });
+          return;
+        }
         this.setState(s => {
           const alle = this.oppskriftData().slice();
           const idx = s.redIndeks ?? -1;
@@ -11522,10 +11745,10 @@ class Component extends DCLogic {
       ...(() => {
         if (side !== 'adminseo') return {};
         const sider = this.seoSider();
-        const lagret = this.state.seoLagret || {};
         const valgtId = this.state.seoValgtId || 'dreiekurs';
         const valgtSide = sider.find(x => x.id === valgtId) || sider[0];
-        const dataFor = id => lagret[id] || {};
+        const dataFor = id => this.seoData(id);
+        const utkast = this.state.seoUtkast || {};
         const d = dataFor(valgtSide.id);
         const sc = this.seoScore(d, valgtSide);
         const scoreFarge = n => n >= 80 ? 'var(--sage-500)' : n >= 55 ? 'var(--lissom-yellow)' : 'var(--terracotta-500)';
@@ -11583,7 +11806,7 @@ class Component extends DCLogic {
               tellerStil: { fontSize: 11, color: forMye ? 'var(--terracotta-600)' : forLite ? 'var(--terracotta-600)' : 'var(--text-muted)' },
               sett: e => {
                 const v = e.target.value;
-                this.setState(st => ({ seoLagret: Object.assign({}, st.seoLagret, { [valgtSide.id]: Object.assign({}, (st.seoLagret || {})[valgtSide.id], { [f.key]: v }) }) }));
+                this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: Object.assign({}, this.seoData(valgtSide.id), { [f.key]: v }) }) }));
               },
             };
           }),
@@ -11606,24 +11829,63 @@ class Component extends DCLogic {
             }
             return JSON.stringify(ut, null, 2);
           })(),
+          // Forslaget fyller bare tomme felt. «Erstatt alt» bytter ut alt.
+          // Begge legger seg i utkastet — ingenting gaar ut paa nettsiden for
+          // eieren har trykket Lagre.
           seoForeslaa: () => {
             const forslag = this.seoForslag(valgtSide);
-            this.setState(st => ({ seoLagret: Object.assign({}, st.seoLagret, { [valgtSide.id]: Object.assign({}, forslag, (st.seoLagret || {})[valgtSide.id]) }) }));
+            this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: Object.assign({}, forslag, this.seoData(valgtSide.id)) }) }));
           },
           seoOverskriv: () => {
             const forslag = this.seoForslag(valgtSide);
-            this.setState(st => ({ seoLagret: Object.assign({}, st.seoLagret, { [valgtSide.id]: forslag }) }));
+            this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: this.seoForslag(valgtSide) }) }));
           },
-          landingsForslag: ['Keramikkurs i Tønsberg', 'Dreiekurs i Tønsberg', 'Keramikkurs i Vestfold', 'Kreativt kurs for voksne', 'Teambuilding med keramikk', 'Gavekort på keramikkurs', 'Håndlaget keramikk fra Tønsberg', 'Norsk keramikk kunst', 'Keramikkverksted med medlemskap', 'Kurs og events hos Lissom Keramikk'].map(navn => {
-            const laget = (this.state.seoLanding || {})[navn];
-            return {
+          seoUlagret: !!utkast[valgtSide.id],
+          seoLagreTekst: utkast[valgtSide.id] ? 'Lagre endringene' : 'Lagret',
+          seoLagre: () => {
+            if (!utkast[valgtSide.id]) return;
+            const rent = {};
+            this.seoFeltDef().forEach(f => {
+              const v = (d[f.key] || '').trim();
+              if (v) rent[f.key] = v;
+            });
+            this.lagreInnhold(
+              { ['SEO/' + valgtSide.id]: JSON.stringify(rent) },
+              'SEO for ' + valgtSide.navn + ' er lagret'
+            );
+            this._seoSatt = null;
+            this.setState(st => {
+              const u = Object.assign({}, st.seoUtkast);
+              delete u[valgtSide.id];
+              return { seoUtkast: u };
+            });
+          },
+          seoForkast: () => {
+            this.setState(st => {
+              const u = Object.assign({}, st.seoUtkast);
+              delete u[valgtSide.id];
+              return { seoUtkast: u };
+            });
+          },
+          // Huskeliste over lokale soek det er verdt aa lage en side for.
+          // Avkryssingen lagres som resten av tekstene, saa lista ikke
+          // nullstiller seg hver gang skjermen aapnes.
+          landingsForslag: (() => {
+            const merket = (() => {
+              try { return JSON.parse((this.state.innholdLagret || {})['SEO/landing'] || '{}') || {}; }
+              catch (e) { return {}; }
+            })();
+            return ['Keramikkurs i Tønsberg', 'Dreiekurs i Tønsberg', 'Keramikkurs i Vestfold', 'Kreativt kurs for voksne', 'Teambuilding med keramikk', 'Gavekort på keramikkurs', 'Håndlaget keramikk fra Tønsberg', 'Norsk keramikk kunst', 'Keramikkverksted med medlemskap', 'Kurs og events hos Lissom Keramikk'].map(navn => ({
               navn, fokus: navn.toLowerCase(),
-              status: laget ? 'Utkast opprettet' : 'Ikke opprettet',
-              tone: laget ? 'success' : 'neutral',
-              opprett: () => this.setState(st => ({ seoLanding: Object.assign({}, st.seoLanding, { [navn]: true }) })),
-              kanOpprette: !laget,
-            };
-          }),
+              status: merket[navn] ? 'Planlagt' : 'Ikke tatt',
+              tone: merket[navn] ? 'success' : 'neutral',
+              kanOpprette: !merket[navn],
+              opprett: () => this.lagreInnhold(
+                { 'SEO/landing': JSON.stringify(Object.assign({}, merket, { [navn]: true })) },
+                navn + ' er markert som planlagt'
+              ),
+            }));
+          })(),
         };
       })(),
       goTilbake: this.go(this.state.fra === 'minside' ? 'minside' : this.state.fra === 'medlemskap' ? 'medlemskap' : 'kurs'),

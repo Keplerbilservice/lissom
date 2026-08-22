@@ -244,8 +244,13 @@ er levert til koen paa serveren.
 Sett heller opp SMTP. Da vet vi om det gikk galt, og hvorfor. Legg til i
 `~/lissom-secrets/secrets.php`:
 
+Utgaaende server staar under **kontodetaljer** for e-postkontoen i
+kontrollpanelet. Paa cPanel-webhotell heter den som regel `mail.dittdomene.no`
+— ikke leverandorens egen smtp-adresse. Bruker du feil server, svarer den
+`535 Incorrect authentication data` selv om passordet er riktig.
+
 ```php
-'smtp_vert'      => 'smtp.domeneshop.no',
+'smtp_vert'      => 'mail.lissom.no',
 'smtp_port'      => 587,
 'smtp_bruker'    => 'post@lissom.no',
 'smtp_passord'   => 'passordet til e-postkontoen',

@@ -269,7 +269,9 @@ final class Utsending
         if ($sikker === 'starttls') {
             if (!$ok($si('STARTTLS'), '220')
                 || !stream_socket_enable_crypto($sokk, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                self::$sisteFeil = 'STARTTLS feilet. Prov smtp_sikkerhet => \'ssl\' og smtp_port => 465.';
+                self::$sisteFeil = 'STARTTLS feilet mot ' . $vert . '. Prov smtp_sikkerhet => \'ssl\' og'
+                    . ' smtp_port => 465. Holder det fram, kan sertifikatet gjelde et annet navn enn '
+                    . $vert . '.';
                 logg('SMTP: STARTTLS feilet', ['vert' => $vert]);
                 fclose($sokk);
                 return false;
@@ -294,8 +296,12 @@ final class Utsending
             if (!$ok($svarAuth, '235')) {
                 // Serverens eget svar sier mer enn vi kan gjette. «535» betyr
                 // som regel feil passord, «534» at kontoen krever noe mer.
+                // 535 betyr som regel feil passord — men like ofte at man
+                // staar mot feil server. Hos mange webhotell er utgaaende
+                // server mail.<domenet>, ikke leverandorens egen smtp-adresse.
                 self::$sisteFeil = 'Innloggingen ble avvist av ' . $vert . ': ' . trim($svarAuth)
-                    . ' — sjekk smtp_bruker og smtp_passord.';
+                    . ' — sjekk smtp_bruker og smtp_passord, og at smtp_vert er riktig server'
+                    . ' (staar under kontodetaljer for e-postkontoen, ofte mail.dittdomene.no).';
                 logg('SMTP: innlogging avvist', ['vert' => $vert, 'bruker' => $bruker, 'svar' => trim($svarAuth)]);
                 fclose($sokk);
                 return false;

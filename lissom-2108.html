@@ -1255,7 +1255,7 @@ window.__resources = {
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Gavekort</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl); color: var(--lissom-brown);">Gavekort på keramikkurs</h1>
-          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Gjelder kurs, events, medlemskap og verkstedtid. Sendes på e-post med en gang, med en personlig hilsen fra deg.</p>
+          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Kan brukes på alle våre tjenester og produkter. Gavekortet sendes på e-post, eller hentes i verkstedet, med en personlig hilsen fra deg.</p>
         </div>
       </section>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
@@ -1283,11 +1283,13 @@ window.__resources = {
           </div>
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
             <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg beløp</div>
-            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6);">
-              <sc-for list="{{ gvBelop }}" as="b" hint-placeholder-count="5">
-                <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
-              </sc-for>
+            <label style="display: block; margin-bottom: var(--space-2); font-size: var(--text-sm); color: var(--text-body);">Beløp i kroner</label>
+            <div style="position: relative; margin-bottom: var(--space-2);">
+              <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: var(--text-lg); font-weight: 700; color: var(--text-muted); pointer-events: none;">kr.</span>
+              <input type="number" inputmode="numeric" min="100" max="20000" step="10" placeholder="1490" value="{{ gvBelopFelt }}" onChange="{{ settGvBelop }}" aria-label="Beløp i kroner"
+                style="width: 100%; box-sizing: border-box; padding: 14px 16px 14px 52px; font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); background: var(--clay-50); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg);">
             </div>
+            <p style="margin: 0 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">Fra 100 til 20 000 kroner — du velger selv.</p>
             <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-6);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens navn" placeholder="Fornavn Etternavn" value="{{ gvNavn }}" on-change="{{ settGvNavn }}" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens e-post" icon="mail" placeholder="navn@epost.no" value="{{ gvEpost }}" on-change="{{ settGvEpost }}" hint-size="100%,66px"></x-import>
@@ -4972,7 +4974,7 @@ const SIDEINNHOLD = {
       { l: 'Råbrann', v: 'kr. 150,-' },
       { l: 'Glasurbrann', v: 'kr. 220,-' },
       { l: 'Drop-in-time', v: 'kr. 490,-' },
-      { l: 'Gavekort', v: 'kr. 500,-' } ] },
+      { l: 'Gavekort', v: 'Valgfritt beløp' } ] },
     { navn: 'Timer brukt opp', type: 'Varsel', synlig: 'Publisert', felter: [
       { l: 'Tekst', v: 'Du kan ikke stemple inn før 1. september. Forny abonnementet, eller kjøp en drop-in-time.', lang: true } ] },
   ],
@@ -5775,6 +5777,13 @@ class Component extends DCLogic {
   kjopGavekort() {
     const belop = this.state.gvValgt || 1490;
     const epost = (this.state.gvEpost || '').trim();
+
+    // Serveren avviser belop utenfor 100–20 000 uansett. Vi sier fra her
+    // ogsaa, saa man ikke sendes til Vipps for aa faa nei.
+    if (!(belop >= 100 && belop <= 20000)) {
+      this.setState({ kvittering: 'Velg et beløp', kvitteringDetalj: 'Gavekortet må være mellom 100 og 20 000 kroner.' });
+      return;
+    }
 
     if (epost && epost.indexOf('@') < 1) {
       this.setState({ kvittering: 'Sjekk e-postadressen', kvitteringDetalj: 'Adressen til mottakeren ser ikke riktig ut.' });
@@ -7174,7 +7183,7 @@ class Component extends DCLogic {
       })),
       paafyll: [
         { navn: 'Drop-in-time', detalj: 'Én økt på 2 timer', pris: 'kr. 490,-' },
-        { navn: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid', pris: 'kr. 500,-' },
+        { navn: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter', pris: 'Valgfritt beløp' },
       ].map(v => Object.assign(v, {
         kjop: () => this.leggTil(v.navn),
       })),
@@ -8272,7 +8281,7 @@ class Component extends DCLogic {
           { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller' },
           { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: 'kr. 340,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
           { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
-          { title: 'Gavekort', detalj: 'Gjelder kurs, events, medlemskap og verkstedtid.', pris: 'Fra kr. 500,-', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
+          { title: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
         ].concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
@@ -9032,7 +9041,7 @@ class Component extends DCLogic {
         { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: 5, status: 'På lager', tone: 'success' },
         { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: 0, status: 'Utsolgt', tone: 'danger' },
         { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: 2, status: 'Få igjen', tone: 'warning' },
-        { navn: 'Gavekort', pris: 'Fra kr. 500,-', antall: null, status: 'Digitalt', tone: 'neutral' },
+        { navn: 'Gavekort', pris: 'Valgfritt beløp', antall: null, status: 'Digitalt', tone: 'neutral' },
       ].map(v => Object.assign(v, { antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk' })), v => [v.navn, 'Produkt i butikken', [{ navn: 'Navn', verdi: v.navn }, { navn: 'Pris', verdi: v.pris }, { navn: 'Mva', verdi: 'Uten mva' }, { navn: 'På lager', verdi: v.antall === null ? 'Ubegrenset' : String(v.antall) }, { navn: 'Status', verdi: v.status }], 'Lagre produkt', null, 'produkt']),
       ordrer: this.klikkbar([
         { nr: '#1042', navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', status: 'Sendt på e-post', tone: 'success' },
@@ -9367,27 +9376,24 @@ class Component extends DCLogic {
       goGavekort: this.go('gavekortside'),
       goKontakt: this.go('kontakt'),
       gvPunkter: [
-        'Gjelder kurs, Paint on Pots, Date Night, Sip & Clay, medlemskap og verkstedtid.',
-        'Sendes på e-post med en gang, med hilsenen din på kortet.',
+        'Kan brukes på alle våre tjenester og produkter.',
+        'Sendes på e-post, eller hentes i verkstedet.',
         'Mottakeren velger selv kurs og dato, og booker med koden på nettsiden.',
         'Gyldig i tre år fra kjøpsdato.',
       ],
       gvFaq: [
-        { sp: 'Kan gavekortet brukes på alle kurs?', sv: 'Ja — kurs, events, medlemskap og verkstedtid. Er kurset dyrere enn gavekortet, betaler mottakeren mellomlegget med Vipps.' },
+        { sp: 'Hva kan gavekortet brukes på?', sv: 'Alle våre tjenester og produkter — kurs, events, medlemskap, verkstedtid og varer i butikken. Er det du velger dyrere enn gavekortet, betaler du mellomlegget med Vipps.' },
         { sp: 'Hva om beløpet ikke brukes opp?', sv: 'Resten blir stående på koden og kan brukes senere, helt til gavekortet utløper.' },
-        { sp: 'Kan jeg få gavekortet fysisk?', sv: 'Gavekortet kommer på e-post og kan skrives ut. Vil du ha et trykket kort, kom innom butikken på Teie.' },
+        { sp: 'Kan jeg få gavekortet fysisk?', sv: 'Gavekortet sendes på e-post og kan skrives ut. Vil du heller hente det i verkstedet, sier du fra — vi holder til i Nordre Løkkevei 15 på Teie.' },
       ],
-      gvBelop: [500, 1000, 1490, 2800].map(b => ({
-        navn: 'kr. ' + b + ',-',
-        velg: () => this.setState({ gvValgt: b }),
-        stil: {
-          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '10px 18px',
-          font: 'var(--type-body-sm)', fontWeight: 700,
-          border: '2px solid var(--lissom-brown)',
-          background: (this.state.gvValgt || 1490) === b ? 'var(--lissom-brown)' : 'transparent',
-          color: (this.state.gvValgt || 1490) === b ? 'var(--clay-50)' : 'var(--lissom-brown)',
-        },
-      })),
+      // Belopet er fritt. Feltet holdes som tekst mens man skriver, slik at
+      // det gaar an aa slette alt og begynne paa nytt — et tall her ville
+      // hoppet tilbake til 0 ved forste tastetrykk.
+      gvBelopFelt: this.state.gvBelopFelt === undefined ? '1490' : this.state.gvBelopFelt,
+      settGvBelop: e => {
+        const rent = (e.target.value || '').replace(/[^0-9]/g, '').slice(0, 5);
+        this.setState({ gvBelopFelt: rent, gvValgt: rent === '' ? null : parseInt(rent, 10) });
+      },
       gvValgt: 'kr. ' + (this.state.gvValgt || 1490) + ',-',
       gvNavn: this.state.gvNavn || '',
       settGvNavn: e => this.setState({ gvNavn: e.target.value }),
@@ -9721,7 +9727,7 @@ class Component extends DCLogic {
         { title: 'Kopp, sandglasur', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
         { title: 'Bolle, stor', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
         { title: 'Fat, 28 cm', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
-        { title: 'Gavekort', pris: 'Fra kr. 500,-', image: 'uploads_shutterstock_2829108657.jpg' },
+        { title: 'Gavekort', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg' },
       ]),
     };
   }

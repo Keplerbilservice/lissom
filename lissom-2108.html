@@ -5948,6 +5948,30 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // Merk en foresporsel som besvart. Svaret sendes fra e-postklienten som
+  // vanlig — her holder vi bare styr paa hva som er tatt hand om.
+  merkForesporsel(id, status) {
+    if (!id) return;
+    fetch('/api/admin/foresporsler.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, status: status }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) { this.setState({ kvittering: 'Fikk ikke oppdatert', kvitteringDetalj: d.feil || 'Prov igjen om litt.' }); return; }
+        this.setState({
+          adminForesporsler: (this.state.adminForesporsler || []).map(f => f.id === id
+            ? Object.assign({}, f, { status: status === 'besvart' ? 'Besvart' : 'Ubesvart', tone: status === 'besvart' ? 'neutral' : 'warning' })
+            : f),
+          kvittering: status === 'besvart' ? 'Merket som besvart' : 'Merket som ubesvart',
+          kvitteringDetalj: 'Lista er oppdatert.',
+        });
+      })
+      .catch(() => this.setState({ kvittering: 'Fikk ikke kontakt med serveren', kvitteringDetalj: 'Prov igjen om litt.' }));
+  }
+
   // Foresporsel fra nettsiden — «Send oss en foresporsel».
   sendForesporsel() {
     const s = this.state;
@@ -6731,7 +6755,7 @@ class Component extends DCLogic {
 
   adminMeny(aktiv) {
     const ruter = { 'Oversikt': 'adminoversikt', 'Innhold': 'admininnhold', 'Kurs og events': 'admin', 'Påmeldte': 'adminpameldte', 'Medlemmer': 'adminmedlem', 'Drop-in': 'admindropin', 'Butikk': 'adminbutikk', 'Økonomi': 'adminokonomi', 'Mobilvisning': 'adminmobilvis', 'Oppskrifter': 'adminoppskrifter', 'Nyttig info': 'adminnyttig', 'SEO': 'adminseo', 'Beskjeder': 'adminbeskjeder', 'Brukere': 'adminbrukere' };
-    return ['Oversikt', 'Innhold', 'Kurs og events', 'Påmeldte', 'Medlemmer', 'Drop-in', 'Butikk', 'Økonomi', 'Brukere', 'Mobilvisning'].map(navn => ({
+    return ['Oversikt', 'Innhold', 'Kurs og events', 'Påmeldte', 'Medlemmer', 'Beskjeder', 'Drop-in', 'Butikk', 'Økonomi', 'Brukere', 'Mobilvisning'].map(navn => ({
       navn,
       velg: ruter[navn] ? this.go(ruter[navn]) : () => {},
       stil: {
@@ -7975,23 +7999,24 @@ class Component extends DCLogic {
         }));
       },
       antallPersoner: ['2–5 personer', '6–10 personer', '11–20 personer', 'Over 20 personer'],
-      foresporsler: ((this.state.nyVenteliste || []).map(v => ({
-        navn: v.navn, hva: 'Ny på venteliste: ' + v.kurs, tid: v.tid, status: 'Venteliste', tone: 'info',
-        tekst: v.navn + ' satte seg på ventelisten (' + v.plass + '). Kontakt: ' + v.epost + '.',
-      })).reverse()).concat(this.state.nyeForesporsler || []).concat([
-        { navn: 'Kine Solheim', hva: 'Utdrikningslag, 12 personer', tid: '2 timer siden', status: 'Ubesvart', tone: 'warning', tekst: 'Hei! Vi er 12 stykker som ønsker en kveld med dreiing i oktober, helst en lørdag. Er det mulig?', epost: 'kine@epost.no', tlf: '+47 986 33 471' },
-        { navn: 'Nøtterøy ungdomsskole', hva: 'Skoleklasse, 24 elever', tid: 'I går', status: 'Ubesvart', tone: 'warning', tekst: 'Vi ønsker et opplegg for en 9. klasse i november. Har dere kapasitet, og hva koster det?', epost: 'post@notteroyus.no', tlf: '+47 33 40 22 10' },
-        { navn: 'Bjørn Ask', hva: 'Kurs på dagtid', tid: '20. aug', status: 'Besvart', tone: 'neutral', tekst: 'Har dere planer om dreiekurs på dagtid? Jeg jobber kveld og rekker aldri de vanlige.', epost: 'bjorn@epost.no', tlf: '+47 913 76 220' },
-      ]).map(f => Object.assign(f, {
+      // Ekte foresporsler fra nettsiden. Sto tidligere med tre oppdiktede
+      // navn, saa lista saa travel ut selv om ingen hadde tatt kontakt.
+      foresporsler: (this.state.adminForesporsler || (this.erPublisert() ? [] : [
+        { navn: 'Kine Solheim', hva: 'Utdrikningslag, 12 personer', tid: 'i dag', status: 'Ubesvart', tone: 'warning', tekst: 'Vi er 12 stykker som onsker en kveld med dreiing i oktober.', epost: 'kine@epost.no', tlf: '' },
+      ])).map(f => Object.assign({}, f, {
+        erUbesvart: f.status === 'Ubesvart',
         velg: this.apne(f.navn, f.hva + ' · ' + f.tid, [
           { navn: 'FORESPØRSEL', verdi: '' },
           { navn: f.tekst, verdi: ' ' },
           { navn: 'KONTAKT', verdi: '' },
-          { navn: 'E-post', verdi: f.epost },
-          { navn: 'Telefon', verdi: f.tlf },
+          { navn: 'E-post', verdi: f.epost || '—' },
+          { navn: 'Telefon', verdi: f.tlf || '—' },
           { navn: 'Status', verdi: f.status },
-        ], 'Svar på forespørselen'),
+        ], f.status === 'Ubesvart' ? 'Merk som besvart' : 'Merk som ubesvart', null, false,
+          () => this.merkForesporsel(f.id, f.status === 'Ubesvart' ? 'besvart' : 'ubesvart')),
       })),
+      harForesporsler: (this.state.adminForesporsler || []).length > 0,
+      ingenForesporsler: this.erPublisert() && (this.state.adminForesporsler || []).length === 0,
       venteliste: ((this.state.nyVenteliste || []).slice().reverse()).concat([
         { navn: 'Marte Grøn', kurs: 'Date Night, 28. aug', plass: 'Nr. 1', tid: 'Meldte seg 21. aug', epost: 'marte@epost.no' },
         { navn: 'Jonas Lie', kurs: 'Date Night, 28. aug', plass: 'Nr. 2', tid: 'Meldte seg 22. aug', epost: 'jonas@epost.no' },

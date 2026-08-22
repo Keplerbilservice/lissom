@@ -19,10 +19,26 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
-$nokkel = (string) Config::hent('cron_nokkel', '');
+// To veier inn.
+//
+// Noekkelen fra secrets.php virker alltid, ogsaa naar innlogging er det som
+// er i stykker. Men aa lete den fram i ei fil paa serveren hver gang er
+// tungvint, saa en innlogget admin slipper ogsaa til — med ett forbehold:
+//
+// Dette endepunktet endrer databasen, og det er et GET-kall. Uten en sperre
+// kunne et bilde paa et fremmed nettsted utlost det mens du var innlogget.
+// Sec-Fetch-Site forteller hvor kallet kom fra: «none» naar du skriver
+// adressen selv eller bruker et bokmerke, «same-origin» fra en lenke paa vaar
+// egen side, og «cross-site» naar noe paa et annet nettsted ber om den.
+// Bare de to forste slipper gjennom. Mangler headeren (svaert gammel
+// nettleser), kreves noekkelen.
+$nokkel  = (string) Config::hent('cron_nokkel', '');
 $oppgitt = Foresporsel::tekst('nokkel');
+$medNokkel = $nokkel !== '' && $oppgitt !== '' && hash_equals($nokkel, $oppgitt);
 
-if ($nokkel === '' || $oppgitt === '' || !hash_equals($nokkel, $oppgitt)) {
+$fraEgenHand = in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '', ['none', 'same-origin'], true);
+
+if (!$medNokkel && !(Sesjon::erAdmin() && $fraEgenHand)) {
     Svar::feil('Fant ikke siden.', 404);
 }
 

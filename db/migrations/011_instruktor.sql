@@ -7,9 +7,10 @@
 -- Signaturen er et filnavn, ikke en sti. Endepunktet slipper bare gjennom
 -- rene filnavn, saa ingen kan peke den ut av mappa.
 
+-- IF NOT EXISTS er MariaDB-syntaks, og gjor fila trygg aa kjore om igjen.
 ALTER TABLE courses
-  ADD COLUMN instruktor VARCHAR(191) NULL COMMENT 'Navnet paa kursbeviset. Tomt = Monica.' AFTER beskrivelse,
-  ADD COLUMN instruktor_signatur VARCHAR(191) NULL COMMENT 'Filnavn, f.eks. signatur-monica.png' AFTER instruktor;
+  ADD COLUMN IF NOT EXISTS instruktor VARCHAR(191) NULL COMMENT 'Navnet paa kursbeviset. Tomt = Monica.' AFTER beskrivelse,
+  ADD COLUMN IF NOT EXISTS instruktor_signatur VARCHAR(191) NULL COMMENT 'Filnavn, f.eks. signatur-monica.png' AFTER instruktor;
 
 -- «Workshop» ble lagt til som egen kategori paa nettsiden, men kolonnen tillot
 -- bare kurs, event og dropin. Uten dette ville en workshop blitt lagret som

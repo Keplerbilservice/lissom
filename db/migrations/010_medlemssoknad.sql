@@ -5,7 +5,7 @@
 -- ikke medlemmer. For aa bli medlem sender man en soknad her, og verkstedet
 -- godkjenner den. Forst da settes status til «prove» eller «aktiv».
 
-CREATE TABLE membership_applications (
+CREATE TABLE IF NOT EXISTS membership_applications (
   id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   member_id    BIGINT UNSIGNED NOT NULL,
   onsket_type  VARCHAR(64) NULL COMMENT 'Prov Lissom, 30 timer, Arsmedlemskap, Fri tilgang',

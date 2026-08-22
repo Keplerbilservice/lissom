@@ -25,6 +25,14 @@
     border-radius: 14px; padding: 28px; margin: 16px 0;
   }
   .merk { font-size: 14px; color: #7a5c50; }
+  button#kopier {
+    appearance: none; cursor: pointer;
+    font-family: inherit; font-size: 16px; font-weight: 700;
+    padding: 12px 22px; border-radius: 999px;
+    border: 2px solid var(--brun); background: var(--brun); color: var(--papir);
+  }
+  button#kopier:active { transform: translateY(1px); }
+  #kopistatus { margin-left: 12px; }
   textarea {
     width: 100%; box-sizing: border-box; height: 260px;
     font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
@@ -37,11 +45,13 @@
 <div class="side">
 
   <h1>E-postsignatur</h1>
-  <p>Slik gjør du: marker hele signaturen i den stiplede boksen, kopier, og lim
-  den inn i signaturfeltet i e-postprogrammet. Formatering og logo følger med.</p>
+  <p>Trykk på knappen under, og lim inn i signaturfeltet i e-postprogrammet.
+  Formatering og logo følger med.</p>
 
   <h2>Signaturen</h2>
-  <div class="boks">
+  <p><button type="button" id="kopier">Kopier signaturen</button>
+     <span id="kopistatus" class="merk"></span></p>
+  <div class="boks" id="signatur">
 
 <!-- ▼▼▼ KOPIER FRA HER ▼▼▼ -->
 <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Georgia,'Times New Roman',serif;color:#4D1D12;">
@@ -82,8 +92,12 @@
 
   <h2>Slik legger du den inn</h2>
   <ol>
-    <li><strong>Webmail hos Domene.no:</strong> Innstillinger → Identiteter →
-      velg kontoen → Signatur. Slå på «HTML-signatur», lim inn, lagre.</li>
+    <li><strong>Webmail (cPanel):</strong> signaturen ligger ikke på oversikten
+      med «Autoresponders» og «Spam Filters» — den ligger inne i selve
+      e-postprogrammet. Åpne innboksen (Roundcube), og gå så til
+      <em>Settings → Identities</em> → klikk adressen din →
+      <em>Signature</em>. Kryss av for <em>HTML signature</em> før du limer inn,
+      ellers blir logo og formatering borte.</li>
     <li><strong>Outlook:</strong> Fil → Alternativer → E-post → Signaturer.
       Lim inn i redigeringsfeltet.</li>
     <li><strong>Apple Mail:</strong> Mail → Innstillinger → Signaturer.
@@ -140,20 +154,66 @@
   // siden — og da var logoen borte bade her og i signaturen folk limte inn.
   (function () {
     var her = location.protocol + '//' + location.host;
-    if (her === 'https://lissom.no') return;
-
     var boks = document.querySelector('.boks');
-    boks.innerHTML = boks.innerHTML.split('https://lissom.no').join(her);
 
-    var felt = document.querySelector('textarea');
-    felt.value = felt.value.split('https://lissom.no').join(her);
+    if (her !== 'https://lissom.no') {
+      boks.innerHTML = boks.innerHTML.split('https://lissom.no').join(her);
+      var felt = document.querySelector('textarea');
+      felt.value = felt.value.split('https://lissom.no').join(her);
+    }
 
-    var merk = document.createElement('p');
-    merk.className = 'merk';
-    merk.style.marginTop = '10px';
-    merk.textContent = 'Adressene i signaturen peker på ' + her
-      + ', som er der du åpnet denne siden fra.';
-    boks.parentNode.insertBefore(merk, boks.nextSibling);
+    // Aa markere en tabell med musa er vanskelig aa faa til presist, og noen
+    // nettlesere lar bildet ligge igjen. Knappen legger bade formatert og ren
+    // tekst paa utklippstavla i ett trykk.
+    var knapp = document.getElementById('kopier');
+    var status = document.getElementById('kopistatus');
+    var kilde = document.querySelector('#signatur table');
+
+    function siFra(tekst) {
+      status.textContent = tekst;
+      setTimeout(function () { status.textContent = ''; }, 4000);
+    }
+
+    knapp.addEventListener('click', function () {
+      var html = kilde.outerHTML;
+      var ren = kilde.innerText.replace(/\n{3,}/g, '\n\n').trim();
+
+      if (navigator.clipboard && window.ClipboardItem) {
+        navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([ren], { type: 'text/plain' }),
+        })]).then(function () {
+          siFra('Kopiert. Lim inn i signaturfeltet.');
+        }).catch(function () { gammelMaate(); });
+        return;
+      }
+      gammelMaate();
+    });
+
+    // Reserve for eldre nettlesere, og for adresser uten https.
+    function gammelMaate() {
+      var utvalg = window.getSelection();
+      var omraade = document.createRange();
+      omraade.selectNode(kilde);
+      utvalg.removeAllRanges();
+      utvalg.addRange(omraade);
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      if (ok) {
+        siFra('Kopiert. Lim inn i signaturfeltet.');
+      } else {
+        siFra('Signaturen er markert — trykk Ctrl+C (eller Cmd+C) for å kopiere.');
+      }
+    }
+
+    if (her !== 'https://lissom.no') {
+      var merk = document.createElement('p');
+      merk.className = 'merk';
+      merk.style.marginTop = '10px';
+      merk.textContent = 'Adressene i signaturen peker på ' + her
+        + ', som er der du åpnet denne siden fra.';
+      boks.parentNode.insertBefore(merk, boks.nextSibling);
+    }
   })();
 </script>
 </body>

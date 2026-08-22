@@ -442,6 +442,22 @@ DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $avtaleId]);
 DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $avtaleMedlem]);
 
 
+// ── Timene et medlemskap gir ───────────────────────────────────────────────
+//
+// «timer_per_mnd» paa medlemsraden ble aldri fylt ut — bare lest. Alle sto
+// med NULL, som betyr fri tilgang, og Min side viste ingen timeoversikt til
+// noen. Planen bestemmer naa, og medlemsraden overstyrer.
+
+echo "\n== Timer per maaned ==\n";
+
+sjekk('30 timer gir 30', Medlemskap::timerFor(['medlemskap_type' => '30 timer', 'timer_per_mnd' => null]) === 30);
+sjekk('aarsmedlemskap gir 35', Medlemskap::timerFor(['medlemskap_type' => 'Årsmedlemskap', 'timer_per_mnd' => null]) === 35);
+sjekk('proveperiode gir 8', Medlemskap::timerFor(['medlemskap_type' => 'Prøv Lissom', 'timer_per_mnd' => null]) === 8);
+sjekk('fri tilgang har ingen grense', Medlemskap::timerFor(['medlemskap_type' => 'Fri tilgang', 'timer_per_mnd' => null]) === null);
+sjekk('eget timetall gaar foran planen', Medlemskap::timerFor(['medlemskap_type' => '30 timer', 'timer_per_mnd' => 12]) === 12);
+sjekk('ukjent plan gir ingen grense', Medlemskap::timerFor(['medlemskap_type' => 'Finnes ikke', 'timer_per_mnd' => null]) === null);
+sjekk('uten medlemskap ingen grense', Medlemskap::timerFor(['medlemskap_type' => '', 'timer_per_mnd' => null]) === null);
+
 // ── Samtidige bookinger og betaling som ikke kom i gang ────────────────────
 //
 // To ting som bare viser seg naar noe gaar galt paa akkurat riktig tidspunkt,

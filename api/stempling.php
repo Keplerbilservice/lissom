@@ -51,7 +51,7 @@ $medlem = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]) ?? $medlem
 
 $apen = Stempling::apenOkt($id);
 $brukt = Stempling::minutterDenneManeden($id);
-$perMnd = $medlem['timer_per_mnd'] === null ? null : (int) $medlem['timer_per_mnd'];
+$perMnd = Medlemskap::timerFor($medlem);
 $inne = Stempling::inneNa();
 
 $siden = null;
@@ -71,7 +71,8 @@ Svar::json([
     'timer' => [
         'brukt'    => Stempling::timer($brukt),
         'bruktMin' => $brukt,
-        // NULL i basen betyr fri tilgang. Da er det ingen grense aa vise.
+        // NULL betyr fri tilgang — hverken planen eller medlemsraden setter
+        // en grense. Da er det ingenting aa telle ned mot.
         'perMnd'   => $perMnd,
         'igjen'    => $perMnd === null ? null : max(0, round(($perMnd * 60 - $brukt) / 60 * 10) / 10),
         'andel'    => $perMnd === null || $perMnd === 0 ? 0 : min(100, (int) round($brukt / ($perMnd * 60) * 100)),

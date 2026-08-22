@@ -32,6 +32,31 @@ final class Medlemskap
         return DB::alle('SELECT * FROM membership_plans WHERE aktiv = 1 ORDER BY sortering');
     }
 
+    /**
+     * Hvor mange timer i maaneden dette medlemmet har.
+     *
+     * «timer_per_mnd» paa medlemmet ble aldri fylt ut noe sted — den ble bare
+     * lest. Alle sto derfor med NULL, som betyr fri tilgang, og Min side viste
+     * ingen timeoversikt til noen. Poenget med et 30-timers medlemskap er
+     * nettopp de tretti timene.
+     *
+     * Planen bestemmer, medlemsraden overstyrer: setter verkstedet et eget
+     * timetall paa én person, gjelder det foran planen. NULL fra planen (Fri
+     * tilgang) betyr fortsatt ingen grense.
+     */
+    public static function timerFor(array $medlem): ?int
+    {
+        if ($medlem['timer_per_mnd'] !== null) {
+            return (int) $medlem['timer_per_mnd'];
+        }
+        $type = trim((string) ($medlem['medlemskap_type'] ?? ''));
+        if ($type === '') {
+            return null;
+        }
+        $plan = self::plan($type);
+        return $plan === null || $plan['timer'] === null ? null : (int) $plan['timer'];
+    }
+
     /** Avtalen et medlem har naa, eller null. */
     public static function avtale(int $medlemId): ?array
     {

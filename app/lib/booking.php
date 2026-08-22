@@ -366,7 +366,7 @@ final class Booking
             . "Koden er: {$kode}\n"
             . "Gyldig til {$gyldig}.\n\n"
             . "Gavekortet kan brukes på kurs, events, medlemskap og verkstedtid. "
-            . "Oppgi koden naar du bestiller, eller ta den med i verkstedet.\n\n"
+            . "Oppgi koden når du bestiller, eller ta den med i verkstedet.\n\n"
             . 'Hilsen Lissom Keramikk',
             'gift_card',
             $kortId
@@ -378,7 +378,7 @@ final class Booking
                 (string) $k['kjoper_epost'],
                 'Gavekortet er sendt',
                 "Hei " . $k['kjoper_navn'] . "!\n\n"
-                . "Gavekortet paa {$belop} er sendt til {$k['mottaker_epost']}.\n"
+                . "Gavekortet på {$belop} er sendt til {$k['mottaker_epost']}.\n"
                 . "Koden er {$kode}, gyldig til {$gyldig}.\n\n"
                 . 'Hilsen Lissom Keramikk',
                 'gift_card',
@@ -414,8 +414,8 @@ final class Booking
             . implode("\n", $liste) . "\n\n"
             . 'Til sammen: ' . self::kroner((int) $o['sum_ore']) . "\n\n"
             . "Varene er klare til henting i verkstedet innen to virkedager. "
-            . "Vi gir beskjed naar de staar klare.\n\n"
-            . "Nordre Lokkevei 15, 3120 Notteroy\n\n"
+            . "Vi gir beskjed når de står klare.\n\n"
+            . "Nordre Løkkevei 15, 3120 Nøtterøy\n\n"
             . 'Hilsen Lissom Keramikk',
             'order',
             $ordreId

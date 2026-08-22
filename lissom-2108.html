@@ -5625,52 +5625,99 @@ class Component extends DCLogic {
 
   // Adressekartet: hvilken sti hoerer til hvilken skjerm.
   //
-  // Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alt
-  // ligget paa samme adresse — ingen kunne dele en lenke til et kurs, og
-  // sokemotorer ville sett én eneste side.
+  // Flere sider deler samme skjerm og skilles bare av et filter — Events og
+  // Drop-in er kurssiden med ulikt utvalg. Kartet maa derfor bere filteret
+  // ogsaa, ellers havner alt paa /kurs.
+  //
+  // Rekkefolgen betyr noe: forste treff vinner naar adressen skal skrives.
   static get STIER() {
-    return {
-      '/': 'forside',
-      '/kurs': 'kurs',
-      '/medlemskap': 'medlemskap',
-      '/butikk': 'butikk',
-      '/om-oss': 'omoss',
-      '/kontakt': 'kontakt',
-      '/gavekort': 'gavekortside',
-      '/bedrift': 'bedrift',
-      '/paint-on-pots': 'paintonpots',
-      '/kalender': 'kalender',
-      '/nyttig-info': 'nyttig',
-      '/booking': 'booking',
-      '/kasse': 'kasse',
-      '/logg-inn': 'login',
-      '/min-side': 'minside',
-      '/admin': 'adminoversikt',
-      '/admin/innhold': 'admininnhold',
-      '/admin/kurs': 'admin',
-      '/admin/pameldte': 'adminpameldte',
-      '/admin/medlemmer': 'adminmedlem',
-      '/admin/drop-in': 'admindropin',
-      '/admin/butikk': 'adminbutikk',
-      '/admin/okonomi': 'adminokonomi',
-      '/admin/beskjeder': 'adminbeskjeder',
-      '/admin/oppskrifter': 'adminoppskrifter',
-      '/admin/seo': 'adminseo',
-      '/admin/nyttig': 'adminnyttig',
-      '/admin/mobilvisning': 'adminmobilvis',
-    };
+    return [
+      { sti: '/',              side: 'forside' },
+      { sti: '/events',        side: 'kurs',    filter: 'Events' },
+      { sti: '/drop-in',       side: 'booking', dropin: true },
+      { sti: '/kurs',          side: 'kurs' },
+      { sti: '/medlemskap',    side: 'medlemskap' },
+      { sti: '/butikk',        side: 'butikk' },
+      { sti: '/om-oss',        side: 'omoss' },
+      { sti: '/kontakt',       side: 'kontakt' },
+      { sti: '/gavekort',      side: 'gavekortside' },
+      { sti: '/bedrift',       side: 'bedrift' },
+      { sti: '/paint-on-pots', side: 'paintonpots' },
+      { sti: '/kalender',      side: 'kalender' },
+      { sti: '/nyttig-info',   side: 'nyttig' },
+      { sti: '/booking',       side: 'booking' },
+      { sti: '/kasse',         side: 'kasse' },
+      { sti: '/logg-inn',      side: 'login' },
+      { sti: '/min-side',      side: 'minside' },
+      { sti: '/admin',              side: 'adminoversikt' },
+      { sti: '/admin/innhold',      side: 'admininnhold' },
+      { sti: '/admin/kurs',         side: 'admin' },
+      { sti: '/admin/pameldte',     side: 'adminpameldte' },
+      { sti: '/admin/medlemmer',    side: 'adminmedlem' },
+      { sti: '/admin/drop-in',      side: 'admindropin' },
+      { sti: '/admin/butikk',       side: 'adminbutikk' },
+      { sti: '/admin/okonomi',      side: 'adminokonomi' },
+      { sti: '/admin/beskjeder',    side: 'adminbeskjeder' },
+      { sti: '/admin/oppskrifter',  side: 'adminoppskrifter' },
+      { sti: '/admin/seo',          side: 'adminseo' },
+      { sti: '/admin/nyttig',       side: 'adminnyttig' },
+      { sti: '/admin/mobilvisning', side: 'adminmobilvis' },
+    ];
   }
 
-  stiForSide(s) {
-    const kart = Component.STIER;
-    return Object.keys(kart).find(k => kart[k] === s) || null;
+  /** Er kurset som bookes drop-in? Da fortjener det sin egen adresse. */
+  bookerDropin() {
+    const k = this.state.valgtKurs || {};
+    return (k.tema || k.level) === 'Drop-in' || (k.title || k.tittel) === 'Drop-in i verkstedet';
+  }
+
+  stiForSide() {
+    const side = this.state.side;
+    const filter = this.state.kursFilter;
+
+    const treff = Component.STIER.find(r => {
+      if (r.side !== side) return false;
+      if (r.dropin) return this.bookerDropin();
+      if (r.filter) return r.filter === filter;
+      // En oppforing uten filter tar bare det som ikke alt er fanget over.
+      if (side === 'booking') return !this.bookerDropin();
+      return true;
+    });
+
+    return treff ? treff.sti : null;
   }
 
   // Setter skjermen ut fra adressen i feltet. Kalles ved oppstart og naar
   // noen bruker tilbakeknappen.
-  sideFraAdresse() {
+  ruteFraAdresse() {
     const sti = window.location.pathname.replace(/\/+$/, '') || '/';
-    return Component.STIER[sti] || null;
+    return Component.STIER.find(r => r.sti === sti) || null;
+  }
+
+  /** Tar brukeren dit adressen peker. */
+  folgRute(rute) {
+    if (!rute) return;
+
+    if (rute.dropin) {
+      const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
+      if (k) {
+        this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false,
+                        bookKvittert: false, bDato: null, bOktId: null });
+        return;
+      }
+      // Katalogen er ikke lastet ennaa — vis kurssiden med drop-in-filteret
+      // framfor en tom bookingskjerm.
+      this.setState({ side: 'kurs', kursFilter: 'Drop-in' });
+      return;
+    }
+
+    // /kurs nullstiller filteret. Ellers ville et gammelt Events-filter
+    // blitt staaende, og adressen umiddelbart skrevet tilbake til /events —
+    // tilbakeknappen ville sittet fast mellom de to.
+    this.setState({
+      side: rute.side,
+      kursFilter: rute.filter || (rute.side === 'kurs' ? 'Alle' : this.state.kursFilter),
+    });
   }
 
   // Skriver adressen naar skjermen har byttet. Gaar gjennom renderVals fordi
@@ -5681,7 +5728,8 @@ class Component extends DCLogic {
     // componentDidMount, og uten dette ville forste tegning skrevet «/» over
     // en dyplenke som /kurs for vi rakk aa lese den.
     if (!this._adresseKlar) return;
-    const sti = this.stiForSide(this.state.side);
+
+    const sti = this.stiForSide();
     if (!sti) return;
     if (window.location.pathname.replace(/\/+$/, '') === sti.replace(/\/+$/, '')) return;
     history.pushState({ side: this.state.side }, '', sti + window.location.search);
@@ -5889,13 +5937,13 @@ class Component extends DCLogic {
     if (kommerFraVipps) {
       history.replaceState(null, '', window.location.pathname + window.location.search);
     }
-    const fraAdresse = this.sideFraAdresse();
-    if (fraAdresse && !kommerFraVipps) {
-      this.setState({ side: fraAdresse });
+    const rute = this.ruteFraAdresse();
+    if (rute && !kommerFraVipps) {
+      this.folgRute(rute);
     }
     this._popstate = () => {
-      const s2 = this.sideFraAdresse();
-      if (s2) { this.setState({ side: s2 }); window.scrollTo(0, 0); }
+      const r = this.ruteFraAdresse();
+      if (r) { this.folgRute(r); window.scrollTo(0, 0); }
     };
     window.addEventListener('popstate', this._popstate);
     this._adresseKlar = true;

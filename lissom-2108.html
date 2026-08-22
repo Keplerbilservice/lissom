@@ -439,7 +439,7 @@ window.__resources = {
           </div>
           <div class="lx-kortgrid lx-karusell" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ produkter }}" as="p" hint-placeholder-count="4">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="{{ p.cta }}" on-book="{{ p.velg }}" hint-size="100%,420px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" text="{{ p.tekst }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="{{ p.cta }}" on-book="{{ p.velg }}" hint-size="100%,420px"></x-import>
             </sc-for>
           </div>
         </div>
@@ -10261,12 +10261,14 @@ class Component extends DCLogic {
       // Gavekortet ligger ikke i butikken — det har sin egen side. Knappen sa
       // «Se i butikken», og der var det ingenting aa finne.
       produkter: this.medBildeCss([
-        { title: 'Kopp, sandglasur', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
-        { title: 'Bolle, stor', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
-        { title: 'Fat, 28 cm', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
-        { title: 'Gavekort', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
+        { title: 'Kopp, sandglasur', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
+        { title: 'Bolle, stor', tekst: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
+        { title: 'Fat, 28 cm', tekst: 'Dekorglasur. Ment som pyntefat, ikke matsikret.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
+        { title: 'Gavekort', tekst: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
       ]).map(p => Object.assign({}, p, {
-        cta: p.gavekort ? 'Kjøp gavekort' : 'Se i butikken',
+        // «Valgfritt beløp» er en lang pristekst. Med «Kjøp gavekort» ved siden
+        // av sprengte raden kortet, og knappen ble klippet midt i ordet.
+        cta: p.gavekort ? 'Kjøp' : 'Se i butikken',
         velg: p.gavekort ? this.go('gavekortside') : this.go('butikk'),
       })),
     };

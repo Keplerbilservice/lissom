@@ -122,6 +122,26 @@ if ($tilEpost !== '') {
         'feil'   => $rad['feilmelding'] ?? null,
         'koen'   => $resultat,
     ];
+
+    // «Leverandoren svarte med feil» sier ingenting til den som skal fikse
+    // det. Naar utsendingen gaar gjennom serverens egen mail() — altsaa uten
+    // SMTP satt opp — er det nesten alltid det som er aarsaken, og da skal
+    // svaret si hva som mangler i stedet for hva som gikk galt.
+    if (($rad['status'] ?? '') !== 'sendt') {
+        $svar['epost_test']['hva_na'] = trim((string) Config::hent('smtp_vert', '')) === ''
+            ? 'Utsendingen går gjennom serverens egen mail(), og den kom ikke fram. '
+              . 'Legg inn smtp_vert, smtp_bruker og smtp_passord i secrets.php — '
+              . 'verdiene står under kontodetaljer for e-postkontoen hos webhotellet.'
+            : 'SMTP er satt opp mot ' . Config::hent('smtp_vert', '') . '. Sjekk at brukernavnet er '
+              . 'hele e-postadressen, at passordet stemmer, og at porten passer med sikkerheten '
+              . '(587 med starttls, 465 med ssl).';
+    } elseif (trim((string) Config::hent('smtp_vert', '')) === '') {
+        // Den kom fram, men gjennom mail(). Det virker ofte — helt til noen
+        // sjekker SPF, og da havner alt i soppelposten.
+        $svar['epost_test']['merk'] = 'Meldingen gikk gjennom serverens egen mail(), ikke SMTP. '
+            . 'Det virker, men mange mottakere legger slik post i søppelposten. '
+            . 'Settes smtp_vert opp mot e-postkontoen deres, kommer den fram som den skal.';
+    }
 }
 
 $tilSms = Foresporsel::tekst('sms');

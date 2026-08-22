@@ -5154,7 +5154,7 @@ class Component extends DCLogic {
           status: ledige <= 0 ? 'Fullbooket'
                 : ledige + (ledige === 1 ? ' plass igjen' : ' plasser igjen'),
           // Uten eget bilde faar kurset verkstedbildet framfor et tomt felt.
-          image: FOTO + 'verkstedet.jpg',
+          image: FOTO + 'handbygging.jpg',
           om: k.om || '',
           punkter: [],
         };
@@ -5230,7 +5230,11 @@ class Component extends DCLogic {
   filtrerKurs(liste) {
     const f = this.state.kursFilter;
     if (!f || f === 'Alle') return liste;
-    if (f === 'Kurs') return liste.filter(k => (k.tema || k.level) !== 'Events' && (k.tema || k.level) !== 'Event' && (k.tema || k.level) !== 'Drop-in');
+    if (f === 'Kurs') {
+      // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
+      const utenom = ['Events', 'Event', 'Sip & Clay', 'Drop-in'];
+      return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1);
+    }
     return liste.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
   }
 
@@ -5484,7 +5488,7 @@ class Component extends DCLogic {
       price: k.pris === 'Gratis' ? 'Gratis' : 'Fra ' + k.pris,
       status: plasser + ' plasser',
       image: FOTO + 'handbygging.jpg',
-      tema: k.type === 'Event' ? 'Events' : k.type === 'Drop-in' ? 'Drop-in' : 'Kurs',
+      tema: { 'Event': 'Events', 'Drop-in': 'Drop-in', 'Workshop': 'Workshop', 'Sip & Clay': 'Sip & Clay' }[k.type] || 'Kurs',
       om: k.beskrivelse || '',
       punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks ' + plasser + ' deltakere.'],
       datoer: (k.datoer && k.datoer.length) ? k.datoer.map((d, i) => ({ dato: d, tid: '', plasser: plasser + ' plasser', valgt: i === 0 })) : [{ dato: 'Dato kommer', tid: '', plasser: plasser + ' plasser', valgt: true }],
@@ -6493,7 +6497,7 @@ class Component extends DCLogic {
       const punkter = o.navn !== 'Prøv Lissom' ? (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']) : (o.punkter || []);
       const oppsigelse = o.navn === 'Prøv Lissom' ? 'Stopper av seg selv etter 30 dager' : o.navn === 'Årsmedlemskap' ? 'Årsavtale — binding i 12 måneder' : 'Måned til måned — si opp når du vil';
       const visMer = () => {
-        const bilde = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'verkstedet.jpg';
+        const bilde = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'handbygging.jpg';
         const k = {
           level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
           status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
@@ -6519,7 +6523,7 @@ class Component extends DCLogic {
         dempetFarge: m ? 'var(--clay-300)' : 'var(--text-muted)',
         prikkFarge: m ? 'var(--lissom-yellow)' : 'var(--terracotta-500)',
         knapp: m ? 'primary' : 'secondary',
-        bilde: { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'verkstedet.jpg',
+        bilde: { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'handbygging.jpg',
         kjop: visMer,
         kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },
       }, o, { passer, punkter });
@@ -6801,8 +6805,8 @@ class Component extends DCLogic {
         padding: 0, textAlign: 'left', font: 'var(--type-body)', fontSize: 'calc(var(--text-base) * 1.5)', color: 'var(--clay-200)',
         transition: 'transform .18s var(--ease-clay, ease), color .18s ease',
       },
-      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
-      erKursFilter: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk'].indexOf(this.state.kursFilter || 'Alle') >= 0,
+      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Workshop': 'Workshops', 'Sip & Clay': 'Sip & Clay', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
+      erKursFilter: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop'].indexOf(this.state.kursFilter || 'Alle') >= 0,
       medlemFordeler: [
         'Tilgang til verksted og utstyr',
         'Mulighet til å jobbe med egne prosjekter',
@@ -6903,7 +6907,7 @@ class Component extends DCLogic {
         { hvem: 'Den enkleste', navn: 'Paint on Pots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.', pris: 'Fra kr. 690,-', cta: 'Les mer', gjor: () => { this.setState({ side: 'paintonpots' }); window.scrollTo(0, 0); } },
         { hvem: 'For gjengen', navn: 'Privat event', tekst: 'Utdrikningslag, bursdag eller teambuilding — fra 8 personer, kvelden er deres.', pris: 'Pris på forespørsel', cta: 'Les mer', gjor: () => { this.setState({ side: 'bedrift' }); window.scrollTo(0, 0); } },
       ].map(e => Object.assign(e, { velg: e.gjor })),
-      kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
+      kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop', 'Sip & Clay', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
         navn, valgt: navn === this.state.kursFilter,
         velg: () => {
           if (navn === 'Drop-in') {
@@ -7130,10 +7134,10 @@ class Component extends DCLogic {
       visMinInternbutikk: this.state.visMinInternbutikk !== false,
       visMinSalg: this.state.visMinSalg !== false,
       medlemskurs: this.medBildeCss([
-        { title: 'Glasurkveld for medlemmer', date: 'ons 27. aug', duration: '18:00 – 21:00', price: 'Gratis', status: '4 av 10 plasser', image: FOTO + 'verkstedet.jpg', om: 'Vi går gjennom glasurene i skapet, hva de tåler og hvordan de oppfører seg oppå hverandre. Ta med noe du vil glasere.', timer: 'Nei, kvelden er utenom timene dine' },
+        { title: 'Glasurkveld for medlemmer', date: 'ons 27. aug', duration: '18:00 – 21:00', price: 'Gratis', status: '4 av 10 plasser', image: FOTO + 'handbygging.jpg', om: 'Vi går gjennom glasurene i skapet, hva de tåler og hvordan de oppfører seg oppå hverandre. Ta med noe du vil glasere.', timer: 'Nei, kvelden er utenom timene dine' },
         { title: 'Store former, viderekomne', date: 'lør 13. sep', duration: '10:00 – 15:00', price: 'Gratis', status: '2 plasser igjen', image: FOTO + 'dreiing-naerbilde.jpg', om: 'Dagskurs i å dreie store former: sentrering av mye leire, oppbygging i flere ledd og trimming av tunge fat. Krever at du dreier fra før.', timer: 'Nei, kurset kommer i tillegg' },
         { title: 'Medlemsfrokost', date: 'søn 21. sep', duration: '09:00 – 11:00', price: 'Gratis', status: 'Åpen påmelding', image: 'uploads_shutterstock_2752346251.jpg', om: 'Frokost i verkstedet før åpning. Vi spiser, ser på hverandres arbeider og planlegger høsten. Ta med noe å dele.', timer: 'Nei' },
-      ].concat((this.state.nyeInterne || []).map(n => ({ title: n.navn, date: n.naar, duration: n.gjentas === 'Ikke' ? '' : n.gjentas, price: n.pris, status: 'Åpen påmelding', image: FOTO + 'verkstedet.jpg', om: '' })))).map(k => Object.assign(k, {
+      ].concat((this.state.nyeInterne || []).map(n => ({ title: n.navn, date: n.naar, duration: n.gjentas === 'Ikke' ? '' : n.gjentas, price: n.pris, status: 'Åpen påmelding', image: FOTO + 'handbygging.jpg', om: '' })))).map(k => Object.assign(k, {
         level: 'Kun for medlemmer',
         meld: () => {
           this.setState({ side: 'booking', fra: 'minside', valgtKurs: Object.assign({}, k, { level: 'Kun for medlemmer' }), bookOrdre: false, bDato: null });
@@ -7751,7 +7755,7 @@ class Component extends DCLogic {
         { merke: 'Omsetning i august', verdi: 'kr. 182 400,-', under: 'Vipps, oppgjør hver mandag' },
         { merke: 'Ubesvarte meldinger', verdi: '4', under: '2 forespørsler, 2 fra medlemmer' },
       ]))(this.state.adminData).map(t => Object.assign(t, { velg: this.go(TALLMAAL[t.merke] || 'admin'), kortStil: KORT_KLIKK })),
-      adminTyper: ['Kurs', 'Event', 'Drop-in', 'Workshop'],
+      adminTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],
       adminKurs: this.kursData().map((k, i) => Object.assign({}, k, {
@@ -7988,7 +7992,7 @@ class Component extends DCLogic {
         velg: () => this.setState({ nkHolder: t }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkHolder || 'Monica') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkHolder || 'Monica') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkHolder || 'Monica') ? 'var(--clay-50)' : 'var(--text-heading)' },
       })),
-      nkTyper: ['Kurs', 'Event', 'Workshop', 'Drop-in'].map(t => ({
+      nkTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'].map(t => ({
         navn: t,
         velg: () => this.setState({ nkType: t }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkType || 'Kurs') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkType || 'Kurs') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkType || 'Kurs') ? 'var(--clay-50)' : 'var(--text-heading)' },
@@ -8454,7 +8458,7 @@ class Component extends DCLogic {
       artIngress: this.state.artIngress || '', settArtIngress: (e) => this.setState({ artIngress: e.target.value }),
       artBilde: this.state.artBilde || '', settArtBilde: (e) => this.setState({ artBilde: e.target.value }),
       artInnhold: this.state.artInnhold || '', settArtInnhold: (e) => this.setState({ artInnhold: e.target.value }),
-      artBildeValg: ['dreiing-naerbilde.jpg', 'handbygging.jpg', 'kursrommet.jpg', 'verkstedet.jpg', 'butikken.jpg', 'plateteknikk-fat.jpg'].map(fil => ({
+      artBildeValg: ['dreiing-naerbilde.jpg', 'handbygging.jpg', 'kursrommet.jpg', 'butikken.jpg', 'plateteknikk-fat.jpg'].map(fil => ({
         navn: fil.replace('.jpg', ''),
         velg: () => this.setState({ artBilde: 'assets_photos_' + fil }),
         stil: { appearance: 'none', cursor: 'pointer', border: (this.state.artBilde === 'assets_photos_' + fil ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)'), borderRadius: 'var(--radius-md)', padding: 0, width: 64, height: 48, backgroundImage: "url('assets_photos_" + fil + "')", backgroundSize: 'cover', backgroundPosition: 'center' },
@@ -8593,7 +8597,7 @@ class Component extends DCLogic {
       goKasse: this.go('kasse'),
       kurv: [
         { navn: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl', antall: '2', sum: 'kr. 780,-', image: FOTO + 'butikken.jpg' },
-        { navn: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm', antall: '1', sum: 'kr. 590,-', image: FOTO + 'verkstedet.jpg' },
+        { navn: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm', antall: '1', sum: 'kr. 590,-', image: FOTO + 'butikken.jpg' },
         { navn: 'Gavekort, kr. 1 000,-', detalj: 'Sendes på e-post til mottaker', antall: '1', sum: 'kr. 1 000,-', image: 'uploads_shutterstock_2829108657.jpg' },
       ],
       kasseLinjer: [
@@ -9551,7 +9555,7 @@ class Component extends DCLogic {
       })(),
       bKarusell: (() => {
         const k = this.state.valgtKurs || {};
-        const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'verkstedet.jpg']);
+        const bilder = (k.bilder && k.bilder.length ? k.bilder : k.image ? [k.image] : [FOTO + 'handbygging.jpg', FOTO + 'handbygging.jpg']);
         const sek = parseFloat(k.sekunder) || 5;
         const fade = k.fade !== false;
         const idx = Math.floor((this.state.karTikk || 0) / sek) % bilder.length;

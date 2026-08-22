@@ -4800,7 +4800,7 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Ordensregler og HMS' },
       { l: 'Ingress', v: 'Gjelder for drop-in og kurs. Vi går gjennom det samme når du kommer.', lang: true },
       { l: 'Punkt 1: Rydd etter deg', v: 'Vask verktøy, bord og dreieskive før du går. Leirerester skrapes i leirebøtta, ikke i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.', lang: true },
-      { l: 'Punkt 2: Støv er den største risikoen', v: 'Tørr leire og glasurpulver inneholder kvarts som er skadelig å puste inn. Tørk alltid vått. Bruk støvmaske når du blander glasur eller sliper brent gods.', lang: true },
+      { l: 'Punkt 2: Støv er den største risikoen', v: 'Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.', lang: true },
       { l: 'Punkt 3: Glasur og kjemikalier', v: 'Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.', lang: true },
       { l: 'Punkt 4: Ovnen', v: 'Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.', lang: true },
       { l: 'Punkt 5: Merk arbeidene dine', v: 'Skriv initialene dine i bunnen før tørking. Umerkede arbeider på fellehyllene kastes etter to måneder.', lang: true },
@@ -6488,7 +6488,7 @@ class Component extends DCLogic {
         'Prøv Lissom': 'Passer for: deg som er nysgjerrig etter et kurs',
         '30 timer': 'Passer for: deg som vil ha fast plass i uka',
         'Årsmedlemskap': 'Passer for: deg som bruker verkstedet fast hele året',
-        'Fri tilgang': 'Passer for: deg som jobber seriøst med keramikk',
+        'Fri tilgang': 'Passer for: deg som blir bitt av basillen',
       }[o.navn] || '';
       const punkter = o.navn !== 'Prøv Lissom' ? (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']) : (o.punkter || []);
       const oppsigelse = o.navn === 'Prøv Lissom' ? 'Stopper av seg selv etter 30 dager' : o.navn === 'Årsmedlemskap' ? 'Årsavtale — binding i 12 måneder' : 'Måned til måned — si opp når du vil';
@@ -7291,6 +7291,12 @@ class Component extends DCLogic {
         return (admin && admin.bekreftelse) || (k.bekreftelse) || 'Takk for bestillingen! 🧡 Bestillingen din er registrert, og du vil snart motta en bekreftelse på e-post. Vi gleder oss til å se deg hos Lissom Keramikk & Håndverk. Har du spørsmål i mellomtiden, er det bare å ta kontakt. 😊';
       })(),
       bOm: (this.state.valgtKurs && this.state.valgtKurs.om)
+        || ({
+          // Reservetekst naar kurset ikke har egen beskrivelse. Sentrering,
+          // dreiing og trimming hoerer bare hjemme paa dreiekurs.
+          'Plateteknikk': 'Du bygger din egen gjenstand med tradisjonell plateteknikk. Vi kjevler ut leira, former den og jobber med kanter og sammenføyninger. Vi glaserer og brenner arbeidene for deg.',
+          'Håndbygging': 'Du bygger din egen gjenstand for hånd, uten dreieskive. Vi glaserer og brenner arbeidene for deg.',
+        }[(this.state.valgtKurs || {}).tema])
         || 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.',
       erBetalt: (this.state.valgtKurs && this.state.valgtKurs.price) !== 'Gratis',
       harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket',
@@ -8520,7 +8526,7 @@ class Component extends DCLogic {
       ],
       ordensregler: [
         { h: 'Rydd etter deg', p: 'Vask verktøy, bord og dreieskive før du går. Leirerester skrapes i leirebøtta, ikke i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.' },
-        { h: 'Støv er den største risikoen', p: 'Tørr leire og glasurpulver inneholder kvarts som er skadelig å puste inn. Tørk alltid vått. Bruk støvmaske når du blander glasur eller sliper brent gods.' },
+        { h: 'Støv er den største risikoen', p: 'Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.' },
         { h: 'Glasur og kjemikalier', p: 'Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.' },
         { h: 'Ovnen', p: 'Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.' },
         { h: 'Merk arbeidene dine', p: 'Skriv initialene dine i bunnen før tørking. Umerkede arbeider på fellehyllene kastes etter to måneder.' },
@@ -8532,8 +8538,8 @@ class Component extends DCLogic {
         'Drop-in krever godkjenning av oss. Du må ha gått kurs hos oss, eller være sammen med et aktivt medlem som er til stede hele tiden. Er du med et medlem, oppgir du medlemmets navn når du booker.',
         'Du får låne forkle av oss, men regn med å bli litt skitten.',
         'Ta av ringer og armbånd, og sett opp langt hår før du setter deg ved dreieskiva.',
-        'Ikke spis eller drikk ved arbeidsbenkene. Kaffen tar du i sofakroken.',
-        'Alt tørkes vått. Aldri kost eller blås bort leirestøv — det inneholder kvarts.',
+        'Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Aldri kost eller blås bort leirestøv — det kan inneholde kvarts.',
+        'Unngå sliping og pussing av leire. Er det mye støv i lokalet, bruk støvmaske.',
         'Ovnen betjenes kun av oss. Hold en meters avstand når den er varm.',
         'Rydd og vask plassen din før du går.',
       ],
@@ -9148,7 +9154,7 @@ class Component extends DCLogic {
           'Nybegynner': 'Deg som aldri har prøvd leire før — ingen forkunnskaper nødvendig.',
           'Event': 'Alle — ingen erfaring nødvendig. Kom som du er, vi viser deg resten.',
           'Drop-in': 'Deg som har gått kurs hos oss, eller kommer sammen med et aktivt medlem.',
-        }[k.level] || 'Deg som har prøvd litt leire før, eller er nysgjerrig på å lære mer.';
+        }[k.level] || 'Alle — ingen forkunnskaper nødvendig.';
       })(),
       diHva: [
         'Fleksibel verkstedtid uten fast program — du jobber med dine egne prosjekter.',

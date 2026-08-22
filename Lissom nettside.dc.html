@@ -1228,7 +1228,7 @@
               </div>
             </div>
             <div style="display: flex; flex-direction: column; gap: var(--space-6);">
-              <div style="border-radius: var(--radius-xl, 22px); overflow: hidden; flex: 1; min-height: 440px; background-image: url('assets_photos_verkstedet.jpg'); background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end;">
+              <div style="border-radius: var(--radius-xl, 22px); overflow: hidden; flex: 1; min-height: 440px; background-image: url('assets_photos_butikken.jpg'); background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end;">
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(43,20,12,0.7) 0%, transparent 55%); pointer-events: none;"></div>
                 <p style="position: relative; margin: 0; padding: var(--space-8); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--clay-50);">Slik finner du oss: vi holder til i Nordre Løkkevei på Teie, fem minutter fra Tønsberg sentrum over Kanalbrua. Gratis parkering rett utenfor.</p>
               </div>
@@ -5860,7 +5860,7 @@ class Component extends DCLogic {
       { id: 'g2', status: 'publisert', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter i verkstedet. Ett unikt eksemplar.', laget: 'Laget av Jonas', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'jonas@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
       { id: 'g3', status: 'publisert', tittel: 'Fat i plateteknikk', tekst: 'Dekorfat laget på plateteknikk-kurs. Ikke matsikret — ment som pyntefat.', laget: 'Laget av Silje', bilde: 'assets_photos_plateteknikk-fat.jpg', pris: 'kr. 520,-', vipps: '901 23 456', kontakt: 'silje@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
       { id: 'g4', status: 'publisert', tittel: 'Boller i sett', tekst: 'Tre små boller, dreid og trimmet i verkstedet. Selges samlet.', laget: 'Laget av et medlem', bilde: 'assets_photos_dreiing-naerbilde.jpg', pris: 'kr. 480,-', vipps: '456 78 901', kontakt: '940 12 345', levering: 'Leveres etter avtale', antall: 1, kategori: 'Boller' },
-      { id: 'g5', status: 'venter', tittel: 'Mugge med hank', tekst: 'Første forsøk på hank — ett unikt eksemplar.', laget: 'Laget av Emma', bilde: 'assets_photos_verkstedet.jpg', pris: 'kr. 300,-', vipps: '478 90 123', kontakt: 'emma@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Kopper' },
+      { id: 'g5', status: 'venter', tittel: 'Mugge med hank', tekst: 'Første forsøk på hank — ett unikt eksemplar.', laget: 'Laget av Emma', bilde: 'assets_photos_butikken.jpg', pris: 'kr. 300,-', vipps: '478 90 123', kontakt: 'emma@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Kopper' },
     ];
     const endringer = this.state.galleriEndringer || [];
     const overstyrt = {};
@@ -7821,7 +7821,7 @@ class Component extends DCLogic {
       })),
       artLagre: () => {
         if (!(this.state.artTittel || '').trim()) return;
-        const ny = { tittel: this.state.artTittel.trim(), dato: this.state.artDato || '', ingress: this.state.artIngress || '', bilde: this.state.artBilde || 'assets_photos_verkstedet.jpg', innhold: this.state.artInnhold || '' };
+        const ny = { tittel: this.state.artTittel.trim(), dato: this.state.artDato || '', ingress: this.state.artIngress || '', bilde: this.state.artBilde || 'assets_photos_butikken.jpg', innhold: this.state.artInnhold || '' };
         this.setState(s => {
           const alle = this.artikkelData().slice();
           if ((s.artIndeks ?? -1) >= 0) alle[s.artIndeks] = ny; else alle.push(ny);

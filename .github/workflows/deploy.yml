@@ -47,6 +47,7 @@ jobs:
             bin/**
             db/**
             docs/**
+            tests/**
             .github/**
             *.md
             **/.DS_Store

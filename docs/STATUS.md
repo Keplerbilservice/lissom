@@ -1,6 +1,6 @@
-# Status — 22. august 2026, natt
+# Status — 22. august 2026
 
-Oppdatert gjennom natta. Dette er hva som virker, hva som ikke gjør det, og
+Oppdatert gjennom natta og morgenen. Dette er hva som virker, hva som ikke gjør det, og
 hva som venter på en avgjørelse.
 
 **Kort sagt:** backend er nå testet mot en ekte database — det var den ikke da
@@ -34,6 +34,9 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Favicon | Hjertemerket |
 | Sesjon utløper etter 3 timer | Virker |
 | Vilkår og personvern | Publisert som egne sider |
+| Favicon i fane, adresselinje og hjemskjerm | Ekte ikonsett, 16–512 px |
+| Ingen avhengighet til unpkg.com | React og ikoner ligger på egen server |
+| Mobilvisning verifisert i ekte nettleser | Se under |
 
 ## Det som fortsatt er simulering
 
@@ -66,6 +69,20 @@ ratebegrensning.
 `flyt.sh` kjører hele betalingskjeden mot en stubbet Vipps: booking, webhook
 med signaturkontroll begge veier, og duplikatvern. Alle cron-jobbene er også
 kjørt, og kurspåminnelser er verifisert med en økt som starter dagen etter.
+
+---
+
+## Nytt 22. august: siden kan endelig ses
+
+Fram til nå er hver endring i frontend verifisert med syntakssjekk og
+telling av tagger — jeg har aldri sett siden tegnet opp, fordi jeg ikke når
+ny.lissom.no herfra.
+
+Nå kjøres siden i en ekte nettleser lokalt (Chromium via Playwright), og
+skjermbilder tas på mobilbredde. Det avdekket med én gang to feil som ingen
+syntakssjekk kunne finne: karusellen på mobil klemte fire kort sammen på én
+linje, og logoen i toppmenyen var presset ned til tre piksler av knappene
+ved siden av. Begge er rettet og etterpå kontrollert på skjermbilde.
 
 ---
 
@@ -107,9 +124,11 @@ inn.
 uten lagerstyring — det går an å bestille flere enn dere har. Skal lager
 telles, eller holder det å følge med på ordrene?
 
-**4. Kurs boller.** Flyttet fra Dreiing til Plateteknikk, og beskrivelsen
-skrevet om, etter beskjed. Verdt en ny lesning — jeg skrev den uten å kjenne
-kurset.
+**4. Kurstekstene.** Gjennomlest i verkstedet 22. august og rettet
+(migrasjon 009): «Store fat kurs» krever ikke erfaring, og plateteknikk
+beskrives som å bygge sin egen gjenstand — sentrere, dreie og trimme hører
+bare hjemme på dreiekurs. Migrasjon 009 må kjøres på serveren før teksten
+endrer seg der.
 
 **5. Datoene i katalogen** er satt av meg ut fra designet. De må erstattes med
 de faktiske kursdatoene deres, enten i admin eller ved at jeg legger dem inn.
@@ -120,12 +139,10 @@ er en vanlig vei inn for angripere, og den deler konto med betalingsdataene.
 Bør fjernes — men `public_html/ny.lissom.no` må spares, den nye siden ligger
 inni den mappa.
 
-**7. Testkurset og prisen på Paint on Pots.** Paint on Pots står midlertidig
-til én krone for å kunne teste betaling. `docs/006_etter_test.sql.venter`
-setter den tilbake til 690 og avlyser testkurset — flytt den til
-`db/migrations/` og kjør migrering når testen er gjennomført.
+**7. Testkurset og prisen på Paint on Pots.** Gjort. Migrasjon 008 satte
+Paint on Pots tilbake til 690 kroner og avlyste testkurset.
 
-**8. Nytt kurs uten bilde.** Kurs opprettet i admin får verkstedbildet som
+**8. Nytt kurs uten bilde.** Kurs opprettet i admin får butikkbildet som
 standard. Det finnes ingen måte å laste opp bilde i admin ennå — si fra om det
 skal bygges.
 
@@ -133,7 +150,21 @@ skal bygges.
 skriver meldingen er ikke koblet til ennå — endepunktet er klart og testet, men
 teksten fra dialogboksen når ikke fram. Det står igjen.
 
-**10. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
+**10. Migrasjon 009 må kjøres.** Kurstekstene ligger i databasen, ikke i
+fila. Åpne `/api/migrer.php?nokkel=<cron_nokkel>&kjor=ja` én gang, så
+oppdaterer teksten seg på nettsiden.
+
+**11. Ordensreglene om mat og drikke.** Du ba meg fjerne «ikke spis eller
+drikk ved arbeidsbenkene» og sofakroken. Det er gjort. Punktet «bruk hansker
+ved glasering, ikke spis eller drikk i glasurrommet» står fortsatt — det
+handler om kjemikalier og ikke om benkene, så jeg lot det stå. Si fra hvis
+det også skal ut.
+
+**12. «Store former, viderekomne»** sier fortsatt «for deg som allerede
+dreier stødig». Det er et internkurs for medlemmer, så jeg tolket «gjelder
+alle våre kurs» som de åpne kursene. Skal den også endres, sier du fra.
+
+**13. Cron-jobbene.** To av fire er satt opp. `varsler` og `betalinger` trengs
 ikke — trafikk på nettsiden gjør den jobben. `paaminnelser` og `vedlikehold`
 bør stå.
 

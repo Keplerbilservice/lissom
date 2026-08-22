@@ -19,10 +19,16 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
-$nokkel = (string) Config::hent('cron_nokkel', '');
+// To veier inn: noekkelen fra secrets.php, eller en innlogget admin.
+//
+// Noekkelen finnes for at helsesjekken skal virke naar innlogging er det som
+// er i stykker. Er du allerede logget inn som admin, er det unodvendig aa lete
+// etter den i ei fil paa serveren.
+$nokkel  = (string) Config::hent('cron_nokkel', '');
 $oppgitt = Foresporsel::tekst('nokkel');
+$medNokkel = $nokkel !== '' && $oppgitt !== '' && hash_equals($nokkel, $oppgitt);
 
-if ($nokkel === '' || $oppgitt === '' || !hash_equals($nokkel, $oppgitt)) {
+if (!$medNokkel && !Sesjon::erAdmin()) {
     Svar::feil('Fant ikke siden.', 404);
 }
 
@@ -30,6 +36,8 @@ if ($nokkel === '' || $oppgitt === '' || !hash_equals($nokkel, $oppgitt)) {
 $fylt = static fn(string $n): bool => trim((string) Config::hent($n, '')) !== '';
 
 $svar = [
+    'slapp_inn' => $medNokkel ? 'noekkel' : 'admin-innlogging',
+    'cron_nokkel_satt' => $nokkel !== '',
     'tidspunkt' => gmdate('c'),
     'php'       => PHP_VERSION,
     'miljo'     => Config::miljo(),

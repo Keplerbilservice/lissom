@@ -317,12 +317,22 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kurs og events</div>
               <h2 style="margin: 0;">Kommende datoer</h2>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goKurs }}" hint-size="auto,40px">Se alt</x-import>
+            <span class="lx-hide-m">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goKurs }}" hint-size="auto,40px">Se alt</x-import>
+            </span>
           </div>
-          <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+
+          <!-- Paa mobil tar fire kurskort mesteparten av en skjermlengde, og
+               man maa scrolle forbi dem for aa komme videre. Der staar det én
+               knapp i stedet; kortene ligger uansett paa kurssiden. -->
+          <div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ kursForside }}" as="k" hint-placeholder-count="4">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
             </sc-for>
+          </div>
+          <div class="lx-kunmobil">
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ kursTeller }}</p>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" icon-after="arrow-right" full-width="{{ sant }}" on-click="{{ goKurs }}" hint-size="100%,52px">Se alle planlagte kurs</x-import>
           </div>
         </div>
       </section>
@@ -10921,6 +10931,20 @@ class Component extends DCLogic {
       })(),
       popHarDatoer: true,
       popManglerDatoer: false,
+      // Linja over knappen paa mobil. En knapp alene sier ikke hvor mye som
+      // ligger bak den; dette er hentet fra katalogen, ikke gjettet.
+      kursTeller: (() => {
+        const kat = (this.state.katalog || []).filter(k => k.tema !== 'Kun for medlemmer');
+        const datoer = kat.reduce((n, k) => n + ((k.datoer || []).length), 0);
+        if (!datoer) {
+          return this.erPublisert()
+            ? 'Se hva som er satt opp framover.'
+            : 'Fire kurs og events er satt opp framover.';
+        }
+        return datoer === 1
+          ? 'Én dato er satt opp framover.'
+          : datoer + ' datoer er satt opp framover, fordelt på ' + kat.length + (kat.length === 1 ? ' kurs.' : ' kurs og events.');
+      })(),
       kursForside: this.medBooking([
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg' },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg' },

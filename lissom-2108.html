@@ -5417,6 +5417,7 @@ class Component extends DCLogic {
         return {
           level: k.tema || (k.type === 'event' ? 'Event' : k.type === 'dropin' ? 'Drop-in' : 'Kurs'),
           tema: tema,
+          temaer: this.undertemaer(k.tittel, k.tema),
           title: k.tittel,
           date: k.datoer[0].dato,
           duration: '',
@@ -5499,13 +5500,40 @@ class Component extends DCLogic {
 
   filtrerKurs(liste) {
     const f = this.state.kursFilter;
-    if (!f || f === 'Alle') return liste;
+    if (!f || f === 'Alle' || f === 'Vis alle') return liste;
     if (f === 'Kurs') {
       // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
       const utenom = ['Events', 'Event', 'Drop-in'];
       return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1);
     }
     return liste.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
+  }
+
+  /** Setter undertemaer paa hele lista, uten aa roere resten. */
+  medUndertemaer(liste) {
+    return (liste || []).map(k => {
+      const merker = this.undertemaer(k.title || k.tittel, k.tema);
+      if (!merker.length) return k;
+      return Object.assign({}, k, { temaer: (k.temaer || []).concat(merker.filter(m => (k.temaer || []).indexOf(m) < 0)) });
+    });
+  }
+
+  // Undermerkene et kurs kan finnes paa i tillegg til hovedkategorien.
+  //
+  // Sip & Clay og Date Night ligger under Events, og workshop under Kurs —
+  // det er der de hoerer hjemme. Men de skal ogsaa kunne velges hver for seg
+  // i knapperaden, og da maa de baere merket sitt videre.
+  undertemaer(tittel, tema) {
+    const merker = ['Workshop', 'Sip & Clay', 'Date Night', 'Paint on Pots'];
+    const t = String(tittel || '').toLowerCase();
+    const ut = [];
+
+    merker.forEach(m => {
+      if (tema === m || t.indexOf(m.toLowerCase()) >= 0) ut.push(m);
+    });
+    // Knappen heter «Paint on pots» med liten p, og maa treffe likevel.
+    if (ut.indexOf('Paint on Pots') >= 0) ut.push('Paint on pots');
+    return ut;
   }
 
   regelNaa() {
@@ -7803,7 +7831,7 @@ class Component extends DCLogic {
         padding: 0, textAlign: 'left', font: 'var(--type-body)', fontSize: 'calc(var(--text-base) * 1.5)', color: 'var(--clay-200)',
         transition: 'transform .18s var(--ease-clay, ease), color .18s ease',
       },
-      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Workshop': 'Workshops', 'Sip & Clay': 'Sip & Clay', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
+      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Workshop': 'Workshops', 'Sip & Clay': 'Sip & Clay', 'Date Night': 'Date Night', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
       erKursFilter: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop'].indexOf(this.state.kursFilter || 'Alle') >= 0,
       medlemFordeler: [
         'Tilgang til verksted og utstyr',
@@ -7905,8 +7933,10 @@ class Component extends DCLogic {
         { hvem: 'Den enkleste', navn: 'Paint on Pots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.', pris: 'Fra kr. 690,-', cta: 'Les mer', gjor: () => { this.setState({ side: 'paintonpots' }); window.scrollTo(0, 0); } },
         { hvem: 'For gjengen', navn: 'Privat event', tekst: 'Utdrikningslag, bursdag eller teambuilding — fra 8 personer, kvelden er deres.', pris: 'Pris på forespørsel', cta: 'Les mer', gjor: () => { this.setState({ side: 'bedrift' }); window.scrollTo(0, 0); } },
       ].map(e => Object.assign(e, { velg: e.gjor })),
-      kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
-        navn, valgt: navn === this.state.kursFilter,
+      kursFiltre: ['Vis alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop', 'Events', 'Sip & Clay', 'Date Night', 'Paint on pots', 'Drop-in'].map(navn => ({
+        navn,
+        valgt: navn === this.state.kursFilter
+          || (navn === 'Vis alle' && (!this.state.kursFilter || this.state.kursFilter === 'Alle')),
         velg: () => {
           if (navn === 'Drop-in') {
             const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
@@ -7915,14 +7945,14 @@ class Component extends DCLogic {
           this.setState({ kursFilter: navn });
         },
       })),
-      kursAlle: this.medBooking(this.filtrerKurs((this._kursListe = [
+      kursAlle: this.medBooking(this.filtrerKurs((this._kursListe = this.medUndertemaer([
         { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
         { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
         { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
         { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
-      ]).concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe)))),
+      ])).concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe)))),
       bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
       ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
       ktApen: !!this.state.ktApen,
@@ -10789,7 +10819,8 @@ class Component extends DCLogic {
 
         return lenker.concat([vogn]);
       })(),
-      kursNavAktiv: this.state.kursFilter === 'Events' ? 'Events' : (this.state.kursFilter === 'Drop-in' ? 'Drop-in' : 'Kurs'),
+      kursNavAktiv: ['Events', 'Sip & Clay', 'Date Night', 'Paint on pots'].indexOf(this.state.kursFilter) >= 0
+        ? 'Events' : (this.state.kursFilter === 'Drop-in' ? 'Drop-in' : 'Kurs'),
       bGradientStil: (() => {
         const k = this.state.valgtKurs || {};
         const styrke = parseFloat(k.styrke) || 0;

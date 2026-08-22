@@ -373,6 +373,75 @@ sjekk('oredeling rundes til hele ore', Booking::belopFor($skjev, 5)['netto'] ===
 
 DB::kjor("DELETE FROM discount_tiers");
 
+// ---------------------------------------------------------------------------
+// Medlemskap og manedstrekk
+//
+// Selve kallet til Vipps kan ikke testes her. Alt rundt det kan: hvilke
+// avtaler som skal trekkes, at et trekk bare skjer én gang per maaned, og at
+// en stoppet avtale aldri belastes.
+// ---------------------------------------------------------------------------
+echo "\n== Medlemskap ==\n";
+
+sjekk('planene ligger i basen', count(Medlemskap::planer()) >= 4);
+sjekk('prisen leses fra basen', (int) (Medlemskap::plan('30 timer')['pris_ore'] ?? 0) === 259000);
+sjekk('ukjent plan gir null', Medlemskap::plan('Finnes ikke') === null);
+sjekk('proveperioden er engangs', (int) (Medlemskap::plan('Prøv Lissom')['engangs'] ?? 0) === 1);
+sjekk('aarsavtalen har binding', (int) (Medlemskap::plan('Årsmedlemskap')['binding_mnd'] ?? 0) === 12);
+
+$avtaleMedlem = DB::settInn('members', [
+    'navn' => 'Avtaletest', 'epost' => 'avtale@test.local', 'status' => 'ingen',
+]);
+
+$avtaleId = DB::settInn('subscriptions', [
+    'member_id' => $avtaleMedlem,
+    'plan' => '30 timer',
+    'pris_ore' => 259000,
+    'vipps_agreement_id' => 'agr_test_' . bin2hex(random_bytes(4)),
+    'status' => 'aktiv',
+    'neste_trekk' => gmdate('Y-m-d'),
+]);
+
+$mine = static fn(int $id): int => count(array_filter(Medlemskap::tilTrekk(), static fn($a) => (int) $a['id'] === $id));
+
+sjekk('avtale med forfall i dag skal trekkes', $mine($avtaleId) === 1);
+
+DB::oppdater('subscriptions', ['neste_trekk' => gmdate('Y-m-d', time() + 86400)], ['id' => $avtaleId]);
+sjekk('avtale med forfall i morgen skal ikke trekkes', $mine($avtaleId) === 0);
+
+DB::oppdater('subscriptions', ['neste_trekk' => gmdate('Y-m-d'), 'status' => 'stoppet'], ['id' => $avtaleId]);
+sjekk('stoppet avtale trekkes ikke', $mine($avtaleId) === 0);
+
+DB::oppdater('subscriptions', ['status' => 'aktiv'], ['id' => $avtaleId]);
+
+// Dobbelt trekk: er betalingen alt fort for maaneden, gjor vi ikke noe mer.
+$avtale = DB::en('SELECT s.*, m.navn, m.epost FROM subscriptions s JOIN members m ON m.id = s.member_id WHERE s.id = :i', ['i' => $avtaleId]);
+$maaned = (new DateTimeImmutable((string) $avtale['neste_trekk']))->format('Y-m');
+$nokkel = substr(hash('sha256', 'trekk:' . $avtale['id'] . ':' . $maaned), 0, 36);
+
+DB::settInn('payments', [
+    'vipps_reference' => 'MED-TEST-' . bin2hex(random_bytes(4)),
+    'type' => 'recurring_charge',
+    'formal' => 'medlemskap',
+    'member_id' => $avtaleMedlem,
+    'subscription_id' => $avtaleId,
+    'belop_ore' => 259000,
+    'status' => 'betalt',
+    'idempotency_key' => $nokkel,
+]);
+
+sjekk('trekk som alt er fort gjentas ikke', Medlemskap::trekk($avtale) === 'alt fort');
+sjekk('ingen ny betaling ble lagt inn', (int) DB::verdi(
+    'SELECT COUNT(*) FROM payments WHERE subscription_id = :s', ['s' => $avtaleId]) === 1);
+
+sjekk('avtalen finnes for medlemmet', (int) (Medlemskap::avtale($avtaleMedlem)['id'] ?? 0) === $avtaleId);
+DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => $avtaleId]);
+sjekk('stoppet avtale regnes ikke som loepende', Medlemskap::avtale($avtaleMedlem) === null);
+
+DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $avtaleId]);
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $avtaleId]);
+DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $avtaleMedlem]);
+
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

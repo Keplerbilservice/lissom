@@ -5,6 +5,7 @@
 //   */5 * * * *   php ~/lissom-app/bin/cron.php betalinger
 //   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold
+//   0 4 * * *     php ~/lissom-app/bin/cron.php medlemstrekk
 //
 // Klokkeslettene er UTC. 07:00 UTC er 09:00 norsk sommertid, 08:00 om vinteren.
 
@@ -34,6 +35,52 @@ switch ($jobb) {
             logg('Varselkø tømt', ['sendt' => $sendt, 'feilet' => $feilet]);
         }
         $si("Varsler: {$sendt} sendt, {$feilet} feilet.");
+        break;
+
+    // -----------------------------------------------------------------------
+    // Manedstrekk for medlemskap.
+    //
+    // Kjores én gang i dognet. Hver avtale har sin egen dato — trekket folger
+    // dagen medlemmet meldte seg inn, ikke den 1. i maaneden. Da slipper vi aa
+    // forklare hvorfor noen betalte full pris for tre dager.
+    //
+    // Trygg aa kjore flere ganger: idempotensnokkelen bygges av avtalen og
+    // maaneden, saa to kjoringer samme natt gir ett trekk.
+    case 'medlemstrekk':
+        $avtaler = Medlemskap::tilTrekk();
+        $gjort = 0;
+        $feilet = 0;
+
+        foreach ($avtaler as $a) {
+            try {
+                $svar = Medlemskap::trekk($a);
+                $si('  ' . $a['navn'] . ' (' . $a['plan'] . '): ' . $svar);
+                $gjort++;
+            } catch (Throwable $e) {
+                logg_feil('Medlemstrekk feilet for avtale ' . $a['id'], $e);
+                $si('  ' . $a['navn'] . ': FEILET — ' . $e->getMessage());
+                $feilet++;
+            }
+            usleep(300_000);
+        }
+
+        // Avtaler som venter paa godkjenning: kunden kan ha godkjent i appen
+        // uten aa komme tilbake til nettsiden. Vi sporr Vipps.
+        $venter = DB::alle(
+            "SELECT * FROM subscriptions
+              WHERE status = 'venter'
+                AND vipps_agreement_id IS NOT NULL
+                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)"
+        );
+        foreach ($venter as $a) {
+            Medlemskap::oppdaterFraVipps($a);
+            usleep(200_000);
+        }
+
+        if ($gjort > 0 || $feilet > 0) {
+            logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet]);
+        }
+        $si("Medlemstrekk: {$gjort} trekk, {$feilet} feilet, " . count($venter) . ' avtaler sjekket.');
         break;
 
     // -----------------------------------------------------------------------

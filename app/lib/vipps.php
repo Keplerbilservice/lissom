@@ -214,6 +214,141 @@ final class Vipps
         ];
     }
 
+    // -----------------------------------------------------------------------
+    // Recurring — avtaler og manedstrekk
+    // -----------------------------------------------------------------------
+
+    /**
+     * Oppretter en avtale kunden godkjenner i Vipps.
+     *
+     * Avtalen er ikke et trekk. Den er en fullmakt: etter godkjenning kan vi
+     * belaste den hver maned, til noen stopper den. Forste trekk gjor vi selv
+     * med belastAvtale() — det gir oss ett sted a fore alle trekk, framfor at
+     * det forste kommer en annen vei enn resten.
+     *
+     * @return array{url:string,avtaleId:string}
+     */
+    public static function opprettAvtale(
+        string $plan,
+        int $prisOre,
+        string $beskrivelse,
+        string $returUrl,
+        ?string $telefon = null
+    ): array {
+        $kropp = [
+            'pricing' => [
+                'type'     => 'LEGACY',
+                'amount'   => $prisOre,
+                'currency' => 'NOK',
+            ],
+            'interval' => [
+                'unit'  => 'MONTH',
+                'count' => 1,
+            ],
+            'merchantRedirectUrl'   => $returUrl,
+            'merchantAgreementUrl'  => Config::nettsted() . '/min-side',
+            'productName'           => mb_substr($plan, 0, 45),
+            'productDescription'    => mb_substr($beskrivelse, 0, 100),
+            // Ingen kampanje og ingen forste trekk her: vi belaster selv, sa
+            // alle trekk far samme vei gjennom systemet.
+            'scope'                 => 'name phoneNumber',
+        ];
+
+        if ($telefon !== null && $telefon !== '') {
+            $kropp['phoneNumber'] = ltrim($telefon, '+');
+        }
+
+        $svar = http_post_json(
+            Config::vippsBase() . '/recurring/v3/agreements',
+            $kropp,
+            self::headere(self::uuid())
+        );
+
+        if ($svar['status'] !== 201 || !is_array($svar['json'])) {
+            logg_feil('Kunne ikke opprette Vipps-avtale: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException('Fikk ikke opprettet avtalen. Prov igjen om litt.');
+        }
+
+        return [
+            'url'      => (string) ($svar['json']['vippsConfirmationUrl'] ?? ''),
+            'avtaleId' => (string) ($svar['json']['agreementId'] ?? ''),
+        ];
+    }
+
+    /**
+     * Status pa en avtale. Fasiten — vi stoler ikke pa at kunden kom tilbake
+     * til kvitteringssiden.
+     *
+     * @return array<string,mixed>
+     */
+    public static function hentAvtale(string $avtaleId): array
+    {
+        $svar = http_get_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId),
+            self::headere()
+        );
+
+        if ($svar['status'] !== 200 || !is_array($svar['json'])) {
+            throw new RuntimeException('Fikk ikke hentet avtalen fra Vipps.');
+        }
+        return $svar['json'];
+    }
+
+    /** Stopper en avtale. Etter dette kan den ikke belastes igjen. */
+    public static function stoppAvtale(string $avtaleId): void
+    {
+        $svar = http_patch_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId),
+            ['status' => 'STOPPED'],
+            self::headere(self::uuid())
+        );
+
+        if ($svar['status'] !== 200 && $svar['status'] !== 204) {
+            logg_feil('Kunne ikke stoppe Vipps-avtale: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException('Fikk ikke sagt opp avtalen. Ta kontakt, sa ordner vi det.');
+        }
+    }
+
+    /**
+     * Belaster en avtale.
+     *
+     * Vipps krever at kunden varsles for trekket. Vi ber om trekk noen dager
+     * fram i tid og sender varselet selv — da vet kunden hva som kommer, og
+     * rekker a si fra.
+     *
+     * @return string charge-ID-en
+     */
+    public static function belastAvtale(
+        string $avtaleId,
+        int $belopOre,
+        string $beskrivelse,
+        string $forfall,
+        string $idempotensnokkel
+    ): string {
+        $kropp = [
+            'amount'          => $belopOre,
+            'description'     => mb_substr($beskrivelse, 0, 45),
+            'due'             => $forfall,          // YYYY-MM-DD
+            'retryDays'       => 5,
+            'transactionType' => 'DIRECT_CAPTURE',
+        ];
+
+        $svar = http_post_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId) . '/charges',
+            $kropp,
+            // Idempotensnokkelen er trekkets egen, ikke en tilfeldig: kjorer
+            // cron to ganger samme natt, skal kunden belastes én gang.
+            self::headere($idempotensnokkel)
+        );
+
+        if ($svar['status'] !== 201 || !is_array($svar['json'])) {
+            logg_feil('Kunne ikke belaste Vipps-avtale: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException('Trekket gikk ikke gjennom.');
+        }
+
+        return (string) ($svar['json']['chargeId'] ?? '');
+    }
+
     /**
      * Henter status. Denne er fasiten — vi stoler aldri på at kunden kom
      * tilbake til kvitteringssiden, bare på webhook og dette oppslaget.

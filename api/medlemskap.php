@@ -1,0 +1,98 @@
+<?php
+/**
+ * Medlemskap: start, status og oppsigelse.
+ *
+ *   GET                      planene, og min egen avtale
+ *   POST handling=start      { plan }   → url til Vipps
+ *   POST handling=siOpp      stopper avtalen i Vipps
+ *
+ * Avtalen godkjennes i Vipps én gang, og belastes deretter hver maaned av
+ * cron. Vi setter den aldri aktiv selv — vi sporr Vipps.
+ */
+
+declare(strict_types=1);
+
+require __DIR__ . '/_boot.php';
+
+$planer = static fn(): array => array_map(static fn($p) => [
+    'navn'     => $p['navn'],
+    'pris'     => Booking::kroner((int) $p['pris_ore']),
+    'prisOre'  => (int) $p['pris_ore'],
+    'periode'  => (int) $p['engangs'] === 1 ? 'engangs' : 'per måned',
+    'timer'    => $p['timer'] === null ? null : (int) $p['timer'],
+    'binding'  => (int) $p['binding_mnd'],
+    'engangs'  => (bool) $p['engangs'],
+], Medlemskap::planer());
+
+// ------------------------------------------------------------------ lesing
+if (Foresporsel::metode() === 'GET') {
+    $medlem = Sesjon::medlem();
+    $min = null;
+
+    if ($medlem !== null) {
+        $a = Medlemskap::avtale((int) $medlem['id']);
+        if ($a !== null) {
+            $min = [
+                'plan'       => $a['plan'],
+                'pris'       => Booking::kroner((int) $a['pris_ore']),
+                'status'     => $a['status'],
+                'nesteTrekk' => $a['neste_trekk']
+                    ? Booking::norskDatoKort((string) $a['neste_trekk'] . ' 12:00:00') : null,
+                'binding'    => $a['binding_til']
+                    ? Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00') : null,
+                'kanSiOpp'   => $a['status'] === 'aktiv'
+                    && ($a['binding_til'] === null || $a['binding_til'] < gmdate('Y-m-d')),
+            ];
+        }
+    }
+
+    Svar::json(['planer' => $planer(), 'min' => $min]);
+}
+
+// ----------------------------------------------------------------- skriving
+Foresporsel::krevMetode('POST');
+Foresporsel::krevSammeOpphav();
+$medlem = krev_medlem();
+
+switch (Foresporsel::tekst('handling')) {
+
+    case 'start':
+        Rate::sjekk('medlemsavtale', maks: 5, vindu: 600);
+        try {
+            $ut = Medlemskap::startAvtale($medlem, Foresporsel::tekst('plan'));
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('medlemsavtale_startet', 'subscription', $ut['id'], ['plan' => Foresporsel::tekst('plan')]);
+        Svar::ok(['url' => $ut['url']]);
+
+    case 'siOpp':
+        $a = Medlemskap::avtale((int) $medlem['id']);
+        if ($a === null) {
+            Svar::feil('Du har ingen loepende avtale.');
+        }
+        if ($a['binding_til'] !== null && $a['binding_til'] >= gmdate('Y-m-d')) {
+            Svar::feil('Aarsavtalen loeper til ' . Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00')
+                . '. Ta kontakt om noe har endret seg, saa finner vi ut av det.');
+        }
+        try {
+            Medlemskap::siOpp($a);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('medlemsavtale_sagt_opp', 'subscription', (int) $a['id']);
+        Svar::ok(['beskjed' => 'Medlemskapet er sagt opp. Du blir ikke trukket igjen.']);
+
+    // Kunden kan ha godkjent i appen uten aa komme tilbake til nettsiden.
+    // Denne lar Min side sporre Vipps paa nytt.
+    case 'sjekk':
+        $a = Medlemskap::avtale((int) $medlem['id']);
+        if ($a === null) {
+            Svar::feil('Du har ingen avtale aa sjekke.');
+        }
+        $status = Medlemskap::oppdaterFraVipps($a);
+        Svar::ok(['status' => $status]);
+
+    default:
+        Svar::feil('Ukjent handling.');
+}

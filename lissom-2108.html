@@ -799,6 +799,9 @@ window.__resources = {
           </div>
         </section>
 
+        <!-- Seksjonen vises bare naar et medlem faktisk har lagt ut noe. En
+             overskrift over fire tomme plasser ser ut som en feil. -->
+        <sc-if value="{{ harGalleri }}" hint-placeholder-val="{{ true }}">
         <section style="background: var(--clay-100); padding: var(--section-y) var(--space-8);">
           <div style="max-width: var(--width-content); margin: 0 auto;">
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Laget av medlemmene</div>
@@ -811,6 +814,7 @@ window.__resources = {
             </div>
           </div>
         </section>
+        </sc-if>
       </sc-if>
 
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8); position: relative; overflow: hidden;">
@@ -953,7 +957,7 @@ window.__resources = {
                   <div style="height: var(--space-5);"></div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode (valgfritt)" icon="gift" placeholder="Skriv koden" hint-size="100%,66px"></x-import>
                   <div style="height: var(--space-5);"></div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">Book plass · {{ bookOrdreSum }}</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
                   
                   <sc-if value="{{ erBookKvittert }}" hint-placeholder-val="{{ true }}">
                     <div style="background: var(--sage-50, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -1215,6 +1219,14 @@ window.__resources = {
               <button type="button" onClick="{{ ukeNeste }}" aria-label="Neste uke" style="{{ ukePilStilH }}">›</button>
             </div>
           </div>
+          <!-- En tom uke sa «Ingen kurs i dag» sju ganger og ga ingen vei
+               videre. Naa staar det hvor det neste faktisk er. -->
+          <sc-if value="{{ ukeTom }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+              <span style="font-size: var(--text-base); color: var(--text-body);">{{ ukeTomTekst }}</span>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ ukeTomGaa }}" hint-size="auto,40px">{{ ukeTomKnapp }}</x-import>
+            </div>
+          </sc-if>
           <div class="lx-week" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-3);">
             <sc-for list="{{ uke }}" as="d" hint-placeholder-count="7">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); min-height: 170px; display: flex; flex-direction: column;">
@@ -1829,7 +1841,19 @@ window.__resources = {
                 <sc-if value="{{ gDelIkkeSendt }}" hint-placeholder-val="{{ true }}">
                   <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); align-items: start;">
                     <div style="display: flex; flex-direction: column; gap: var(--space-4);">
-                      <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px;"><image-slot id="salg-bilde" shape="rounded" radius="12" placeholder="Slipp produktbilde — beskjæres automatisk til kvadrat (1:1)"></image-slot></div>
+                      <!-- «image-slot» er en plassholder fra designverktoyet og
+                           laster ingenting opp. Et vanlig filfelt gjor det. -->
+                      <label style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px; border: 2px dashed var(--lissom-brown); background: var(--clay-100); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; padding: var(--space-4); text-align: center;">
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ settSkBilde }}" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                        <sc-if value="{{ harSkBilde }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); word-break: break-all;">{{ skBilde }}</span>
+                          <span style="font-size: var(--text-xs); color: var(--text-muted);">Trykk for å bytte bilde</span>
+                        </sc-if>
+                        <sc-if value="{{ skIkkeBilde }}" hint-placeholder-val="{{ true }}">
+                          <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Velg produktbilde</span>
+                          <span style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres og lagres på nytt hos oss.</span>
+                        </sc-if>
+                      </label>
                       <div>
                         <div style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Fokuspunkt</div>
                         <div style="display: grid; grid-template-columns: repeat(3, 24px); gap: 4px;">
@@ -1875,7 +1899,7 @@ window.__resources = {
                       <sc-if value="{{ skFeil }}" hint-placeholder-val="{{ false }}">
                         <div style="background: var(--terracotta-100, var(--clay-100)); border: 1px solid var(--terracotta-500); border-radius: var(--radius-md); padding: 10px 12px; font-size: var(--text-xs); color: var(--terracotta-600);">{{ skFeilTekst }}</div>
                       </sc-if>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ skSend }}" hint-size="auto,44px">Send til godkjenning</x-import>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ skSend }}" hint-size="auto,44px">{{ skSendKnapp }}</x-import>
                       <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Salget er en avtale mellom deg og kjøperen — betaling går direkte til ditt Vippsnummer.</p>
                     </div>
                   </div>
@@ -3931,68 +3955,6 @@ window.__resources = {
             </div>
           </sc-for>
         </div>
-
-        <div style="background: var(--surface-card); border: 2px solid var(--terracotta-500); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
-          <div style="padding: var(--space-5) var(--space-6); background: var(--terracotta-500); color: var(--clay-50); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Medlemssalg — venter på godkjenning</span>
-            <span style="font-size: var(--text-xs);">Publiseres i butikken først når du godkjenner</span>
-          </div>
-          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-            <div style="min-width: 0;">
-              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">«Selg keramikk» på Min side</div>
-              <div style="font-size: var(--text-xs); color: var(--text-muted);">Styrer om medlemmene ser innsendingsskjemaet. Allerede publiserte produkter påvirkes ikke.</div>
-            </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ salgSkjemaEtikett }}" checked="{{ salgSkjemaPaa }}" on-change="{{ salgSkjemaVeksl }}" hint-size="auto,28px"></x-import>
-          </div>
-          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgsuke — kampanje på forsiden</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">Front en periode der medlemmene selger varer sammen i nettbutikken.</div>
-              </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ kampanjeEtikett }}" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="auto,28px"></x-import>
-            </div>
-            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
-              <input value="{{ kampanjeTittel }}" onChange="{{ settKampanjeTittel }}" placeholder="Tittel" style="{{ skFeltStil }}">
-              <input value="{{ kampanjePeriode }}" onChange="{{ settKampanjePeriode }}" placeholder="Periode, f.eks. 2.–8. september" style="{{ skFeltStil }}">
-            </div>
-            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-              <input value="{{ kampanjeTekst }}" onChange="{{ settKampanjeTekst }}" placeholder="Tekst som vises på forsiden" style="{{ skFeltStil }}">
-            </div>
-            <!-- Teksten sto bare i skjermbildet og forsvant ved neste
-                 sidelasting — den staar paa forsiden, saa den maa lagres. -->
-            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kampanjeLagre }}" hint-size="auto,36px">{{ kampanjeKnapp }}</x-import>
-              <sc-if value="{{ kampanjeUlagret }}" hint-placeholder-val="{{ false }}">
-                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
-              </sc-if>
-            </div>
-          </div>
-          <sc-if value="{{ gIngenVenter }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen bidrag venter nå.</div>
-          </sc-if>
-          <sc-for list="{{ gVenter }}" as="g" hint-placeholder-count="2">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                <button type="button" onClick="{{ g.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
-                <button type="button" onClick="{{ g.avvis }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">Avvis</button>
-              </div>
-            </div>
-          </sc-for>
-          <sc-if value="{{ gHarPubliserte }}" hint-placeholder-val="{{ true }}">
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--clay-100); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Publisert</span>
-              <sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">
-                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button></span>
-              </sc-for>
-            </div>
-          </sc-if>
-        </div>
-
         <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
             <div style="display: grid; grid-template-columns: 1.4fr 1.2fr 1.4fr 1.1fr; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
@@ -4184,6 +4146,68 @@ window.__resources = {
             </sc-for>
           </div>
           </div>
+        </div>
+              <!-- Godkjenning av medlemssalg. Laa paa Drop-in-skjermen, som ikke
+             har noe med saken aa gjore — det er varer i butikken. -->
+        <div style="background: var(--surface-card); border: 2px solid var(--terracotta-500); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-5) var(--space-6); background: var(--terracotta-500); color: var(--clay-50); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Medlemssalg — venter på godkjenning</span>
+            <span style="font-size: var(--text-xs);">Publiseres i butikken først når du godkjenner</span>
+          </div>
+          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="min-width: 0;">
+              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">«Selg keramikk» på Min side</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">Styrer om medlemmene ser innsendingsskjemaet. Allerede publiserte produkter påvirkes ikke.</div>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ salgSkjemaEtikett }}" checked="{{ salgSkjemaPaa }}" on-change="{{ salgSkjemaVeksl }}" hint-size="auto,28px"></x-import>
+          </div>
+          <div style="padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Salgsuke — kampanje på forsiden</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">Front en periode der medlemmene selger varer sammen i nettbutikken.</div>
+              </div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ kampanjeEtikett }}" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="auto,28px"></x-import>
+            </div>
+            <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+              <input value="{{ kampanjeTittel }}" onChange="{{ settKampanjeTittel }}" placeholder="Tittel" style="{{ skFeltStil }}">
+              <input value="{{ kampanjePeriode }}" onChange="{{ settKampanjePeriode }}" placeholder="Periode, f.eks. 2.–8. september" style="{{ skFeltStil }}">
+            </div>
+            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+              <input value="{{ kampanjeTekst }}" onChange="{{ settKampanjeTekst }}" placeholder="Tekst som vises på forsiden" style="{{ skFeltStil }}">
+            </div>
+            <!-- Teksten sto bare i skjermbildet og forsvant ved neste
+                 sidelasting — den staar paa forsiden, saa den maa lagres. -->
+            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kampanjeLagre }}" hint-size="auto,36px">{{ kampanjeKnapp }}</x-import>
+              <sc-if value="{{ kampanjeUlagret }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+              </sc-if>
+            </div>
+          </div>
+          <sc-if value="{{ gIngenVenter }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen bidrag venter nå.</div>
+          </sc-if>
+          <sc-for list="{{ gVenter }}" as="g" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.tittel }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.pris }} · {{ g.laget }} · Vipps {{ g.vipps }} · {{ g.levering }}</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ g.godkjenn }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; white-space: nowrap;">Godkjenn</button>
+                <button type="button" onClick="{{ g.avvis }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">Avvis</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ gHarPubliserte }}" hint-placeholder-val="{{ true }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--clay-100); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Publisert</span>
+              <sc-for list="{{ gPubliserte }}" as="g" hint-placeholder-count="4">
+                <span style="display: inline-flex; align-items: center; gap: 8px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 5px 6px 5px 12px; font: var(--type-body-sm); color: var(--text-heading);">{{ g.tittel }}<button type="button" onClick="{{ g.skjul }}" title="Skjul fra nettsiden" style="appearance: none; cursor: pointer; border: none; background: var(--clay-100); color: var(--text-muted); border-radius: 999px; padding: 2px 8px; font-size: 11px;">Skjul</button></span>
+              </sc-for>
+            </div>
+          </sc-if>
         </div>
       </main>
     </div>
@@ -5831,6 +5855,41 @@ class Component extends DCLogic {
   }
 
   /** Uketallet for i dag, etter ISO. */
+  // Uka kalenderen skal aapne paa.
+  //
+  // Den aapnet paa inneverende uke, uansett om det sto noe der. Er det
+  // mandag i en stille uke og forste kurs er neste torsdag, moter man sju
+  // ganger «Ingen kurs i dag» og tror kalenderen ikke er koblet til noe.
+  // Naa aapner den paa den forste uka framover som faktisk har noe.
+  ukeMedNoe(fra) {
+    const okter = this.okterEtterUke(fra);
+    return okter.length ? okter[0] : fra;
+  }
+
+  /** Ukenumrene framover som har minst én okt, i rekkefolge. */
+  okterEtterUke(fra) {
+    const naa = new Date();
+    const uker = [];
+    (this.state.katalog || []).forEach(k => {
+      if (k.tema === 'Kun for medlemmer') return;
+      (k.datoer || []).forEach(o => {
+        if (!o.startUtc) return;
+        const d = new Date(String(o.startUtc).replace(' ', 'T') + 'Z');
+        if (d < naa) return;
+        const u = this.isoUke(new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' })));
+        if (u >= fra && uker.indexOf(u) === -1) uker.push(u);
+      });
+    });
+    return uker.sort((a, b) => a - b);
+  }
+
+  isoUke(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+    const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
+  }
+
   ukeNaa() {
     if (!this.erPublisert()) return 35;
     const naa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
@@ -5979,7 +6038,9 @@ class Component extends DCLogic {
   pengeHandling(h) {
     if (!h) return null;
     if (h.indexOf('Betal') === 0) return 'betaling';
-    if (h.indexOf('Opprett avtale') === 0) return 'avtale';
+    // Avtalen gaar naa mot Vipps gjennom bekreftBooking(). Bare knapper uten
+    // en slik kobling fanges her.
+    if (h.indexOf('Opprett avtale') === 0 && !(this.state.detalj || {}).gjor) return 'avtale';
     // Avbestilling gaar mot serveren naar plassen er en ekte booking, og
     // haandteres av gjor()-tilbakekallet. Bare knapper uten en slik kobling
     // faanges her.
@@ -5994,7 +6055,7 @@ class Component extends DCLogic {
     if (slag) {
       const melding = {
         betaling: ['Betaling kommer snart', 'Vi tar ikke imot betaling for dette ennaa. Ta kontakt paa post@lissom.no, saa ordner vi det.'],
-        avtale: ['Medlemsavtale kommer snart', 'Vipps-avtalen er ikke koblet opp ennaa. Ta kontakt paa post@lissom.no, saa setter vi den opp for deg.'],
+        avtale: ['Medlemsavtale', 'Trykk «Opprett avtale i Vipps» paa medlemskapssiden, saa gaar den gjennom Vipps.'],
         avbestilling: ['Ta kontakt for avbestilling', 'Send oss en e-post paa post@lissom.no, saa avbestiller vi og ordner refusjonen.'],
       }[slag];
       this.setState({ detalj: null, kvittering: melding[0], kvitteringDetalj: melding[1] });
@@ -8656,39 +8717,136 @@ class Component extends DCLogic {
     return { score: Math.max(0, score), trekk };
   }
 
-  galleriListe() {
-    // Medlemskolleksjonen. Fem oppdiktede selgere med oppdiktede telefonnumre
-    // og e-postadresser sto her og ble vist offentlig i butikken — nummer som
-    // enten ikke finnes, eller tilhorer noen som ikke aner noe om det.
-    //
-    // Medlemmene kan legge ut arbeider fra Min side, men det gaar ikke mot
-    // basen ennaa. Til det er paa plass viser vi ingen.
-    const basis = this.erPublisert() ? [] : [
-      { id: 'g1', status: 'publisert', tittel: 'Kopp i steingods', tekst: 'Dreid i verkstedet, glasert med sandglasur. Tåler oppvaskmaskin.', laget: 'Laget av Ingrid', bilde: 'assets_photos_butikken.jpg', pris: 'kr. 350,-', vipps: '412 34 567', kontakt: 'ingrid@epost.no', levering: 'Leveres etter avtale', antall: 2, kategori: 'Kopper' },
-      { id: 'g2', status: 'publisert', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter i verkstedet. Ett unikt eksemplar.', laget: 'Laget av Jonas', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'jonas@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
-      { id: 'g3', status: 'publisert', tittel: 'Fat i plateteknikk', tekst: 'Dekorfat laget på plateteknikk-kurs. Ikke matsikret — ment som pyntefat.', laget: 'Laget av Silje', bilde: 'assets_photos_plateteknikk-fat.jpg', pris: 'kr. 520,-', vipps: '901 23 456', kontakt: 'silje@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
-      { id: 'g4', status: 'publisert', tittel: 'Boller i sett', tekst: 'Tre små boller, dreid og trimmet i verkstedet. Selges samlet.', laget: 'Laget av et medlem', bilde: 'assets_photos_dreiing-naerbilde.jpg', pris: 'kr. 480,-', vipps: '456 78 901', kontakt: '940 12 345', levering: 'Leveres etter avtale', antall: 1, kategori: 'Boller' },
-      { id: 'g5', status: 'venter', tittel: 'Mugge med hank', tekst: 'Første forsøk på hank — ett unikt eksemplar.', laget: 'Laget av Emma', bilde: 'assets_photos_butikken.jpg', pris: 'kr. 300,-', vipps: '478 90 123', kontakt: 'emma@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Kopper' },
-    ];
-    const endringer = this.state.galleriEndringer || [];
-    const overstyrt = {};
-    endringer.forEach(e => { if (e.id && !e.tittel) overstyrt[e.id] = e.status; });
-    const nye = endringer.filter(e => e.tittel);
-    return basis.map(b => Object.assign({}, b, overstyrt[b.id] ? { status: overstyrt[b.id] } : {}))
-      .concat(nye.map(n => {
-        const o = overstyrt[n.id];
-        return Object.assign({}, n, o ? { status: o } : {});
-      }));
+  // Medlemskapsavtalen i Vipps. Kunden godkjenner den én gang, og den
+  // belastes hver maaned av cron — ikke av et sidevisning.
+  hentMedlemskap() {
+    if (!this.erPublisert() || this._medlemskapHentes) return;
+    this._medlemskapHentes = true;
+    fetch('/api/medlemskap.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._medlemskapHentes = false;
+        if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null });
+      })
+      .catch(() => { this._medlemskapHentes = false; });
   }
 
-  galleriSettStatus(id, status) {
-    this.setState(s => {
-      const liste = (s.galleriEndringer || []).slice();
-      const eksisterende = liste.findIndex(e => e.id === id && e.tittel);
-      if (eksisterende >= 0) { liste[eksisterende] = Object.assign({}, liste[eksisterende], { status }); return { galleriEndringer: liste }; }
-      return { galleriEndringer: liste.filter(e => !(e.id === id && !e.tittel)).concat([{ id, status }]) };
-    });
+  medlemskapKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._medlemskapLagrer) return Promise.resolve(false);
+    this._medlemskapLagrer = true;
+
+    return fetch('/api/medlemskap.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._medlemskapLagrer = false;
+        // Skal kunden til Vipps for aa godkjenne, sender vi hen dit.
+        if (ok && d.url) { window.location.href = d.url; return true; }
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._medlemskapHentes = false; this.hentMedlemskap(); }
+        return ok;
+      })
+      .catch(() => {
+        this._medlemskapLagrer = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
   }
+
+  // Medlemmenes salg. Fem oppdiktede selgere med telefonnumre og
+  // e-postadresser sto her og ble vist offentlig i butikken.
+  //
+  // Naa: publiserte varer fra api/medlemssalg.php i butikken, og i admin hele
+  // lista med det som venter paa godkjenning oeverst.
+  galleriListe() {
+    if (this.state.adminSalg) {
+      return this.state.adminSalg.map(v => Object.assign({}, v, {
+        status: v.status === 'til_godkjenning' ? 'venter'
+              : v.status === 'publisert' ? 'publisert' : v.status,
+      }));
+    }
+    if (this.state.offentligSalg) {
+      return this.state.offentligSalg.map(v => Object.assign({}, v, { status: 'publisert' }));
+    }
+    return this.erPublisert() ? [] : [
+      { id: 1, status: 'publisert', tittel: 'Kopp i steingods', tekst: 'Dreid i verkstedet, glasert med sandglasur.', laget: 'Laget av et medlem', bilde: 'assets_photos_butikken.jpg', pris: 'kr. 350,-', vipps: '412 34 567', kontakt: 'medlem@epost.no', levering: 'Leveres etter avtale', antall: 2, kategori: 'Kopper' },
+      { id: 2, status: 'venter', tittel: 'Vase med askeglasur', tekst: 'Håndbygget over tre økter.', laget: 'Laget av et medlem', bilde: 'assets_photos_handbygging.jpg', pris: 'kr. 650,-', vipps: '923 45 678', kontakt: 'medlem@epost.no', levering: 'Leveres etter avtale', antall: 1, kategori: 'Fat' },
+    ];
+  }
+  // Godkjenning gaar mot serveren. Sto som en liste i skjermbildet, saa et
+  // «godkjenn» var borte ved neste sidelasting — og varen kom aldri ut.
+  salgKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._salgLagrer) return Promise.resolve(false);
+    this._salgLagrer = true;
+
+    return fetch('/api/admin/medlemssalg.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._salgLagrer = false;
+        this.setState(Object.assign(
+          { kvittering: ok ? 'Lagret' : 'Ble ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' },
+          ok && d.salg ? { adminSalg: d.salg } : {}
+        ));
+        if (ok) { this._salgHentes = false; this.hentOffentligSalg(); }
+        return ok;
+      })
+      .catch(() => {
+        this._salgLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
+  hentAdminSalg() {
+    if (!this.erPublisert() || this._adminSalgHentes) return;
+    this._adminSalgHentes = true;
+    fetch('/api/admin/medlemssalg.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._adminSalgHentes = false;
+        if (d && d.salg) this.setState({ adminSalg: d.salg });
+      })
+      .catch(() => { this._adminSalgHentes = false; });
+  }
+
+  hentOffentligSalg() {
+    if (!this.erPublisert() || this._salgHentes) return;
+    this._salgHentes = true;
+    fetch('/api/medlemssalg.php', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._salgHentes = false;
+        if (d && d.varer) this.setState({ offentligSalg: d.varer });
+      })
+      .catch(() => { this._salgHentes = false; });
+  }
+
+  hentMineSalg() {
+    if (!this.erPublisert() || this._mineSalgHentes) return;
+    this._mineSalgHentes = true;
+    fetch('/api/medlemssalg.php?mine=ja', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._mineSalgHentes = false;
+        if (d && d.mine) this.setState({ mineSalg: d.mine });
+      })
+      .catch(() => { this._mineSalgHentes = false; });
+  }
+
 
   mobilSkjul() {
     // Salgsuke-banneret finnes to steder paa forsiden. Paa mobil kom de rett
@@ -9004,6 +9162,21 @@ class Component extends DCLogic {
     }
     if (side === 'minside' && this.state.innlogget && !this.state.mineKjop) {
       this.hentMineKjop();
+    }
+    if (side === 'minside' && this.state.innlogget && !this.state.mineSalg) {
+      this.hentMineSalg();
+    }
+    if ((side === 'minside' || side === 'medlemskap') && !this.state.planListe) {
+      this.hentMedlemskap();
+    }
+    // Medlemskolleksjonen i butikken.
+    if ((side === 'butikk' || side === 'forside') && !this.state.offentligSalg) {
+      this.hentOffentligSalg();
+    }
+    // Godkjenningslista staar paa Drop-in-skjermen, ikke bare Butikk. Hentes
+    // paa alle admin-sider — det er ett lite oppslag.
+    if (side.indexOf('admin') === 0 && !this.state.adminSalg) {
+      this.hentAdminSalg();
     }
     if (side === 'adminokonomi' && !this.state.okonomi) {
       this.hentOkonomi();
@@ -9598,7 +9771,7 @@ class Component extends DCLogic {
         clearTimeout(this._fsTimer);
         this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
       },
-      uke: this.ukeData(this.state.ukeNr ?? this.ukeNaa()).map((d, dagIdx) => Object.assign(d, {
+      uke: this.ukeData(this.state.ukeNr ?? this.ukeMedNoe(this.ukeNaa())).map((d, dagIdx) => Object.assign(d, {
         erTom: !(d.poster || []).length,
         tomTekst: 'Ingen kurs i dag',
         velgDag: (d.poster || []).length
@@ -9626,22 +9799,42 @@ class Component extends DCLogic {
       })),
       mittAbo: aboNavn,
       mittAboPris: plan.pris + ' ' + plan.periode,
-      // Medlemskapsbetaling gaar ikke gjennom noe system ennaa. «Fornyes 1.
-      // september» var en paastand om et trekk som ikke finnes.
-      aboStatus: this.state.oppsagt ? 'Sagt opp, løper ut august'
-        : (this.erPublisert() ? 'Avtalen gjøres opp direkte med verkstedet' : 'Fornyes 1. september · kan sies opp når du vil'),
-      erOppsagt: !!this.state.oppsagt,
-      aboBadge: this.state.oppsagt ? 'Sagt opp' : 'Aktivt',
-      aboBadgeStil: {
-        fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
-        padding: '3px 10px', borderRadius: 999,
-        background: this.state.oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
-        color: this.state.oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
-      },
-      // Det finnes ingen trekk. Vipps Recurring er ikke bygget, og «1. sep ·
-      // kr. 2 590,-» var en paastand om noe som ikke skjer.
-      aboNesteTrekk: this.state.oppsagt ? '—'
-        : (this.erPublisert() ? 'Avtales med verkstedet' : '1. sep · ' + plan.pris),
+      // Avtalen slik den staar i Vipps. «Fornyes 1. september» sto som fast
+      // tekst — en paastand om et trekk som ikke fantes noe sted.
+      ...(() => {
+        const a = this.state.minAvtale;
+        const oppsagt = a ? (a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
+        const status = a
+          ? ({
+              aktiv:   a.nesteTrekk ? 'Trekkes automatisk i Vipps' : 'Aktiv',
+              venter:  'Venter på godkjenning i Vipps',
+              stoppet: 'Sagt opp — ingen flere trekk',
+              utlopt:  'Avtalen har løpt ut',
+              avslaatt:'Avtalen ble ikke godkjent',
+            }[a.status] || a.status)
+          : (this.erPublisert() ? 'Avtalen gjøres opp direkte med verkstedet' : 'Fornyes 1. september · kan sies opp når du vil');
+
+        return {
+          aboStatus: status + (a && a.binding ? ' · bundet til ' + a.binding : ''),
+          erOppsagt: oppsagt,
+          aboBadge: a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
+                      : (oppsagt ? 'Sagt opp' : 'Aktivt'),
+          aboBadgeStil: {
+            fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+            padding: '3px 10px', borderRadius: 999,
+            background: oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
+            color: oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
+          },
+          aboNesteTrekk: a
+            ? (a.nesteTrekk ? a.nesteTrekk + ' · ' + a.pris : '—')
+            : (this.erPublisert() ? 'Avtales med verkstedet' : '1. sep · ' + plan.pris),
+          aboKanSiOpp: !!(a && a.kanSiOpp),
+          aboSiOpp: () => {
+            if (!window.confirm('Si opp medlemskapet? Du blir ikke trukket igjen.')) return;
+            this.medlemskapKall({ handling: 'siOpp' });
+          },
+        };
+      })(),
       aboFordeler: aboNavn === 'Fri tilgang' ? ['Ubegrenset verkstedtid', 'Dørkode og medlemspriser']
         : aboNavn === 'Prøv Lissom' ? ['30 dager prøvetid', 'Tilgang til verksted og utstyr']
         : ['30 verkstedtimer i måneden', 'Dørkode og medlemspriser'],
@@ -9927,9 +10120,30 @@ class Component extends DCLogic {
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || k.date || '';
         this.leggTil((k.title || k.tittel || 'Kurs') + (dato ? ' — ' + dato : ''));
       },
+      // Knappen sier hva som faktisk skjer. «Book plass» paa et medlemskap
+      // er misvisende — det er en avtale, ikke en plass.
+      bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')
+        ? 'Opprett avtale i Vipps'
+        : 'Book plass · ' + ((() => {
+            const k = this.state.valgtKurs || {};
+            const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
+            const antall = Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
+            const grunn = this.prisAv(k.title || '') || 0;
+            const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
+            return k.price === 'Gratis' ? 'Gratis'
+              : 'kr. ' + Math.round(netto).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-';
+          })()),
       bekreftBooking: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra kr. 2 800,-', date: 'Onsdag 2. september, 17:30' };
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || (k.date + (k.duration ? ', ' + k.duration : ''));
+        // Medlemskap er ikke en booking, men en avtale i Vipps som belastes
+        // hver maaned. «Betalingen er gjennomfort» sto her uansett — for et
+        // trekk som ikke fantes.
+        if ((k.tema === 'Medlemskap' || k.level === 'Medlemskap') && this.erPublisert()) {
+          this.medlemskapKall({ handling: 'start', plan: k.title || k.tittel });
+          return;
+        }
+
         const erMedlem = k.level === 'Kun for medlemmer' || k.price === 'Gratis';
         if (erMedlem) {
           const ny = {
@@ -11176,7 +11390,9 @@ class Component extends DCLogic {
           title: g.tittel, detalj: g.tekst, pris: g.pris, image: g.bilde,
           visInfo: () => this.setState({ salgApen: g.id }),
           imageCss: "url('" + g.bilde + "')", fokus: this.fokusFor(g.id),
-          badge: 'Laget av medlem', kategori: g.kategori, erMedlem: true,
+          // Navnet paa den som laget den — det er hele poenget med
+          // kolleksjonen. Sto som «Laget av medlem» paa alt.
+          badge: g.laget || 'Laget av medlem', kategori: g.kategori, erMedlem: true,
           cta: 'Se produkt',
           velgHandling: () => this.setState({ salgApen: g.id }),
         }));
@@ -12505,10 +12721,15 @@ class Component extends DCLogic {
         { sp: 'Kan jeg glasere senere?', sv: 'Ja. Arbeidene tørker og råbrennes hos oss, og du kan komme tilbake på ny drop-in for å glasere.' },
         { sp: 'Hva skjer med tingene jeg lager?', sv: 'Vi brenner arbeidene dine, og de er klare til henting etter 2–3 uker. Vi sender beskjed.' },
       ],
-      galleriKort: this.galleriListe().filter(g => g.status === 'publisert').map(g => ({
-        tittel: g.tittel, tekst: g.tekst, laget: g.laget, bilde: g.bilde, pris: g.pris,
+      // Butikken viser bare det som er godkjent. Bildet kommer fra
+      // api/bilde.php, som ikke gir ut bilder til varer som venter.
+      galleriKort: (this.state.offentligSalg || this.galleriListe().filter(g => g.status === 'publisert')).map(g => ({
+        tittel: g.tittel, tekst: g.tekst, laget: g.laget,
+        bilde: g.bilde, bildeCss: "url('" + (g.bilde || '') + "')", harBilde: !!g.bilde,
+        pris: g.pris, kategori: g.kategori,
         apne: () => this.setState({ salgApen: g.id }),
       })),
+      harGalleri: (this.state.offentligSalg || []).length > 0 || !this.erPublisert(),
       salgApen: !!this.state.salgApen,
       salgSkjemaPaa: this.bryterPaa('salgsskjema'),
       kampanjeVis: this.bryterPaa('salgsuke') && this.mobilVis('salgsuke'),
@@ -12597,8 +12818,26 @@ class Component extends DCLogic {
       })),
       skFeil: !!this.state.skFeil,
       skFeilTekst: this.state.skFeil || '',
+      // Bildet velges med et vanlig filfelt. «image-slot» i designet er en
+      // plassholder — den laster ingenting opp.
+      skBilde: this.state.skBildeNavn || '',
+      harSkBilde: !!this.state.skBildeNavn,
+      skIkkeBilde: !this.state.skBildeNavn,
+      settSkBilde: e => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        if (f.size > 8 * 1024 * 1024) {
+          this.setState({ skFeil: 'Bildet er for stort. Maks 8 MB.' });
+          return;
+        }
+        this._skFil = f;
+        this.setState({ skBildeNavn: f.name, skFeil: null });
+      },
+      skSender: !!this.state.skSender,
+      skSendKnapp: this.state.skSender ? 'Sender …' : 'Send til godkjenning',
       skSend: () => {
         const s = this.state;
+        if (s.skSender) return;
         const mangler = [];
         if (!s.skNavn) mangler.push('produktnavn');
         if (!s.skTekst) mangler.push('beskrivelse');
@@ -12608,26 +12847,77 @@ class Component extends DCLogic {
         if (!s.skVipps) mangler.push('vippsnummer');
         if (!s.skKontakt) mangler.push('kontaktinfo');
         if (!s.skKategori) mangler.push('kategori');
+        if (!this._skFil) mangler.push('bilde');
         if (!s.b1 || !s.b2 || !s.b3) mangler.push('bekreftelsene');
         if (mangler.length) { this.setState({ skFeil: 'Mangler: ' + mangler.join(', ') + '.' }); return; }
-        this.setState(st => ({
-          skFeil: null, gDelSendt: true,
-          galleriEndringer: (st.galleriEndringer || []).concat([{
-            id: 'ny-' + Date.now(), status: 'venter',
-            tittel: st.skNavn, tekst: st.skTekst, pris: 'kr. ' + st.skPris + ',-',
-            laget: 'Laget av ' + st.skProdusent, vipps: st.skVipps, kontakt: st.skKontakt,
-            levering: 'Leveres etter avtale', antall: parseInt(st.skAntall, 10) || 1, kategori: st.skKategori,
-            bilde: 'assets_photos_handbygging.jpg',
-          }]),
-        }));
+
+        if (!this.erPublisert()) { this.setState({ skFeil: null, gDelSendt: true }); return; }
+
+        // Multipart, fordi skjemaet har med et bilde.
+        const skjema = new FormData();
+        skjema.append('tittel', s.skNavn);
+        skjema.append('tekst', s.skTekst);
+        skjema.append('pris', s.skPris);
+        skjema.append('antall', s.skAntall);
+        skjema.append('produsent', s.skProdusent);
+        skjema.append('vipps', s.skVipps);
+        skjema.append('kontakt', s.skKontakt);
+        skjema.append('kategori', s.skKategori);
+        if (this._skFil) skjema.append('bilde', this._skFil);
+
+        this.setState({ skSender: true, skFeil: null });
+        fetch('/api/medlemssalg.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+          .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+          .then(({ ok, d }) => {
+            if (!ok) {
+              this.setState({ skSender: false, skFeil: (d && d.feil) || 'Noe gikk galt. Prøv igjen.' });
+              return;
+            }
+            this._skFil = null;
+            this.setState({
+              skSender: false, skFeil: null, gDelSendt: true,
+              skNavn: '', skTekst: '', skPris: '', skAntall: '', skProdusent: '',
+              skVipps: '', skKontakt: '', skKategori: '', skBildeNavn: '',
+              b1: false, b2: false, b3: false,
+              kvittering: 'Sendt til godkjenning', kvitteringDetalj: d.beskjed || '',
+            });
+            this._mineSalgHentes = false;
+            this.hentMineSalg();
+          })
+          .catch(() => this.setState({ skSender: false, skFeil: 'Fikk ikke kontakt med serveren.' }));
       },
+      // Mine egne varer, med status. En vare som ble avvist skal si hvorfor.
+      mineSalg: (this.state.mineSalg || []).map(v => Object.assign({}, v, {
+        statusTekst: { til_godkjenning: 'Til godkjenning', publisert: 'Ute i butikken', avvist: 'Ikke lagt ut', skjult: 'Tatt ned', solgt: 'Solgt' }[v.status] || v.status,
+        tone: { publisert: 'success', til_godkjenning: 'warning', avvist: 'danger' }[v.status] || 'neutral',
+        kanTrekke: v.status === 'publisert' || v.status === 'til_godkjenning',
+        trekk: () => {
+          if (!window.confirm('Ta ned «' + v.tittel + '»?')) return;
+          const f = new FormData();
+          f.append('handling', 'trekk');
+          f.append('id', String(v.id));
+          fetch('/api/medlemssalg.php', { method: 'POST', credentials: 'same-origin', body: f })
+            .then(r => r.json())
+            .then(d => {
+              this.setState({ kvittering: d && d.ok ? 'Tatt ned' : 'Gikk ikke', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+              this._mineSalgHentes = false; this.hentMineSalg();
+              this._salgHentes = false; this.hentOffentligSalg();
+            })
+            .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+        },
+      })),
+      harMineSalg: (this.state.mineSalg || []).length > 0,
       gVenter: this.galleriListe().filter(g => g.status === 'venter').map(g => Object.assign({}, g, {
-        godkjenn: () => this.galleriSettStatus(g.id, 'publisert'),
-        avvis: () => this.galleriSettStatus(g.id, 'avvist'),
+        godkjenn: () => this.salgKall({ handling: 'godkjenn', id: g.id }),
+        avvis: () => {
+          const grunn = window.prompt('Hvorfor legges den ikke ut? Selgeren får denne teksten.', '');
+          if (grunn === null) return;
+          this.salgKall({ handling: 'avvis', id: g.id, grunn: grunn });
+        },
       })),
       gIngenVenter: !this.galleriListe().some(g => g.status === 'venter'),
       gPubliserte: this.galleriListe().filter(g => g.status === 'publisert').map(g => Object.assign({}, g, {
-        skjul: () => this.galleriSettStatus(g.id, 'skjult'),
+        skjul: () => this.salgKall({ handling: 'skjul', id: g.id }),
       })),
       gHarPubliserte: this.galleriListe().some(g => g.status === 'publisert'),
       gDelSendt: !!this.state.gDelSendt,
@@ -13097,11 +13387,33 @@ class Component extends DCLogic {
       goDropin: () => this.goDropinNaa(),
       // Kalenderen starter paa denne uka og lar deg bla ett aar framover.
       // Grensene sto paa 35–37, som var de tre ukene designdataene dekket.
-      ukeNr: this.state.ukeNr ?? this.ukeNaa(),
-      ukeForrige: () => this.setState(s => ({ ukeNr: Math.max(this.ukeNaa(), (s.ukeNr ?? this.ukeNaa()) - 1) })),
-      ukeNeste: () => this.setState(s => ({ ukeNr: Math.min(this.ukeNaa() + 52, (s.ukeNr ?? this.ukeNaa()) + 1) })),
-      ukePilStilV: this.ukePil((this.state.ukeNr ?? this.ukeNaa()) > this.ukeNaa()),
-      ukePilStilH: this.ukePil((this.state.ukeNr ?? this.ukeNaa()) < this.ukeNaa() + 52),
+      ...(() => {
+        const start = this.ukeMedNoe(this.ukeNaa());
+        const vist = this.state.ukeNr ?? start;
+        // Uker framover som har noe. «Neste» hopper til den neste av dem,
+        // framfor aa bla gjennom tomme uker én for én.
+        const medNoe = this.okterEtterUke(this.ukeNaa());
+        const neste = medNoe.find(u => u > vist);
+        const forrige = medNoe.filter(u => u < vist).pop();
+
+        return {
+          ukeNr: vist,
+          ukeForrige: () => this.setState({ ukeNr: forrige ?? Math.max(this.ukeNaa(), vist - 1) }),
+          ukeNeste: () => this.setState({ ukeNr: neste ?? Math.min(this.ukeNaa() + 52, vist + 1) }),
+          ukePilStilV: this.ukePil(vist > this.ukeNaa()),
+          ukePilStilH: this.ukePil(vist < this.ukeNaa() + 52),
+          // Er uka tom, sier vi hvor det neste faktisk er — framfor sju
+          // «Ingen kurs i dag» paa rad og ingen vei videre.
+          ukeTom: this.erPublisert() && !this.ukeData(vist).some(d => (d.poster || []).length),
+          ukeTomTekst: neste
+            ? 'Ingenting denne uka. Neste kurs er i uke ' + neste + '.'
+            : (medNoe.length
+                ? 'Ingenting denne uka.'
+                : 'Ingen kursdatoer er lagt ut ennå. Ta kontakt, så finner vi en tid.'),
+          ukeTomKnapp: neste ? 'Gå til uke ' + neste : 'Se alle kurs',
+          ukeTomGaa: neste ? () => this.setState({ ukeNr: neste }) : this.go('kurs'),
+        };
+      })(),
       hoppTilKursliste: () => {
         const el = document.getElementById('kursliste');
         if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 110; window.scrollTo({ top: y, behavior: 'smooth' }); }

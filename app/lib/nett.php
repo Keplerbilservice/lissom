@@ -35,6 +35,23 @@ function http_post_json(string $url, array $data, array $headere = []): array
 }
 
 /**
+ * PATCH. Vipps bruker den til aa stoppe en avtale.
+ *
+ * @param array<string,mixed> $data
+ * @param list<string> $headere
+ * @return array{status:int,kropp:string,json:mixed}
+ */
+function http_patch_json(string $url, array $data, array $headere = []): array
+{
+    $svar = http_kall($url, 'PATCH', json_encode($data, JSON_UNESCAPED_UNICODE), array_merge(
+        ['Content-Type: application/json', 'Accept: application/json'],
+        $headere
+    ));
+    $svar['json'] = json_decode($svar['kropp'], true);
+    return $svar;
+}
+
+/**
  * @param list<string> $headere
  * @return array{status:int,kropp:string,json:mixed}
  */

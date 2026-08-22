@@ -89,8 +89,9 @@ $ubetalte = (int) DB::verdi(
 $kommende = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
-            (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
-              WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS pameldte
+            cs.manuelt_opptatt
+              + (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
+                  WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS pameldte
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.status = 'planlagt' AND cs.start_tid >= :fra

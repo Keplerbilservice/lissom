@@ -23,7 +23,7 @@ final class Booking
     public static function ledigePlasser(int $oktId): int
     {
         $okt = DB::en(
-            'SELECT cs.id, COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet
+            'SELECT cs.id, cs.manuelt_opptatt, COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :id AND cs.status = \'planlagt\'',
@@ -41,6 +41,11 @@ final class Booking
                      OR (status = 'reservert' AND reservert_til > UTC_TIMESTAMP()))",
             ['id' => $oktId]
         );
+
+        // Plasser som er tatt utenfor nettsiden — paamelding i verkstedet, paa
+        // telefon eller Instagram. De finnes ikke som bookinger, men de er
+        // opptatt, og maa trekkes fra her. Ellers ville nettsiden solgt dem.
+        $opptatt += (int) ($okt['manuelt_opptatt'] ?? 0);
 
         return max(0, (int) $okt['kapasitet'] - $opptatt);
     }
@@ -363,6 +368,42 @@ final class Booking
                 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
 
         return sprintf('%d. %s %d', (int) $d->format('j'), $mnd[(int) $d->format('n') - 1], (int) $d->format('Y'));
+    }
+
+    /**
+     * Som norskDato, men tar med sluttdagen naar okten gaar over flere dager:
+     * «onsdag 9. – torsdag 10. september, 17:00».
+     *
+     * Dreiekurset gaar to kvelder og er én paamelding. Sto bare startdagen,
+     * kunne man tro man booket en enkeltkveld.
+     */
+    public static function norskPeriode(string $start, ?string $slutt): string
+    {
+        $fra = self::norskDato($start);
+        if ($slutt === null || $slutt === '') {
+            return $fra;
+        }
+
+        $sone = new DateTimeZone('Europe/Oslo');
+        $s = (new DateTimeImmutable($start, new DateTimeZone('UTC')))->setTimezone($sone);
+        $t = (new DateTimeImmutable($slutt, new DateTimeZone('UTC')))->setTimezone($sone);
+        if ($s->format('Y-m-d') === $t->format('Y-m-d')) {
+            return $fra;
+        }
+
+        $dager = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
+        $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
+                'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+
+        return sprintf(
+            '%s %d. – %s %d. %s, %s',
+            $dager[(int) $s->format('N') - 1],
+            (int) $s->format('j'),
+            $dager[(int) $t->format('N') - 1],
+            (int) $t->format('j'),
+            $mnd[(int) $t->format('n') - 1],
+            $s->format('H:i')
+        );
     }
 
     /** 2026-09-02 15:30:00 UTC → «onsdag 2. september, 17:30» */

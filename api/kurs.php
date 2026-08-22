@@ -40,7 +40,7 @@ foreach ($kurs as $k) {
         'om'      => $k['beskrivelse'],
         'datoer'  => array_map(static fn($o) => [
             'oktId'  => (int) $o['id'],
-            'dato'   => Booking::norskDato((string) $o['start_tid']),
+            'dato'   => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
             'ledige' => Booking::ledigePlasser((int) $o['id']),
         ], $okter),
     ];

@@ -5384,12 +5384,15 @@ class Component extends DCLogic {
   go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s }); window.scrollTo(0, 0); }; }
 
   medBooking(liste) {
-    return liste.map(k0 => {
-      const k = this.medServerdata(k0);
-      return Object.assign({}, k, {
+    return liste
+      .map(k0 => this.medServerdata(k0))
+      // Et kurs uten datoer kan ikke bookes. Sto det likevel i lista, med
+      // «Book plass» og en gammel dato fra designet, sendte knappen folk til
+      // en bookingskjerm uten noe aa velge.
+      .filter(k => !k.utenDato)
+      .map(k => Object.assign({}, k, {
         book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
-      });
-    });
+      }));
   }
 
   // Kurs som bare finnes i databasen.
@@ -5408,7 +5411,6 @@ class Component extends DCLogic {
       // medlemsarrangementene dukket opp for alle.
       .filter(k => k.tema !== 'Kun for medlemmer')
       .map(k => {
-        const ledige = k.datoer.reduce((n, d) => n + d.ledige, 0);
         // Sip & Clay og Date Night hoerer under Events, og workshop er et
         // kurs. Uten dette ville et kurs lagret med temaet «Sip & Clay» falt
         // utenfor alle filtrene og bare vaert synlig under «Alle».
@@ -5420,10 +5422,9 @@ class Component extends DCLogic {
           temaer: this.undertemaer(k.tittel, k.tema),
           title: k.tittel,
           date: k.datoer[0].dato,
-          duration: '',
+          duration: k.datoer.length > 1 ? k.datoer.length + ' datoer å velge mellom' : '',
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
-          status: ledige <= 0 ? 'Fullbooket'
-                : ledige + (ledige === 1 ? ' plass igjen' : ' plasser igjen'),
+          status: this.plasstekst(k.datoer),
           // Uten eget bilde faar kurset verkstedbildet framfor et tomt felt.
           image: FOTO + 'handbygging.jpg',
           om: k.om || '',
@@ -5438,21 +5439,33 @@ class Component extends DCLogic {
   // brodtekst. Men prisen skal aldri komme derfra: serveren slaar opp belopet
   // ved betaling, og et kort som viser 690 mens Vipps ber om noe annet er en
   // feil kunden merker.
+  // «12 plasser igjen» under «onsdag 9. september» var summen av alle datoer.
+  // Kortet viser én dato, og tallet maa gjelde den — ellers loves det plasser
+  // paa en kveld som er full.
+  plasstekst(datoer) {
+    const neste = (datoer || [])[0];
+    if (!neste) return 'Ingen datoer ennå';
+    const l = neste.ledige;
+    if (l <= 0) return 'Fullbooket';
+    return l + (l === 1 ? ' plass igjen' : ' plasser igjen');
+  }
+
   medServerdata(k) {
     const tittel = k.title || k.tittel || '';
     const kat = (this.state.katalog || []).find(x => x.tittel === tittel);
     if (!kat) return k;
 
     const datoer = kat.datoer || [];
-    const ledige = datoer.reduce((n, d) => n + d.ledige, 0);
 
     return Object.assign({}, k, {
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
-      status: datoer.length === 0 ? 'Ingen datoer ennå'
-            : ledige <= 0 ? 'Fullbooket'
-            : ledige + (ledige === 1 ? ' plass igjen' : ' plasser igjen'),
+      status: this.plasstekst(datoer),
       date: (datoer[0] || {}).dato || k.date,
+      // Flere datoer enn den som staar? Si det, i stedet for aa la det se ut
+      // som om kurset gaar én gang.
+      duration: datoer.length > 1 ? datoer.length + ' datoer å velge mellom' : k.duration,
       om: kat.om || k.om,
+      utenDato: datoer.length === 0,
     });
   }
 

@@ -42,7 +42,7 @@ if (Foresporsel::metode() === 'GET') {
             'bekreftelse'=> $k['bekreftelse_tekst'],
             'datoer'     => array_map(static fn($o) => [
                 'oktId'     => (int) $o['id'],
-                'naar'      => Booking::norskDato((string) $o['start_tid']),
+                'naar'      => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
                 'startUtc'  => $o['start_tid'],
                 'status'    => $o['status'],
                 'ledige'    => Booking::ledigePlasser((int) $o['id']),

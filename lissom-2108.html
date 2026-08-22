@@ -7,8 +7,17 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#FFCF38">
 <meta name="theme-color" content="#FBF6EE">
+<script>
+// React og ReactDOM lastes ellers fra unpkg.com hver gang noen aapner siden.
+// Da ligger hele nettstedet nede hvis unpkg er nede. Filene ligger derfor i
+// vendor/ her paa serveren. __resources er kroken dc-runtime selv tilbyr for
+// dette — support.js er generert og skal ikke endres.
+window.__resources = {
+  "https://unpkg.com/react@18.3.1/umd/react.production.min.js": "/vendor/react-18.3.1.min.js",
+  "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js": "/vendor/react-dom-18.3.1.min.js"
+};
+</script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -4299,161 +4308,6 @@
     </div>
   </sc-if>
 
-  <sc-if value="{{ erMobil }}" hint-placeholder-val="{{ true }}">
-    <div data-screen-label="Mobil" style="padding: var(--space-12) var(--space-8) var(--space-16); background: var(--clay-100); min-height: 100vh;">
-      <div style="max-width: var(--width-wide); margin: 0 auto;">
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Mobil</div>
-        <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-4xl);">Appen for medlemmene</h1>
-        <p style="margin: 0 0 var(--space-10); color: var(--text-body); font-size: var(--text-lg); max-width: 54ch; text-wrap: pretty;">Denne virker: bytt mellom fanene nederst, og stemple inn og ut med knappen.</p>
-
-        <div style="display: flex; gap: var(--space-12); flex-wrap: wrap; align-items: flex-start;">
-          <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="390px,844px">
-            <div style="height: 100%; display: flex; flex-direction: column; background: var(--clay-50); padding-top: 54px; box-sizing: border-box;">
-
-              <sc-if value="{{ mErMedlem }}" hint-placeholder-val="{{ true }}">
-                <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
-                  <div style="padding: var(--space-5) var(--space-5) var(--space-4);">
-                    <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">30 timer · fornyes 1. sep</div>
-                    <h2 style="margin: 6px 0 0; font-size: var(--text-2xl);">Hei, Ingrid</h2>
-                  </div>
-                  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-4);">
-                    <div style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow);">Timer igjen i august</div>
-                      <div style="display: flex; align-items: baseline; gap: 8px; margin: 10px 0;">
-                        <span style="font-family: var(--font-display); font-weight: 800; font-size: 44px; line-height: 1; color: var(--clay-50);">18,5</span>
-                        <span style="font-size: var(--text-sm); color: var(--clay-300);">av 30</span>
-                      </div>
-                      <div style="height: 8px; border-radius: 999px; background: rgba(244,235,222,.16); overflow: hidden;">
-                        <div style="width: 62%; height: 100%; background: var(--lissom-yellow); border-radius: 999px;"></div>
-                      </div>
-                    </div>
-                    <div style="{{ mStatusStil }}">
-                      <span style="{{ mPrikkStil }}"></span>
-                      <span style="font-size: var(--text-sm); color: var(--text-body);">{{ mStatusTekst }}</span>
-                    </div>
-                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">I verkstedet nå · {{ antallInne }}</div>
-                      <div style="display: flex; flex-direction: column; gap: var(--space-3);">
-                        <sc-for list="{{ adminInne }}" as="m" hint-placeholder-count="5">
-                          <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500); flex: 0 0 auto;"></span>
-                            <span style="font-size: var(--text-sm); color: var(--text-body);">{{ m.navn }}</span>
-                          </div>
-                        </sc-for>
-                      </div>
-                    </div>
-                    <div style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5);" data-theme="sun">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Gave fra Monica</div>
-                      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--lissom-brown); margin: 6px 0 0;">Ta med en venn</div>
-                    </div>
-                  </div>
-                  <div style="padding: var(--space-4); background: var(--surface-card); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 10px;">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ mStempleVariant }}" size="lg" full-width="{{ sant }}" icon="qr-code" on-click="{{ vekslMobil }}" hint-size="100%,52px">{{ mStempleTekst }}</x-import>
-                    <button type="button" onClick="{{ apneManuell }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Stemple inn manuelt</button>
-                  </div>
-                </div>
-              </sc-if>
-
-              <sc-if value="{{ mErKurs }}" hint-placeholder-val="{{ true }}">
-                <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
-                  <div data-theme="sun" style="background: var(--lissom-yellow); padding: var(--space-5); position: relative; overflow: hidden;">
-                    <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -30px; top: -20px; width: 180px; opacity: 0.1;">
-                    <img src="logo-lockup.svg" alt="lissom" style="height: 46px; position: relative;">
-                    <p style="margin: var(--space-3) 0 0; color: var(--brown-500); font-size: var(--text-sm); position: relative;">Alt som skjer hos oss.</p>
-                  </div>
-                  <div style="flex: 1; min-height: 0; overflow: hidden; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4);">
-                    <div style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow);">Søndag 6. september</div>
-                      <h3 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--clay-50); margin: 8px 0 6px;">Åpen dag i verkstedet</h3>
-                      <p style="margin: 0; font-size: var(--text-xs); color: var(--clay-300);">11–16. Gratis, ingen påmelding.</p>
-                    </div>
-                    <sc-for list="{{ mobilKurs }}" as="k" hint-placeholder-count="2">
-                      <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex;">
-                        <div style="width: 96px; height: 96px; background-image: {{ k.imageCss }}; background-size: cover; background-position: center; flex: 0 0 auto;"></div>
-                        <div style="padding: var(--space-4); min-width: 0;">
-                          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ k.level }}</div>
-                          <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin: 4px 0;">{{ k.title }}</div>
-                          <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.date }} · {{ k.price }}</div>
-                        </div>
-                      </div>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-if>
-
-              <sc-if value="{{ mErMine }}" hint-placeholder-val="{{ true }}">
-                <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
-                  <div style="padding: var(--space-5) var(--space-5) var(--space-4);">
-                    <h2 style="margin: 0; font-size: var(--text-2xl);">Mine plasser</h2>
-                  </div>
-                  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
-                    <sc-for list="{{ minePameldinger }}" as="p" hint-placeholder-count="3">
-                      <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4);">
-                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ p.tittel }}</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted); margin: 4px 0 10px;">{{ p.naar }} · {{ p.sum }}</div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ p.tone }}" hint-size="auto,24px">{{ p.status }}</x-import>
-                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ p.avbestill }}" hint-size="auto,34px">Avbestill</x-import>
-                        </div>
-                      </div>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-if>
-
-              <sc-if value="{{ mErMeg }}" hint-placeholder-val="{{ true }}">
-                <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
-                  <div style="padding: var(--space-5) var(--space-5) var(--space-4);">
-                    <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Internbutikk</div>
-                    <h2 style="margin: 6px 0 0; font-size: var(--text-2xl);">Leire og brenning</h2>
-                  </div>
-                  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 0 var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
-                    <sc-for list="{{ internvarer }}" as="v" hint-placeholder-count="4">
-                      <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); display: flex; align-items: center; gap: var(--space-3);">
-                        <div style="flex: 1; min-width: 0;">
-                          <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                          <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }} · {{ v.pris }}</div>
-                        </div>
-                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.leggTil }}" hint-size="auto,34px">Legg til</x-import>
-                      </div>
-                    </sc-for>
-                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); margin-top: var(--space-2);">
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 10px;">Intern info</div>
-                      <div style="display: flex; align-items: baseline; justify-content: space-between;">
-                        <span style="font-size: var(--text-sm); color: var(--text-muted);">Dørkode</span>
-                        <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); letter-spacing: .08em; color: var(--text-heading);">{{ dorkode }}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style="padding: var(--space-4); background: var(--surface-card); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);">
-                    <div>
-                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Denne måneden</div>
-                      <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">kr. 440,-</div>
-                    </div>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" hint-size="auto,44px">Betal med Vipps</x-import>
-                  </div>
-                </div>
-              </sc-if>
-
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.BottomNav" value="{{ mFane }}" on-change="{{ settFane }}" items="{{ mobilNav }}" hint-size="100%,64px"></x-import>
-            </div>
-          </x-import>
-
-          <div style="flex: 1; min-width: 280px; max-width: 420px;">
-            <h2 style="margin: 0 0 var(--space-5); font-size: var(--text-2xl);">Hva medlemmene gjør her</h2>
-            <div style="display: flex; flex-direction: column; gap: var(--space-5);">
-              <sc-for list="{{ mobilPunkter }}" as="p" hint-placeholder-count="4">
-                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
-                  <h3 style="margin: 0 0 6px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ p.h }}</h3>
-                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ p.t }}</p>
-                </div>
-              </sc-for>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </sc-if>
 
 </div>
 
@@ -9617,7 +9471,6 @@ class Component extends DCLogic {
       erMinside: side === 'minside',
       erAdmin: side === 'admin',
       erAdminNoen: (side || '').indexOf('admin') === 0,
-      erMobil: side === 'mobil',
       goMedlemskap: this.go('medlemskap'),
       goButikk: this.go('butikk'),
       goMinside: () => {

@@ -168,7 +168,11 @@ Object.assign(__ds_scope, { Divider });
 try { (() => {
 function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 const CACHE = {};
-const BASE = 'https://unpkg.com/lucide-static@0.428.0/icons/';
+const BASE = '/icons/';
+// Ikonene laa foer paa unpkg.com og ble hentet over nett for hver visning.
+// De ligger naa i /icons/ her paa serveren; unpkg staar igjen som reserve
+// hvis et ikon skulle mangle lokalt.
+const RESERVE_BASE = 'https://unpkg.com/lucide-static@0.428.0/icons/';
 
 /** Inline Lucide SVG so it inherits currentColor. */
 function Icon({
@@ -186,7 +190,9 @@ function Icon({
       setSvg(CACHE[name]);
       return;
     }
-    fetch(BASE + name + '.svg').then(r => r.ok ? r.text() : '').then(t => {
+    fetch(BASE + name + '.svg')
+      .then(r => r.ok ? r.text() : fetch(RESERVE_BASE + name + '.svg').then(r2 => r2.ok ? r2.text() : ''))
+      .then(t => {
       CACHE[name] = t;
       if (alive) setSvg(t);
     }).catch(() => {});

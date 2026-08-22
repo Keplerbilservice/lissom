@@ -1598,9 +1598,17 @@ window.__resources = {
         <div style="max-width: var(--width-wide); margin: 0 auto;">
 
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-4);">
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Hei, Ingrid</h1>
-            <div style="display: flex; align-items: center; gap: var(--space-4);">
+            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
+            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
               <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ stemplingTekst }}</span>
+              <button type="button" onClick="{{ loggUt }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                Logg ut
+              </button>
               <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
               </sc-if>
@@ -9538,6 +9546,12 @@ class Component extends DCLogic {
       erMedlemskap: side === 'medlemskap',
       erButikk: side === 'butikk',
       erMinside: side === 'minside',
+      // Sto som «Hei, Ingrid» for alle. Fornavnet holder — etternavnet gjor
+      // bare overskriften lang, og man vet hvem man selv er.
+      minsideHilsen: (() => {
+        const navn = (this.state.vippsNavn || '').trim();
+        return navn ? 'Hei, ' + navn.split(' ')[0] : 'Hei';
+      })(),
       erAdmin: side === 'admin',
       erAdminNoen: (side || '').indexOf('admin') === 0,
       goMedlemskap: this.go('medlemskap'),

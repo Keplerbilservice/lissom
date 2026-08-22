@@ -64,7 +64,9 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'medlemskap' => $m['medlemskap_type'],
     'status'     => $m['status'],
     'startDato'  => $m['start_dato'],
-    'timer'      => $m['timer_per_mnd'],
+    // Planen bestemmer timetallet, medlemsraden overstyrer. «timer_per_mnd»
+    // alene sto tom for alle — se Medlemskap::timerFor().
+    'timer'      => Medlemskap::timerFor($m),
     'bruktTimer' => Stempling::timer($brukt[(int) $m['id']] ?? 0),
     'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
     'erInne'     => isset($inne[(int) $m['id']]),

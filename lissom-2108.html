@@ -122,6 +122,38 @@ window.__resources = {
       .lx-split { min-width: 0; }
       .lx-split > * { min-width: 0; }
     }
+    /* Flytende handlekurv. Bare mobil — paa desktop staar vogna i toppmenyen. */
+    .lx-kurvflyt { display: none; }
+    @media (max-width: 760px) {
+      .lx-kurvflyt {
+        position: fixed;
+        right: var(--space-5);
+        bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+        z-index: 60;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border: none;
+        border-radius: var(--radius-pill, 999px);
+        background: var(--lissom-brown);
+        color: var(--clay-50);
+        font: var(--type-body-sm);
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(43, 20, 12, 0.28);
+      }
+      .lx-kurvflyt-tall {
+        background: var(--lissom-yellow);
+        color: var(--lissom-brown);
+        border-radius: 999px;
+        min-width: 22px;
+        padding: 1px 7px;
+        line-height: 20px;
+        text-align: center;
+        font-size: 12px;
+      }
+    }
     .lx-bedriftmobil { display: none !important; }
     @media (max-width: 900px) { .lx-omoss-h1 { font-size: clamp(22px, 6.8vw, 44px) !important; } }
     @media (max-width: 560px) {
@@ -4737,6 +4769,22 @@ window.__resources = {
 </x-import>
 </div>
 
+<!-- Handlekurven paa mobil.
+     Paa desktop ligger vogna i toppmenyen. Paa mobil ligger toppmenyen inne
+     i hamburgeren, saa den som nettopp la noe i kurven fikk ingen kvittering
+     paa skjermen. Denne knappen dukker opp naar kurven ikke er tom, og
+     forsvinner igjen naar den tommes eller man staar i kassen. -->
+<sc-if value="{{ visKurvKnapp }}" hint-placeholder-val="{{ false }}">
+  <button type="button" onClick="{{ goKurv }}" class="lx-kurvflyt" aria-label="Gå til handlekurven">
+    <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="8" cy="21" r="1"></circle>
+      <circle cx="19" cy="21" r="1"></circle>
+      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
+    </svg>
+    <span class="lx-kurvflyt-tall">{{ kurvAntall }}</span>
+  </button>
+</sc-if>
+
 
 
 <template id="__bundler_thumbnail">
@@ -7345,6 +7393,11 @@ class Component extends DCLogic {
       ordrePopup: Object.keys(this.state.kurv || {}).length > 0 && !!this.state.ordreApen,
       visKurvKnapp: Object.keys(this.state.kurv || {}).length > 0 && !this.state.kurvApen && side === 'minside',
       kurvAntall: Object.keys(this.state.kurv || {}).reduce((n, navn) => n + (this.state.kurv[navn] || 0), 0),
+      visKurvKnapp: (() => {
+        const antall = Object.keys(this.state.kurv || {}).reduce((n, navn) => n + (this.state.kurv[navn] || 0), 0);
+        return antall > 0 && ['kasse', 'booking'].indexOf(this.state.side) === -1;
+      })(),
+      goKurv: () => { this.setState({ side: 'kasse' }); window.scrollTo(0, 0); },
       apneOrdre: () => this.apneKurvAuto(200),
       stoppKurvTimer: () => this.stoppKurvTimerNaa(),
       gaveinnpakning: !!this.state.gaveinnpakning,

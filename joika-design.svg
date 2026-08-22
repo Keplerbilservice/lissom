@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 344 62" role="img" aria-labelledby="jdTittel">
+  <title id="jdTittel">Joika Design</title>
+  <!--
+    Firevindslua som merke, i én flate.
+    Spissene har svaert ulik lengde og lener utover — den bakerste er nesten
+    dobbelt saa lang som de andre. Fire like tagger paa en rett strek leser som
+    en krone hver gang; det ble prøvd i fem varianter, og det ble krone hver
+    gang. Det er skjevheten som gjor lua til en lue.
+
+    Fylt flate, ikke strek: i bunnteksten staar merket 60 px bredt, og der
+    forsvinner tynne streker.
+
+    currentColor, saa merket tar fargen fra teksten rundt. Det forutsetter at
+    svg-en ligger inne i sida — en <img> er sitt eget dokument og arver ingen
+    farge utenfra.
+  -->
+  <g fill="currentColor">
+    <path d="M9 45 L2.5 25 L21 38 L16 12 L35.5 33 L53 2 L57.5 45 Z"/>
+    <rect x="5.5" y="43" width="51" height="11" rx="5.5"/>
+  </g>
+
+  <text x="76" y="44"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="34" font-weight="700" letter-spacing="0.3"
+        fill="currentColor">Joika Design</text>
+</svg>

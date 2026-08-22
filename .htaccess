@@ -30,6 +30,43 @@ AddDefaultCharset UTF-8
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
 </IfModule>
 
+# Komprimering.
+#
+# Nettsiden er én fil på nær 1 MB. Komprimert er den 193 kB — en femdel. Uten
+# dette laster hver besøkende ned hele megabyten, hver gang, og på mobilnett
+# er det forskjellen på en side som er der med én gang og en som henger.
+#
+# Bare tekst komprimeres. Bilder er komprimert fra før, og å pakke dem om
+# gjør dem større, ikke mindre.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE application/json application/xml
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# Mellomlagring i nettleseren.
+#
+# Nettsiden endres når vi legger ut en ny utgave, og da skal den nye komme
+# fram med én gang — «no-cache» betyr ikke «ikke lagre», men «spør først».
+# Nettleseren beholder fila og sender en liten forespørsel; er den uendret
+# svarer serveren 304 uten innhold, og ingenting lastes ned på nytt.
+#
+# Bilder og skrifttyper får derimot ligge lenge. De byttes ikke ut.
+<IfModule mod_headers.c>
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|avif|svg|ico|woff2?|ttf|otf)$">
+        Header set Cache-Control "public, max-age=2592000"
+    </FilesMatch>
+    # Svar fra API-et skal aldri mellomlagres. Innholdet eieren nettopp
+    # lagret ville ellers kommet tilbake i sin gamle utgave.
+    <FilesMatch "\.php$">
+        Header set Cache-Control "no-store"
+    </FilesMatch>
+</IfModule>
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle

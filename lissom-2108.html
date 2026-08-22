@@ -846,7 +846,7 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <button type="button" onClick="{{ goTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-6);">← {{ tilbakeTekst }}</button>
+          <button type="button" onClick="{{ goTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-6);">← {{ tilbakeTekst }}</button>
 
           <div class="lx-split" style="display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--space-10); align-items: start;">
             <div>
@@ -1507,7 +1507,7 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <button type="button" onClick="{{ goButikk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-6);">← Fortsett å handle</button>
+          <button type="button" onClick="{{ goButikk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-6);">← Fortsett å handle</button>
           <h1 style="margin: 0 0 var(--space-10); font-size: var(--text-5xl);">Handlekurv</h1>
 
           <div class="lx-split" style="display: grid; grid-template-columns: 1.7fr 1fr; gap: var(--space-10); align-items: start;">
@@ -2233,7 +2233,7 @@ window.__resources = {
       <sc-if value="{{ artikkelApen }}" hint-placeholder-val="{{ false }}">
         <section style="background: var(--clay-50); padding: var(--space-12) var(--space-8) var(--section-y);">
           <div style="max-width: 880px; margin: 0 auto;">
-            <button type="button" onClick="{{ lukkArtikkel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-8);">← Tilbake til Nyttig info</button>
+            <button type="button" onClick="{{ lukkArtikkel }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-8);">← Tilbake til Nyttig info</button>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ artikkel.dato }}</div>
             <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ artikkel.tittel }}</h1>
             <p style="margin: 0 0 var(--space-8); font-size: var(--text-lg); line-height: 1.65; color: var(--text-body); text-wrap: pretty;">{{ artikkel.ingress }}</p>
@@ -2281,7 +2281,7 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: 940px; margin: 0 auto;">
-          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
+          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
           <div class="lx-plakat-kropp" style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 64px 48px 48px;">
             <div style="text-align: center; margin-bottom: var(--space-10);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Brennetabell · Orton-coner</div>
@@ -2328,7 +2328,7 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: 940px; margin: 0 auto;">
-          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
+          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
           <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
@@ -2358,7 +2358,7 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Nyttig info" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section class="lx-plakat-ark" style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: 940px; margin: 0 auto;">
-          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
+          <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: -10px -8px; cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); margin-bottom: var(--space-6);">← Tilbake til Nyttig info</button>
           <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden;">
             <div data-theme="ink" style="background: var(--lissom-brown); text-align: center; padding: 44px 24px 40px;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Lissom · Keramikk &amp; Håndverk</div>
@@ -5232,7 +5232,7 @@ window.__resources = {
   <div style="display: flex; flex-direction: column; gap: var(--space-4); max-height: min(62vh, 520px); overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;">
     <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ detaljUnder }}</div>
     <sc-if value="{{ detaljTilbake }}" hint-placeholder-val="{{ true }}">
-      <button type="button" onClick="{{ gaaTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">← Tilbake til listen</button>
+      <button type="button" onClick="{{ gaaTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; text-align: left; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">← Tilbake til listen</button>
     </sc-if>
     <sc-if value="{{ detaljLese }}" hint-placeholder-val="{{ true }}">
       <div style="max-height: 52vh; overflow-y: auto; display: flex; flex-direction: column;">
@@ -6056,9 +6056,9 @@ class Component extends DCLogic {
     const slag = this.erPublisert() ? this.pengeHandling(d && d.handling) : null;
     if (slag) {
       const melding = {
-        betaling: ['Betaling kommer snart', 'Vi tar ikke imot betaling for dette ennaa. Ta kontakt paa post@lissom.no, saa ordner vi det.'],
-        avtale: ['Medlemsavtale', 'Trykk «Opprett avtale i Vipps» paa medlemskapssiden, saa gaar den gjennom Vipps.'],
-        avbestilling: ['Ta kontakt for avbestilling', 'Send oss en e-post paa post@lissom.no, saa avbestiller vi og ordner refusjonen.'],
+        betaling: ['Betaling kommer snart', 'Vi tar ikke imot betaling for dette ennå. Ta kontakt på post@lissom.no, så ordner vi det.'],
+        avtale: ['Medlemsavtale', 'Trykk «Opprett avtale i Vipps» på medlemskapssiden, så går den gjennom Vipps.'],
+        avbestilling: ['Ta kontakt for avbestilling', 'Send oss en e-post på post@lissom.no, så avbestiller vi og ordner refusjonen.'],
       }[slag];
       this.setState({ detalj: null, kvittering: melding[0], kvitteringDetalj: melding[1] });
       return;
@@ -7834,16 +7834,16 @@ class Component extends DCLogic {
     if (!m) return;
     history.replaceState(null, '', window.location.pathname + window.location.search);
     const tekst = {
-      ok: 'Betalingen er gjennomfort — kvittering kommer paa e-post',
+      ok: 'Betalingen er gjennomført — kvittering kommer på e-post',
       avbrutt: 'Betalingen ble avbrutt. Plassen er ikke reservert.',
-      venter: 'Vi venter paa svar fra Vipps. Du faar kvittering saa snart betalingen er bekreftet.',
-      ukjent: 'Fant ikke betalingen. Ta kontakt hvis belopet er trukket.',
+      venter: 'Vi venter på svar fra Vipps. Du får kvittering så snart betalingen er bekreftet.',
+      ukjent: 'Fant ikke betalingen. Ta kontakt hvis beløpet er trukket.',
     }[m[1]] || '';
     const detalj = {
       ok: 'Kvitteringen sendes til e-postadressen din. Plassen din er registrert.',
-      avbrutt: 'Ingen penger er trukket. Du kan prove igjen naar du vil.',
-      venter: 'Du trenger ikke gjore noe. Vi gir beskjed saa snart Vipps svarer.',
-      ukjent: 'Ta kontakt paa post@lissom.no, saa finner vi ut av det.',
+      avbrutt: 'Ingen penger er trukket. Du kan prøve igjen når du vil.',
+      venter: 'Du trenger ikke gjøre noe. Vi gir beskjed så snart Vipps svarer.',
+      ukjent: 'Ta kontakt på post@lissom.no, så finner vi ut av det.',
     }[m[1]] || '';
     if (tekst) this.setState({ kvittering: tekst, kvitteringDetalj: detalj });
   }

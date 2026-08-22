@@ -276,18 +276,22 @@ window.__resources = {
 
 
 
+      <!-- Banneret under heroen. Alt i det — stikktittel, tittel, tekst, knapp,
+           hvor knappen gaar og bildet — settes i admin under Oversikt, og
+           lagres i basen. Det sto foer som fast «Aapent hus»-tekst, saa det
+           kunne bare brukes til én ting. -->
       <sc-if value="{{ visApentHus }}" hint-placeholder-val="{{ true }}">
         <section data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-8); position: relative; overflow: clip;">
-          <div class="lx-hide-m" style="position: absolute; top: 0; bottom: 0; right: 0; width: 52%; background-image: url('uploads_shutterstock_2829102169.jpg'); background-size: cover; background-position: center 30%; mask-image: linear-gradient(to right, transparent 0%, black 60%); -webkit-mask-image: linear-gradient(to right, transparent 0%, black 60%); opacity: 0.85; pointer-events: none;"></div>
+          <div class="lx-hide-m" style="{{ bannerBildeStil }}"></div>
           <div class="lx-band" style="max-width: var(--width-content); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6) var(--space-10); flex-wrap: wrap; position: relative;">
             <div style="min-width: 0;">
               <div style="display: flex; align-items: baseline; gap: var(--space-3) var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
-                <span style="font: var(--type-eyebrow); font-size: var(--text-base); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); white-space: nowrap;">Åpent hus</span>
-                <span class="lx-wrapm" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(24px, 2vw, 34px); color: var(--clay-50); white-space: nowrap;">Søndag 6. september · 11–16</span>
+                <span style="font: var(--type-eyebrow); font-size: var(--text-base); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); white-space: nowrap;">{{ bannerStikk }}</span>
+                <span class="lx-wrapm" style="font-family: var(--font-display); font-weight: 800; font-size: clamp(24px, 2vw, 34px); color: var(--clay-50); white-space: nowrap;">{{ bannerTittel }}</span>
               </div>
-              <p style="margin: 0; font-size: var(--text-lg); color: var(--clay-300); text-wrap: pretty;">Prøv dreieskiva, se verkstedet — og kjøp keramikk laget av medlemmene. Gratis, ingen påmelding.</p>
+              <p style="margin: 0; font-size: var(--text-lg); color: var(--clay-300); text-wrap: pretty;">{{ bannerTekst }}</p>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ kampanjeTilButikk }}" hint-size="auto,56px">Se medlemmenes keramikk</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bannerKlikk }}" hint-size="auto,56px">{{ bannerKnapp }}</x-import>
           </div>
         </section>
       </sc-if>
@@ -2888,7 +2892,7 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Vis på nettsiden</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Åpent hus-banneret" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Salgsuke-kampanjen" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken i toppen" checked="{{ bryterKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
@@ -2958,6 +2962,63 @@ window.__resources = {
                 <button type="button" onClick="{{ grLeggTil }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Nytt rabattnivå</button>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">Eksempel: fra 3 deltakere, 10 % avslag.</span>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Banneret under toppbildet. Ett felt som skal brukes til det som
+             gjelder akkurat naa: aapent hus, gavekort til jul, paaskeegg. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Banneret under toppbildet</span>
+            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnStatus }}</span>
+          </div>
+
+          <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); max-width: 780px;">
+            <div style="display: grid; grid-template-columns: minmax(140px, 0.6fr) minmax(0, 1.4fr); gap: var(--space-4);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Merkelapp</label>
+                <input value="{{ bnStikk }}" onChange="{{ settBnStikk }}" placeholder="F.eks. Jul" style="{{ bnFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Overskrift</label>
+                <input value="{{ bnTittel }}" onChange="{{ settBnTittel }}" placeholder="F.eks. Gi et gavekort" style="{{ bnFeltStil }}">
+              </div>
+            </div>
+
+            <div>
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst</label>
+              <textarea value="{{ bnTekst }}" onChange="{{ settBnTekst }}" rows="2" placeholder="En setning eller to om hva det gjelder." style="{{ bnOmradeStil }}"></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-4);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst på knappen</label>
+                <input value="{{ bnKnapp }}" onChange="{{ settBnKnapp }}" placeholder="F.eks. Kjøp gavekort" style="{{ bnFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
+                <select value="{{ bnLenke }}" onChange="{{ settBnLenke }}" style="{{ bnValgStil }}">
+                  <sc-for list="{{ bnMaal }}" as="m" hint-placeholder-count="8">
+                    <option value="{{ m.nokkel }}">{{ m.navn }}</option>
+                  </sc-for>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde til høyre i banneret</label>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <sc-for list="{{ bnBilder }}" as="i" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ i.velg }}" title="{{ i.navn }}" aria-label="{{ i.navn }}" style="{{ i.stil }}"></button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ bnLagre }}" hint-size="auto,44px">Lagre banneret</x-import>
+              <button type="button" onClick="{{ bnTilbakestill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Tilbakestill</button>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ bnHint }}</span>
             </div>
           </div>
         </div>
@@ -5901,6 +5962,95 @@ class Component extends DCLogic {
     return fornavn ? tid + ', ' + fornavn : tid;
   }
 
+  // Banneret under heroen.
+  //
+  // Alt i det ligger i content_blocks, som resten av tekstene eieren kan
+  // endre. Sto det i fila, kunne banneret bare brukes til én ting — og
+  // «Aapent hus 6. september» ville staatt der i desember.
+  static get BANNER_STANDARD() {
+    return {
+      stikk:  'Åpent hus',
+      tittel: 'Søndag 6. september · 11–16',
+      tekst:  'Prøv dreieskiva, se verkstedet — og kjøp keramikk laget av medlemmene. Gratis, ingen påmelding.',
+      knapp:  'Se medlemmenes keramikk',
+      lenke:  'butikk',
+      bilde:  'uploads_shutterstock_2829102169.jpg',
+    };
+  }
+
+  // Hvor knappen kan gaa. En fast liste, ikke et fritt felt: en adresse
+  // skrevet inn for haand blir fort en lenke til ingenting.
+  static get BANNER_MAAL() {
+    return [
+      { nokkel: 'butikk',      navn: 'Butikken' },
+      { nokkel: 'gavekort',    navn: 'Gavekort' },
+      { nokkel: 'kurs',        navn: 'Kurs og datoer' },
+      { nokkel: 'events',      navn: 'Events' },
+      { nokkel: 'paintonpots', navn: 'Paint on Pots' },
+      { nokkel: 'medlemskap',  navn: 'Medlemskap' },
+      { nokkel: 'dropin',      navn: 'Drop-in' },
+      { nokkel: 'kontakt',     navn: 'Kontakt oss' },
+    ];
+  }
+
+  bannerNaa() {
+    const il = this.state.innholdLagret || {};
+    const ut = {};
+    Object.keys(Component.BANNER_STANDARD).forEach(f => {
+      const v = il['Banner/' + f];
+      ut[f] = (v === undefined || v === '') ? Component.BANNER_STANDARD[f] : v;
+    });
+    return ut;
+  }
+
+  bannerGaa() {
+    const maal = {
+      butikk:      () => this.goNaa('butikk'),
+      gavekort:    () => this.goNaa('gavekortside'),
+      kurs:        () => this.goNaa('kurs', 'Alle'),
+      events:      () => this.goNaa('kurs', 'Events'),
+      paintonpots: () => this.goNaa('paintonpots'),
+      medlemskap:  () => this.goNaa('medlemskap'),
+      dropin:      () => this.goDropinNaa(),
+      kontakt:     () => this.goNaa('kontakt'),
+    };
+    (maal[this.bannerNaa().lenke] || maal.butikk)();
+  }
+
+  // Lagrer tekster i content_blocks. Skjermbildet oppdateres med en gang, og
+  // rettes opp igjen om serveren sier nei — ellers ville eieren sittet og
+  // ventet paa nettverket for hvert tastetrykk.
+  lagreInnhold(endringer, kvittering) {
+    const forrige = Object.assign({}, this.state.innholdLagret);
+    this.setState(s => ({ innholdLagret: Object.assign({}, s.innholdLagret, endringer) }));
+
+    if (!this.erPublisert() || !Object.keys(endringer).length) return;
+
+    fetch('/api/admin/innhold.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endringer: endringer }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.ok) {
+          this.setState({ kvittering: kvittering || 'Lagret', kvitteringDetalj: 'Endringen er lagret og synlig for alle.' });
+          return;
+        }
+        this.setState({
+          innholdLagret: forrige,
+          kvittering: 'Kunne ikke lagre',
+          kvitteringDetalj: (d && d.feil) || 'Prøv igjen, eller last siden på nytt.',
+        });
+      })
+      .catch(() => this.setState({
+        innholdLagret: forrige,
+        kvittering: 'Kunne ikke lagre',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren. Endringen er ikke lagret.',
+      }));
+  }
+
   apneForesporsel() {
     this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) });
   }
@@ -5953,8 +6103,8 @@ class Component extends DCLogic {
         stikktittel: 'Medlemskap',
         tittel: 'Verkstedet, når det passer deg',
         tekst: 'Fast plass i verkstedet med egen dørkode. Du stempler inn på mobilen og jobber videre når du vil — leire, glasur og brenning er en del av medlemskapet. Krever kurs eller erfaring fra før.',
-        bilde: 'assets_photos_plateteknikk-fat.jpg',
-        alt: 'Et medlem som jobber alene med et fat i verkstedet',
+        bilde: 'uploads_shutterstock_2829104351.jpg',
+        alt: 'Et nytt medlem far provemedlemskapet sitt i verkstedet',
         knappA: 'Se medlemskap',
         knappB: 'Book drop-in',
       },
@@ -8714,7 +8864,78 @@ class Component extends DCLogic {
       })),
       ingenOvUbesvarte: this.erPublisert()
         && (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length === 0,
-      bryterApentHus: this.state.visApentHus !== false,
+      bryterApentHus: (this.state.innholdLagret || {})['Banner/pa'] !== 'nei',
+      ...(() => {
+        // Kladden ligger i skjermbildet til den lagres. Da kan eieren skrive
+        // ferdig for noe gaar ut paa nettsiden.
+        const naa = this.bannerNaa();
+        const kladd = this.state.bnKladd || {};
+        const felt = (f) => (kladd[f] !== undefined ? kladd[f] : naa[f]);
+        const sett = (f) => (e) => {
+          const v = e.target.value;
+          this.setState(st => ({ bnKladd: Object.assign({}, st.bnKladd, { [f]: v }) }));
+        };
+        const feltStil = {
+          boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          background: 'var(--clay-50)', color: 'var(--text-heading)',
+        };
+        const BILDER = [
+          { fil: 'uploads_shutterstock_2829102169.jpg', navn: 'Verkstedet, åpent hus' },
+          { fil: 'assets_photos_kursrommet.jpg', navn: 'Kursrommet' },
+          { fil: 'assets_photos_dreiekurs-smil.jpg', navn: 'Ved dreieskiva' },
+          { fil: 'assets_photos_plateteknikk-fat.jpg', navn: 'Plateteknikk' },
+          { fil: 'assets_photos_butikken.jpg', navn: 'Butikken' },
+          { fil: 'uploads_shutterstock_2830582037.jpg', navn: 'Kopper' },
+        ];
+        const endret = Object.keys(kladd).some(f => kladd[f] !== naa[f]);
+
+        return {
+          bnStikk: felt('stikk'), settBnStikk: sett('stikk'),
+          bnTittel: felt('tittel'), settBnTittel: sett('tittel'),
+          bnTekst: felt('tekst'), settBnTekst: sett('tekst'),
+          bnKnapp: felt('knapp'), settBnKnapp: sett('knapp'),
+          bnLenke: felt('lenke'),
+          settBnLenke: sett('lenke'),
+          bnMaal: Component.BANNER_MAAL,
+          bnFeltStil: feltStil,
+          bnOmradeStil: Object.assign({}, feltStil, { resize: 'vertical', fontFamily: 'inherit' }),
+          bnValgStil: Object.assign({}, feltStil, { cursor: 'pointer', background: 'var(--surface-card)' }),
+          bnBilder: BILDER.map(b => ({
+            navn: b.navn,
+            velg: () => this.setState(st => ({ bnKladd: Object.assign({}, st.bnKladd, { bilde: b.fil }) })),
+            stil: {
+              appearance: 'none', cursor: 'pointer', padding: 0,
+              width: 92, height: 58, borderRadius: 'var(--radius-md)',
+              backgroundImage: "url('" + b.fil + "')", backgroundSize: 'cover', backgroundPosition: 'center',
+              border: felt('bilde') === b.fil ? '3px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+            },
+          })),
+          bnStatus: (this.state.innholdLagret || {})['Banner/pa'] === 'nei'
+            ? 'Skjult — slå på i «Vis på nettsiden»' : 'Vises på forsiden',
+          bnHint: endret ? 'Ikke lagret ennå.' : 'Endringene vises for alle med én gang de er lagret.',
+          bnLagre: () => {
+            const endringer = {};
+            Object.keys(Component.BANNER_STANDARD).forEach(f => {
+              if (kladd[f] !== undefined) endringer['Banner/' + f] = String(kladd[f]).trim();
+            });
+            if (!Object.keys(endringer).length) {
+              this.setState({ kvittering: 'Ingenting å lagre', kvitteringDetalj: 'Du har ikke endret noe i banneret.' });
+              return;
+            }
+            this.setState({ bnKladd: {} });
+            this.lagreInnhold(endringer, 'Banneret er lagret');
+          },
+          // Tilbake til teksten som staar i designet: noklene tommes, og da
+          // faller banneret tilbake paa standardverdiene av seg selv.
+          bnTilbakestill: () => {
+            const tomme = {};
+            Object.keys(Component.BANNER_STANDARD).forEach(f => { tomme['Banner/' + f] = ''; });
+            this.setState({ bnKladd: {} });
+            this.lagreInnhold(tomme, 'Banneret er tilbakestilt');
+          },
+        };
+      })(),
       bryterKursvelger: this.state.visKursvelger !== false,
       bryterMinInternkurs: this.state.visMinInternkurs !== false,
       vekslMinInternkurs: () => this.setState(s => ({ visMinInternkurs: s.visMinInternkurs === false })),
@@ -9074,8 +9295,31 @@ class Component extends DCLogic {
         }));
         return ut;
       })(),
-      visApentHus: this.state.visApentHus !== false && this.mobilVis('apenthus'),
-      vekslApentHus: () => this.setState(s => ({ visApentHus: s.visApentHus === false })),
+      // Av og paa lagres naa i basen, ikke bare i denne nettleseren. Skrudde
+      // eieren det av og lastet siden paa nytt, sto det paa igjen.
+      visApentHus: (this.state.innholdLagret || {})['Banner/pa'] !== 'nei' && this.mobilVis('apenthus'),
+      vekslApentHus: () => this.lagreInnhold(
+        { 'Banner/pa': (this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'ja' : 'nei' },
+        'Banneret er ' + ((this.state.innholdLagret || {})['Banner/pa'] === 'nei' ? 'slått på' : 'skjult')
+      ),
+      ...(() => {
+        const b = this.bannerNaa();
+        return {
+          bannerStikk: b.stikk,
+          bannerTittel: b.tittel,
+          bannerTekst: b.tekst,
+          bannerKnapp: b.knapp,
+          bannerKlikk: () => this.bannerGaa(),
+          bannerBildeStil: {
+            position: 'absolute', top: 0, bottom: 0, right: 0, width: '52%',
+            backgroundImage: "url('" + b.bilde + "')", backgroundSize: 'cover',
+            backgroundPosition: 'center 30%',
+            maskImage: 'linear-gradient(to right, transparent 0%, black 60%)',
+            WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 60%)',
+            opacity: 0.85, pointerEvents: 'none',
+          },
+        };
+      })(),
       visMedlemskolleksjon: this.state.visMedlemskolleksjon !== false,
       vekslMedlemskolleksjon: () => this.setState(s => ({ visMedlemskolleksjon: s.visMedlemskolleksjon === false, butikkKolleksjon: s.visMedlemskolleksjon === false ? s.butikkKolleksjon : 'Lissom', butikkFilter: 'Alt' })),
       butikkLissomKant: (this.state.butikkKolleksjon || 'Lissom') !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',

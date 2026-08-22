@@ -89,6 +89,19 @@ try {
         ),
     ];
 
+    if (in_array('notifications', $navn, true)) {
+        // Varsler som blir liggende er den vanligste stille feilen: ingen
+        // merker at e-posten ikke gaar ut for noen sporr hvorfor de ikke fikk
+        // kvittering.
+        $svar['varsler'] = [
+            'venter'   => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko'"),
+            'sendt'    => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'sendt'"),
+            'feilet'   => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'"),
+            'gitt_opp' => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko' AND forsok >= 5"),
+            'maate'    => trim((string) Config::hent('smtp_vert', '')) !== '' ? 'SMTP' : 'serverens mail()',
+        ];
+    }
+
     if (in_array('notification_templates', $navn, true)) {
         $svar['database']['varselmaler'] =
             (int) DB::verdi('SELECT COUNT(*) FROM notification_templates');

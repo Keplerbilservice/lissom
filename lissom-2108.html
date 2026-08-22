@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Adressene er rene stier: /kurs, /admin/medlemmer. Bildene og skriptene
+     ligger i rota, og uten denne linja ville nettleseren lett etter dem i
+     forhold til adressen — paa /admin/medlemmer ble logo-lockup-yellow.svg
+     til /admin/logo-lockup-yellow.svg, som ikke finnes. Derfor var logoen
+     borte paa alle admin-sidene unntatt /admin. -->
+<base href="/">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -2477,6 +2483,9 @@ window.__resources = {
             <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobForPil }}</span>
           </div>
           <sc-if value="{{ mobForApen }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ ingenOvMedlemskap }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen søknader venter.</div>
+            </sc-if>
             <sc-for list="{{ ovMedlemskap }}" as="n" hint-placeholder-count="2">
               <div onClick="{{ n.velg }}" style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="display: flex; justify-content: space-between; gap: var(--space-3);">
@@ -2889,6 +2898,9 @@ window.__resources = {
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Nye medlemskapsforespørsler</div>
+            <sc-if value="{{ ingenOvMedlemskap }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen søknader venter.</div>
+            </sc-if>
             <sc-for list="{{ ovMedlemskap }}" as="n" hint-placeholder-count="2">
               <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="min-width: 0;">
@@ -2902,6 +2914,9 @@ window.__resources = {
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Ubesvarte meldinger</div>
+            <sc-if value="{{ ingenOvUbesvarte }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen ubesvarte forespørsler.</div>
+            </sc-if>
             <sc-for list="{{ ovUbesvarte }}" as="n" hint-placeholder-count="2">
               <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="min-width: 0;">
@@ -4350,7 +4365,6 @@ window.__resources = {
             <img src="logo-lockup-yellow.svg" alt="lissom — keramikk &amp; håndverk" style="height: 44px; display: block; margin-bottom: var(--space-5);">
             <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-5);">
               <a href="{{ someInstagram }}" target="_blank" rel="noopener" aria-label="Instagram" title="@lissom_keramikk" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(244,235,222,.35); display: inline-flex; align-items: center; justify-content: center; color: var(--clay-100); text-decoration: none; transition: background .18s ease, color .18s ease, border-color .18s ease;" style-hover="background: var(--lissom-yellow); color: var(--lissom-brown); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="instagram" size="{{ tjue }}" hint-size="20px,20px"></x-import></a>
-              <a href="{{ someFacebook }}" target="_blank" rel="noopener" aria-label="Facebook" title="Lissom Keramikk" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(244,235,222,.35); display: inline-flex; align-items: center; justify-content: center; color: var(--clay-100); text-decoration: none; transition: background .18s ease, color .18s ease, border-color .18s ease;" style-hover="background: var(--lissom-yellow); color: var(--lissom-brown); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="facebook" size="{{ tjue }}" hint-size="20px,20px"></x-import></a>
             </div>
             <div style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);"><img src="mark-heart.png" alt="" style="height: 15px; width: auto; filter: invert(0.92) sepia(0.14) saturate(1.4) hue-rotate(-15deg);">100% håndlaget med kjærlighet</div>
           </div>
@@ -5934,6 +5948,41 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // Foresporsel fra nettsiden — «Send oss en foresporsel».
+  sendForesporsel() {
+    const s = this.state;
+    if (this._fsPagaar) return;
+    this._fsPagaar = true;
+
+    fetch('/api/foresporsel.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        navn: (s.fsNavn || '').trim(),
+        kontakt: (s.fsKontakt || '').trim(),
+        type: s.fsType || '',
+        antall: s.fsAntall ? String(s.fsAntall) : '',
+        melding: (s.fsMelding || '').trim(),
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._fsPagaar = false;
+        if (!ok) { this.setState({ fsFeil: d.feil || 'Fikk ikke sendt forespørselen. Prøv igjen om litt.' }); return; }
+        this.setState({
+          fsSendt2: true, fsFeil: null,
+          fsNavn: '', fsKontakt: '', fsMelding: '', fsAntall: null,
+        });
+        clearTimeout(this._fsTimer);
+        this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
+      })
+      .catch(() => {
+        this._fsPagaar = false;
+        this.setState({ fsFeil: 'Fikk ikke kontakt med serveren. Prøv igjen om litt.' });
+      });
+  }
+
   // --- Brukere med innlogging til verkstedet ------------------------------
 
   hentBrukere() {
@@ -6798,8 +6847,9 @@ class Component extends DCLogic {
       hent('/api/admin/betalinger.php'),
       hent('/api/admin/soknader.php?status=venter'),
       hent('/api/admin/brukere.php'),
+      hent('/api/admin/foresporsler.php'),
     ])
-      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere]) => {
+      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere, foresporsler]) => {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
@@ -6807,6 +6857,7 @@ class Component extends DCLogic {
         if (betalinger && betalinger.betalinger) ny.adminBetalinger = betalinger.betalinger;
         if (soknader && soknader.soknader) ny.adminSoknader = soknader.soknader;
         if (brukere && brukere.brukere) ny.adminBrukere = brukere.brukere;
+        if (foresporsler && foresporsler.foresporsler) ny.adminForesporsler = foresporsler.foresporsler;
         if (Object.keys(ny).length) this.setState(ny);
       })
       .catch(() => {})
@@ -7408,6 +7459,10 @@ class Component extends DCLogic {
       fsSend: () => {
         const s = this.state;
         if (!(s.fsNavn || '').trim() || !(s.fsKontakt || '').trim()) { this.setState({ fsFeil: 'Fyll inn navn og e-post eller telefon, så kan vi svare deg.' }); return; }
+        // Paa den ekte nettsiden gaar foresporselen til serveren. Foer dette
+        // la den seg bare i nettleserens minne, og forsvant naar fana ble
+        // lukket — verkstedet fikk aldri vite om den.
+        if (this.erPublisert()) { this.sendForesporsel(); return; }
         this.setState(st => ({
           fsSendt2: true,
           nyeForesporsler: (st.nyeForesporsler || []).concat([{
@@ -8273,43 +8328,30 @@ class Component extends DCLogic {
         };
         return Object.assign({}, lag('mobKur'), lag('mobBut'), lag('mobMeld'), lag('mobInne'), lag('mobFor'));
       })(),
-      ovMedlemskap: [
-        { navn: 'Ole Aarseth', hva: 'Vil forlenge prøvemedlemskapet', tid: '2 timer siden' },
-        { navn: 'Emma Bjørnstad', hva: 'Søker medlemskap etter nybegynnerkurs', tid: 'I går' },
-      ].map(m => Object.assign(m, {
-        velg: this.apne(m.navn, m.hva, [
-          { navn: 'Mottatt', verdi: m.tid },
-          { navn: 'Krav', verdi: 'Kurs hos oss, eller erfaring fra før — oppfylt' },
-          { navn: 'Ved godkjenning', verdi: 'Hen får e-post med betalingslenke i Vipps' },
-        ], 'Godkjenn'),
-      })).concat(this.state.frysStatus === 'venter' ? [{
-        navn: 'Ingrid Hansen', hva: 'Søker frys av medlemskapet — 2 uker fra ' + (this.state.frysFra || '1. september'), tid: 'Nå nettopp',
-        velg: this.apne('Ingrid Hansen', 'Søknad om frys av medlemskap', [
-          { navn: 'Periode', verdi: '2 sammenhengende uker fra ' + (this.state.frysFra || '1. september') },
-          { navn: 'Virkning', verdi: 'Ingen trekk og ingen timer i perioden. Neste trekk utsettes to uker.' },
-        ], 'Godkjenn frysen', null, false, () => this.setState({ frysStatus: 'godkjent' })),
-      }] : []),
-      visMinFrys: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.state.visMinFrys !== false,
-      bryterMinFrys: this.state.visMinFrys !== false,
-      vekslMinFrys: () => this.setState(s => ({ visMinFrys: s.visMinFrys === false })),
-      frysIkkeSokt: !this.state.frysStatus,
-      frysVenter: this.state.frysStatus === 'venter',
-      frysGodkjentVis: this.state.frysStatus === 'godkjent',
-      frysFra: this.state.frysFra || '1. september',
-      aSokFrys: this.apne('Søk om frys av medlemskapet', 'To sammenhengende uker uten trekk — kan ikke deles opp', [
-        { navn: 'Fra dato', verdi: '1. september' },
-        { navn: 'Til dato', verdi: 'Beregnes automatisk — 14 dager senere' },
-        { navn: 'Grunn (valgfritt)', verdi: '' },
-      ], 'Send søknad', null, true, () => this.setState({ frysStatus: 'venter' })),
-      ovUbesvarte: [
-        { navn: 'Emma Bjørnstad', hva: 'Er koppene ferdig brent?', tid: 'I går' },
-        { navn: 'Bjørn Ask', hva: 'Har dere planer om dreiekurs på dagtid?', tid: '20. aug' },
-      ].map(m => Object.assign(m, {
-        velg: this.apne(m.navn, 'Melding mottatt ' + m.tid.toLowerCase(), [
-          { navn: 'MELDING', verdi: '' },
-          { navn: m.hva, verdi: ' ' },
-        ], 'Svar på e-post'),
+      // Ekte soknader om medlemskap. Sto foer med oppdiktede navn — det er
+      // verre enn ingenting: eieren tror det ligger noe der som ikke gjor det.
+      ovMedlemskap: (this.state.adminSoknader || (this.erPublisert() ? [] : [
+        { navn: 'Ola Nordmann', type: '30 timer', sendt: 'i dag' },
+      ])).map(m => ({
+        navn: m.navn,
+        hva: m.type ? 'Søker medlemskap · ' + m.type : 'Søker medlemskap',
+        tid: m.sendt || '',
+        velg: this.go('adminmedlem'),
       })),
+      harOvMedlemskap: (this.state.adminSoknader || []).length > 0,
+      ingenOvMedlemskap: this.erPublisert() && (this.state.adminSoknader || []).length === 0,
+
+      // Ubesvarte foresporsler fra nettsiden.
+      ovUbesvarte: (this.state.adminForesporsler || (this.erPublisert() ? [] : [
+        { navn: 'Kine Solheim', hva: 'Utdrikningslag, 12 personer', tid: 'i dag', status: 'Ubesvart' },
+      ])).filter(f => f.status === 'Ubesvart').slice(0, 5).map(f => ({
+        navn: f.navn,
+        hva: f.hva || 'Forespørsel',
+        tid: f.tid || '',
+        velg: this.go('adminbeskjeder'),
+      })),
+      ingenOvUbesvarte: this.erPublisert()
+        && (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length === 0,
       bryterApentHus: this.state.visApentHus !== false,
       bryterKursvelger: this.state.visKursvelger !== false,
       bryterMinInternkurs: this.state.visMinInternkurs !== false,

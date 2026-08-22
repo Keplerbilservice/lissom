@@ -234,3 +234,48 @@ Når alt er prøvd ferdig i testmiljøet:
    `'vipps_base' => 'https://api.vipps.no'` og `'miljo' => 'produksjon'`.
 2. Legg inn redirect-URI-en på **produksjons**salgsenheten i portalen.
 3. Ingen kodeendringer. Ingen ny publisering.
+
+## E-post og SMS
+
+E-post gaar som standard gjennom serverens egen `mail()`. Det virker ofte,
+men du faar aldri vite om meldingen ble avvist — `mail()` svarer bare at den
+er levert til koen paa serveren.
+
+Sett heller opp SMTP. Da vet vi om det gikk galt, og hvorfor. Legg til i
+`~/lissom-secrets/secrets.php`:
+
+```php
+'smtp_vert'      => 'smtp.domeneshop.no',
+'smtp_port'      => 587,
+'smtp_bruker'    => 'post@lissom.no',
+'smtp_passord'   => 'passordet til e-postkontoen',
+'smtp_sikkerhet' => 'starttls',
+
+'epost_fra'      => 'post@lissom.no',
+'epost_fra_navn' => 'Lissom Keramikk',
+'epost_svar_til' => 'monica@lissom.no',
+'varsel_epost'   => 'monica@lissom.no',
+```
+
+Avsenderadressen maa ligge paa lissom.no. Sender du fra en gmail-adresse,
+blir meldingene avvist eller havner i sokkelen — SPF sier at Domene.no ikke
+har lov til aa sende paa vegne av Gmail.
+
+SMS gaar gjennom Sveve. Ingen maanedsavgift, betaling per melding:
+
+```php
+'sveve_bruker'   => 'brukernavnet hos Sveve',
+'sveve_passord'  => 'passordet',
+'sveve_avsender' => 'Lissom',
+```
+
+### Sjekk at det virker
+
+```
+/api/test-varsel.php?epost=din@adresse.no
+/api/test-varsel.php?sms=+4790000000
+```
+
+Den sender én melding med det oppsettet som gjelder, forteller hvilken vei
+den gikk, og viser de siste feilene fra koen. Krever noekkelen eller at du
+er innlogget som admin.

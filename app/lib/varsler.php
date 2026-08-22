@@ -191,7 +191,121 @@ final class Utsending
         $emneKodet = '=?UTF-8?B?' . base64_encode($emne) . '?=';
         $kropp = str_replace("\r\n", "\n", $tekst);
 
+        // SMTP naar det er satt opp, ellers serverens egen mail(). SMTP er aa
+        // foretrekke: da vet vi om det gikk galt, og hvorfor. mail() svarer
+        // bare true naar meldingen er levert til koen paa serveren — den kan
+        // fortsatt bli avvist av mottakeren uten at vi far vite noe.
+        if (trim((string) Config::hent('smtp_vert', '')) !== '') {
+            return self::sendSmtp($til, $emneKodet, $kropp, $headere, (string) $fra);
+        }
+
         return mail($til, $emneKodet, $kropp, $headere, '-f' . $fra);
+    }
+
+    /**
+     * Enkel SMTP-klient. Ingen avhengigheter — webhotellet har ikke Composer.
+     *
+     * Stotter STARTTLS og AUTH LOGIN, som er det Domene.no og de fleste andre
+     * bruker. Kaster ikke: feilen legges i feilloggen og meldingen blir
+     * liggende i koen, som proever igjen.
+     *
+     * @param array<string,string> $headere
+     */
+    private static function sendSmtp(string $til, string $emne, string $kropp, array $headere, string $fra): bool
+    {
+        $vert    = (string) Config::hent('smtp_vert', '');
+        $port    = (int) Config::hent('smtp_port', 587);
+        $bruker  = (string) Config::hent('smtp_bruker', '');
+        $passord = (string) Config::hent('smtp_passord', '');
+        $sikker  = (string) Config::hent('smtp_sikkerhet', 'starttls'); // starttls | ssl | ingen
+
+        $adresse = ($sikker === 'ssl' ? 'ssl://' : '') . $vert . ':' . $port;
+        $sokk = @stream_socket_client($adresse, $eno, $estr, 15);
+        if (!$sokk) {
+            logg('SMTP: fikk ikke kontakt', ['vert' => $vert, 'feil' => $estr]);
+            return false;
+        }
+        stream_set_timeout($sokk, 15);
+
+        $les = static function () use ($sokk): string {
+            $ut = '';
+            while (($linje = fgets($sokk, 515)) !== false) {
+                $ut .= $linje;
+                // Siste linje i et svar har mellomrom paa plass fire, ikke bindestrek.
+                if (strlen($linje) < 4 || $linje[3] !== '-') {
+                    break;
+                }
+            }
+            return $ut;
+        };
+        $si = static function (string $kommando) use ($sokk, $les): string {
+            fwrite($sokk, $kommando . "\r\n");
+            return $les();
+        };
+        $ok = static fn(string $svar, string $kode): bool => str_starts_with(trim($svar), $kode);
+
+        $velkomst = $les();
+        if (!$ok($velkomst, '220')) {
+            logg('SMTP: uventet velkomst', ['svar' => trim($velkomst)]);
+            fclose($sokk);
+            return false;
+        }
+
+        $navn = parse_url(Config::nettsted(), PHP_URL_HOST) ?: 'lissom.no';
+        $si('EHLO ' . $navn);
+
+        if ($sikker === 'starttls') {
+            if (!$ok($si('STARTTLS'), '220')
+                || !stream_socket_enable_crypto($sokk, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                logg('SMTP: STARTTLS feilet', ['vert' => $vert]);
+                fclose($sokk);
+                return false;
+            }
+            $si('EHLO ' . $navn);
+        }
+
+        if ($bruker !== '') {
+            $si('AUTH LOGIN');
+            $si(base64_encode($bruker));
+            if (!$ok($si(base64_encode($passord)), '235')) {
+                logg('SMTP: innlogging avvist', ['vert' => $vert, 'bruker' => $bruker]);
+                fclose($sokk);
+                return false;
+            }
+        }
+
+        if (!$ok($si('MAIL FROM:<' . $fra . '>'), '250')) {
+            logg('SMTP: avsenderadressen ble avvist', ['fra' => $fra]);
+            fclose($sokk);
+            return false;
+        }
+        if (!$ok($si('RCPT TO:<' . $til . '>'), '250')) {
+            logg('SMTP: mottakeren ble avvist', ['til' => $til]);
+            fclose($sokk);
+            return false;
+        }
+        if (!$ok($si('DATA'), '354')) {
+            fclose($sokk);
+            return false;
+        }
+
+        $linjer = ['To: ' . $til, 'Subject: ' . $emne, 'Date: ' . gmdate('r')];
+        foreach ($headere as $navnH => $verdi) {
+            $linjer[] = $navnH . ': ' . $verdi;
+        }
+        // En enslig prikk avslutter meldingen, saa en prikk forst i en linje
+        // maa dobles. Ellers ville teksten kunne kutte seg selv av.
+        $tekst = preg_replace('/^\./m', '..', str_replace("\n", "\r\n", $kropp));
+
+        $svar = $si(implode("\r\n", $linjer) . "\r\n\r\n" . $tekst . "\r\n.");
+        $godtatt = $ok($svar, '250');
+        if (!$godtatt) {
+            logg('SMTP: meldingen ble avvist', ['til' => $til, 'svar' => trim($svar)]);
+        }
+
+        $si('QUIT');
+        fclose($sokk);
+        return $godtatt;
     }
 
     /**

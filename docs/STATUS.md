@@ -40,7 +40,10 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Kursbevis på Min side og i admin | Virker |
 | Forespørsler fra nettsiden | Lagres, varsles, følges opp i admin |
 | Brukernavn og passord for verkstedet | Virker, med brukeradministrasjon |
-| E-post over SMTP | Bygget — krever oppsett, se OPPSETT.md |
+| E-post over SMTP | Virker — mail.lissom.no |
+| Kursbevis fra admin | Virker |
+| Logg ut og «se nettsiden» i admin | Virker |
+| Ingen oppdiktede data på publisert side | Verifisert side for side |
 | Ingen sporing, ingen tredjeparter | Verifisert i nettleser |
 | Workshop og Sip & Clay som kategori | Virker |
 | Vilkår og personvern | Publisert som egne sider |
@@ -199,8 +202,9 @@ bør stå.
 
 ## Sikkerhet — verdt å vite
 
-**Vipps-nøkler i chatlogg.** Client secret og subscription key ble limt inn i
-en samtale under oppsettet. De bør byttes i portalen.
+**Vipps-nøkler i chatlogg.** Client secret, subscription key og databasepassordet
+ble limt inn i samtaler under oppsettet. Alle er byttet 22. august. De gamle
+verdiene i chatloggen er dermed verdiløse.
 
 **Admin-markupen er offentlig.** Ingen kommer til dataene — alle admin-
 endepunkter krever admin-sesjon og svarer 404 til andre. Men selve HTML-en for

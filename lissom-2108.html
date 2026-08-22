@@ -52,15 +52,6 @@ window.__resources = {
     /* Toppmeny: fjern 1.35x-oppskalering av søk + Book nå, stram menypunktene */
     header [style*="zoom: 1.35"] { zoom: 1 !important; }
     header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
-    /* Lenkeraden har overflow: hidden og staar sentrert. Blir den for bred,
-       forsvinner forste og siste punkt uten et eneste varsel — «Forside» sto
-       som «SIDE». Med Workshop og Sip & Clay paa plass er raden 11 punkter,
-       og standardavstanden holder ikke lenger. Strammes bare paa desktop;
-       under 1080 px er det hamburgermenyen som gjelder. */
-    @media (min-width: 1081px) {
-      header nav[style*="overflow: hidden"][style*="justify-content: center"] { gap: 4px clamp(7px, 0.8vw, 14px) !important; }
-      header a[style*="padding-bottom: 7px"] { letter-spacing: 0.045em !important; }
-    }
     span[style*="radius-pill"][style*="inline-flex"] { white-space: nowrap; }
     /* Kurskort-bunn: mindre pris og lavere rad, så pris + knapp balanserer i kortet */
     div[style*="margin-top: auto"][style*="height: 44px"] { height: 36px !important; }
@@ -5409,9 +5400,14 @@ class Component extends DCLogic {
       .filter(k => k.tema !== 'Kun for medlemmer')
       .map(k => {
         const ledige = k.datoer.reduce((n, d) => n + d.ledige, 0);
+        // Sip & Clay og Date Night hoerer under Events, og workshop er et
+        // kurs. Uten dette ville et kurs lagret med temaet «Sip & Clay» falt
+        // utenfor alle filtrene og bare vaert synlig under «Alle».
+        const KATEGORI = { 'Sip & Clay': 'Events', 'Date Night': 'Events', 'Workshop': 'Kurs' };
+        const tema = KATEGORI[k.tema] || k.tema || 'Kurs';
         return {
           level: k.tema || (k.type === 'event' ? 'Event' : k.type === 'dropin' ? 'Drop-in' : 'Kurs'),
-          tema: k.tema || 'Kurs',
+          tema: tema,
           title: k.tittel,
           date: k.datoer[0].dato,
           duration: '',
@@ -5497,7 +5493,7 @@ class Component extends DCLogic {
     if (!f || f === 'Alle') return liste;
     if (f === 'Kurs') {
       // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
-      const utenom = ['Events', 'Event', 'Sip & Clay', 'Drop-in'];
+      const utenom = ['Events', 'Event', 'Drop-in'];
       return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1);
     }
     return liste.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
@@ -5753,7 +5749,9 @@ class Component extends DCLogic {
       price: k.pris === 'Gratis' ? 'Gratis' : 'Fra ' + k.pris,
       status: plasser + ' plasser',
       image: FOTO + 'handbygging.jpg',
-      tema: { 'Event': 'Events', 'Drop-in': 'Drop-in', 'Workshop': 'Workshop', 'Sip & Clay': 'Sip & Clay' }[k.type] || 'Kurs',
+      // Workshop er et kurs, ikke en egen kategori. Sip & Clay og Date Night
+      // hoerer til under Events.
+      tema: { 'Event': 'Events', 'Sip & Clay': 'Events', 'Drop-in': 'Drop-in' }[k.type] || 'Kurs',
       om: k.beskrivelse || '',
       punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks ' + plasser + ' deltakere.'],
       datoer: (k.datoer && k.datoer.length) ? k.datoer.map((d, i) => ({ dato: d, tid: '', plasser: plasser + ' plasser', valgt: i === 0 })) : [{ dato: 'Dato kommer', tid: '', plasser: plasser + ' plasser', valgt: true }],
@@ -6052,7 +6050,7 @@ class Component extends DCLogic {
     return {
       id: k.id,
       navn: k.tittel,
-      type: k.tema === 'Sip & Clay' ? 'Sip & Clay' : (TYPE[k.type] || 'Kurs'),
+      type: TYPE[k.type] || 'Kurs',
       pris: 'kr. ' + String(k.pris || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
       gjentas: datoer.length > 1 ? datoer.length + ' datoer' : 'Engangs',
       pameldte: pameldte + ' / ' + kapasitet,
@@ -7709,7 +7707,7 @@ class Component extends DCLogic {
         { hvem: 'Den enkleste', navn: 'Paint on Pots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.', pris: 'Fra kr. 690,-', cta: 'Les mer', gjor: () => { this.setState({ side: 'paintonpots' }); window.scrollTo(0, 0); } },
         { hvem: 'For gjengen', navn: 'Privat event', tekst: 'Utdrikningslag, bursdag eller teambuilding — fra 8 personer, kvelden er deres.', pris: 'Pris på forespørsel', cta: 'Les mer', gjor: () => { this.setState({ side: 'bedrift' }); window.scrollTo(0, 0); } },
       ].map(e => Object.assign(e, { velg: e.gjor })),
-      kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop', 'Sip & Clay', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
+      kursFiltre: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Paint on pots', 'Events', 'Drop-in'].map(navn => ({
         navn, valgt: navn === this.state.kursFilter,
         velg: () => {
           if (navn === 'Drop-in') {
@@ -10489,8 +10487,8 @@ class Component extends DCLogic {
               React.createElement(DS.Icon, { name: 'shopping-cart', size: 36 }),
               antall ? React.createElement('span', { key: 'n' + antall, style: { background: 'var(--lissom-brown)', color: 'var(--clay-50)', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '16px', display: 'inline-block', animation: 'lissomPuls .45s var(--ease-clay, ease)' } }, antall) : null) }
           : 'Handlekurv';
-        const lenker = ['Forside', 'Kurs', 'Workshop', 'Sip & Clay', 'Events', 'Drop-in',
-          'Medlemskap', 'Butikk', 'Om oss', { value: 'Kurskalender', label: 'Kalender' }];
+        const lenker = ['Forside', 'Kurs', 'Events', 'Drop-in', 'Medlemskap', 'Butikk', 'Om oss',
+          { value: 'Kurskalender', label: 'Kalender' }];
 
         // Paa mobil er hamburgermenyen eneste vei inn til Min side — paa
         // desktop ligger den i toppen fra for, og en niende lenke der ville
@@ -10571,6 +10569,8 @@ class Component extends DCLogic {
           'Forside': ['forside'],
           'Kurs': ['kurs', 'Kurs'], 'Våre kurs': ['kurs', 'Kurs'], 'Kurskalender': ['kalender'],
           'Events': ['kurs', 'Events'], 'Drop-in': ['kurs', 'Drop-in'],
+          // Ruten staar igjen selv om knappen er borte: en delt lenke til
+          // /workshop skal fortsatt fore et sted, ikke til ingenting.
           'Workshop': ['kurs', 'Workshop'], 'Sip & Clay': ['kurs', 'Sip & Clay'],
           'Medlemskap': ['medlemskap'], 'Butikk': ['butikk'],
           'Min side': [this.state.innlogget ? 'minside' : 'login'], 'Internbutikk': ['minside'], 'Om oss': ['omoss'], 'Nyttig info': ['nyttig'], 'Handlekurv': ['kasse'],

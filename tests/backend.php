@@ -192,6 +192,41 @@ if ($internOkt) {
         ) === 'Kun for medlemmer');
 }
 
+echo "\n== Kursbevis ==\n";
+
+// Beviset skal finnes for et betalt kurs som har vaert, og ikke for noe annet.
+// Reglene ligger i api/mine-plasser.php og api/kursbevis.php; her testes selve
+// betingelsene, som er der det gaar galt.
+$bevis = static function (array $b, bool $betalt): ?string {
+    if (!$betalt) return null;
+    if (in_array((string) ($b['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) return null;
+    $slutt = $b['slutt_tid'] ?: $b['start_tid'];
+    if ($slutt === null || strtotime((string) $slutt) > time()) return null;
+    return '/api/kursbevis.php?booking=1';
+};
+$igaar = gmdate('Y-m-d H:i:s', time() - 86400);
+$imorgen = gmdate('Y-m-d H:i:s', time() + 86400);
+
+sjekk('gjennomfort og betalt kurs gir bevis',
+    $bevis(['tema' => 'Dreiing', 'start_tid' => $igaar, 'slutt_tid' => $igaar], true) !== null);
+sjekk('kurs som ikke har vaert gir ikke bevis',
+    $bevis(['tema' => 'Dreiing', 'start_tid' => $imorgen, 'slutt_tid' => $imorgen], true) === null);
+sjekk('ubetalt kurs gir ikke bevis',
+    $bevis(['tema' => 'Dreiing', 'start_tid' => $igaar, 'slutt_tid' => $igaar], false) === null);
+sjekk('drop-in gir ikke kursbevis',
+    $bevis(['tema' => 'Drop-in', 'start_tid' => $igaar, 'slutt_tid' => $igaar], true) === null);
+sjekk('kurs uten dato gir ikke bevis',
+    $bevis(['tema' => 'Dreiing', 'start_tid' => null, 'slutt_tid' => null], true) === null);
+
+// Instruktoren staar paa kurset; er feltet tomt, er det Monica i malen.
+sjekk('kurs har instruktorfelt',
+    DB::verdi("SELECT COUNT(*) FROM information_schema.columns
+                WHERE table_schema = DATABASE() AND table_name = 'courses'
+                  AND column_name = 'instruktor'") == 1);
+sjekk('type godtar workshop',
+    strpos((string) DB::verdi("SELECT column_type FROM information_schema.columns
+             WHERE table_schema = DATABASE() AND table_name = 'courses' AND column_name = 'type'"), 'workshop') !== false);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

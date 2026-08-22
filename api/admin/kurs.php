@@ -38,6 +38,7 @@ if (Foresporsel::metode() === 'GET') {
             'sms'        => (bool) $k['sms_paaminnelse'],
             'status'     => $k['status'],
             'om'         => $k['beskrivelse'],
+            'instruktor' => $k['instruktor'],
             'bekreftelse'=> $k['bekreftelse_tekst'],
             'datoer'     => array_map(static fn($o) => [
                 'oktId'     => (int) $o['id'],
@@ -86,13 +87,15 @@ switch ($handling) {
 
         $data = [
             'tittel'            => $tittel,
-            'type'              => in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin'], true)
+            'type'              => in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
                                     ? Foresporsel::tekst('type') : 'kurs',
             'tema'              => mb_substr(Foresporsel::tekst('tema'), 0, 64) ?: null,
             'pris_ore'          => $pris * 100,
             'kapasitet'         => max(1, min(999, Foresporsel::heltall('kapasitet', 8))),
             'sms_paaminnelse'   => Foresporsel::tekst('sms') === 'nei' ? 0 : 1,
             'beskrivelse'       => Foresporsel::tekst('om') ?: null,
+            // Navnet paa kursbeviset. Tomt betyr Monica, som staar i malen.
+            'instruktor'        => mb_substr(Foresporsel::tekst('instruktor'), 0, 191) ?: null,
             'bekreftelse_tekst' => Foresporsel::tekst('bekreftelse') ?: null,
             'status'            => in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)
                                     ? Foresporsel::tekst('status') : 'kladd',

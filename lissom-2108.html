@@ -1941,6 +1941,9 @@ window.__resources = {
                         <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ p.frist }}</div>
                       </div>
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ p.tone }}" hint-size="auto,24px">{{ p.status }}</x-import>
+                      <sc-if value="{{ p.harKursbevis }}" hint-placeholder-val="{{ false }}">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ p.apneKursbevis }}" hint-size="auto,36px">Kursbevis</x-import>
+                      </sc-if>
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ p.avbestill }}" hint-size="auto,36px">Avbestill</x-import>
                     </div>
                   </sc-for>
@@ -7652,6 +7655,8 @@ class Component extends DCLogic {
       ])).concat((this.state.nyePaameldt || []).map(n => Object.assign({}, n, { tone: n.intern ? 'info' : 'success', status: n.intern ? 'Intern samling' : 'Bekreftet', frist: 'Gratis avmelding inntil 24 timer før', kanAvbestille: true, nyDato: n.naar }))).filter(p => (this.state.avbestilt || []).indexOf(p.tittel) === -1).map(p => Object.assign(p, {
         naar: ((this.state.flyttet || {})[p.tittel]) ? ((this.state.flyttet || {})[p.tittel]).charAt(0).toUpperCase() + ((this.state.flyttet || {})[p.tittel]).slice(1) : p.naar,
         status: ((this.state.flyttet || {})[p.tittel]) ? 'Flyttet' : p.status,
+        harKursbevis: !!p.kursbevis,
+        apneKursbevis: () => { if (p.kursbevis) window.open(p.kursbevis, '_blank', 'noopener'); },
         avbestill: this.apne('Avbestille ' + p.tittel + '?', p.naar, [
           { navn: 'Betalt', verdi: p.sum },
           { navn: 'Refusjon', verdi: p.kanAvbestille ? 'Etter vilkårene: full refusjon mer enn 14 dager før, 50 % inntil 7 dager før. Tilbake på Vipps innen 3 virkedager.' : 'Ingenting er belastet' },

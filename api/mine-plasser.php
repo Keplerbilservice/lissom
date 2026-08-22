@@ -37,9 +37,26 @@ $frist = static function (?string $startUtc): array {
     return ['Kurset har vaert.', false];
 };
 
+/**
+ * Har kurset vaert, og var det et kurs? Da finnes det et kursbevis aa hente.
+ */
+$kursbevis = static function (array $b, bool $betalt): ?string {
+    if (!$betalt) {
+        return null;
+    }
+    if (in_array((string) ($b['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) {
+        return null;
+    }
+    $slutt = $b['slutt_tid'] ?: $b['start_tid'];
+    if ($slutt === null || strtotime((string) $slutt) > time()) {
+        return null;
+    }
+    return '/api/kursbevis.php?booking=' . (int) $b['id'];
+};
+
 $bookinger = DB::alle(
     "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
-            c.tittel, cs.start_tid, p.vipps_reference
+            c.tittel, c.tema, cs.start_tid, cs.slutt_tid, p.vipps_reference
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
   LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
@@ -66,6 +83,9 @@ foreach ($bookinger as $b) {
         'frist'         => $betalt ? $fristTekst : 'Reservasjonen frigis om betalingen ikke fullfores.',
         'kanAvbestille' => $betalt && $kanAvbestille,
         'referanse'     => $b['vipps_reference'],
+        // Kursbeviset dukker opp av seg selv naar kurset er gjennomfort og
+        // betalt. Drop-in er ikke et kurs, saa der gis det ikke bevis.
+        'kursbevis'     => $kursbevis($b, $betalt),
     ];
 }
 
@@ -93,6 +113,7 @@ foreach ($venteliste as $v) {
         'frist'         => 'Du belastes forst naar en plass blir din.',
         'kanAvbestille' => false,
         'referanse'     => null,
+        'kursbevis'     => null,
     ];
 }
 

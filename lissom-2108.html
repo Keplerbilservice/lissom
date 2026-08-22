@@ -86,6 +86,11 @@ window.__resources = {
       section { padding-left: 20px !important; padding-right: 20px !important; }
       .lx-hide-m { display: none !important; }
       .lx-kunmobil { display: block !important; }
+      /* Medlemskap/events og butikken staar rett under hverandre paa mobil —
+         salgsuke-banneret mellom dem er skjult der. To fulle seksjonsmarger
+         mot hverandre ble et tomrom paa 157 px, som leste som at noe manglet. */
+      .lx-tettbunn { padding-bottom: var(--space-6) !important; }
+      .lx-tetttopp { padding-top: var(--space-8) !important; }
       .lx-hero { min-height: auto !important; overflow: visible !important; }
       .lx-hero-pad { padding: 140px 20px 56px !important; }
       .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
@@ -340,7 +345,7 @@ window.__resources = {
       <!-- Events og medlemskap deler denne plassen og bytter paa. Hoyden er
            laast paa bildet, saa siden under ikke hopper naar teksten skifter
            lengde. -->
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+      <section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="{{ rotSplitStil }}">
           <img src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
           <div>
@@ -386,7 +391,7 @@ window.__resources = {
            medlemsplasser — som ingen kunne redigere noe sted. Seksjonen under
            startet med padding 0 fordi denne laa over; den maa ha topp-padding
            tilbake naa som den er borte. -->
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+      <section class="lx-tetttopp" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
             <div>
@@ -395,10 +400,23 @@ window.__resources = {
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goButikk }}" hint-size="auto,40px">Til butikken</x-import>
           </div>
-          <div class="lx-kortgrid lx-karusell" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+          <div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ produkter }}" as="p" hint-placeholder-count="4">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" text="{{ p.tekst }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="{{ p.cta }}" on-book="{{ p.velg }}" hint-size="100%,420px"></x-import>
             </sc-for>
+          </div>
+
+          <!-- Paa mobil vises ett produkt om gangen, og de bytter av seg selv.
+               Sidescroll krevde at man visste at det laa mer til hoyre. -->
+          <div class="lx-kunmobil">
+            <div style="{{ butKortStil }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ butTittel }}" text="{{ butTekst }}" price="{{ butPris }}" image="{{ butBilde }}" cta-label="{{ butCta }}" on-book="{{ butVelg }}" hint-size="100%,420px"></x-import>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: var(--space-5);">
+              <sc-for list="{{ butPrikker }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
+              </sc-for>
+            </div>
           </div>
         </div>
       </section>
@@ -5453,7 +5471,14 @@ class Component extends DCLogic {
   medServerdata(k) {
     const tittel = k.title || k.tittel || '';
     const kat = (this.state.katalog || []).find(x => x.tittel === tittel);
-    if (!kat) return k;
+
+    // Paa den ekte siden er katalogen fasiten. Finner vi ikke kurset der,
+    // skal det ikke staa noe — designlista har datoer og plasstall som var
+    // sanne den dagen de ble skrevet, og «3 plasser igjen, starter 19. aug»
+    // er verre enn ingenting. Kortet faller ut i medBooking.
+    if (!kat) {
+      return this.erPublisert() ? Object.assign({}, k, { utenDato: true }) : k;
+    }
 
     const datoer = kat.datoer || [];
 
@@ -6164,25 +6189,58 @@ class Component extends DCLogic {
 
   // Bytter til neste, eller til en bestemt. Teksten tones ut for den byttes,
   // og inn igjen etterpaa — ellers ville den hoppet.
-  rotasjonTil(nr) {
-    if (this._rotBytter) return;
-    const antall = this.rotasjonene().length;
-    const neste = ((nr === undefined ? (this.state.rotNr || 0) + 1 : nr) % antall + antall) % antall;
-    if (neste === (this.state.rotNr || 0)) return;
+  // Toner ut, bytter, toner inn. Brukes av to steder paa forsiden — feltet
+  // som veksler mellom events og medlemskap, og produktene i butikkfeltet paa
+  // mobil. «nokkel» skiller dem: state-feltene heter <nokkel>Nr og <nokkel>Ute.
+  tonBytt(nokkel, antall, nr) {
+    if (antall < 2) return;
+    const laas = '_bytter' + nokkel;
+    if (this[laas]) return;
+
+    const naa = this.state[nokkel + 'Nr'] || 0;
+    const neste = ((nr === undefined ? naa + 1 : nr) % antall + antall) % antall;
+    if (neste === naa) return;
 
     // Uten animasjon: bytt med en gang. Noen har slaatt av bevegelse i
     // systeminnstillingene, og da skal ingenting tone.
     if (this.roligBevegelse()) {
-      this.setState({ rotNr: neste });
+      this.setState({ [nokkel + 'Nr']: neste });
       return;
     }
 
-    this._rotBytter = true;
-    this.setState({ rotUte: true });
-    this._rotTimer = setTimeout(() => {
-      this.setState({ rotNr: neste, rotUte: false });
-      this._rotBytter = false;
+    this[laas] = true;
+    this.setState({ [nokkel + 'Ute']: true });
+    this['_timer' + nokkel] = setTimeout(() => {
+      this.setState({ [nokkel + 'Nr']: neste, [nokkel + 'Ute']: false });
+      this[laas] = false;
     }, Component.ROT_TONING);
+  }
+
+  /** Stilen som toner: kalles med resten av boksens egenskaper. */
+  toneStil(nokkel, resten) {
+    return Object.assign({}, resten, {
+      opacity: this.state[nokkel + 'Ute'] ? 0 : 1,
+      transition: 'opacity ' + (Component.ROT_TONING / 1000) + 's var(--ease-clay, ease)',
+    });
+  }
+
+  /** Prikkene under. Trykker noen paa en, slutter den aa bytte av seg selv. */
+  tonePrikker(nokkel, navn) {
+    const naa = ((this.state[nokkel + 'Nr'] || 0) % navn.length + navn.length) % navn.length;
+    return navn.map((n, i) => ({
+      merke: 'Vis ' + n,
+      velg: () => { this['_pause' + nokkel] = true; this.tonBytt(nokkel, navn.length, i); },
+      stil: {
+        appearance: 'none', cursor: 'pointer', padding: 0, border: 'none',
+        width: i === naa ? 26 : 10, height: 10, borderRadius: 999,
+        background: i === naa ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+        transition: 'width .3s var(--ease-clay, ease), background .3s ease',
+      },
+    }));
+  }
+
+  rotasjonTil(nr) {
+    this.tonBytt('rot', this.rotasjonene().length, nr);
   }
 
   roligBevegelse() {
@@ -6862,9 +6920,11 @@ class Component extends DCLogic {
     // Events og medlemskap bytter paa forsiden. Har noen trykket paa en av
     // prikkene, slutter den aa bytte av seg selv — da har de valgt.
     this._rotasjon = setInterval(() => {
-      if (this.state.side !== 'forside' || this._rotPause) return;
-      if (document.hidden || this.roligBevegelse()) return;
-      this.rotasjonTil();
+      if (this.state.side !== 'forside' || document.hidden || this.roligBevegelse()) return;
+      if (!this._pauserot) this.tonBytt('rot', this.rotasjonene().length);
+      // Produktene i butikkfeltet bytter bare paa mobil; paa desktop staar de
+      // alle fire ved siden av hverandre.
+      if (!this._pausebut && this.erSmal()) this.tonBytt('but', this.forsideProdukter().length);
     }, Component.ROT_OPPHOLD);
     this._klikk = (e) => { this._klikkY = e.pageY; };
     document.addEventListener('click', this._klikk, true);
@@ -6935,7 +6995,8 @@ class Component extends DCLogic {
     if (this._pop) window.removeEventListener('popstate', this._pop);
     clearInterval(this._karusell);
     clearInterval(this._rotasjon);
-    clearTimeout(this._rotTimer);
+    clearTimeout(this._timerrot);
+    clearTimeout(this._timerbut);
     clearInterval(this._kurvPuls);
     clearTimeout(this._kvitteringTimer);
     clearTimeout(this._ventelisteTimer);
@@ -10935,22 +10996,11 @@ class Component extends DCLogic {
           rotKnappB: handling[1],
           // Rutenettet ligger her, ikke i malen, fordi opasiteten maa vaere
           // en del av samme style-verdi.
-          rotSplitStil: {
+          rotSplitStil: this.toneStil('rot', {
             maxWidth: 'var(--width-content)', margin: '0 auto', display: 'grid',
             gridTemplateColumns: '0.75fr 1.25fr', gap: 'var(--space-16)', alignItems: 'center',
-            opacity: this.state.rotUte ? 0 : 1,
-            transition: 'opacity ' + (Component.ROT_TONING / 1000) + 's var(--ease-clay, ease)',
-          },
-          rotPrikker: alle.map((x, i) => ({
-            merke: 'Vis ' + x.merke,
-            velg: () => { this._rotPause = true; this.rotasjonTil(i); },
-            stil: {
-              appearance: 'none', cursor: 'pointer', padding: 0, border: 'none',
-              width: i === nr ? 26 : 10, height: 10, borderRadius: 999,
-              background: i === nr ? 'var(--lissom-brown)' : 'var(--border-subtle)',
-              transition: 'width .3s var(--ease-clay, ease), background .3s ease',
-            },
-          })),
+          }),
+          rotPrikker: this.tonePrikker('rot', alle.map(x => x.merke)),
         };
       })(),
       ...(() => {
@@ -11000,18 +11050,40 @@ class Component extends DCLogic {
       }).concat(this.state.nyeKurs || [])),
       // Gavekortet ligger ikke i butikken — det har sin egen side. Knappen sa
       // «Se i butikken», og der var det ingenting aa finne.
-      produkter: this.medBildeCss([
-        { title: 'Kopp, sandglasur', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
-        { title: 'Bolle, stor', tekst: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
-        { title: 'Fat, 28 cm', tekst: 'Dekorglasur. Ment som pyntefat, ikke matsikret.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
-        { title: 'Gavekort', tekst: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
-      ]).map(p => Object.assign({}, p, {
-        // «Valgfritt beløp» er en lang pristekst. Med «Kjøp gavekort» ved siden
-        // av sprengte raden kortet, og knappen ble klippet midt i ordet.
-        cta: p.gavekort ? 'Kjøp' : 'Se i butikken',
-        velg: p.gavekort ? this.go('gavekortside') : this.go('butikk'),
-      })),
+      // Produktet som staar fram paa mobil akkurat naa.
+      ...(() => {
+        const liste = this.forsideProdukter();
+        const nr = ((this.state.butNr || 0) % liste.length + liste.length) % liste.length;
+        const v = liste[nr];
+        return {
+          butTittel: v.title,
+          butTekst: v.tekst,
+          butPris: v.pris,
+          butBilde: v.image,
+          butCta: v.gavekort ? 'Kjøp' : 'Se i butikken',
+          butVelg: v.gavekort ? this.go('gavekortside') : this.go('butikk'),
+          butKortStil: this.toneStil('but', {}),
+          butPrikker: this.tonePrikker('but', liste.map(x => x.title)),
+        };
+      })(),
+      produkter: this.forsideProdukter(),
     };
+  }
+
+  // Produktene i butikkfeltet paa forsiden. Rutenettet paa desktop og
+  // enkeltkortet paa mobil viser de samme, saa de leser den samme lista.
+  forsideProdukter() {
+    return this.medBildeCss([
+      { title: 'Kopp, sandglasur', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
+      { title: 'Bolle, stor', tekst: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
+      { title: 'Fat, 28 cm', tekst: 'Dekorglasur. Ment som pyntefat, ikke matsikret.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
+      { title: 'Gavekort', tekst: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
+    ]).map(p => Object.assign({}, p, {
+      // «Valgfritt beløp» er en lang pristekst. Med «Kjøp gavekort» ved siden
+      // av sprengte raden kortet, og knappen ble klippet midt i ordet.
+      cta: p.gavekort ? 'Kjøp' : 'Se i butikken',
+      velg: p.gavekort ? this.go('gavekortside') : this.go('butikk'),
+    }));
   }
 }
 

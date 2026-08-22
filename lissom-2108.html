@@ -7270,6 +7270,67 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
   }
 
+  // Lagrer en vare i butikken.
+  //
+  // «Legg ut i butikken» viste kvittering og skrev ingenting. Nye varer
+  // forsvant ved neste sidelasting, og prisen kunden faktisk ble trukket sto
+  // fortsatt i basen.
+  lagreVare() {
+    const s = this.state;
+    const navn = (s.npNavn || '').trim();
+    const pris = (s.npPris || '').replace(/[^\d]/g, '');
+
+    if (!navn || !pris) {
+      this.setState({ kvittering: 'Fyll inn navn og pris', kvitteringDetalj: 'Begge må være satt før varen kan lagres.' });
+      return;
+    }
+
+    if (!this.erPublisert()) {
+      const vare = { title: navn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr. ' + pris + ',-', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
+      this.setState(s2 => ({ npApen: false, nyeVarer: s.npRediger ? (s2.nyeVarer || []) : (s2.nyeVarer || []).concat([vare]), kvittering: s.npRediger ? 'Endringene er lagret' : navn + ' er lagt ut i butikken' }));
+      return;
+    }
+    if (this._vareLagres) return;
+    this._vareLagres = true;
+
+    const fra = (this.state.adminProdukter || []).find(v => v.tittel === navn);
+
+    fetch('/api/admin/produkter.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'lagre',
+        id: fra ? fra.id : 0,
+        tittel: navn,
+        beskrivelse: (s.npBeskrivelse || '').trim(),
+        pris: parseInt(pris, 10),
+        // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
+        lager: (s.npAntall || '').trim(),
+        kategori: fra ? fra.kategori : '',
+        bilde: fra ? fra.bilde : '',
+        kunMedlemmer: fra && fra.kunMedlemmer ? 'ja' : 'nei',
+        status: 'publisert',
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._vareLagres = false;
+        if (!ok) {
+          this.setState({ kvittering: 'Varen ble ikke lagret', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+          return;
+        }
+        this.setState({ npApen: false, kvittering: 'Lagret', kvitteringDetalj: d.beskjed || '' });
+        this._adminHentes = false;
+        this.hentAdmin();
+        this.hentButikk();
+      })
+      .catch(() => {
+        this._vareLagres = false;
+        this.setState({ kvittering: 'Varen ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   // Tilbyr plassen til den som staar forst paa ventelista.
   //
   // Plassen holdes ikke av — forste som booker, faar den. Det staar i
@@ -7949,8 +8010,9 @@ class Component extends DCLogic {
       hent('/api/admin/foresporsler.php'),
       hent('/api/admin/kurs.php'),
       hent('/api/admin/venteliste.php'),
+      hent('/api/admin/produkter.php'),
     ])
-      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere, foresporsler, kurs, venteliste]) => {
+      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere, foresporsler, kurs, venteliste, produkter]) => {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
@@ -7962,6 +8024,7 @@ class Component extends DCLogic {
         // Kurskatalogen. Uten den falt admin tilbake paa to oppdiktede kurs,
         // og «Ny kursdato» tilbod datoer paa kurs som ikke fantes.
         if (venteliste && venteliste.venteliste) ny.adminVenteliste = venteliste.venteliste;
+        if (produkter && produkter.varer) ny.adminProdukter = produkter.varer;
         if (kurs && kurs.kurs) {
           ny.adminKursRaa = kurs.kurs;
           ny.adminKursListe = kurs.kurs.map(k => this.kursTilRad(k));
@@ -9450,12 +9513,7 @@ class Component extends DCLogic {
       settNpBeskrivelse: e => this.setState({ npBeskrivelse: e.target.value }),
       npTekstStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', resize: 'vertical', fontFamily: 'inherit' },
       npKnappStil: { appearance: 'none', cursor: (this.state.npNavn && this.state.npPris) ? 'pointer' : 'not-allowed', opacity: (this.state.npNavn && this.state.npPris) ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
-      npLeggUt: () => {
-        const s = this.state;
-        if (!s.npNavn || !s.npPris) return;
-        const vare = { title: s.npNavn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr. ' + s.npPris.replace(/[^\d ]/g, '').trim() + ',-', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
-        this.setState(s2 => ({ npApen: false, nyeVarer: s.npRediger ? (s2.nyeVarer || []) : (s2.nyeVarer || []).concat([vare]), kvittering: s.npRediger ? 'Endringene er lagret' : s.npNavn + ' er lagt ut i butikken' }));
-      },
+      npLeggUt: () => this.lagreVare(),
       mobMeldDeltakere: this.apne('Melding til deltakere', 'Sendes på e-post og SMS til alle påmeldte på kurset', [
         { navn: 'Kurs', verdi: 'Nybegynner dreiekurs, 19. aug' },
         { navn: 'Melding', verdi: '' },
@@ -10906,14 +10964,35 @@ class Component extends DCLogic {
           background: 'var(--surface-card)',
         },
       })),
-      lager: this.klikkbar((this.erPublisert() ? [] : [
-        { navn: 'Kopp, sandglasur', pris: 'kr. 390,-', antall: 8, status: 'På lager', tone: 'success' },
-        { navn: 'Kopp med hank', pris: 'kr. 450,-', antall: 3, status: 'Få igjen', tone: 'warning' },
-        { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: 5, status: 'På lager', tone: 'success' },
-        { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: 0, status: 'Utsolgt', tone: 'danger' },
-        { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: 2, status: 'Få igjen', tone: 'warning' },
-        { navn: 'Gavekort', pris: 'Valgfritt beløp', antall: null, status: 'Digitalt', tone: 'neutral' },
-      ]).map(v => Object.assign(v, { antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk' })), v => [v.navn, 'Produkt i butikken', [{ navn: 'Navn', verdi: v.navn }, { navn: 'Pris', verdi: v.pris }, { navn: 'Mva', verdi: 'Uten mva' }, { navn: 'På lager', verdi: v.antall === null ? 'Ubegrenset' : String(v.antall) }, { navn: 'Status', verdi: v.status }], 'Lagre produkt', null, 'produkt']),
+      // Lageret, fra basen. Trykk paa en rad aapner skjemaet med varen i,
+      // slik at «Lagre» faktisk endrer den raden.
+      lager: (this.state.adminProdukter
+        ? this.state.adminProdukter.filter(v => !v.kunMedlemmer).map(v => ({
+            navn: v.tittel,
+            pris: v.pris === 0 ? 'Gratis' : 'kr. ' + String(v.pris).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
+            antall: v.lager,
+            status: v.status === 'kladd' ? 'Kladd' : (v.lager === null ? 'Ubegrenset' : (v.lager === 0 ? 'Utsolgt' : (v.lager <= 3 ? 'Få igjen' : 'På lager'))),
+            tone: v.status === 'kladd' ? 'neutral' : (v.lager === 0 ? 'danger' : (v.lager !== null && v.lager <= 3 ? 'warning' : 'success')),
+            raa: v,
+          }))
+        : (this.erPublisert() ? [] : [
+            { navn: 'Kopp, sandglasur', pris: 'kr. 390,-', antall: 8, status: 'På lager', tone: 'success' },
+            { navn: 'Kopp med hank', pris: 'kr. 450,-', antall: 3, status: 'Få igjen', tone: 'warning' },
+            { navn: 'Bolle, stor', pris: 'kr. 590,-', antall: 5, status: 'På lager', tone: 'success' },
+            { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: 0, status: 'Utsolgt', tone: 'danger' },
+            { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: 2, status: 'Få igjen', tone: 'warning' },
+            { navn: 'Gavekort', pris: 'Valgfritt beløp', antall: null, status: 'Digitalt', tone: 'neutral' },
+          ])
+      ).map(v => Object.assign(v, {
+        antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk',
+        velg: () => this.setState({
+          npApen: true, npRediger: true,
+          npNavn: v.navn,
+          npPris: v.raa ? String(v.raa.pris) : String(v.pris).replace(/[^\d]/g, ''),
+          npAntall: v.antall === null ? '' : String(v.antall),
+          npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
+        }),
+      })),
       ordrer: this.klikkbar((this.erPublisert() ? [] : [
         { nr: '#1042', navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', status: 'Sendt på e-post', tone: 'success' },
         { nr: '#1041', navn: 'Trude Holm', hva: '2 kopper · henting', status: 'Klar til henting', tone: 'info' },

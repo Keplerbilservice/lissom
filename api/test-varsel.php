@@ -46,12 +46,6 @@ $svar = [
         'sveve_passord' => $fylt('sveve_passord'),
         'avsender'      => (string) Config::hent('sveve_avsender', 'Lissom'),
     ],
-    'ko' => [
-        'venter'  => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko'"),
-        'sendt'   => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'sendt'"),
-        'feilet'  => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'"),
-        'gitt_opp' => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko' AND forsok >= 5"),
-    ],
 ];
 
 $sisteFeil = DB::alle(
@@ -68,7 +62,23 @@ $svar['siste_feil'] = array_map(static fn(array $r): array => [
 ], $sisteFeil);
 
 $tilEpost = Foresporsel::tekst('epost');
+
+// «meg» sender til den innloggede sin egen adresse. Det er den vanligste
+// hensikten, og da slipper man aa skrive adressen inn i en URL.
+if ($tilEpost === 'meg') {
+    $jeg = Sesjon::medlem();
+    $tilEpost = (string) ($jeg['epost'] ?? '');
+    if ($tilEpost === '') {
+        Svar::feil('Du har ingen e-postadresse registrert. Skriv den inn i adressen i stedet: ?epost=din@adresse.no');
+    }
+}
+
 if ($tilEpost !== '') {
+    // Plassholderen fra dokumentasjonen. Den er blitt sendt inn to ganger,
+    // og feilen ser ut som et oppsettsproblem naar den ikke er det.
+    if (str_ends_with(mb_strtolower($tilEpost), '@adresse.no')) {
+        Svar::feil('«din@adresse.no» er bare et eksempel. Skriv inn din egen adresse, eller bruk ?epost=meg.');
+    }
     if (!filter_var($tilEpost, FILTER_VALIDATE_EMAIL)) {
         Svar::feil('Adressen ser ikke riktig ut.');
     }
@@ -111,8 +121,24 @@ if ($tilSms !== '') {
     }
 }
 
+// Koetallene hentes til slutt, slik at de viser tilstanden etter testen og
+// ikke for. Sto de over, sa de alltid «null feil» rett etter en feilet test.
+$svar['ko'] = [
+    'venter'   => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko'"),
+    'sendt'    => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'sendt'"),
+    'feilet'   => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'"),
+    'gitt_opp' => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko' AND forsok >= 5"),
+];
+$svar['siste_feil'] = array_map(static fn(array $r): array => [
+    'kanal'    => $r['kanal'],
+    'mottaker' => $r['mottaker'],
+    'feil'     => $r['feilmelding'],
+    'forsok'   => (int) $r['forsok'],
+], DB::alle("SELECT kanal, mottaker, feilmelding, forsok FROM notifications
+              WHERE feilmelding IS NOT NULL ORDER BY id DESC LIMIT 5"));
+
 if ($tilEpost === '' && $tilSms === '') {
-    $svar['hvordan'] = 'Legg til &epost=din@adresse.no eller &sms=+4790000000 for aa sende en testmelding.';
+    $svar['hvordan'] = 'Legg til &epost=meg for aa sende en test til din egen adresse, eller &sms=+4790000000 for SMS.';
 }
 
 Svar::json($svar);

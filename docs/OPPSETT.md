@@ -272,9 +272,11 @@ SMS gaar gjennom Sveve. Ingen maanedsavgift, betaling per melding:
 ### Sjekk at det virker
 
 ```
-/api/test-varsel.php?epost=din@adresse.no
+/api/test-varsel.php?epost=meg
 /api/test-varsel.php?sms=+4790000000
 ```
+
+`epost=meg` sender til adressen som staar paa din egen bruker.
 
 Den sender én melding med det oppsettet som gjelder, forteller hvilken vei
 den gikk, og viser de siste feilene fra koen. Krever noekkelen eller at du

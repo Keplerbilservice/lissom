@@ -2589,7 +2589,7 @@ window.__resources = {
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
-            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>5 medlemmer
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
           </div>
         </div>
       </aside>
@@ -2839,7 +2839,7 @@ window.__resources = {
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
-            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>5 medlemmer
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
           </div>
         </div>
       </aside>
@@ -2849,7 +2849,7 @@ window.__resources = {
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Mandag 24. august</div>
             <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">God morgen, Monica</h1>
-            <div style="font-size: var(--text-sm); color: var(--text-muted);">4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet nå</div>
+            <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ adminUnderTittel }}</div>
           </div>
         </div>
 
@@ -3317,7 +3317,7 @@ window.__resources = {
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
-            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>5 medlemmer
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
           </div>
         </div>
       </aside>
@@ -3628,7 +3628,7 @@ window.__resources = {
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
-            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>5 medlemmer
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
           </div>
         </div>
       </aside>
@@ -6773,7 +6773,44 @@ class Component extends DCLogic {
         background: navn === aktiv ? 'var(--lissom-yellow)' : 'transparent',
         color: navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-200)',
       },
-    }));
+    })).concat([
+      // Ut av admin. To ting man vil ha for haanden hele tida, og som ikke
+      // fantes: veien tilbake til nettsiden, og veien ut.
+      {
+        navn: '↗  Se nettsiden',
+        velg: this.go('forside'),
+        stil: Object.assign({}, this.adminBunnStil(), { marginTop: 'var(--space-4)', borderTop: '1px solid rgba(244,235,222,.18)', paddingTop: 'var(--space-4)' }),
+      },
+      {
+        navn: '⌁  Logg ut',
+        velg: () => this.loggUtNaa(),
+        stil: this.adminBunnStil(),
+      },
+    ]);
+  }
+
+  adminBunnStil() {
+    return {
+      appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+      padding: '10px 14px', borderRadius: 'var(--radius-md)',
+      font: 'var(--type-body-sm)', fontWeight: 500,
+      background: 'transparent', color: 'var(--clay-300)',
+    };
+  }
+
+  // Samme utlogging som paa Min side, men naabar fra admin.
+  loggUtNaa() {
+    if (!this.erPublisert()) { this.setState({ innlogget: false, erAdminBruker: false, side: 'forside' }); return; }
+    fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
+      .then(() => {
+        this.setState({
+          innlogget: false, erAdminBruker: false, erMedlemBruker: false,
+          soknadStatus: null, vippsNavn: '', side: 'forside',
+          kvittering: 'Du er logget ut',
+        });
+        window.scrollTo(0, 0);
+      })
+      .catch(() => {});
   }
 
   // Avbestilling. Serveren regner ut refusjonen etter vilkaarene og utforer
@@ -8845,6 +8882,19 @@ class Component extends DCLogic {
       synlig: this.state.synlig,
       vekslSynlig: (e) => this.setState({ synlig: e && e.target ? e.target.checked : !this.state.synlig }),
       antallInne: this.erPublisert() ? 0 : 5,
+      // Sidepanelet i admin sa «5 medlemmer» uansett. Innstempling er ikke
+      // koblet opp, saa paa den ekte siden er svaret ingen.
+      inneTekst: this.erPublisert()
+        ? 'Ingen innstemplet'
+        : '5 medlemmer',
+      adminUnderTittel: (() => {
+        const d = this.state.adminData;
+        if (d && d.bookinger) {
+          return (d.kommende || []).length + ' økter framover · '
+            + d.bookinger.sisteUke + ' påmeldte siste uke';
+        }
+        return this.erPublisert() ? 'Henter …' : '4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet';
+      })(),
       ingenInne: this.erPublisert(),
       visHandlevogn: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'omoss', 'personvern', 'vipps', 'kasse'].indexOf(side) >= 0,
       handlevognAntall: 3 + ((this.state.nyePaameldt || []).length),

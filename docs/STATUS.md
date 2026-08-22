@@ -33,6 +33,11 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Ekte adresser (/kurs, /medlemskap) | Virker |
 | Favicon | Hjertemerket |
 | Sesjon utløper etter 3 timer | Virker |
+| Logg ut-knapp på Min side | Virker |
+| Medlemskap krever godkjenning | Virker — søknad i admin |
+| Handlekurv synlig på mobil | Virker |
+| Gavekort med valgfritt beløp | Virker |
+| Workshop og Sip & Clay som kategori | Virker |
 | Vilkår og personvern | Publisert som egne sider |
 | Favicon i fane, adresselinje og hjemskjerm | Ekte ikonsett, 16–512 px |
 | Ingen avhengighet til unpkg.com | React og ikoner ligger på egen server |
@@ -57,7 +62,7 @@ tall der ville vært oppspinn.
 Backend kjører nå mot en ekte MariaDB 10.11 — samme versjon som webhotellet.
 
 ```
-php tests/backend.php    26 sjekker, alle grønne
+php tests/backend.php    38 sjekker, alle grønne
 tests/flyt.sh            10 sjekker, alle grønne
 ```
 
@@ -150,9 +155,10 @@ skal bygges.
 skriver meldingen er ikke koblet til ennå — endepunktet er klart og testet, men
 teksten fra dialogboksen når ikke fram. Det står igjen.
 
-**10. Migrasjon 009 må kjøres.** Kurstekstene ligger i databasen, ikke i
-fila. Åpne `/api/migrer.php?nokkel=<cron_nokkel>&kjor=ja` én gang, så
-oppdaterer teksten seg på nettsiden.
+**10. Migrasjon 009 og 010 må kjøres.** Kurstekstene og den nye tabellen
+for medlemssøknader ligger i databasen, ikke i fila. Åpne
+`/api/migrer.php?nokkel=<cron_nokkel>&kjor=ja` én gang. Medlemsdelen av Min
+side virker ikke før 010 er kjørt.
 
 **11. Ordensreglene om mat og drikke.** Du ba meg fjerne «ikke spis eller
 drikk ved arbeidsbenkene» og sofakroken. Det er gjort. Punktet «bruk hansker

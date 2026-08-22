@@ -36,6 +36,15 @@ if ($hemmelighet !== '') {
     }
 }
 
+// Uten hemmelighet i secrets.php kan hvem som helst sende hit. Hendelsen far
+// aldri endre en betaling — men den blir notert, og uten en grense kunne noen
+// fylt tabellen med tusenvis av rader. Med hemmeligheten satt er signaturen
+// alt som trengs, og da gjelder ingen grense: Vipps kan sende sa mange
+// hendelser den vil.
+if ($hemmelighet === '') {
+    Rate::sjekk('webhook-usignert', maks: 60, vindu: 600);
+}
+
 $hendelsesId = (string) ($data['eventId'] ?? ($data['reference'] ?? '') . ':' . ($data['name'] ?? ''));
 $referanse   = (string) ($data['reference'] ?? '');
 $navn        = strtoupper((string) ($data['name'] ?? ''));

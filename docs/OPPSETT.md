@@ -257,6 +257,17 @@ Sett heller opp SMTP. Da vet vi om det gikk galt, og hvorfor. Legg til i
 'varsel_epost'   => 'monica@lissom.no',
 ```
 
+### Naar innloggingen blir avvist
+
+`smtp_bruker` og `smtp_passord` er innloggingen til selve e-postkontoen, ikke
+til cPanel og ikke til kundeweben hos Domene.no. Prov aa logge inn i webmail
+med de samme opplysningene — gaar ikke det, er det passordet som er feil, og
+det settes paa nytt under e-postkontoene i kontrollpanelet.
+
+Virker det ikke med en gang, kan du ta ut `smtp_vert`-linja. Da gaar e-posten
+gjennom serverens egen `mail()` i mellomtida. Nettsiden ligger hos Domene.no,
+saa SPF stemmer uansett — det som mangler er bare beskjed nar noe blir avvist.
+
 Avsenderadressen maa ligge paa lissom.no. Sender du fra en gmail-adresse,
 blir meldingene avvist eller havner i sokkelen — SPF sier at Domene.no ikke
 har lov til aa sende paa vegne av Gmail.

@@ -264,7 +264,7 @@ final class Utsending
         }
 
         $navn = parse_url(Config::nettsted(), PHP_URL_HOST) ?: 'lissom.no';
-        $si('EHLO ' . $navn);
+        $evner = $si('EHLO ' . $navn);
 
         if ($sikker === 'starttls') {
             if (!$ok($si('STARTTLS'), '220')
@@ -274,15 +274,29 @@ final class Utsending
                 fclose($sokk);
                 return false;
             }
-            $si('EHLO ' . $navn);
+            $evner = $si('EHLO ' . $navn);
         }
 
         if ($bruker !== '') {
-            $si('AUTH LOGIN');
-            $si(base64_encode($bruker));
-            if (!$ok($si(base64_encode($passord)), '235')) {
-                self::$sisteFeil = 'Innloggingen ble avvist. Sjekk smtp_bruker og smtp_passord.';
-                logg('SMTP: innlogging avvist', ['vert' => $vert, 'bruker' => $bruker]);
+            // Serveren forteller i EHLO-svaret hvilke maater den godtar. Noen
+            // tilbyr bare PLAIN, andre bare LOGIN.
+            $harPlain = stripos($evner, 'PLAIN') !== false;
+            $harLogin = stripos($evner, 'LOGIN') !== false;
+
+            if ($harLogin || !$harPlain) {
+                $si('AUTH LOGIN');
+                $si(base64_encode($bruker));
+                $svarAuth = $si(base64_encode($passord));
+            } else {
+                $svarAuth = $si('AUTH PLAIN ' . base64_encode("\0" . $bruker . "\0" . $passord));
+            }
+
+            if (!$ok($svarAuth, '235')) {
+                // Serverens eget svar sier mer enn vi kan gjette. «535» betyr
+                // som regel feil passord, «534» at kontoen krever noe mer.
+                self::$sisteFeil = 'Innloggingen ble avvist av ' . $vert . ': ' . trim($svarAuth)
+                    . ' — sjekk smtp_bruker og smtp_passord.';
+                logg('SMTP: innlogging avvist', ['vert' => $vert, 'bruker' => $bruker, 'svar' => trim($svarAuth)]);
                 fclose($sokk);
                 return false;
             }

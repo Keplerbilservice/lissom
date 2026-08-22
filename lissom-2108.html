@@ -323,16 +323,24 @@ window.__resources = {
         </div>
       </section>
 
+      <!-- Events og medlemskap deler denne plassen og bytter paa. Hoyden er
+           laast paa bildet, saa siden under ikke hopper naar teksten skifter
+           lengde. -->
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 0.75fr 1.25fr; gap: var(--space-16); align-items: center;">
-          <img src="uploads_shutterstock_2767913113-1.jpg" alt="Sip &amp; Clay hos Lissom" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
+        <div class="lx-split" style="{{ rotSplitStil }}">
+          <img src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Events</div>
-            <h2 style="margin: 0 0 var(--space-5);">En kveld de kommer til å snakke om</h2>
-            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">Date Night, Sip &amp; Clay og private events. Perfekt for utdrikningslag, bedrifter, bursdager og venninnekvelder — ingen trenger erfaring, og vi ordner alt.</p>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ rotStikktittel }}</div>
+            <h2 style="margin: 0 0 var(--space-5);">{{ rotTittel }}</h2>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ rotTekst }}</p>
             <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" icon-after="arrow-right" on-click="{{ goEvents }}" hint-size="auto,48px">Se events</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ goForesporsel }}" hint-size="auto,48px">Send forespørsel</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" icon-after="arrow-right" on-click="{{ rotKnappA }}" hint-size="auto,48px">{{ rotKnappANavn }}</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ rotKnappB }}" hint-size="auto,48px">{{ rotKnappBNavn }}</x-import>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: var(--space-8);">
+              <sc-for list="{{ rotPrikker }}" as="d" hint-placeholder-count="2">
+                <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
+              </sc-for>
             </div>
           </div>
         </div>
@@ -5893,6 +5901,89 @@ class Component extends DCLogic {
     return fornavn ? tid + ', ' + fornavn : tid;
   }
 
+  apneForesporsel() {
+    this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) });
+  }
+
+  goNaa(side, filter) {
+    this.setState({ side: side, kursFilter: filter || this.state.kursFilter });
+    window.scrollTo(0, 0);
+  }
+
+  // Drop-in gaar rett i bookingen naar katalogen er lastet, ellers til
+  // kurssiden med drop-in-filteret — samme vei som toppmenyen tar.
+  goDropinNaa() {
+    const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
+    if (k) {
+      this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false,
+                      bookKvittert: false, bDato: null, ventelisteBekreftet: null });
+      window.scrollTo(0, 0);
+      return;
+    }
+    this.goNaa('kurs', 'Drop-in');
+  }
+
+  // De to som deler plassen paa forsiden: events og medlemskap.
+  //
+  // Teksten om medlemskap er den samme som staar paa medlemskapssiden — ett
+  // sted aa endre, og ingen fare for at forsiden lover noe annet enn siden
+  // den lenker til.
+  rotasjonene() {
+    return [
+      {
+        merke: 'Events',
+        stikktittel: 'Events',
+        tittel: 'En kveld de kommer til å snakke om',
+        tekst: 'Date Night, Sip & Clay og private events. Perfekt for utdrikningslag, bedrifter, bursdager og venninnekvelder — ingen trenger erfaring, og vi ordner alt.',
+        bilde: 'uploads_shutterstock_2767913113-1.jpg',
+        alt: 'Sip & Clay hos Lissom',
+        knappA: 'Se events',
+        knappB: 'Send forespørsel',
+      },
+      {
+        merke: 'Medlemskap',
+        stikktittel: 'Medlemskap',
+        tittel: 'Verkstedet, når det passer deg',
+        tekst: 'Fast plass i verkstedet med egen dørkode. Du stempler inn på mobilen og jobber videre når du vil — leire, glasur og brenning er en del av medlemskapet. Krever kurs eller erfaring fra før.',
+        bilde: 'assets_photos_kursrommet.jpg',
+        alt: 'Medlemmer som jobber ved dreieskivene i verkstedet',
+        knappA: 'Se medlemskap',
+        knappB: 'Book drop-in',
+      },
+    ];
+  }
+
+  // Bytter til neste, eller til en bestemt. Teksten tones ut for den byttes,
+  // og inn igjen etterpaa — ellers ville den hoppet.
+  rotasjonTil(nr) {
+    if (this._rotBytter) return;
+    const antall = this.rotasjonene().length;
+    const neste = ((nr === undefined ? (this.state.rotNr || 0) + 1 : nr) % antall + antall) % antall;
+    if (neste === (this.state.rotNr || 0)) return;
+
+    // Uten animasjon: bytt med en gang. Noen har slaatt av bevegelse i
+    // systeminnstillingene, og da skal ingenting tone.
+    if (this.roligBevegelse()) {
+      this.setState({ rotNr: neste });
+      return;
+    }
+
+    this._rotBytter = true;
+    this.setState({ rotUte: true });
+    this._rotTimer = setTimeout(() => {
+      this.setState({ rotNr: neste, rotUte: false });
+      this._rotBytter = false;
+    }, 420);
+  }
+
+  roligBevegelse() {
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /** Kursene «Ny kursdato» kan legge datoer paa. */
   ndKursnavn() {
     const fra = this.kursData().map(k => k.navn).filter(Boolean);
@@ -6559,6 +6650,13 @@ class Component extends DCLogic {
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
     }, 1000);
+    // Events og medlemskap bytter paa forsiden. Har noen trykket paa en av
+    // prikkene, slutter den aa bytte av seg selv — da har de valgt.
+    this._rotasjon = setInterval(() => {
+      if (this.state.side !== 'forside' || this._rotPause) return;
+      if (document.hidden || this.roligBevegelse()) return;
+      this.rotasjonTil();
+    }, 8000);
     this._klikk = (e) => { this._klikkY = e.pageY; };
     document.addEventListener('click', this._klikk, true);
     this._resize = () => this.setState({ vw: window.innerWidth });
@@ -6627,6 +6725,8 @@ class Component extends DCLogic {
   componentWillUnmount() {
     if (this._pop) window.removeEventListener('popstate', this._pop);
     clearInterval(this._karusell);
+    clearInterval(this._rotasjon);
+    clearTimeout(this._rotTimer);
     clearInterval(this._kurvPuls);
     clearTimeout(this._kvitteringTimer);
     clearTimeout(this._ventelisteTimer);
@@ -9903,7 +10003,7 @@ class Component extends DCLogic {
       heroKnapp1: (this.state.innholdLagret || {})['Forside/0/Knapp 1'] ?? 'Se kurs og datoer',
       heroKnapp2: (this.state.innholdLagret || {})['Forside/0/Knapp 2'] ?? 'Paint on Pots',
       heroBildeCss: "url('" + ((this.state.innholdLagret || {})['Forside/0/Hero-bilde'] ?? 'assets_photos_dreiekurs-smil.png') + "')",
-      goForesporsel: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
+      goForesporsel: () => this.apneForesporsel(),
       goForesporselGammel: () => {
         this.setState({ side: 'kurs' });
         setTimeout(() => {
@@ -10471,12 +10571,7 @@ class Component extends DCLogic {
         el.style.color = 'var(--lissom-brown)'; el.style.webkitTextFillColor = '';
       },
       tjueseks: 26,
-      goDropin: () => {
-        const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
-        if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); }
-        else { this.setState({ side: 'kurs', kursFilter: 'Drop-in' }); }
-        window.scrollTo(0, 0);
-      },
+      goDropin: () => this.goDropinNaa(),
       ukeNr: this.state.ukeNr ?? 35,
       ukeForrige: () => this.setState(s => ({ ukeNr: Math.max(35, (s.ukeNr ?? 35) - 1) })),
       ukeNeste: () => this.setState(s => ({ ukeNr: Math.min(37, (s.ukeNr ?? 35) + 1) })),
@@ -10513,6 +10608,45 @@ class Component extends DCLogic {
         if (mal) { this.setState({ side: mal[0], kursFilter: mal[1] || 'Alle' }); window.scrollTo(0, 0); }
       },
       goEvents: () => { this.setState({ side: 'kurs', kursFilter: 'Events' }); window.scrollTo(0, 0); },
+      ...(() => {
+        const alle = this.rotasjonene();
+        const nr = ((this.state.rotNr || 0) % alle.length + alle.length) % alle.length;
+        const r = alle[nr];
+        const handling = [
+          [() => this.goNaa('kurs', 'Events'), () => this.apneForesporsel()],
+          [() => this.goNaa('medlemskap'), () => this.goDropinNaa()],
+        ][nr];
+
+        return {
+          rotStikktittel: r.stikktittel,
+          rotTittel: r.tittel,
+          rotTekst: r.tekst,
+          rotBilde: r.bilde,
+          rotAlt: r.alt,
+          rotKnappANavn: r.knappA,
+          rotKnappBNavn: r.knappB,
+          rotKnappA: handling[0],
+          rotKnappB: handling[1],
+          // Rutenettet ligger her, ikke i malen, fordi opasiteten maa vaere
+          // en del av samme style-verdi.
+          rotSplitStil: {
+            maxWidth: 'var(--width-content)', margin: '0 auto', display: 'grid',
+            gridTemplateColumns: '0.75fr 1.25fr', gap: 'var(--space-16)', alignItems: 'center',
+            opacity: this.state.rotUte ? 0 : 1,
+            transition: 'opacity .42s var(--ease-clay, ease)',
+          },
+          rotPrikker: alle.map((x, i) => ({
+            merke: 'Vis ' + x.merke,
+            velg: () => { this._rotPause = true; this.rotasjonTil(i); },
+            stil: {
+              appearance: 'none', cursor: 'pointer', padding: 0, border: 'none',
+              width: i === nr ? 26 : 10, height: 10, borderRadius: 999,
+              background: i === nr ? 'var(--lissom-brown)' : 'var(--border-subtle)',
+              transition: 'width .3s var(--ease-clay, ease), background .3s ease',
+            },
+          })),
+        };
+      })(),
       ...(() => {
         const il = this.state.innholdLagret || {};
         const hent = (felt, fallback) => {

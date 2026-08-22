@@ -34,6 +34,12 @@ foreach ($rader as $r) {
     $ut[$r['nokkel']] = $r['verdi'];
 }
 
-// Tekstene endres sjelden. Ett minutts mellomlagring sparer databasen for et
-// oppslag ved hvert eneste sidevisning, uten at en endring blir staaende lenge.
-Svar::json(['innhold' => (object) $ut], 200, 60);
+// Ingen mellomlagring.
+//
+// Her sto «max-age=60». Det sparte databasen for ett lite oppslag, og kostet
+// eieren tilliten til hele admin-panelet: hun endret en bryter, lastet siden
+// paa nytt innen minuttet, og fikk den gamle verdien tilbake fra
+// nettleserens eget lager. Det ser ut som om ingenting ble lagret.
+//
+// Tabellen er noen faa rader. Oppslaget er ikke verdt det.
+Svar::json(['innhold' => (object) $ut]);

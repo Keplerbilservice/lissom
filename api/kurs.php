@@ -49,4 +49,12 @@ foreach ($kurs as $k) {
     ];
 }
 
-Svar::json(['kurs' => $ut]);
+// Rabattnivaaene folger med. Bookingsiden viste tidligere rabatter den fant
+// paa selv, mens serveren trakk full pris — naa leser begge det samme.
+$nivaer = array_map(static fn($r) => [
+    'min'     => (int) $r['min_antall'],
+    'prosent' => (float) $r['prosent'],
+    'gjelder' => $r['gjelder'],
+], DB::alle('SELECT min_antall, prosent, gjelder FROM discount_tiers WHERE aktiv = 1 ORDER BY min_antall'));
+
+Svar::json(['kurs' => $ut, 'rabatter' => $nivaer]);

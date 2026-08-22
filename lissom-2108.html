@@ -399,7 +399,7 @@ window.__resources = {
         <section data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-12) var(--space-8);">
           <div class="lx-band" style="max-width: var(--width-content); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-6) var(--space-10); flex-wrap: wrap;">
             <div style="min-width: 0; max-width: 72ch;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-2);">Salgsuke · {{ kampanjePeriode }}</div>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-2);">{{ kampanjeMerke }}</div>
               <h2 style="margin: 0 0 var(--space-3); color: var(--clay-50);">{{ kampanjeTittel }}</h2>
               <p style="margin: 0; font-size: var(--text-lg); line-height: 1.55; color: var(--clay-200); text-wrap: pretty;">{{ kampanjeTekst }}</p>
             </div>
@@ -3045,7 +3045,7 @@ window.__resources = {
                   <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ skFeltStil }}">
                   <select value="{{ r.gjelder }}" onChange="{{ r.settGjelder }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
                     <sc-for list="{{ grGjelderValg }}" as="g" hint-placeholder-count="5">
-                      <option value="{{ g }}">{{ g }}</option>
+                      <option value="{{ g.verdi }}">{{ g.navn }}</option>
                     </sc-for>
                   </select>
                   <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
@@ -3054,6 +3054,9 @@ window.__resources = {
               </sc-for>
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                 <button type="button" onClick="{{ grLeggTil }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Nytt rabattnivå</button>
+                <!-- Nivaaene laa bare i skjermbildet. Serveren visste ingenting
+                     om dem og trakk full pris, mens bookingsiden viste rabatt. -->
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ grLagre }}" hint-size="auto,36px">{{ grKnapp }}</x-import>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">Eksempel: fra 3 deltakere, 10 % avslag.</span>
               </div>
             </div>
@@ -3925,8 +3928,16 @@ window.__resources = {
               <input value="{{ kampanjeTittel }}" onChange="{{ settKampanjeTittel }}" placeholder="Tittel" style="{{ skFeltStil }}">
               <input value="{{ kampanjePeriode }}" onChange="{{ settKampanjePeriode }}" placeholder="Periode, f.eks. 2.–8. september" style="{{ skFeltStil }}">
             </div>
-            <div style="margin-top: var(--space-4);">
+            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
               <input value="{{ kampanjeTekst }}" onChange="{{ settKampanjeTekst }}" placeholder="Tekst som vises på forsiden" style="{{ skFeltStil }}">
+            </div>
+            <!-- Teksten sto bare i skjermbildet og forsvant ved neste
+                 sidelasting — den staar paa forsiden, saa den maa lagres. -->
+            <div style="margin-top: var(--space-4); display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kampanjeLagre }}" hint-size="auto,36px">{{ kampanjeKnapp }}</x-import>
+              <sc-if value="{{ kampanjeUlagret }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+              </sc-if>
             </div>
           </div>
           <sc-if value="{{ gIngenVenter }}" hint-placeholder-val="{{ false }}">
@@ -4382,8 +4393,8 @@ window.__resources = {
           </sc-for>
         </nav>
         <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
-          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Neste Vipps-oppgjør</div>
-          <div style="color: var(--clay-100); font-size: var(--text-sm);">Mandag 1. september</div>
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Denne måneden</div>
+          <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ okOmsetning }}</div>
         </div>
       </aside>
 
@@ -4391,7 +4402,7 @@ window.__resources = {
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Økonomi i august</h1>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ okMaanedTittel }}</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ aEksport }}" hint-size="auto,44px">Eksporter til regnskap</x-import>
@@ -4407,14 +4418,17 @@ window.__resources = {
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Omsetning hittil i måneden</div>
                 <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; color: var(--text-heading); margin-top: 8px; white-space: nowrap;">{{ okOmsetning }}</div>
               </div>
-              <span style="font-size: var(--text-sm); color: var(--sage-600); white-space: nowrap;">+14 % mot juli</span>
+              <sc-if value="{{ harOkEndring }}" hint-placeholder-val="{{ true }}">
+                <span style="font-size: var(--text-sm); color: var(--sage-600); white-space: nowrap;">{{ okEndring }}</span>
+              </sc-if>
             </div>
             <sc-if value="{{ visOkonomiGraf }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: flex-end; gap: 10px; height: 180px;">
               <sc-for list="{{ okonomiStolper }}" as="s" hint-placeholder-count="8">
-                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0;">
                   <div style="{{ s.stil }}"></div>
-                  <span style="font-size: 11px; color: var(--text-muted);">{{ s.uke }}</span>
+                  <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">{{ s.uke }}</span>
+                  <span style="font-size: 10px; color: var(--text-muted); white-space: nowrap;">{{ s.sum }}</span>
                 </div>
               </sc-for>
             </div>
@@ -4428,6 +4442,7 @@ window.__resources = {
                 <div onClick="{{ k.velg }}" style="cursor: pointer;">
                   <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ k.navn }}</div>
                   <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-top: 6px;">{{ k.sum }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ k.andel }} % av total</div>
                 </div>
               </sc-for>
             </div>
@@ -4476,21 +4491,16 @@ window.__resources = {
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Nøklene hentes i portal.vipps.no. Test og produksjon har hver sine. Del dem aldri på e-post.</p>
           </div>
 
+          <!-- Kortet sa «Tilkoblet» og viste to oppdiktede tokens. Det
+               finnes ingen regnskapskobling. Naa staar det som er. -->
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-5);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Tripletex-regnskap</div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="success" hint-size="auto,24px">Tilkoblet</x-import>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Regnskap</div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="neutral" hint-size="auto,24px">Ikke koblet til</x-import>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: var(--space-6);">
-              <sc-for list="{{ tripletexFelter }}" as="f" hint-placeholder-count="5">
-                <div style="display: flex; justify-content: space-between; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: 10px; font-size: var(--text-sm);">
-                  <span style="color: var(--text-muted);">{{ f.navn }}</span>
-                  <span style="color: var(--text-heading); font-weight: 600; text-align: right;">{{ f.verdi }}</span>
-                </div>
-              </sc-for>
-            </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" full-width="{{ sant }}" on-click="{{ aTripletex }}" hint-size="100%,40px">Rediger Tripletex-oppsett</x-import>
-            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Salg, ordre og Vipps-utbetalinger bokføres automatisk. API-nøkkelen opprettes i Tripletex under Selskap → API-tilgang.</p>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Betalingene bokføres ikke automatisk noe sted. Inntil videre laster du ned transaksjonene og legger dem inn i regnskapet selv.</p>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" full-width="{{ sant }}" icon="download" on-click="{{ aEksport }}" hint-size="100%,40px">Last ned transaksjoner</x-import>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Skal det kobles mot Tripletex eller Fiken, sier du fra — det krever en API-nøkkel fra regnskapssystemet ditt.</p>
           </div>
 
           
@@ -6096,12 +6106,18 @@ class Component extends DCLogic {
     };
   }
 
+  // Nivaaene fra serveren. «gjelder» er 'alle', 'dreiing' eller slug-en til
+  // ett kurs — de samme verdiene serveren regner prisen etter.
   rabattNivaer() {
-    return this.state.rabattNivaer || [
-      { min: 3, prosent: 10, gjelder: 'Alle kurs og workshops', aktiv: true },
-      { min: 5, prosent: 15, gjelder: 'Alle kurs og workshops', aktiv: true },
-      { min: 3, prosent: 5, gjelder: 'Alle dreiekurs', aktiv: true },
-      { min: 6, prosent: 10, gjelder: 'Alle dreiekurs', aktiv: true },
+    if (this.state.rabatter) {
+      return this.state.rabatter.map(r => Object.assign({ aktiv: true }, r));
+    }
+    if (this.state.rabattNivaer) return this.state.rabattNivaer;
+    return this.erPublisert() ? [] : [
+      { min: 3, prosent: 10, gjelder: 'alle', aktiv: true },
+      { min: 5, prosent: 15, gjelder: 'alle', aktiv: true },
+      { min: 3, prosent: 5, gjelder: 'dreiing', aktiv: true },
+      { min: 6, prosent: 10, gjelder: 'dreiing', aktiv: true },
     ];
   }
 
@@ -6109,17 +6125,22 @@ class Component extends DCLogic {
     return !!kurs && ((kurs.tema === 'Dreiing') || ((kurs.title || '').toLowerCase().indexOf('dreie') >= 0));
   }
 
+  // Samme utvalg som Booking::rabattProsent paa serveren: alle kurs, alle
+  // dreiekurs, eller ett bestemt kurs. Star de to fra hverandre, viser siden
+  // igjen en annen pris enn den kunden trekkes.
   nivaerFor(kurs) {
+    const slug = (kurs && (kurs.slug || kurs.kursSlug)) || '';
     const dreiing = this.erDreiekurs(kurs);
     return this.rabattNivaer().filter(r =>
-      r.gjelder === (kurs && kurs.title)
-      || (dreiing ? r.gjelder === 'Alle dreiekurs' : r.gjelder === 'Alle kurs og workshops')
+      r.gjelder === 'alle'
+      || (dreiing && r.gjelder === 'dreiing')
+      || (slug && r.gjelder === slug)
     );
   }
 
   rabattFor(kurs, antall) {
     const tema = (kurs && kurs.tema) || '';
-    if (tema === 'Medlemskap' || tema === 'Drop-in') return 0;
+    if (tema === 'Medlemskap' || tema === 'Drop-in' || antall < 2) return 0;
     return this.nivaerFor(kurs)
       .filter(r => r.aktiv && antall >= (parseInt(r.min, 10) || 0))
       .reduce((m, r) => Math.max(m, parseFloat(r.prosent) || 0), 0);
@@ -6282,6 +6303,59 @@ class Component extends DCLogic {
 
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
   // I forhandsvisning finnes ingen server, og simuleringen maa staa igjen.
+  // Rabattnivaaene i admin. Serveren er kilden — den regner prisen kunden
+  // trekkes, og skjermen maa vise det samme.
+  hentRabatter() {
+    if (!this.erPublisert() || this._rabattHentes) return;
+    this._rabattHentes = true;
+    fetch('/api/admin/rabatter.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._rabattHentes = false;
+        if (d && d.nivaer) this.setState({ rabattNivaer: d.nivaer, rabattMaal: d.maal, rabattUlagret: false });
+      })
+      .catch(() => { this._rabattHentes = false; });
+  }
+
+  rabattKall(nivaer) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    return fetch('/api/admin/rabatter.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nivaer: nivaer }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState(Object.assign(
+          { kvittering: ok ? 'Lagret' : 'Ble ikke lagret', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' },
+          ok ? { rabattNivaer: d.nivaer, rabattUlagret: false, rabatter: null } : {}
+        ));
+        // Prisene paa bookingsiden leser nivaaene fra kurskatalogen. Den maa
+        // hentes paa nytt, ellers viser siden de gamle til neste lasting.
+        if (ok) this.hentKatalog();
+        return ok;
+      })
+      .catch(() => {
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
+  // Okonomiskjermen: ukesfordeling, hva pengene kom fra, og hvilke
+  // betalingsnokler som faktisk staar inne.
+  hentOkonomi() {
+    if (!this.erPublisert() || this._okonomiHentes) return;
+    this._okonomiHentes = true;
+    fetch('/api/admin/okonomi.php', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._okonomiHentes = false;
+        if (d && d.uker) this.setState({ okonomi: d });
+      })
+      .catch(() => { this._okonomiHentes = false; });
+  }
+
   // Kjopshistorikken til den innloggede. Bygges paa betalingene: ordrer,
   // kursplasser, gavekort og medlemstrekk, nyeste forst.
   hentMineKjop() {
@@ -7330,7 +7404,10 @@ class Component extends DCLogic {
   // paa nettsiden, og det skal alle se — ikke bare den som er logget inn.
   hentInnhold() {
     if (!this.erPublisert()) return;
-    fetch('/api/innhold.php')
+    // «no-store»: nettleseren skal ikke svare fra sitt eget lager her.
+    // Uten det fikk eieren den forrige verdien tilbake naar hun lastet siden
+    // paa nytt rett etter aa ha endret noe — og trodde lagringen feilet.
+    fetch('/api/innhold.php', { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
         if (d && d.innhold) {
@@ -7345,9 +7422,14 @@ class Component extends DCLogic {
   // igjen.
   hentKatalog() {
     if (!this.erPublisert()) return;
-    fetch('/api/kurs.php', { credentials: 'same-origin' })
+    fetch('/api/kurs.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => r.json())
-      .then(d => { if (d && d.kurs) this.setState({ katalog: d.kurs }); })
+      .then(d => {
+        if (!d || !d.kurs) return;
+        // Rabattnivaaene kommer sammen med kursene. Uten dem regnet siden med
+        // sine egne nivaaer, og viste en rabatt serveren ikke ga.
+        this.setState(d.rabatter ? { katalog: d.kurs, rabatter: d.rabatter } : { katalog: d.kurs });
+      })
       .catch(() => {});
   }
 
@@ -8664,6 +8746,12 @@ class Component extends DCLogic {
     if (side === 'minside' && this.state.innlogget && !this.state.mineKjop) {
       this.hentMineKjop();
     }
+    if (side === 'adminokonomi' && !this.state.okonomi) {
+      this.hentOkonomi();
+    }
+    if (side.indexOf('admin') === 0 && !this.state.rabattMaal) {
+      this.hentRabatter();
+    }
 
     if (side === 'admindropin' && !this.state.dropinOppsett) {
       this.hentDropin();
@@ -9969,66 +10057,19 @@ class Component extends DCLogic {
           background: m.andel >= 90 ? 'var(--sage-500)' : 'var(--terracotta-500)',
         },
       })),
-      okonomiStolper: (this.erPublisert() ? [] : [
-        { uke: 'U27', h: 42 }, { uke: 'U28', h: 55 }, { uke: 'U29', h: 48 }, { uke: 'U30', h: 63 },
-        { uke: 'U31', h: 71 }, { uke: 'U32', h: 58 }, { uke: 'U33', h: 88 }, { uke: 'U34', h: 100 },
-      ]).map((s, i, arr) => Object.assign(s, {
-        stil: {
-          width: '100%', height: s.h + '%', minHeight: 8, borderRadius: 'var(--radius-sm)',
-          background: i === arr.length - 1 ? 'var(--lissom-yellow)' : 'var(--clay-300)',
-        },
-      })),
-      vippsProdukter: (this.erPublisert() ? [] : [
-        { navn: 'ePayment', hva: 'Kurs, events, drop-in, butikk og gavekort', status: 'Aktivt', tone: 'success' },
-        { navn: 'Recurring', hva: 'Månedstrekk for medlemskap', status: 'Aktivt', tone: 'success' },
-        { navn: 'Login', hva: 'Logg inn med Vipps', status: 'Aktivt', tone: 'success' },
-        { navn: 'QR', hva: 'Innstemplingskode ved døra', status: 'Ikke bestilt', tone: 'neutral' },
-      ]).map(p => Object.assign(p, {
-        velg: this.apne('Vipps ' + p.navn, p.hva, [
-          { navn: 'Status', verdi: p.status },
-          { navn: 'Bestilles i', verdi: 'portal.vipps.no' },
-          { navn: 'Miljø', verdi: 'Produksjon' },
-        ], p.status === 'Aktivt' ? 'Se innstillinger' : 'Bestill produktet'),
-      })),
-      tripletexFelter: (this.erPublisert() ? [] : [
-        { navn: 'Consumer token', verdi: '••••••••••••••••c2e1' },
-        { navn: 'Employee token', verdi: '••••••••••••••••8b40' },
-        { navn: 'Miljø', verdi: 'Produksjon' },
-        { navn: 'Bokføringskonto salg', verdi: '3000 · Salgsinntekt, avgiftspliktig' },
-        { navn: 'Synk', verdi: 'Daglig kl. 03:00' },
-      ]),
-      aTripletex: this.apne('Tripletex-oppsett', 'API-nøkkel opprettes i Tripletex under Selskap → API-tilgang', [
-        { navn: 'Consumer token', verdi: '••••••••••••••••c2e1' },
-        { navn: 'Employee token', verdi: '••••••••••••••••8b40' },
-        { navn: 'Miljø', verdi: 'Produksjon' },
-        { navn: 'Bokføringskonto salg', verdi: '3000' },
-        { navn: 'Bokføringskonto gavekort', verdi: '2900' },
-        { navn: 'Synk', verdi: 'Daglig kl. 03:00' },
-      ], 'Lagre', null, true),
-      vippsFelter: (this.erPublisert() ? [] : [
-        { navn: 'Salgsenhet (MSN)', verdi: '284 719' },
-        { navn: 'Client ID', verdi: 'fb492b5e-…-a10c' },
-        { navn: 'Subscription key', verdi: '••••••••••••••••3f7a' },
-        { navn: 'Webhook-adresse', verdi: 'lissom.no/api/vipps/hendelser' },
-        { navn: 'Oppgjørskonto', verdi: '3201 •• ••127' },
-        { navn: 'Oppgjør', verdi: 'Hver mandag' },
-      ]),
-      aVippsNokler: this.apne('Vipps-nøkler', 'Hentes i portal.vipps.no under Utvikler', [
-        { navn: 'Salgsenhet (MSN)', verdi: '284 719' },
-        { navn: 'Client ID', verdi: 'fb492b5e-…-a10c' },
-        { navn: 'Client secret', verdi: '••••••••••••••••' },
-        { navn: 'Subscription key', verdi: '••••••••••••••••3f7a' },
-        { navn: 'Miljø', verdi: 'Produksjon' },
-        { navn: 'Merk', verdi: 'Test og produksjon har hver sine nøkler. Del dem aldri på e-post.' },
-      ], 'Lagre nøkler', null, true),
-      // Fordelingen per kilde finnes ikke i databasen ennaa. Tomt framfor
-      // oppdiktet — eieren skal ikke kunne lese av tall som ikke stemmer.
-      okonomiKilder: this.klikkbar(this.erPublisert() ? [] : [
-        { navn: 'Kurs og events', sum: 'kr. 96 200,-' },
-        { navn: 'Medlemskap', sum: 'kr. 61 400,-' },
-        { navn: 'Butikk', sum: 'kr. 17 300,-' },
-        { navn: 'Leire og brenning', sum: 'kr. 7 500,-' },
-      ], k => [k.navn, 'Omsetning i august', [{ navn: 'Sum', verdi: k.sum }, { navn: 'Andel av total', verdi: 'Se rapport' }], 'Se transaksjoner', 'adminokonomi']),
+      // Noklene staar i secrets.php paa serveren og redigeres der — ikke
+      // fra en nettside. Kortet viser om de er satt, ikke hva de er.
+      aVippsNokler: this.apne(
+        'Vipps-nøkler',
+        'Hentes i portal.vipps.no under Utvikler',
+        [
+          { navn: 'Hvor de ligger', verdi: 'app/secrets.php på serveren' },
+          { navn: 'Hvorfor ikke her', verdi: 'En nøkkel som kan endres fra nettsiden kan også leses derfra' },
+          { navn: 'Miljø', verdi: 'Test og produksjon har hver sine nøkler' },
+          { navn: 'Merk', verdi: 'Del dem aldri på e-post.' },
+        ],
+        'Lukk'
+      ),
       betalinger: this.klikkbar(
         (this.state.adminBetalinger || []).map(b => ({
           navn: b.medlem || 'Gjest',
@@ -10253,8 +10294,9 @@ class Component extends DCLogic {
       vekslMinGave: () => this.vekslBryter('gaven', 'Gaven'),
       // Bryteren for frys sto uten kobling — den var tegnet, men verken
       // «checked» eller «on-change» pekte paa noe. Da gjorde den ingenting.
-      bryterMinFrys: this.state.visMinFrys !== false,
-      vekslMinFrys: () => this.setState(s => ({ visMinFrys: s.visMinFrys === false })),
+      bryterMinFrys: this.bryterPaa('frys'),
+      vekslMinFrys: () => this.vekslBryter('frys', 'Frys av medlemskap'),
+      visMinFrys: this.bryterPaa('frys'),
       ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovProgram: n }),
@@ -10294,8 +10336,8 @@ class Component extends DCLogic {
         { navn: 'Timer', verdi: '' },
         { navn: 'Hva', verdi: 'Kurs, forberedelse eller brenning' },
       ], 'Registrer', null, true),
-      bryterVisKursholdere: this.state.visKursholdere !== false,
-      vekslVisKursholdere: () => this.setState(s => ({ visKursholdere: s.visKursholdere === false })),
+      bryterVisKursholdere: this.bryterPaa('kursholdere'),
+      vekslVisKursholdere: () => this.vekslBryter('kursholdere', 'Kursholderne'),
       aNyKursholder: this.apne('Ny kursholder', 'Knyttes til kursene du skriver inn — vises på kurssidene', [
         { navn: 'Navn', verdi: '' },
         { navn: 'E-post', verdi: '' },
@@ -10325,14 +10367,69 @@ class Component extends DCLogic {
         if (o) return (this.state.ovOms || 'I dag') === 'I dag' ? o.idag : o.maned;
         return this.erPublisert() ? '–' : ((this.state.ovOms || 'I dag') === 'I dag' ? 'kr. 7 470,-' : 'kr. 182 400,-');
       })(),
-      okOmsetning: (() => {
-        const o = (this.state.adminData || {}).omsetning;
-        return o ? o.maned : (this.erPublisert() ? '–' : 'kr. 182 400,-');
+      // Okonomiskjermen. Ukesfordelingen, kildene og innstillingene sto som
+      // fast tekst og var tomme paa den ekte siden. Naa kommer alt fra
+      // api/admin/okonomi.php.
+      ...(() => {
+        const ok = this.state.okonomi;
+        const maaned = ok ? ok.maned : new Date().toLocaleDateString('nb-NO', { month: 'long' });
+
+        return {
+          okMaanedTittel: 'Økonomi i ' + maaned,
+          okOmsetning: ok
+            ? ok.omsetning
+            : (((this.state.adminData || {}).omsetning || {}).maned || (this.erPublisert() ? '–' : 'kr. 182 400,-')),
+          // «+14 % mot juli» sto fast. Sammenlikningen vises bare naar det
+          // fantes en forrige maaned aa sammenlikne med.
+          okEndring: ok ? (ok.endring || '') : (this.erPublisert() ? '' : '+14 % mot juli'),
+          harOkEndring: ok ? !!ok.endring : !this.erPublisert(),
+
+          visOkonomiGraf: ok ? ok.harUker : !this.erPublisert(),
+          ingenOkonomiGraf: ok ? !ok.harUker : this.erPublisert(),
+          okonomiStolper: (ok
+            ? ok.uker
+            : (this.erPublisert() ? [] : [
+                { uke: 'U27', h: 42 }, { uke: 'U28', h: 55 }, { uke: 'U29', h: 48 }, { uke: 'U30', h: 63 },
+                { uke: 'U31', h: 71 }, { uke: 'U32', h: 58 }, { uke: 'U33', h: 88 }, { uke: 'U34', h: 100 },
+              ])
+          ).map((u, i, arr) => Object.assign({}, u, {
+            stil: {
+              width: '100%', height: u.h + '%', minHeight: 8, borderRadius: 'var(--radius-sm)',
+              background: i === arr.length - 1 ? 'var(--lissom-yellow)' : 'var(--clay-300)',
+            },
+          })),
+
+          okonomiKilder: this.klikkbar(
+            ok ? ok.kilder : (this.erPublisert() ? [] : [
+              { navn: 'Kurs og events', sum: 'kr. 96 200,-', andel: 53 },
+              { navn: 'Medlemskap', sum: 'kr. 61 400,-', andel: 34 },
+              { navn: 'Butikk', sum: 'kr. 17 300,-', andel: 9 },
+              { navn: 'Drop-in', sum: 'kr. 7 500,-', andel: 4 },
+            ]),
+            k => [k.navn, 'Omsetning i ' + maaned,
+                  [{ navn: 'Sum', verdi: k.sum }, { navn: 'Andel av total', verdi: k.andel + ' %' }],
+                  'Se betalingene', 'adminokonomi']
+          ),
+
+          vippsProdukter: (ok ? ok.vipps.produkter : (this.erPublisert() ? [] : [
+            { navn: 'ePayment', hva: 'Kurs, events, drop-in, butikk og gavekort', status: 'I bruk', tone: 'success' },
+            { navn: 'Recurring', hva: 'Månedstrekk for medlemskap', status: 'Ikke koblet opp', tone: 'neutral' },
+            { navn: 'Login', hva: 'Logg inn med Vipps', status: 'Satt opp', tone: 'success' },
+          ])).map(p2 => Object.assign({}, p2, {
+            velg: this.apne('Vipps ' + p2.navn, p2.hva, [
+              { navn: 'Status', verdi: p2.status },
+              { navn: 'Bestilles i', verdi: 'portal.vipps.no' },
+            ], 'Lukk'),
+          })),
+          vippsFelter: ok ? ok.vipps.felter : (this.erPublisert() ? [] : [
+            { navn: 'Salgsenhet (MSN)', verdi: '1142801' },
+            { navn: 'Miljø', verdi: 'Produksjon' },
+          ]),
+          // Ingen regnskapskobling finnes. Kortet sa «Tilkoblet» med
+          // oppdiktede tokens.
+          regnskapTilkoblet: false,
+        };
       })(),
-      // Ukesfordelingen finnes ikke i databasen ennaa. Heller ingen stolper
-      // enn aatte oppdiktede.
-      visOkonomiGraf: !this.erPublisert(),
-      ingenOkonomiGraf: this.erPublisert(),
       // Dagsoppgjoret bygges av de samme tallene som omsetningskortet.
       aDagsoppgjor: this.apne(
         'Dagsoppgjør',
@@ -10583,9 +10680,20 @@ class Component extends DCLogic {
         slett: () => this.setState({ kvRegler: this.kvRegler().filter((x, j) => j !== i), kvHva: null }),
       })),
       kvLeggTilRegel: () => this.setState({ kvRegler: this.kvRegler().concat([{ navn: 'Nytt svar', mal: 'Nybegynner dreiekurs', tekst: '' }]) }),
-      grGjelderValg: ['Alle kurs og workshops', 'Alle dreiekurs'].concat(this.kursData().map(k => k.navn)),
+      grGjelderValg: (this.state.rabattMaal || [
+        { verdi: 'alle', navn: 'Alle kurs og workshops' },
+        { verdi: 'dreiing', navn: 'Alle dreiekurs' },
+      ]),
+      grKnapp: this.state.rabattUlagret ? 'Lagre rabattene' : 'Lagret',
+      grLagre: () => {
+        if (!this.state.rabattUlagret) return;
+        this.rabattKall(this.rabattNivaer());
+      },
       grListe: this.rabattNivaer().map((r, i) => {
-        const oppdater = endring => this.setState({ rabattNivaer: this.rabattNivaer().map((x, j) => j === i ? Object.assign({}, x, endring) : x) });
+        const oppdater = endring => this.setState({
+          rabattNivaer: this.rabattNivaer().map((x, j) => j === i ? Object.assign({}, x, endring) : x),
+          rabattUlagret: true,
+        });
         return {
           min: r.min, prosent: r.prosent, gjelder: r.gjelder,
           settMin: e => oppdater({ min: Math.max(2, parseInt(e.target.value, 10) || 2) }),
@@ -10594,10 +10702,13 @@ class Component extends DCLogic {
           veksl: () => oppdater({ aktiv: !r.aktiv }),
           aktivTekst: r.aktiv ? 'På' : 'Av',
           aktivStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 0', font: 'var(--type-body-sm)', fontWeight: 700, border: '1px solid ' + (r.aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: r.aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)', color: r.aktiv ? 'var(--clay-50)' : 'var(--text-muted)' },
-          slett: () => this.setState({ rabattNivaer: this.rabattNivaer().filter((x, j) => j !== i) }),
+          slett: () => this.setState({ rabattNivaer: this.rabattNivaer().filter((x, j) => j !== i), rabattUlagret: true }),
         };
       }),
-      grLeggTil: () => this.setState({ rabattNivaer: this.rabattNivaer().concat([{ min: 3, prosent: 10, gjelder: 'Alle kurs og workshops', aktiv: true }]) }),
+      grLeggTil: () => this.setState({
+        rabattNivaer: this.rabattNivaer().concat([{ min: 3, prosent: 10, gjelder: 'alle', aktiv: true }]),
+        rabattUlagret: true,
+      }),
       skiveOpptatt: (() => {
         const skiveord = ['dreiekurs', 'kurs boller', 'date night', 'store fat'];
         const ut = [];
@@ -12014,21 +12125,51 @@ class Component extends DCLogic {
         apne: () => this.setState({ salgApen: g.id }),
       })),
       salgApen: !!this.state.salgApen,
-      salgSkjemaPaa: !this.state.salgSkjemaAv,
+      salgSkjemaPaa: this.bryterPaa('salgsskjema'),
       kampanjeVis: this.bryterPaa('salgsuke') && this.mobilVis('salgsuke'),
       kampanjePaa: this.bryterPaa('salgsuke'),
       kampanjeEtikett: this.bryterPaa('salgsuke') ? 'Vises på forsiden' : 'Skjult',
       kampanjeVeksl: () => this.vekslBryter('salgsuke', 'Salgsuke-kampanjen'),
-      kampanjeTittel: this.state.kampanjeTittel ?? 'Medlemmenes salgsuke',
-      kampanjePeriode: this.state.kampanjePeriode ?? '2.–8. september',
-      kampanjeTekst: this.state.kampanjeTekst ?? 'I én uke selger vi medlemmenes håndlagde keramikk sammen i nettbutikken. Alt er laget i verkstedet på Teie.',
-      settKampanjeTittel: e => this.setState({ kampanjeTittel: e.target.value }),
-      settKampanjePeriode: e => this.setState({ kampanjePeriode: e.target.value }),
-      settKampanjeTekst: e => this.setState({ kampanjeTekst: e.target.value }),
+      // Kampanjeteksten paa forsiden. Laa i state og forsvant ved neste
+      // sidelasting — og naadde aldri en besokende, for state finnes bare i
+      // nettleseren til den som skrev.
+      ...(() => {
+        const il = this.state.innholdLagret || {};
+        const kladd = this.state.kampanjeKladd || {};
+        const felt = (n, standard) => kladd[n] ?? il['Salgsuke/' + n] ?? standard;
+        const sett = n => e => {
+          const v = e.target.value;
+          this.setState(st => ({ kampanjeKladd: Object.assign({}, st.kampanjeKladd, { [n]: v }) }));
+        };
+        const tittel  = felt('tittel', 'Medlemmenes salgsuke');
+        const periode = felt('periode', '');
+        const tekst   = felt('tekst', 'I én uke selger vi medlemmenes håndlagde keramikk sammen i nettbutikken. Alt er laget i verkstedet på Teie.');
+        const ulagret = Object.keys(kladd).length > 0;
+
+        return {
+          // «Salgsuke · 2.–8. september» sto fast. Er ingen periode satt,
+          // staar det bare «Salgsuke» framfor en dato som ikke gjelder.
+          kampanjeMerke: periode.trim() ? 'Salgsuke · ' + periode.trim() : 'Salgsuke',
+          kampanjeTittel: tittel, settKampanjeTittel: sett('tittel'),
+          kampanjePeriode: periode, settKampanjePeriode: sett('periode'),
+          kampanjeTekst: tekst, settKampanjeTekst: sett('tekst'),
+          kampanjeUlagret: ulagret,
+          kampanjeKnapp: ulagret ? 'Lagre kampanjen' : 'Lagret',
+          kampanjeLagre: () => {
+            if (!ulagret) return;
+            this.lagreInnhold({
+              'Salgsuke/tittel': tittel,
+              'Salgsuke/periode': periode,
+              'Salgsuke/tekst': tekst,
+            }, 'Salgsuken er lagret');
+            this.setState({ kampanjeKladd: {} });
+          },
+        };
+      })(),
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
-      salgSkjemaEtikett: this.state.salgSkjemaAv ? 'Skjult' : 'Synlig',
-      salgSkjemaVeksl: () => this.setState(s => ({ salgSkjemaAv: !s.salgSkjemaAv })),
-      visSalgSkjema: (!this.erPublisert() || !!this.state.erMedlemBruker) && !this.state.salgSkjemaAv && this.bryterPaa('medlemssalg'),
+      salgSkjemaEtikett: this.bryterPaa('salgsskjema') ? 'Synlig' : 'Skjult',
+      salgSkjemaVeksl: () => this.vekslBryter('salgsskjema', 'Skjemaet for å legge ut arbeider'),
+      visSalgSkjema: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
       lukkSalg: () => this.setState({ salgApen: null }),
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);

@@ -55,6 +55,57 @@ final class Booking
     }
 
     /**
+     * Grupperabatten som gjelder for et kurs med et gitt antall plasser.
+     *
+     * Bookingsiden viste rabatten, men serveren regnet full pris — kunden saa
+     * én sum og ble trukket en annen. Utregningen maa skje her, der belopet
+     * faktisk settes; nettleseren skal aldri sende hva noe koster.
+     *
+     * Flere nivaaer kan treffe samtidig. Da gjelder det beste for kunden.
+     */
+    public static function rabattProsent(array $kurs, int $antall): float
+    {
+        // Medlemskap og drop-in er ikke gruppekjop.
+        $tema = (string) ($kurs['tema'] ?? '');
+        $type = (string) ($kurs['type'] ?? '');
+        if ($tema === 'Medlemskap' || $type === 'dropin' || $antall < 2) {
+            return 0.0;
+        }
+
+        $dreiing = $tema === 'Dreiing'
+            || str_contains(mb_strtolower((string) ($kurs['tittel'] ?? '')), 'dreie');
+
+        $gjelder = ['alle', (string) ($kurs['slug'] ?? '')];
+        if ($dreiing) {
+            $gjelder[] = 'dreiing';
+        }
+
+        $plassholdere = implode(',', array_map(static fn($i) => ':g' . $i, array_keys($gjelder)));
+        $param = ['a' => $antall];
+        foreach ($gjelder as $i => $g) {
+            $param['g' . $i] = $g;
+        }
+
+        $best = DB::verdi(
+            "SELECT MAX(prosent) FROM discount_tiers
+              WHERE aktiv = 1 AND min_antall <= :a AND gjelder IN ({$plassholdere})",
+            $param
+        );
+
+        return max(0.0, min(100.0, (float) ($best ?? 0)));
+    }
+
+    /** Belopet for en booking, etter grupperabatt. Alltid hele ore. */
+    public static function belopFor(array $kurs, int $antall): array
+    {
+        $brutto = (int) $kurs['pris_ore'] * $antall;
+        $rabatt = self::rabattProsent($kurs, $antall);
+        $netto  = (int) round($brutto * (1 - $rabatt / 100));
+
+        return ['brutto' => $brutto, 'rabatt' => $rabatt, 'netto' => $netto];
+    }
+
+    /**
      * Oppretter en reservasjon og starter betaling i Vipps.
      *
      * @return array{redirectUrl:string,referanse:string,bookingId:int}
@@ -95,7 +146,11 @@ final class Booking
             throw new RuntimeException('Dette arrangementet er kun for medlemmer.');
         }
 
-        $belop = (int) $okt['pris_ore'] * $antall;
+        // Prisen regnes her, ikke i nettleseren. Rabatten som vises paa
+        // bookingsiden og den kunden trekkes er naa det samme tallet.
+        $pris   = self::belopFor($okt, $antall);
+        $belop  = $pris['netto'];
+        $rabatt = $pris['rabatt'];
         $referanse = Vipps::nyReferanse();
 
         // Reservasjonen foerst, i en kort transaksjon. Kallet til Vipps ligger
@@ -103,7 +158,7 @@ final class Booking
         // skal ingen databaselaas staa aapen.
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
-            $folgeMedlem, $gratis, $belop, $referanse
+            $folgeMedlem, $gratis, $belop, $rabatt, $referanse
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
@@ -133,6 +188,9 @@ final class Booking
                 'gjest_telefon'     => $telefon !== '' ? $telefon : null,
                 'antall'            => $antall,
                 'belop_ore'         => $belop,
+                // Rabatten lagres med bookingen. Endres nivaaene senere, skal
+                // en gammel kvittering fortsatt kunne forklares.
+                'rabatt_prosent'    => $rabatt,
                 'status'            => $gratis ? 'betalt' : 'reservert',
                 'payment_id'        => $paymentId,
                 'folge_medlem'      => $folgeMedlem,

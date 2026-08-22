@@ -328,6 +328,51 @@ sjekk('maanedsgrensa folger norsk kalender', (function () {
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
 DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $testMedlem]);
 
+// ---------------------------------------------------------------------------
+// Grupperabatt
+//
+// Bookingsiden viste «Grupperabatt 10 %» og en nedsatt sum, mens serveren
+// regnet pris_ore × antall og trakk full pris. Testene her holder de to
+// sammen: det som staar paa skjermen er det kunden faktisk trekkes.
+// ---------------------------------------------------------------------------
+echo "\n== Grupperabatt ==\n";
+
+DB::kjor("DELETE FROM discount_tiers");
+DB::settInn('discount_tiers', ['min_antall' => 3, 'prosent' => 10, 'gjelder' => 'alle', 'aktiv' => 1]);
+DB::settInn('discount_tiers', ['min_antall' => 5, 'prosent' => 15, 'gjelder' => 'alle', 'aktiv' => 1]);
+DB::settInn('discount_tiers', ['min_antall' => 3, 'prosent' => 20, 'gjelder' => 'dreiing', 'aktiv' => 1]);
+DB::settInn('discount_tiers', ['min_antall' => 4, 'prosent' => 30, 'gjelder' => 'test-kurs', 'aktiv' => 0]);
+
+$vanlig  = ['pris_ore' => 100000, 'tema' => 'Handbygging', 'type' => 'kurs',    'slug' => 'test-kurs', 'tittel' => 'Testkurs'];
+$dreie   = ['pris_ore' => 100000, 'tema' => 'Dreiing',     'type' => 'kurs',    'slug' => 'dreietest', 'tittel' => 'Dreiekurs test'];
+$dropin  = ['pris_ore' => 49000,  'tema' => 'Drop-in',     'type' => 'dropin',  'slug' => 'drop-in',   'tittel' => 'Drop-in'];
+$medlem  = ['pris_ore' => 259000, 'tema' => 'Medlemskap',  'type' => 'kurs',    'slug' => 'medlem',    'tittel' => 'Medlemskap'];
+
+sjekk('én plass gir ingen rabatt', Booking::rabattProsent($vanlig, 1) === 0.0);
+sjekk('to plasser gir ingen rabatt naar nivaaet er tre', Booking::rabattProsent($vanlig, 2) === 0.0);
+sjekk('tre plasser gir ti prosent', Booking::rabattProsent($vanlig, 3) === 10.0);
+sjekk('fem plasser gir femten prosent', Booking::rabattProsent($vanlig, 5) === 15.0);
+
+// Flere nivaaer kan treffe samtidig. Det beste for kunden skal gjelde.
+sjekk('dreiekurs faar det beste nivaaet', Booking::rabattProsent($dreie, 3) === 20.0);
+
+// Et inaktivt nivaa skal ikke telle, selv om det passer.
+sjekk('inaktivt nivaa teller ikke', Booking::rabattProsent($vanlig, 4) === 10.0);
+
+sjekk('drop-in har ingen grupperabatt', Booking::rabattProsent($dropin, 5) === 0.0);
+sjekk('medlemskap har ingen grupperabatt', Booking::rabattProsent($medlem, 5) === 0.0);
+
+// Belopet: det som vises og det som trekkes maa vaere samme tall.
+$b = Booking::belopFor($vanlig, 3);
+sjekk('belop trekkes med rabatt', $b['brutto'] === 300000 && $b['netto'] === 270000 && $b['rabatt'] === 10.0);
+sjekk('belop uten rabatt er uendret', Booking::belopFor($vanlig, 1)['netto'] === 100000);
+
+// Oredeling: 15 % av 3 × 1 490 er ikke et rundt tall.
+$skjev = ['pris_ore' => 149000, 'tema' => '', 'type' => 'kurs', 'slug' => 'x', 'tittel' => 'X'];
+sjekk('oredeling rundes til hele ore', Booking::belopFor($skjev, 5)['netto'] === (int) round(149000 * 5 * 0.85));
+
+DB::kjor("DELETE FROM discount_tiers");
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

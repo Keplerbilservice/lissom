@@ -34,6 +34,26 @@ $medlemmer = DB::alle(
 // medlem i lista, mens hen faktisk har admin-tilgang.
 $nodluker = Config::adminNumre();
 
+// Brukte minutter denne maaneden, per medlem. Ett oppslag for hele lista —
+// ikke ett per rad. Maanedsgrensa folger norsk kalender.
+$fra = Stempling::manedStart();
+Stempling::lukkGlemte();
+
+$brukt = [];
+foreach (DB::alle(
+    "SELECT member_id,
+            COALESCE(SUM(COALESCE(minutter, TIMESTAMPDIFF(MINUTE, inn_tid, UTC_TIMESTAMP()))), 0) AS min
+       FROM check_ins WHERE inn_tid >= :fra GROUP BY member_id",
+    ['fra' => $fra]
+) as $r) {
+    $brukt[(int) $r['member_id']] = (int) $r['min'];
+}
+
+$inne = [];
+foreach (DB::alle('SELECT member_id FROM check_ins WHERE ut_tid IS NULL') as $r) {
+    $inne[(int) $r['member_id']] = true;
+}
+
 Svar::json(['medlemmer' => array_map(static fn($m) => [
     'id'         => (int) $m['id'],
     'navn'       => $m['navn'],
@@ -45,4 +65,7 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'status'     => $m['status'],
     'startDato'  => $m['start_dato'],
     'timer'      => $m['timer_per_mnd'],
+    'bruktTimer' => Stempling::timer($brukt[(int) $m['id']] ?? 0),
+    'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
+    'erInne'     => isset($inne[(int) $m['id']]),
 ], $medlemmer)]);

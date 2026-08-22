@@ -53,6 +53,7 @@ require APP_DIR . '/lib/ratelimit.php';
 require APP_DIR . '/lib/varsler.php';
 require APP_DIR . '/lib/vipps.php';
 require APP_DIR . '/lib/booking.php';
+require APP_DIR . '/lib/stempling.php';
 require APP_DIR . '/lib/tikk.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i

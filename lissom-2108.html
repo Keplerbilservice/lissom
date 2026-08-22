@@ -1971,8 +1971,8 @@ window.__resources = {
                        skjult» dukket opp rett under «Ingen er innstemplet nå». -->
                   <sc-if value="{{ harSkjulteInne }}" hint-placeholder-val="{{ true }}">
                   <div style="display: flex; align-items: center; gap: var(--space-3); opacity: .75;">
-                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--clay-200); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); flex: 0 0 auto;">2</div>
-                    <div style="font-size: var(--text-sm); color: var(--text-muted);">to medlemmer er skjult</div>
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--clay-200); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); color: var(--text-muted); flex: 0 0 auto;">{{ skjulteInne }}</div>
+                    <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ skjulteInneTekst }}</div>
                   </div>
                   </sc-if>
                 </div>
@@ -7269,6 +7269,66 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
   }
 
+  /** Staar jeg innstemplet naa? */
+  erInne() {
+    const st = this.state.stempling;
+    return st ? !!st.innstemplet : !!this.state.innstemplet;
+  }
+
+  // Innstempling og timeforbruk.
+  //
+  // Alt her sto som faste verdier for: «11,5 av 30 timer», «Innstemplet
+  // 13:42 · 1 t 20 min», «5 medlemmer inne». Naa kommer det fra basen.
+  hentStempling() {
+    if (!this.erPublisert() || this._stemplingHentes) return;
+    this._stemplingHentes = true;
+
+    fetch('/api/stempling.php', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._stemplingHentes = false;
+        if (d && d.timer) this.setState({ stempling: d });
+      })
+      .catch(() => { this._stemplingHentes = false; });
+  }
+
+  stemplingKall(kropp, kvittering) {
+    if (!this.erPublisert()) {
+      this.setState(s => ({ innstemplet: !s.innstemplet }));
+      return;
+    }
+    if (this._stempler) return;
+    this._stempler = true;
+
+    fetch('/api/stempling.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._stempler = false;
+        if (!ok || !d || !d.timer) {
+          this.setState({
+            kvittering: 'Fikk ikke registrert',
+            kvitteringDetalj: (d && d.feil) || 'Prøv igjen, eller si fra i verkstedet.',
+          });
+          return;
+        }
+        this.setState(Object.assign({ stempling: d }, kvittering ? {
+          kvittering: d.innstemplet ? 'Du er stemplet inn' : 'Du er stemplet ut',
+          kvitteringDetalj: d.innstemplet
+            ? 'Timen teller fra ' + d.siden + '.'
+            : 'Du har brukt ' + d.timer.brukt + ' timer denne måneden.',
+        } : {}));
+      })
+      .catch(() => {
+        this._stempler = false;
+        this.setState({ kvittering: 'Fikk ikke registrert', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   // Beskjed fra et medlem til verkstedet.
   //
   // Denne la beskjeden i en lokal liste og sa «sendt» — den kom aldri fram.
@@ -7811,17 +7871,24 @@ class Component extends DCLogic {
       epost: m.epost || m.telefon || '',
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
       abonnement: m.medlemskap || 'Ingen',
-      // Timeforbruk foeres ikke ennaa — innstempling er ikke koblet opp.
-      timer: m.timer ? ('0 / ' + m.timer) : '—',
-      andel: 0,
-      status: tekst[m.status] || m.status,
-      tone: tone[m.status] || 'neutral',
-      inne: false,
+      // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
+      // viser bare hvor mye som er brukt.
+      timer: m.timer ? (m.bruktTimer + ' / ' + m.timer) : (m.bruktMin > 0 ? m.bruktTimer + ' t' : '—'),
+      andel: m.timer ? Math.min(100, Math.round((m.bruktMin || 0) / (m.timer * 60) * 100)) : 0,
+      status: m.erInne ? 'Inne nå' : (tekst[m.status] || m.status),
+      tone: m.erInne ? 'success' : (tone[m.status] || 'neutral'),
+      inne: !!m.erInne,
     }));
   }
 
   renderVals() {
     const side = this.state.side;
+
+    // Innstemplingsstatus hentes naar man er der den vises: Min side for
+    // medlemmet selv, og admin-sidene for «i verkstedet naa».
+    if ((side === 'minside' || side.indexOf('admin') === 0) && this.state.innlogget && !this.state.stempling) {
+      this.hentStempling();
+    }
 
     if (side.indexOf('admin') === 0 && !this.state.migStatus) {
       this.hentMigrasjoner();
@@ -8413,7 +8480,10 @@ class Component extends DCLogic {
         background: this.state.oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
         color: this.state.oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
       },
-      aboNesteTrekk: this.state.oppsagt ? '—' : '1. sep · ' + plan.pris,
+      // Det finnes ingen trekk. Vipps Recurring er ikke bygget, og «1. sep ·
+      // kr. 2 590,-» var en paastand om noe som ikke skjer.
+      aboNesteTrekk: this.state.oppsagt ? '—'
+        : (this.erPublisert() ? 'Avtales med verkstedet' : '1. sep · ' + plan.pris),
       aboFordeler: aboNavn === 'Fri tilgang' ? ['Ubegrenset verkstedtid', 'Dørkode og medlemspriser']
         : aboNavn === 'Prøv Lissom' ? ['30 dager prøvetid', 'Tilgang til verksted og utstyr']
         : ['30 verkstedtimer i måneden', 'Dørkode og medlemspriser'],
@@ -9816,26 +9886,76 @@ class Component extends DCLogic {
         const el = document.getElementById('minside-abonnement');
         if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
       },
-      timerIgjen: String(t.igjen).replace('.', ','),
-      timerMaks: t.maks || 'av 30 timer',
-      timerUndertekst: aboNavn === 'Fri tilgang' ? 'Fri tilgang har ingen timebegrensning. Du har brukt ' + t.brukt + ' timer denne måneden.' : 'Du har brukt ' + t.brukt + ' timer denne måneden. Nye timer 1. september.',
-      timerBrukt: t.brukt,
-      timerVarsel: t.varsel,
-      timerVarselStil: t.varselStil,
+      ...(() => {
+        // Timene kommer fra innstemplingene i basen. Har vi ikke svar ennaa,
+        // faller vi tilbake paa designverdiene — men bare i designmodus.
+        const st = this.state.stempling;
+        if (!st) return {
+          timerIgjen: String(t.igjen).replace('.', ','),
+          timerMaks: t.maks || 'av 30 timer',
+          timerUndertekst: aboNavn === 'Fri tilgang'
+            ? 'Fri tilgang har ingen timebegrensning. Du har brukt ' + t.brukt + ' timer denne måneden.'
+            : 'Du har brukt ' + t.brukt + ' timer denne måneden. Nye timer 1. september.',
+          timerBrukt: t.brukt,
+        };
+
+        const fri = st.timer.perMnd === null;
+        const nesteMnd = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+        nesteMnd.setMonth(nesteMnd.getMonth() + 1, 1);
+        const nyeTimer = nesteMnd.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
+
+        return {
+          timerIgjen: fri ? '∞' : String(st.timer.igjen).replace('.', ','),
+          timerMaks: fri ? 'ingen timebegrensning' : 'av ' + st.timer.perMnd + ' timer',
+          timerUndertekst: fri
+            ? 'Fri tilgang har ingen timebegrensning. Du har brukt ' + st.timer.brukt + ' timer denne måneden.'
+            : 'Du har brukt ' + st.timer.brukt + ' timer denne måneden. Nye timer ' + nyeTimer + '.',
+          timerBrukt: st.timer.brukt,
+        };
+      })(),
       // Timeteljinga finnes ikke ennaa. Framfor aa vise «du har 30 av 30
       // timer igjen» — som er like usant som 11,5 — skjules kortet helt paa
       // den ekte siden.
-      harTimer: !this.erPublisert() && (t.igjen === '∞' || t.igjen > 0),
-      erTom: !this.erPublisert() && t.igjen === 0,
-      timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
-      stemplingKnapp: this.state.innstemplet ? 'Stemple ut' : 'Stemple inn',
-      stemplingVariant: this.state.innstemplet ? 'secondary' : 'primary',
-      // Innstempling er ikke koblet opp. Klokkeslettet «13:42» og «1 t 20 min»
-      // sto som faste verdier og ble vist til alle, uansett naar de var der.
-      stemplingTekst: this.erPublisert()
-        ? 'Innstempling kommer'
-        : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet'),
-      vekslStempling: () => this.setState(s => ({ innstemplet: !s.innstemplet })),
+      ...(() => {
+        const st = this.state.stempling;
+        // Uten svar fra serveren viser vi ingen timer paa den ekte siden —
+        // et tall vi ikke har dekning for er verre enn ingen tall.
+        if (!st) return {
+          harTimer: !this.erPublisert() && (t.igjen === '∞' || t.igjen > 0),
+          erTom: !this.erPublisert() && t.igjen === 0,
+          timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
+          timerVarsel: t.varsel,
+          timerVarselStil: t.varselStil,
+        };
+
+        const fri = st.timer.perMnd === null;
+        const igjen = fri ? Infinity : st.timer.igjen;
+        const varselBoks = (bg, kant) => ({
+          background: bg, border: '1px solid ' + kant, borderRadius: 'var(--radius-lg)',
+          padding: 'var(--space-5) var(--space-6)', marginBottom: 'var(--space-6)',
+          fontSize: 'var(--text-base)', color: 'var(--text-body)',
+        });
+
+        return {
+          harTimer: igjen > 0,
+          erTom: igjen === 0,
+          timerBarStil: { width: st.timer.andel + '%', height: '100%', background: igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
+          timerVarsel: igjen === 0 ? 'Du har brukt opp timene dine denne måneden.'
+            : (igjen <= 4 ? 'Du har ' + String(igjen).replace('.', ',') + ' timer igjen denne måneden.' : ''),
+          timerVarselStil: igjen === 0 ? varselBoks('rgba(196,90,58,.12)', 'var(--terracotta-500)')
+            : (igjen <= 4 ? varselBoks('var(--clay-100)', 'var(--border-subtle)') : { display: 'none' }),
+        };
+      })(),
+      stemplingKnapp: this.erInne() ? 'Stemple ut' : 'Stemple inn',
+      stemplingVariant: this.erInne() ? 'secondary' : 'primary',
+      // Innstempling, fra basen. Klokkeslettet «13:42 · 1 t 20 min» sto som
+      // fast verdi og ble vist til alle, uansett naar de var der.
+      stemplingTekst: (() => {
+        const st = this.state.stempling;
+        if (st) return st.innstemplet ? 'Innstemplet ' + st.siden + ' · ' + st.saaLenge : 'Du er ikke innstemplet';
+        return this.erPublisert() ? 'Henter …' : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet');
+      })(),
+      vekslStempling: () => this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true),
       aInvitasjon: this.apne('Ta med en venn', 'Én gratis drop-in for en venn i august', [
         { navn: 'Vennens navn', verdi: '' },
         { navn: 'Vennens e-post', verdi: '' },
@@ -9850,14 +9970,21 @@ class Component extends DCLogic {
       apneManuell: this.apne('Stemple inn manuelt', 'Koden står på skiltet ved døra og byttes hver dag. Glemmer du å stemple ut, stopper telleren automatisk ved stengetid.', [
         { navn: 'Dagens kode', verdi: '' },
       ], 'Stemple inn', null, true),
-      synlig: this.state.synlig,
-      vekslSynlig: (e) => this.setState({ synlig: e && e.target ? e.target.checked : !this.state.synlig }),
-      antallInne: this.erPublisert() ? 0 : 5,
-      // Sidepanelet i admin sa «5 medlemmer» uansett. Innstempling er ikke
-      // koblet opp, saa paa den ekte siden er svaret ingen.
-      inneTekst: this.erPublisert()
-        ? 'Ingen innstemplet'
-        : '5 medlemmer',
+      // Synligheten lagres paa medlemmet, ikke i nettleseren.
+      synlig: this.state.stempling ? this.state.stempling.visMeg : this.state.synlig,
+      vekslSynlig: (e) => {
+        const paa = e && e.target ? e.target.checked : !((this.state.stempling || {}).visMeg ?? this.state.synlig);
+        this.setState({ synlig: paa });
+        this.stemplingKall({ visMeg: paa ? 'ja' : 'nei' }, false);
+      },
+      antallInne: this.state.stempling ? this.state.stempling.inne.antall : (this.erPublisert() ? 0 : 5),
+      // Sidepanelet i admin sa «5 medlemmer» uansett.
+      inneTekst: (() => {
+        const st = this.state.stempling;
+        if (!st) return this.erPublisert() ? 'Ingen innstemplet' : '5 medlemmer';
+        const n = st.inne.antall;
+        return n === 0 ? 'Ingen innstemplet' : (n === 1 ? 'Ett medlem' : n + ' medlemmer');
+      })(),
       adminUnderTittel: (() => {
         const d = this.state.adminData;
         if (d && d.bookinger) {
@@ -9866,7 +9993,7 @@ class Component extends DCLogic {
         }
         return this.erPublisert() ? 'Henter …' : '4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet';
       })(),
-      ingenInne: this.erPublisert(),
+      ingenInne: this.state.stempling ? this.state.stempling.inne.antall === 0 : this.erPublisert(),
       visHandlevogn: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'omoss', 'personvern', 'vipps', 'kasse'].indexOf(side) >= 0,
       handlevognAntall: 3 + ((this.state.nyePaameldt || []).length),
       chatTekst: this.state.chatTekst ?? '',
@@ -9891,17 +10018,33 @@ class Component extends DCLogic {
       })),
       // Dorkoden ligger ikke i basen. «4 7 1 2» sto som fast verdi — en kode
       // som enten er feil, eller er den ekte og staar aapent i kildekoden.
-      harSkjulteInne: !this.erPublisert(),
+      ...(() => {
+        const n = this.state.stempling ? this.state.stempling.inne.skjulte : (this.erPublisert() ? 0 : 2);
+        return {
+          harSkjulteInne: n > 0,
+          skjulteInne: String(n),
+          skjulteInneTekst: n === 1 ? 'ett medlem er skjult' : n + ' medlemmer er skjult',
+        };
+      })(),
       dorkode: this.state.dorkode || (this.erPublisert() ? '— — — —' : '4 7 1 2'),
       // «I verkstedet naa» krever innstempling, og den er ikke koblet opp.
       // Paa den ekte nettsiden staar lista derfor tom framfor aa vise
       // oppdiktede folk — et medlem som logger inn skal ikke tro at det er
       // tre andre i verkstedet naar det ikke er noen.
-      inne: ((this.erPublisert() || !(this.props.visGronnPrikk ?? true)) ? [] : [
-        { navn: 'Ingrid Hansen (deg)', initial: 'IH', siden: 'Innstemplet 13:42' },
-        { navn: 'Kari Nordbø', initial: 'KN', siden: 'Innstemplet 12:10' },
-        { navn: 'Jonas Five', initial: 'JF', siden: 'Innstemplet 09:55' },
-      ]).map(m => Object.assign(m, {
+      // Hvem som er i verkstedet naa, fra innstemplingene. Initialene bygges
+      // av navnet — serveren sender bare navn og klokkeslett.
+      inne: (this.state.stempling
+        ? this.state.stempling.inne.liste.map(m => ({
+            navn: m.navn + (m.navn === (this.state.vippsNavn || '') ? ' (deg)' : ''),
+            initial: m.navn.split(/\s+/).slice(0, 2).map(o => o.charAt(0).toUpperCase()).join(''),
+            siden: 'Innstemplet ' + m.siden,
+          }))
+        : ((this.erPublisert() || !(this.props.visGronnPrikk ?? true)) ? [] : [
+            { navn: 'Ingrid Hansen (deg)', initial: 'IH', siden: 'Innstemplet 13:42' },
+            { navn: 'Kari Nordbø', initial: 'KN', siden: 'Innstemplet 12:10' },
+            { navn: 'Jonas Five', initial: 'JF', siden: 'Innstemplet 09:55' },
+          ])
+      ).map(m => Object.assign(m, {
         avatarStil: {
           width: 36, height: 36, borderRadius: '50%', background: 'var(--clay-200)',
           color: 'var(--brown-500)', display: 'flex', alignItems: 'center', justifyContent: 'center',

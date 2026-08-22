@@ -255,6 +255,79 @@ sjekk('passord_hash-kolonnen finnes',
                       WHERE table_schema = DATABASE() AND table_name = 'members'
                         AND column_name = 'passord_hash'") === 1);
 
+// ---------------------------------------------------------------- innstempling
+echo "\n== Innstempling og timer ==\n";
+
+$testMedlem = DB::settInn('members', [
+    'navn' => 'Stempeltest', 'status' => 'aktiv',
+    'medlemskap_type' => '30 timer', 'timer_per_mnd' => 30,
+]);
+
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+
+sjekk('ingen apen okt til aa begynne med', Stempling::apenOkt($testMedlem) === null);
+
+$okt = Stempling::inn($testMedlem);
+sjekk('innstempling gir en apen okt', Stempling::apenOkt($testMedlem) !== null);
+
+sjekk('dobbel innstempling gir samme okt', Stempling::inn($testMedlem) === $okt);
+sjekk('bare én apen okt i basen',
+    (int) DB::verdi('SELECT COUNT(*) FROM check_ins WHERE member_id = :m AND ut_tid IS NULL',
+        ['m' => $testMedlem]) === 1);
+
+// Skru okta 95 minutter tilbake og stemple ut.
+DB::kjor('UPDATE check_ins SET inn_tid = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 95 MINUTE) WHERE id = :i', ['i' => $okt]);
+$min = Stempling::ut($testMedlem);
+sjekk('utstempling regner minutter', $min !== null && $min >= 94 && $min <= 96, 'fikk ' . var_export($min, true));
+sjekk('ingen apen okt etter utstempling', Stempling::apenOkt($testMedlem) === null);
+sjekk('utstempling uten apen okt gir null', Stempling::ut($testMedlem) === null);
+
+sjekk('minutter denne maaneden teller med',
+    Stempling::minutterDenneManeden($testMedlem) >= 94);
+
+// Glemt utstempling skal lukkes, og ikke spise hele maaneden.
+DB::settInn('check_ins', [
+    'member_id' => $testMedlem,
+    'inn_tid'   => gmdate('Y-m-d H:i:s', time() - 3 * 86400),
+]);
+Stempling::lukkGlemte();
+$glemt = DB::en('SELECT minutter, auto_lukket FROM check_ins WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+    ['m' => $testMedlem]);
+sjekk('glemt utstempling lukkes', (int) ($glemt['auto_lukket'] ?? 0) === 1);
+sjekk('glemt okt kappes til seks timer', (int) ($glemt['minutter'] ?? 0) === 360);
+
+// En okt kan aldri telle mer enn taket, selv om den staar lenge aapen.
+$lang = DB::settInn('check_ins', [
+    'member_id' => $testMedlem,
+    'inn_tid'   => gmdate('Y-m-d H:i:s', time() - 9 * 3600),
+]);
+sjekk('lang okt kappes ogsaa ved utstempling', Stempling::ut($testMedlem) === 360);
+
+// Synlighet: skjulte medlemmer telles, men vises ikke.
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => gmdate('Y-m-d H:i:s')]);
+DB::oppdater('members', ['vis_innstempling' => 0], ['id' => $testMedlem]);
+$inne = Stempling::inneNa();
+$skjultTelt = $inne['antall'] >= 1;
+$skjultVist = false;
+foreach ($inne['synlige'] as $rad) {
+    if ($rad['navn'] === 'Stempeltest') { $skjultVist = true; }
+}
+sjekk('skjult medlem telles med', $skjultTelt);
+sjekk('skjult medlem vises ikke i lista', $skjultVist === false);
+
+sjekk('varighet skrives paa norsk', Stempling::varighet(80) === '1 t 20 min'
+    && Stempling::varighet(45) === '45 min' && Stempling::varighet(120) === '2 t');
+sjekk('timer skrives med komma', Stempling::timer(95) === '1,6');
+
+sjekk('maanedsgrensa folger norsk kalender', (function () {
+    $oslo = new DateTimeImmutable(Stempling::manedStart(), new DateTimeZone('UTC'));
+    $lokal = $oslo->setTimezone(new DateTimeZone('Europe/Oslo'));
+    return $lokal->format('j') === '1' && $lokal->format('H:i') === '00:00';
+})());
+
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $testMedlem]);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

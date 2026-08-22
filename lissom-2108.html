@@ -78,6 +78,16 @@ window.__resources = {
       button[style*="min-height: 44px"][style*="text-transform: uppercase"], a[style*="min-height: 44px"][style*="text-transform: uppercase"] { min-height: 36px !important; padding: 8px 16px !important; letter-spacing: 0.08em !important; }
       button[style*="min-height: 34px"][style*="text-transform: uppercase"], a[style*="min-height: 34px"][style*="text-transform: uppercase"] { min-height: 28px !important; padding: 5px 12px !important; font-size: 11px !important; letter-spacing: 0.08em !important; }
     }
+    /* «Kontakt oss» i toppmenyen, 25 % mindre enn de andre store knappene.
+       Bare paa desktop — paa mobil er knappen alt nede i 38 px, og under det
+       blir den for liten aa treffe med en tommel. */
+    @media (min-width: 761px) {
+      header button[style*="min-height: 52px"][style*="text-transform: uppercase"] {
+        min-height: 32px !important;
+        padding: 7px 17px !important;
+        font-size: 11px !important;
+      }
+    }
     a { color: var(--lissom-brown); text-decoration: none; }
     a:hover { color: var(--terracotta-500); }
     .lx-kortgrid img { object-position: center 32%; }
@@ -2439,6 +2449,46 @@ window.__resources = {
               <input value="{{ nyLenkeOm }}" onChange="{{ settNyLenkeOm }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ lenkeLeggTil }}" hint-size="auto,44px">Legg til</x-import>
+          </div>
+        </div>
+
+        <!-- Plakatene. Tre sider som laa som fast tekst i designfila og
+             dermed ikke kunne endres av noen — enda det er verkstedets egne
+             regler som staar der. -->
+        <div style="margin-top: var(--space-10);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Plakater</div>
+          <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl); letter-spacing: 0;">Sidene under Nyttig info</h2>
+          <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Ett punkt per linje. Tomme linjer hoppes over. Sidene kan skrives ut og henges opp i verkstedet.</p>
+
+          <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+            <sc-for list="{{ plakatRed }}" as="pl" hint-placeholder-count="2">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 860px;">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                  <div>
+                    <div style="font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ pl.navn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ pl.antall }}</div>
+                  </div>
+                  <div style="display: flex; gap: var(--space-3); align-items: center;">
+                    <button type="button" onClick="{{ pl.apne }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se siden →</button>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ pl.lagre }}" hint-size="auto,36px">{{ pl.knapp }}</x-import>
+                  </div>
+                </div>
+                <textarea value="{{ pl.tekst }}" onChange="{{ pl.sett }}" rows="9" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); font-family: inherit; color: var(--text-heading); background: var(--clay-50); resize: vertical;"></textarea>
+              </div>
+            </sc-for>
+
+            <!-- Orton-conene er faste fysiske verdier. De styrer ovnene, og
+                 skal ikke kunne skrives om fra et tekstfelt. -->
+            <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 860px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <div>
+                  <div style="font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Cone til grader</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ coneAntall }} — faste verdier, kan ikke endres</div>
+                </div>
+                <button type="button" onClick="{{ goPlakatCone }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Se siden →</button>
+              </div>
+              <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-body); max-width: 62ch;">Orton-conene er fysiske verdier vi styrer ovnene etter. De ligger fast med vilje — en tabell som kan skrives om fra et tekstfelt er ikke en tabell å brenne etter.</p>
+            </div>
           </div>
         </div>
       </main>
@@ -6122,6 +6172,12 @@ class Component extends DCLogic {
       { sti: '/paint-on-pots', side: 'paintonpots' },
       { sti: '/kalender',      side: 'kalender' },
       { sti: '/nyttig-info',   side: 'nyttig' },
+      // Plakatene hadde ingen adresse — de kunne bare naas ved aa klikke seg
+      // inn fra Nyttig info, og lot seg derfor verken lenke til eller
+      // bokmerke. De skal kunne skrives ut og henges opp.
+      { sti: '/nyttig-info/brennetabell',   side: 'plakatcone' },
+      { sti: '/nyttig-info/medlemsinfo',    side: 'plakatinfo' },
+      { sti: '/nyttig-info/trivselsregler', side: 'plakattrivsel' },
       { sti: '/booking',       side: 'booking' },
       { sti: '/kasse',         side: 'kasse' },
       { sti: '/logg-inn',      side: 'login' },
@@ -6226,10 +6282,57 @@ class Component extends DCLogic {
 
   // Kjorer vi paa den ekte nettsiden, eller i designverktoyets forhandsvisning?
   // I forhandsvisning finnes ingen server, og simuleringen maa staa igjen.
+  // Kjopshistorikken til den innloggede. Bygges paa betalingene: ordrer,
+  // kursplasser, gavekort og medlemstrekk, nyeste forst.
+  hentMineKjop() {
+    if (!this.erPublisert() || this._kjopHentes) return;
+    this._kjopHentes = true;
+    fetch('/api/mine-kjop.php', { credentials: 'same-origin' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._kjopHentes = false;
+        if (d && d.kjop) this.setState({ mineKjop: d.kjop });
+      })
+      .catch(() => { this._kjopHentes = false; });
+  }
+
   // Intern info til medlemmer: dorkode og wifi. Kommer fra api/meg.php, som
   // bare gir dem ut til den som er aktivt medlem. Det som nettopp er lagret
   // i admin ligger i internInfoLokal, saa eieren ser endringen med en gang
   // uten aa vente paa neste oppslag.
+  // Punktene paa en plakat: det eieren har lagret, ellers teksten fra
+  // designet. Lagres som JSON i content_blocks, som resten av tekstene.
+  // Bryterne under «Vis paa nettsiden» og «Vis for medlemmene».
+  //
+  // De laa i state og forsvant ved neste sidelasting — og naadde uansett
+  // aldri en besokende, for state finnes bare i nettleseren til den som
+  // trykket. Naa ligger de i content_blocks, som resten av det eieren
+  // bestemmer over. Standard er paa: en bryter ingen har rort skal vise
+  // seksjonen.
+  bryterPaa(nokkel) {
+    return (this.state.innholdLagret || {})['Vis/' + nokkel] !== 'nei';
+  }
+
+  vekslBryter(nokkel, navn) {
+    const paa = this.bryterPaa(nokkel);
+    this.lagreInnhold(
+      { ['Vis/' + nokkel]: paa ? 'nei' : 'ja' },
+      navn + (paa ? ' er skjult' : ' vises igjen')
+    );
+  }
+
+  plakatPunkter(nokkel) {
+    const pl = Component.PLAKATER.find(x => x.nokkel === nokkel);
+    const raa = (this.state.innholdLagret || {})['Plakat/' + nokkel];
+    if (raa) {
+      try {
+        const liste = JSON.parse(raa);
+        if (Array.isArray(liste) && liste.length) return liste;
+      } catch (e) { /* ligger det noe rart der, viser vi standarden */ }
+    }
+    return pl ? pl.standard : [];
+  }
+
   internInfo() {
     return Object.assign({}, this.state.internInfo || {}, this.state.internInfoLokal || {});
   }
@@ -6343,6 +6446,52 @@ class Component extends DCLogic {
   // «Aapent hus 6. september» ville staatt der i desember.
   // Hvordan en paamelding lagt inn for haand ble gjort opp. Samme liste som
   // serveren godtar — staar de to fra hverandre, blir valget avvist.
+  // Plakatene under Nyttig info. Tekstene laa fast i designfila, saa
+  // verkstedets egne regler kunne ikke endres av verkstedet.
+  static get PLAKATER() {
+    return [
+      {
+        nokkel: 'medlemsinfo', navn: 'Informasjon til medlemmer', side: 'plakatinfo',
+        standard: [
+          'Alle må lage egne råbrente plater til å sette under alt som skal glasurbrennes.',
+          'Bruk av verksted, transparent glasur og brenning følger med i alle medlemsskapene.',
+          'Dersom man har mye som skal brennes og ikke vil vente, kan man kjøpe egen brenning kun til sine egne ting.',
+          'Det er kun underglasurer som kan benyttes før råbrenning. Glasurer skal KUN brukes etter råbrenning!',
+          'Leire, farger og andre glasurer holder man selv, og oppbevarer det i sin egen hylle og på eget ansvar.',
+          'Vær klar over at det du har laget kan gå i stykker, enten under brenning eller ved uhell!',
+        ],
+      },
+      {
+        nokkel: 'ordensregler', navn: 'Ordensregler og HMS', side: 'minside', hp: true,
+        hjelp: 'Overskrift, kolon, og så teksten — ett punkt per linje. Vises på Min side.',
+        standard: [
+          'Rydd etter deg: Vask verktøy, bord og dreieskive før du går. Leirerester skrapes i leirebøtta, ikke i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.',
+          'Støv er den største risikoen: Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.',
+          'Glasur og kjemikalier: Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.',
+          'Ovnen: Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.',
+          'Merk arbeidene dine: Skriv initialene dine i bunnen før tørking. Umerkede arbeider på fellehyllene kastes etter to måneder.',
+          'Hylla di: Medlemmer har egen hylle. Hold arbeidene innenfor din egen plass, og ta med ferdige ting hjem så det blir plass til andre.',
+          'Siste person låser: Sjekk at vinduene er lukket, vannet er avstengt og lyset er slukket. Døra låses automatisk, men dra i den for å være sikker.',
+          'Ved uhell: Førstehjelpsskrin henger ved vasken, brannslukker ved utgangen. Meld fra til Monica på +47 94 13 46 01 ved skade, kutt eller søl av kjemikalier.',
+        ],
+      },
+      {
+        nokkel: 'trivsel', navn: 'Trivselsregler', side: 'plakattrivsel',
+        standard: [
+          'Bruk gjerne innesko, tøfler kan lånes.',
+          'Rydde og vaske etter seg på bord, skiver, vekt og verktøy.',
+          'Vaske opp det man har bruk selv, og legge alt tilbake på plass.',
+          'Slukke alt lys i verkstedet.',
+          'Skru av radio/musikk.',
+          'Slukke alt lys i gangene, unntatt lyset i den lille gangen ved inngangsdøren.',
+          'Sjekke tavlen om det er andre på huset. Er det noen inne, la lyset i gangene stå på.',
+          'Sjekke om bakdøren er låst før du går.',
+          'Låse dørene og legge nøklene tilbake i nøkkelboksene.',
+        ],
+      },
+    ];
+  }
+
   static get BETALT_MAATER() {
     return ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
   }
@@ -7307,8 +7456,6 @@ class Component extends DCLogic {
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
     this._resize(); // startverdi — ellers vet vi ikke om vi er paa mobil for forste rotasjon
-    this._lagring = () => this.setState({ mobilSkjulLokal: null, mobilTikk: (this.state.mobilTikk || 0) + 1 });
-    window.addEventListener('storage', this._lagring);
     this._kurvPuls = setInterval(() => {
       const harVarer = Object.keys(this.state.kurv || {}).length > 0;
       if (harVarer && this.state.side !== 'kasse' && !this.state.kurvApen) {
@@ -7382,7 +7529,6 @@ class Component extends DCLogic {
     clearTimeout(this._ktTimer);
     clearInterval(this._kurvIntervall);
     window.removeEventListener('resize', this._resize);
-    window.removeEventListener('storage', this._lagring);
     document.removeEventListener('click', this._klikk, true);
     document.removeEventListener('keydown', this._esc);
   }
@@ -8015,6 +8161,8 @@ class Component extends DCLogic {
       booking: 'Book plass', kalender: 'Kalender', nyttig: 'Nyttig info',
       kasse: 'Kasse', login: 'Logg inn', minside: 'Min side',
       personvern: 'Personvern', vilkar: 'Vilkår', vipps: 'Betaling med Vipps',
+      plakatcone: 'Cone til grader', plakatinfo: 'Informasjon til medlemmer',
+      plakattrivsel: 'Trivselsregler',
     }[side];
     if (n) return n + ' | Lissom Keramikk & Håndverk';
     if (side.indexOf('admin') === 0) return 'Admin | Lissom Keramikk';
@@ -8206,9 +8354,17 @@ class Component extends DCLogic {
     // Salgsuke-banneret finnes to steder paa forsiden. Paa mobil kom de rett
     // etter hverandre, saa det nederste (over «Dette skjer naa») er av som
     // standard. Det kan slaas paa igjen under Admin -> Mobilvisning.
+    //
+    // Valget laa i localStorage. Det er den enkelte nettleserens eget lager:
+    // eieren skrudde av en seksjon, og den var like synlig for alle andre.
+    // Naa ligger det i content_blocks som resten.
     const standard = { salgsuke: true };
-    if (this.state.mobilSkjulLokal) return Object.assign({}, standard, this.state.mobilSkjulLokal);
-    try { return Object.assign({}, standard, JSON.parse(localStorage.getItem('lissomMobilSkjul')) || {}); } catch (e) { return Object.assign({}, standard); }
+    const il = this.state.innholdLagret || {};
+    const ut = Object.assign({}, standard);
+    Object.keys(il).forEach(k => {
+      if (k.indexOf('Mobil/') === 0) ut[k.slice(6)] = il[k] === 'skjul';
+    });
+    return ut;
   }
 
   erSmal() { return (this.state.vw || (typeof window !== 'undefined' ? window.innerWidth : 1200)) <= 760; }
@@ -8505,6 +8661,9 @@ class Component extends DCLogic {
     if ((side === 'minside' || side.indexOf('admin') === 0) && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
     }
+    if (side === 'minside' && this.state.innlogget && !this.state.mineKjop) {
+      this.hentMineKjop();
+    }
 
     if (side === 'admindropin' && !this.state.dropinOppsett) {
       this.hentDropin();
@@ -8634,9 +8793,11 @@ class Component extends DCLogic {
       };
     }
 
-    // Kjopshistorikken finnes ikke som endepunkt ennaa. Fire oppdiktede kjop
-    // med kvitteringsnummer sto her og ble vist til alle.
-    const fh = this.state.kjop || (this.erPublisert() ? [] : [
+    // Kjopshistorikken. Fire oppdiktede kjop med kvitteringsnummer sto her
+    // og ble vist til alle som logget inn — «Leire, stengods graa, kr. 290,-,
+    // LIS-10488». Naa kommer den fra api/mine-kjop.php, som bygger den paa
+    // betalingene til den som faktisk er innlogget.
+    const fh = this.state.mineKjop || this.state.kjop || (this.erPublisert() ? [] : [
       { navn: 'Leire, stengods grå', detalj: '10 kg pose', sum: 'kr. 290,-', tid: '22. august 14:12', ref: 'LIS-10488' },
       { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', sum: 'kr. 220,-', tid: '18. august 09:40', ref: 'LIS-10471' },
       { navn: 'Kurs boller', detalj: 'Betalt', sum: 'kr. 1 490,-', tid: '2. august 11:30', ref: 'LIS-10402' },
@@ -9240,10 +9401,10 @@ class Component extends DCLogic {
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
       harMedlemskurs: (!this.erPublisert() || !!this.state.erMedlemBruker)
-        && this.state.visMinInternkurs !== false
+        && this.bryterPaa('internkurs')
         && (!this.erPublisert() || (this.state.nyeInterne || []).length > 0),
-      visMinInternbutikk: this.state.visMinInternbutikk !== false,
-      visMinSalg: this.state.visMinSalg !== false,
+      visMinInternbutikk: this.bryterPaa('internbutikk'),
+      visMinSalg: this.bryterPaa('medlemssalg'),
       // Interne samlinger finnes ikke i basen ennaa. Paa den ekte siden viser
       // vi derfor ingen — bedre enn tre oppdiktede kvelder et medlem kan
       // forsoke aa melde seg paa.
@@ -9520,9 +9681,11 @@ class Component extends DCLogic {
           this.apne(k.navn, k.detalj + ' · ' + k.tid, [
             { navn: 'Beløp', verdi: k.sum },
             { navn: 'Referanse', verdi: k.ref },
-            { navn: 'Betalt', verdi: 'Vipps' },
-            { navn: 'Kvittering', verdi: 'Sendt på e-post' },
-          ], 'Lukk')();
+            { navn: 'Betalt', verdi: k.betaltMed || 'Vipps' },
+            // Sto som «Sendt paa e-post» uansett. Naa staar det som faktisk
+            // skjedde med kvitteringen.
+            { navn: 'Kvittering', verdi: k.kvittering || 'Sendt på e-post' },
+          ].concat(k.refundert ? [{ navn: 'Refundert', verdi: k.refundert }] : []), 'Lukk')();
           clearTimeout(this._histTimer);
           this._histTimer = setTimeout(() => {
             if (this.state.detalj && this.state.detalj.tittel === k.navn) this.setState({ detalj: null });
@@ -10079,15 +10242,15 @@ class Component extends DCLogic {
           },
         };
       })(),
-      bryterKursvelger: this.state.visKursvelger !== false,
-      bryterMinInternkurs: this.state.visMinInternkurs !== false,
-      vekslMinInternkurs: () => this.setState(s => ({ visMinInternkurs: s.visMinInternkurs === false })),
-      bryterMinInternbutikk: this.state.visMinInternbutikk !== false,
-      vekslMinInternbutikk: () => this.setState(s => ({ visMinInternbutikk: s.visMinInternbutikk === false })),
-      bryterMinSalg: this.state.visMinSalg !== false && !this.state.salgSkjemaAv,
-      vekslMinSalg: () => this.setState(s => ({ visMinSalg: s.visMinSalg === false })),
-      bryterMinGave: this.state.visMinGave !== false,
-      vekslMinGave: () => this.setState(s => ({ visMinGave: s.visMinGave === false })),
+      bryterKursvelger: this.bryterPaa('kursvelger'),
+      bryterMinInternkurs: this.bryterPaa('internkurs'),
+      vekslMinInternkurs: () => this.vekslBryter('internkurs', 'Interne kurs og samlinger'),
+      bryterMinInternbutikk: this.bryterPaa('internbutikk'),
+      vekslMinInternbutikk: () => this.vekslBryter('internbutikk', 'Internbutikken'),
+      bryterMinSalg: this.bryterPaa('medlemssalg'),
+      vekslMinSalg: () => this.vekslBryter('medlemssalg', 'Selg egne arbeider'),
+      bryterMinGave: this.bryterPaa('gaven'),
+      vekslMinGave: () => this.vekslBryter('gaven', 'Gaven'),
       // Bryteren for frys sto uten kobling — den var tegnet, men verken
       // «checked» eller «on-change» pekte paa noe. Da gjorde den ingenting.
       bryterMinFrys: this.state.visMinFrys !== false,
@@ -10403,8 +10566,8 @@ class Component extends DCLogic {
       })(),
       butikkVelgLissom: () => this.setState({ butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' }),
       butikkVelgMedlem: () => this.setState({ butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }),
-      visKursvelger: this.state.visKursvelger !== false && this.mobilVis('kursvelger'),
-      vekslKursvelger: () => this.setState(s => ({ visKursvelger: s.visKursvelger === false })),
+      visKursvelger: this.bryterPaa('kursvelger') && this.mobilVis('kursvelger'),
+      vekslKursvelger: () => this.vekslBryter('kursvelger', 'Kursvelger-lenken'),
       kvAdminMaal: [
         { verdi: 'Nybegynner dreiekurs', navn: 'Nybegynner dreiekurs' },
         { verdi: 'Kurs boller', navn: 'Kurs boller' },
@@ -10471,8 +10634,13 @@ class Component extends DCLogic {
           },
         };
       })(),
-      visMedlemskolleksjon: this.state.visMedlemskolleksjon !== false,
-      vekslMedlemskolleksjon: () => this.setState(s => ({ visMedlemskolleksjon: s.visMedlemskolleksjon === false, butikkKolleksjon: s.visMedlemskolleksjon === false ? s.butikkKolleksjon : 'Lissom', butikkFilter: 'Alt' })),
+      visMedlemskolleksjon: this.bryterPaa('medlemskolleksjon'),
+      vekslMedlemskolleksjon: () => {
+        // Skjules kolleksjonen mens man staar i den, maa butikken tilbake
+        // til Lissom — ellers blir skjermen staaende tom.
+        if (this.bryterPaa('medlemskolleksjon')) this.setState({ butikkKolleksjon: 'Lissom', butikkFilter: 'Alt' });
+        this.vekslBryter('medlemskolleksjon', 'Medlemskolleksjonen');
+      },
       butikkLissomKant: (this.state.butikkKolleksjon || 'Lissom') !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
       butikkMedlemKant: (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
       butikkFiltre: ((this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? ['Alt', 'Kopper', 'Boller', 'Fat'] : ['Alt', 'Kopper', 'Boller', 'Fat', 'Gavekort']).map(navn => ({
@@ -10806,29 +10974,44 @@ class Component extends DCLogic {
       erPlakatInfo: side === 'plakatinfo',
       erPlakatTrivsel: side === 'plakattrivsel',
       coneRader: side === 'plakatcone' ? this.coneTabell() : [],
-      medlemsInfoPunkter: [
-        'Alle må lage egne råbrente plater til å sette under alt som skal glasurbrennes.',
-        'Bruk av verksted, transparent glasur og brenning følger med i alle medlemsskapene.',
-        'Dersom man har mye som skal brennes og ikke vil vente, kan man kjøpe egen brenning kun til sine egne ting.',
-        'Det er kun underglasurer som kan benyttes før råbrenning. Glasurer skal KUN brukes etter råbrenning!',
-        'Leire, farger og andre glasurer holder man selv, og oppbevarer det i sin egen hylle og på eget ansvar.',
-        'Vær klar over at det du har laget kan gå i stykker, enten under brenning eller ved uhell!',
-      ],
-      trivselsPunkter: [
-        'Bruk gjerne innesko, tøfler kan lånes.',
-        'Rydde og vaske etter seg på bord, skiver, vekt og verktøy.',
-        'Vaske opp det man har bruk selv, og legge alt tilbake på plass.',
-        'Slukke alt lys i verkstedet.',
-        'Skru av radio/musikk.',
-        'Slukke alt lys i gangene, unntatt lyset i den lille gangen ved inngangsdøren.',
-        'Sjekke tavlen om det er andre på huset. Er det noen inne, la lyset i gangene stå på.',
-        'Sjekke om bakdøren er låst før du går.',
-        'Låse dørene og legge nøklene tilbake i nøkkelboksene.',
-      ].map((tekst, i) => ({ nr: i + 1, tekst })),
+      medlemsInfoPunkter: this.plakatPunkter('medlemsinfo'),
+      trivselsPunkter: this.plakatPunkter('trivsel').map((tekst, i) => ({ nr: i + 1, tekst })),
+      goPlakatCone: this.go('plakatcone'),
+      coneAntall: this.coneTabell().length + ' rader',
+      // Plakatene til redigering. Ett punkt per linje — det er slik de leses,
+      // og slik de skrives.
+      plakatRed: Component.PLAKATER.map(pl => {
+        const lagret = this.plakatPunkter(pl.nokkel).join('\n');
+        const utkast = (this.state.plakatUtkast || {})[pl.nokkel];
+        const tekst = utkast === undefined ? lagret : utkast;
+        const antall = tekst.split('\n').map(l => l.trim()).filter(Boolean).length;
+        return {
+          navn: pl.navn,
+          antall: (antall === 1 ? '1 punkt' : antall + ' punkter')
+                  + (pl.hjelp ? ' · ' + pl.hjelp : ''),
+          tekst,
+          knapp: tekst === lagret ? 'Lagret' : 'Lagre',
+          apne: this.go(pl.side),
+          sett: e => {
+            const v = e.target.value;
+            this.setState(st => ({ plakatUtkast: Object.assign({}, st.plakatUtkast, { [pl.nokkel]: v }) }));
+          },
+          lagre: () => {
+            if (tekst === lagret) return;
+            const rene = tekst.split('\n').map(l => l.trim()).filter(Boolean);
+            this.lagreInnhold({ ['Plakat/' + pl.nokkel]: JSON.stringify(rene) }, pl.navn + ' er lagret');
+            this.setState(st => {
+              const u = Object.assign({}, st.plakatUtkast);
+              delete u[pl.nokkel];
+              return { plakatUtkast: u };
+            });
+          },
+        };
+      }),
       plakatKort: [
         { eyebrow: 'Brennetabell', navn: 'Cone til grader', om: 'Orton-coner omregnet til celsius og fahrenheit — verdiene vi styrer ovnene etter.', side: 'plakatcone' },
         { eyebrow: 'Medlemmer', navn: 'Informasjon til medlemmer', om: 'Det viktigste å vite om brenning, glasur og oppbevaring i verkstedet.', side: 'plakatinfo' },
-        { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: 'Ni enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
+        { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: this.plakatPunkter('trivsel').length + ' enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
       adminNavNyttig: this.adminMeny('Nyttig info'),
@@ -10966,16 +11149,14 @@ class Component extends DCLogic {
         { h: 'Reklamasjon', p: 'Håndlaget keramikk varierer i farge og form — det er ikke en mangel. Ved skade eller feil, kontakt oss på monica@lissom.no innen rimelig tid, så finner vi en løsning etter forbrukerkjøpsloven.' },
         { h: 'Avlysning fra oss', p: 'Ved for få påmeldte eller sykdom kan vi avlyse kurs. Du får da valget mellom ny dato eller full refusjon.' },
       ],
-      ordensregler: [
-        { h: 'Rydd etter deg', p: 'Vask verktøy, bord og dreieskive før du går. Leirerester skrapes i leirebøtta, ikke i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.' },
-        { h: 'Støv er den største risikoen', p: 'Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.' },
-        { h: 'Glasur og kjemikalier', p: 'Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.' },
-        { h: 'Ovnen', p: 'Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.' },
-        { h: 'Merk arbeidene dine', p: 'Skriv initialene dine i bunnen før tørking. Umerkede arbeider på fellehyllene kastes etter to måneder.' },
-        { h: 'Hylla di', p: 'Medlemmer har egen hylle. Hold arbeidene innenfor din egen plass, og ta med ferdige ting hjem så det blir plass til andre.' },
-        { h: 'Siste person låser', p: 'Sjekk at vinduene er lukket, vannet er avstengt og lyset er slukket. Døra låses automatisk, men dra i den for å være sikker.' },
-        { h: 'Ved uhell', p: 'Førstehjelpsskrin henger ved vasken, brannslukker ved utgangen. Meld fra til Monica på +47 94 13 46 01 ved skade, kutt eller søl av kjemikalier.' },
-      ],
+      // Overskrift og tekst skilles paa forste kolon. «Ovnen: Bare Monica...»
+      // blir overskrift «Ovnen» og tekst «Bare Monica...».
+      ordensregler: this.plakatPunkter('ordensregler').map(rad => {
+        const i = rad.indexOf(':');
+        return i > 0
+          ? { h: rad.slice(0, i).trim(), p: rad.slice(i + 1).trim() }
+          : { h: '', p: rad };
+      }),
       dropinRegler: [
         'Drop-in krever godkjenning av oss. Du må ha gått kurs hos oss, eller være sammen med et aktivt medlem som er til stede hele tiden. Er du med et medlem, oppgir du medlemmets navn når du booker.',
         'Du får låne forkle av oss, men regn med å bli litt skitten.',
@@ -11834,10 +12015,10 @@ class Component extends DCLogic {
       })),
       salgApen: !!this.state.salgApen,
       salgSkjemaPaa: !this.state.salgSkjemaAv,
-      kampanjeVis: !this.state.kampanjeAv && this.mobilVis('salgsuke'),
-      kampanjePaa: !this.state.kampanjeAv,
-      kampanjeEtikett: this.state.kampanjeAv ? 'Skjult' : 'Vises på forsiden',
-      kampanjeVeksl: () => this.setState(s => ({ kampanjeAv: !s.kampanjeAv })),
+      kampanjeVis: this.bryterPaa('salgsuke') && this.mobilVis('salgsuke'),
+      kampanjePaa: this.bryterPaa('salgsuke'),
+      kampanjeEtikett: this.bryterPaa('salgsuke') ? 'Vises på forsiden' : 'Skjult',
+      kampanjeVeksl: () => this.vekslBryter('salgsuke', 'Salgsuke-kampanjen'),
       kampanjeTittel: this.state.kampanjeTittel ?? 'Medlemmenes salgsuke',
       kampanjePeriode: this.state.kampanjePeriode ?? '2.–8. september',
       kampanjeTekst: this.state.kampanjeTekst ?? 'I én uke selger vi medlemmenes håndlagde keramikk sammen i nettbutikken. Alt er laget i verkstedet på Teie.',
@@ -11847,7 +12028,7 @@ class Component extends DCLogic {
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
       salgSkjemaEtikett: this.state.salgSkjemaAv ? 'Skjult' : 'Synlig',
       salgSkjemaVeksl: () => this.setState(s => ({ salgSkjemaAv: !s.salgSkjemaAv })),
-      visSalgSkjema: (!this.erPublisert() || !!this.state.erMedlemBruker) && !this.state.salgSkjemaAv && this.state.visMinSalg !== false,
+      visSalgSkjema: (!this.erPublisert() || !!this.state.erMedlemBruker) && !this.state.salgSkjemaAv && this.bryterPaa('medlemssalg'),
       lukkSalg: () => this.setState({ salgApen: null }),
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);
@@ -12030,16 +12211,17 @@ class Component extends DCLogic {
         { nokkel: 'apenthus', navn: 'Banneret under toppbildet' },
         { nokkel: 'salgsuke', navn: 'Salgsuke-kampanjen' },
         { nokkel: 'kursvelger', navn: 'Kursvelger-lenken i toppen' },
-      ].map(v => ({
-        navn: v.navn,
-        paa: !(this.mobilSkjul())[v.nokkel],
-        veksl: () => {
-          const s = Object.assign({}, this.mobilSkjul());
-          s[v.nokkel] = !s[v.nokkel];
-          try { localStorage.setItem('lissomMobilSkjul', JSON.stringify(s)); } catch (e) {}
-          this.setState({ mobilSkjulLokal: s });
-        },
-      })),
+      ].map(v => {
+        const paa = !(this.mobilSkjul())[v.nokkel];
+        return {
+          navn: v.navn,
+          paa,
+          veksl: () => this.lagreInnhold(
+            { ['Mobil/' + v.nokkel]: paa ? 'skjul' : 'vis' },
+            v.navn + (paa ? ' er skjult på mobil' : ' vises på mobil')
+          ),
+        };
+      }),
       ...(() => {
         if (side !== 'adminseo') return {};
         const sider = this.seoSider();

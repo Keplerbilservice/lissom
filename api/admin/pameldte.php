@@ -15,6 +15,21 @@ krev_admin();
 
 $oktId = Foresporsel::heltall('oktId');
 
+/** Samme regel som paa Min side: betalt, gjennomfort, og et kurs. */
+$kursbevis = static function (array $d): ?string {
+    if (($d['status'] ?? '') !== 'betalt') {
+        return null;
+    }
+    if (in_array((string) ($d['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) {
+        return null;
+    }
+    $slutt = $d['slutt_tid'] ?: $d['start_tid'];
+    if ($slutt === null || strtotime((string) $slutt) > time()) {
+        return null;
+    }
+    return '/api/kursbevis.php?booking=' . (int) $d['id'];
+};
+
 if ($oktId <= 0) {
     $okter = DB::alle(
         "SELECT cs.id, cs.start_tid, c.tittel,
@@ -36,7 +51,8 @@ if ($oktId <= 0) {
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
                 COALESCE(m.telefon, b.gjest_telefon) AS telefon,
-                c.tittel, cs.start_tid, p.vipps_reference, p.status AS betalingsstatus
+                c.tittel, c.tema, cs.start_tid, cs.slutt_tid,
+                p.vipps_reference, p.status AS betalingsstatus
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
@@ -61,6 +77,9 @@ if ($oktId <= 0) {
             'antall'  => (int) $d['antall'],
             'folge'   => $d['folge_medlem'],
             'referanse' => $d['vipps_reference'],
+            // Kursbevis for gjennomforte, betalte kurs. Verkstedet skal kunne
+            // skrive ut for noen som ikke faar det til selv.
+            'kursbevis' => $kursbevis($d),
         ], $alle),
         'okter' => array_map(static fn($o) => [
         'oktId'     => (int) $o['id'],

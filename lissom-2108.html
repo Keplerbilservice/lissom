@@ -4841,8 +4841,11 @@ window.__resources = {
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Beskrivelse" rows="3" placeholder="Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin." hint-size="100%,100px"></x-import>
       </sc-if>
     </sc-if>
-    <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4);">
+    <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ utforDetalj }}" hint-size="auto,40px">{{ detaljHandling }}</x-import>
+      <sc-if value="{{ visDetaljBevis }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ apneDetaljBevis }}" hint-size="auto,40px">Kursbevis</x-import>
+      </sc-if>
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ lukkDetalj }}" hint-size="auto,40px">Lukk</x-import>
     </div>
   </div>
@@ -6826,6 +6829,13 @@ class Component extends DCLogic {
       adminFokusValg: this.fokusValg((this.state.detalj && this.state.detalj.tittel) || 'produkt'),
       detaljLese: !(this.state.detalj && this.state.detalj.skjema),
       lukkDetalj: () => this.setState({ detalj: null, kvittering: '' }),
+      // Kursbevis fra detaljdialogen. Verkstedet skal kunne skrive ut for
+      // noen som ikke faar det til selv.
+      visDetaljBevis: !!(this.state.detalj && this.state.detalj.kursbevis),
+      apneDetaljBevis: () => {
+        const u = this.state.detalj && this.state.detalj.kursbevis;
+        if (u) window.open(u, '_blank', 'noopener');
+      },
       utforDetalj: () => this.utforDetalj(),
       kvittering: this.state.kvittering || '',
       harKvittering: !!this.state.kvittering,
@@ -8927,6 +8937,7 @@ class Component extends DCLogic {
               { navn: 'Status', verdi: p.status },
             ],
             handling: p.status === 'Ubetalt' ? 'Send betalingslenke' : 'Avbestill og refunder',
+            kursbevis: p.kursbevis || null,
           },
         }),
       })),

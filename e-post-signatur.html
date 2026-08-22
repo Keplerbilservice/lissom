@@ -97,10 +97,11 @@
       <code>lissom.no/e-post-logo.png</code> når mottakeren åpner meldingen. Det holder
       signaturen lett, men betyr at logoen ikke vises for de som blokkerer bilder —
       derfor står all kontaktinformasjon som tekst, ikke i bildet.</li>
-    <li><strong>Mens siden ligger på ny.lissom.no</strong> må adressene i signaturen
-      peke dit: bytt <code>https://lissom.no</code> til <code>https://ny.lissom.no</code>
-      begge steder, og det samme for bildeadressen. Når siden flyttes til lissom.no,
-      bytter du tilbake.</li>
+    <li><strong>Adressene retter seg selv.</strong> Signaturen peker på det
+      domenet du åpner denne siden fra. Åpner du den på ny.lissom.no, peker den
+      dit; åpner du den på lissom.no senere, peker den dit. Da slipper du å huske
+      å bytte — men det betyr også at du må hente signaturen på nytt herfra den
+      dagen siden flyttes.</li>
     <li><strong>Ingen webfonter.</strong> Signaturen bruker Georgia, som finnes på
       alle maskiner. Bitter og Alegreya Sans ville blitt byttet ut med noe tilfeldig
       i de fleste e-postprogrammer.</li>
@@ -132,5 +133,28 @@
 </table></textarea>
 
 </div>
+
+<script>
+  // Adressene i signaturen skrives om til det domenet siden faktisk aapnes
+  // fra. Uten dette pekte bildet paa lissom.no, som fortsatt viser den gamle
+  // siden — og da var logoen borte bade her og i signaturen folk limte inn.
+  (function () {
+    var her = location.protocol + '//' + location.host;
+    if (her === 'https://lissom.no') return;
+
+    var boks = document.querySelector('.boks');
+    boks.innerHTML = boks.innerHTML.split('https://lissom.no').join(her);
+
+    var felt = document.querySelector('textarea');
+    felt.value = felt.value.split('https://lissom.no').join(her);
+
+    var merk = document.createElement('p');
+    merk.className = 'merk';
+    merk.style.marginTop = '10px';
+    merk.textContent = 'Adressene i signaturen peker på ' + her
+      + ', som er der du åpnet denne siden fra.';
+    boks.parentNode.insertBefore(merk, boks.nextSibling);
+  })();
+</script>
 </body>
 </html>

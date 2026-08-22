@@ -105,12 +105,16 @@ $varsler = [];
 
 $feiledeVarsler = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'");
 if ($feiledeVarsler > 0) {
-    $varsler[] = $feiledeVarsler . ' varsel kom ikke fram';
+    $varsler[] = $feiledeVarsler === 1
+        ? 'Ett varsel kom ikke fram — sjekk e-postoppsettet'
+        : $feiledeVarsler . ' varsler kom ikke fram — sjekk e-postoppsettet';
 }
 
 $iKo = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko' AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 MINUTE)");
 if ($iKo > 0) {
-    $varsler[] = $iKo . ' varsel har ligget i ko i over en halvtime';
+    $varsler[] = $iKo === 1
+        ? 'Ett varsel har ligget i kø i over en halvtime'
+        : $iKo . ' varsler har ligget i kø i over en halvtime';
 }
 
 $hengende = (int) DB::verdi(
@@ -119,7 +123,9 @@ $hengende = (int) DB::verdi(
         AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)"
 );
 if ($hengende > 0) {
-    $varsler[] = $hengende . ' betaling har hengt i over en time';
+    $varsler[] = $hengende === 1
+        ? 'Én betaling har hengt i over en time'
+        : $hengende . ' betalinger har hengt i over en time';
 }
 
 $venteliste = (int) DB::verdi("SELECT COUNT(*) FROM waitlist WHERE status = 'venter'");

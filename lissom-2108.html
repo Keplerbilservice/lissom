@@ -11040,7 +11040,9 @@ class Component extends DCLogic {
       // api/admin/okonomi.php.
       ...(() => {
         const ok = this.state.okonomi;
-        const maaned = ok ? ok.maned : new Date().toLocaleDateString('nb-NO', { month: 'long' });
+        // Feltet heter «maaned» i svaret fra api/admin/okonomi.php. Lest som
+        // «maned» ga det undefined, og overskriften sto «Økonomi i undefined».
+        const maaned = ok ? (ok.maaned || '') : new Date().toLocaleDateString('nb-NO', { month: 'long' });
 
         return {
           okMaanedTittel: 'Økonomi i ' + maaned,

@@ -3,7 +3,7 @@
 
 INSERT INTO notification_templates (navn, kanal, emne, tekst) VALUES
 ('ordrebekreftelse', 'epost', 'Takk for bestillingen hos Lissom!',
- 'Hei {navn}! Vi har mottatt bestillingen din ({ordre}). Du finner kvitteringen vedlagt. Velkommen til verkstedet!'),
+ 'Hei {navn}! Vi har mottatt bestillingen din ({ordre}). Du finner kvitteringen under Min side. Velkommen til verkstedet!'),
 
 ('kurspaaminnelse', 'epost_sms', 'I morgen: {kurs} kl. {tid}',
  'Hei {navn}! Vi gleder oss til å se deg i morgen. Du får låne forkle av oss, men regn med å bli litt skitten. Adresse: Nordre Løkkevei 15, Teie.'),
@@ -18,7 +18,7 @@ INSERT INTO notification_templates (navn, kanal, emne, tekst) VALUES
  'Hei {navn}. Månedstrekket for {abonnement} feilet. Åpne Vipps og godkjenn betalingen innen 5 dager for å beholde tilgangen.'),
 
 ('venteliste_ledig', 'sms', NULL,
- 'Hei {navn}! Det ble ledig plass på {kurs} {dato}. Plassen er din i 24 timer: {lenke}'),
+ 'Hei {navn}! Det ble ledig plass på {kurs} {dato}. Først til mølla — book her: {lenke}'),
 
 ('ferdig_brent', 'sms', NULL,
  'Hei {navn}! Keramikken din fra {kurs} er ferdig og klar til henting. Vi holder av den i to uker.');

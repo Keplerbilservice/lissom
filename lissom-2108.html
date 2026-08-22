@@ -3551,10 +3551,11 @@ window.__resources = {
                     </sc-for>
                   </div>
                 </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" default-value="Ovnen går natt til torsdag" hint-size="100%,66px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="4" default-value="Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med." hint-size="100%,120px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Send også som SMS" hint-size="100%,24px"></x-import>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" hint-size="100%,44px">Send til 47 medlemmer</x-import>
+                <!-- Feltene sto uten binding, og knappen uten on-click: man kunne
+                     skrive en beskjed og trykke Send uten at noe skjedde. -->
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ mbEmne }}" on-change="{{ settMbEmne }}" placeholder="F.eks. Ovnen går natt til torsdag" hint-size="100%,66px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="4" value="{{ mbTekst }}" on-change="{{ settMbTekst }}" placeholder="Hva vil du si til medlemmene?" hint-size="100%,120px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ mbSend }}" hint-size="100%,44px">{{ mbKnapp }}</x-import>
               </div>
             </div>
             <div style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-6);" data-theme="sun">
@@ -7269,6 +7270,152 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
   }
 
+  // Tilbyr plassen til den som staar forst paa ventelista.
+  //
+  // Plassen holdes ikke av — forste som booker, faar den. Det staar i
+  // beskjeden, saa ingen tror de har fatt en reservasjon.
+  ventelisteVarsle(id) {
+    if (!this.erPublisert() || this._ventelisteSender) return;
+    this._ventelisteSender = true;
+
+    fetch('/api/admin/venteliste.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, handling: 'varsle' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._ventelisteSender = false;
+        this.setState({
+          kvittering: ok ? 'Plassen er tilbudt' : 'Fikk ikke sendt tilbudet',
+          kvitteringDetalj: (d && d.beskjed) || (d && d.feil) || '',
+        });
+        this._adminHentes = false;
+        this.hentAdmin();
+      })
+      .catch(() => {
+        this._ventelisteSender = false;
+        this.setState({ kvittering: 'Fikk ikke sendt tilbudet', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  // Beskjed til alle aktive medlemmer.
+  //
+  // Skjemaet sto uten binding og knappen uten handler — man kunne skrive en
+  // beskjed, trykke «Send til 47 medlemmer» og faa ingenting.
+  sendTilMedlemmer() {
+    const tekst = (this.state.bmTekst || '').trim();
+    const emne = (this.state.bmEmne || '').trim();
+
+    if (tekst.length < 3) {
+      this.setState({ kvittering: 'Skriv en beskjed først', kvitteringDetalj: 'Teksten må ha innhold.' });
+      return;
+    }
+    if (!this.erPublisert()) {
+      this.setState({ bmTekst: '', bmEmne: '', kvittering: 'Beskjeden er sendt' });
+      return;
+    }
+    if (this._bmSender) return;
+    this._bmSender = true;
+
+    fetch('/api/admin/beskjed.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ til: 'medlemmer', emne: emne || 'Beskjed fra Lissom', tekst: tekst }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._bmSender = false;
+        if (!ok) {
+          this.setState({ kvittering: 'Beskjeden ble ikke sendt', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+          return;
+        }
+        this.setState({
+          bmTekst: '', bmEmne: '',
+          kvittering: 'Beskjeden er sendt',
+          kvitteringDetalj: d.beskjed || '',
+        });
+      })
+      .catch(() => {
+        this._bmSender = false;
+        this.setState({ kvittering: 'Beskjeden ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  // Lagrer et kurs i basen, og datoene med det.
+  //
+  // «Lagre og publiser» viste kvittering og skrev ingenting. Serveren har
+  // stottet dette hele tida — knappen var bare ikke koblet til.
+  lagreKurs(rad, okter) {
+    if (this._kursLagres) return;
+    this._kursLagres = true;
+
+    const TYPE = { 'Kurs': 'kurs', 'Event': 'event', 'Workshop': 'workshop', 'Sip & Clay': 'event', 'Drop-in': 'dropin' };
+    const TEMA = { 'Sip & Clay': 'Sip & Clay', 'Workshop': 'Workshop', 'Drop-in': 'Drop-in', 'Event': 'Events' };
+    const eksisterende = (this.state.adminKursRaa || []).find(k => k.tittel === rad.navn);
+
+    fetch('/api/admin/kurs.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'lagre',
+        id: eksisterende ? eksisterende.id : 0,
+        tittel: rad.navn,
+        type: TYPE[rad.type] || 'kurs',
+        tema: TEMA[rad.type] || 'Kurs',
+        pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
+        kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 8,
+        sms: rad.sms === false ? 'nei' : 'ja',
+        om: rad.beskrivelse || '',
+        bekreftelse: rad.bekreftelse || '',
+        status: 'publisert',
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok || !d || !d.id) {
+          this._kursLagres = false;
+          this.setState({ kvittering: 'Kurset ble ikke lagret', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+          return;
+        }
+        // Datoene legges paa etterpaa, én etter én. nydato er idempotent paa
+        // (kurs, starttid), saa et kurs som lagres om igjen faar ikke dubletter.
+        const nye = (okter || []).filter(o => o.dato);
+        return nye.reduce((kjede, o) => kjede.then(() => fetch('/api/admin/kurs.php', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            handling: 'nydato',
+            kursId: d.id,
+            start: o.dato + ' ' + (o.fra || '18:00'),
+            slutt: o.dato + ' ' + (o.til || o.fra || '21:00'),
+            kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 0,
+          }),
+        })), Promise.resolve())
+          .then(() => {
+            this._kursLagres = false;
+            this.setState({
+              kRed: false,
+              kvittering: rad.navn + ' er lagret',
+              kvitteringDetalj: nye.length
+                ? nye.length + (nye.length === 1 ? ' dato' : ' datoer') + ' lagt ut.'
+                : 'Legg til datoer for at kurset skal kunne bookes.',
+            });
+            this._adminHentes = false;
+            this.hentAdmin();
+            this.hentKatalog();
+          });
+      })
+      .catch(() => {
+        this._kursLagres = false;
+        this.setState({ kvittering: 'Kurset ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   /** Staar jeg innstemplet naa? */
   erInne() {
     const st = this.state.stempling;
@@ -7801,8 +7948,9 @@ class Component extends DCLogic {
       hent('/api/admin/brukere.php'),
       hent('/api/admin/foresporsler.php'),
       hent('/api/admin/kurs.php'),
+      hent('/api/admin/venteliste.php'),
     ])
-      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere, foresporsler, kurs]) => {
+      .then(([oversikt, pameldte, medlemmer, betalinger, soknader, brukere, foresporsler, kurs, venteliste]) => {
         const ny = {};
         if (oversikt && oversikt.nyeste) ny.adminData = oversikt;
         if (pameldte && pameldte.deltakere) ny.adminDeltakere = pameldte.deltakere;
@@ -7813,6 +7961,7 @@ class Component extends DCLogic {
         if (foresporsler && foresporsler.foresporsler) ny.adminForesporsler = foresporsler.foresporsler;
         // Kurskatalogen. Uten den falt admin tilbake paa to oppdiktede kurs,
         // og «Ny kursdato» tilbod datoer paa kurs som ikke fantes.
+        if (venteliste && venteliste.venteliste) ny.adminVenteliste = venteliste.venteliste;
         if (kurs && kurs.kurs) {
           ny.adminKursRaa = kurs.kurs;
           ny.adminKursListe = kurs.kurs.map(k => this.kursTilRad(k));
@@ -8973,18 +9122,29 @@ class Component extends DCLogic {
       })),
       harForesporsler: (this.state.adminForesporsler || []).length > 0,
       ingenForesporsler: this.erPublisert() && (this.state.adminForesporsler || []).length === 0,
-      venteliste: ((this.state.nyVenteliste || []).slice().reverse()).concat(this.erPublisert() ? [] : [
-        { navn: 'Marte Grøn', kurs: 'Date Night, 28. aug', plass: 'Nr. 1', tid: 'Meldte seg 21. aug', epost: 'marte@epost.no' },
-        { navn: 'Jonas Lie', kurs: 'Date Night, 28. aug', plass: 'Nr. 2', tid: 'Meldte seg 22. aug', epost: 'jonas@epost.no' },
-        { navn: 'Kaja Berge', kurs: 'Nybegynner dreiekurs, 19. aug', plass: 'Nr. 1', tid: 'Meldte seg 20. aug', epost: 'kaja@epost.no' },
-      ]).map(v => Object.assign(v, {
+      // Ekte venteliste. «Tilby plass» sendte ingenting — endepunktet fantes,
+      // knappen var ikke koblet til.
+      venteliste: ((this.state.nyVenteliste || []).slice().reverse()).concat(
+        this.state.adminVenteliste
+          ? this.state.adminVenteliste.map(v => ({
+              id: v.id, navn: v.navn, kurs: v.kurs,
+              plass: 'Nr. ' + v.posisjon, tid: 'Meldte seg ' + v.siden,
+              epost: v.epost || v.telefon || '', status: v.status, varslet: v.varslet,
+            }))
+          : (this.erPublisert() ? [] : [
+              { navn: 'Marte Grøn', kurs: 'Date Night, 28. aug', plass: 'Nr. 1', tid: 'Meldte seg 21. aug', epost: 'marte@epost.no' },
+              { navn: 'Jonas Lie', kurs: 'Date Night, 28. aug', plass: 'Nr. 2', tid: 'Meldte seg 22. aug', epost: 'jonas@epost.no' },
+              { navn: 'Kaja Berge', kurs: 'Nybegynner dreiekurs, 19. aug', plass: 'Nr. 1', tid: 'Meldte seg 20. aug', epost: 'kaja@epost.no' },
+            ])
+      ).map(v => Object.assign(v, {
         velg: this.apne(v.navn, v.kurs, [
           { navn: 'Plass i køen', verdi: v.plass },
           { navn: 'Meldte seg', verdi: v.tid },
-          { navn: 'E-post', verdi: v.epost },
+          { navn: 'Kontakt', verdi: v.epost },
+          { navn: 'Status', verdi: v.varslet ? 'Varslet ' + v.varslet : (v.status || 'Venter') },
           { navn: 'Belastet', verdi: 'Nei, betaler først når plassen tilbys' },
-          { navn: 'Svarfrist ved tilbud', verdi: '6 timer' },
-        ], 'Tilby plass'),
+        ], v.status === 'Varslet' ? 'Lukk' : 'Tilby plass', null, false,
+           v.id && v.status !== 'Varslet' ? () => this.ventelisteVarsle(v.id) : null),
       })),
       bTittel: (this.state.valgtKurs && this.state.valgtKurs.title) || 'Nybegynner dreiekurs',
       bNivaa: (this.state.valgtKurs && this.state.valgtKurs.level) || 'Nybegynner',
@@ -9604,6 +9764,11 @@ class Component extends DCLogic {
           gjentas: 'Engangs', pameldte: '0 / ' + (s.nkPlasser || '8'), andel: 0,
           neste: 'Ikke satt', beskrivelse: s.nkBeskrivelse || '',
         };
+        if (this.erPublisert()) {
+          this.setState({ nkApen: false });
+          this.lagreKurs(rad, []);
+          return;
+        }
         this.setState(st => ({
           nkApen: false,
           adminKursListe: this.kursData().slice().concat([rad]),
@@ -9718,6 +9883,10 @@ class Component extends DCLogic {
           sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
           gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
         };
+        if (this.erPublisert()) {
+          this.lagreKurs(nytt, okter);
+          return;
+        }
         this.setState(s => {
           const alle = this.kursData().slice();
           const idx = s.kIndeks ?? -1;
@@ -10055,6 +10224,19 @@ class Component extends DCLogic {
         { navn: 'Ingrid Hansen' }, { navn: 'Kari Nordbø' }, { navn: 'Jonas Five' },
         { navn: 'Silje Bratt (skjult for medlemmer)' }, { navn: 'Mari Lunde (skjult for medlemmer)' },
       ],
+      // Melding til alle aktive medlemmer.
+      // Noeklene het bmEmne/bmTekst, som «Bli medlem»-blokka alt brukte.
+      // Feltet fikk da medlemsteksten inn i seg og beskjeden ble aldri sendt.
+      mbEmne: this.state.bmEmne || '',
+      settMbEmne: (e) => this.setState({ bmEmne: e.target.value }),
+      mbTekst: this.state.bmTekst || '',
+      settMbTekst: (e) => this.setState({ bmTekst: e.target.value }),
+      mbKnapp: (() => {
+        const n = (this.state.adminMedlemmer || []).filter(m => m.status === 'aktiv').length;
+        return n ? 'Send til ' + n + (n === 1 ? ' medlem' : ' medlemmer') : 'Send til medlemmene';
+      })(),
+      mbSend: () => this.sendTilMedlemmer(),
+
       // Beskjeder fra verkstedet finnes ikke som endepunkt ennaa.
       beskjeder: (this.erPublisert() ? [] : [
         { tittel: 'Ovnen går natt til torsdag', tid: 'I dag', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med.', ny: true },

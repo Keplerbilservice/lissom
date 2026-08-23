@@ -3,6 +3,7 @@
  * Markedsforing — alt som ikke krever et AI-kall.
  *
  *   GET                     hele skjermen: tavle, SEO-muligheter, kurs, sokeord, analyse
+ *   GET ?utkast=<id>        ett utkast med hele teksten
  *   POST handling=sokeord   legg til, endre eller fjern et sokeord
  *   POST handling=innstilling  lagre GA-id, tak for AI-bruk, Google-kobling
  *
@@ -22,6 +23,40 @@ $utc  = new DateTimeZone('UTC');
 $naa  = new DateTimeImmutable('now', $oslo);
 
 // ─────────────────────────────────────────────────────────────── lesing
+
+// Teksten til ett utkast, hentet for seg.
+//
+// Lista over utkast baerer bare overskriftene. Foertti artikler paa noen tusen
+// tegn hver ville vaert en megabyte ved hver eneste lasting av skjermen, og
+// alt sammen for aa vise en tittel. Teksten hentes derfor naar den skal leses.
+if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
+    $u = DB::en(
+        'SELECT id, type, tittel, tekst, data, kontekst, status, kostnad_ore, created_at
+           FROM ai_utkast WHERE id = :i',
+        ['i' => (int) Foresporsel::tekst('utkast')]
+    );
+    if ($u === null) {
+        Svar::feil('Fant ikke utkastet.', 404);
+    }
+    $data = json_decode((string) ($u['data'] ?? '{}'), true) ?: [];
+    Svar::json(['utkast' => [
+        'id'        => (int) $u['id'],
+        'type'      => $u['type'],
+        'tittel'    => $u['tittel'],
+        'tekst'     => (string) $u['tekst'],
+        'kontekst'  => (string) $u['kontekst'],
+        'status'    => $u['status'],
+        // Emneknagger og billedforslag ligger i data-feltet, ikke i teksten.
+        // De skal limes inn hver for seg, saa de vises hver for seg.
+        'hashtags'  => array_values(array_filter(array_map(
+            static fn($h) => trim((string) $h),
+            (array) ($data['hashtags'] ?? [])
+        ))),
+        'bildeforslag' => trim((string) ($data['bildeforslag'] ?? '')),
+        'ingress'   => trim((string) ($data['ingress'] ?? '')),
+    ]]);
+}
+
 if (Foresporsel::metode() === 'GET') {
 
     // ── Kurs som trenger hjelp, og kurs som snart er fulle ──────────────

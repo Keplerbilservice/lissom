@@ -5041,15 +5041,19 @@ window.__resources = {
           <sc-if value="{{ mkHarArtikler }}" hint-placeholder-val="{{ true }}">
             <sc-for list="{{ mkBank }}" as="a" hint-placeholder-count="5">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-3); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
-                <div style="min-width: 220px; flex: 1 1 340px;">
-                  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
-                    <span style="{{ a.merkeStil }}">{{ a.merke }}</span>
-                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ a.detalj }}</span>
+                <div style="display: flex; gap: var(--space-4); min-width: 220px; flex: 1 1 340px;">
+                  <button type="button" onClick="{{ a.byttBilde }}" aria-label="Bytt bilde" style="{{ a.bildeStil }}"></button>
+                  <div style="min-width: 0;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;">
+                      <span style="{{ a.merkeStil }}">{{ a.merke }}</span>
+                      <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ a.detalj }}</span>
+                    </div>
+                    <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ a.tittel }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px;">{{ a.adresse }}</div>
                   </div>
-                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ a.tittel }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px;">{{ a.adresse }}</div>
                 </div>
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <button type="button" onClick="{{ a.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">{{ a.bildeKnapp }}</button>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ a.veksle }}" hint-size="auto,40px">{{ a.knapp }}</x-import>
                   <button type="button" onClick="{{ a.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                 </div>
@@ -5177,6 +5181,54 @@ window.__resources = {
         </sc-if>
 
         <!-- ── Utkast i full lengde ───────────────────────────────────── -->
+        <!-- ── Velg bilde til en artikkel ──────────────────────────────
+             Bildet er det forste folk ser i lista over artikler, og til naa
+             fikk alle det samme. -->
+        <sc-if value="{{ mkBildevalgApen }}" hint-placeholder-val="{{ false }}">
+          <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
+            <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-8);">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6);">
+                <div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Bilde til artikkelen</div>
+                  <h2 style="margin: 0; font-size: var(--text-2xl);">{{ mkBildevalgTittel }}</h2>
+                </div>
+                <button type="button" onClick="{{ mkLukkBildevalg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 26px; line-height: 1; color: var(--text-muted); padding: 4px 10px;">×</button>
+              </div>
+
+              <label style="display: block; border: 2px dashed var(--lissom-brown); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-5); text-align: center; cursor: pointer; margin-bottom: var(--space-6); position: relative;">
+                <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ mkLastOppBilde }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Last opp eget bilde</span>
+                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres ned og settes på artikkelen med en gang.</span>
+              </label>
+
+              <sc-if value="{{ mkBildeLaster }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Laster opp …</p>
+              </sc-if>
+              <sc-if value="{{ mkBildeHenter }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Henter bildene …</p>
+              </sc-if>
+
+              <sc-if value="{{ mkHarEgneBilder }}" hint-placeholder-val="{{ false }}">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dine egne</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
+                  <sc-for list="{{ mkBildeEgne }}" as="b" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Bilder fra nettsiden</div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
+                <sc-for list="{{ mkBildeMedfolgende }}" as="b" hint-placeholder-count="12">
+                  <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
+                </sc-for>
+              </div>
+
+              <button type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk standardbildet i stedet</button>
+            </div>
+          </div>
+        </sc-if>
+
         <sc-if value="{{ mkLesApen }}" hint-placeholder-val="{{ false }}">
           <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
             <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 720px; width: 100%; padding: var(--space-8);">
@@ -5187,7 +5239,34 @@ window.__resources = {
                 </div>
                 <button type="button" onClick="{{ mkLukkLes }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 26px; line-height: 1; color: var(--text-muted); padding: 4px 10px;">×</button>
               </div>
+              <sc-if value="{{ mkLesHenter }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted);">Henter teksten …</p>
+              </sc-if>
+              <sc-if value="{{ mkLesFeil }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body);">Teksten kom ikke fram. Lukk ruta og prøv igjen.</p>
+              </sc-if>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); white-space: pre-wrap; line-height: 1.7;">{{ mkLesTekst }}</p>
+
+              <!-- Emneknaggene ligger for seg i basen, ikke i teksten. De
+                   limes inn i et eget felt paa Instagram, saa de staar for
+                   seg her ogsaa — med en egen kopiknapp. -->
+              <sc-if value="{{ mkLesHarTagger }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-bottom: var(--space-5);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Emneknagger</div>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); word-break: break-word;">{{ mkLesTagger }}</p>
+                  <button type="button" onClick="{{ mkLesKopierTagger }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); color: var(--text-heading);">Kopier emneknaggene</button>
+                </div>
+              </sc-if>
+
+              <!-- Teksten alene hjelper lite naar bildet skal tas paa
+                   verkstedet. AI-en foreslar hva bildet bor vise. -->
+              <sc-if value="{{ mkLesHarBildeforslag }}" hint-placeholder-val="{{ false }}">
+                <div style="background: var(--clay-50); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-5);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Bilde å ta med</div>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ mkLesBildeforslag }}</p>
+                </div>
+              </sc-if>
+
               <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mkLesGodkjenn }}" hint-size="auto,44px">Ta i bruk</x-import>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="copy" on-click="{{ mkLesKopier }}" hint-size="auto,44px">Kopier teksten</x-import>
@@ -8473,6 +8552,68 @@ class Component extends DCLogic {
       .catch(() => { this._artiklerHentes = false; });
   }
 
+  /**
+   * Bildene som kan settes paa en artikkel.
+   *
+   * To kilder: de som foelger med nettsida, og de eieren har lastet opp.
+   * Lista hentes én gang og holdes til noe legges til.
+   */
+  hentBilder() {
+    if (!this.erPublisert() || this._bilderHentes) return;
+    this._bilderHentes = true;
+    fetch('/api/admin/bilder.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._bilderHentes = false;
+        if (d) this.setState({ bildeliste: { egne: d.egne || [], medfolgende: d.medfolgende || [] } });
+      })
+      .catch(() => { this._bilderHentes = false; });
+  }
+
+  /** Aapner billedvalget for én artikkel. */
+  apneBildevalg(id) {
+    this.setState({ bildeFor: id });
+    if (!this.state.bildeliste) this.hentBilder();
+  }
+
+  /** Setter — eller fjerner, med tom streng — bildet paa en artikkel. */
+  settArtikkelBilde(id, url) {
+    this.setState({ bildeFor: null });
+    this.artikkelKall({ handling: 'bilde', id, bilde: url || '' });
+  }
+
+  /**
+   * Tar imot et bilde fra maskina og setter det paa artikkelen med én gang.
+   *
+   * Aa laste opp og deretter maatte finne bildet igjen i lista ville vaert et
+   * unodig steg — den som velger en fil, har alt bestemt seg.
+   */
+  lastOppBilde(fil, forArtikkel) {
+    if (!fil) return;
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden', kvitteringDetalj: 'Opplasting virker først når siden kjører på serveren.' });
+      return;
+    }
+    const skjema = new FormData();
+    skjema.append('handling', 'last-opp');
+    skjema.append('bilde', fil);
+    this.setState({ bildeLaster: true });
+    fetch('/api/admin/bilder.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({ bildeLaster: false });
+        if (!ok) {
+          this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: (d && d.feil) || 'Bildet kom ikke fram.' });
+          return;
+        }
+        this._bilderHentes = false;
+        this.hentBilder();
+        if (forArtikkel) this.settArtikkelBilde(forArtikkel, d.url);
+        else this.setState({ kvittering: 'Lastet opp', kvitteringDetalj: d.beskjed || '' });
+      })
+      .catch(() => this.setState({ bildeLaster: false, kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
   markedKall(kropp) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Lagret' }); return; }
     fetch('/api/admin/marked.php', {
@@ -8575,16 +8716,31 @@ class Component extends DCLogic {
       });
   }
 
-  /** Henter et utkast i full lengde og aapner det. */
+  /**
+   * Henter et utkast i full lengde og aapner det.
+   *
+   * Lista over utkast baerer bare overskriftene — teksten foelger ikke med,
+   * for da ville hver lasting av skjermen dratt med seg alle utkastene i sin
+   * helhet. Den hentes derfor her. Tidligere leste ruta fra lista, og siden
+   * teksten aldri laa der, aapnet den seg tom hver gang: eieren kunne lage et
+   * utkast, men ikke lese det.
+   */
   mkLes(id) {
     const u = ((this.state.marked || {}).utkast || []).find(x => x.id === id);
     if (!u) return;
-    // Lista baerer bare overskriften; teksten hentes naar den skal leses.
-    fetch('/api/admin/marked.php', { credentials: 'same-origin', cache: 'no-store' })
+    // Aapne med det vi alt vet, saa ruta ikke blinker tom mens teksten kommer.
+    this.setState({ mkLes: { id: u.id, tittel: u.tittel, type: u.type, tekst: '', henter: true } });
+    // Svaret kan komme etter at ruta er lukket, eller etter at et annet
+    // utkast er aapnet. Da skal det ikke inn.
+    const gjelderFortsatt = s => s.mkLes && s.mkLes.id === id;
+    fetch('/api/admin/marked.php?utkast=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
       .then(r => r.json())
-      .then(() => this.setState({ mkLes: { id: u.id, tittel: u.tittel, tekst: u.tekst || '', type: u.type } }))
-      .catch(() => {});
-    this.setState({ mkLes: { id: u.id, tittel: u.tittel, tekst: u.tekst || '', type: u.type } });
+      .then(d => {
+        if (!d || !d.utkast) throw new Error('tomt svar');
+        this.setState(s => (gjelderFortsatt(s) ? { mkLes: Object.assign({}, d.utkast, { henter: false })} : {}));
+      })
+      .catch(() => this.setState(s => (gjelderFortsatt(s)
+        ? { mkLes: Object.assign({}, s.mkLes, { henter: false, feil: true }) } : {})));
   }
 
   /**
@@ -8600,6 +8756,25 @@ class Component extends DCLogic {
       minimumFractionDigits: kr < 10 ? 2 : 0,
       maximumFractionDigits: kr < 10 ? 2 : 0,
     }).replace(/\u00a0/g, ' ');
+  }
+
+  /**
+   * Legg tekst paa utklippstavla, og si fra om det gikk.
+   *
+   * Nettleseren nekter naar sida ikke gaar over https, og da skjer det
+   * ingenting i det hele tatt om vi ikke sier fra. Det ser ut som om knappen
+   * er odelagt.
+   */
+  kopier(tekst, nar) {
+    if (!tekst) return;
+    const gikkGalt = () => this.setState({
+      kvittering: 'Kunne ikke kopiere',
+      kvitteringDetalj: 'Merk teksten og kopier den for hånd.',
+    });
+    if (!navigator.clipboard) { gikkGalt(); return; }
+    navigator.clipboard.writeText(tekst)
+      .then(() => this.setState({ kvittering: 'Kopiert', kvitteringDetalj: nar }))
+      .catch(gikkGalt);
   }
 
   hentInnhold() {
@@ -14106,6 +14281,15 @@ class Component extends DCLogic {
           mkIngenArtikler: bankListe.length === 0,
           mkBank: bankListe.map(a => ({
             tittel: a.tittel,
+            // Uten eget bilde bruker nettsida standardbildet. Det staar her
+            // ogsaa, slik at ruta viser det artikkelen faktisk faar — ikke en
+            // tom firkant som ser ut som en feil.
+            bildeStil: { width: 92, height: 68, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+                         backgroundImage: "url('" + (a.bilde || FOTO + 'butikken.jpg') + "')",
+                         backgroundSize: 'cover', backgroundPosition: 'center',
+                         border: '1px solid var(--border-subtle)' },
+            bildeKnapp: a.bilde ? 'Bytt bilde' : 'Velg bilde',
+            byttBilde: () => this.apneBildevalg(a.id),
             adresse: a.slug ? '/nyheter/' + a.slug : 'ingen adresse ennå',
             merke: a.status === 'publisert' ? 'Ute' : 'Kladd',
             merkeStil: { font: 'var(--type-label)', fontSize: '10px', letterSpacing: 'var(--tracking-caps)',
@@ -14186,21 +14370,63 @@ class Component extends DCLogic {
           mkSettGoogleBedrift: e => this.setState({ mkGoogleBedrift: e.target.value }),
           mkLagreBedrift: () => this.markedKall({ handling: 'innstilling', googleBedrift: this.state.mkGoogleBedrift ?? '' }),
 
+          // ── Billedvalg til en artikkel ──
+          //
+          // Bildene ligger to steder: de som foelger med utlegget, og de som
+          // er lastet opp. For den som velger er det samme sak, saa de vises
+          // i samme rute — men opplastede kan slettes, og det kan ikke de
+          // andre.
+          mkBildevalgApen: !!this.state.bildeFor,
+          mkBildeLaster: !!this.state.bildeLaster,
+          mkBildeHenter: !!this.state.bildeFor && !this.state.bildeliste,
+          ...(() => {
+            const valgt = (this.state.markedArtikler || []).find(a => a.id === this.state.bildeFor) || {};
+            const liste = this.state.bildeliste || { egne: [], medfolgende: [] };
+            const rute = (b) => ({
+              url: b.url,
+              valgt: (valgt.bilde || '') === b.url,
+              stil: { appearance: 'none', cursor: 'pointer', padding: 0, height: 84, borderRadius: 'var(--radius-md)',
+                      backgroundImage: "url('" + b.url + "')", backgroundSize: 'cover', backgroundPosition: 'center',
+                      border: ((valgt.bilde || '') === b.url ? '3px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') },
+              velg: () => this.settArtikkelBilde(this.state.bildeFor, b.url),
+            });
+            return {
+              mkBildevalgTittel: valgt.tittel || '',
+              mkBildeEgne: (liste.egne || []).map(rute),
+              mkHarEgneBilder: (liste.egne || []).length > 0,
+              mkBildeMedfolgende: (liste.medfolgende || []).map(rute),
+            };
+          })(),
+          mkLukkBildevalg: () => this.setState({ bildeFor: null }),
+          mkFjernBilde: () => this.settArtikkelBilde(this.state.bildeFor, ''),
+          // Filfeltet nullstilles etter valget, ellers gir det samme bildet to
+          // ganger paa rad ingen hendelse — nettleseren ser ingen endring.
+          mkLastOppBilde: e => {
+            const fil = e.target.files && e.target.files[0];
+            e.target.value = '';
+            this.lastOppBilde(fil, this.state.bildeFor);
+          },
+
           // ── Utkast i full lengde ──
           mkLesApen: !!this.state.mkLes,
           mkLesTittel: (this.state.mkLes || {}).tittel || '',
           mkLesMerke: MERKE[(this.state.mkLes || {}).type] || '',
           mkLesTekst: (this.state.mkLes || {}).tekst || '',
+          mkLesHenter: !!(this.state.mkLes || {}).henter,
+          mkLesFeil: !!(this.state.mkLes || {}).feil,
+          // Med emneknagg-tegnet foran, slik de skal limes inn. I basen ligger
+          // de uten, for da kan de ogsaa brukes som vanlige ord.
+          mkLesTagger: (((this.state.mkLes || {}).hashtags) || []).map(h => '#' + h).join(' '),
+          mkLesHarTagger: (((this.state.mkLes || {}).hashtags) || []).length > 0,
+          mkLesBildeforslag: (this.state.mkLes || {}).bildeforslag || '',
+          mkLesHarBildeforslag: !!(this.state.mkLes || {}).bildeforslag,
           mkLukkLes: () => this.setState({ mkLes: null }),
           mkLesGodkjenn: () => { const u = this.state.mkLes; if (u) { this.setState({ mkLes: null }); this.aiKall({ handling: 'godkjenn', id: u.id }); } },
-          mkLesKopier: () => {
-            const u = this.state.mkLes;
-            if (u && navigator.clipboard) {
-              navigator.clipboard.writeText(u.tekst || '')
-                .then(() => this.setState({ kvittering: 'Kopiert', kvitteringDetalj: 'Teksten ligger på utklippstavla.' }))
-                .catch(() => this.setState({ kvittering: 'Kunne ikke kopiere', kvitteringDetalj: 'Merk teksten og kopier den for hånd.' }));
-            }
-          },
+          mkLesKopier: () => this.kopier((this.state.mkLes || {}).tekst || '', 'Teksten ligger på utklippstavla.'),
+          mkLesKopierTagger: () => this.kopier(
+            (((this.state.mkLes || {}).hashtags) || []).map(h => '#' + h).join(' '),
+            'Emneknaggene ligger på utklippstavla.'
+          ),
         };
       })(),
       // Skjermen naas fra SEO-fanen inne i Markedsforing, og hører hjemme

@@ -5,6 +5,7 @@
  *   GET                    alle artikler, med kategoriene som finnes
  *   POST handling=lagre    ny eller endret artikkel
  *   POST handling=status   publiser eller sett tilbake til kladd
+ *   POST handling=bilde    bytt bildet paa en artikkel
  *   POST handling=slett    fjern en artikkel
  *
  * Artiklene laa fra for under Nyttig info. De samme radene brukes her; det
@@ -110,6 +111,21 @@ switch (Foresporsel::tekst('handling')) {
         revider('artikkel_lagret', 'article', $id, ['tittel' => $tittel]);
         Svar::ok(['beskjed' => 'Artikkelen er lagret.', 'id' => $id,
                   'slug' => $felter['slug'] ?? null]);
+
+    // Bildet for seg. «lagre» krever tittel og tekst, og aa sende hele
+    // artikkelen fram og tilbake bare for aa bytte bilde er en unodig sjanse
+    // til aa skrive over noe som ble endret imens.
+    case 'bilde':
+        $id = (int) ($kropp['id'] ?? 0);
+        if (DB::en('SELECT id FROM articles WHERE id = :i', ['i' => $id]) === null) {
+            Svar::feil('Fant ikke artikkelen.');
+        }
+        $bilde = mb_substr(trim((string) ($kropp['bilde'] ?? '')), 0, 255);
+        // Tomt betyr «ingen egen» — da faller artikkelen tilbake paa
+        // standardbildet, ikke paa en tom ramme.
+        DB::oppdater('articles', ['bilde' => $bilde !== '' ? $bilde : null], ['id' => $id]);
+        revider('artikkel_bilde', 'article', $id, ['bilde' => $bilde]);
+        Svar::ok(['beskjed' => $bilde !== '' ? 'Bildet er byttet.' : 'Bildet er fjernet.']);
 
     case 'status':
         $id = (int) ($kropp['id'] ?? 0);

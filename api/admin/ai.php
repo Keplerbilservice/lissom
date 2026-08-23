@@ -228,9 +228,15 @@ switch ($handling) {
         $r = AI::sporJson(
             $rolle(
                 "Du skriver {$vink} til {$kanal}.\n\n"
-                . "Svar med JSON: {\"tekst\": \"...\", \"hashtags\": [\"...\"]}\n"
+                . "Svar med JSON: {\"tekst\": \"...\", \"hashtags\": [\"...\"], \"bildeforslag\": \"...\"}\n"
                 . ($form === 'karusell' ? "tekst har ett kort per avsnitt, nummerert.\n" : '')
                 . "hashtags er 5-8 stykker uten emneknagg-tegnet, paa norsk der det passer. "
+                // Teksten alene hjelper lite. Den som skal legge ut innlegget
+                // maa vite hva slags bilde hun skal ta med, og det er lettere
+                // aa hente fram naar det staar konkret hva som skal vaere i det.
+                . "bildeforslag er én setning om hva bildet bor vise — noe som "
+                . "faktisk finnes i et keramikkverksted, og som kan knipses paa "
+                . "mobilen der og da. Ikke et oppdiktet motiv.\n"
                 . ($kanal === 'LinkedIn' ? "LinkedIn: saklig tone, ingen emojier.\n" : "Hoyst én emoji, og bare om den tilfoerer noe.\n")
             ),
             'Handler om: ' . $om,
@@ -239,7 +245,8 @@ switch ($handling) {
         );
 
         $lagre('sosialt', $kanal . ' — ' . $om, (string) ($r['tekst'] ?? ''),
-            ['kanal' => $kanal, 'form' => $form, 'hashtags' => $r['hashtags'] ?? []], $om, AI::sisteKostnad());
+            ['kanal' => $kanal, 'form' => $form, 'hashtags' => $r['hashtags'] ?? [],
+             'bildeforslag' => (string) ($r['bildeforslag'] ?? '')], $om, AI::sisteKostnad());
 
     // ── Side som mangler ────────────────────────────────────────────────
     case 'seoside':

@@ -5,6 +5,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- iOS Safari gjor tallrekker som ligner telefonnummer om til lenker av
+       seg selv, og gir dem systemets lenkefarge. Org.nummeret «938 280 819»
+       ble dermed tegnet i en morkeblaa som er tilnaermet usynlig mot den
+       brune bunnteksten — «ORG. NR.» og «MVA» sto igjen, tallene forsvant.
+       Bare paa iPhone, og bare tallene. Dette slaar det av. De ekte
+       tel:-lenkene virker som for. -->
+  <meta name="format-detection" content="telephone=no">
+  <meta name="format-detection" content="date=no">
+  <meta name="format-detection" content="address=no">
 <!-- Adressene er rene stier: /kurs, /admin/medlemmer. Bildene og skriptene
      ligger i rota, og uten denne linja ville nettleseren lett etter dem i
      forhold til adressen — paa /admin/medlemmer ble logo-lockup-yellow.svg
@@ -53,6 +62,16 @@ window.__resources = {
     header img[data-logo-cup] { height: 27px !important; }
     header img[src$="mark-cup-saucer.svg"] { height: 8px !important; }
     header img[src*="wordmark-lissom"] { height: 18px !important; }
+    /* Sikringsnett til det over: lager iOS lenka likevel, skal den se ut som
+       teksten rundt. -webkit-text-fill-color maa med — color alene holder
+       ikke mot Safaris egen lenkefarge. */
+    a[href^="tel:"], a[x-apple-data-detectors] {
+      color: inherit !important;
+      -webkit-text-fill-color: inherit !important;
+      text-decoration: inherit !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+    }
 
     /* 404-siden: koppen snurrer som i toppmenyen.
        Der gjor den 720 grader paa 1600 ms naar man holder musa over. Her er

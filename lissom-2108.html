@@ -591,11 +591,24 @@ window.__resources = {
     @keyframes lissomBolge { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
     @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
     button[aria-label="Meny"] { order: 3; }
-    [data-screen-label="Admin mobil"] { display: none; }
     .lx-kunmobil { display: none; }
+
+    /* Adminmenyen paa smal skjerm.
+       Under 980px legger menyen seg som en topplinje. Logoen i full
+       stoerrelse og «I verkstedet naa» tok da all plassen, og selve menyen
+       ble klemt bort — paa mobil kom man ikke videre fra den sida man sto
+       paa. Logoen krymper, statuslinja gaar ut (den er status, ikke
+       navigasjon), og menyen faar bredden. */
+    @media (max-width: 979px) {
+      /* Uten en bredde her regner nettleseren SVG-en til 300px og
+         dytter menyen ut av skjermen. */
+      .lx-adminaside img { height: 30px !important; width: auto !important; max-width: 92px; flex: 0 0 auto; }
+      .lx-adminaside > div:last-child { display: none !important; }
+      .lx-adminaside nav { flex: 1 1 auto; min-width: 0; }
+      .lx-adminaside nav button { flex: 0 0 auto; }
+    }
+
     @media (max-width: 760px) {
-      [data-screen-label^="Admin"] { display: none !important; }
-      [data-screen-label="Admin mobil"] { display: block !important; }
       [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
     }
     @media (max-width: 900px) {
@@ -3051,7 +3064,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminNyttig }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – nyttig info" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
@@ -3197,129 +3210,6 @@ window.__resources = {
     </div>
   </sc-if>
 
-  <sc-if value="{{ erAdminNoen }}" hint-placeholder-val="{{ false }}">
-    <div role="main" data-screen-label="Admin mobil" style="background: var(--clay-100); min-height: 100vh; padding: var(--space-6) var(--space-5) var(--space-16);">
-      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6);">
-        <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Verkstedet</div>
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Admin</div>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: var(--space-5);">
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div onClick="{{ mobPamToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
-            <div style="display: flex; align-items: center; gap: var(--space-3);">
-              <span style="min-width: 26px; height: 26px; border-radius: 50%; background: var(--lissom-yellow); color: var(--lissom-brown); font-size: var(--text-sm); font-weight: 800; display: inline-flex; align-items: center; justify-content: center;">{{ mobPamAntall }}</span>
-              <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Nye påmeldinger</span>
-            </div>
-            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobPamPil }}</span>
-          </div>
-          <sc-if value="{{ mobPamApen }}" hint-placeholder-val="{{ false }}">
-            <sc-for list="{{ nyePameldinger }}" as="n" hint-placeholder-count="3">
-              <div onClick="{{ n.velg }}" style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; gap: var(--space-3);">
-                  <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</span>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
-                </div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ n.hva }}</div>
-              </div>
-            </sc-for>
-          </sc-if>
-        </div>
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div onClick="{{ mobForToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
-            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Medlemskapsforespørsler</span>
-            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobForPil }}</span>
-          </div>
-          <sc-if value="{{ mobForApen }}" hint-placeholder-val="{{ false }}">
-            <sc-if value="{{ ingenOvMedlemskap }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen søknader venter.</div>
-            </sc-if>
-            <sc-for list="{{ ovMedlemskap }}" as="n" hint-placeholder-count="2">
-              <div onClick="{{ n.velg }}" style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="display: flex; justify-content: space-between; gap: var(--space-3);">
-                  <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</span>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
-                </div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ n.hva }}</div>
-              </div>
-            </sc-for>
-            <div style="padding: var(--space-3) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Trykk på en forespørsel for å godkjenne — også søknader om frys av medlemskap.</div>
-          </sc-if>
-        </div>
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div onClick="{{ mobKurToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
-            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Kurs og datoer</span>
-            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobKurPil }}</span>
-          </div>
-          <sc-if value="{{ mobKurApen }}" hint-placeholder-val="{{ false }}">
-          <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; gap: var(--space-3); flex-wrap: wrap;">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,40px">Nytt kurs</x-import>
-          </div>
-          <sc-for list="{{ mobAdminKurs }}" as="k" hint-placeholder-count="4">
-            <div onClick="{{ k.velg }}" style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.pris }} · {{ k.pameldte }} påmeldte</div>
-              </div>
-              <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</span>
-            </div>
-          </sc-for>
-          </sc-if>
-        </div>
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div onClick="{{ mobButToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
-            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Butikken</span>
-            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobButPil }}</span>
-          </div>
-          <sc-if value="{{ mobButApen }}" hint-placeholder-val="{{ false }}">
-          <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
-            <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Nye varer legges rett i nettbutikken. Husk bilder — de beskjæres automatisk til kvadrat (1:1).</p>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="plus" on-click="{{ npApne }}" hint-size="auto,40px">Ny vare med bilder</x-import>
-          </div>
-          <sc-for list="{{ mobButikkVarer }}" as="v" hint-placeholder-count="4">
-            <div onClick="{{ v.velg }}" style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.pris }}</div>
-              </div>
-              <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</span>
-            </div>
-          </sc-for>
-          </sc-if>
-        </div>
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div onClick="{{ mobMeldToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
-            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">Meldinger</span>
-            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mobMeldPil }}</span>
-          </div>
-          <sc-if value="{{ mobMeldApen }}" hint-placeholder-val="{{ false }}">
-          <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; gap: var(--space-3); flex-wrap: wrap;">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ mobMeldDeltakere }}" hint-size="auto,40px">Til deltakere</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Til medlemmene</x-import>
-          </div>
-          </sc-if>
-        </div>
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div onClick="{{ mobInneToggle }}" style="padding: var(--space-4) var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); cursor: pointer;">
-            <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">I verkstedet nå</span>
-            <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ antallInne }} inne · {{ mobInnePil }}</span>
-          </div>
-          <sc-if value="{{ mobInneApen }}" hint-placeholder-val="{{ false }}">
-          <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-3);">
-            <sc-for list="{{ inne }}" as="m" hint-placeholder-count="3">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500); flex: 0 0 auto;"></span>
-                <span style="font-size: var(--text-sm); color: var(--text-heading); flex: 1;">{{ m.navn }}</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.siden }}</span>
-              </div>
-            </sc-for>
-          </div>
-          </sc-if>
-        </div>
-      </div>
-    </div>
-  </sc-if>
-
   <!-- Medlemskapene.
        De laa som en smal boks nederst i hoyre kolonne paa kursskjermen, under
        kurslista og datolista. Verkstedet fant dem ikke, og fant de dem, var
@@ -3341,7 +3231,7 @@ window.__resources = {
        nettsalg, saa det telles ett sted. -->
   <sc-if value="{{ erAdminUttak }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – uttak butikk" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
@@ -3463,7 +3353,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminNyreg }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – ny registrering" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
@@ -3630,7 +3520,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminMedlemskap }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – medlemskap" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
@@ -3835,7 +3725,7 @@ window.__resources = {
   <sc-if value="{{ erAdmin }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin" style="{{ adminGridStil }}">
 
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
@@ -4160,7 +4050,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminOversikt }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – oversikt" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
@@ -4185,19 +4075,31 @@ window.__resources = {
         </div>
 
         <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-10);">
-          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Hurtig</span>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,40px">Nytt kurs</x-import>
+          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Også ofte</span>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
-          <!-- De to man gjor oftest og som ikke sto her: noen ringer og vil
-               ha en plass, noen staar i doera og vil bli medlem. -->
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovLeggTilDeltaker }}" hint-size="auto,40px">Legg til deltaker</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovNyttMedlem }}" hint-size="auto,40px">Nytt medlem</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ npApne }}" hint-size="auto,40px">Legg ut vare</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldDeltakere }}" hint-size="auto,40px">Til deltakere</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="download" on-click="{{ aDagsoppgjor }}" hint-size="auto,40px">Dagsoppgjør</x-import>
         </div>
 
+        <!-- Kortene.
+             Oversikten aapnet foer med en rad snarveier og deretter tolv
+             paneler under hverandre. Alt var der, men ingenting var lett aa
+             finne: det du gjorde oftest laa mellom det du gjorde sjelden.
+             Kortene er de ni tingene verkstedet faktisk begynner med. Hele
+             kortet er klikkbart, og tallet paa det avgjor om du maa dit. -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; margin-bottom: var(--space-10);">
+          <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
+            <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
+                <span style="{{ k.tallStil }}">{{ k.tall }}</span>
+              </div>
+              <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.hva }}</p>
+              <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ k.knapp }} →</span>
+            </button>
+          </sc-for>
+        </div>
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Krever handling</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start; margin-bottom: var(--space-5);">
 
@@ -4574,7 +4476,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminMobilvis }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – mobilvisning" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
@@ -4618,7 +4520,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminPameldte }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – påmeldte" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
@@ -4820,7 +4722,7 @@ window.__resources = {
        som kort, med tallet som avgjor om det haster. -->
   <sc-if value="{{ erAdminOmraade }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – område" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
@@ -4868,7 +4770,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminKursdeltakere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – kursdeltakere" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
@@ -5029,7 +4931,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminBrukere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – brukere" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
@@ -5114,7 +5016,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminMedlem }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – medlemmer" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
@@ -5436,7 +5338,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminInnhold }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – innhold" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
@@ -5586,7 +5488,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminDropin }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – drop-in" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavDropin }}" as="a" hint-placeholder-count="7">
@@ -5708,7 +5610,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminButikk }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – butikk" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
@@ -5921,7 +5823,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminBeskjeder }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – beskjeder" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
@@ -6057,7 +5959,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminOppskrifter }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – oppskrifter" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
@@ -6193,7 +6095,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminOkonomi }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – økonomi" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
@@ -6464,7 +6366,7 @@ window.__resources = {
        lager blir liggende som utkast til eieren har lest det. -->
   <sc-if value="{{ erAdminMarked }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – markedsføring" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMarked }}" as="a" hint-placeholder-count="7">
@@ -6871,7 +6773,7 @@ window.__resources = {
 
   <sc-if value="{{ erAdminSeo }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – SEO" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
@@ -15623,6 +15525,122 @@ class Component extends DCLogic {
           })),
           utIngenIdag: idag.length === 0,
           utDagsum: dagsum > 0 ? kr(dagsum * 100) : 'kr. 0,-',
+        };
+      })(),
+      // ── Kortene paa Oversikt ─────────────────────────────────────────
+      //
+      // De ni tingene verkstedet begynner med. Tallet paa kortet er det som
+      // avgjor om du maa dit i det hele tatt: staar det ingen ubetalte,
+      // trenger du ikke aapne betalingene for aa finne det ut.
+      //
+      // Kortene erstatter ikke panelene under — de er veien inn. Program og
+      // Kursholdere staar paa denne sida, saa de to ruller dit i stedet for
+      // aa bytte skjerm.
+      ...(() => {
+        if (side !== 'adminoversikt') return { ovKort: [] };
+
+        const d = this.state.adminData || null;
+        const okter = (this.state.adminOkter || []);
+        const planer = this.state.adminPlanerRaa || [];
+        const deltakere = this.state.adminDeltakere || [];
+        const varer = (this.state.adminProdukter || []);
+
+        const kortStil = {
+          appearance: 'none', textAlign: 'left', cursor: 'pointer', width: '100%',
+          background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+          display: 'flex', flexDirection: 'column', height: '100%',
+          fontFamily: 'inherit',
+          transition: 'box-shadow var(--duration-base) var(--ease-clay), border-color var(--duration-base) var(--ease-clay)',
+        };
+        const tallStil = (haster) => ({
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-2xl)',
+          color: haster ? 'var(--terracotta-600)' : 'var(--text-heading)',
+          whiteSpace: 'nowrap',
+        });
+
+        const kort = (navn, hva, tall, knapp, velg, haster) => ({
+          navn, hva, knapp,
+          tall: (tall === null || tall === undefined) ? '' : String(tall),
+          tallStil: tallStil(!!haster && !!tall),
+          stil: kortStil, velg,
+        });
+
+        // Ruller til et panel lenger nede paa den samme sida. Byttet vi
+        // skjerm her, matte man tilbake for aa se resten av oversikten.
+        const rullTil = (merke) => () => {
+          const el = [...document.querySelectorAll('*')].find(
+            e => e.children.length === 0 && (e.textContent || '').trim().toUpperCase().indexOf(merke) === 0
+          );
+          if (!el) return;
+          const y = el.getBoundingClientRect().top + window.scrollY - 90;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        };
+
+        const nyttKurs = {
+          kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
+          kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8',
+          kBeskrivelse: '', kBekreftelse: '', kMva: false,
+          kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+          kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
+          kDatoer: [{ dato: '', fra: '', til: '' }],
+        };
+
+        const ubetalte = deltakere.filter(x => x.status !== 'Betalt').length;
+
+        return {
+          ovKort: [
+            kort('Nytt kurs',
+                 'Navn, pris, plasser og datoer i tre steg.',
+                 null, 'Lag et kurs',
+                 () => this.gaaAdmin('admin', nyttKurs)),
+
+            kort('Planlagte kurs',
+                 okter.length ? 'Datoene som ligger ute, nærmeste først.' : 'Ingen datoer ligger ute ennå.',
+                 okter.length, 'Se kursene',
+                 () => this.gaaAdmin('admin', { kursFane: 'alle' })),
+
+            kort('Medlemskap',
+                 'Pris, timer og teksten på kortet ute.',
+                 planer.length || null, 'Se medlemskapene',
+                 () => this.gaaAdmin('adminmedlemskap', {})),
+
+            kort('Priser, tekst og bilder',
+                 'Tekstene på nettsiden, side for side.',
+                 null, 'Rediger innholdet',
+                 () => this.gaaAdmin('admininnhold', {})),
+
+            kort('Program',
+                 'Hva som skjer i dag, denne uka og denne måneden.',
+                 null, 'Se programmet',
+                 rullTil('PROGRAM')),
+
+            kort('Ny registrering',
+                 'Meld noen på kurs, event, drop-in eller medlemskap.',
+                 null, 'Registrer noen',
+                 () => this.gaaAdmin('adminnyreg', {
+                   nrValgt: null, nrSok: '', nrNavn: '', nrTlf: '', nrEpost: '',
+                   nrNotat: '', nrOkt: '', nrAntall: '', nrBelop: '',
+                 })),
+
+            kort('Uttak butikk',
+                 'Salg over disk, med kontant eller Vipps.',
+                 null, 'Registrer et salg',
+                 () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '' })),
+
+            kort('Butikk',
+                 'Varer, priser, bilder og lager.',
+                 varer.length || null, 'Se butikken',
+                 () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' })),
+
+            kort('Kursholdere',
+                 'Hvem som holder kursene, og timene deres.',
+                 null, 'Se kursholderne',
+                 rullTil('KURSHOLDERE')),
+          ],
+          // Staar det ubetalte paameldinger, skal det staa her ogsaa — ikke
+          // bare inne paa Paameldte.
+          ovUbetalte: ubetalte,
         };
       })(),
       erAdminKursdeltakere: side === 'adminkursdeltakere',

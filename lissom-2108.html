@@ -5184,6 +5184,9 @@ window.__resources = {
                     <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); overflow-wrap: anywhere;">{{ b.navn }}</div>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ b.synligTone }}" hint-size="auto,24px">{{ b.synlig }}</x-import>
                   </div>
+                  <sc-if value="{{ b.harEndret }}" hint-placeholder-val="{{ false }}">
+                    <span style="font: var(--type-label); font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; padding: 3px 8px; border-radius: var(--radius-sm); background: var(--lissom-yellow); color: var(--lissom-brown); white-space: nowrap;">{{ b.endretMerke }}</span>
+                  </sc-if>
                   <sc-if value="{{ b.leser }}" hint-placeholder-val="{{ true }}">
                     <div style="display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; min-width: 0;">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="pencil" on-click="{{ b.startRediger }}" hint-size="auto,36px">Rediger</x-import>
@@ -5192,6 +5195,11 @@ window.__resources = {
                     </div>
                   </sc-if>
                 </div>
+                <!-- Pekeren. Innholdet finnes, men det redigeres et annet
+                     sted — her staar det hvor, i stedet for et tomt skjema. -->
+                <sc-if value="{{ b.peker }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">{{ b.type }}</div>
+                </sc-if>
                 <sc-if value="{{ b.leser }}" hint-placeholder-val="{{ true }}">
                   <div style="display: flex; flex-direction: column; gap: var(--space-4);">
                     <sc-for list="{{ b.felter }}" as="f" hint-placeholder-count="3">
@@ -17134,9 +17142,24 @@ class Component extends DCLogic {
         const overstyrt = (this.state.innholdSynlig || {})[nokkel];
         const synlig = overstyrt || b.synlig;
         const redigerer = this.state.innholdRed === nokkel;
+        // En blokk uten felter er en peker: den forteller hvor innholdet
+        // faktisk redigeres. Foer fikk den de samme knappene som alle andre
+        // — «Rediger» aapnet et tomt skjema, og «Skjul» skjulte ingenting.
+        const peker = (b.felter || []).length === 0;
+        // Hvor mange av feltene eieren har endret fra standarden. Uten det
+        // ser en side man har jobbet mye med ut som en man aldri har rort.
+        const endret = (b.felter || []).filter(f => {
+          const v = (this.state.innholdLagret || {})[nokkel + '/' + f.l];
+          return v !== undefined && v !== f.v;
+        }).length;
         return {
-          navn: b.navn, type: b.type, synlig, redigerer, leser: !redigerer,
-          synligTone: synlig === 'Publisert' ? 'success' : 'neutral',
+          navn: b.navn, type: b.type, synlig,
+          redigerer: redigerer && !peker,
+          leser: !redigerer && !peker,
+          peker,
+          endretMerke: endret === 0 ? '' : (endret === 1 ? '1 felt endret' : endret + ' felter endret'),
+          harEndret: endret > 0,
+          synligTone: synlig === 'Publisert' ? 'success' : (synlig === 'Vises ikke nå' ? 'warning' : 'neutral'),
           synligKnapp: synlig === 'Publisert' ? 'Skjul' : 'Vis',
           toggleSynlig: () => this.setState(s => ({ innholdSynlig: Object.assign({}, s.innholdSynlig, { [nokkel]: synlig === 'Publisert' ? 'Skjult' : 'Publisert' }) })),
           startRediger: () => this.setState({ innholdRed: nokkel, innholdKladd: {} }),

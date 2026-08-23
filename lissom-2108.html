@@ -9383,7 +9383,15 @@ class Component extends DCLogic {
   // i SEO-skjermen vaert tekst ingen leser: Google ser <head>, ikke skjemaet.
   seoTilHodet(side) {
     const id = this.seoIdForSide(side);
-    const d = id ? this.seoData(id) : {};
+    // De ferdigskrevne tekstene ligger under, det eieren har lagret over.
+    //
+    // Tidligere kom alt fra content_blocks, som hentes med et kall til
+    // serveren etter at sida er tegnet. Googles robot rakk ikke aa vente:
+    // den leste hodet mens det fortsatt sto «Forside | Lissom Keramikk &
+    // Haandverk» og ingen beskrivelse — altsaa det som ville blitt vist i
+    // sokeresultatet. Naa staar riktig tittel der fra forste tegning, uten
+    // aa spore noen om noe.
+    const d = Object.assign({}, (id && Component.SEO_FERDIG[id]) || {}, id ? this.seoData(id) : {});
     const std = (id && this.seoSider().find(x => x.id === id)) || null;
     const tittel = d.tittel
       || (std ? std.navn + ' | Lissom Keramikk & Håndverk' : this.seoStandardTittel(side));

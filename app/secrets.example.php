@@ -51,6 +51,16 @@ return [
     'epost_fra_navn'  => 'Lissom Keramikk',
     'epost_svar_til'  => 'post@lissom.no',
 
+    // Uten smtp_vert gaar posten gjennom serverens egen mail(). Det virker
+    // ofte — helt til noen sjekker avsenderen, og da havner alt i
+    // soeppelposten. Verdiene staar i cPanel under E-postkontoer →
+    // Tilkoblingsenheter. Brukernavnet er hele e-postadressen.
+    'smtp_vert'      => '',          // f.eks. mail.lissom.no
+    'smtp_port'      => 587,         // 587 med starttls, 465 med ssl
+    'smtp_sikkerhet' => 'starttls',  // 'starttls', 'ssl' eller 'ingen'
+    'smtp_bruker'    => '',          // hele adressen: post@lissom.no
+    'smtp_passord'   => '',
+
     // --- SMS (sveve.no) ----------------------------------------------------
     'sveve_bruker'  => '',
     'sveve_passord' => '',
@@ -66,4 +76,13 @@ return [
     // Nøkkel som må sendes med for at cron-jobbene skal kunne kjøres over HTTP.
     // Lag en tilfeldig streng: php -r "echo bin2hex(random_bytes(24));"
     'cron_nokkel' => '',
+
+    // --- AI i markedsføringen ---------------------------------------------
+    // Lages på console.anthropic.com → Settings → API keys. Begynner med
+    // «sk-ant-». Uten den står AI-knappene og sier fra; resten av
+    // Markedsføring virker som før.
+    //
+    // Hvert kall koster noen øre. Taket per måned settes i admin under
+    // Markedsføring → Innstillinger, ikke her.
+    'claude_api_key' => '',
 ];

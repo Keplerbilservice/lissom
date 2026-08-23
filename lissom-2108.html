@@ -1540,10 +1540,6 @@ window.__resources = {
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ mkKicker }}</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ mkTittel }}</h1>
           <p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 54ch; text-wrap: pretty;">{{ mkIngress }}</p>
-          <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-top: var(--space-6); display: flex; align-items: baseline; gap: var(--space-3) var(--space-5); flex-wrap: wrap;">
-            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--lissom-brown);">{{ mkRegnestykke }}</span>
-            <span style="font-size: var(--text-base); color: var(--brown-500);">{{ mkRegnestykkeTekst }}</span>
-          </div>
         </div>
       </section>
 
@@ -3363,6 +3359,20 @@ window.__resources = {
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="4">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Tekstfeltene kom i en databaseoppdatering. Er den ikke kjort,
+             kan teksten ikke lagres. Foer sto det «Ingen tekst er skrevet
+             ennaa» paa hvert kort — en paastand om at kortet sto tomt ute,
+             mens det sto helt riktig der. -->
+        <sc-if value="{{ tekstIkkeMulig }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--lissom-yellow); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-8); display: flex; align-items: center; gap: var(--space-4) var(--space-5); flex-wrap: wrap;">
+            <div style="flex: 1 1 380px; min-width: 0;">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--lissom-brown); margin-bottom: 4px;">Databasen mangler en oppdatering</div>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--brown-500); text-wrap: pretty;">Pris, timer og binding kan endres som vanlig. Teksten på kortene — merkelapp, beskrivelse og punkter — kan ikke lagres før oppdateringen er kjørt. Nettsiden viser i mellomtiden standardteksten, og den ser riktig ut.</p>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="check" on-click="{{ vedlikeholdKjor }}" hint-size="auto,40px">Kjør oppdateringen nå</x-import>
           </div>
         </sc-if>
 
@@ -7352,9 +7362,7 @@ const SIDEINNHOLD = {
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Medlemskap' },
       { l: 'Overskrift', v: 'Verkstedet er ditt, døgnet rundt' },
-      { l: 'Ingress', v: 'Abonnementet løper fra måned til måned og kan sies opp når du vil. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true },
-      { l: 'Regnestykke', v: '30 timer = kr. 86,- per verkstedtime.' },
-      { l: 'Regnestykke, forklaring', v: 'Drop-in koster ca. kr. 245,- per time — medlemskapet lønner seg fra andre økt i uka.', lang: true } ] },
+      { l: 'Ingress', v: 'Abonnementet løper fra måned til måned og kan sies opp når du vil. Du må ha tatt et kurs hos oss, eller ha erfaring fra før.', lang: true } ] },
     { navn: 'Hvorfor bli medlem', type: 'Tekst og lister', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Fellesskapet' },
       { l: 'Overskrift', v: 'Hvorfor bli medlem?' },
@@ -12407,7 +12415,15 @@ class Component extends DCLogic {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         this._planerHentes = false;
-        if (d && d.planer) this.setState({ adminPlanerRaa: d.planer });
+        if (d && d.planer) {
+          this.setState({
+            adminPlanerRaa: d.planer,
+            // Serveren sier om tekstkolonnene finnes. Uten dette tolket
+            // skjermen tomt svar som «ingen har skrevet noe» — og skrev at
+            // kortet sto tomt paa nettsiden, mens det sto helt riktig der.
+            planerTekstMulig: d.tekstMulig !== false,
+          });
+        }
       })
       .catch(() => { this._planerHentes = false; });
   }
@@ -15235,19 +15251,37 @@ class Component extends DCLogic {
         };
         const veksle = n => () => this.setState(st => ({ plRed: Object.assign({}, st.plRed, { [n]: !st.plRed[n] }) }));
 
+        // Kan teksten lagres i det hele tatt? Serveren svarer paa det.
+        // Mangler kolonnene, er tomt svar ikke det samme som «ingen har
+        // skrevet noe» — og da skal skjermen ikke paastaa at kortet staar
+        // tomt ute, naar det staar helt riktig der.
+        const tekstMulig = this.state.planerTekstMulig !== false;
+        const B = Component.PLANBILDER;
+        const bilderekke = Object.keys(B).map(n => B[n]);
+
         return {
-          adminPlaner: liste.map(pl => {
-            const punkter = String(pl.punkter || '').split('\n')
+          tekstIkkeMulig: !tekstMulig,
+          adminPlaner: liste.map((pl, nr) => {
+            const skrevne = String(pl.punkter || '').split('\n')
               .map(s => s.replace(/^[\s\-\*•·]+/, '').trim()).filter(Boolean);
             const fri = pl.timer === null || pl.timer === undefined;
+            const timetekst = fri ? 'Ingen timebegrensning' : pl.timer + ' timer i måneden';
+            // Nettsiden faller tilbake paa det samme naar feltet er tomt.
+            // Viser admin noe annet, ser eieren to ulike kort for det samme
+            // medlemskapet — og tror det ene er i stykker.
+            const punkter = skrevne.length ? skrevne : [
+              timetekst,
+              pl.engangs ? 'Kan kun benyttes én gang' : 'Tilgang 24/7 med dørkode',
+            ];
             return Object.assign({}, pl, {
               punkter,
+              bilde: pl.bilde || B[pl.navn] || bilderekke[nr % bilderekke.length],
               beskrivelse: pl.beskrivelse || '',
-              undertekst: pl.undertekst || (fri ? 'Ingen timebegrensning' : pl.timer + ' timer i måneden'),
+              undertekst: pl.undertekst || timetekst,
               periodeTekst: pl.engangs ? 'engangs' : 'per måned',
-              // Uten tekst staar kortet tomt ute paa nettsiden. Det skal
-              // sies her, ikke oppdages der.
-              manglerTekst: !(pl.beskrivelse || '').trim() && punkter.length === 0,
+              // Bare naar teksten FAKTISK kan lagres, og eieren ikke har
+              // skrevet noe. Ellers er beskjeden feil.
+              manglerTekst: tekstMulig && !(pl.beskrivelse || '').trim() && skrevne.length === 0,
               fakta: [
                 fri ? 'Fri tilgang' : pl.timer + ' timer i måneden',
                 pl.engangs ? 'Trekkes én gang' : (pl.binding > 0 ? pl.binding + ' måneders binding' : 'Måned til måned'),
@@ -15268,9 +15302,10 @@ class Component extends DCLogic {
                 color: pl.aktiv ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
                 whiteSpace: 'nowrap',
               },
-              // Merkelappen kunden ser, ikke vaar egen salgsstatus.
-              harMerkelapp: !!(pl.merke || '').trim(),
-              merkelapp: pl.merke || '',
+              // Merkelappen kunden ser, ikke vaar egen salgsstatus. Samme
+              // reserve som nettsiden bruker, saa de to viser det samme.
+              harMerkelapp: true,
+              merkelapp: (pl.merke || '').trim() || (pl.engangs ? 'Prøveperiode' : 'Medlemskap'),
               merkelappStil: {
                 font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
                 textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
@@ -17646,8 +17681,6 @@ class Component extends DCLogic {
       mkKicker: this.innh('Medlemskap/0/Kicker'),
       mkTittel: this.innh('Medlemskap/0/Overskrift'),
       mkIngress: this.innh('Medlemskap/0/Ingress'),
-      mkRegnestykke: this.innh('Medlemskap/0/Regnestykke'),
-      mkRegnestykkeTekst: this.innh('Medlemskap/0/Regnestykke, forklaring'),
       mkHvorforKicker: this.innh('Medlemskap/1/Kicker'),
       mkHvorforTittel: this.innh('Medlemskap/1/Overskrift'),
       mkFordelerTittel: this.innh('Medlemskap/1/Overskrift, fordeler'),

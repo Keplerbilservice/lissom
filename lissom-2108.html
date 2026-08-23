@@ -416,7 +416,7 @@ window.__resources = {
                knapp i stedet; kortene ligger uansett paa kurssiden. -->
           <div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ kursForside }}" as="k" hint-placeholder-count="4">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -608,7 +608,7 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
               </sc-for>
             </div>
           </sc-if>
@@ -725,7 +725,7 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
           </sc-for>
         </div>
       </section>
@@ -2954,6 +2954,47 @@ window.__resources = {
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
                   </div>
                 </sc-if>
+
+                <!-- Faste ukedager.
+                     Feltene over er tekst til deg selv. Dette er det som
+                     faktisk legger ut datoer: velg ukedag og klokkeslett, saa
+                     ligger de ute aatte uker fram, og fylles paa av seg selv. -->
+                <sc-if value="{{ kHarKursId }}" hint-placeholder-val="{{ true }}">
+                  <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); margin-top: var(--space-4);">
+                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">Fast ukedag</label>
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kurset legges ut på denne dagen hver uke, åtte uker fram. Nye datoer kommer av seg selv etter hvert.</p>
+
+                    <sc-if value="{{ kHarSerier }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3);">
+                        <sc-for list="{{ kSerier }}" as="r" hint-placeholder-count="2">
+                          <div style="display: flex; align-items: center; gap: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px;">
+                            <span style="flex: 1; font-size: var(--text-sm); color: var(--text-heading);">{{ r.tekst }}</span>
+                            <button type="button" onClick="{{ r.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                      <sc-for list="{{ kSerieDager }}" as="d" hint-placeholder-count="7">
+                        <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.kort }}</button>
+                      </sc-for>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                      <input type="time" value="{{ kSerieFra }}" onChange="{{ settKSerieFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <span style="color: var(--text-muted);">–</span>
+                      <input type="time" value="{{ kSerieTil }}" onChange="{{ settKSerieTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" icon="plus" on-click="{{ kLeggTilSerie }}" hint-size="auto,40px">Legg til fast dag</x-import>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <!-- Kurs som settes opp naar noen sporr. Uten dette forsvant
+                     Date Night fra nettsida den dagen datoene tok slutt. -->
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading); margin-top: var(--space-4);">
+                  <input type="checkbox" checked="{{ kUtenDato }}" onChange="{{ toggleKUtenDato }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  Vis kurset på nettsiden også uten datoer, med «Kontakt oss»
+                </label>
               </div>
               </sc-if>
               <sc-if value="{{ kSteg3 }}" hint-placeholder-val="{{ false }}">
@@ -6305,7 +6346,12 @@ class Component extends DCLogic {
       // en bookingskjerm uten noe aa velge.
       .filter(k => !k.utenDato)
       .map(k => Object.assign({}, k, {
-        book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
+        // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
+        // uten noe aa velge er en blindvei.
+        cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),
+        book: k.kunKontakt
+          ? () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsType: k.title, fsTop: Math.min(this.topNaa(60), 90) })
+          : () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
   }
 
@@ -6319,7 +6365,7 @@ class Component extends DCLogic {
 
     return (this.state.katalog || [])
       .filter(k => kjente.indexOf(k.tittel.toLowerCase()) === -1)
-      .filter(k => (k.datoer || []).length > 0)
+      .filter(k => (k.datoer || []).length > 0 || k.utenDatoOk)
       // Interne kurs hoerer hjemme paa Min side, ikke i den offentlige lista.
       // Da denne metoden ble skrevet, tok den med alt fra katalogen — og
       // medlemsarrangementene dukket opp for alle.
@@ -6335,10 +6381,11 @@ class Component extends DCLogic {
           tema: tema,
           temaer: this.undertemaer(k.tittel, k.tema),
           title: k.tittel,
-          date: k.datoer[0].dato,
+          date: k.datoer.length ? k.datoer[0].dato : 'Etter avtale',
           duration: k.datoer.length > 1 ? k.datoer.length + ' datoer å velge mellom' : '',
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
-          status: this.plasstekst(k.datoer),
+          status: k.datoer.length ? this.plasstekst(k.datoer) : 'Ta kontakt for dato',
+          kunKontakt: k.datoer.length === 0,
           // Uten eget bilde faar kurset verkstedbildet framfor et tomt felt.
           image: FOTO + 'handbygging.jpg',
           om: k.om || '',
@@ -6377,6 +6424,21 @@ class Component extends DCLogic {
     }
 
     const datoer = kat.datoer || [];
+
+    // Noen kurs settes opp naar noen sporr, og har ikke datoer liggende ute.
+    // De skal likevel staa paa nettsida — Date Night forsvant helt da datoene
+    // tok slutt, og da fantes tilbudet ikke lenger for den som lette.
+    if (datoer.length === 0 && kat.utenDatoOk) {
+      return Object.assign({}, k, {
+        price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
+        status: 'Ta kontakt for dato',
+        date: 'Etter avtale',
+        duration: '',
+        om: kat.om || k.om,
+        utenDato: false,
+        kunKontakt: true,
+      });
+    }
 
     return Object.assign({}, k, {
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
@@ -8816,6 +8878,28 @@ class Component extends DCLogic {
         else this.setState({ kvittering: 'Lastet opp', kvitteringDetalj: d.beskjed || '' });
       })
       .catch(() => this.setState({ bildeLaster: false, kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Kall mot kursendepunktet som skal oppdatere skjermen etterpaa.
+   *
+   * Faste ukedager og «vis uten dato» lagres for seg, ikke sammen med resten
+   * av kursskjemaet. De gjelder med det samme, og skal ikke ligge og vente paa
+   * at noen trykker Lagre lenger nede.
+   */
+  kursSerieKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Lagret' }); return; }
+    fetch('/api/admin/kurs.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({ kvittering: ok ? 'Lagret' : 'Gikk ikke', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   markedKall(kropp) {
@@ -12482,6 +12566,62 @@ class Component extends DCLogic {
       kalForrige: () => { const n = new Date(); let aar = this.state.kalAar ?? n.getFullYear(); let mnd = (this.state.kalMnd ?? n.getMonth()) - 1; if (mnd < 0) { mnd = 11; aar--; } this.setState({ kalAar: aar, kalMnd: mnd }); },
       kalNeste: () => { const n = new Date(); let aar = this.state.kalAar ?? n.getFullYear(); let mnd = (this.state.kalMnd ?? n.getMonth()) + 1; if (mnd > 11) { mnd = 0; aar++; } this.setState({ kalAar: aar, kalMnd: mnd }); },
       kalUkedager: ['ma', 'ti', 'on', 'to', 'fr', 'lø', 'sø'],
+
+      // ── Faste ukedager ──
+      //
+      // Serien ligger paa serveren, ikke i skjemaet: den skal fortsette aa
+      // legge ut datoer ogsaa naar ingen har kursvinduet aapent. Derfor gaar
+      // «Legg til» rett til serveren framfor aa vente paa at kurset lagres.
+      ...(() => {
+        const navn = (this.state.kNavn || '').trim();
+        const kurs = (this.state.adminKursRaa || []).find(k => k.tittel === navn);
+        const DAG = [[1, 'Man'], [2, 'Tir'], [3, 'Ons'], [4, 'Tor'], [5, 'Fre'], [6, 'Lør'], [7, 'Søn']];
+        const valgt = this.state.kSerieDag ?? 4;
+        return {
+          // Serien trenger et kurs aa henge paa. Et helt nytt kurs som ikke er
+          // lagret ennaa har ikke noe nummer, og da skjules feltet framfor aa
+          // vise en knapp som ikke kan virke.
+          kHarKursId: !!kurs,
+          kSerier: ((kurs || {}).serier || []).map(r => Object.assign({}, r, {
+            fjern: () => this.kursSerieKall({ handling: 'serieAv', serieId: r.id }),
+          })),
+          kHarSerier: (((kurs || {}).serier) || []).length > 0,
+          kSerieDager: DAG.map(([nr, kort]) => ({
+            kort,
+            velg: () => this.setState({ kSerieDag: nr }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', padding: '8px 14px', borderRadius: 'var(--radius-pill)',
+              font: 'var(--type-body-sm)', fontWeight: 600,
+              border: '1px solid ' + (valgt === nr ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: valgt === nr ? 'var(--lissom-brown)' : 'transparent',
+              color: valgt === nr ? 'var(--clay-50)' : 'var(--text-body)',
+            },
+          })),
+          kSerieFra: this.state.kSerieFra || '10:00',
+          settKSerieFra: e => this.setState({ kSerieFra: e.target.value }),
+          kSerieTil: this.state.kSerieTil || '13:00',
+          settKSerieTil: e => this.setState({ kSerieTil: e.target.value }),
+          kLeggTilSerie: () => {
+            if (!kurs) return;
+            this.kursSerieKall({
+              handling: 'serie',
+              kursId: kurs.id,
+              ukedag: this.state.kSerieDag ?? 4,
+              fra: this.state.kSerieFra || '10:00',
+              til: this.state.kSerieTil || '13:00',
+            });
+          },
+          kUtenDato: kurs ? !!kurs.visUtenDato : false,
+          toggleKUtenDato: () => {
+            if (!kurs) return;
+            this.kursSerieKall({ handling: 'lagre', id: kurs.id, tittel: kurs.tittel,
+              pris: kurs.pris, kapasitet: kurs.kapasitet, type: kurs.type, tema: kurs.tema || '',
+              om: kurs.om || '', bekreftelse: kurs.bekreftelse || '', status: kurs.status,
+              sms: kurs.sms ? 'ja' : 'nei',
+              visUtenDato: kurs.visUtenDato ? 'nei' : 'ja' });
+          },
+        };
+      })(),
       kalDager: (() => {
         const n = new Date(); const aar = this.state.kalAar ?? n.getFullYear(); const mnd = this.state.kalMnd ?? n.getMonth();
         const forste = (new Date(aar, mnd, 1).getDay() + 6) % 7;

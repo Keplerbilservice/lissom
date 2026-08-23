@@ -37,6 +37,8 @@ if (Foresporsel::metode() === 'GET') {
             'kapasitet'  => (int) $k['kapasitet'],
             'sms'        => (bool) $k['sms_paaminnelse'],
             'status'     => $k['status'],
+            'visUtenDato'=> (bool) ($k['vis_uten_dato'] ?? 0),
+            'serier'     => Serier::forKurs((int) $k['id']),
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
             'bekreftelse'=> $k['bekreftelse_tekst'],
@@ -101,6 +103,16 @@ switch ($handling) {
                                     ? Foresporsel::tekst('status') : 'kladd',
         ];
 
+        // Vis kurset paa nettsida ogsaa naar det ikke har datoer — da staar
+        // det med «Kontakt oss» framfor en bookingknapp.
+        //
+        // Bare naar feltet faktisk er med. Sto det her uansett, ville et
+        // skjema som ikke kjenner feltet — kursredigeringen — slaatt det av
+        // igjen hver gang kurset ble lagret, uten at noen ba om det.
+        if (array_key_exists('visUtenDato', Foresporsel::kropp())) {
+            $data['vis_uten_dato'] = Foresporsel::tekst('visUtenDato') === 'ja' ? 1 : 0;
+        }
+
         if ($id > 0) {
             DB::oppdater('courses', $data, ['id' => $id]);
             revider('kurs_endret', 'course', $id, ['tittel' => $tittel]);
@@ -143,6 +155,63 @@ switch ($handling) {
         ]);
         revider('dato_lagt_til', 'course_session', $oktId, ['kurs' => $kursId, 'start' => $start]);
         Svar::ok(['oktId' => $oktId, 'naar' => Booking::norskDato($start)]);
+
+    // ------------------------------------------------- fast ukedag (serie)
+    //
+    // «Hver torsdag 10:00» framfor én dato av gangen. Cron fyller paa
+    // framover, saa kurset ikke gaar tomt og forsvinner fra nettsida.
+    case 'serie':
+        $kursId = Foresporsel::heltall('kursId');
+        if ($kursId <= 0 || DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
+            Svar::feil('Ukjent kurs.');
+        }
+        $ukedag = Foresporsel::heltall('ukedag');
+        if ($ukedag < 1 || $ukedag > 7) {
+            Svar::feil('Velg en ukedag.');
+        }
+        $klokke = static function (string $t): ?string {
+            return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t) === 1 ? $t . ':00' : null;
+        };
+        $fra = $klokke(Foresporsel::tekst('fra'));
+        $til = $klokke(Foresporsel::tekst('til'));
+        if ($fra === null || $til === null) {
+            Svar::feil('Skriv klokkeslettene som 10:00 og 13:00.');
+        }
+
+        DB::kjor(
+            'INSERT INTO kurs_serier (course_id, ukedag, fra, til, kapasitet, uker_fram, aktiv)
+             VALUES (:c, :d, :f, :t, :k, :u, 1)
+             ON DUPLICATE KEY UPDATE til = VALUES(til), kapasitet = VALUES(kapasitet),
+                                     uker_fram = VALUES(uker_fram), aktiv = 1',
+            [
+                'c' => $kursId, 'd' => $ukedag, 'f' => $fra, 't' => $til,
+                'k' => Foresporsel::heltall('kapasitet') ?: null,
+                'u' => max(1, min(52, Foresporsel::heltall('ukerFram', 8))),
+            ]
+        );
+        $laget = Serier::fyllPaa($kursId);
+        revider('serie_lagret', 'course', $kursId, ['ukedag' => $ukedag, 'fra' => $fra]);
+        Svar::ok([
+            'serier'  => Serier::forKurs($kursId),
+            'beskjed' => $laget > 0
+                ? $laget . ($laget === 1 ? ' dato' : ' datoer') . ' er lagt ut framover.'
+                : 'Datoene lå ute fra før.',
+        ]);
+
+    // Fjern en fast ukedag. Oktene som alt er lagt ut, blir staaende — folk
+    // kan ha booket dem, og de skal avlyses én og én med «avlys».
+    case 'serieAv':
+        $serieId = Foresporsel::heltall('serieId');
+        $serie = DB::en('SELECT course_id FROM kurs_serier WHERE id = :i', ['i' => $serieId]);
+        if ($serie === null) {
+            Svar::feil('Fant ikke gjentakelsen.');
+        }
+        DB::kjor('DELETE FROM kurs_serier WHERE id = :i', ['i' => $serieId]);
+        revider('serie_fjernet', 'course', (int) $serie['course_id'], ['serie' => $serieId]);
+        Svar::ok([
+            'serier'  => Serier::forKurs((int) $serie['course_id']),
+            'beskjed' => 'Datoene som alt ligger ute blir stående. Avlys dem enkeltvis hvis de skal bort.',
+        ]);
 
     // --------------------------------------------------------------- avlys
     case 'avlys':

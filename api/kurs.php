@@ -18,7 +18,7 @@ $erMedlem = ($m = Sesjon::medlem()) !== null && er_aktivt_medlem($m);
 $hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, vis_uten_dato
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -42,6 +42,10 @@ foreach ($kurs as $k) {
         'tittel'  => $k['tittel'],
         'type'    => $k['type'],
         'tema'    => $k['tema'],
+        // Kurs som skal staa paa nettsida ogsaa uten datoer. Date Night
+        // forsvant helt da datoene tok slutt — det finnes fortsatt, det
+        // settes bare opp naar noen sporr.
+        'utenDatoOk' => (bool) $k['vis_uten_dato'],
         'pris'    => Booking::kroner((int) $k['pris_ore']),
         'prisOre' => (int) $k['pris_ore'],
         'om'      => $k['beskrivelse'],

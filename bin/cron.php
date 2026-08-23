@@ -159,6 +159,15 @@ switch ($jobb) {
         $sesjoner = Sesjon::ryddUtlopte();
         $rater = Rate::rydd();
 
+        // Kurs med fast ukedag: legg ut oktene som mangler framover.
+        //
+        // Uten dette ville en serie gaatt tom etter aatte uker, og kurset
+        // forsvunnet fra nettsida uten at noen sa fra.
+        $nyeOkter = Serier::fyllPaa();
+        if ($nyeOkter > 0) {
+            logg('Faste kursdatoer lagt ut', ['okter' => $nyeOkter]);
+        }
+
         // Ubetalte reservasjoner som har stått for lenge frigis, slik at
         // plassen blir ledig for andre.
         $frigitt = DB::kjor(
@@ -175,7 +184,7 @@ switch ($jobb) {
         DB::kjor("UPDATE gift_cards SET status = 'utlopt'
                    WHERE status = 'aktivt' AND gyldig_til < CURDATE()");
 
-        $si("Vedlikehold: {$sesjoner} sesjoner, {$rater} ratelinjer, {$frigitt} reservasjoner frigitt.");
+        $si("Vedlikehold: {$sesjoner} sesjoner, {$rater} ratelinjer, {$frigitt} reservasjoner frigitt, {$nyeOkter} faste kursdatoer lagt ut.");
         break;
 
     // -----------------------------------------------------------------------

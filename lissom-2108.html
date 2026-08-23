@@ -3900,7 +3900,10 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.epost }}</div>
                   </div>
                 </div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.abonnement }}</div>
+                <div>
+                  <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.abonnement }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ m.gruppe }} · {{ m.kursTekst }}</div>
+                </div>
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ m.barStil }}"></div>
@@ -10591,10 +10594,31 @@ class Component extends DCLogic {
     const tone = { aktiv: 'success', prove: 'warning', pause: 'neutral', oppsagt: 'neutral', ingen: 'neutral' };
     const tekst = { aktiv: 'Aktiv', prove: 'Proveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
 
+    // Tre grupper, og de er ikke det samme.
+    //
+    //   Admin        — driver verkstedet. Kommer rett til adminpanelet.
+    //   Medlem       — har abonnement. Ser innstempling, internbutikk og
+    //                  det interne paa Min side.
+    //   Kursdeltaker — kontoen ble laget da hen booket et kurs. Ser sine
+    //                  egne paameldinger, kvitteringer og kursbevis, og
+    //                  ingenting av det interne.
+    //
+    // Alle sto i den samme lista uten noe som skilte dem, og en konto som
+    // bare hadde vaert paa ett kurs saa ut som et medlem som hadde sagt opp.
+    const MEDLEM = ['prove', 'aktiv', 'pause'];
+
     return (this.state.adminMedlemmer || []).map(m => ({
       navn: m.navn || '(uten navn)',
       epost: m.epost || m.telefon || '',
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
+      erAdmin: !!m.erAdmin,
+      erMedlem: MEDLEM.indexOf(m.status) !== -1,
+      antallKurs: m.antallKurs || 0,
+      gruppe: m.erAdmin ? 'Admin'
+        : (MEDLEM.indexOf(m.status) !== -1 ? 'Medlem'
+        : (m.antallKurs > 0 ? 'Kursdeltaker' : 'Konto uten kjøp')),
+      kursTekst: (m.antallKurs || 0) === 0 ? 'ingen kurs'
+        : (m.antallKurs === 1 ? '1 kurs' : m.antallKurs + ' kurs'),
       abonnement: m.medlemskap || 'Ingen',
       // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
       // viser bare hvor mye som er brukt.
@@ -12121,7 +12145,7 @@ class Component extends DCLogic {
         { merke: 'Oppsagt i august', verdi: '2', under: 'Begge på 30 timer' },
       ]).map(t => Object.assign(t, { velg: this.go('adminmedlem'), kortStil: KORT_KLIKK })),
       mottakere: ['Alle aktive medlemmer', 'Kun 30 timer', 'Kun fri tilgang', 'Kun på prøve', 'Deltakere på et kurs'],
-      medlemFiltre: ['Alle', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
+      medlemFiltre: ['Alle', 'Medlemmer', 'Kursdeltakere', 'Admin', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
         const valgt = (this.state.medlemFilter || 'Alle') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
@@ -12151,9 +12175,19 @@ class Component extends DCLogic {
         { navn: 'Silje Bratt', epost: 'silje@epost.no', initial: 'SB', abonnement: '30 timer', timer: '27 / 30', andel: 90, status: 'Aktiv', tone: 'neutral' },
         { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
-      ])).filter(m => { const fv = this.state.medlemFilter || 'Alle'; return fv === 'Alle' || (fv === 'Inne nå' ? !!m.inne : m.abonnement === fv); }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
+      ])).filter(m => {
+        const fv = this.state.medlemFilter || 'Alle';
+        if (fv === 'Alle') return true;
+        if (fv === 'Inne nå') return !!m.inne;
+        if (fv === 'Medlemmer') return !!m.erMedlem && !m.erAdmin;
+        if (fv === 'Kursdeltakere') return !m.erMedlem && !m.erAdmin && (m.antallKurs || 0) > 0;
+        if (fv === 'Admin') return !!m.erAdmin;
+        return m.abonnement === fv;
+      }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
         velg: this.apne(m.navn, m.epost, [
+          { navn: 'Hvem er dette', verdi: m.gruppe },
           { navn: 'Abonnement', verdi: m.abonnement },
+          { navn: 'Kurs betalt', verdi: m.kursTekst },
           { navn: 'Timer brukt', verdi: m.timer },
           { navn: 'Status', verdi: m.status },
           { navn: 'I verkstedet nå', verdi: m.inne ? 'Ja' : 'Nei' },

@@ -50,6 +50,21 @@ foreach (DB::alle(
 }
 
 $inne = [];
+// Hvor mange kurs hver av dem har betalt for.
+//
+// Uten dette er en kursdeltaker og en tom konto det samme i lista: begge
+// staar som «Ikke medlem». Tallet er det som skiller dem — og det er ogsaa
+// det som avgjor om noen har et kursbevis aa hente.
+$kurs = [];
+foreach (DB::alle(
+    "SELECT b.member_id, COUNT(*) AS antall
+       FROM bookings b
+      WHERE b.member_id IS NOT NULL AND b.status = 'betalt'
+      GROUP BY b.member_id"
+) as $r) {
+    $kurs[(int) $r['member_id']] = (int) $r['antall'];
+}
+
 foreach (DB::alle('SELECT member_id FROM check_ins WHERE ut_tid IS NULL') as $r) {
     $inne[(int) $r['member_id']] = true;
 }
@@ -70,4 +85,5 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'bruktTimer' => Stempling::timer($brukt[(int) $m['id']] ?? 0),
     'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
     'erInne'     => isset($inne[(int) $m['id']]),
+    'antallKurs' => $kurs[(int) $m['id']] ?? 0,
 ], $medlemmer)]);

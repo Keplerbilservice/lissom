@@ -147,6 +147,14 @@ $nyeste = DB::alle(
 );
 
 Svar::json([
+    // Hva som faktisk er skrudd paa.
+    //
+    // SMS-malene laa i admin som om de gikk ut. Uten leverandoer i
+    // secrets.php gjor de ikke det, og da lovet skjermen noe verkstedet
+    // ikke holdt. Naa staar det «ikke aktivert» der SMS tilbys.
+    'kanaler' => [
+        'sms' => Varsler::smsMulig(),
+    ],
     'nyeste' => array_map(static fn($b) => [
         'navn'      => $b['navn'],
         'epost'     => $b['epost'],

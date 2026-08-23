@@ -3073,27 +3073,29 @@ window.__resources = {
 
         <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
-            <div style="display: grid; grid-template-columns: 2.2fr 1.3fr 1fr 1.1fr 120px; min-width: 700px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
-              <span>Kurs</span><span>Gjentas</span><span>Påmeldte</span><span>Neste dato</span><span></span>
-            </div>
+          <!-- Kurslista.
+               Sto som et rutenett med «min-width: 700px» inne i en boks som
+               sjelden er saa bred. Da havnet «Rediger» og «Slett» utenfor
+               kanten — knappene var der, men umulige aa treffe uten aa dra
+               tabellen sidelengs. Naa bryter raden i stedet. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kurs og events · {{ adminKursAntall }}</div>
             <sc-for list="{{ adminKurs }}" as="k" hint-placeholder-count="5">
-              <div onClick="{{ k.velg }}" style="display: grid; grid-template-columns: 2.2fr 1.3fr 1fr 1.1fr 120px; min-width: 700px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
-                <div>
+              <div onClick="{{ k.velg }}" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+                <div style="flex: 1 1 200px; min-width: 0;">
                   <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.type }} · {{ k.pris }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.type }} · {{ k.pris }} · {{ k.gjentas }}</div>
                 </div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ k.gjentas }}</div>
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 150px; min-width: 120px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ k.barStil }}"></div>
                   </div>
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ k.pameldte }}</span>
                 </div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ k.neste }}</div>
-                <div style="display: flex; gap: 4px; justify-self: end;">
-                  <button type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
-                  <button type="button" onClick="{{ k.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Slett</button>
+                <div style="font-size: var(--text-sm); color: var(--text-body); white-space: nowrap;">{{ k.neste }}</div>
+                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
+                  <button type="button" onClick="{{ k.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
                 </div>
               </div>
             </sc-for>
@@ -10463,6 +10465,40 @@ class Component extends DCLogic {
 
   mobilVis(nokkel) { return !(this.erSmal() && (this.mobilSkjul())[nokkel]); }
 
+  /**
+   * Aapner kursredigeringen paa ett kurs.
+   *
+   * Sto som den samme lange feltlista to steder — én for klikk paa raden og
+   * én for «Rediger». Naa er den ett sted, og begge ruller til toppen:
+   * skjemaet tegnes over lista, saa uten rullingen sto man igjen med
+   * foelelsen av at knappen ikke virket.
+   */
+  apneKursRed(k, i) {
+    this.setState({
+      kRed: true, kSteg: 1, kIndeks: i,
+      kNavn: k.navn, kType: k.type,
+      kPris: k.pris.replace(/[^\d ]/g, '').trim(),
+      kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
+      kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
+      kMva: k.mva === '25 % mva', kSms: k.sms !== false,
+      kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0
+        ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'),
+      kIntervall: k.gjentas, kAntall: '',
+      kSekunder: String(k.sekunder || 5), kFade: k.fade !== false,
+      kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40,
+      kDatoer: (k.okter && k.okter.length
+        ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til }))
+        : [{ dato: '', fra: '', til: '' }]),
+    });
+    this.tilToppen();
+  }
+
+  /** Ruller til toppen av skjermen. Skjemaene tegnes der. */
+  tilToppen() {
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    catch (e) { window.scrollTo(0, 0); }
+  }
+
   adminMeny(aktiv) {
     // Menyen var én flat liste paa elleve punkter, og tre skjermer sto ikke
     // i den i det hele tatt — Oppskrifter, Nyttig info og SEO fantes bare for
@@ -12468,9 +12504,10 @@ class Component extends DCLogic {
       adminTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],
+      adminKursAntall: this.kursData().length,
       adminKurs: this.kursData().map((k, i) => Object.assign({}, k, {
-        velg: () => this.setState({ kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: k.pris.replace(/[^\d ]/g, '').trim(), kPlasser: (k.pameldte.split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kSekunder: String(k.sekunder || 5), kFade: k.fade !== false, kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40, kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) }),
-        rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: k.pris.replace(/[^\d ]/g, '').trim(), kPlasser: (k.pameldte.split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kSekunder: String(k.sekunder || 5), kFade: k.fade !== false, kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40, kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) }); },
+        velg: () => this.apneKursRed(k, i),
+        rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apneKursRed(k, i); },
         slett: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ adminKursListe: this.kursData().filter((_, j) => j !== i), kRed: s.kIndeks === i ? false : s.kRed })); },
         barStil: {
           width: k.andel + '%', height: '100%', borderRadius: 999,

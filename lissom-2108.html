@@ -4266,26 +4266,26 @@ window.__resources = {
         </div>
 
         <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.1fr 36px; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
-              <span>Produkt</span><span>Pris</span><span>På lager</span><span>Status</span><span></span>
-            </div>
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Produkter i butikken</div>
             <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
-              <div style="display: grid; grid-template-columns: 56px 2fr 1fr 1fr 1.1fr auto; min-width: 820px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center;">
-                <!-- Bildet er det forste kunden ser i butikken. Uten en vei
-                     hit fikk hver nye vare standardbildet, og alt saa likt ut. -->
+              <!-- Raden brekker framfor aa skli ut til hoyre.
+                   Den sto som et rutenett med fast minstebredde inne i en
+                   boks som er smalere enn det paa en vanlig skjerm. Da laa
+                   knappene utenfor kanten, og lista maatte dras sidelengs
+                   for aa naa dem — noe ingenting fortalte at den kunne. -->
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
                 <button type="button" onClick="{{ v.byttBilde }}" aria-label="Bytt bilde" style="{{ v.bildeStil }}"></button>
-                <div onClick="{{ v.velg }}" style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading); cursor: pointer;">{{ v.navn }}</div>
-                <div onClick="{{ v.velg }}" style="font-size: var(--text-sm); color: var(--text-body); cursor: pointer;">{{ v.pris }}</div>
-                <div onClick="{{ v.velg }}" style="font-size: var(--text-sm); color: var(--text-body); cursor: pointer;">{{ v.antallTekst }}</div>
-                <div>
+                <div onClick="{{ v.velg }}" style="flex: 1 1 180px; min-width: 0; cursor: pointer;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ v.prisOgAntall }}</div>
+                </div>
+                <div style="flex: 0 0 auto;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
                 </div>
-                <!-- Hver linje skal kunne endres og fjernes der den staar.
-                     For laa redigeringen bare bak et klikk paa navnet, og
-                     ingenting viste at raden var klikkbar. -->
-                <div style="display: flex; gap: var(--space-2); align-items: center; justify-self: end; white-space: nowrap;">
-                  <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">{{ v.bildeKnapp }}</button>
+                <!-- Hver linje skal kunne endres og fjernes der den staar. -->
+                <div style="display: flex; gap: var(--space-2); align-items: center; margin-left: auto; flex-wrap: wrap;">
+                  <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ v.bildeKnapp }}</button>
                   <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
                   <button type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                 </div>
@@ -5656,6 +5656,24 @@ window.__resources = {
           <input value="{{ npAntall }}" onChange="{{ settNpAntall }}" placeholder="Antall på lager" style="{{ skFeltStil }}">
         </div>
         <textarea value="{{ npBeskrivelse }}" onChange="{{ settNpBeskrivelse }}" placeholder="Kort beskrivelse, f.eks. «Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.»" rows="{{ 3 }}" style="{{ npTekstStil }}"></textarea>
+
+        <!-- Kategorien styrer hvilket filter varen havner under i butikken.
+             Uten den ble en ny vare liggende utenfor alle filtrene. -->
+        <div>
+          <input value="{{ npKategori }}" onChange="{{ settNpKategori }}" placeholder="Kategori, f.eks. Kopper" style="{{ skFeltStil }}">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+            <sc-for list="{{ npKategoriValg }}" as="k" hint-placeholder-count="5">
+              <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Mva. Keramikk selges med 25 %, men noe kan vaere fritatt — og
+             satsen sto laast til 25 uten vei utenom. -->
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+          <input type="checkbox" checked="{{ npMva }}" onChange="{{ toggleNpMva }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+          <span>{{ npMvaTekst }}</span>
+        </label>
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-1);">
           <button type="button" onClick="{{ npLeggUt }}" style="{{ npKnappStil }}">{{ npHandling }}</button>
           <button type="button" onClick="{{ npLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
@@ -9505,7 +9523,8 @@ class Component extends DCLogic {
         pris: parseInt(pris, 10),
         // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
         lager: (s.npAntall || '').trim(),
-        kategori: fra ? fra.kategori : '',
+        kategori: (s.npKategori || '').trim(),
+        mva: s.npMva === false ? 0 : 25,
         bilde: fra ? fra.bilde : '',
         kunMedlemmer: fra && fra.kunMedlemmer ? 'ja' : 'nei',
         status: 'publisert',
@@ -12173,11 +12192,34 @@ class Component extends DCLogic {
       })),
       npApen: !!this.state.npApen,
       npLukk: () => this.setState({ npApen: false }),
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '' }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true }),
       npTittel: this.state.npRediger ? 'Rediger vare' : 'Ny vare',
       npHandling: this.state.npRediger ? 'Lagre endringer' : 'Legg ut i butikken',
       npNavn: this.state.npNavn || '',
       settNpNavn: e => this.setState({ npNavn: e.target.value }),
+      npKategori: this.state.npKategori || '',
+      settNpKategori: e => this.setState({ npKategori: e.target.value }),
+      // Kategoriene er ikke en fast liste — de vokser med det som legges ut.
+      npKategoriValg: Array.from(new Set(
+        (this.state.adminProdukter || []).map(v => (v.kategori || '').trim()).filter(Boolean)
+      )).sort().map(navn => {
+        const valgt = (this.state.npKategori || '') === navn;
+        return {
+          navn,
+          velg: () => this.setState({ npKategori: navn }),
+          stil: {
+            appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+            padding: '6px 12px', font: 'var(--type-body-sm)',
+            border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+            background: valgt ? 'var(--lissom-brown)' : 'transparent',
+            color: valgt ? 'var(--clay-50)' : 'var(--text-body)',
+          },
+        };
+      }),
+      // Standard er 25 %: alt verkstedet selger av keramikk har mva.
+      npMva: this.state.npMva !== false,
+      toggleNpMva: () => this.setState(s2 => ({ npMva: s2.npMva === false })),
+      npMvaTekst: this.state.npMva === false ? 'Uten mva' : '25 % mva',
       npPris: this.state.npPris || '',
       settNpPris: e => this.setState({ npPris: e.target.value }),
       npAntall: this.state.npAntall || '',
@@ -14060,6 +14102,9 @@ class Component extends DCLogic {
           ])
       ).map(v => Object.assign(v, {
         antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk',
+        // Pris og antall staar sammen under navnet. De hadde hver sin kolonne,
+        // men kolonnene gjorde raden bredere enn boksen den laa i.
+        prisOgAntall: v.pris + ' · ' + (v.antall === null ? 'Ubegrenset' : v.antall + ' stk'),
         // Uten eget bilde bruker butikken standardbildet. Det staar her ogsaa,
         // saa raden viser det varen faktisk faar ute paa nettsida.
         bildeStil: { width: 56, height: 44, appearance: 'none', padding: 0, cursor: 'pointer',
@@ -14078,6 +14123,8 @@ class Component extends DCLogic {
           npPris: v.raa ? String(v.raa.pris) : String(v.pris).replace(/[^\d]/g, ''),
           npAntall: v.antall === null ? '' : String(v.antall),
           npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
+          npKategori: v.raa ? (v.raa.kategori || '') : '',
+          npMva: v.raa ? (v.raa.mva ?? 25) > 0 : true,
         }),
         slett: () => { if (v.raa) this.slettVare(v.raa.id, v.navn); },
       })),
@@ -15479,13 +15526,41 @@ class Component extends DCLogic {
 
   // Produktene i butikkfeltet paa forsiden. Rutenettet paa desktop og
   // enkeltkortet paa mobil viser de samme, saa de leser den samme lista.
+  /**
+   * De tre varene som staar fram paa forsida, pluss gavekortet.
+   *
+   * Lista var skrevet inn her, og sto igjen med varer som var tatt ut av
+   * butikken for lenge siden. Forsida viste dermed noe det ikke gikk an aa
+   * kjope — mens butikksida viste det riktige. Naa er butikken fasiten
+   * begge steder.
+   */
   forsideProdukter() {
-    return this.medBildeCss([
-      { title: 'Kopp, sandglasur', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
-      { title: 'Bolle, stor', tekst: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
-      { title: 'Fat, 28 cm', tekst: 'Dekorglasur. Ment som pyntefat, ikke matsikret.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
-      { title: 'Gavekort', tekst: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true },
-    ]).map(p => Object.assign({}, p, {
+    const gavekort = { title: 'Gavekort', tekst: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', gavekort: true };
+
+    const fraBasen = (this.state.butikkvareListe || [])
+      .filter(v => !v.kunMedlemmer && !v.utsolgt)
+      .slice()
+      // Varer med eget bilde forst, deretter de nyeste. Fire kort med samme
+      // standardbilde ser ut som en feil, ikke som et utvalg.
+      .sort((a, b) => ((b.bilde ? 1 : 0) - (a.bilde ? 1 : 0)) || (b.id - a.id))
+      .slice(0, 3)
+      .map(v => ({
+        title: v.tittel,
+        tekst: v.detalj || 'Håndlaget i verkstedet på Teie.',
+        pris: v.pris,
+        image: v.bilde || FOTO + 'butikken.jpg',
+      }));
+
+    const liste = (this.erPublisert() && fraBasen.length > 0)
+      ? fraBasen.concat([gavekort])
+      : [
+          { title: 'Kopp, sandglasur', tekst: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg' },
+          { title: 'Bolle, stor', tekst: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg' },
+          { title: 'Fat, 28 cm', tekst: 'Dekorglasur. Ment som pyntefat, ikke matsikret.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg' },
+          gavekort,
+        ];
+
+    return this.medBildeCss(liste).map(p => Object.assign({}, p, {
       // Én tekst paa alle kortene. To ulike tekster hoppet naar kortene byttet
       // paa mobil, og «Se i butikken» stemmer ikke for gavekortet, som har sin
       // egen side. «Se mer» passer begge veier og faar plass ved siden av

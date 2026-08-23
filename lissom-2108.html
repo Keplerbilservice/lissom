@@ -53,6 +53,27 @@ window.__resources = {
     header img[data-logo-cup] { height: 27px !important; }
     header img[src$="mark-cup-saucer.svg"] { height: 8px !important; }
     header img[src*="wordmark-lissom"] { height: 18px !important; }
+
+    /* 404-siden: koppen snurrer som i toppmenyen.
+       Der gjor den 720 grader paa 1600 ms naar man holder musa over. Her er
+       det ingen meny aa holde musa over, saa den gjor det samme av seg selv
+       — og hviler et par sekunder mellom hver runde, ellers blir det uro.
+       40 % av 4 s er nettopp 1600 ms, saa farten er den samme. */
+    @keyframes lx-kopp-snurr {
+      0%   { transform: perspective(600px) rotateY(0deg); }
+      40%  { transform: perspective(600px) rotateY(720deg); }
+      100% { transform: perspective(600px) rotateY(720deg); }
+    }
+    .lx-404-kopp {
+      animation: lx-kopp-snurr 4s linear infinite;
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+    /* Snurring uten stopp er nettopp det noen blir uvel av. Ber nettleseren
+       om mindre bevegelse, staar koppen stille. */
+    @media (prefers-reduced-motion: reduce) {
+      .lx-404-kopp { animation: none; }
+    }
     /* Toppmeny: fjern 1.35x-oppskalering av søk + Book nå, stram menypunktene */
     header [style*="zoom: 1.35"] { zoom: 1 !important; }
     header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
@@ -1158,6 +1179,43 @@ window.__resources = {
               <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ a.p }}</p>
             </div>
           </sc-for>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <!-- Siden som ikke finnes.
+       Adressen ble for servert forsida, saa den som skrev feil trodde de var
+       framme og lurte paa hvor kurset ble av. Na sier den fra — og koppen
+       snurrer, saa det er til aa smile av framfor aa bli staaende fast. -->
+  <sc-if value="{{ erIkkeFunnet }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Siden finnes ikke">
+      <section style="background: var(--lissom-yellow); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: var(--space-10) var(--space-6); position: relative; overflow: hidden;">
+
+        <!-- Ingen stor kopp i hjornet her. Paa kremfarge og brunt leser den
+             som et svakt avtrykk; paa gult ble den en blek firkant. Koppen
+             som snurrer er uansett det som skal ses paa denne sida. -->
+
+        <div style="position: relative; max-width: 520px; width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center;">
+
+          <!-- Koppen og skaala, i samme forhold som i toppmenyen: 0,786 og
+               0,214 av hoyden. Ordmerket under, slik lockupen ellers staar. -->
+          <span style="display: flex; flex-direction: column; align-items: center; height: 132px; margin-bottom: var(--space-6);">
+            <img class="lx-404-kopp" src="mark-cup-top.svg" alt="" aria-hidden="true" style="height: 104px; width: auto; display: block;" decoding="async">
+            <img src="mark-cup-saucer.svg" alt="" aria-hidden="true" style="height: 28px; width: auto; display: block;" decoding="async">
+          </span>
+          <img src="wordmark-lissom.svg" alt="lissom" style="height: 34px; width: auto; display: block; margin-bottom: var(--space-8);" decoding="async">
+
+          <h1 style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 4.6vw, 40px); line-height: 1.15; color: var(--lissom-brown); text-wrap: balance;">Du har kommet til en side som ikke finnes, prøv på nytt</h1>
+
+          <p style="margin: 0 0 var(--space-8); font-size: var(--text-lg); color: var(--lissom-brown); opacity: .78; text-wrap: pretty;">Kanskje ble det en skrivefeil i adressen — eller så har vi flyttet på noe. Koppen snurrer mens du bestemmer deg.</p>
+
+          <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; justify-content: center;">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" on-click="{{ goForsideFra404 }}" hint-size="auto,48px">Til forsiden</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ goKursFra404 }}" hint-size="auto,48px">Se kursene</x-import>
+          </div>
+
+          <button type="button" onClick="{{ goKontaktFra404 }}" style="appearance: none; background: transparent; border: none; cursor: pointer; margin-top: var(--space-7); padding: 10px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 4px;">Fant du ikke det du lette etter? Si fra</button>
         </div>
       </section>
     </div>
@@ -6393,7 +6451,14 @@ class Component extends DCLogic {
   // noen bruker tilbakeknappen.
   ruteFraAdresse() {
     const sti = window.location.pathname.replace(/\/+$/, '') || '/';
-    return Component.STIER.find(r => r.sti === sti) || null;
+    const treff = Component.STIER.find(r => r.sti === sti);
+    if (treff) return treff;
+
+    // Ingen treff. For sto skjermen igjen paa forsida, og den som hadde
+    // skrevet feil trodde de var framme — og lette etter kurset som ikke var
+    // der. Na sier sida fra. Adressen blir staaende som den er, fordi
+    // stiForSide() ikke kjenner «ikkefunnet» og synkAdresse() da lar den vaere.
+    return { sti, side: 'ikkefunnet' };
   }
 
   /** Tar brukeren dit adressen peker. */
@@ -8644,6 +8709,7 @@ class Component extends DCLogic {
       booking: 'Book plass', kalender: 'Kalender', nyttig: 'Nyttig info',
       kasse: 'Kasse', login: 'Logg inn', minside: 'Min side',
       personvern: 'Personvern', vilkar: 'Vilkår', vipps: 'Betaling med Vipps',
+      ikkefunnet: 'Siden finnes ikke',
       plakatcone: 'Cone til grader', plakatinfo: 'Informasjon til medlemmer',
       plakattrivsel: 'Trivselsregler',
     }[side];
@@ -8687,7 +8753,9 @@ class Component extends DCLogic {
 
     meta('description', d.meta);
     // Kasse, Min side, innlogging og admin skal ikke i sokemotorene.
-    const privat = ['kasse', 'minside', 'login', 'vipps'].indexOf(side) !== -1 || side.indexOf('admin') === 0;
+    // «ikkefunnet» staar her fordi hver feilskrevet adresse ellers ville blitt
+    // en egen side i soket — og alle med samme innhold.
+    const privat = ['kasse', 'minside', 'login', 'vipps', 'ikkefunnet'].indexOf(side) !== -1 || side.indexOf('admin') === 0;
     meta('robots', privat || (d.index || '').toLowerCase() === 'noindex' ? 'noindex,nofollow' : 'index,follow');
     meta('og:title', d.ogTittel || tittel, 'property');
     meta('og:description', d.ogBeskrivelse || d.meta, 'property');
@@ -11966,6 +12034,10 @@ class Component extends DCLogic {
       // etter innlogging.
       erLogin: side === 'login' || (side === 'minside' && this.erPublisert() && !this.state.innlogget),
       erPersonvern: side === 'personvern',
+      erIkkeFunnet: side === 'ikkefunnet',
+      goForsideFra404: this.go('forside'),
+      goKursFra404: this.go('kurs'),
+      goKontaktFra404: this.go('kontakt'),
       erVilkar: side === 'vilkar',
       erBedrift: side === 'bedrift',
       bedriftTilbud: (() => {

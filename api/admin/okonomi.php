@@ -124,7 +124,10 @@ $vippsFelter = [
     ['navn' => 'Client secret',    'verdi' => $maskert((string) Config::hent('vipps_client_secret', ''))],
     ['navn' => 'Subscription key', 'verdi' => $maskert((string) Config::hent('vipps_sub_key', ''))],
     ['navn' => 'Webhook-hemmelighet', 'verdi' => $maskert((string) Config::hent('vipps_webhook_secret', ''))],
-    ['navn' => 'Retur-adresse',    'verdi' => (string) Config::hent('vipps_redirect_uri', '') ?: 'Ikke satt'],
+    // Returadressen settes ikke i secrets.php — den regnes ut av nettstedets
+    // egen adresse. Feltet leste likevel secrets, og sto derfor som «Ikke
+    // satt» selv paa en side der Vipps-innlogging virket.
+    ['navn' => 'Retur-adresse',    'verdi' => Vipps::returAdresse()],
     ['navn' => 'Miljø',            'verdi' => $erProd ? 'Produksjon' : 'Test'],
 ];
 
@@ -133,6 +136,7 @@ $vippsFelter = [
 // ingenting vi ikke har sett skje.
 $harBetaling = (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE status = 'betalt' AND type = 'epayment'");
 $harTrekk    = (int) DB::verdi("SELECT COUNT(*) FROM payments WHERE status = 'betalt' AND type = 'recurring_charge'");
+$harVippsBruker = (int) DB::verdi('SELECT COUNT(*) FROM members WHERE vipps_sub IS NOT NULL');
 $satt        = static fn(string $n): bool => (string) Config::hent($n, '') !== '';
 
 $vippsProdukter = [
@@ -147,9 +151,14 @@ $vippsProdukter = [
         'tone'   => $harTrekk > 0 ? 'success' : 'neutral',
     ],
     [
+        // Samme regel som over: vi paastaar ikke at noe virker for vi har
+        // sett det skje. Statusen sto foer paa en noekkel som aldri settes,
+        // og meldte «Mangler retur-adresse» paa et oppsett som var i bruk.
         'navn' => 'Login', 'hva' => 'Logg inn med Vipps',
-        'status' => $satt('vipps_redirect_uri') ? 'Satt opp' : 'Mangler retur-adresse',
-        'tone'   => $satt('vipps_redirect_uri') ? 'success' : 'warning',
+        'status' => $harVippsBruker > 0
+            ? 'I bruk'
+            : ($satt('vipps_client_id') ? 'Satt opp — ingen har logget inn ennå' : 'Mangler nøkler'),
+        'tone'   => $harVippsBruker > 0 ? 'success' : ($satt('vipps_client_id') ? 'neutral' : 'warning'),
     ],
 ];
 

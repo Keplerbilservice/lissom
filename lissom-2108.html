@@ -3161,6 +3161,13 @@ window.__resources = {
                   </div>
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ o.plasser }}</span>
                 </div>
+                <!-- Plassene paa akkurat denne datoen. En kveld med to
+                     instruktoerer tar flere enn kurset ellers gjor. -->
+                <div style="display: flex; align-items: center; gap: 4px; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 2px 4px;">
+                  <button type="button" onClick="{{ o.faerre }}" title="Én plass færre" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; color: var(--text-heading); font-size: 17px;">−</button>
+                  <span style="min-width: 42px; text-align: center; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ o.plassTekst }}</span>
+                  <button type="button" onClick="{{ o.flere }}" title="Én plass til" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; color: var(--text-heading); font-size: 17px;">+</button>
+                </div>
                 <div style="display: flex; gap: var(--space-3); margin-left: auto;">
                   <button type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
                   <button type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
@@ -4157,7 +4164,8 @@ window.__resources = {
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ aGiGave }}" hint-size="auto,44px">Gi gave</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ miApne }}" hint-size="auto,44px">Nytt medlem</x-import>
           </div>
         </div>
 
@@ -4168,6 +4176,52 @@ window.__resources = {
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ miApen }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 780px;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Meld inn som medlem</h2>
+              <button type="button" onClick="{{ miLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+            </div>
+            <sc-if value="{{ miKjent }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Personen står i registeret fra før. Kontoen beholdes — historikken og kursbevisene følger med.</p>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ miEtikett }}">Navn</label>
+                  <input value="{{ miNavn }}" onChange="{{ settMiNavn }}" placeholder="Fornavn Etternavn" style="{{ miFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ miEtikett }}">Telefon</label>
+                  <input value="{{ miTlf }}" onChange="{{ settMiTlf }}" placeholder="Valgfritt" style="{{ miFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ miEtikett }}">E-post</label>
+                  <input value="{{ miEpost }}" onChange="{{ settMiEpost }}" placeholder="Valgfritt" style="{{ miFeltStil }}">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ miEtikett }}">Medlemskap</label>
+                  <select value="{{ miType }}" onChange="{{ settMiType }}" style="{{ miFeltStil }}">
+                    <sc-for list="{{ miTyper }}" as="t" hint-placeholder-count="3">
+                      <option value="{{ t }}">{{ t }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+                <div>
+                  <label style="{{ miEtikett }}">Notat</label>
+                  <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
+                </div>
+              </div>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side.</p>
+              <div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ miLagre }}" hint-size="auto,44px">{{ miKnapp }}</x-import>
+              </div>
+            </div>
           </div>
         </sc-if>
 
@@ -6482,7 +6536,12 @@ window.__resources = {
       </sc-if>
     </sc-if>
     <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
-      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ utforDetalj }}" hint-size="auto,40px">{{ detaljHandling }}</x-import>
+      <!-- Ruter som bare viser noe, sender «Lukk» som handling. Da sto det
+           to like knapper ved siden av hverandre, og den ene gjorde ikke
+           noe mer enn den andre. -->
+      <sc-if value="{{ detaljHarHandling }}" hint-placeholder-val="{{ true }}">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ utforDetalj }}" hint-size="auto,40px">{{ detaljHandling }}</x-import>
+      </sc-if>
       <sc-if value="{{ visDetaljBevis }}" hint-placeholder-val="{{ false }}">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ apneDetaljBevis }}" hint-size="auto,40px">Kursbevis</x-import>
       </sc-if>
@@ -11374,6 +11433,41 @@ class Component extends DCLogic {
     this.tilToppen();
   }
 
+  /**
+   * Endrer antall plasser paa én dato.
+   *
+   * Kurset har et antall, men kvelden kan avvike. Foer matte man endre hele
+   * kurset for aa gi plass til én til paa torsdag — og da gjaldt det alle
+   * datoene, ogsaa de som var fulle med vilje.
+   */
+  settPlasser(oktId, kapasitet) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden' });
+      return;
+    }
+    if (this._plasserLagrer) return;
+    this._plasserLagrer = true;
+
+    fetch('/api/admin/kurs.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'plasser', oktId: oktId, kapasitet: String(kapasitet) }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._plasserLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Plassene er endret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
+      })
+      .catch(() => {
+        this._plasserLagrer = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   /** Ruller til toppen av skjermen. Skjemaene tegnes der. */
   tilToppen() {
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -12203,6 +12297,7 @@ class Component extends DCLogic {
         });
       }),
       detaljHandling: (this.state.detalj && this.state.detalj.handling) || 'Lagre',
+      detaljHarHandling: ((this.state.detalj && this.state.detalj.handling) || 'Lagre') !== 'Lukk',
       detaljSkjema: !!(this.state.detalj && this.state.detalj.skjema),
       detaljBilder: (this.state.detalj && this.state.detalj.skjema) === 'produkt',
       adminFokusValg: this.fokusValg((this.state.detalj && this.state.detalj.tittel) || 'produkt'),
@@ -13589,7 +13684,7 @@ class Component extends DCLogic {
           omrUnder: 'Alt som gjelder dem som har fast plass i verkstedet: registeret, '
             + 'samlingene deres, internbutikken, beskjedene og det interne innholdet.',
           omrHurtig: [
-            { navn: 'Meld inn medlem', velg: () => this.gaaAdmin('adminkursdeltakere', {
+            { navn: 'Nytt medlem', velg: () => this.gaaAdmin('adminmedlem', {
                 miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '',
               }) },
             { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
@@ -13931,6 +14026,7 @@ class Component extends DCLogic {
         const okter = (this.state.adminOkter || []).map(o => {
           const tatt = (o.betalt || 0) + (o.reservert || 0);
           const kap = o.kapasitet || 0;
+
           return {
             oktId: o.oktId,
             tittel: o.tittel,
@@ -13944,6 +14040,9 @@ class Component extends DCLogic {
               height: '100%', borderRadius: 999,
               background: o.ledige > 0 ? 'var(--terracotta-500)' : 'var(--sage-500)',
             },
+            plassTekst: kap ? kap + ' plasser' : 'som kurset',
+            faerre: () => this.settPlasser(o.oktId, Math.max(0, (kap || 0) - 1)),
+            flere: () => this.settPlasser(o.oktId, (kap || 0) + 1),
             leggTil: () => {
               this.setState({ side: 'adminpameldte', mpApen: true, mpOkt: String(o.oktId) });
               window.scrollTo(0, 0);

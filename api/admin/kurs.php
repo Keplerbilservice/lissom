@@ -5,6 +5,7 @@
  *   GET                     alle kurs, ogsaa kladder
  *   POST handling=lagre     opprett eller endre et kurs
  *   POST handling=nydato    legg til en dato
+ *   POST handling=plasser   endre antall plasser paa én dato
  *   POST handling=avlys     avlys en dato
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
@@ -223,6 +224,54 @@ switch ($handling) {
         ]);
 
     // --------------------------------------------------------------- avlys
+    // ------------------------------------------------- antall plasser
+    //
+    // Plassene settes paa kurset, men den enkelte datoen kan avvike: en
+    // kveld med to instruktoerer tar flere, en med sykdom faerre. Uten
+    // dette matte man endre hele kurset for aa gi plass til én til paa
+    // torsdag — og da gjaldt det alle datoene.
+    case 'plasser':
+        $oktId = Foresporsel::heltall('oktId');
+        $okt = DB::en(
+            'SELECT cs.id, cs.course_id, c.kapasitet AS kurskapasitet
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.id = :o',
+            ['o' => $oktId]
+        );
+        if ($okt === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+
+        $kropp = Foresporsel::kropp();
+        $raa = trim((string) ($kropp['kapasitet'] ?? ''));
+        // Tomt betyr «foelg kurset». Da er det ett sted aa endre plassene
+        // for alle datoene, framfor et tall som maa rettes hver gang.
+        $kapasitet = $raa === '' ? null : max(0, (int) $raa);
+
+        // Plassene kan ikke settes lavere enn dem som alt har betalt. Da
+        // ville lista vist «9 av 8», og neste kunde faatt en plass som ikke
+        // finnes.
+        $solgt = (int) DB::verdi(
+            "SELECT COALESCE(SUM(antall), 0) FROM bookings
+              WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+            ['o' => $oktId]
+        );
+        if ($kapasitet !== null && $kapasitet < $solgt) {
+            Svar::feil('Det står allerede ' . $solgt . ' på denne datoen. Sett minst så mange plasser.');
+        }
+
+        DB::oppdater('course_sessions', ['kapasitet' => $kapasitet], ['id' => $oktId]);
+        revider('dato_plasser', 'course_session', $oktId, ['kapasitet' => $kapasitet]);
+
+        Svar::ok([
+            'kapasitet' => $kapasitet ?? (int) $okt['kurskapasitet'],
+            'ledige'    => Booking::ledigePlasser($oktId),
+            'beskjed'   => $kapasitet === null
+                ? 'Datoen følger kursets antall plasser igjen.'
+                : 'Datoen har nå ' . $kapasitet . ' plasser.',
+        ]);
+
     case 'avlys':
         $oktId = Foresporsel::heltall('oktId');
         $antall = (int) DB::verdi(

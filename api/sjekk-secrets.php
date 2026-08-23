@@ -78,16 +78,54 @@ if (!is_array($verdier)) {
 
 $fylt = static fn(string $k): bool => trim((string) ($verdier[$k] ?? '')) !== '';
 
+// Gruppert etter hva det faktisk slaar ut paa. En flat liste over noekler
+// sier ikke hva som slutter aa virke naar en av dem mangler.
+$grupper = [
+    'database' => ['db_passord'],
+    'vipps'    => ['vipps_msn', 'vipps_client_id', 'vipps_client_secret', 'vipps_sub_key'],
+    'epost'    => ['smtp_vert', 'smtp_bruker', 'smtp_passord'],
+    'sms'      => ['sveve_bruker', 'sveve_passord', 'gatewayapi_token'],
+    'ai'       => ['claude_api_key'],
+    'drift'    => ['cron_nokkel'],
+];
+
+$utfylt = [];
+foreach ($grupper as $navn => $noekler) {
+    foreach ($noekler as $k) {
+        $utfylt[$navn][$k] = $fylt($k);
+    }
+}
+
+// Hva som ikke virker akkurat naa, skrevet slik at det gir mening uten aa
+// kjenne koden. SMS teller som satt opp naar én av leverandorene er fylt ut.
+$mangler = [];
+if (!$fylt('db_passord')) {
+    $mangler[] = 'Uten db_passord kommer ikke nettstedet til databasen i det hele tatt.';
+}
+if (!$fylt('smtp_vert')) {
+    $mangler[] = 'E-post går gjennom serverens egen mail(). Det virker ofte, men havner lett i søppelposten. '
+        . 'Legg inn smtp_vert, smtp_bruker og smtp_passord.';
+}
+if (!$fylt('sveve_bruker') && !$fylt('gatewayapi_token')) {
+    $mangler[] = 'SMS er ikke satt opp. «Plass ledig på venteliste» og «keramikken er ferdig brent» '
+        . 'sendes bare som SMS, og når derfor ingen.';
+}
+if (!$fylt('claude_api_key')) {
+    $mangler[] = 'AI-knappene under Markedsføring svarer ikke før claude_api_key er lagt inn.';
+} elseif (!str_starts_with(trim((string) $verdier['claude_api_key']), 'sk-ant-')) {
+    // Formen, ikke innholdet. En nokkel som er limt inn halvveis, eller tatt
+    // fra feil tjeneste, ser ellers riktig ut helt til forste kall feiler.
+    $mangler[] = 'claude_api_key ser ikke ut som en nøkkel fra console.anthropic.com — de begynner med «sk-ant-». '
+        . 'Sjekk at hele nøkkelen kom med.';
+}
+if (!$fylt('cron_nokkel')) {
+    $mangler[] = 'Uten cron_nokkel kan ikke de automatiske jobbene kjøre (påminnelser, kvitteringer, opprydding).';
+}
+
 $ut([
     'ok'         => true,
     'miljo'      => $verdier['miljo'] ?? '(ikke satt)',
     'vipps_base' => $verdier['vipps_base'] ?? '(ikke satt)',
-    'utfylt'     => [
-        'db_passord'          => $fylt('db_passord'),
-        'vipps_msn'           => $fylt('vipps_msn'),
-        'vipps_client_id'     => $fylt('vipps_client_id'),
-        'vipps_client_secret' => $fylt('vipps_client_secret'),
-        'vipps_sub_key'       => $fylt('vipps_sub_key'),
-        'cron_nokkel'         => $fylt('cron_nokkel'),
-    ],
+    'utfylt'     => $utfylt,
+    'mangler'    => $mangler,
 ]);

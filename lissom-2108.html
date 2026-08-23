@@ -3950,6 +3950,47 @@ window.__resources = {
             </sc-for>
           </div>
 
+          <!-- Én person, slik hen selv ser det paa Min side.
+               Verkstedet kunne se paameldinger per kurs, men ikke alt én
+               person har gjort — og dermed heller ikke svare den som ringer
+               og lurer paa kursbeviset sitt. -->
+          <sc-if value="{{ visPerson }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                <div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dette ser {{ personFornavn }} på Min side</div>
+                  <h2 style="margin: 2px 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ personNavn }}</h2>
+                  <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ personDetalj }}</div>
+                </div>
+                <button type="button" onClick="{{ lukkPerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--text-muted); padding: 2px 8px;">×</button>
+              </div>
+
+              <sc-if value="{{ personHenter }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Henter historikken …</p>
+              </sc-if>
+              <sc-if value="{{ personTom }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen påmeldinger ennå. Da står Min side tom for denne personen.</p>
+              </sc-if>
+
+              <sc-for list="{{ personHistorikk }}" as="h" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0; flex-wrap: wrap;">
+                  <div style="flex: 1 1 220px; min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ h.tittel }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ h.linje }}</div>
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ h.tone }}" hint-size="auto,24px">{{ h.status }}</x-import>
+                  <sc-if value="{{ h.harBevis }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ h.apneBevis }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">Kursbevis</button>
+                  </sc-if>
+                  <sc-if value="{{ h.utenBevis }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.hvorforIkke }}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Ny beskjed</div>
@@ -10683,6 +10724,25 @@ class Component extends DCLogic {
   }
 
   // Serverens medlemsrader oversatt til feltene admin-siden tegner.
+  /**
+   * Henter én persons historikk — det samme hen selv ser paa Min side.
+   *
+   * Verkstedet skal kunne svare den som ringer og lurer paa kursbeviset sitt
+   * uten aa lete gjennom kurs etter kurs.
+   */
+  apnePerson(id) {
+    if (!id) return;
+    this.setState({ personFor: id, personData: null });
+    if (!this.erPublisert()) return;
+    fetch('/api/admin/medlemmer.php?person=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        // Svaret kan komme etter at ruta er lukket eller en annen er aapnet.
+        this.setState(st => (st.personFor === id ? { personData: d || { historikk: [] } } : {}));
+      })
+      .catch(() => this.setState(st => (st.personFor === id ? { personData: { historikk: [] } } : {})));
+  }
+
   medlemsrader() {
     const tone = { aktiv: 'success', prove: 'warning', pause: 'neutral', oppsagt: 'neutral', ingen: 'neutral' };
     const tekst = { aktiv: 'Aktiv', prove: 'Proveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
@@ -10701,6 +10761,7 @@ class Component extends DCLogic {
     const MEDLEM = ['prove', 'aktiv', 'pause'];
 
     return (this.state.adminMedlemmer || []).map(m => ({
+      id: m.id,
       navn: m.navn || '(uten navn)',
       epost: m.epost || m.telefon || '',
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
@@ -12252,6 +12313,34 @@ class Component extends DCLogic {
         { merke: 'Oppsagt i august', verdi: '2', under: 'Begge på 30 timer' },
       ]).map(t => Object.assign(t, { velg: this.go('adminmedlem'), kortStil: KORT_KLIKK })),
       mottakere: ['Alle aktive medlemmer', 'Kun 30 timer', 'Kun fri tilgang', 'Kun på prøve', 'Deltakere på et kurs'],
+      // ── Én person, slik hen selv ser det ──
+      ...(() => {
+        const d = this.state.personData;
+        const p = (d || {}).person || {};
+        const h = (d || {}).historikk || [];
+        return {
+          visPerson: !!this.state.personFor,
+          personHenter: !!this.state.personFor && !d,
+          personTom: !!d && h.length === 0,
+          personNavn: p.navn || '',
+          personFornavn: (p.navn || '').split(' ')[0] || 'personen',
+          personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
+            .filter(Boolean).join(' · '),
+          lukkPerson: () => this.setState({ personFor: null, personData: null }),
+          personHistorikk: h.map(x => ({
+            tittel: x.tittel,
+            linje: x.naar + ' · ' + x.sum,
+            status: x.status,
+            tone: x.betalt ? 'success' : (x.status === 'Avbestilt' ? 'neutral' : 'warning'),
+            harBevis: !!x.kursbevis,
+            utenBevis: !x.kursbevis,
+            // Naar beviset ikke er der, er det alltid en grunn — og den er
+            // verdt aa si, for det er den eieren blir spurt om paa telefonen.
+            hvorforIkke: !x.betalt ? 'Bevis når det er betalt' : 'Bevis etter kurset',
+            apneBevis: () => window.open(x.kursbevis, '_blank', 'noopener'),
+          })),
+        };
+      })(),
       medlemFiltre: ['Alle', 'Medlemmer', 'Kursdeltakere', 'Admin', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
         const valgt = (this.state.medlemFilter || 'Alle') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
@@ -12291,7 +12380,8 @@ class Component extends DCLogic {
         if (fv === 'Admin') return !!m.erAdmin;
         return m.abonnement === fv;
       }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
-        velg: this.apne(m.navn, m.epost, [
+        velg: () => this.apnePerson(m.id),
+        detaljer: this.apne(m.navn, m.epost, [
           { navn: 'Hvem er dette', verdi: m.gruppe },
           { navn: 'Abonnement', verdi: m.abonnement },
           { navn: 'Kurs betalt', verdi: m.kursTekst },

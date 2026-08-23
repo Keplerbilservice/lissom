@@ -10,6 +10,68 @@ require __DIR__ . '/../_boot.php';
 Foresporsel::krevMetode('GET');
 krev_admin();
 
+// ── Én person, slik hen selv ser det ────────────────────────────────────
+//
+// Verkstedet kunne se paameldinger per kurs, men ikke alt én person har
+// gjort — og dermed heller ikke hva som faktisk staar paa Min side hos den
+// som ringer og lurer paa kursbeviset sitt.
+if (Foresporsel::heltall('person') > 0) {
+    $pid = Foresporsel::heltall('person');
+    $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status FROM members WHERE id = :i', ['i' => $pid]);
+    if ($m === null) {
+        Svar::feil('Fant ikke personen.', 404);
+    }
+
+    $rader = DB::alle(
+        "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
+                c.tittel, c.type, cs.start_tid, p.vipps_reference
+           FROM bookings b
+           JOIN courses c ON c.id = b.course_id
+      LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+      LEFT JOIN payments p ON p.id = b.payment_id
+          WHERE b.member_id = :m
+       ORDER BY cs.start_tid IS NULL, cs.start_tid DESC, b.id DESC",
+        ['m' => $pid]
+    );
+
+    $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
+    Svar::json([
+        'person' => [
+            'id'         => (int) $m['id'],
+            'navn'       => $m['navn'],
+            'epost'      => $m['epost'] ?: '',
+            'telefon'    => $m['telefon'] ?: '',
+            'medlemskap' => $m['medlemskap_type'] ?: 'Ingen',
+            'status'     => $m['status'],
+        ],
+        'historikk' => array_map(static function (array $b) use ($naa): array {
+            $holdt = $b['start_tid'] !== null
+                && new DateTimeImmutable((string) $b['start_tid'], new DateTimeZone('UTC')) < $naa;
+            return [
+                'id'      => (int) $b['id'],
+                'tittel'  => $b['tittel'],
+                'naar'    => $b['start_tid'] ? Booking::norskDato((string) $b['start_tid']) : 'Uten dato',
+                'sum'     => Booking::kroner((int) $b['belop_ore'])
+                             . ((int) $b['antall'] > 1 ? ' · ' . $b['antall'] . ' plasser' : ''),
+                'status'  => match ((string) $b['status']) {
+                    'betalt'    => 'Betalt',
+                    'reservert' => 'Reservert — ikke betalt',
+                    'avbestilt' => 'Avbestilt',
+                    default     => (string) $b['status'],
+                },
+                'betalt'  => (string) $b['status'] === 'betalt',
+                // Samme regel som paa Min side: bevis naar kurset er holdt og
+                // betalt, og drop-in er ikke et kurs.
+                'kursbevis' => ($holdt && (string) $b['status'] === 'betalt' && (string) $b['type'] !== 'dropin')
+                    ? '/api/kursbevis.php?booking=' . (int) $b['id']
+                    : null,
+                'referanse' => $b['vipps_reference'],
+            ];
+        }, $rader),
+    ]);
+}
+
 $sok = Foresporsel::tekst('sok');
 $hvor = 'anonymisert_at IS NULL';
 $param = [];

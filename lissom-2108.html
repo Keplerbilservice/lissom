@@ -1537,7 +1537,13 @@ window.__resources = {
               </div>
               <div style="border-radius: var(--radius-xl, 22px); overflow: hidden; flex: 1; min-height: 440px; background-image: url('assets_photos_butikken.jpg'); background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end;">
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(43,20,12,0.88) 0%, rgba(43,20,12,0.45) 45%, transparent 78%); pointer-events: none;"></div>
-                <p style="position: relative; margin: 0; padding: var(--space-8); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--clay-50);">Slik finner du oss: vi holder til i Nordre Løkkevei på Teie, fem minutter fra Tønsberg sentrum over Kanalbrua. Gratis parkering rett utenfor.</p>
+                <div style="position: relative; padding: var(--space-8);">
+                  <p style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--clay-50);">Slik finner du oss: vi holder til i Nordre Løkkevei på Teie, fem minutter fra Tønsberg sentrum over Kanalbrua. Gratis parkering rett utenfor.</p>
+                  <!-- Stedene folk kommer fra staar her fordi det er sant og
+                       fordi det er her det hoerer hjemme — ikke som en ramse
+                       med stedsnavn presset inn i en tekst om noe annet. -->
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--clay-200); text-wrap: pretty;">Vi tar imot folk fra hele Vestfold: Tønsberg, Nøtterøy, Tjøme, Horten, Sandefjord, Stokke, Revetal og Andebu.</p>
+                </div>
               </div>
             </div>
           </div>
@@ -7829,10 +7835,10 @@ class Component extends DCLogic {
     forside: {
       fokus: 'keramikkurs Tønsberg',
       tittel: 'Keramikkurs i Tønsberg | Lissom Keramikk',
-      meta: 'Bli med på keramikkurs, dreiekurs og events på Teie i Tønsberg. Leire, verktøy og brenning er inkludert. Se ledige datoer og book plass.',
+      meta: 'Keramikkurs, dreiekurs og events på Teie ved Tønsberg — for hele Vestfold. Lag din egen keramikk fra første kveld. Leire, verktøy og brenning inkludert.',
       slug: 'keramikkurs-tonsberg',
       h1: 'Keramikkurs og håndverk i Tønsberg',
-      sekundare: 'dreiekurs, keramikkverksted, kreative kurs, Vestfold, Nøtterøy',
+      sekundare: 'keramikkverksted, dreiekurs, plateteknikk, lag din egen keramikk, en hobby for alle, Nøtterøy, Tjøme, Horten, Sandefjord, hele Vestfold',
       altTekst: 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg',
       ogTittel: 'Keramikkurs i Tønsberg | Lissom Keramikk',
       ogBeskrivelse: 'Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.',
@@ -7844,16 +7850,31 @@ class Component extends DCLogic {
     kurs: {
       fokus: 'keramikkurs Vestfold',
       tittel: 'Keramikkurs og events i Vestfold | Lissom',
-      meta: 'Alle kurs og events hos Lissom Keramikk i Tønsberg: dreiekurs, bollekurs, workshop, Sip & Clay og Date Night. Se ledige datoer og book plass.',
+      meta: 'Alle kurs og events hos Lissom Keramikk ved Tønsberg: dreiekurs, plateteknikk, workshop, Sip & Clay, Date Night og Paint on Pots. Se datoer og book plass.',
       slug: 'keramikkurs-vestfold',
       h1: 'Keramikkurs og events i Vestfold',
-      sekundare: 'dreiekurs Tønsberg, workshop keramikk, sip and clay, date night',
+      sekundare: 'dreiekurs, plateteknikk, workshop, sip and clay, date night, paint on pots, keramikkurs Sandefjord, keramikkurs Horten, kurs Tjøme, Andebu, Revetal',
       altTekst: 'Kursdeltakere rundt langbordet i keramikkverkstedet på Teie',
       ogTittel: 'Keramikkurs og events i Vestfold | Lissom',
       ogBeskrivelse: 'Dreiekurs, bollekurs, workshop og kreative kvelder i Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
       canonical: 'https://lissom.no/kurs',
       internlenker: 'Forside, Medlemskap, Bedrift og event, Gavekort',
       schema: 'Course',
+      index: 'Index',
+    },
+    events: {
+      fokus: 'keramikk events Vestfold',
+      tittel: 'Keramikk-events i Vestfold — Sip & Clay, Date Night | Lissom',
+      meta: 'Sip & Clay, Date Night og Paint on Pots i verkstedet på Teie ved Tønsberg. Kreative kvelder for venner, par og kolleger. Se datoer og book plass.',
+      slug: 'keramikk-events-vestfold',
+      h1: 'Keramikk-events i Vestfold',
+      sekundare: 'sip and clay, date night, paint on pots, kreativ kveld Tønsberg, vennegjeng, events Sandefjord, events Horten',
+      altTekst: 'Vennegjeng former leire sammen på en kreativ kveld i verkstedet på Teie',
+      ogTittel: 'Keramikk-events i Vestfold — Sip & Clay, Date Night',
+      ogBeskrivelse: 'Kreative kvelder med leire på Teie ved Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
+      canonical: 'https://lissom.no/events',
+      internlenker: 'Alle kurs, Gavekort, Bedrift og event',
+      schema: 'Event',
       index: 'Index',
     },
     dreiekurs: {
@@ -7892,7 +7913,7 @@ class Component extends DCLogic {
       meta: 'Bygg store fat i plateteknikk over form, på formiddagskurs i verkstedet på Teie i Tønsberg. Alt utstyr inkludert. Se datoer og book plass.',
       slug: 'keramikkurs-store-fat',
       h1: 'Keramikkurs i store fat — Tønsberg',
-      sekundare: 'plateteknikk, fat keramikk, formiddagskurs Vestfold',
+      sekundare: 'plateteknikk, kurs i plateteknikk, fat keramikk, formiddagskurs Vestfold, lag din egen keramikk',
       altTekst: 'Stort fat formet i plateteknikk over form i verkstedet på Teie',
       ogTittel: 'Keramikkurs i store fat i Tønsberg | Lissom',
       ogBeskrivelse: 'Plateteknikk over form, alt utstyr inkludert. Se ledige datoer og book plass i Tønsberg.',
@@ -7928,6 +7949,21 @@ class Component extends DCLogic {
       ogBeskrivelse: 'En kveld ved dreieskiva for to. Alt inkludert. Se ledige datoer og book plass.',
       canonical: 'https://lissom.no/events/date-night',
       internlenker: 'Alle events, Sip & Clay, Gavekort',
+      schema: 'Event',
+      index: 'Index',
+    },
+    sipclay: {
+      fokus: 'sip and clay Tønsberg',
+      tittel: 'Sip & Clay i Tønsberg — leire og et glass | Lissom',
+      meta: 'En kveld med leire i hendene og et glass ved siden av. Ingen forkunnskaper, alt utstyr inkludert. Se ledige datoer i Tønsberg og book plass.',
+      slug: 'sip-and-clay-tonsberg',
+      h1: 'Sip & Clay i Tønsberg',
+      sekundare: 'sip and clay Vestfold, kreativ kveld, vennegjeng, keramikk og vin, en hobby for alle',
+      altTekst: 'Vennegjeng former leire med et glass på bordet under Sip & Clay i Tønsberg',
+      ogTittel: 'Sip & Clay i Tønsberg — leire og et glass',
+      ogBeskrivelse: 'Leire i hendene og et glass ved siden av. Alt inkludert. Se ledige datoer og book plass.',
+      canonical: 'https://lissom.no/events',
+      internlenker: 'Alle events, Date Night, Gavekort',
       schema: 'Event',
       index: 'Index',
     },
@@ -8012,7 +8048,7 @@ class Component extends DCLogic {
       meta: 'Fast plass i verkstedet på Teie med egen dørkode og hylle. Leire, glasur og brenning inkludert. Se prisene og meld deg inn i dag.',
       slug: 'medlemskap-keramikkverksted',
       h1: 'Medlemskap i keramikkverkstedet — Tønsberg',
-      sekundare: 'verkstedplass, keramikk abonnement, dreieskive Vestfold',
+      sekundare: 'medlemskap keramikk, verkstedplass, keramikk abonnement, dreieskive Vestfold, keramikk som hobby',
       altTekst: 'Medlem jobber alene ved dreieskiva i keramikkverkstedet på Teie',
       ogTittel: 'Medlemskap i keramikkverksted i Tønsberg',
       ogBeskrivelse: 'Fast plass i verkstedet, egen hylle og dørkode. Se prisene og meld deg inn.',
@@ -8054,10 +8090,10 @@ class Component extends DCLogic {
     omoss: {
       fokus: 'keramikkverksted Tønsberg',
       tittel: 'Keramikkverksted på Teie i Tønsberg | Lissom',
-      meta: 'Et kreativt fristed for skaperglede og håndverk på Nordre Løkkevei 15, Nøtterøy. Les om verkstedet, og se hvilke kurs vi holder gjennom året.',
+      meta: 'Et kreativt fristed for skaperglede og håndverk på Teie ved Tønsberg. Leire er en hobby for alle — og en time som gjør deg til stede. Se kursene våre.',
       slug: 'keramikkverksted-tonsberg',
       h1: 'Keramikkverkstedet på Teie i Tønsberg',
-      sekundare: 'om Lissom, keramiker Vestfold, verksted Nøtterøy',
+      sekundare: 'keramikkverksted Vestfold, en hobby for alle, bli mindful med keramikk, keramiker Tønsberg, verksted Nøtterøy',
       altTekst: 'Interiør fra keramikkverkstedet til Lissom på Teie i Tønsberg',
       ogTittel: 'Keramikkverksted på Teie i Tønsberg | Lissom',
       ogBeskrivelse: 'Et kreativt fristed for skaperglede og håndverk på Nøtterøy. Se hva vi holder på med.',
@@ -10384,11 +10420,13 @@ class Component extends DCLogic {
     return [
       { id: 'forside', navn: 'Forside', type: 'side', fokus: 'keramikkurs Tønsberg' },
       { id: 'kurs', navn: 'Kurs og events', type: 'side', fokus: 'keramikkurs Vestfold' },
+      { id: 'events', navn: 'Events', type: 'side', fokus: 'keramikk events Vestfold' },
       { id: 'dreiekurs', navn: 'Nybegynner dreiekurs', type: 'kurs', fokus: 'dreiekurs Tønsberg' },
       { id: 'boller', navn: 'Kurs boller', type: 'kurs', fokus: 'keramikkurs boller' },
       { id: 'fat', navn: 'Store fat kurs', type: 'kurs', fokus: 'keramikkurs store fat' },
       { id: 'workshop', navn: 'Keramikk workshop', type: 'kurs', fokus: 'keramikk workshop Tønsberg' },
       { id: 'datenight', navn: 'Date Night', type: 'event', fokus: 'date night keramikk Tønsberg' },
+      { id: 'sipclay', navn: 'Sip & Clay', type: 'event', fokus: 'sip and clay Tønsberg' },
       { id: 'paintonpots', navn: 'Paint on Pots', type: 'event', fokus: 'paint on pots Tønsberg' },
       { id: 'medlemskap', navn: 'Medlemskap', type: 'side', fokus: 'keramikkverksted medlemskap' },
       { id: 'butikk', navn: 'Butikk', type: 'kategori', fokus: 'håndlaget keramikk Tønsberg' },
@@ -10426,6 +10464,12 @@ class Component extends DCLogic {
     // folk soker etter, bookingskjemaet er ikke det.
     if (side === 'booking') {
       return (typeof location !== 'undefined' && location.pathname === '/drop-in') ? 'dropin' : null;
+    }
+    // «/kurs» og «/events» er ogsaa samme skjerm, skilt av et filter. Uten
+    // dette fikk events-sida tittelen og beskrivelsen til kurssida, og de to
+    // konkurrerte om de samme ordene i stedet for aa dekke hver sine.
+    if (side === 'kurs' && typeof location !== 'undefined' && location.pathname === '/events') {
+      return 'events';
     }
     return {
       forside: 'forside', kurs: 'kurs', medlemskap: 'medlemskap', butikk: 'butikk',
@@ -10470,8 +10514,9 @@ class Component extends DCLogic {
     const std = (id && this.seoSider().find(x => x.id === id)) || null;
     const tittel = d.tittel
       || (std ? std.navn + ' | Lissom Keramikk & Håndverk' : this.seoStandardTittel(side));
-    if (this._seoSatt === side + '|' + tittel) return;
-    this._seoSatt = side + '|' + tittel;
+    const merke = side + '|' + tittel + '|' + (this.state.katalog || []).length;
+    if (this._seoSatt === merke) return;
+    this._seoSatt = merke;
 
     document.title = tittel;
 
@@ -10515,6 +10560,160 @@ class Component extends DCLogic {
       const gammel = document.head.querySelector('link[rel="canonical"]');
       if (gammel) gammel.remove();
     }
+
+    // Strukturerte data. Ikke paa sidene som ikke skal i soket — der ville
+    // de bare fortalt Google om noe den ikke faar lov til aa vise.
+    const gammelLd = document.head.querySelector('script[data-lissom-ld]');
+    if (privat) {
+      if (gammelLd) gammelLd.remove();
+    } else {
+      const el = gammelLd || (() => {
+        const sc = document.createElement('script');
+        sc.type = 'application/ld+json';
+        sc.setAttribute('data-lissom-ld', '1');
+        document.head.appendChild(sc);
+        return sc;
+      })();
+      try {
+        el.textContent = JSON.stringify(this.seoStrukturert(d, tittel));
+      } catch (e) { /* heller ingen data enn halve */ }
+    }
+  }
+
+  /**
+   * Stedene verkstedet betjener.
+   *
+   * Folk soker «keramikkurs Sandefjord» og «keramikk Horten», ikke bare
+   * «keramikkurs Tonsberg». Verkstedet ligger paa Teie, men kundene kommer
+   * fra hele Vestfold — og det er noe Google maa faa vite, ikke noe vi kan
+   * stappe inn i teksten paa hver side.
+   *
+   * Derfor staar det i strukturerte data som «areaServed», der det hoerer
+   * hjemme, framfor som en ramse med stedsnavn i brodteksten.
+   */
+  static get OMRAADE() {
+    return ['Tønsberg', 'Nøtterøy', 'Teie', 'Tjøme', 'Færder', 'Horten',
+            'Sandefjord', 'Revetal', 'Re', 'Andebu', 'Stokke', 'Vestfold'];
+  }
+
+  /** Det verkstedet driver med. Ord folk faktisk soker paa. */
+  static get FAGOMRAADER() {
+    return ['keramikk', 'keramikkurs', 'dreiing på dreieskive', 'plateteknikk',
+            'håndbygging', 'glasering', 'brenning av keramikk',
+            'lage din egen keramikk', 'keramikk som hobby', 'Paint on Pots',
+            'Sip & Clay', 'Date Night med keramikk', 'medlemskap i keramikkverksted',
+            'bedriftsarrangement og teambuilding med leire'];
+  }
+
+  /**
+   * Strukturerte data i hodet.
+   *
+   * Metatagger sier hva sida heter. Dette sier hva virksomheten er: et
+   * keramikkverksted paa Teie som holder kurs, med adresse, telefon,
+   * aapningstider og hvilke steder folk kommer fra. Det er det som gjor at
+   * Lissom kan dukke opp i kartet og i «keramikkurs i naerheten», og ikke
+   * bare i en vanlig trefflste.
+   *
+   * Alt her er noe vi faktisk vet. Vi finner ikke paa koordinater,
+   * aapningstider eller anmeldelser for aa fylle ut flere felter — feil
+   * opplysninger i strukturerte data er verre enn ingen.
+   */
+  seoStrukturert(d, tittel) {
+    const rot = 'https://lissom.no';
+    const sted = {
+      '@type': 'LocalBusiness',
+      '@id': rot + '/#verksted',
+      name: 'Lissom Keramikk & Håndverk',
+      legalName: 'Lissom Keramikk & Håndverk AS',
+      url: rot + '/',
+      telephone: '+4794134601',
+      email: 'monica@lissom.no',
+      description: 'Keramikkverksted på Teie ved Tønsberg. Kurs i dreiing og '
+        + 'plateteknikk, events som Sip & Clay, Date Night og Paint on Pots, '
+        + 'drop-in og medlemskap med fast plass i verkstedet.',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Nordre Løkkevei 15',
+        postalCode: '3120',
+        addressLocality: 'Nøtterøy',
+        addressRegion: 'Vestfold',
+        addressCountry: 'NO',
+      },
+      areaServed: Component.OMRAADE.map(n => ({ '@type': 'Place', name: n })),
+      knowsAbout: Component.FAGOMRAADER,
+      // Kontoene slik de er lagret i innholdsboksene. Foerste tegning skjer
+      // for de er lest, saa standardnavnene staar som reserve — en tom
+      // «sameAs» er det samme som ingen kobling til profilene.
+      sameAs: [
+        (this._some && this._some.instagram) || 'https://instagram.com/lissom_keramikk',
+        (this._some && this._some.facebook) || 'https://facebook.com/lissomkeramikk',
+      ],
+      image: rot + '/assets_photos_kursrommet.jpg',
+      logo: rot + '/logo-lockup.svg',
+    };
+
+    const graf = [sted, {
+      '@type': 'WebSite',
+      '@id': rot + '/#nettsted',
+      url: rot + '/',
+      name: 'Lissom Keramikk & Håndverk',
+      inLanguage: 'nb-NO',
+      publisher: { '@id': rot + '/#verksted' },
+    }];
+
+    if (d.canonical) {
+      graf.push({
+        '@type': 'WebPage',
+        '@id': d.canonical + '#side',
+        url: d.canonical,
+        name: tittel,
+        description: d.meta || undefined,
+        isPartOf: { '@id': rot + '/#nettsted' },
+        about: { '@id': rot + '/#verksted' },
+        inLanguage: 'nb-NO',
+      });
+    }
+
+    // Kurslista, slik den faktisk staar paa sida akkurat naa. Tomme lister
+    // sendes ikke — et kurs uten datoer er ikke et tilbud.
+    const kurs = (this.state.katalog || []).filter(k => (k.datoer || []).length > 0);
+    if (kurs.length && (this.state.side === 'kurs' || this.state.side === 'forside')) {
+      graf.push({
+        '@type': 'ItemList',
+        '@id': rot + '/kurs#liste',
+        name: 'Kurs og events hos Lissom Keramikk',
+        itemListElement: kurs.map((k, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          item: {
+            '@type': 'Course',
+            name: k.tittel,
+            description: k.om || undefined,
+            provider: { '@id': rot + '/#verksted' },
+            hasCourseInstance: (k.datoer || []).slice(0, 12).map(dt => ({
+              '@type': 'CourseInstance',
+              courseMode: 'Offline',
+              startDate: dt.startUtc ? String(dt.startUtc).replace(' ', 'T') + 'Z' : undefined,
+              location: {
+                '@type': 'Place',
+                name: 'Lissom Keramikk & Håndverk',
+                address: sted.address,
+              },
+              offers: k.prisOre > 0 ? {
+                '@type': 'Offer',
+                price: String(k.prisOre / 100),
+                priceCurrency: 'NOK',
+                availability: dt.ledige > 0
+                  ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+                url: rot + '/kurs',
+              } : undefined,
+            })),
+          },
+        })),
+      });
+    }
+
+    return { '@context': 'https://schema.org', '@graph': graf };
   }
 
   seoSlug(t) {
@@ -16588,6 +16787,10 @@ class Component extends DCLogic {
         };
         const insta = String(hent('Instagram', '@lissom_keramikk')).replace('@', '').trim();
         const fb = String(hent('Facebook', 'lissomkeramikk')).replace('facebook.com/', '').trim();
+        this._some = {
+          instagram: 'https://instagram.com/' + insta,
+          facebook: 'https://facebook.com/' + fb,
+        };
         return {
           someInstagram: 'https://instagram.com/' + insta,
           someFacebook: 'https://facebook.com/' + fb,

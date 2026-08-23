@@ -107,8 +107,9 @@ if (!$fylt('smtp_vert')) {
         . 'Legg inn smtp_vert, smtp_bruker og smtp_passord.';
 }
 if (!$fylt('sveve_bruker') && !$fylt('gatewayapi_token')) {
-    $mangler[] = 'SMS er ikke satt opp. «Plass ledig på venteliste» og «keramikken er ferdig brent» '
-        . 'sendes bare som SMS, og når derfor ingen.';
+    $mangler[] = 'SMS er ikke satt opp. Varsler som ellers gikk på SMS sendes nå som e-post i stedet, '
+        . 'og har mottakeren ingen e-postadresse, får verkstedet beskjed med navn og nummer. '
+        . 'Ingenting går tapt — men de kommer fram tregere enn en SMS ville gjort.';
 }
 if (!$fylt('claude_api_key')) {
     $mangler[] = 'AI-knappene under Markedsføring svarer ikke før claude_api_key er lagt inn.';

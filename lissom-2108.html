@@ -2922,8 +2922,11 @@ window.__resources = {
                 <textarea value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
                   <input type="checkbox" checked="{{ kSms }}" onChange="{{ toggleKSms }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                  Send SMS-påminnelse til deltakerne 24 timer før
+                  Send SMS-påminnelse til deltakerne 24 timer før — {{ smsMerke }}
                 </label>
+                <sc-if value="{{ smsAv }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ smsForklaring }}</p>
+                </sc-if>
               </div>
               </sc-if>
               <sc-if value="{{ kSteg2 }}" hint-placeholder-val="{{ false }}">
@@ -4812,7 +4815,10 @@ window.__resources = {
               </sc-if>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ nbEmne }}" on-change="{{ settNbEmne }}" placeholder="Kort og tydelig" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="5" value="{{ nbTekst }}" on-change="{{ settNbTekst }}" placeholder="Skriv beskjeden her" hint-size="100%,140px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Send også som SMS" checked="{{ nbSms }}" on-change="{{ vekslNbSms }}" hint-size="100%,24px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="{{ nbSmsEtikett }}" checked="{{ nbSms }}" on-change="{{ vekslNbSms }}" hint-size="100%,24px"></x-import>
+              <sc-if value="{{ smsAv }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: -6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ smsForklaring }}</p>
+              </sc-if>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ nbSend }}" hint-size="100%,44px">{{ nbKnapp }}</x-import>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ nbHvem }}</p>
             </div>
@@ -10716,6 +10722,20 @@ class Component extends DCLogic {
       .filter(({ k }) => fane === 'alle' || (fane === 'interne' ? intern(k) : !intern(k)));
   }
 
+  /**
+   * Kan verkstedet sende SMS i det hele tatt?
+   *
+   * Skjermene tilbod SMS-paaminnelser og SMS-maler som om de gikk ut. Uten
+   * leverandoer i secrets.php gjor de ikke det — meldingen blir liggende i
+   * koen. Da er det bedre aa si «ikke aktivert» enn aa la eieren tro at
+   * deltakerne har faatt beskjed.
+   *
+   * Serveren svarer paa dette; nettleseren gjetter ikke.
+   */
+  smsAktivert() {
+    return ((this.state.adminData || {}).kanaler || {}).sms === true;
+  }
+
   adminMeny(aktiv) {
     // Menyen var én flat liste paa elleve punkter, og tre skjermer sto ikke
     // i den i det hele tatt — Oppskrifter, Nyttig info og SEO fantes bare for
@@ -11005,7 +11025,9 @@ class Component extends DCLogic {
           adminSoknader: (this.state.adminSoknader || []).filter(s => s.id !== id),
           kvittering: vedtak === 'godkjent' ? 'Søknaden er godkjent' : 'Søknaden er avslått',
           kvitteringDetalj: vedtak === 'godkjent'
-            ? 'Medlemmet har fått beskjed på e-post og SMS.'
+            ? (this.smsAktivert()
+                ? 'Medlemmet har fått beskjed på e-post og SMS.'
+                : 'Medlemmet har fått beskjed på e-post.')
             : 'Søkeren har fått beskjed på e-post.',
         });
         this._adminHentes = false;
@@ -11453,7 +11475,7 @@ class Component extends DCLogic {
       ], 'Last ned'),
       aSendBeskjed: this.apne('Send beskjed', 'Går til Min side, og på e-post', [
         { navn: 'Mottakere', verdi: 'Alle aktive medlemmer' },
-        { navn: 'Kanal', verdi: 'Min side, e-post, eventuelt SMS' },
+        { navn: 'Kanal', verdi: this.smsAktivert() ? 'Min side, e-post og SMS' : 'Min side og e-post (SMS ikke aktivert)' },
         { navn: 'Vises', verdi: 'Til medlemmet har lest den' },
       ], 'Skriv beskjed'),
       aGiGave: () => { const g = this.state.gave || {}; this.setState({ gRed: true, gType: g.type || 'Ta med en venn', gMottaker: g.mottaker || 'Alle medlemmer', gMedlem: g.medlem || '', gTekst: g.tekst || '', gTimer: g.timer || '2', gBelop: g.belop || '500' }); },
@@ -12176,7 +12198,7 @@ class Component extends DCLogic {
               this.setState({
                 vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null,
                 kvittering: d.gjentakelse ? 'Du står allerede på ventelisten' : 'Du står nå på ventelisten',
-                kvitteringDetalj: 'Plass nummer ' + d.posisjon + '. Vi gir beskjed på e-post og SMS hvis det blir ledig. Du betaler ingenting før plassen er din.',
+                kvitteringDetalj: 'Plass nummer ' + d.posisjon + '. Vi gir beskjed på e-post hvis det blir ledig. Du betaler ingenting før plassen er din.',
               });
             })
             .catch(() => this.setState({ vlFeil: 'Fikk ikke kontakt med serveren. Prøv igjen.' }));
@@ -12190,7 +12212,7 @@ class Component extends DCLogic {
           vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null,
         }));
         this.apne('Du er nå satt på venteliste', kursNavn + ' · plass nr. ' + plassNr, [
-          { navn: 'Hva skjer nå', verdi: 'Vi kontakter deg på e-post og SMS dersom det blir ledig plass.' },
+          { navn: 'Hva skjer nå', verdi: 'Vi kontakter deg på e-post dersom det blir ledig plass.' },
           { navn: 'Betaling', verdi: 'Du betaler ingenting før plassen er din.' },
           { navn: 'Status', verdi: 'Du kan følge statusen på Min side. Du sendes til forsiden om noen sekunder.' },
         ], 'Lukk')();
@@ -12491,7 +12513,8 @@ class Component extends DCLogic {
           nbTlf: this.state.nbTlf || '', settNbTlf: e => this.setState({ nbTlf: e.target.value }),
           nbEmne: this.state.nbEmne || '', settNbEmne: e => this.setState({ nbEmne: e.target.value }),
           nbTekst: this.state.nbTekst || '', settNbTekst: e => this.setState({ nbTekst: e.target.value }),
-          nbSms: !!this.state.nbSms,
+          nbSms: !!this.state.nbSms && this.smsAktivert(),
+          nbSmsEtikett: 'Send også som SMS — ' + (this.smsAktivert() ? 'aktivert' : 'ikke aktivert'),
           vekslNbSms: () => this.setState(s2 => ({ nbSms: !s2.nbSms })),
           nbKnapp: sender ? 'Sender …' : 'Send',
           nbHvem: valgt === 'Én mottaker'
@@ -12510,7 +12533,7 @@ class Component extends DCLogic {
             const kropp = Object.assign({
               tekst: tekst,
               emne: (this.state.nbEmne || '').trim() || 'Beskjed fra Lissom',
-              ogsaaSms: this.state.nbSms ? 'ja' : 'nei',
+              ogsaaSms: (this.state.nbSms && this.smsAktivert()) ? 'ja' : 'nei',
             }, g);
             if (g.til === 'okt') kropp.oktId = Number(oktValgt);
             if (g.til === 'en') {
@@ -12942,6 +12965,13 @@ class Component extends DCLogic {
         { merke: 'Omsetning i august', verdi: 'kr. 182 400,-', under: 'Vipps, oppgjør hver mandag' },
         { merke: 'Ubesvarte meldinger', verdi: '4', under: '2 forespørsler, 2 fra medlemmer' },
       ]))(this.state.adminData).map(t => Object.assign(t, { velg: this.go(TALLMAAL[t.merke] || 'admin'), kortStil: KORT_KLIKK })),
+      // SMS staar flere steder i admin. Alle henter status herfra.
+      smsPaa: this.smsAktivert(),
+      smsAv: !this.smsAktivert(),
+      smsMerke: this.smsAktivert() ? 'Aktivert' : 'Ikke aktivert',
+      smsForklaring: this.smsAktivert()
+        ? 'SMS sendes fra Lissom.'
+        : 'SMS er ikke aktivert. Meldingene går på e-post og Min side. Skal SMS også gå ut, må vi koble på en SMS-leverandør først.',
       adminTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],
@@ -13063,7 +13093,9 @@ class Component extends DCLogic {
       npTekstStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', resize: 'vertical', fontFamily: 'inherit' },
       npKnappStil: { appearance: 'none', cursor: (this.state.npNavn && this.state.npPris) ? 'pointer' : 'not-allowed', opacity: (this.state.npNavn && this.state.npPris) ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
       npLeggUt: () => this.lagreVare(),
-      mobMeldDeltakere: this.apne('Melding til deltakere', 'Sendes på e-post og SMS til alle påmeldte på kurset', [
+      mobMeldDeltakere: this.apne('Melding til deltakere', this.smsAktivert()
+        ? 'Sendes på e-post og SMS til alle påmeldte på kurset'
+        : 'Sendes på e-post til alle påmeldte på kurset', [
         { navn: 'Kurs', verdi: 'Nybegynner dreiekurs, 19. aug' },
         { navn: 'Melding', verdi: '' },
       ], 'Send melding', null, true),
@@ -14879,6 +14911,12 @@ class Component extends DCLogic {
         { navn: 'Venteliste — plass ledig', kanal: 'SMS', emne: '', tekst: 'Hei {navn}! Det ble ledig plass på {kurs} {dato}. Plassen er din i 24 timer: {lenke}' },
         { navn: 'Arbeidene er ferdig brent', kanal: 'SMS', emne: '', tekst: 'Hei {navn}! Keramikken din fra {kurs} er ferdig og klar til henting. Vi holder av den i to uker.' },
       ]).map(m => Object.assign(m, {
+        // Malene sto med kanalen som om alle gikk ut. Er ikke SMS satt
+        // opp, gjor de ikke det — og da skal det staa her, ikke oppdages
+        // naar noen ikke moette.
+        kanal: m.kanal.indexOf('SMS') === -1 || this.smsAktivert()
+          ? m.kanal : m.kanal + ' (SMS ikke aktivert)',
+      })).map(m => Object.assign(m, {
         velg: this.apne(m.navn, 'Sendes automatisk · ' + m.kanal, m.emne ? [
           { navn: 'Emne', verdi: m.emne },
           { navn: 'Tekst', verdi: m.tekst },

@@ -221,6 +221,26 @@ window.__resources = {
     @media (max-width: 560px) {
       .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
 
+      /* Bunnteksten paa mobil.
+         Stablet under hverandre ble den 1300 piksler lang — halvannen
+         skjermhoyde med rulling forbi noe folk sjelden leser. «Besok oss» og
+         «Lissom» er begge korte lister, og staar fint side om side. «Folg
+         oss» tar bredden under, for logoen trenger plassen. */
+      .lx-footcols {
+        grid-template-columns: 1fr 1fr !important;
+        gap: var(--space-8) var(--space-6) !important;
+        padding: var(--space-8) 0 !important;
+      }
+      .lx-footcols > div:last-child { grid-column: 1 / -1; }
+      /* Under 900 px legges lenkene paa rad. I en halv skjermbredde blir det
+         et rotete brekk — her staar de under hverandre igjen, like tett som
+         adressen ved siden av. */
+      .lx-footcols .lx-footlinks {
+        flex-direction: column !important;
+        gap: 2px !important;
+      }
+      .lx-footcols .lx-footlinks > button { padding: 3px 0 !important; line-height: 1.45; }
+
       /* Nyheter og produkter som karusell paa mobil.
          Bygget paa scroll-snap framfor JavaScript: det gir ekte
          fingerbevegelse med treghet, virker med tastatur og skjermleser, og
@@ -4714,25 +4734,17 @@ window.__resources = {
           </div>
         </div>
 
-        <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8) var(--space-10); align-items: start; padding: var(--space-10) 0;">
+        <div class="lx-footcols" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8) var(--space-10); align-items: start; padding: var(--space-10) 0;">
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Besøk oss</div>
-            <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--clay-200);">
-              <a href="https://maps.google.com/?q=Nordre+L%C3%B8kkevei+15,+3120+N%C3%B8tter%C3%B8y" target="_blank" rel="noopener" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">Nordre Løkkevei 15, 3120 Nøtterøy</a>
-              <a href="tel:+4794134601" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">+47 94 13 46 01</a>
-              <a href="mailto:monica@lissom.no" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">monica@lissom.no</a>
-              <div style="margin-top: var(--space-2); font-size: var(--text-sm); color: var(--clay-300); display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; font-size: var(--text-base); line-height: 1.45; color: var(--clay-200);">
+              <a href="https://maps.google.com/?q=Nordre+L%C3%B8kkevei+15,+3120+N%C3%B8tter%C3%B8y" target="_blank" rel="noopener" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">Nordre Løkkevei 15, 3120 Nøtterøy</a>
+              <a href="tel:+4794134601" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">+47 94 13 46 01</a>
+              <a href="mailto:monica@lissom.no" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">monica@lissom.no</a>
+              <div style="margin-top: 6px; font-size: var(--text-sm); line-height: 1.45; color: var(--clay-300); display: flex; flex-direction: column;">
                 <span>Verkstedet: etter avtale</span>
                 <span>Medlemmer: døgnåpent</span>
               </div>
-            </div>
-          </div>
-          <div>
-            <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Utforsk</div>
-            <div class="lx-footlinks" style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
-              <sc-for list="{{ footerTilbud }}" as="l" hint-placeholder-count="6">
-                <button type="button" onClick="{{ l.velg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; text-align: left; font-family: var(--font-sans); font-size: var(--text-base); color: var(--clay-200); transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">{{ l.navn }}</button>
-              </sc-for>
             </div>
           </div>
           <div>
@@ -4746,9 +4758,14 @@ window.__resources = {
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Følg oss</div>
             <img src="logo-lockup-yellow.svg" alt="lissom — keramikk &amp; håndverk" style="height: 44px; display: block; margin-bottom: var(--space-5);" loading="lazy" decoding="async">
-            <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-5);">
-              <a href="{{ someInstagram }}" target="_blank" rel="noopener" aria-label="Instagram" title="@lissom_keramikk" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(244,235,222,.35); display: inline-flex; align-items: center; justify-content: center; color: var(--clay-100); text-decoration: none; transition: background .18s ease, color .18s ease, border-color .18s ease;" style-hover="background: var(--lissom-yellow); color: var(--lissom-brown); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="instagram" size="{{ tjue }}" hint-size="20px,20px"></x-import></a>
-            </div>
+            <!-- Navnet staar ved siden av ikonet. Et ikon alene sier «her er
+                 vi paa Instagram», men ikke hvem vi er der — og den som vil
+                 soke oss opp i appen framfor aa trykke, har ingenting aa soke
+                 etter. Navnet hentes fra Innhold, som resten. -->
+            <a href="{{ someInstagram }}" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 12px; margin-bottom: var(--space-5); color: var(--clay-100); text-decoration: none; transition: color .18s ease;" style-hover="color: var(--lissom-yellow);">
+              <span style="width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid rgba(244,235,222,.35); display: inline-flex; align-items: center; justify-content: center;"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="instagram" size="{{ tjue }}" hint-size="20px,20px"></x-import></span>
+              <span style="font-size: var(--text-base); font-weight: 600;">{{ instaNavn }}</span>
+            </a>
             <div style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);"><img src="mark-heart.png" alt="" style="height: 15px; width: auto; filter: invert(0.92) sepia(0.14) saturate(1.4) hue-rotate(-15deg);" loading="lazy" decoding="async">100% håndlaget med kjærlighet</div>
           </div>
         </div>
@@ -12083,18 +12100,13 @@ class Component extends DCLogic {
         { dag: 'Kurs og events', tid: 'Se datoer under kurs' },
         { dag: 'Medlemmer', tid: 'Døgnåpent, 24 timer' },
       ],
-      footerTilbud: [
-        { navn: 'Kurs', velg: this.go('kurs') },
-        { navn: 'Events', velg: this.go('kurs') },
-        { navn: 'Paint on Pots', velg: this.go('paintonpots') },
-        { navn: 'Medlemskap', velg: this.go('medlemskap') },
-        { navn: 'Butikk', velg: this.go('butikk') },
-        { navn: 'Gavekort', velg: this.go('gavekortside') },
-      ],
+      // «Utforsk» er tatt bort fra bunnteksten — de seks lenkene staar alt i
+      // toppmenyen, og paa mobil ble bunnteksten 1300 piksler lang.
+      //
+      // E-post og telefon sto her ogsaa, rett under «Besok oss» der de
+      // samme to staar. Én gang holder.
       footerOm: [
         { navn: 'Om oss', velg: this.go('omoss') },
-        { navn: 'monica@lissom.no', velg: () => { window.location.href = 'mailto:monica@lissom.no'; } },
-        { navn: '+47 94 13 46 01', velg: () => { window.location.href = 'tel:+4794134601'; } },
         { navn: 'Spørsmål og svar', velg: this.go('omoss') },
         { navn: 'Bedrift og event', velg: this.go('bedrift') },
         { navn: 'Personvern', velg: this.go('personvern') },
@@ -13677,15 +13689,27 @@ class Component extends DCLogic {
       })(),
       ...(() => {
         const il = this.state.innholdLagret || {};
+        // Leter etter noekkelen som slutter paa «/Instagram» eller
+        // «/Facebook», uansett hvilken seksjon den staar i.
+        //
+        // Sto for som indexOf(...) === x.length - suffiks.length. Finner ikke
+        // indexOf noe, gir den -1 — og for en noekkel som er noyaktig like
+        // lang som suffikset er hoyresida ogsaa -1. Da traff hva som helst:
+        // «Banner/pa» ble Instagram-navnet vaart, og «SEO/kurs» ble
+        // Facebook-adressen. Lenkene pekte til instagram.com/nei og til
+        // facebook.com/ efterfulgt av et helt SEO-oppsett.
         const hent = (felt, fallback) => {
-          const k = Object.keys(il).find(x => x.indexOf('/' + felt) === x.length - ('/' + felt).length);
-          return (k ? il[k] : fallback) || fallback;
+          const suffiks = '/' + felt;
+          const k = Object.keys(il).find(x => x.length > suffiks.length && x.endsWith(suffiks));
+          return (k ? String(il[k]).trim() : '') || fallback;
         };
         const insta = String(hent('Instagram', '@lissom_keramikk')).replace('@', '').trim();
         const fb = String(hent('Facebook', 'lissomkeramikk')).replace('facebook.com/', '').trim();
         return {
           someInstagram: 'https://instagram.com/' + insta,
           someFacebook: 'https://facebook.com/' + fb,
+          // Navnet slik det skrives i appen, med krollalfa foran.
+          instaNavn: '@' + insta,
         };
       })(),
       // Datoene sto som to faste oppforinger. Begge ble koblet mot det samme

@@ -6467,7 +6467,18 @@ class Component extends DCLogic {
   // Setter skjermen ut fra adressen i feltet. Kalles ved oppstart og naar
   // noen bruker tilbakeknappen.
   ruteFraAdresse() {
-    const sti = window.location.pathname.replace(/\/+$/, '') || '/';
+    let sti = window.location.pathname.replace(/\/+$/, '') || '/';
+
+    // Sida kan bli servert paa sitt eget filnavn.
+    //
+    // «/» gaar via index.html, som er en meta-refresh videre til
+    // lissom-2108.html — og da staar filnavnet i adressefeltet. Det navnet
+    // finnes ikke i STIER, saa 404-skjermen slo inn og tok hele forsida.
+    // Filnavnet og index.html er forsida, ikke en ukjent adresse.
+    if (/^\/(index\.html|lissom-[\w.-]+\.html)$/i.test(sti)) {
+      sti = '/';
+    }
+
     const treff = Component.STIER.find(r => r.sti === sti);
     if (treff) return treff;
 
@@ -13237,8 +13248,15 @@ class Component extends DCLogic {
       // Den ekte forsiden, ikke designeksporten. «?forhands» gjor bare at
       // ramma lastes paa nytt naar man trykker Oppdater — adressen maa endre
       // seg, ellers rorer ikke nettleseren den.
-      mobilForhandsUrl: (this.erPublisert() ? '/' : 'lissom-2108.html')
-        + '?forhands=' + (this.state.mobilForhandsNr || 1),
+      // Peker rett paa fila, ikke paa «/».
+      //
+      // «/» gaar via index.html, som er en meta-refresh videre til
+      // lissom-2108.html — og videresendingen tar ikke med spoerringen.
+      // Cache-bryteren forsvant dermed underveis, og «Oppdater visningen»
+      // hentet den samme mellomlagrede kopien hver gang. Rammen viste en
+      // gammel utgave av sida mens den ekte var oppdatert, og det saa ut som
+      // om endringer «ikke kom gjennom paa mobil».
+      mobilForhandsUrl: 'lissom-2108.html?forhands=' + (this.state.mobilForhandsNr || 1),
       mobilForhandsNy: () => this.setState(s2 => ({ mobilForhandsNr: (s2.mobilForhandsNr || 1) + 1 })),
       mobilValg: [
         { nokkel: 'apenthus', navn: 'Banneret under toppbildet' },

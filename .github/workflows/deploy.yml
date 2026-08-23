@@ -3,13 +3,16 @@ name: Publiser til lissom.no
 # Hver push til main oppdaterer nettsiden automatisk. Du fortsetter altså å
 # laste opp filer på github.com akkurat som før — resten skjer av seg selv.
 #
-# Nettsiden legges på ny.lissom.no. I public_html ligger det en gammel
-# WordPress-installasjon som skal stå urørt til den nye siden er verifisert.
+# Nettsiden ligger på lissom.no, i public_html.
 #
-# Merk stien: cPanel tillot ikke dokumentrot utenfor public_html for underdomener,
-# så mappa ligger inni den. Det fungerer — Apache leser ikke .htaccess over
-# dokumentroten, så WordPress' regler treffer ikke hit. Men når WordPress en gang
-# skal fjernes, må public_html/ny.lissom.no spares. Se docs/OPPSETT.md.
+# Fram til august 2026 lå den i public_html/ny.lissom.no, mens en gammel
+# WordPress hadde public_html. cPanel lot oss ikke endre dokumentroten på
+# hovedområdet, så filene ble flyttet opp i stedet: WordPress ligger nå i
+# ~/gammel-wordpress, utenfor det som publiseres.
+#
+# Endres denne stien, må filene flyttes samtidig. Peker den ett sted mens
+# nettsiden ligger et annet, går publiseringen grønt uten at noe endrer seg —
+# og det er en vond feil å lete etter.
 on:
   push:
     branches: [main]
@@ -39,7 +42,7 @@ jobs:
           password: ${{ secrets.FTP_PASSORD }}
           protocol: ftps
           local-dir: ./
-          server-dir: public_html/ny.lissom.no/
+          server-dir: public_html/
           exclude: |
             **/.git*
             **/.git*/**

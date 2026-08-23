@@ -364,19 +364,23 @@ https://lissom.no/api/vipps-callback.php
 
 ### 3. Pek lissom.no på den nye siden
 
-cPanel → **Domains** → `lissom.no` → **Manage**. Sett dokumentroten til:
+**Slik ble det gjort, august 2026.** cPanel hos Domene.no låser dokumentroten
+på hovedområdet — det finnes ingen blyant ved «Dokumentrot» på `lissom.no`.
+Filene ble derfor flyttet i stedet:
 
-```
-public_html/ny.lissom.no
-```
+1. Filbehandler → Innstillinger → **Vis skjulte filer**. Uten dette blir
+   `.htaccess` liggende igjen, og ingen adresser på siden virker.
+2. Alt i `public_html` unntatt `ny.lissom.no` og `.well-known` ble flyttet til
+   `~/gammel-wordpress`. Ingenting slettet.
+3. Alt i `public_html/ny.lissom.no` ble flyttet opp til `public_html`.
+4. `server-dir` i `.github/workflows/deploy.yml` ble endret fra
+   `public_html/ny.lissom.no/` til `public_html/`.
 
-Går ikke det — noen oppsett låser hovedområdets dokumentrot — er alternativet
-å flytte filene i stedet: tøm `public_html` for WordPress (etter kopien i
-steg 0), flytt innholdet i `public_html/ny.lissom.no` opp ett nivå, og endre
-`server-dir` i `.github/workflows/deploy.yml` fra
-`public_html/ny.lissom.no/` til `public_html/`.
+Punkt 4 må gjøres **etter** at filene er flyttet. Gjøres den før, legger neste
+publisering filene i public_html ved siden av WordPress.
 
-Den første veien er å foretrekke: den kan reverseres på ett minutt.
+Har hosten senere låst opp dokumentroten, er det enklere å be support endre
+den enn å flytte filene tilbake.
 
 ### 4. Bytt adressen serveren mener er sin egen
 

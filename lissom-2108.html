@@ -5979,6 +5979,22 @@ window.__resources = {
      Google Analytics lagt igjen informasjonskapsler fra forste sidevisning,
      og det har man ikke lov til i Norge uten aa spore forst. Valget lagres
      lokalt i nettleseren, ikke hos oss. -->
+<!-- Ny utgave lagt ut.
+     Sida lastes én gang og byttes aldri ut av seg selv. Uten dette kunne man
+     sitte en hel dag i en utgave som var erstattet, og lure paa hvorfor noe
+     som er lagt ut ikke er der. -->
+<sc-if value="{{ visNyUtgave }}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 80; background: var(--lissom-yellow); color: var(--lissom-brown); padding: var(--space-4) var(--space-6); box-shadow: 0 -6px 24px rgba(46,16,2,.18);">
+    <div style="max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+      <p style="margin: 0; font-size: var(--text-sm); font-weight: 600; line-height: 1.6;">Det er lagt ut en ny utgave av siden. Last den inn på nytt for å få med det nyeste.</p>
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <button type="button" onClick="{{ lastNyUtgave }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: var(--lissom-brown); color: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 18px; font: var(--type-body-sm); font-weight: 700;">Last inn på nytt</button>
+        <button type="button" onClick="{{ avvisNyUtgave }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--lissom-brown); padding: 9px 12px; font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Ikke nå</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <sc-if value="{{ visSamtykke }}" hint-placeholder-val="{{ false }}">
   <div style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; background: var(--lissom-brown); color: var(--clay-100); padding: var(--space-5) var(--space-6); box-shadow: 0 -6px 24px rgba(31, 17, 12, .22);">
     <div style="max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
@@ -8715,6 +8731,39 @@ class Component extends DCLogic {
     try { localStorage.setItem('lissom-kjop', talt.concat(id).slice(-30).join(',')); } catch (e) { /* da telles det kanskje igjen */ }
   }
 
+  /**
+   * Si fra naar en ny utgave av sida er lagt ut.
+   *
+   * Hele nettsida er én fil som lastes én gang. Sitter man i admin og
+   * klikker seg rundt, byttes aldri fila ut — man kan jobbe en hel dag i en
+   * utgave som ble erstattet for timer siden, og lure paa hvorfor en knapp
+   * som er lagt ut ikke finnes.
+   *
+   * Vi sporr serveren om fila har endret seg, uten aa laste den ned:
+   * ETag eller Last-Modified holder. Endrer den seg, kommer det en linje
+   * nederst med en knapp som laster paa nytt. Vi laster aldri paa nytt av
+   * oss selv — det ville kastet bort et skjema noen holdt paa aa fylle ut.
+   */
+  vaktNyUtgave() {
+    if (!this.erPublisert()) return;
+    const merke = r => r.headers.get('etag') || r.headers.get('last-modified') || '';
+    const sjekk = () => fetch('/lissom-2108.html', { method: 'HEAD', cache: 'no-store' })
+      .then(r => {
+        const m = merke(r);
+        if (!m) return;                       // serveren sier ingenting — la det ligge
+        if (!this._utgave) { this._utgave = m; return; }
+        if (m !== this._utgave) this.setState({ nyUtgave: true });
+      })
+      .catch(() => {});
+
+    sjekk();
+    this._utgaveVakt = setInterval(sjekk, 5 * 60 * 1000);
+    // Og naar man kommer tilbake til fana. Det er som regel da man har vaert
+    // et annet sted og lurer paa om noe er kommet.
+    this._utgaveFokus = () => { if (!document.hidden) sjekk(); };
+    document.addEventListener('visibilitychange', this._utgaveFokus);
+  }
+
   settOppAnalyse(idFra) {
     if (!this.erPublisert() || this._gaSatt) return;
     const id = String(idFra || (this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
@@ -9208,6 +9257,15 @@ class Component extends DCLogic {
         .catch(() => {});
     }, 5 * 60 * 1000);
 
+    // «?ny=» settes bare for aa tvinge nettleseren til aa hente fila paa nytt.
+    // Den skal ikke bli staaende i adressen etterpaa — da foelger den med
+    // hver lenke som deles.
+    if (/[?&]ny=\d+/.test(window.location.search)) {
+      const rest = window.location.search.replace(/([?&])ny=\d+&?/, '$1').replace(/[?&]$/, '');
+      history.replaceState(null, '', window.location.pathname + rest + window.location.hash);
+    }
+
+    this.vaktNyUtgave();
     this.hentInnlogget(kommerFraVipps);
     this.hentKatalog();
     this.hentInnhold();
@@ -9296,6 +9354,8 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     if (this._pop) window.removeEventListener('popstate', this._pop);
+    clearInterval(this._utgaveVakt);
+    if (this._utgaveFokus) document.removeEventListener('visibilitychange', this._utgaveFokus);
     clearInterval(this._karusell);
     clearInterval(this._rotasjon);
     clearInterval(this._rotasjonBut);
@@ -13433,6 +13493,16 @@ class Component extends DCLogic {
         && side.indexOf('admin') !== 0
         && /^G-[A-Z0-9]{6,20}$/i.test((((this.state.innholdLagret || {})['Marked/GA-id']) || '').trim())
         && (this.state.samtykkeSvart || this.samtykke()) === '',
+      visNyUtgave: !!this.state.nyUtgave && !this.state.nyUtgaveAvvist,
+      // location.reload() alene kan gi den samme fila tilbake fra
+      // nettleserens eget lager. Et tall i adressen tvinger en ny henting,
+      // og strykes med det samme sida er lastet.
+      lastNyUtgave: () => {
+        const url = window.location.pathname
+          + (window.location.search ? window.location.search + '&' : '?') + 'ny=' + Date.now();
+        window.location.replace(url);
+      },
+      avvisNyUtgave: () => this.setState({ nyUtgaveAvvist: true }),
       godtaAnalyse: () => this.settSamtykke('ja'),
       avslaAnalyse: () => this.settSamtykke('nei'),
       samtykkeLesMer: this.go('personvern'),

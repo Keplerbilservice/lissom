@@ -2622,7 +2622,7 @@ window.__resources = {
               </sc-if>
 
               <sc-if value="{{ harPameldinger }}" hint-placeholder-val="{{ true }}">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <div id="minside-pameldinger" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Mine påmeldinger</div>
                 <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Kurs og events du har plass på</h3>
                 <div style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -3641,6 +3641,75 @@ window.__resources = {
               <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.</div>
             </sc-if>
           </div>
+
+          <!-- Medlemskapene.
+               De laa bare i databasen, lagt inn av en migrasjon. Skulle
+               prisen endres, matte noen skrive SQL. De ligger her fordi det
+               er det samme arbeidet som kursene: hva verkstedet tilbyr, og
+               hva det koster. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemskap</span>
+              <button type="button" onClick="{{ plNy }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Nytt medlemskap</button>
+            </div>
+
+            <sc-if value="{{ plRedApen }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--clay-50);">
+                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: var(--space-4);">{{ plTittel }}</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
+                  <div>
+                    <label style="{{ plEtikett }}">Navn</label>
+                    <input value="{{ plNavn }}" onChange="{{ settPlNavn }}" placeholder="F.eks. 30 timer" style="{{ plFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ plEtikett }}">Pris per måned (kr)</label>
+                    <input value="{{ plPris }}" onChange="{{ settPlPris }}" placeholder="2590" style="{{ plFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ plEtikett }}">Timer i måneden</label>
+                    <input value="{{ plTimer }}" onChange="{{ settPlTimer }}" placeholder="Tomt = fri tilgang" style="{{ plFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ plEtikett }}">Binding (måneder)</label>
+                    <input value="{{ plBinding }}" onChange="{{ settPlBinding }}" placeholder="0" style="{{ plFeltStil }}">
+                  </div>
+                </div>
+                <div style="display: flex; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                    <input type="checkbox" checked="{{ plEngangs }}" onChange="{{ vekslPlEngangs }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Prøveperiode — trekkes én gang og stopper av seg selv
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                    <input type="checkbox" checked="{{ plAktiv }}" onChange="{{ vekslPlAktiv }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    I salg på nettsiden
+                  </label>
+                </div>
+                <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ plLagre }}" hint-size="auto,40px">Lagre</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ghost" on-click="{{ plAvbryt }}" hint-size="auto,40px">Avbryt</x-import>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ adminPlaner }}" as="pl" hint-placeholder-count="4">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="flex: 1 1 220px; min-width: 0;">
+                  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ pl.navn }}</span>
+                    <span style="{{ pl.merkeStil }}">{{ pl.merke }}</span>
+                  </div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ pl.detalj }}</div>
+                </div>
+                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ pl.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
+                  <button type="button" onClick="{{ pl.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ ingenPlaner }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen medlemskap er lagt ut ennå.</div>
+            </sc-if>
+          </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -4488,7 +4557,7 @@ window.__resources = {
         </div>
 
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Har vært på kurs · {{ kdAntall }}</div>
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Har vært på kurs · {{ kdAntall }} · kursbevis til høyre</div>
           <sc-for list="{{ kdRader }}" as="d" hint-placeholder-count="6">
             <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
               <div style="flex: 1 1 220px; min-width: 0;">
@@ -4506,8 +4575,11 @@ window.__resources = {
                 <sc-if value="{{ d.utenKonto }}" hint-placeholder-val="{{ false }}">
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">Ingen konto — ser ingenting ennå</span>
                 </sc-if>
-                <sc-if value="{{ d.harBevis }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ d.apneBevis }}" title="{{ d.bevisTittel }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">Kursbevis</button>
+                <sc-if value="{{ d.harBevis }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ d.apneBevis }}" title="{{ d.bevisTittel }}" style="appearance: none; background: var(--lissom-yellow); border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">Kursbevis</button>
+                </sc-if>
+                <sc-if value="{{ d.utenBevis }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); max-width: 190px; text-wrap: pretty;">{{ d.bevisGrunn }}</span>
                 </sc-if>
                 <button type="button" onClick="{{ d.meldInn }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Meld inn</button>
               </div>
@@ -4852,6 +4924,17 @@ window.__resources = {
                 </div>
                 <div style="margin-left: auto; flex: 0 0 auto;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
+                </div>
+                <div style="display: flex; gap: var(--space-3); flex: 0 0 auto;">
+                  <sc-if value="{{ m.kanAvslutte }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ m.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Avslutt</button>
+                  </sc-if>
+                  <sc-if value="{{ m.kanGjenapne }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ m.gjenapne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Ta inn igjen</button>
+                  </sc-if>
+                  <sc-if value="{{ m.kanSlette }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ m.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
+                  </sc-if>
                 </div>
               </div>
             </sc-for>
@@ -7965,6 +8048,11 @@ class Component extends DCLogic {
 
     const p = this.priser();
     if (p[navn] != null) return p[navn];
+
+    // Medlemskapene staar i prislista med «Abonnement: » foran. Spor noen om
+    // «Prov Lissom», er det det samme de mener.
+    if (p['Abonnement: ' + navn] != null) return p['Abonnement: ' + navn];
+
     const k = Object.keys(p).find(x => navn.indexOf(x) === 0);
     return k ? p[k] : 0;
   }
@@ -8071,7 +8159,7 @@ class Component extends DCLogic {
 
   planer() {
     return [
-      { navn: 'Prøv Lissom', pris: 'kr. 990,-', periode: '30 dager', detalj: 'Kan kun benyttes én gang', timer: 30, brukt: true },
+      { navn: 'Prøv Lissom', pris: 'kr. 990,-', periode: '30 dager', detalj: 'Kan kun benyttes én gang', timer: 10, brukt: true },
       { navn: '30 timer', pris: 'kr. 2 590,-', periode: 'per måned', detalj: '30 timer i måneden', timer: 30 },
       { navn: 'Årsmedlemskap', pris: 'kr. 1 990,-', periode: 'per måned', detalj: '35 timer i måneden · årsavtale', timer: 35 },
       { navn: 'Fri tilgang', pris: 'kr. 4 990,-', periode: 'per måned', detalj: 'Ingen timebegrensning', timer: null },
@@ -11971,6 +12059,89 @@ class Component extends DCLogic {
       });
   }
 
+  /**
+   * Handlinger paa et kurs som maa gjennom serveren.
+   *
+   * Sletting og avlysning endrer noe ekte. Gjorde vi det bare i
+   * skjermbildet, sto kurset der igjen ved neste sidelasting.
+   */
+  kursKall(kropp) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden' });
+      return;
+    }
+    if (this._kursKall) return;
+    this._kursKall = true;
+
+    fetch('/api/admin/kurs.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._kursKall = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          kRed: false,
+        });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
+      })
+      .catch(() => {
+        this._kursKall = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /** Lagrer eller sletter et medlemskap. */
+  planKall(kropp) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden' });
+      return;
+    }
+    if (this._planKall) return;
+    this._planKall = true;
+
+    fetch('/api/admin/planer.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._planKall = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) {
+          this.setState({ plRed: null });
+          this._planerHentes = false;
+          this.hentPlaner();
+          // Prisene paa medlemskapssida kommer fra det samme stedet.
+          this._medlemskapHentes = false;
+          this.hentMedlemskap();
+        }
+      })
+      .catch(() => {
+        this._planKall = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  hentPlaner() {
+    if (!this.erPublisert() || this._planerHentes) return;
+    this._planerHentes = true;
+    fetch('/api/admin/planer.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._planerHentes = false;
+        if (d && d.planer) this.setState({ adminPlanerRaa: d.planer });
+      })
+      .catch(() => { this._planerHentes = false; });
+  }
+
   /** Ruller til toppen av skjermen. Skjemaene tegnes der. */
   tilToppen() {
     try { window.scrollTo({ top: 0, behavior: 'smooth' }); }
@@ -12022,7 +12193,7 @@ class Component extends DCLogic {
       ['Oversikt',  'adminoversikt'],
       ['Deltakere', 'adminomrdeltakere'],
       ['Medlemmer', 'adminomrmedlemmer'],
-      ['Kurs',      'admin',        { kursFane: 'alle' }],
+      ['Kurs og medlemskap', 'admin', { kursFane: 'alle' }],
       ['Drop-in',   'admindropin'],
       // Oppskriftene laa under Medlemmer, men de er verkstedets egne —
       // glasurene og leiretypene som staar paa veggen. De hoerer ikke til
@@ -12108,7 +12279,7 @@ class Component extends DCLogic {
       case 'admin':
         if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
-        return p('Kurs');
+        return p('Kurs og medlemskap');
       case 'adminbeskjeder':
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
           ? p('Deltakere', 'Deltakere', 'Beskjeder')
@@ -12528,6 +12699,41 @@ class Component extends DCLogic {
       }));
   }
 
+  /**
+   * Avslutt, ta inn igjen eller slett et medlem.
+   *
+   * Serveren avviser aa avslutte noen som har en loepende Vipps-avtale:
+   * da ville lista sagt «sluttet» mens pengene fortsatt gikk.
+   */
+  medlemKall(kropp) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden' });
+      return;
+    }
+    if (this._medlemKall) return;
+    this._medlemKall = true;
+
+    fetch('/api/admin/medlemmer.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._medlemKall = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          personFor: null, personData: null,
+        });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); }
+      })
+      .catch(() => {
+        this._medlemKall = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   medlemsrader() {
     const tone = { aktiv: 'success', prove: 'warning', pause: 'neutral', oppsagt: 'neutral', ingen: 'neutral' };
     const tekst = { aktiv: 'Aktiv', prove: 'Proveperiode', pause: 'Pause', oppsagt: 'Oppsagt', ingen: 'Ikke medlem' };
@@ -12552,6 +12758,9 @@ class Component extends DCLogic {
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
       erAdmin: !!m.erAdmin,
       erMedlem: MEDLEM.indexOf(m.status) !== -1,
+      // Én som har vaert medlem og ikke er det lenger. «ingen» er en konto
+      // som aldri har vaert medlem — den hoerer ikke hjemme under «Sluttet».
+      harSluttet: m.status === 'oppsagt',
       antallKurs: m.antallKurs || 0,
       gruppe: m.erAdmin ? 'Admin'
         : (MEDLEM.indexOf(m.status) !== -1 ? 'Medlem'
@@ -12633,6 +12842,9 @@ class Component extends DCLogic {
     }
     if (this.erAdminSkjerm(side) && !this.state.adminData) {
       this.hentAdmin();
+    }
+    if (side === 'admin' && !this.state.adminPlanerRaa) {
+      this.hentPlaner();
     }
 
     if (side === 'minside' && this.state.innlogget && !this.state.minePlasser && !this._plasserHentes) {
@@ -13995,7 +14207,11 @@ class Component extends DCLogic {
       ...(() => {
         const k = this.state.valgtKurs || {};
         const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-';
-        const grunn = this.prisAv(k.title || 'Nybegynner dreiekurs') || 2800;
+        // Ingen reservepris. Sto det 2800 her, og oppslaget ikke traff, viste
+        // skjermen prisen paa dreiekurset for noe helt annet — det var
+        // nettopp det som skjedde med proveperioden. Finner vi ingen pris,
+        // sier vi ingenting.
+        const grunn = this.prisAv(k.title || '') || 0;
         const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
         const antall = ((k.tema || '') === 'Medlemskap') ? 1 : Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
         const rabatt = this.rabattFor(k, antall);
@@ -14003,7 +14219,8 @@ class Component extends DCLogic {
         const netto = brutto * (1 - rabatt / 100);
         const maks = this.maksRabatt(k);
         return {
-          bPris: k.price === 'Gratis' ? 'Gratis' : (antall > 1 ? '' : 'Fra ') + fmt(netto),
+          bPris: k.price === 'Gratis' ? 'Gratis'
+            : (grunn > 0 ? (antall > 1 ? '' : 'Fra ') + fmt(netto) : (k.price || '')),
           bPrisAntallNote: (k.tema !== 'Medlemskap' && antall > 1) ? (antall + ' × ' + fmt(grunn) + (rabatt ? ' = ' + fmt(brutto) : '')) : '',
           bRabattLinje: (rabatt && k.price !== 'Gratis') ? ('Grupperabatt ' + rabatt + ' %: −' + fmt(brutto - netto)) : '',
           bRabattTeaser: (!rabatt && maks > 0 && k.price !== 'Gratis' && k.tema !== 'Medlemskap' && k.tema !== 'Drop-in') ? ('Ta med venner og få opptil ' + maks + ' % rabatt.') : '',
@@ -14308,6 +14525,12 @@ class Component extends DCLogic {
             : 'Ingen treff på «' + (this.state.kdSok || '') + '».',
           kdRader: treff.map(p => Object.assign({}, p, {
             harBevis: !!p.bevis,
+            // Staar det ingen knapp, er det alltid en grunn — og det er den
+            // grunnen verkstedet blir spurt om paa telefonen. Uten den saa
+            // raden bare ut som om kursbeviset manglet.
+            utenBevis: !p.bevis,
+            bevisGrunn: p.antall === 0 ? 'Ingen kurs ennå'
+              : 'Kursbevis kommer når kurset er gjennomført og betalt',
             bevisTittel: p.bevisKurs ? 'Kursbevis · ' + p.bevisKurs : 'Kursbevis',
             apneBevis: () => { if (p.bevis) window.open(p.bevis, '_blank', 'noopener'); },
             // Har hen konto, kan vi vise akkurat det hen selv ser. Har hen
@@ -14358,7 +14581,10 @@ class Component extends DCLogic {
           miLagre: () => this.meldInnMedlem(valgt),
         };
       })(),
-      medlemFiltre: ['Alle', 'Medlemmer', 'Kursdeltakere', 'Admin', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
+      // «Medlemmer» var alle som noen gang hadde vaert det. Aktive og
+      // sluttede sto om hverandre, og lista svarte ikke paa det man
+      // spor om oftest: hvem betaler naa?
+      medlemFiltre: ['Alle', 'Aktive', 'Sluttet', 'Kursdeltakere', 'Admin', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
         const valgt = (this.state.medlemFilter || 'Alle') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
@@ -14392,7 +14618,8 @@ class Component extends DCLogic {
         const fv = this.state.medlemFilter || 'Alle';
         if (fv === 'Alle') return true;
         if (fv === 'Inne nå') return !!m.inne;
-        if (fv === 'Medlemmer') return !!m.erMedlem && !m.erAdmin;
+        if (fv === 'Aktive') return !!m.erMedlem && !m.erAdmin;
+        if (fv === 'Sluttet') return !!m.harSluttet;
         if (fv === 'Kursdeltakere') return !m.erMedlem && !m.erAdmin && (m.antallKurs || 0) > 0;
         if (fv === 'Admin') return !!m.erAdmin;
         return m.abonnement === fv;
@@ -14400,6 +14627,29 @@ class Component extends DCLogic {
         // Én linje, ikke to felt limt sammen med et punktum som blir
         // staaende alene naar det ene mangler.
         undertekst: [m.gruppe, m.kursTekst].filter(Boolean).join(' · '),
+        // Et medlemskap kunne bare avsluttes ved at Vipps-avtalen stoppet.
+        // En som var meldt inn for haand sto som aktiv i all evighet.
+        kanAvslutte: !!m.erMedlem && !m.erAdmin,
+        kanGjenapne: !m.erMedlem && !m.erAdmin && !!m.harSluttet,
+        kanSlette: !m.erAdmin,
+        avslutt: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (!window.confirm('Avslutte medlemskapet til ' + m.navn + '?\n\n'
+              + 'Historikken og kursbevisene blir stående. Personen flyttes til «Sluttet».')) return;
+          this.medlemKall({ handling: 'avslutt', medlemId: m.id });
+        },
+        gjenapne: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          this.medlemKall({ handling: 'gjenapne', medlemId: m.id });
+        },
+        slett: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (!window.confirm('Slette ' + m.navn + '?\n\n'
+              + 'Navn, kontaktinfo og innlogging fjernes. Har personen kjøpt noe, '
+              + 'blir kjøpene stående uten navn — det krever bokføringsloven.\n\n'
+              + 'Dette kan ikke angres.')) return;
+          this.medlemKall({ handling: 'slett', medlemId: m.id });
+        },
         velg: () => this.apnePerson(m.id),
         detaljer: this.apne(m.navn, m.epost, [
           { navn: 'Hvem er dette', verdi: m.gruppe },
@@ -14514,7 +14764,7 @@ class Component extends DCLogic {
           kursFaneApen: fane !== 'interne',
           kursListeTittel: NAVN[fane] || NAVN.alle,
           kursSkjermTittel: fane === 'interne' ? 'Kurs for medlemmer'
-            : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og events'),
+            : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og medlemskap'),
           kursSkjermEyebrow: fane === 'interne' ? 'Medlemmer'
             : (fane === 'apne' ? 'Kursdeltakere' : 'Administrasjon'),
           kursFaneValg: [['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
@@ -14571,11 +14821,118 @@ class Component extends DCLogic {
           ingenAktiveOkter: okter.length === 0,
         };
       })(),
+      // ── Medlemskapene som kan kjopes ────────────────────────────────
+      //
+      // Planene laa bare i databasen, lagt inn av en migrasjon. Skulle
+      // prisen paa «30 timer» endres, matte noen skrive SQL — og verkstedet
+      // kunne verken lage et nytt medlemskap eller ta et gammelt ut av salg.
+      //
+      // De ligger her fordi det er det samme arbeidet: hva verkstedet
+      // tilbyr, og hva det koster.
+      ...(() => {
+        const r = this.state.adminPlanerRaa;
+        const liste = r || (this.erPublisert() ? [] : [
+          { navn: 'Prøv Lissom', pris: 990, prisTekst: 'kr. 990,-', timer: 10, binding: 0, engangs: true, aktiv: true, medlemmer: 6, sortering: 1 },
+          { navn: '30 timer', pris: 2590, prisTekst: 'kr. 2 590,-', timer: 30, binding: 0, engangs: false, aktiv: true, medlemmer: 30, sortering: 2 },
+        ]);
+        const red = this.state.plRed || null;
+
+        const felt = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          background: 'var(--clay-50)', color: 'var(--text-heading)',
+        };
+
+        return {
+          adminPlaner: liste.map(pl => Object.assign({}, pl, {
+            timerTekst: pl.timer === null || pl.timer === undefined ? 'Fri tilgang' : pl.timer + ' timer',
+            detalj: [
+              pl.prisTekst,
+              pl.timer === null || pl.timer === undefined ? 'fri tilgang' : pl.timer + ' timer i måneden',
+              pl.engangs ? 'engangs' : (pl.binding > 0 ? pl.binding + ' mnd binding' : 'måned til måned'),
+              pl.medlemmer === 1 ? '1 medlem' : pl.medlemmer + ' medlemmer',
+            ].join(' · '),
+            merke: pl.aktiv ? 'I salg' : 'Ikke i salg',
+            merkeStil: {
+              font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+              textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
+              background: pl.aktiv ? 'var(--sage-100, #E3EDE4)' : 'var(--clay-200)',
+              color: pl.aktiv ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
+              whiteSpace: 'nowrap',
+            },
+            rediger: () => this.setState({ plRed: {
+              foer: pl.navn, navn: pl.navn, pris: String(pl.pris),
+              timer: pl.timer === null || pl.timer === undefined ? '' : String(pl.timer),
+              binding: String(pl.binding || 0), engangs: !!pl.engangs, aktiv: !!pl.aktiv,
+              sortering: String(pl.sortering || 0),
+            } }),
+            slett: () => {
+              if (!window.confirm('Slette medlemskapet «' + pl.navn + '»?\n\n'
+                  + (pl.medlemmer > 0
+                      ? 'Noen står på det, så det blir tatt ut av salg i stedet. De beholder prisen og timene sine.'
+                      : 'Det er ingen på det, så det forsvinner helt.'))) return;
+              this.planKall({ handling: 'slett', navn: pl.navn });
+            },
+          })),
+          ingenPlaner: liste.length === 0,
+          plNy: () => this.setState({ plRed: { foer: '', navn: '', pris: '', timer: '',
+                                               binding: '0', engangs: false, aktiv: true, sortering: '0' } }),
+          plRedApen: !!red,
+          plTittel: red && red.foer ? 'Rediger ' + red.foer : 'Nytt medlemskap',
+          plFeltStil: felt,
+          plEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
+                       color: 'var(--text-heading)', marginBottom: 6 },
+          plNavn: red ? red.navn : '',
+          settPlNavn: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { navn: v }) })); },
+          plPris: red ? red.pris : '',
+          settPlPris: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { pris: v }) })); },
+          plTimer: red ? red.timer : '',
+          settPlTimer: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { timer: v }) })); },
+          plBinding: red ? red.binding : '0',
+          settPlBinding: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { binding: v }) })); },
+          plEngangs: !!(red && red.engangs),
+          vekslPlEngangs: () => this.setState(st => ({ plRed: Object.assign({}, st.plRed, { engangs: !st.plRed.engangs }) })),
+          plAktiv: !!(red && red.aktiv),
+          vekslPlAktiv: () => this.setState(st => ({ plRed: Object.assign({}, st.plRed, { aktiv: !st.plRed.aktiv }) })),
+          plAvbryt: () => this.setState({ plRed: null }),
+          plLagre: () => {
+            const d = this.state.plRed || {};
+            if (!(d.navn || '').trim()) {
+              this.setState({ kvittering: 'Medlemskapet må ha et navn' });
+              return;
+            }
+            this.planKall({
+              handling: 'lagre', foer: d.foer || '', navn: d.navn.trim(),
+              pris: parseFloat(String(d.pris).replace(/[^\d.,]/g, '').replace(',', '.')) || 0,
+              // Tomt timetall betyr fri tilgang, ikke null timer.
+              timer: String(d.timer || '').trim(),
+              binding: parseInt(d.binding, 10) || 0,
+              engangs: !!d.engangs, aktiv: !!d.aktiv,
+              sortering: parseInt(d.sortering, 10) || 0,
+            });
+          },
+        };
+      })(),
       adminKursAntall: this.kursSynlige().length,
       adminKurs: this.kursSynlige().map(({ k, i }) => Object.assign({}, k, {
         velg: () => this.apneKursRed(k, i),
         rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apneKursRed(k, i); },
-        slett: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ adminKursListe: this.kursData().filter((_, j) => j !== i), kRed: s.kIndeks === i ? false : s.kRed })); },
+        // «Slett» fjernet bare raden fra skjermbildet. Kurset var tilbake ved
+        // neste sidelasting, for serveren hadde aldri hort om det.
+        slett: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (!window.confirm('Slette «' + k.navn + '»?\n\n'
+              + 'Datoene forsvinner sammen med kurset. Har noen meldt seg på, '
+              + 'blir kurset avlyst i stedet — da må du gi beskjed og refundere selv.')) return;
+          const kurs = (this.state.adminKursRaa || []).find(x => x.tittel === k.navn);
+          if (!kurs) {
+            // Bare i forhaandsvisningen, der det ikke finnes noen server.
+            this.setState(s => ({ adminKursListe: this.kursData().filter((_, j) => j !== i),
+                                  kRed: s.kIndeks === i ? false : s.kRed }));
+            return;
+          }
+          this.kursKall({ handling: 'slett', id: kurs.id });
+        },
         barStil: {
           width: k.andel + '%', height: '100%', borderRadius: 999,
           background: k.andel === 100 ? 'var(--sage-500)' : 'var(--terracotta-500)',
@@ -15399,12 +15756,27 @@ class Component extends DCLogic {
         ];
       })(),
       minsideLinks: ['Forside', 'Min side', 'Kurs', 'Internbutikk', 'Medlemskap'],
-      minsideSnarveier: [
-        { navn: 'Internbutikk — leire og brenning', id: 'minside-internbutikk' },
-        { navn: 'Interne kurs og samlinger', id: 'minside-internkurs' },
-        { navn: 'Beskjeder', id: 'minside-beskjeder' },
-        { navn: 'Ordensregler og HMS', id: 'minside-ordensregler' },
-      ].map(s => ({ navn: s.navn, velg: s.ekstern || (() => {
+      // Snarveiene oeverst paa Min side.
+      //
+      // Fire av dem pekte til seksjoner bare medlemmer har — internbutikken,
+      // medlemssamlingene og ordensreglene. Seksjonene var skjult for en
+      // kursdeltaker, men snarveiene sto igjen og fortalte om dem, og
+      // klikket foerte ingen steder.
+      //
+      // En kursdeltaker har to ting her: paameldingene sine og beskjedene.
+      minsideSnarveier: (
+        (!this.erPublisert() || !!this.state.erMedlemBruker)
+          ? [
+            { navn: 'Internbutikk — leire og brenning', id: 'minside-internbutikk' },
+            { navn: 'Interne kurs og samlinger', id: 'minside-internkurs' },
+            { navn: 'Beskjeder', id: 'minside-beskjeder' },
+            { navn: 'Ordensregler og HMS', id: 'minside-ordensregler' },
+          ]
+          : [
+            { navn: 'Kursene mine', id: 'minside-pameldinger' },
+            { navn: 'Beskjeder', id: 'minside-beskjeder' },
+          ]
+      ).map(s => ({ navn: s.navn, velg: s.ekstern || (() => {
         const el = document.getElementById(s.id);
         if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
       }) })),
@@ -15622,7 +15994,7 @@ class Component extends DCLogic {
         const P = n => this.planer().find(p => p.navn === n) || {};
         const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };
         return [
-          abo({ merke: 'Prøveperiode', navn: 'Prøv Lissom', pris: P('Prøv Lissom').pris, periode: 'for ' + P('Prøv Lissom').periode, beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.', punkter: ['8 verkstedtimer', 'Leire og brenning kjøpes i tillegg', 'Kan kun benyttes én gang', 'Går ikke automatisk over til abonnement'] }),
+          abo({ merke: 'Prøveperiode', navn: 'Prøv Lissom', pris: P('Prøv Lissom').pris, periode: 'for ' + P('Prøv Lissom').periode, beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.', punkter: ['10 verkstedtimer', 'Leire og brenning kjøpes i tillegg', 'Kan kun benyttes én gang', 'Går ikke automatisk over til abonnement'] }),
           abo({ mork: true, merke: 'Mest valgt', navn: '30 timer', pris: P('30 timer').pris, periode: P('30 timer').periode, beskrivelse: 'Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.', punkter: ['30 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Ta med en venn én gang i måneden'] }),
           abo({ merke: 'Mest for pengene', navn: 'Årsmedlemskap', pris: P('Årsmedlemskap').pris, periode: P('Årsmedlemskap').periode, beskrivelse: 'Få mer, betal mindre: 35 timer i måneden til lavere pris, med årsavtale.', punkter: ['35 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Binding i 12 måneder'] }),
           abo({ merke: 'Proff', navn: 'Fri tilgang', pris: P('Fri tilgang').pris, periode: P('Fri tilgang').periode, beskrivelse: 'Ubegrenset verkstedtid for deg som jobber med keramikk fast.', punkter: ['Ingen timebegrensning', 'Egen hylle og lagerplass', 'Tilgang 24/7 med dørkode', 'Rabatt på leire og brenning'] }),

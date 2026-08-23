@@ -168,6 +168,27 @@ switch ($jobb) {
             logg('Faste kursdatoer lagt ut', ['okter' => $nyeOkter]);
         }
 
+        // Medlemskap som har gaatt ut.
+        //
+        // Et medlemskap tok bare slutt naar Vipps-avtalen stoppet. En som var
+        // meldt inn for haand — eller en proveperiode — sto som aktiv i all
+        // evighet, og medlemslista blandet dem som betaler med dem som
+        // sluttet i fjor.
+        //
+        // Sluttdatoen er fasiten. Den settes ved innmelding for proveperioder
+        // og ved avslutning for haand; er den ikke satt, roerer vi ingenting.
+        $utlopte = DB::kjor(
+            "UPDATE members
+                SET status = 'oppsagt'
+              WHERE status IN ('aktiv', 'prove')
+                AND slutt_dato IS NOT NULL
+                AND slutt_dato < CURDATE()
+                AND anonymisert_at IS NULL"
+        )->rowCount();
+        if ($utlopte > 0) {
+            logg('Medlemskap gaatt ut', ['antall' => $utlopte]);
+        }
+
         // Ubetalte reservasjoner som har stått for lenge frigis, slik at
         // plassen blir ledig for andre.
         $frigitt = DB::kjor(

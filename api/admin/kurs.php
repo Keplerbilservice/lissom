@@ -7,6 +7,7 @@
  *   POST handling=nydato    legg til en dato
  *   POST handling=plasser   endre antall plasser paa én dato
  *   POST handling=avlys     avlys en dato
+ *   POST handling=slett     fjern et kurs (avlyses om noen er paameldt)
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved booking — den slaas opp herfra.
@@ -288,6 +289,51 @@ switch ($handling) {
                 ? "Datoen er avlyst. {$antall} har betalt og må refunderes manuelt under Økonomi."
                 : 'Datoen er avlyst.',
         ]);
+
+    // ------------------------------------------------- slett et kurs
+    //
+    // «Slett» fjernet bare raden fra skjermbildet. Kurset var tilbake ved
+    // neste sidelasting, for serveren hadde aldri hort om det.
+    case 'slett':
+        $kursId = Foresporsel::heltall('id');
+        $kurs = DB::en('SELECT id, tittel FROM courses WHERE id = :i', ['i' => $kursId]);
+        if ($kurs === null) {
+            Svar::feil('Fant ikke kurset.', 404);
+        }
+
+        // Har noen meldt seg paa, kan raden ikke forsvinne: bookingene og
+        // betalingene peker paa den, og de er bokforingspliktige. Kurset
+        // avlyses i stedet — det er det sletting egentlig betyr her.
+        $pameldte = (int) DB::verdi(
+            "SELECT COUNT(*) FROM bookings
+              WHERE course_id = :c AND status IN ('betalt','reservert')",
+            ['c' => $kursId]
+        );
+
+        if ($pameldte > 0) {
+            DB::oppdater('courses', ['status' => 'avlyst'], ['id' => $kursId]);
+            DB::kjor(
+                "UPDATE course_sessions SET status = 'avlyst'
+                  WHERE course_id = :c AND status = 'planlagt'",
+                ['c' => $kursId]
+            );
+            revider('kurs_avlyst', 'course', $kursId, ['pameldte' => $pameldte]);
+            Svar::ok([
+                'slettet' => false,
+                'beskjed' => $pameldte === 1
+                    ? 'Én har meldt seg på, så kurset er avlyst og tatt av nettsiden i stedet for slettet. Husk å gi beskjed og refundere.'
+                    : $pameldte . ' har meldt seg på, så kurset er avlyst og tatt av nettsiden i stedet for slettet. Husk å gi beskjed og refundere.',
+            ]);
+        }
+
+        // Ingen paameldte: datoene og eventuelle faste ukedager foelger med.
+        if (DB::harTabell('kurs_serier')) {
+            DB::kjor('DELETE FROM kurs_serier WHERE course_id = :c', ['c' => $kursId]);
+        }
+        DB::kjor('DELETE FROM course_sessions WHERE course_id = :c', ['c' => $kursId]);
+        DB::kjor('DELETE FROM courses WHERE id = :i', ['i' => $kursId]);
+        revider('kurs_slettet', 'course', $kursId, ['tittel' => $kurs['tittel']]);
+        Svar::ok(['slettet' => true, 'beskjed' => '«' . $kurs['tittel'] . '» er slettet.']);
 
     default:
         Svar::feil('Ukjent handling.');

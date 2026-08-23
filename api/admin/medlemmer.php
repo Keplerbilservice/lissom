@@ -11,7 +11,10 @@ $jeg = krev_admin();
 
 // ── Meld inn et medlem for haand ───────────────────────────────────────
 //
-//   POST handling=meld-inn  { navn, epost, telefon, type, notat, medlemId? }
+//   POST handling=meld-inn   { navn, epost, telefon, type, notat, medlemId? }
+//   POST handling=avslutt    { medlemId }   medlemskapet tar slutt i dag
+//   POST handling=gjenapne   { medlemId }   aktivt igjen
+//   POST handling=slett      { medlemId }   personopplysningene fjernes
 //
 // Ikke alle soker paa nett. Noen staar i doera, noen ringer, og noen har
 // vaert paa kurs i et halvt aar for de bestemmer seg. Uten dette matte
@@ -23,7 +26,100 @@ $jeg = krev_admin();
 if (Foresporsel::metode() === 'POST') {
     Foresporsel::krevSammeOpphav();
 
-    if (Foresporsel::tekst('handling', 'meld-inn') !== 'meld-inn') {
+    $handling = Foresporsel::tekst('handling', 'meld-inn');
+
+    // ── Avslutt, ta inn igjen, slett ───────────────────────────────────
+    //
+    // Et medlemskap tok aldri slutt av seg selv med mindre Vipps-avtalen
+    // stoppet. En som var meldt inn for haand sto som aktiv i all
+    // evighet, og lista blandet dem som betaler med dem som sluttet i
+    // fjor.
+    if (in_array($handling, ['avslutt', 'gjenapne', 'slett'], true)) {
+        $id = Foresporsel::heltall('medlemId');
+        $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+        if ((int) $m['id'] === (int) $jeg['id'] && $handling === 'slett') {
+            Svar::feil('Du kan ikke slette din egen konto.');
+        }
+
+        // Loper det en avtale i Vipps, blir kunden trukket videre selv om
+        // vi setter statusen her. Da ville lista sagt «sluttet» mens
+        // pengene fortsatt gikk.
+        $avtale = DB::en(
+            "SELECT id, vipps_agreement_id FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' LIMIT 1",
+            ['m' => $id]
+        );
+
+        if ($handling === 'avslutt') {
+            if ($avtale !== null) {
+                Svar::feil('Medlemmet har en løpende Vipps-avtale. Den må sies opp først, '
+                         . 'ellers fortsetter trekket etter at medlemskapet er avsluttet.');
+            }
+            DB::oppdater('members', [
+                'status'     => 'oppsagt',
+                'slutt_dato' => date('Y-m-d'),
+            ], ['id' => $id]);
+            revider('medlem_avsluttet', 'member', $id, ['av' => (int) $jeg['id']]);
+            Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står nå som sluttet. '
+                                 . 'Historikken og kursbevisene er beholdt.']);
+        }
+
+        if ($handling === 'gjenapne') {
+            DB::oppdater('members', [
+                'status'     => 'aktiv',
+                'start_dato' => date('Y-m-d'),
+                'slutt_dato' => null,
+            ], ['id' => $id]);
+            revider('medlem_gjenapnet', 'member', $id, ['av' => (int) $jeg['id']]);
+            Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' er aktivt medlem igjen.']);
+        }
+
+        // Sletting.
+        //
+        // Bookinger og betalinger er bokforingspliktige og maa bli staaende
+        // — fremmednoklene peker paa raden. Vi fjerner derfor personen, ikke
+        // raden: navn, kontaktinfo og innlogging tommes, og anonymisert_at
+        // settes. Resten av koden ser allerede etter den kolonnen, saa
+        // personen forsvinner fra lister, beskjeder og innlogging.
+        if ($avtale !== null) {
+            Svar::feil('Medlemmet har en løpende Vipps-avtale. Si den opp før du sletter.');
+        }
+
+        $harHistorikk = (int) DB::verdi(
+            'SELECT (SELECT COUNT(*) FROM bookings WHERE member_id = :a)
+                  + (SELECT COUNT(*) FROM payments WHERE member_id = :b)',
+            ['a' => $id, 'b' => $id]
+        ) > 0;
+
+        DB::kjor('DELETE FROM sessions WHERE member_id = :id', ['id' => $id]);
+
+        if (!$harHistorikk) {
+            DB::kjor('DELETE FROM members WHERE id = :id', ['id' => $id]);
+            revider('medlem_slettet', 'member', $id, ['navn' => $m['navn']]);
+            Svar::ok(['beskjed' => 'Medlemmet er slettet.']);
+        }
+
+        DB::oppdater('members', [
+            'navn'            => 'Slettet medlem',
+            'epost'           => null,
+            'telefon'         => null,
+            'vipps_sub'       => null,
+            'brukernavn'      => null,
+            'passord_hash'    => null,
+            'notat'           => null,
+            'medlemskap_type' => null,
+            'status'          => 'ingen',
+            'anonymisert_at'  => date('Y-m-d H:i:s'),
+        ], ['id' => $id]);
+        revider('medlem_anonymisert', 'member', $id);
+        Svar::ok(['beskjed' => 'Personopplysningene er slettet. Kjøpene står igjen uten navn, '
+                             . 'slik bokføringsloven krever.']);
+    }
+
+    if ($handling !== 'meld-inn') {
         Svar::feil('Ukjent handling.');
     }
 
@@ -61,10 +157,15 @@ if (Foresporsel::metode() === 'POST') {
         $fra = DB::en('SELECT * FROM members WHERE epost = :e LIMIT 1', ['e' => $epost]);
     }
 
+    // En proveperiode er engangs og varer en maaned. Uten sluttdato sto den
+    // som aktiv for alltid, og «Prov Lissom» ble et gratis medlemskap.
+    $prove = $plan !== null && (int) ($plan['engangs'] ?? 0) === 1;
+
     $felter = [
         'medlemskap_type' => $type !== '' ? $type : null,
-        'status'          => 'aktiv',
+        'status'          => $prove ? 'prove' : 'aktiv',
         'start_dato'      => date('Y-m-d'),
+        'slutt_dato'      => $prove ? date('Y-m-d', strtotime('+1 month')) : null,
         'timer_per_mnd'   => $plan !== null && $plan['timer_per_mnd'] !== null
                                 ? (int) $plan['timer_per_mnd'] : null,
     ];

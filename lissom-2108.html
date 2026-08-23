@@ -2598,11 +2598,21 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Nyttig info</h1>
           </div>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyArtikkel }}" hint-size="auto,44px">Ny artikkel</x-import>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <sc-if value="{{ artRed }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6); max-width: 760px;">
@@ -2866,7 +2876,7 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ kursSkjermEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ kursSkjermTittel }}</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
@@ -2881,6 +2891,16 @@ window.__resources = {
             </sc-if>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-8);">
           <sc-for list="{{ adminTall }}" as="t" hint-placeholder-count="4">
@@ -3637,7 +3657,7 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Påmeldte</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
@@ -3646,6 +3666,16 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mpApne }}" hint-size="auto,44px">Legg til deltaker</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <!-- Paamelding lagt inn for haand. Ikke alle bestiller paa nett —
              noen ringer, noen staar i doera. Uten dette matte verkstedet
@@ -3800,6 +3830,16 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ kdLeggTil }}" hint-size="auto,44px">Legg til på kurs</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <sc-if value="{{ miApen }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 780px;">
@@ -4023,7 +4063,7 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Medlemmer</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
@@ -4031,6 +4071,16 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="send" on-click="{{ aSendBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <!-- Soknader om medlemskap.
              Ingen blir medlem av aa logge inn med Vipps — de sender en soknad,
@@ -4538,14 +4588,24 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Butikk</h1>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ butikkTittel }}</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="package" on-click="{{ aInternbutikk }}" hint-size="auto,44px">Internbutikk</x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyttProdukt }}" hint-size="auto,44px">Nytt produkt</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
@@ -4741,10 +4801,20 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Beskjeder</h1>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ beskjedTittel }}</h1>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -4867,6 +4937,16 @@ window.__resources = {
           </div>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyOppskrift }}" hint-size="auto,44px">Ny oppskrift</x-import>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
@@ -4993,14 +5073,27 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ okEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ okMaanedTittel }}</h1>
+            <sc-if value="{{ okAvgrenset }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted);">{{ okAvgrensetTekst }}</p>
+            </sc-if>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ aEksport }}" hint-size="auto,44px">Eksporter til regnskap</x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="printer" on-click="{{ lagRapport }}" hint-size="auto,44px">Månedsrapport (PDF)</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
+             denne gruppa, uten aa maatte ut av den. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -10745,74 +10838,162 @@ class Component extends DCLogic {
     return ((this.state.adminData || {}).kanaler || {}).sms === true;
   }
 
-  adminMeny(aktiv) {
-    // Menyen var én flat liste paa elleve punkter, og tre skjermer sto ikke
-    // i den i det hele tatt — Oppskrifter, Nyttig info og SEO fantes bare for
-    // den som kjente adressen. Naa er alt med, gruppert etter hva man holder
-    // paa med: det man gjor daglig, verkstedet, og nettsiden utad.
-    const ruter = {
-      'Oversikt': 'adminoversikt', 'Kurs og events': 'admin', 'Drop-in': 'admindropin',
-      'Økonomi': 'adminokonomi',
-      'Deltakere': 'adminkursdeltakere', 'Påmeldte': 'adminpameldte',
-      'Kurs og datoer': 'admin', 'Beskjed til deltakere': 'adminbeskjeder',
-      'Nyttig info': 'adminnyttig',
-      'Medlemmer': 'adminmedlem', 'Interne kurs': 'admin',
-      'Beskjed til medlemmer': 'adminbeskjeder', 'Oppskrifter': 'adminoppskrifter',
-      'Internbutikk': 'adminbutikk',
-      'Innhold': 'admininnhold', 'Markedsføring': 'adminmarked', 'Butikk': 'adminbutikk',
-      'SEO': 'adminseo', 'Mobilvisning': 'adminmobilvis',
-      'Brukere': 'adminbrukere',
-    };
-
-    // Menyen fulgte husets egen inndeling: alt som handlet om beskjeder laa
-    // ett sted, alt om info et annet. Jobber du med kursdeltakerne, matte du
-    // ut av den delen og inn i en annen for hver ting du skulle gjore.
-    //
-    // Naa foelger den hvem det gjelder. Kursdeltakere er ett sted, med
-    // deltakerne, paameldingene og beskjedene til dem. Internsiden er det
-    // medlemmene ser. Nettsiden er det alle andre ser.
-    const grupper = [
-      ['Daglig',        ['Oversikt', 'Kurs og events', 'Drop-in', 'Økonomi']],
-      ['Kursdeltakere', ['Deltakere', 'Påmeldte', 'Kurs og datoer', 'Beskjed til deltakere', 'Nyttig info']],
-      ['Internsiden',   ['Medlemmer', 'Interne kurs', 'Beskjed til medlemmer', 'Oppskrifter', 'Internbutikk']],
-      ['Nettsiden',     ['Innhold', 'Markedsføring', 'Butikk', 'SEO', 'Mobilvisning']],
-      ['Tilgang',       ['Brukere']],
+  /**
+   * Adminpanelet, delt etter hvem det gjelder.
+   *
+   * Ett sted for kursdeltakerne, ett for medlemmene. Inne i et omraade skal
+   * alt man trenger vaere for haanden: listene, beskjedene, betalingene,
+   * kursene og infoen. Foer laa dette spredt etter hva slags ting det var —
+   * alle beskjeder ett sted, all info et annet — og jobbet du med
+   * deltakerne, matte du ut av deres del for hver ting du skulle gjore.
+   *
+   * Derfor staar hvert punkt med sitt enkle navn: gruppa har alt sagt hvem
+   * det gjelder. «Beskjeder» under Kursdeltakere er beskjeder til dem.
+   * Samme navn finnes derfor flere steder, og noekkelen er «Gruppe/Navn».
+   *
+   * Denne tabellen er den ene kilden: bade sidemenyen og fanerekka oeverst
+   * paa hvert omraade bygges av den, saa de to aldri kan si ulike ting.
+   */
+  static get ADMIN_OMRAADER() {
+    return [
+      ['Daglig', [
+        ['Oversikt',      'adminoversikt'],
+        ['Kurs',          'admin',              { kursFane: 'alle' }],
+        ['Drop-in',       'admindropin'],
+        ['Økonomi',       'adminokonomi',       { okonomiFor: '' }],
+      ]],
+      ['Kursdeltakere', [
+        ['Deltakere',     'adminkursdeltakere'],
+        ['Påmeldte',      'adminpameldte'],
+        ['Kurs',          'admin',              { kursFane: 'apne' }],
+        ['Beskjeder',     'adminbeskjeder',     { motValg: 'Deltakere på et kurs' }],
+        ['Betalinger',    'adminokonomi',       { okonomiFor: 'deltakere' }],
+        ['Nyttig info',   'adminnyttig',        { nyttigFor: 'deltakere' }],
+      ]],
+      ['Medlemmer', [
+        ['Medlemmer',     'adminmedlem'],
+        ['Kurs',          'admin',              { kursFane: 'interne' }],
+        ['Butikk',        'adminbutikk',        { butikkFane: 'Medlemssalg' }],
+        ['Beskjeder',     'adminbeskjeder',     { motValg: 'Alle aktive medlemmer' }],
+        ['Betalinger',    'adminokonomi',       { okonomiFor: 'medlemmer' }],
+        ['Nyttig info',   'adminnyttig',        { nyttigFor: 'medlemmer' }],
+        ['Oppskrifter',   'adminoppskrifter'],
+      ]],
+      ['Nettsiden', [
+        ['Innhold',       'admininnhold'],
+        ['Butikk',        'adminbutikk',        { butikkFane: 'Butikken' }],
+        ['Markedsføring', 'adminmarked'],
+        ['SEO',           'adminseo'],
+        ['Mobilvisning',  'adminmobilvis'],
+      ]],
+      ['Tilgang', [
+        ['Brukere',       'adminbrukere'],
+      ]],
     ];
+  }
 
-    // Noen punkter gaar til samme skjerm, men med ulikt utgangspunkt: samme
-    // beskjedskjema, forskjellig mottakergruppe. Uten dette matte man velge
-    // gruppa paa nytt hver gang, og det var nettopp det som var tungvint.
-    const forvalg = {
-      'Beskjed til deltakere': { motValg: 'Deltakere på et kurs' },
-      'Beskjed til medlemmer': { motValg: 'Alle aktive medlemmer' },
-      'Internbutikk':          { butikkFane: 'Medlemssalg' },
-      'Butikk':                { butikkFane: 'Butikken' },
-      // Samme kursskjerm, tre innganger. «Interne kurs» er ikke en egen
-      // slags kurs — det er de som er merket «Kun for medlemmer», og de
-      // hoerer hjemme sammen med resten av det medlemmene ser.
-      'Kurs og events':        { kursFane: 'alle' },
-      'Kurs og datoer':        { kursFane: 'apne' },
-      'Interne kurs':          { kursFane: 'interne' },
+  /**
+   * Hvilket punkt staar man paa naa, som «Gruppe/Navn».
+   *
+   * Flere grupper deler skjerm — beskjedskjemaet er det samme enten det gaar
+   * til deltakere eller medlemmer. Da er det hva man kom fra som avgjor,
+   * og det ligger i state.
+   */
+  adminAktiv() {
+    const st = this.state;
+    switch (st.side) {
+      case 'adminoversikt':      return 'Daglig/Oversikt';
+      case 'admindropin':        return 'Daglig/Drop-in';
+      case 'adminkursdeltakere': return 'Kursdeltakere/Deltakere';
+      case 'adminpameldte':      return 'Kursdeltakere/Påmeldte';
+      case 'adminmedlem':        return 'Medlemmer/Medlemmer';
+      case 'adminoppskrifter':   return 'Medlemmer/Oppskrifter';
+      case 'admininnhold':       return 'Nettsiden/Innhold';
+      case 'adminmarked':        return 'Nettsiden/Markedsføring';
+      case 'adminseo':           return 'Nettsiden/SEO';
+      case 'adminmobilvis':      return 'Nettsiden/Mobilvisning';
+      case 'adminbrukere':       return 'Tilgang/Brukere';
+      case 'admin':
+        return st.kursFane === 'interne' ? 'Medlemmer/Kurs'
+          : (st.kursFane === 'apne' ? 'Kursdeltakere/Kurs' : 'Daglig/Kurs');
+      case 'adminbeskjeder':
+        return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
+          ? 'Kursdeltakere/Beskjeder' : 'Medlemmer/Beskjeder';
+      case 'adminokonomi':
+        return st.okonomiFor === 'deltakere' ? 'Kursdeltakere/Betalinger'
+          : (st.okonomiFor === 'medlemmer' ? 'Medlemmer/Betalinger' : 'Daglig/Økonomi');
+      case 'adminnyttig':
+        return st.nyttigFor === 'deltakere' ? 'Kursdeltakere/Nyttig info' : 'Medlemmer/Nyttig info';
+      case 'adminbutikk':
+        return st.butikkFane === 'Medlemssalg' ? 'Medlemmer/Butikk' : 'Nettsiden/Butikk';
+      default: return '';
+    }
+  }
+
+  /** Aapner et punkt: skjerm pluss det som avgjor hvem det gjelder. */
+  gaaAdmin(rute, forvalg) {
+    this.setState(Object.assign({ side: rute }, forvalg || {}));
+    window.scrollTo(0, 0);
+  }
+
+  /**
+   * Fanerekka oeverst paa omraadet man staar i.
+   *
+   * Sidemenyen er kartet; denne er verktoykassa. Uten den foeltes hvert
+   * bytte ut som aa forlate deltakerne for aa gjore noe med dem.
+   */
+  omraadeFaner() {
+    const aktiv = this.adminAktiv();
+    const omraade = aktiv.split('/')[0];
+    // «Daglig», «Nettsiden» og «Tilgang» er ikke noen man jobber med — de er
+    // enkeltverktoy, og en fanerekke der ville bare vaert stoy.
+    if (['Kursdeltakere', 'Medlemmer'].indexOf(omraade) === -1) {
+      return { harOmrFaner: false, omrNavn: '', omrFaner: [] };
+    }
+    const gruppe = Component.ADMIN_OMRAADER.find(g => g[0] === omraade);
+    return {
+      harOmrFaner: true,
+      omrNavn: omraade,
+      omrFaner: gruppe[1].map(([navn, rute, forvalg]) => {
+        const valgt = aktiv === omraade + '/' + navn;
+        return {
+          navn,
+          velg: () => this.gaaAdmin(rute, forvalg),
+          stil: {
+            appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+            font: 'var(--type-body-sm)', fontWeight: valgt ? 700 : 500,
+            padding: '8px 16px', borderRadius: 'var(--radius-pill)',
+            border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+            background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)',
+            color: valgt ? 'var(--clay-50)' : 'var(--text-heading)',
+            transition: 'all .18s ease',
+          },
+        };
+      }),
     };
+  }
 
+  adminMeny(aktiv) {
     // Paa mobil ligger menyen som en vannrett rad man drar i. Da tar
     // overskriftene bare plass uten aa hjelpe, saa der utelates de.
     const smal = (this.state.vw || 1400) < 980;
 
-    const punkt = navn => ({
-      navn,
-      velg: !ruter[navn] ? () => {} : () => {
-        this.setState(Object.assign({ side: ruter[navn] }, forvalg[navn] || {}));
-        window.scrollTo(0, 0);
-      },
-      stil: {
-        appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-        padding: '9px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
-        font: 'var(--type-body-sm)', fontWeight: navn === aktiv ? 700 : 500,
-        background: navn === aktiv ? 'var(--lissom-yellow)' : 'transparent',
-        color: navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-200)',
-      },
-    });
+    const punkt = (gruppe, navn, rute, forvalg) => {
+      const valgt = aktiv === gruppe + '/' + navn;
+      return {
+        navn,
+        velg: !rute ? () => {} : () => this.gaaAdmin(rute, forvalg),
+        stil: {
+          appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+          padding: '9px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+          font: 'var(--type-body-sm)', fontWeight: valgt ? 700 : 500,
+          background: valgt ? 'var(--lissom-yellow)' : 'transparent',
+          color: valgt ? 'var(--lissom-brown)' : 'var(--clay-200)',
+        },
+      };
+    };
+
+    const grupper = Component.ADMIN_OMRAADER;
 
     const overskrift = (tekst, forste) => ({
       navn: tekst,
@@ -10827,9 +11008,9 @@ class Component extends DCLogic {
     });
 
     const rader = [];
-    grupper.forEach(([tittel, navn], i) => {
+    grupper.forEach(([tittel, punkter], i) => {
       if (!smal) rader.push(overskrift(tittel, i === 0));
-      navn.forEach(n => rader.push(punkt(n)));
+      punkter.forEach(([navn, rute, forvalg]) => rader.push(punkt(tittel, navn, rute, forvalg)));
     });
 
     return rader.concat([
@@ -12743,12 +12924,21 @@ class Component extends DCLogic {
         { value: 'medlem', label: 'Medlem', icon: 'star' },
         { value: 'meg', label: 'Meg', icon: 'circle-user' },
       ],
-      adminNav: this.adminMeny(
-        this.state.kursFane === 'interne' ? 'Interne kurs'
-          : (this.state.kursFane === 'apne' ? 'Kurs og datoer' : 'Kurs og events')
-      ),
-      adminNavMedlem: this.adminMeny('Medlemmer'),
-      adminNavOkonomi: this.adminMeny('Økonomi'),
+      // Kursskjermen naas fra tre grupper. Hvilken du kom fra avgjor bade
+      // hvilke kurs som staar i lista og hvilket punkt som er markert.
+      // Fanerekka for omraadet man staar i. Samme rekke paa alle skjermene
+      // i omraadet, saa man blir vaerende hos dem man jobber med.
+      ...this.omraadeFaner(),
+      // Overskriftslinja sier hvem skjermen gjelder naar den deles av to
+      // omraader. Uten den sto det «Administrasjon» begge steder, og man
+      // kunne ikke se om beskjeden gikk til deltakerne eller medlemmene.
+      omrEyebrow: this.omraadeFaner().omrNavn || 'Administrasjon',
+      beskjedTittel: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
+        ? 'Beskjed til kursdeltakere' : 'Beskjed til medlemmer',
+      butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Butikk og medlemssalg' : 'Butikk',
+      adminNav: this.adminMeny(this.adminAktiv()),
+      adminNavMedlem: this.adminMeny(this.adminAktiv()),
+      adminNavOkonomi: this.adminMeny(this.adminAktiv()),
       medlemTall: (this.erPublisert() ? [] : [
         { merke: 'Aktive medlemmer', verdi: '47', under: '+3 siste 30 dager' },
         { merke: 'På prøve', verdi: '6', under: '4 utløper denne måneden' },
@@ -12791,7 +12981,7 @@ class Component extends DCLogic {
       // medlemslista. Skulle du svare noen som ringte om kursbeviset sitt,
       // matte du lete i begge.
       erAdminKursdeltakere: side === 'adminkursdeltakere',
-      adminNavKursdeltakere: this.adminMeny('Deltakere'),
+      adminNavKursdeltakere: this.adminMeny(this.adminAktiv()),
       ...(() => {
         const sok = (this.state.kdSok || '').trim().toLowerCase();
         const alle = this.kursdeltakerRader();
@@ -12934,8 +13124,19 @@ class Component extends DCLogic {
         ],
         'Lukk'
       ),
+      // Betalingslista, filtrert til dem man jobber med.
+      //
+      // «Betalinger» under Kursdeltakere skal vise det de har betalt for
+      // kurs og drop-in; under Medlemmer er det medlemskapstrekkene. Uten
+      // filteret var fanen bare en snarvei til hele oekonomiskjermen, og da
+      // hjalp den ikke.
       betalinger: this.klikkbar(
-        (this.state.adminBetalinger || []).map(b => ({
+        (this.state.adminBetalinger || []).filter(b => {
+          const f = this.state.okonomiFor;
+          if (f === 'deltakere') return ['booking', 'dropin'].indexOf(b.formal) !== -1;
+          if (f === 'medlemmer') return b.formal === 'medlemskap';
+          return true;
+        }).map(b => ({
           navn: b.medlem || 'Gjest',
           hva: ({ booking: 'Kursbooking', dropin: 'Drop-in', gavekort: 'Gavekort',
                   ordre: 'Butikkordre', medlemskap: 'Medlemskap' })[b.formal] || b.formal,
@@ -12993,14 +13194,16 @@ class Component extends DCLogic {
       // hele lista, ikke i den man ser paa.
       ...(() => {
         const fane = this.state.kursFane || 'alle';
-        const NAVN = { alle: 'Kurs og events', apne: 'Åpne kurs og datoer', interne: 'Interne kurs · kun medlemmer' };
+        const NAVN = { alle: 'Alle kurs og events', apne: 'Kurs som er åpne for alle', interne: 'Kurs kun for medlemmer' };
         return {
           kursFane: fane,
           kursFaneInterne: fane === 'interne',
           kursFaneApen: fane !== 'interne',
           kursListeTittel: NAVN[fane] || NAVN.alle,
-          kursSkjermTittel: fane === 'interne' ? 'Interne kurs'
+          kursSkjermTittel: fane === 'interne' ? 'Kurs for medlemmer'
             : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og events'),
+          kursSkjermEyebrow: fane === 'interne' ? 'Medlemmer'
+            : (fane === 'apne' ? 'Kursdeltakere' : 'Administrasjon'),
           kursFaneValg: [['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
             navn,
             velg: () => this.setState({ kursFane: v }),
@@ -13354,7 +13557,14 @@ class Component extends DCLogic {
         const maaned = ok ? (ok.maaned || '') : new Date().toLocaleDateString('nb-NO', { month: 'long' });
 
         return {
-          okMaanedTittel: 'Økonomi i ' + maaned,
+          okMaanedTittel: this.state.okonomiFor === 'deltakere' ? 'Betalinger fra kursdeltakere'
+            : (this.state.okonomiFor === 'medlemmer' ? 'Betalinger fra medlemmer' : 'Økonomi i ' + maaned),
+          okEyebrow: this.state.okonomiFor === 'deltakere' ? 'Kursdeltakere'
+            : (this.state.okonomiFor === 'medlemmer' ? 'Medlemmer' : 'Administrasjon'),
+          okAvgrenset: !!this.state.okonomiFor,
+          okAvgrensetTekst: this.state.okonomiFor === 'deltakere'
+            ? 'Viser kurs og drop-in. Hele regnskapet ligger under Daglig → Økonomi.'
+            : 'Viser medlemskapstrekkene. Hele regnskapet ligger under Daglig → Økonomi.',
           okOmsetning: ok
             ? ok.omsetning
             : (((this.state.adminData || {}).omsetning || {}).maned || (this.erPublisert() ? '–' : 'kr. 182 400,-')),
@@ -14163,7 +14373,7 @@ class Component extends DCLogic {
         { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: this.plakatPunkter('trivsel').length + ' enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
-      adminNavNyttig: this.adminMeny('Nyttig info'),
+      adminNavNyttig: this.adminMeny(this.adminAktiv()),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },
       artikkelApen: this.state.artikkelValgt != null,
       artikkelListeVis: this.state.artikkelValgt == null,
@@ -14500,9 +14710,9 @@ class Component extends DCLogic {
         { verdi: '5 min', merke: 'Fra Tønsberg sentrum' },
         { verdi: '24/7', merke: 'Åpent for medlemmer' },
       ],
-      adminNavOversikt: this.adminMeny('Oversikt'),
-      adminNavInnhold: this.adminMeny('Innhold'),
-      adminNavPameldte: this.adminMeny('Påmeldte'),
+      adminNavOversikt: this.adminMeny(this.adminAktiv()),
+      adminNavInnhold: this.adminMeny(this.adminAktiv()),
+      adminNavPameldte: this.adminMeny(this.adminAktiv()),
       erAdminPameldte: side === 'adminpameldte',
       // Sto som «Uke 35 · 34 paameldte», fast, uansett uke og uansett tall.
       sidepanelUke: 'Uke ' + this.ukeNaa(),
@@ -14783,8 +14993,8 @@ class Component extends DCLogic {
       knappevarianter: ['Brun (ink)', 'Gul (primær)', 'Omriss', 'Tekstlenke'],
       overganger: ['Ingen', 'Mykt fall mot bunnen', 'Mykt fall mot toppen', 'Kopp som vannmerke'],
       hoyder: ['Lav', 'Normal', 'Høy', 'Full skjerm'],
-      adminNavDropin: this.adminMeny('Drop-in'),
-      adminNavOppskrifter: this.adminMeny('Oppskrifter'),
+      adminNavDropin: this.adminMeny(this.adminAktiv()),
+      adminNavOppskrifter: this.adminMeny(this.adminAktiv()),
       erAdminOppskrifter: side === 'adminoppskrifter',
       harOppskrifter: this.oppskriftData().length > 0,
       ingenOppskrifter: this.oppskriftData().length === 0,
@@ -14908,13 +15118,8 @@ class Component extends DCLogic {
         const fargeG = farger.reduce((s, f) => s + Math.round(m * f.pst / 100), 0);
         return (m + fargeG) + ' g tørrstoff';
       })(),
-      adminNavButikk: this.adminMeny(
-        this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Butikk'
-      ),
-      adminNavBeskjeder: this.adminMeny(
-        (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
-          ? 'Beskjed til deltakere' : 'Beskjed til medlemmer'
-      ),
+      adminNavButikk: this.adminMeny(this.adminAktiv()),
+      adminNavBeskjeder: this.adminMeny(this.adminAktiv()),
       erAdminDropin: side === 'admindropin',
       erAdminButikk: side === 'adminbutikk',
       erAdminBeskjeder: side === 'adminbeskjeder',
@@ -15538,7 +15743,7 @@ class Component extends DCLogic {
       },
       erAdminSeo: side === 'adminseo',
       erAdminMarked: side === 'adminmarked',
-      adminNavMarked: this.adminMeny('Markedsføring'),
+      adminNavMarked: this.adminMeny(this.adminAktiv()),
 
       // ── Markedsforing ────────────────────────────────────────────────
       //
@@ -15807,15 +16012,12 @@ class Component extends DCLogic {
           ),
         };
       })(),
-      // Skjermen naas fra SEO-fanen inne i Markedsforing, og hører hjemme
-      // der. Uten dette staar hele menyen umarkert, og man tror man har
-      // havnet et helt annet sted.
-      adminNavSeo: this.adminMeny('Markedsføring'),
+      adminNavSeo: this.adminMeny(this.adminAktiv()),
       erAdminMobilvis: side === 'adminmobilvis',
 
       // --- Brukere med innlogging til verkstedet ---------------------------
       erAdminBrukere: side === 'adminbrukere',
-      adminNavBrukere: this.adminMeny('Brukere'),
+      adminNavBrukere: this.adminMeny(this.adminAktiv()),
       brukere: (this.state.adminBrukere || []).map(b => ({
         id: b.id,
         navn: b.navn,
@@ -15868,7 +16070,7 @@ class Component extends DCLogic {
       settBrPassord2: e => this.setState({ brPassord2: e.target.value, brFeil: null }),
       lagreNyttPassord: () => this.settNyttPassord(),
       avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brBrukernavn2: '', brFeil: null }),
-      adminNavMobilvis: this.adminMeny('Mobilvisning'),
+      adminNavMobilvis: this.adminMeny(this.adminAktiv()),
       // Den ekte forsiden, ikke designeksporten. «?forhands» gjor bare at
       // ramma lastes paa nytt naar man trykker Oppdater — adressen maa endre
       // seg, ellers rorer ikke nettleseren den.

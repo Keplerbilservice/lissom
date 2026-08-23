@@ -3327,6 +3327,307 @@ window.__resources = {
        kunden faktisk leser.
        Naa er de en skjerm. Prisen staar til venstre, teksten til hoyre — det
        er to ulike jobber, og de skal ikke ligge om hverandre. -->
+  <!-- Ny registrering.
+       Aa faa én person inn i systemet gikk foer over tre skjermer: lete opp
+       om hen fantes under Deltakere eller Medlemmer, gaa til Paameldte for
+       kurs, eller til Medlemmer for medlemskap. Ringte noen og ville ha en
+       plass, tok det et halvt minutt aa finne fram.
+       Her staar de tre stegene under hverandre: hvem, hva, ferdig. -->
+  <!-- Uttak butikk.
+       Selger Monica en kopp til noen som staar i verkstedet, fantes det ikke
+       noe sted aa registrere det. Lageret og omsetningen fikk ikke vite om
+       det, og tallene i Okonomi var lavere enn det som faktisk var solgt.
+       Salget blir en helt vanlig ordre med en betaling — samme rader som et
+       nettsalg, saa det telles ett sted. -->
+  <sc-if value="{{ erAdminUttak }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – uttak butikk" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Solgt i dag</div>
+          <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ utDagsum }}</div>
+        </div>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Uttak butikk</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Salg over disk. Går inn i lageret og omsetningen som et vanlig salg.</p>
+        </div>
+
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); gap: var(--space-6); align-items: start;">
+
+          <!-- Varene. Soekefeltet er der fordi 21 varer er for mange aa lete
+               gjennom med oynene mens noen staar og venter. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+              <label style="{{ utEtikett }}">Søk etter vare</label>
+              <input value="{{ utSok }}" onChange="{{ settUtSok }}" placeholder="F.eks. kopp, leire, brenning" style="{{ utFeltStil }}">
+            </div>
+            <sc-for list="{{ utVarer }}" as="v" hint-placeholder-count="8">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-2); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="flex: 1 1 200px; min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.detalj }}</div>
+                </div>
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ v.pris }}</span>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ v.leggTil }}" hint-size="auto,36px">Legg til</x-import>
+              </div>
+            </sc-for>
+            <sc-if value="{{ utIngenVarer }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ utIngenVarerTekst }}</div>
+            </sc-if>
+          </div>
+
+          <!-- Salget som bygges opp. -->
+          <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg);">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">Dette salget</div>
+
+              <sc-for list="{{ utLinjer }}" as="l" hint-placeholder-count="3">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); row-gap: var(--space-2); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                  <div style="flex: 1 1 130px; min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ l.tittel }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.enhetspris }} per stk</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 4px; border: 1px solid var(--border-subtle); border-radius: 999px; padding: 2px 4px;">
+                    <button type="button" onClick="{{ l.faerre }}" title="Én færre" style="{{ l.knappStil }}">−</button>
+                    <span style="min-width: 26px; text-align: center; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ l.antall }}</span>
+                    <button type="button" onClick="{{ l.flere }}" title="Én til" style="{{ l.knappStil }}">+</button>
+                  </div>
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap; margin-left: auto;">{{ l.linjesum }}</span>
+                  <button type="button" onClick="{{ l.fjern }}" style="{{ utFjernStil }}">Fjern</button>
+                </div>
+              </sc-for>
+
+              <sc-if value="{{ utTomt }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen varer valgt ennå. Trykk «Legg til» på en vare.</div>
+              </sc-if>
+
+              <div style="padding: var(--space-5) var(--space-6); border-top: 2px solid var(--lissom-brown); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Å betale</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ utSum }}</span>
+              </div>
+
+              <div style="padding: 0 var(--space-6) var(--space-5); display: flex; flex-direction: column; gap: var(--space-4);">
+                <div>
+                  <label style="{{ utEtikett }}">Betalt med</label>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div>
+                  <label style="{{ utEtikett }}">Kunde</label>
+                  <input value="{{ utKunde }}" onChange="{{ settUtKunde }}" placeholder="Valgfritt — navn på kvitteringen" style="{{ utFeltStil }}">
+                </div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utFullfor }}" hint-size="auto,44px">Fullfør salget</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ utAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dagens salg, med mulighet til aa annullere en feiltasting.
+                 Ordren slettes ikke — den blir staaende som annullert. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">Solgt i dag · {{ utDagsum }}</div>
+              <sc-for list="{{ utIdag }}" as="s" hint-placeholder-count="3">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); row-gap: 4px; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                  <div style="flex: 1 1 160px; min-width: 0;">
+                    <div style="font-size: var(--text-sm); color: var(--text-heading);">{{ s.linjer }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ s.detalj }}</div>
+                  </div>
+                  <span style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ s.sum }}</span>
+                  <sc-if value="{{ s.kanAnnulleres }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ s.annuller }}" style="{{ utFjernStil }}">Annuller</button>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{ utIngenIdag }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen salg over disk i dag.</div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminNyreg }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – ny registrering" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
+          </div>
+        </div>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Ny registrering</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Finn personen eller legg inn en ny, og velg hva de skal registreres på.</p>
+        </div>
+
+        <div style="max-width: 780px; display: flex; flex-direction: column; gap: var(--space-6);">
+
+          <!-- Steg 1: hvem. Soeket gaar mot dem som alt finnes, saa den
+               samme personen ikke blir lagt inn to ganger. -->
+          <div style="{{ nrKortStil }}">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+              <span style="{{ nrSteg1Stil }}">1</span>
+              <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Hvem gjelder det?</span>
+            </div>
+
+            <sc-if value="{{ nrHarValgt }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-radius: var(--radius-md); background: var(--clay-100);">
+                <div style="flex: 1 1 240px; min-width: 0;">
+                  <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ nrValgtNavn }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ nrValgtDetalj }}</div>
+                </div>
+                <button type="button" onClick="{{ nrByttPerson }}" style="{{ nrLenkeStil }}">Velg noen andre</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ nrIngenValgt }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <label style="{{ nrEtikett }}">Søk på navn, telefon eller e-post</label>
+                <input value="{{ nrSok }}" onChange="{{ settNrSok }}" placeholder="F.eks. Ingrid, 91234567 eller ingrid@" style="{{ nrFeltStil }}">
+
+                <sc-for list="{{ nrTreff }}" as="t" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">
+                    <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ t.navn }}</span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ t.detalj }}</span>
+                  </button>
+                </sc-for>
+
+                <sc-if value="{{ nrSokerUtenTreff }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen med det navnet er registrert fra før. Legg inn personen under.</div>
+                </sc-if>
+
+                <div style="margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--border-subtle);">
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: var(--space-4);">Eller legg inn en ny person</div>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                    <div>
+                      <label style="{{ nrEtikett }}">Navn</label>
+                      <input value="{{ nrNavn }}" onChange="{{ settNrNavn }}" placeholder="Fornavn Etternavn" style="{{ nrFeltStil }}">
+                    </div>
+                    <div>
+                      <label style="{{ nrEtikett }}">Telefon</label>
+                      <input value="{{ nrTlf }}" onChange="{{ settNrTlf }}" placeholder="Valgfritt" style="{{ nrFeltStil }}">
+                    </div>
+                    <div>
+                      <label style="{{ nrEtikett }}">E-post</label>
+                      <input value="{{ nrEpost }}" onChange="{{ settNrEpost }}" placeholder="Valgfritt" style="{{ nrFeltStil }}">
+                    </div>
+                  </div>
+                  <div style="margin-top: var(--space-4);">
+                    <label style="{{ nrEtikett }}">Merknad</label>
+                    <input value="{{ nrNotat }}" onChange="{{ settNrNotat }}" placeholder="Valgfritt — f.eks. «betaler ved oppmøte»" style="{{ nrFeltStil }}">
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- Steg 2: hva. -->
+          <div style="{{ nrKortStil }}">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+              <span style="{{ nrSteg2Stil }}">2</span>
+              <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Hva skal de registreres på?</span>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <sc-for list="{{ nrHvaValg }}" as="h" hint-placeholder-count="4">
+                <button type="button" onClick="{{ h.velg }}" style="{{ h.stil }}">{{ h.navn }}</button>
+              </sc-for>
+            </div>
+
+            <!-- Medlemskap: planene fra basen, ikke en liste skrevet av. -->
+            <sc-if value="{{ nrErMedlemskap }}" hint-placeholder-val="{{ false }}">
+              <div>
+                <label style="{{ nrEtikett }}">Medlemskap</label>
+                <select value="{{ nrPlan }}" onChange="{{ settNrPlan }}" style="{{ nrValgStil }}">
+                  <sc-for list="{{ nrPlaner }}" as="p" hint-placeholder-count="4">
+                    <option value="{{ p.verdi }}">{{ p.navn }}</option>
+                  </sc-for>
+                </select>
+                <sc-if value="{{ nrIngenPlaner }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">Ingen medlemskap er lagt ut. Lag ett under Kurs og medlemskap → Medlemskap.</p>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- Kurs, event og drop-in: datoene som ligger ute. -->
+            <sc-if value="{{ nrErOkt }}" hint-placeholder-val="{{ true }}">
+              <div>
+                <label style="{{ nrEtikett }}">{{ nrOktEtikett }}</label>
+                <select value="{{ nrOkt }}" onChange="{{ settNrOkt }}" style="{{ nrValgStil }}">
+                  <sc-for list="{{ nrOkter }}" as="o" hint-placeholder-count="6">
+                    <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                  </sc-for>
+                </select>
+                <sc-if value="{{ nrIngenOkter }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">{{ nrIngenOkterTekst }}</p>
+                </sc-if>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--space-4); margin-top: var(--space-4);">
+                  <div>
+                    <label style="{{ nrEtikett }}">Antall plasser</label>
+                    <input value="{{ nrAntall }}" onChange="{{ settNrAntall }}" placeholder="1" style="{{ nrFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ nrEtikett }}">Betalt med</label>
+                    <select value="{{ nrMaate }}" onChange="{{ settNrMaate }}" style="{{ nrValgStil }}">
+                      <sc-for list="{{ nrMaater }}" as="m" hint-placeholder-count="5">
+                        <option value="{{ m }}">{{ m }}</option>
+                      </sc-for>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="{{ nrEtikett }}">Beløp i kroner</label>
+                    <input value="{{ nrBelop }}" onChange="{{ settNrBelop }}" placeholder="Tomt = prisen på kurset" style="{{ nrFeltStil }}">
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <!-- Steg 3: fullfor. Oppsummeringen staar her, saa man ser hva som
+               faktisk blir registrert for man trykker. -->
+          <div style="{{ nrKortStil }}">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+              <span style="{{ nrSteg3Stil }}">3</span>
+              <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Fullfør</span>
+            </div>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ nrOppsummering }}</p>
+            <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ nrFullfor }}" hint-size="auto,44px">{{ nrKnapp }}</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ nrNullstill }}" hint-size="auto,44px">Nullstill</x-import>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminMedlemskap }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – medlemskap" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
@@ -8565,6 +8866,8 @@ class Component extends DCLogic {
       { sti: '/admin',              side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/medlemskap',   side: 'adminmedlemskap' },
+      { sti: '/admin/ny-registrering', side: 'adminnyreg' },
+      { sti: '/admin/uttak',        side: 'adminuttak' },
       { sti: '/admin/kurs/alle',    side: 'admin' },
       { sti: '/admin/kurs',         side: 'adminomrkurs' },
       { sti: '/admin/pameldte',     side: 'adminpameldte' },
@@ -12408,6 +12711,59 @@ class Component extends DCLogic {
       });
   }
 
+  /** Varene og dagens disksalg. */
+  hentUttak() {
+    if (!this.erPublisert() || this._uttakHentes) return;
+    this._uttakHentes = true;
+    fetch('/api/admin/uttak.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._uttakHentes = false;
+        if (d && d.varer) this.setState({ uttakData: d });
+      })
+      .catch(() => { this._uttakHentes = false; });
+  }
+
+  /**
+   * Registrerer eller annullerer et disksalg.
+   *
+   * Lista hentes paa nytt etterpaa: lageret og dagens salg er endret, og
+   * skjermen skal ikke vise tallene fra for kallet.
+   */
+  uttakKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._uttakLagrer) return Promise.resolve(false);
+    this._uttakLagrer = true;
+
+    return fetch('/api/admin/uttak.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._uttakLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Registrert' : 'Ble ikke registrert',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) {
+          this._uttakHentes = false;
+          this.hentUttak();
+          // Omsetningen paa Oversikt og i Okonomi er endret.
+          this._adminHentes = false;
+          this.hentAdmin();
+        }
+        return ok;
+      })
+      .catch(() => {
+        this._uttakLagrer = false;
+        this.setState({ kvittering: 'Ble ikke registrert', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
   hentPlaner() {
     if (!this.erPublisert() || this._planerHentes) return;
     this._planerHentes = true;
@@ -12569,6 +12925,8 @@ class Component extends DCLogic {
       case 'adminomrdeltakere':  return p('Deltakere', '', '');
       case 'adminomrkurs':       return p('Kurs og medlemskap', '', '');
       case 'adminmedlemskap':    return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Medlemskap');
+      case 'adminnyreg':         return p('Oversikt');
+      case 'adminuttak':         return p('Oversikt');
       case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
       case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
@@ -13145,7 +13503,10 @@ class Component extends DCLogic {
     if (this.erAdminSkjerm(side) && !this.state.adminData) {
       this.hentAdmin();
     }
-    if (['admin', 'adminmedlemskap', 'adminomrkurs'].indexOf(side) !== -1
+    if (side === 'adminuttak' && !this.state.uttakData) {
+      this.hentUttak();
+    }
+    if (['admin', 'adminmedlemskap', 'adminomrkurs', 'adminnyreg'].indexOf(side) !== -1
         && !this.state.adminPlanerRaa) {
       this.hentPlaner();
     }
@@ -14887,6 +15248,383 @@ class Component extends DCLogic {
       // rad per paamelding under Paameldte, og bare de med konto i
       // medlemslista. Skulle du svare noen som ringte om kursbeviset sitt,
       // matte du lete i begge.
+      // ── Ny registrering ──────────────────────────────────────────────
+      //
+      // Skjermen setter ikke opp noe nytt. Den bruker de samme to kallene
+      // som fra for: «meld-inn» paa medlemmer og «legg-til» paa paamelding.
+      // Poenget er veien dit — soeket foran hindrer at den samme personen
+      // legges inn to ganger, og valget etterpaa sparer et bytte av skjerm.
+      ...(() => {
+        if (side !== 'adminnyreg') return { erAdminNyreg: false };
+
+        const st = this.state;
+        const hva = st.nrHva || 'Kurs';
+        const sok = (st.nrSok || '').trim().toLowerCase();
+
+        const felt = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          background: 'var(--clay-50)', color: 'var(--text-heading)',
+        };
+        const stegStil = (paa) => ({
+          width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+          background: paa ? 'var(--lissom-brown)' : 'var(--clay-200)',
+          color: paa ? 'var(--clay-50)' : 'var(--text-muted)',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 700, fontSize: 'var(--text-sm)',
+        });
+
+        // Alle vi kjenner fra for, samlet ett sted. Et navn kan staa bade
+        // som medlem og som deltaker; da er det den samme personen.
+        const kjente = [];
+        const settInn = (navn, epost, tlf, detalj, medlemId) => {
+          const n = String(navn || '').trim();
+          if (!n) return;
+          const fra = kjente.find(k => k.navn.toLowerCase() === n.toLowerCase());
+          if (fra) {
+            if (!fra.medlemId && medlemId) { fra.medlemId = medlemId; fra.detalj = detalj; }
+            return;
+          }
+          kjente.push({ navn: n, epost: epost || '', tlf: tlf || '', detalj, medlemId: medlemId || 0 });
+        };
+        (st.adminMedlemmer || []).forEach(m => settInn(
+          m.navn, m.epost, m.telefon,
+          'Medlem' + (m.medlemskap ? ' · ' + m.medlemskap : '') + (m.status ? ' · ' + m.status : ''),
+          m.id
+        ));
+        (st.adminDeltakere || []).forEach(d => settInn(
+          d.navn, d.epost, d.tlf,
+          'Deltaker' + (d.kurs ? ' · ' + d.kurs : ''),
+          d.medlemId || 0
+        ));
+
+        const treff = !sok ? [] : kjente.filter(k =>
+          (k.navn + ' ' + k.epost + ' ' + k.tlf).toLowerCase().indexOf(sok) !== -1
+        ).slice(0, 6);
+
+        const valgt = st.nrValgt || null;
+
+        // Oktene, delt paa hva de er. «Kurs» tar med workshop, som er et
+        // kurs med et annet navn.
+        const alleOkter = (st.adminOkter || []);
+        const passer = (o) => {
+          const t = String(o.type || 'kurs');
+          if (hva === 'Drop-in') return t === 'dropin';
+          if (hva === 'Event') return t === 'event';
+          return t === 'kurs' || t === 'workshop';
+        };
+        const okter = alleOkter.filter(passer);
+        const oktValgt = String(st.nrOkt || (okter[0] ? okter[0].oktId : ''));
+
+        const planer = (st.adminPlanerRaa || []).filter(p => p.aktiv !== false);
+        const planValgt = st.nrPlan || (planer[0] ? planer[0].navn : '');
+
+        const personNavn = valgt ? valgt.navn : (st.nrNavn || '').trim();
+        const oktNaa = okter.find(o => String(o.oktId) === oktValgt);
+
+        const oppsummering = !personNavn
+          ? 'Velg eller legg inn en person først.'
+          : hva === 'Medlemskap'
+            ? (planValgt
+                ? personNavn + ' meldes inn på «' + planValgt + '».'
+                : personNavn + ' — velg et medlemskap først.')
+            : (oktNaa
+                ? personNavn + ' registreres på ' + oktNaa.tittel + ', ' + oktNaa.naar + '.'
+                : personNavn + ' — velg en dato først.');
+
+        return {
+          erAdminNyreg: true,
+          adminNavNyreg: this.adminMeny(),
+          nrKortStil: {
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+          },
+          nrSteg1Stil: stegStil(!!personNavn),
+          nrSteg2Stil: stegStil(hva === 'Medlemskap' ? !!planValgt : !!oktNaa),
+          nrSteg3Stil: stegStil(false),
+          nrEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
+                       color: 'var(--text-heading)', marginBottom: 6 },
+          nrFeltStil: felt,
+          nrValgStil: Object.assign({}, felt, { cursor: 'pointer' }),
+          nrLenkeStil: {
+            appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+            color: 'var(--lissom-brown)', font: 'var(--type-body-sm)', fontWeight: 600,
+            textDecoration: 'underline', textUnderlineOffset: 3, whiteSpace: 'nowrap',
+          },
+
+          nrHarValgt: !!valgt,
+          nrIngenValgt: !valgt,
+          nrValgtNavn: valgt ? valgt.navn : '',
+          nrValgtDetalj: valgt ? [valgt.detalj, valgt.epost, valgt.tlf].filter(Boolean).join(' · ') : '',
+          nrByttPerson: () => this.setState({ nrValgt: null, nrSok: '' }),
+
+          nrSok: st.nrSok || '',
+          settNrSok: e => this.setState({ nrSok: e.target.value }),
+          nrSokerUtenTreff: sok.length > 1 && treff.length === 0,
+          nrTreff: treff.map(k => ({
+            navn: k.navn,
+            detalj: [k.detalj, k.epost, k.tlf].filter(Boolean).join(' · '),
+            velg: () => this.setState({ nrValgt: k, nrSok: '' }),
+            stil: {
+              appearance: 'none', textAlign: 'left', width: '100%', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', gap: 2,
+              border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+              background: 'var(--surface-card)', padding: '10px 12px', marginTop: 8,
+              fontFamily: 'inherit',
+            },
+          })),
+
+          nrNavn: st.nrNavn || '',   settNrNavn: e => this.setState({ nrNavn: e.target.value }),
+          nrTlf: st.nrTlf || '',     settNrTlf: e => this.setState({ nrTlf: e.target.value }),
+          nrEpost: st.nrEpost || '', settNrEpost: e => this.setState({ nrEpost: e.target.value }),
+          nrNotat: st.nrNotat || '', settNrNotat: e => this.setState({ nrNotat: e.target.value }),
+
+          nrHvaValg: ['Kurs', 'Event', 'Drop-in', 'Medlemskap'].map(n => ({
+            navn: n,
+            velg: () => this.setState({ nrHva: n, nrOkt: '' }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '9px 16px', borderRadius: 'var(--radius-pill)',
+              border: '1px solid ' + (hva === n ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: hva === n ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: hva === n ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
+          nrErMedlemskap: hva === 'Medlemskap',
+          nrErOkt: hva !== 'Medlemskap',
+
+          nrPlaner: planer.map(p => ({
+            verdi: p.navn,
+            navn: p.navn + ' · ' + (p.prisTekst || '') + (p.timer != null ? ' · ' + p.timer + ' timer' : ' · fri tilgang'),
+          })),
+          nrIngenPlaner: planer.length === 0,
+          nrPlan: planValgt,
+          settNrPlan: e => this.setState({ nrPlan: e.target.value }),
+
+          nrOktEtikett: hva === 'Drop-in' ? 'Drop-in-tid' : (hva === 'Event' ? 'Event' : 'Kurs og dato'),
+          nrOkter: okter.map(o => ({
+            verdi: String(o.oktId),
+            navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
+          })),
+          nrIngenOkter: okter.length === 0,
+          nrIngenOkterTekst: hva === 'Drop-in'
+            ? 'Ingen drop-in-tider ligger ute. Legg ut en under Kurs og medlemskap → Drop-in.'
+            : 'Ingen datoer ligger ute. Legg inn en dato under Kurs og medlemskap.',
+          nrOkt: oktValgt,
+          settNrOkt: e => this.setState({ nrOkt: e.target.value }),
+
+          nrAntall: st.nrAntall || '', settNrAntall: e => this.setState({ nrAntall: e.target.value }),
+          nrMaater: Component.BETALT_MAATER,
+          nrMaate: st.nrMaate || Component.BETALT_MAATER[0],
+          settNrMaate: e => this.setState({ nrMaate: e.target.value }),
+          nrBelop: st.nrBelop || '', settNrBelop: e => this.setState({ nrBelop: e.target.value }),
+
+          nrOppsummering: oppsummering,
+          nrKnapp: hva === 'Medlemskap' ? 'Meld inn' : 'Registrer',
+          nrNullstill: () => this.setState({
+            nrValgt: null, nrSok: '', nrNavn: '', nrTlf: '', nrEpost: '', nrNotat: '',
+            nrOkt: '', nrAntall: '', nrBelop: '',
+          }),
+
+          nrFullfor: () => {
+            if (!personNavn) {
+              this.setState({ kvittering: 'Vi trenger navnet', kvitteringDetalj: 'Søk opp personen, eller skriv inn navnet.' });
+              return;
+            }
+            if (hva === 'Medlemskap') {
+              if (!planValgt) {
+                this.setState({ kvittering: 'Velg et medlemskap' });
+                return;
+              }
+              // Samme kall som innmelding under Medlemmer. Finnes personen
+              // fra for, sendes ID-en med, saa det ikke blir en ny rad.
+              this.setState({
+                miMedlemId: valgt ? (valgt.medlemId || 0) : 0,
+                miNavn: personNavn,
+                miEpost: valgt ? (valgt.epost || '') : (st.nrEpost || ''),
+                miTlf: valgt ? (valgt.tlf || '') : (st.nrTlf || ''),
+                miNotat: st.nrNotat || '',
+              }, () => this.meldInnMedlem(planValgt));
+              return;
+            }
+            if (!oktNaa) {
+              this.setState({ kvittering: 'Velg en dato' });
+              return;
+            }
+            this.pameldingKall({
+              handling: 'legg-til',
+              oktId: Number(oktNaa.oktId),
+              navn: personNavn,
+              epost: valgt ? (valgt.epost || '') : (st.nrEpost || '').trim(),
+              telefon: valgt ? (valgt.tlf || '') : (st.nrTlf || '').trim(),
+              antall: Number(st.nrAntall) || 1,
+              betaltMaate: st.nrMaate || Component.BETALT_MAATER[0],
+              belop: (st.nrBelop || '').trim(),
+              notat: (st.nrNotat || '').trim(),
+              varsle: 'nei',
+            }).then(ok => {
+              if (ok) this.setState({
+                nrValgt: null, nrSok: '', nrNavn: '', nrTlf: '', nrEpost: '',
+                nrNotat: '', nrAntall: '', nrBelop: '',
+              });
+            });
+          },
+        };
+      })(),
+      // ── Uttak butikk ─────────────────────────────────────────────────
+      //
+      // Salget bygges opp i skjermbildet og sendes som ett kall. Prisen
+      // regnes ut paa nytt av serveren — det som staar her er bare det
+      // eieren skal se mens hen taster.
+      ...(() => {
+        if (side !== 'adminuttak') return { erAdminUttak: false };
+
+        const st = this.state;
+        const data = st.uttakData || null;
+        const varer = (data && data.varer) || [];
+        const kurv = st.utKurv || {};
+        const maate = st.utMaate || 'Kontant';
+        const sok = (st.utSok || '').trim().toLowerCase();
+
+        const felt = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          background: 'var(--surface-card)', color: 'var(--text-heading)',
+        };
+        const kr = (ore) => 'kr. ' + Math.round(ore / 100).toLocaleString('nb-NO')
+          .replace(/ /g, ' ') + ',-';
+
+        const synlige = varer.filter(v => !sok
+          || (v.tittel + ' ' + v.kategori).toLowerCase().indexOf(sok) !== -1);
+
+        const linjer = Object.keys(kurv).map(id => {
+          const v = varer.find(x => String(x.id) === String(id));
+          return v ? { v, antall: kurv[id] } : null;
+        }).filter(Boolean);
+
+        const sum = linjer.reduce((n, l) => n + l.v.prisOre * l.antall, 0);
+
+        // Lageret er grensa. Foer kunne man legge fire i kurven av en vare
+        // det var én igjen av, taste inn betaling — og forst da faa nei fra
+        // serveren. Nekter vi her, staar det aldri feil sum paa skjermen.
+        const tak = (v) => (v.lager === null || v.lager === undefined) ? 999 : Math.max(0, v.lager);
+        const settAntall = (id, n) => {
+          const v = varer.find(x => String(x.id) === String(id));
+          const maks = v ? tak(v) : 999;
+          if (v && n > maks) {
+            this.setState({
+              kvittering: 'Ikke nok på lager',
+              kvitteringDetalj: maks === 0
+                ? '«' + v.tittel + '» er tom.'
+                : 'Det er bare ' + maks + ' igjen av «' + v.tittel + '».',
+            });
+          }
+          const bedt = Math.min(n, maks);
+          this.setState(s => {
+            const k = Object.assign({}, s.utKurv);
+            if (bedt <= 0) delete k[id]; else k[id] = bedt;
+            return { utKurv: k };
+          });
+        };
+
+        const knappStil = {
+          appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+          width: 28, height: 28, borderRadius: '50%', color: 'var(--text-heading)', fontSize: 17,
+        };
+
+        const idag = (data && data.idag) || [];
+        const dagsum = idag
+          .filter(s => s.status !== 'kansellert')
+          .reduce((n, s) => n + (parseInt(String(s.sum).replace(/[^\d]/g, ''), 10) || 0), 0);
+
+        return {
+          erAdminUttak: true,
+          adminNavUttak: this.adminMeny(),
+          utEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
+                       color: 'var(--text-heading)', marginBottom: 6 },
+          utFeltStil: felt,
+          utFjernStil: {
+            appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+            color: 'var(--text-muted)', font: 'var(--type-body-sm)', whiteSpace: 'nowrap',
+          },
+
+          utSok: st.utSok || '',
+          settUtSok: e => this.setState({ utSok: e.target.value }),
+          utVarer: synlige.map(v => ({
+            tittel: v.tittel,
+            pris: v.pris,
+            detalj: [
+              v.kategori,
+              v.lager === null ? 'Ikke lagerstyrt' : (v.lager + ' på lager'),
+              v.kunMedlemmer ? 'Kun medlemmer' : '',
+              (kurv[String(v.id)] || 0) > 0 ? (kurv[String(v.id)] + ' i salget') : '',
+            ].filter(Boolean).join(' · '),
+            leggTil: () => settAntall(String(v.id), (kurv[String(v.id)] || 0) + 1),
+          })),
+          utIngenVarer: synlige.length === 0,
+          utIngenVarerTekst: varer.length === 0
+            ? 'Henter varene …'
+            : 'Ingen varer passer søket.',
+
+          utLinjer: linjer.map(l => ({
+            tittel: l.v.tittel,
+            antall: String(l.antall),
+            enhetspris: l.v.pris,
+            linjesum: kr(l.v.prisOre * l.antall),
+            knappStil,
+            faerre: () => settAntall(String(l.v.id), l.antall - 1),
+            flere: () => settAntall(String(l.v.id), l.antall + 1),
+            fjern: () => settAntall(String(l.v.id), 0),
+          })),
+          utTomt: linjer.length === 0,
+          utSum: sum > 0 ? kr(sum) : 'kr. 0,-',
+
+          utMaater: ((data && data.maater) || ['Kontant', 'Vipps']).map(n => ({
+            navn: n,
+            velg: () => this.setState({ utMaate: n }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '9px 18px', borderRadius: 'var(--radius-pill)',
+              border: '1px solid ' + (maate === n ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: maate === n ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: maate === n ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
+          utKunde: st.utKunde || '',
+          settUtKunde: e => this.setState({ utKunde: e.target.value }),
+
+          utAvbryt: () => this.setState({ utKurv: {}, utKunde: '', utSok: '' }),
+          utFullfor: () => {
+            if (linjer.length === 0) {
+              this.setState({ kvittering: 'Ingen varer valgt', kvitteringDetalj: 'Legg til minst én vare før du fullfører.' });
+              return;
+            }
+            this.uttakKall({
+              handling: 'selg',
+              maate,
+              kunde: (st.utKunde || '').trim(),
+              linjer: linjer.map(l => ({ id: l.v.id, antall: l.antall })),
+            }).then(ok => {
+              if (ok) this.setState({ utKurv: {}, utKunde: '' });
+            });
+          },
+
+          utIdag: idag.map(s => ({
+            linjer: s.linjer || '(ingen linjer)',
+            sum: s.sum,
+            detalj: [s.tid, s.maate, s.status === 'kansellert' ? 'ANNULLERT' : ''].filter(Boolean).join(' · '),
+            kanAnnulleres: s.status !== 'kansellert',
+            annuller: () => {
+              if (!window.confirm('Annullere salget på ' + s.sum + '?\n\n'
+                  + 'Varene legges tilbake på lager, og beløpet trekkes fra omsetningen. '
+                  + 'Salget blir stående som annullert — det slettes ikke.')) return;
+              this.uttakKall({ handling: 'annuller', ordreId: s.id });
+            },
+          })),
+          utIngenIdag: idag.length === 0,
+          utDagsum: dagsum > 0 ? kr(dagsum * 100) : 'kr. 0,-',
+        };
+      })(),
       erAdminKursdeltakere: side === 'adminkursdeltakere',
       erAdminMedlemskap: side === 'adminmedlemskap',
       adminNavMedlemskap: this.adminMeny(),

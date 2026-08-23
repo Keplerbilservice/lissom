@@ -32,7 +32,7 @@ $kursbevis = static function (array $d): ?string {
 
 if ($oktId <= 0) {
     $okter = DB::alle(
-        "SELECT cs.id, cs.start_tid, c.tittel,
+        "SELECT cs.id, cs.start_tid, c.tittel, c.type, c.tema,
                 COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
                 (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
                   WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS betalt,
@@ -103,6 +103,11 @@ if ($oktId <= 0) {
         'reservert' => (int) $o['reservert'],
         'kapasitet' => (int) $o['kapasitet'],
         'ledige'    => Booking::ledigePlasser((int) $o['id']),
+        // Hva slags oekt det er. Uten dette kunne ikke admin skille kurs,
+        // event og drop-in fra hverandre naar noen skal registreres paa én
+        // av dem — alt sto i én lang liste.
+        'type'      => (string) ($o['type'] ?? 'kurs'),
+        'tema'      => (string) ($o['tema'] ?? ''),
     ], $okter),
     ]);
 }

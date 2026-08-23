@@ -3839,6 +3839,59 @@ window.__resources = {
        er, hva de har vaert paa, hva de selv ser paa Min side, kursbeviset —
        og veien til aa melde dem inn som medlem. Foer laa dette spredt paa
        to skjermer, og ingen av dem hadde hele bildet. -->
+  <!-- Forsidene for de to omraadene.
+       Klikker du «Deltakere» i menyen, er det sjelden deltakerlista du er
+       ute etter — det er et av seks steder. Foer landet du rett i lista og
+       maatte finne veien videre derfra. Naa ligger alt som hoerer til her
+       som kort, med tallet som avgjor om det haster. -->
+  <sc-if value="{{ erAdminOmraade }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – område" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
+          </div>
+        </div>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">{{ omrTittel }}</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ omrUnder }}</p>
+        </div>
+
+        <!-- Det man gjor oftest, uten aa gaa veien om en liste foerst. -->
+        <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-10);">
+          <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Hurtig</span>
+          <sc-for list="{{ omrHurtig }}" as="h" hint-placeholder-count="3">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ h.velg }}" hint-size="auto,40px">{{ h.navn }}</x-import>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
+          <sc-for list="{{ omrKort }}" as="k" hint-placeholder-count="6">
+            <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ k.navn }}</span>
+                <span style="{{ k.tallStil }}">{{ k.tall }}</span>
+              </div>
+              <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ k.hva }}</p>
+              <span style="display: block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);">{{ k.knapp }} →</span>
+            </button>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminKursdeltakere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – kursdeltakere" style="{{ adminGridStil }}">
       <aside style="{{ adminAsideStil }}">
@@ -7636,8 +7689,13 @@ class Component extends DCLogic {
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/kurs',         side: 'admin' },
       { sti: '/admin/pameldte',     side: 'adminpameldte' },
-      { sti: '/admin/deltakere',    side: 'adminkursdeltakere' },
-      { sti: '/admin/medlemmer',    side: 'adminmedlem' },
+      // Rekkefolgen betyr noe: forste treff vinner naar adressen skrives.
+      // Lista maa derfor staa for forsida, ellers hadde begge to endt paa
+      // /admin/deltakere.
+      { sti: '/admin/deltakere/alle', side: 'adminkursdeltakere' },
+      { sti: '/admin/deltakere',      side: 'adminomrdeltakere' },
+      { sti: '/admin/medlemmer/alle', side: 'adminmedlem' },
+      { sti: '/admin/medlemmer',      side: 'adminomrmedlemmer' },
       { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/butikk',       side: 'adminbutikk' },
@@ -11365,8 +11423,8 @@ class Component extends DCLogic {
   static get ADMIN_MENY() {
     return [
       ['Oversikt',  'adminoversikt'],
-      ['Deltakere', 'adminkursdeltakere'],
-      ['Medlemmer', 'adminmedlem'],
+      ['Deltakere', 'adminomrdeltakere'],
+      ['Medlemmer', 'adminomrmedlemmer'],
       ['Kurs',      'admin',        { kursFane: 'alle' }],
       ['Drop-in',   'admindropin'],
       ['Økonomi',   'adminokonomi', { okonomiFor: '' }],
@@ -11391,7 +11449,8 @@ class Component extends DCLogic {
   static get ADMIN_FANER() {
     return {
       'Deltakere': [
-        ['Deltakere',    'adminkursdeltakere'],
+        ['← Deltakere',  'adminomrdeltakere'],
+        ['Alle deltakere', 'adminkursdeltakere'],
         ['Påmeldte',     'adminpameldte'],
         ['Kurs',         'admin',            { kursFane: 'apne' }],
         ['Beskjeder',    'adminbeskjeder',   { motValg: 'Deltakere på et kurs' }],
@@ -11399,7 +11458,8 @@ class Component extends DCLogic {
         ['Nyttig info',  'adminnyttig',      { nyttigFor: 'deltakere' }],
       ],
       'Medlemmer': [
-        ['Medlemmer',    'adminmedlem'],
+        ['← Medlemmer',  'adminomrmedlemmer'],
+        ['Alle medlemmer', 'adminmedlem'],
         ['Kurs',         'admin',            { kursFane: 'interne' }],
         ['Internbutikk', 'adminbutikk',      { butikkFane: 'Medlemssalg' }],
         ['Beskjeder',    'adminbeskjeder',   { motValg: 'Alle aktive medlemmer' }],
@@ -11435,9 +11495,11 @@ class Component extends DCLogic {
       case 'adminoversikt':      return p('Oversikt');
       case 'admindropin':        return p('Drop-in');
       case 'adminbrukere':       return p('Brukere');
-      case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Deltakere');
+      case 'adminomrdeltakere':  return p('Deltakere', '', '');
+      case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
+      case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
-      case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Medlemmer');
+      case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Alle medlemmer');
       case 'adminoppskrifter':   return p('Medlemmer', 'Medlemmer', 'Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
       case 'adminmarked':        return p('Nettsiden', 'Nettsiden', 'Markedsføring');
@@ -13426,6 +13488,150 @@ class Component extends DCLogic {
       ],
       // Kursskjermen naas fra tre grupper. Hvilken du kom fra avgjor bade
       // hvilke kurs som staar i lista og hvilket punkt som er markert.
+      // ── Forsida for et omraade ────────────────────────────────────────
+      //
+      // Klikker du «Deltakere» i menyen, er det sjelden deltakerlista du er
+      // ute etter — det er ett av seks steder. Foer landet du rett i lista
+      // og maatte finne veien videre derfra.
+      //
+      // Kortene er ikke bare lenker. Tallet paa hvert kort er det som
+      // avgjor om du skal dit i det hele tatt: staar det ingen ubetalte,
+      // trenger du ikke aapne betalingene for aa finne det ut.
+      ...(() => {
+        const erDeltakere = side === 'adminomrdeltakere';
+        const erMedlemmer = side === 'adminomrmedlemmer';
+        if (!erDeltakere && !erMedlemmer) {
+          return { erAdminOmraade: false, omrKort: [], omrHurtig: [] };
+        }
+
+        const kortStil = {
+          appearance: 'none', textAlign: 'left', cursor: 'pointer', width: '100%',
+          background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+          display: 'flex', flexDirection: 'column', height: '100%',
+        };
+        // Et tall som krever noe av deg skal se annerledes ut enn et som
+        // bare forteller hvor mange det er.
+        const tallStil = (verdi, haster) => ({
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-2xl)',
+          color: haster && verdi ? 'var(--terracotta-600)' : 'var(--text-heading)',
+          whiteSpace: 'nowrap',
+        });
+        const kort = (navn, hva, verdi, rute, forvalg, knapp, haster) => ({
+          navn, hva,
+          tall: (verdi === null || verdi === undefined) ? '' : String(verdi),
+          tallStil: tallStil(verdi, haster),
+          knapp: knapp || 'Åpne',
+          stil: kortStil,
+          velg: () => this.gaaAdmin(rute, forvalg),
+        });
+
+        const intern = k => (k.tema || '') === 'Kun for medlemmer'
+          || k.type === 'Kun for medlemmer' || k.type === 'Kun medlemmer';
+        const kursData = this.kursData();
+
+        if (erDeltakere) {
+          const deltakere = this.kursdeltakerRader();
+          const pameldte = this.state.adminDeltakere || [];
+          const ubetalte = pameldte.filter(x => x.status !== 'Betalt').length;
+          return {
+            erAdminOmraade: true,
+            adminNavOmraade: this.adminMeny(),
+            omrTittel: 'Kursdeltakere',
+            omrUnder: 'Alt som gjelder dem som går på kurs hos dere: hvem de er, hva de '
+              + 'har meldt seg på, hva de har betalt, og hva de har fått beskjed om.',
+            omrHurtig: [
+              { navn: 'Legg til deltaker', velg: () => this.gaaAdmin('adminpameldte', { mpApen: true }) },
+              { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
+              { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', {
+                  kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
+                  kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8',
+                  kBeskrivelse: '', kBekreftelse: '', kMva: false,
+                  kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+                  kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
+                  kDatoer: [{ dato: '', fra: '', til: '' }],
+                }) },
+            ],
+            omrKort: [
+              kort('Deltakere',
+                   'Alle som har vært på kurs, med historikk og kursbevis — og hva de selv ser på Min side.',
+                   deltakere.length, 'adminkursdeltakere', {}, 'Se deltakerne'),
+              kort('Påmeldte',
+                   ubetalte ? 'Hvem som kommer framover. ' + ubetalte + (ubetalte === 1 ? ' har' : ' har') + ' ikke gjort opp ennå.'
+                            : 'Hvem som kommer framover, og hva de har betalt.',
+                   pameldte.length, 'adminpameldte', {}, 'Se påmeldingene'),
+              kort('Kurs',
+                   'Kursene som er åpne for alle: datoer, priser og ledige plasser.',
+                   kursData.filter(k => !intern(k)).length, 'admin', { kursFane: 'apne' }, 'Se kursene'),
+              kort('Beskjeder',
+                   'Send beskjed til alle påmeldte på én dato, eller til én person.',
+                   null, 'adminbeskjeder', { motValg: 'Deltakere på et kurs' }, 'Skriv beskjed'),
+              kort('Betalinger',
+                   'Det som er betalt for kurs og drop-in.',
+                   ubetalte || null, 'adminokonomi', { okonomiFor: 'deltakere' },
+                   ubetalte ? 'Se de ubetalte' : 'Se betalingene', true),
+              kort('Nyttig info',
+                   'Sidene deltakerne får lese: brennetabell, trivselsregler og guider.',
+                   null, 'adminnyttig', { nyttigFor: 'deltakere' }, 'Rediger info'),
+            ],
+          };
+        }
+
+        const medlemmer = this.state.adminMedlemmer || [];
+        const aktive = medlemmer.filter(m => ['aktiv', 'prove', 'pause'].indexOf(m.status) !== -1).length;
+        const soknader = (this.state.adminSoknader || []).length;
+        const venterSalg = this.galleriListe().filter(g => g.status === 'venter').length;
+
+        return {
+          erAdminOmraade: true,
+          adminNavOmraade: this.adminMeny(),
+          omrTittel: 'Medlemmer',
+          omrUnder: 'Alt som gjelder dem som har fast plass i verkstedet: registeret, '
+            + 'samlingene deres, internbutikken, beskjedene og det interne innholdet.',
+          omrHurtig: [
+            { navn: 'Meld inn medlem', velg: () => this.gaaAdmin('adminkursdeltakere', {
+                miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '',
+              }) },
+            { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
+            { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
+                kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
+                kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10',
+                kBeskrivelse: '', kBekreftelse: '', kMva: false,
+                kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+                kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
+                kDatoer: [{ dato: '', fra: '', til: '' }],
+              }) },
+          ],
+          omrKort: [
+            kort('Medlemmer',
+                 soknader ? 'Registeret med timer og status. ' + soknader
+                          + (soknader === 1 ? ' søknad venter på svar.' : ' søknader venter på svar.')
+                          : 'Registeret med timer, status og hva hver enkelt bruker verkstedet til.',
+                 aktive, 'adminmedlem', {}, soknader ? 'Behandle søknadene' : 'Se medlemmene'),
+            kort('Kurs',
+                 'Samlingene bare medlemmene ser — de som er merket «Kun for medlemmer».',
+                 kursData.filter(intern).length, 'admin', { kursFane: 'interne' }, 'Se samlingene'),
+            kort('Internbutikk',
+                 venterSalg ? 'Varer medlemmene selger. ' + venterSalg + ' venter på godkjenning.'
+                            : 'Varer medlemmene selger gjennom butikken.',
+                 venterSalg || null, 'adminbutikk', { butikkFane: 'Medlemssalg' },
+                 venterSalg ? 'Godkjenn varene' : 'Se varene', true),
+            kort('Beskjeder',
+                 'Send beskjed til alle medlemmene, eller til én gruppe.',
+                 null, 'adminbeskjeder', { motValg: 'Alle aktive medlemmer' }, 'Skriv beskjed'),
+            kort('Betalinger',
+                 'Medlemskapstrekkene, og hvem som ikke har gått gjennom.',
+                 null, 'adminokonomi', { okonomiFor: 'medlemmer' }, 'Se betalingene'),
+            kort('Nyttig info',
+                 'Det medlemmene får lese: dørkode, ordensregler og verkstedinfo.',
+                 null, 'adminnyttig', { nyttigFor: 'medlemmer' }, 'Rediger info'),
+            kort('Oppskrifter',
+                 'Glasurer og leiretyper, slik de står på veggen i verkstedet.',
+                 null, 'adminoppskrifter', {}, 'Se oppskriftene'),
+          ],
+        };
+      })(),
+
       // Fanerekka for omraadet man staar i. Samme rekke paa alle skjermene
       // i omraadet, saa man blir vaerende hos dem man jobber med.
       ...this.omraadeFaner(),

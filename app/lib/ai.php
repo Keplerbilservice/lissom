@@ -38,6 +38,20 @@ final class AI
     /** Tak per maaned i kroner, om eieren ikke har satt sitt eget. */
     private const TAK_STANDARD_KR = 300;
 
+    /**
+     * Hva det siste kallet kostet, i ore.
+     *
+     * sporJson() gir fra seg selve svaret, og da forsvinner kostnaden. Den
+     * som lagrer utkastet trenger den — ellers staar alle utkast med null,
+     * og forbruksoversikten stemmer ikke med loggen.
+     */
+    private static int $sisteOre = 0;
+
+    public static function sisteKostnad(): int
+    {
+        return self::$sisteOre;
+    }
+
     public static function noekkel(): string
     {
         return trim((string) Config::hent('claude_api_key', ''));
@@ -173,6 +187,7 @@ final class AI
         $ore = self::kostnadOre($inn, $ut);
 
         self::logg($formal, $inn, $ut, $ore, true, null);
+        self::$sisteOre = $ore;
 
         if ($tekst === '') {
             throw new RuntimeException('AI-en svarte tomt. Prøv igjen.');

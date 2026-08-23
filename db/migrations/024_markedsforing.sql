@@ -80,3 +80,14 @@ INSERT IGNORE INTO marked_sokeord (ord, maalside, sortering) VALUES
   ('drop-in keramikk Tønsberg',     'dropin',     60),
   ('medlemskap keramikkverksted',   'medlemskap', 70),
   ('gavekort keramikkurs',          'gavekort',   80);
+
+-- Artikler som laa der fra for har ingen adresse. Uten en kan de ikke lenkes
+-- til fra Nyheter. Lager en av tittelen: smaa bokstaver, bindestrek, uten
+-- ae/oe/aa. Kjores bare paa rader som mangler den.
+UPDATE articles
+   SET slug = TRIM(BOTH '-' FROM
+         REGEXP_REPLACE(
+           LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(tittel,
+             'æ','ae'),'ø','o'),'å','a'),'Æ','ae'),'Ø','o'),'Å','a')),
+           '[^a-z0-9]+', '-'))
+ WHERE slug IS NULL OR slug = '';

@@ -70,6 +70,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://lissom.no/nyheter</loc>
+    <lastmod>2026-08-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://lissom.no/nyttig-info</loc>
     <lastmod>2026-08-22</lastmod>
     <changefreq>monthly</changefreq>

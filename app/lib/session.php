@@ -25,8 +25,13 @@ final class Sesjon
     /** @var array<string,mixed>|null|false false = ikke slått opp ennå */
     private static array|null|false $medlem = false;
 
-    /** Oppretter sesjon og setter cookien. Returnerer tokenet. */
-    public static function opprett(int $medlemId): string
+    /**
+     * Oppretter sesjon og setter cookien. Returnerer tokenet.
+     *
+     * @param string $maate 'vipps' eller 'passord'. Adminpanelet krever
+     *   passord, saa sesjonen maa huske hvilken vei man kom inn.
+     */
+    public static function opprett(int $medlemId, string $maate = 'vipps'): string
     {
         $token = bin2hex(random_bytes(32));
         $utloper = new DateTimeImmutable('+' . self::VARIGHET_TIMER . ' hours', new DateTimeZone('UTC'));
@@ -34,6 +39,7 @@ final class Sesjon
         DB::settInn('sessions', [
             'token_hash' => hash('sha256', $token),
             'member_id'  => $medlemId,
+            'maate'      => $maate === 'passord' ? 'passord' : 'vipps',
             'expires_at' => $utloper->format('Y-m-d H:i:s'),
             'ip'         => Foresporsel::ipBinaer(),
             'user_agent' => Foresporsel::userAgent(),
@@ -63,7 +69,7 @@ final class Sesjon
         }
 
         $rad = DB::en(
-            'SELECT m.*, s.token_hash
+            'SELECT m.*, s.token_hash, s.maate AS innlogging_maate
                FROM sessions s
                JOIN members m ON m.id = s.member_id
               WHERE s.token_hash = :h
@@ -97,18 +103,52 @@ final class Sesjon
         return self::medlem() !== null;
     }
 
+    /**
+     * Har den innloggede adminrettigheter akkurat naa?
+     *
+     * Adminpanelet krever brukernavn og passord. Vipps beviser hvem du er,
+     * men telefonen din ligger gjerne ulaast paa et bord — og et adminpanel
+     * med kundedata og betalinger skal ikke staa aapent bak en app som
+     * allerede er logget inn.
+     *
+     * Unntaket er en konto uten passord. Uten det ville den forste
+     * administratoren aldri kommet inn for aa sette et — og en eier som
+     * mister passordet ville vaert laast ute for godt. Da kommer man inn med
+     * Vipps, og adminpanelet sier fra om at passordet mangler.
+     */
     public static function erAdmin(): bool
     {
         $m = self::medlem();
         if ($m === null) {
             return false;
         }
+        if (!self::kanVaereAdmin($m)) {
+            return false;
+        }
+        if (trim((string) ($m['passord_hash'] ?? '')) === '') {
+            return true;   // ingen passord satt ennaa — se over
+        }
+        return ($m['innlogging_maate'] ?? 'vipps') === 'passord';
+    }
+
+    /** Er dette en konto som *kan* vaere admin, uavhengig av innloggingsmaate? */
+    public static function kanVaereAdmin(array $m): bool
+    {
         if (($m['rolle'] ?? '') === 'admin') {
             return true;
         }
         // Nødluke: numre i secrets.php er alltid admin, også om databasen er tom.
         $tlf = normaliser_telefon((string) ($m['telefon'] ?? ''));
         return $tlf !== '' && in_array($tlf, Config::adminNumre(), true);
+    }
+
+    /** Mangler denne kontoen et passord den burde hatt? */
+    public static function adminUtenPassord(): bool
+    {
+        $m = self::medlem();
+        return $m !== null
+            && self::kanVaereAdmin($m)
+            && trim((string) ($m['passord_hash'] ?? '')) === '';
     }
 
     public static function avslutt(): void

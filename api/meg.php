@@ -40,6 +40,13 @@ Svar::json([
     'innlogget'      => true,
     'internInfo'     => (object) $internInfo,
     'erAdmin'        => Sesjon::erAdmin(),
+    // Kontoen er en administratorkonto, men innloggingen holder ikke:
+    // adminpanelet krever brukernavn og passord. Uten dette forsvinner
+    // admin-lenka uten forklaring, og det ser ut som om tilgangen er borte.
+    'adminKreverPassord' => !Sesjon::erAdmin() && Sesjon::kanVaereAdmin($m),
+    // Sluppet inn fordi det ikke finnes noe passord aa kreve. Da skal det
+    // staa tydelig at det bor settes.
+    'adminUtenPassord'   => Sesjon::adminUtenPassord(),
     'erMedlem'       => er_aktivt_medlem($m),
     'soknadStatus'   => $soknad ? (string) $soknad['status'] : null,
     'medlem'    => [

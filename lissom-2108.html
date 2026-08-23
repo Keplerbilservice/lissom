@@ -1792,6 +1792,27 @@ window.__resources = {
       <section style="background: var(--clay-100); padding: var(--space-10) var(--space-8) var(--space-16);">
         <div style="max-width: var(--width-wide); margin: 0 auto;">
 
+          <!-- Adminkonto, men logget inn med Vipps.
+               Uten dette forsvinner admin-lenka uten forklaring, og det ser
+               ut som om tilgangen er tatt bort. -->
+          <sc-if value="{{ visAdminKreverPassord }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+              <div style="min-width: 0;">
+                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 2px;">Adminpanelet krever passord</div>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Du er logget inn med Vipps. Det holder for Min side, men ikke for administrasjonen — logg inn med brukernavn og passord for å komme dit.</p>
+              </div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ tilPassordinnlogging }}" hint-size="auto,40px">Logg inn med passord</x-import>
+            </div>
+          </sc-if>
+
+          <!-- Sluppet inn uten passord fordi kontoen ikke har noe. -->
+          <sc-if value="{{ visAdminUtenPassord }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-600); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-8);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 2px;">Sett et passord på adminkontoen</div>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Kontoen din har ingen passord, og slipper derfor inn i administrasjonen med Vipps. Sett et passord under Admin → Brukere, så kreves det heretter — og en telefon som ligger framme gir ikke lenger tilgang til kundedata og betalinger.</p>
+            </div>
+          </sc-if>
+
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-4);">
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
             <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
@@ -8163,6 +8184,10 @@ class Component extends DCLogic {
         const ny = {
           innlogget: inne,
           erAdminBruker: !!d.erAdmin,
+          // Adminkonto, men logget inn med Vipps. Adminpanelet krever
+          // passord, og uten dette forsvinner lenka uten forklaring.
+          adminKreverPassord: !!d.adminKreverPassord,
+          adminUtenPassord: !!d.adminUtenPassord,
           // Innlogget er ikke medlem. Vipps forteller hvem noen er;
           // medlemskapet er noe verkstedet godkjenner.
           erMedlemBruker: !!d.erMedlem,
@@ -8171,7 +8196,22 @@ class Component extends DCLogic {
           vippsNavn: (d.medlem && d.medlem.navn) || '',
           internInfo: d.internInfo || {},
           vippsSteg: null, // lukk en eventuell innloggingsboks
+          // Naa vet vi hvem som er innlogget. For dette er satt, skal ingen
+          // sendes bort fra en adminskjerm — da ville en oppfrisking av
+          // /admin kastet eieren ut hver gang.
+          innloggingSjekket: true,
         };
+
+        // Adminskjermene skal ikke staa aapne for en innlogging som ikke
+        // holder. Serveren nekter uansett, men da moter man en tom skjerm
+        // uten forklaring framfor beskjeden om hva som mangler.
+        if ((this.state.side || '').indexOf('admin') === 0 && !d.erAdmin) {
+          ny.side = inne ? 'minside' : 'login';
+          if (d.adminKreverPassord) {
+            ny.kvittering = 'Adminpanelet krever passord';
+            ny.kvitteringDetalj = 'Du er logget inn med Vipps. Logg inn med brukernavn og passord for å komme dit.';
+          }
+        }
 
         if (kommerFraVipps) {
           // Adressen bestemmer hvor vi havner — den peker dit brukeren var da
@@ -10700,6 +10740,22 @@ class Component extends DCLogic {
         .then(d => { if (d && d.plasser) this.setState({ minePlasser: d.plasser }); })
         .catch(() => {})
         .then(() => { this._plasserHentes = false; });
+    }
+
+    // Samme sperre naar man navigerer dit etterpaa — via en lenke, et
+    // bokmerke eller tilbakeknappen.
+    if (this.erPublisert() && this.state.innloggingSjekket
+        && side.indexOf('admin') === 0 && !this.state.erAdminBruker) {
+      const til = this.state.innlogget ? 'minside' : 'login';
+      if (this.state.side !== til) {
+        setTimeout(() => this.setState({
+          side: til,
+          kvittering: this.state.adminKreverPassord ? 'Adminpanelet krever passord' : 'Du har ikke tilgang',
+          kvitteringDetalj: this.state.adminKreverPassord
+            ? 'Logg inn med brukernavn og passord for å komme dit.'
+            : 'Denne siden er for verkstedet.',
+        }), 0);
+      }
     }
 
     this.synkAdresse();
@@ -15286,6 +15342,9 @@ class Component extends DCLogic {
       // I designverktoyets forhandsvisning finnes ingen server, og da skal
       // hele siden vises slik den er tegnet. Paa den ekte nettsiden er det
       // serveren som avgjor: bare den som er godkjent som medlem slipper inn.
+      visAdminKreverPassord: this.erPublisert() && !!this.state.adminKreverPassord,
+      visAdminUtenPassord: this.erPublisert() && !!this.state.adminUtenPassord,
+      tilPassordinnlogging: () => { this.setState({ side: 'login', liFeil: null }); window.scrollTo(0, 0); },
       erMedlem: !this.erPublisert() || !!this.state.erMedlemBruker,
       visBliMedlem: this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker,
       bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',

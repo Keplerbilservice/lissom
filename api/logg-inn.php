@@ -58,7 +58,7 @@ if (password_needs_rehash((string) $m['passord_hash'], PASSWORD_DEFAULT)) {
     DB::oppdater('members', ['passord_hash' => password_hash($passord, PASSWORD_DEFAULT)], ['id' => $m['id']]);
 }
 
-Sesjon::opprett((int) $m['id']);
+Sesjon::opprett((int) $m['id'], 'passord');
 DB::oppdater('members', ['siste_innlogging' => gmdate('Y-m-d H:i:s')], ['id' => $m['id']]);
 revider('innlogging_passord', 'member', (int) $m['id']);
 

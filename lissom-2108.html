@@ -1081,8 +1081,8 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Om Lissom</div>
-          <h1 class="lx-omoss-h1" style="margin: 0 0 var(--space-10); font-size: var(--text-5xl); white-space: nowrap;">Keramikkverkstedet vårt</h1>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ ooKicker }}</div>
+          <h1 class="lx-omoss-h1" style="margin: 0 0 var(--space-10); font-size: var(--text-5xl); white-space: nowrap;">{{ ooTittel }}</h1>
           <div class="lx-split" style="display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--space-8) var(--space-16); align-items: start;">
             <div>
               <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); line-height: 1.65; max-width: 58ch; text-wrap: pretty;">Historien om Lissom startet egentlig lenge før keramikkverkstedet åpnet dørene på Teie. På begynnelsen av 2000-tallet drev Monica Lissom Café, et sted hvor mennesker møttes, fant ro og trivdes i godt selskap. Da muligheten senere dukket opp til å skape noe nytt, føltes det naturlig å gi nytt liv til det samme navnet.</p>
@@ -1142,9 +1142,9 @@ window.__resources = {
       <section data-theme="ink" style="background: var(--lissom-brown); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-16); align-items: center;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">Finn fram</div>
-            <h2 style="color: var(--clay-50); margin: 0 0 var(--space-5); font-size: var(--text-4xl);">Nordre Løkkevei 15</h2>
-            <p style="margin: 0 0 var(--space-6); color: var(--clay-300); max-width: 40ch; text-wrap: pretty;">På Teie, få minutter fra Tønsberg sentrum, på vei mot Tjøme. Adresse: Nordre Løkkevei 15, 3120 Nøtterøy. Inngang på baksiden av bygget, gå gjennom porten og følg skiltet.</p>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-3);">{{ ooFinnKicker }}</div>
+            <h2 style="color: var(--clay-50); margin: 0 0 var(--space-5); font-size: var(--text-4xl);">{{ ooAdresse }}</h2>
+            <p style="margin: 0 0 var(--space-6); color: var(--clay-300); max-width: 40ch; text-wrap: pretty;">{{ ooVeibeskrivelse }}</p>
             <div style="display: flex; flex-direction: column; gap: 10px; color: var(--clay-200); font-size: var(--text-base);">
               <span>+47 94 13 46 01</span>
               <span>monica@lissom.no</span>
@@ -1162,16 +1162,16 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-10);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kurs og events</div>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ keKicker }}</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ kursTittel }}</h1>
-          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.</p>
+          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ keIngress }}</p>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <sc-for list="{{ kursFiltre }}" as="f" hint-placeholder-count="6">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ f.valgt }}" on-click="{{ f.velg }}" hint-size="auto,32px">{{ f.navn }}</x-import>
             </sc-for>
           </div>
           <div style="margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: var(--space-2) var(--space-3); flex-wrap: wrap; align-items: center;">
-            <span>Maks 8 deltakere</span><span aria-hidden="true">·</span><span>Leire, glasur og brenning inkludert</span>
+            <span>{{ keDetaljVenstre }}</span><span aria-hidden="true">·</span><span>{{ keDetaljHoyre }}</span>
           </div>
         </div>
       </section>
@@ -1190,8 +1190,8 @@ window.__resources = {
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
           <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">
             <div>
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Velkommen til Lissom</div>
-              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Hos Lissom handler keramikk om mye mer enn leire</h2>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ keVelkomstKicker }}</div>
+              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">{{ keVelkomstTittel }}</h2>
               <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det handler om å senke skuldrene. Om å koble av fra en travel hverdag. Om å oppleve den gode følelsen av å være helt til stede i øyeblikket.</p>
               <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Når hendene får arbeide med leiren, skjer det noe. Tankene roer seg, tiden går litt saktere, og du får rom til å være kreativ uten prestasjonspress. Mange blir overrasket over hvor avslappende det er. Andre oppdager en skaperglede de ikke visste at de hadde.</p>
               <p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Enten du velger dreiekurs eller plateteknikk, trenger du ingen forkunnskaper. Vi hjelper deg hele veien, i et trygt og inkluderende miljø hvor det er lov å prøve, feile, lære og le.</p>
@@ -1233,8 +1233,8 @@ window.__resources = {
           <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr 1.1fr; gap: var(--space-10); align-items: start;">
             <img src="uploads_shutterstock_2829101699.jpg" srcset="uploads_shutterstock_2829101699-400.jpg 400w, uploads_shutterstock_2829101699-800.jpg 800w, uploads_shutterstock_2829101699.jpg 1024w" sizes="(max-width: 760px) 92vw, 520px" alt="Drop-in-registrering i verkstedet" class="lx-foto" style="width: 100%; aspect-ratio: 3 / 4; object-fit: cover; object-position: center 30%; border-radius: var(--radius-lg); display: block;" loading="lazy" decoding="async" width="1024" height="1024">
             <div>
-              <h2 style="margin: 0 0 var(--space-4);">Verkstedet, på dine premisser</h2>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 52ch; text-wrap: pretty;">Book en økt på to timer og jobb med dine egne prosjekter — uten fast program, i verkstedet på Teie.</p>
+              <h2 style="margin: 0 0 var(--space-4);">{{ keDropinTittel }}</h2>
+              <p style="margin: 0 0 var(--space-6); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 52ch; text-wrap: pretty;">{{ keDropinIngress }}</p>
               <div style="display: flex; flex-direction: column; gap: var(--space-3);">
                 <sc-for list="{{ diHva }}" as="p" hint-placeholder-count="4">
                   <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);">
@@ -1264,8 +1264,8 @@ window.__resources = {
 
         <section style="background: var(--clay-100); padding: var(--space-12) var(--space-8);">
           <div style="max-width: var(--width-content); margin: 0 auto;">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Slik fungerer det</div>
-            <h2 style="margin: 0 0 var(--space-8); font-size: var(--text-3xl);">Fra booking til ferdig brent</h2>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ keStegKicker }}</div>
+            <h2 style="margin: 0 0 var(--space-8); font-size: var(--text-3xl);">{{ keStegTittel }}</h2>
             <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6);">
               <sc-for list="{{ diSteg }}" as="s" hint-placeholder-count="4">
                 <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -1281,7 +1281,7 @@ window.__resources = {
         <section style="background: var(--clay-50); padding: var(--space-12) var(--space-8) var(--section-y);">
           <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">Passer for</div>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600); margin-bottom: var(--space-3);">{{ kePasserTittel }}</div>
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <sc-for list="{{ diHvem }}" as="p" hint-placeholder-count="4">
                   <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>{{ p }}</span></div>
@@ -1289,7 +1289,7 @@ window.__resources = {
               </div>
             </div>
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ikke ideelt for</div>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ keIkkeTittel }}</div>
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <sc-for list="{{ diIkke }}" as="p" hint-placeholder-count="2">
                   <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="color: var(--terracotta-600); font-weight: 700; flex: 0 0 auto;">✗</span><span>{{ p }}</span></div>
@@ -1729,9 +1729,9 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: 720px; margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Sist oppdatert 25. august 2026</div>
-          <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">Personvern</h1>
-          <p style="margin: 0 0 var(--space-10); color: var(--text-body); font-size: var(--text-lg); text-wrap: pretty;">Vi lagrer bare det vi trenger for å drive verkstedet, og vi selger aldri opplysninger videre.</p>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Sist oppdatert {{ pvSistOppdatert }}</div>
+          <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ pvTittel }}</h1>
+          <p style="margin: 0 0 var(--space-10); color: var(--text-body); font-size: var(--text-lg); text-wrap: pretty;">{{ pvIngress }}</p>
 
           <sc-for list="{{ personvern }}" as="a" hint-placeholder-count="8">
             <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0;">
@@ -1820,9 +1820,9 @@ window.__resources = {
         <div class="lx-hide-m" style="position: absolute; top: 0; bottom: 0; right: 0; width: 52%; background-image: url('uploads_shutterstock_2752346251.jpg'); background-size: cover; background-position: center 30%;" role="img" aria-label="Gruppe som ler rundt langbordet i verkstedet"></div>
         <div class="lx-hide-m" style="position: absolute; inset: 0; background: linear-gradient(100deg, var(--lissom-yellow) 46%, rgba(255,207,56,0.85) 56%, rgba(255,207,56,0.25) 76%, transparent 94%); pointer-events: none;"></div>
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Bedrift og event</div>
-          <h1 style="margin: 0 0 var(--space-5); color: var(--lissom-brown); font-size: clamp(36px, 3.6vw, 60px); line-height: 1.05; max-width: 18ch;">Samle gjengen rundt <em style="font-style: italic;">dreieskiven.</em></h1>
-          <p style="margin: 0 0 var(--space-8); color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Private events for 6–16 personer: teambuilding, utdrikningslag, bursdager og venninnekvelder. Alt utstyr, veiledning og brenning er inkludert — dere tar bare med godt humør.</p>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">{{ beKicker }}</div>
+          <h1 style="margin: 0 0 var(--space-5); color: var(--lissom-brown); font-size: clamp(36px, 3.6vw, 60px); line-height: 1.05; max-width: 18ch;">{{ beTittel }} <em style="font-style: italic;">{{ beTittelKursiv }}</em></h1>
+          <p style="margin: 0 0 var(--space-8); color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ beIngress }}</p>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ bedriftTilSkjema }}" hint-size="auto,56px">Send en forespørsel</x-import>
         </div>
       </section>
@@ -2093,8 +2093,8 @@ window.__resources = {
         <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -140px; bottom: -180px; width: 620px; opacity: 0.12; pointer-events: none;" loading="lazy" decoding="async" width="192" height="112">
         <img src="logo-lockup.svg" alt="lissom" style="height: 72px; align-self: flex-start; position: relative;" loading="lazy" decoding="async" width="425" height="232">
         <div style="position: relative;">
-          <h2 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--lissom-brown); margin: 0 0 var(--space-5);">Verkstedet ditt, døgnet rundt</h2>
-          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 38ch; text-wrap: pretty;">Logg inn for å stemple inn, se timene dine, lese beskjeder og bestille leire og brenning.</p>
+          <h2 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--lissom-brown); margin: 0 0 var(--space-5);">{{ liTittel }}</h2>
+          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 38ch; text-wrap: pretty;">{{ liTekst }}</p>
         </div>
         <div style="position: relative; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500);">Nordre Løkkevei 15 · 3120 Nøtterøy</div>
       </div>
@@ -2239,7 +2239,7 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på kortet" placeholder="F.eks. «Gratulerer med dagen, mamma!»" hint-size="100%,66px"></x-import>
                 <div style="height: var(--space-4);"></div>
               </sc-if>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">Fullfør bestilling</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">Du betaler med {{ valgtBetaling }}. Alle priser er inkl. mva der mva gjelder. Kvittering sendes på e-post.</p>
               <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Alt er dreid for hånd, så farge og form varierer litt fra bildet. Hentetid i butikken: to uker.</p>
@@ -2795,18 +2795,18 @@ window.__resources = {
 
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-10);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Butikken</div>
-          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">Kopper, boller og fat</h1>
-          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Alt er laget her på verkstedet. Hent i butikken på Teie, eller få det sendt. Betal med Vipps. Alle priser er inkl. mva.</p>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ btKicker }}</div>
+          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ btTittel }}</h1>
+          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ btIngress }}</p>
           <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); margin-bottom: var(--space-8);">
             <div onClick="{{ butikkVelgLissom }}" style="background: var(--surface-card); border: 2px solid {{ butikkLissomKant }}; border-radius: var(--radius-lg); padding: var(--space-6); cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Lissom kolleksjon</div>
-              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">Kopper, boller og fat laget av Monica. Matsikret og klart til bruk.</p>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ btKolleksjonTittel }}</div>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ btKolleksjonTekst }}</p>
             </div>
             <sc-if value="{{ visMedlemskolleksjon }}" hint-placeholder-val="{{ true }}">
               <div onClick="{{ butikkVelgMedlem }}" style="background: var(--surface-card); border: 2px solid {{ butikkMedlemKant }}; border-radius: var(--radius-lg); padding: var(--space-6); cursor: pointer; transition: box-shadow var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Laget av medlemmer</div>
-                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">Unike arbeider fra medlemmene i verkstedet. Selges direkte fra maker.</p>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ btMedlemTittel }}</div>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ btMedlemTekst }}</p>
               </div>
             </sc-if>
           </div>
@@ -2840,9 +2840,9 @@ window.__resources = {
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-12); align-items: start;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-4);">Spesialbestillinger</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-4);">{{ btSpesialKicker }}</div>
             <h2 style="color: var(--lissom-brown); margin: 0 0 var(--space-6); font-size: clamp(32px, 2.8vw, 48px); line-height: 1.05; text-wrap: balance;">Vil du gi noe <em style="font-style: italic; font-weight: 700;">helt eget?</em></h2>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,56px">Send oss en forespørsel</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,56px">{{ btSpesialKnapp }}</x-import>
           </div>
           <div style="display: flex; flex-direction: column; gap: var(--space-5); font-size: var(--text-lg); line-height: 1.65; color: var(--brown-500);">
             <p style="margin: 0; text-wrap: pretty;">Vi tar imot spesialbestillinger — et fat med navn og dato til bryllupet, en jubileumsgave, et servise. Fortell oss om anledningen, så foreslår vi noe som passer.</p>
@@ -6072,8 +6072,8 @@ window.__resources = {
         <div style="padding-bottom: var(--space-10); border-bottom: 1px solid rgba(244,235,222,.18);">
           <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 2.8vw, 52px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
           <div class="lx-band" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
-            <button type="button" onClick="{{ ktApne }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 16px 32px; font: var(--type-body); font-size: var(--text-base); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; transition: all .2s var(--ease-clay, ease);" style-hover="background: var(--yellow-500, #E6B800);">Send oss en forespørsel <span aria-hidden="true">→</span></button>
-            <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--clay-300); max-width: 42ch; text-wrap: pretty;">Et kreativt fristed for skaperglede, håndverk og fellesskap — på Teie, rett utenfor Tønsberg.</p>
+            <button type="button" onClick="{{ ktApne }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; border: 2px solid var(--lissom-brown); background: var(--lissom-yellow); color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 16px 32px; font: var(--type-body); font-size: var(--text-base); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; transition: all .2s var(--ease-clay, ease);" style-hover="background: var(--yellow-500, #E6B800);">{{ ftKnapp }} <span aria-hidden="true">→</span></button>
+            <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--clay-300); max-width: 42ch; text-wrap: pretty;">{{ ftUndertekst }}</p>
           </div>
         </div>
 
@@ -6081,13 +6081,13 @@ window.__resources = {
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Besøk oss</div>
             <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; font-size: var(--text-base); line-height: 1.45; color: var(--clay-200);">
-              <a href="https://maps.google.com/?q=Nordre+L%C3%B8kkevei+15,+3120+N%C3%B8tter%C3%B8y" target="_blank" rel="noopener" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">Nordre Løkkevei 15, 3120 Nøtterøy</a>
-              <a href="tel:+4794134601" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">+47 94 13 46 01</a>
-              <a href="mailto:monica@lissom.no" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">monica@lissom.no</a>
+              <a href="https://maps.google.com/?q=Nordre+L%C3%B8kkevei+15,+3120+N%C3%B8tter%C3%B8y" target="_blank" rel="noopener" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">{{ ftAdresse }}</a>
+              <a href="tel:+4794134601" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">{{ ftTelefon }}</a>
+              <a href="mailto:monica@lissom.no" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">{{ ftEpost }}</a>
               <div style="margin-top: 10px; font-size: var(--text-sm); line-height: 1.45; color: var(--clay-300); display: flex; flex-direction: column;">
-                <span style="font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: 2px;">Åpningstid</span>
-                <span>Verkstedet: etter avtale</span>
-                <span>Medlemmer: døgnåpent</span>
+                <span style="font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: 2px;">{{ ftApningTittel }}</span>
+                <span>{{ ftApning1 }}</span>
+                <span>{{ ftApning2 }}</span>
               </div>
             </div>
           </div>
@@ -6109,14 +6109,14 @@ window.__resources = {
               <span style="width: 44px; height: 44px; flex: none; border-radius: 999px; border: 1px solid rgba(244,235,222,.35); display: inline-flex; align-items: center; justify-content: center;"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="instagram" size="{{ tjue }}" hint-size="20px,20px"></x-import></span>
               <span style="font-size: var(--text-base); font-weight: 600;">{{ instaNavn }}</span>
             </a>
-            <div style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);"><img src="mark-heart.png" alt="" style="height: 15px; width: auto; filter: invert(0.92) sepia(0.14) saturate(1.4) hue-rotate(-15deg);" loading="lazy" decoding="async" width="887" height="856">100% håndlaget med kjærlighet</div>
+            <div style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);"><img src="mark-heart.png" alt="" style="height: 15px; width: auto; filter: invert(0.92) sepia(0.14) saturate(1.4) hue-rotate(-15deg);" loading="lazy" decoding="async" width="887" height="856">{{ ftMerkelinje }}</div>
           </div>
         </div>
 
         <div style="border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
           <div style="display: flex; gap: var(--space-3) var(--space-6); flex-wrap: wrap; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);">
-            <span>&copy; {{ aarstall }} Lissom Keramikk &amp; Håndverk AS — alle rettigheter forbeholdt</span>
-            <span style="color: var(--clay-50); font-weight: 700; font-size: 13px;">Org. nr. 938 280 819 MVA</span>
+            <span>&copy; {{ aarstall }} {{ ftFirmanavn }}</span>
+            <span style="color: var(--clay-50); font-weight: 700; font-size: 13px;">{{ ftOrgnr }}</span>
             <!-- Joika Design-merket, i en lav utgave laget for denne raden.
                  Gjennomsiktigheten er 68 %, ikke lavere: under det faller
                  kontrasten mot den brune bunnen under 4,5, og linja er 12
@@ -7312,35 +7312,29 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Laget her på verkstedet' },
       { l: 'Knapp', v: 'Til butikken' } ] },
   ],
+  // «Ordensregler og HMS» og «Regler for drop-in» sto her med hver sin
+  // punktliste — de samme punktene som redigeres under Nyttig info →
+  // Plakater, og som er de som faktisk vises. To steder for det samme, der
+  // bare det ene virket. De staar naa ett sted, og blokka her peker dit.
   'Kurs og events': [
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events' },
-      { l: 'Overskrift', v: 'Finn en dato som passer' },
-      { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true } ] },
-    { navn: 'Forespørsel', type: 'Skjema nederst', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Fant du ikke det du lette etter?' },
-      { l: 'Overskrift', v: 'Spør oss, så finner vi ut av det' },
-      { l: 'Tekst', v: 'Vi tar imot grupper, bedrifter, utdrikningslag og bursdager, og setter gjerne opp kurs på andre tidspunkter hvis flere ønsker det samme.', lang: true },
-      { l: 'Undertekst', v: 'Vi svarer som regel samme dag. Du kan også ringe +47 94 13 46 01.', lang: true } ] },
-    { navn: 'Filtre', type: 'Kategorier', synlig: 'Publisert', felter: [
-      { l: 'Kategorier', v: 'Alle, Dreiing, Plateteknikk, Paint on pots, Events, Drop-in', lang: true } ] },
-    { navn: 'Kurslisten', type: 'Automatisk fra Kurs og events', synlig: 'Publisert', felter: [
-      { l: 'Sortering', v: 'Neste dato først' } ] },
-    { navn: 'Ordensregler og HMS', type: 'Gul seksjon', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Før du kommer' },
-      { l: 'Overskrift', v: 'Ordensregler og HMS' },
-      { l: 'Ingress', v: 'Gjelder for drop-in og kurs. Vi går gjennom det samme når du kommer.', lang: true },
-      { l: 'Punkt 1: Rydd etter deg', v: 'Vask verktøy, bord og dreieskive før du går. Leirerester skrapes i leirebøtta, ikke i vasken. Gulvet moppes vått — aldri kost, det virvler opp kvartsstøv.', lang: true },
-      { l: 'Punkt 2: Støv er den største risikoen', v: 'Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.', lang: true },
-      { l: 'Punkt 3: Glasur og kjemikalier', v: 'Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.', lang: true },
-      { l: 'Punkt 4: Ovnen', v: 'Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.', lang: true },
-      { l: 'Punkt 5: Merk arbeidene dine', v: 'Skriv initialene dine i bunnen før tørking. Umerkede arbeider på fellehyllene kastes etter to måneder.', lang: true },
-      { l: 'Punkt 6: Hylla di', v: 'Medlemmer har egen hylle. Hold arbeidene innenfor din egen plass, og ta med ferdige ting hjem så det blir plass til andre.', lang: true },
-      { l: 'Punkt 7: Siste person låser', v: 'Sjekk at vinduene er lukket, vannet er avstengt og lyset er slukket. Døra låses automatisk, men dra i den for å være sikker.', lang: true },
-      { l: 'Punkt 8: Ved uhell', v: 'Førstehjelpsskrin henger ved vasken, brannslukker ved utgangen. Meld fra til Monica på +47 94 13 46 01 ved skade, kutt eller søl av kjemikalier.', lang: true } ] },
-    { navn: 'Regler for drop-in', type: 'Punktliste', synlig: 'Publisert', felter: [
-      { l: 'Punkt 1', v: 'Drop-in krever godkjenning av oss. Du må ha gått kurs hos oss, eller være sammen med et aktivt medlem som er til stede hele tiden.', lang: true },
-      { l: 'Punkt 2', v: 'Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true } ] },
+      { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true },
+      { l: 'Detalj venstre', v: 'Maks 8 deltakere' },
+      { l: 'Detalj høyre', v: 'Leire, glasur og brenning inkludert' } ] },
+    { navn: 'Kurslisten', type: 'Automatisk fra Kurs og medlemskap', synlig: 'Publisert', felter: [] },
+    { navn: 'Velkommen til Lissom', type: 'Tekstseksjon', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Velkommen til Lissom' },
+      { l: 'Overskrift', v: 'Hos Lissom handler keramikk om mye mer enn leire' } ] },
+    { navn: 'Drop-in', type: 'Bilde og tekst', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Verkstedet, på dine premisser' },
+      { l: 'Ingress', v: 'Book en økt på to timer og jobb med dine egne prosjekter — uten fast program, i verkstedet på Teie.', lang: true } ] },
+    { navn: 'Slik fungerer det', type: 'Fire steg', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Slik fungerer det' },
+      { l: 'Overskrift', v: 'Fra booking til ferdig brent' },
+      { l: 'Overskrift, passer for', v: 'Passer for' },
+      { l: 'Overskrift, ikke for', v: 'Ikke ideelt for' } ] },
+    { navn: 'Ordensregler og HMS', type: 'Redigeres under Nyttig info → Plakater', synlig: 'Publisert', felter: [] },
   ],
   // Blokk 1 og 2 var prislister med medlemskapsnavnene skrevet inn — et
   // annet sted aa endre den samme prisen, ved siden av Kurs og medlemskap →
@@ -7369,24 +7363,37 @@ const SIDEINNHOLD = {
       { l: 'Sitat', v: '«Jeg kom for å lære å dreie, men det som fikk meg til å bli var menneskene.»', lang: true },
       { l: 'Avsender', v: 'Anniken · medlem siden 2025' } ] },
   ],
+  // «Ingress» sto to ganger i samme blokk. Skjemaet viste to like felter,
+  // og bare det siste hadde noen virkning.
   'Butikk': [
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Butikken' },
       { l: 'Overskrift', v: 'Kopper, boller og fat' },
-      { l: 'Ingress', v: 'Alt er laget her på verkstedet av Monica. Hent i butikken på Teie, eller få det sendt. Betal med Vipps. Alle priser er inkl. mva.', lang: true },
-      { l: 'Ingress', v: 'Alt er laget her på verkstedet av Monica.', lang: true } ] },
-    { navn: 'Produktlisten', type: 'Automatisk fra Butikk', synlig: 'Publisert', felter: [
-      { l: 'Sortering', v: 'Nyeste først' } ] },
+      { l: 'Ingress', v: 'Alt er laget her på verkstedet. Hent i butikken på Teie, eller få det sendt. Betal med Vipps. Alle priser er inkl. mva.', lang: true } ] },
+    { navn: 'Lissom kolleksjon', type: 'Produkter, automatisk', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Lissom kolleksjon' },
+      { l: 'Tekst', v: 'Kopper, boller og fat laget av Monica. Matsikret og klart til bruk.', lang: true } ] },
+    { navn: 'Laget av medlemmer', type: 'Medlemssalg, automatisk', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Laget av medlemmer' },
+      { l: 'Tekst', v: 'Unike arbeider fra medlemmene i verkstedet. Selges direkte fra maker.', lang: true } ] },
+    { navn: 'Spesialbestillinger', type: 'Seksjon nederst', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Spesialbestillinger' },
+      { l: 'Knapp', v: 'Send oss en forespørsel' } ] },
     { navn: 'Praktisk info', type: 'Tre punkter', synlig: 'Publisert', felter: [
       { l: 'Punkt 1', v: 'Hent på Teie' },
       { l: 'Punkt 2', v: 'Betaling med Vipps' },
       { l: 'Punkt 3', v: 'Hvert stykke er unikt' } ] },
+    { navn: 'Produktene', type: 'Redigeres under Nettsiden → Butikk', synlig: 'Publisert', felter: [] },
   ],
   'Bedrift og event': [
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Bedrift og event' },
-      { l: 'Overskrift', v: 'Samle gjengen rundt dreieskiven.' },
+      { l: 'Overskrift', v: 'Samle gjengen rundt' },
+      { l: 'Overskrift, kursiv del', v: 'dreieskiven.' },
       { l: 'Ingress', v: 'Private events for 6–16 personer: teambuilding, utdrikningslag, bursdager og venninnekvelder. Alt utstyr, veiledning og brenning er inkludert — dere tar bare med godt humør.', lang: true } ] },
-    { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
+    // Kortene ble tatt bort fra bedriftssida. Feltene staar igjen fordi det
+    // kan ligge lagret tekst i dem, men de vises ikke noe sted naa.
+    { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Vises ikke nå', felter: [
       { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
       { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
@@ -7398,10 +7405,11 @@ const SIDEINNHOLD = {
       { l: 'Kort 3 pris', v: 'Fra kr. 990 per person' } ] },
   ],
   'Om oss': [
+    // Overskriften og de to avsnittene sto med en tekst sida ikke lenger
+    // viser. «Naavaerende verdi» i skjemaet var da ikke naavaerende verdi.
     { navn: 'Om verkstedet', type: 'Tekst og bilde', synlig: 'Publisert', felter: [
-      { l: 'Overskrift', v: 'Et verksted for glede, kreativitet og fellesskap' },
-      { l: 'Avsnitt 1', v: 'Historien om Lissom startet egentlig lenge før verkstedet åpnet dørene på Teie. På begynnelsen av 2000-tallet drev Monica Lissom Café, et lite sted bygget på varme møtesteder, gode opplevelser og mennesker som trives sammen. Mange år senere fikk navnet nytt liv, denne gangen som et keramikkverksted.', lang: true },
-      { l: 'Avsnitt 2', v: 'Monica driver verkstedet. Vi holder kurs i dreiing, plateteknikk og paint on pots, arrangerer datenights og private events, og har et medlemskap for deg som vil jobbe videre på egen hånd.', lang: true } ] },
+      { l: 'Kicker', v: 'Om Lissom' },
+      { l: 'Overskrift', v: 'Keramikkverkstedet vårt' } ] },
     { navn: 'Spørsmål og svar', type: '11 spørsmål', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Det folk lurer på' },
       { l: 'Undertekst', v: 'Finner du ikke svaret? Ring oss eller send en e-post, vi svarer raskt.', lang: true },
@@ -7428,82 +7436,90 @@ const SIDEINNHOLD = {
       { l: 'Spørsmål 11', v: 'Kan jeg spise og drikke av keramikken?' },
       { l: 'Svar 11', v: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.', lang: true } ] },
     { navn: 'Finn fram', type: 'Brun seksjon', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Finn fram' },
       { l: 'Adresse', v: 'Nordre Løkkevei 15' },
       { l: 'Veibeskrivelse', v: 'På Teie, få minutter fra Tønsberg sentrum, på vei mot Tjøme. Adresse: Nordre Løkkevei 15, 3120 Nøtterøy. Inngang på baksiden av bygget, gå gjennom porten og følg skiltet.', lang: true } ] },
   ],
+  // Avbestillingsvilkaarene sto her som tre felter, og samtidig i teksten
+  // paa Vilkaar-sida. Bare den siste vises. Serveren regner dessuten
+  // refusjonen etter sine egne regler — en tekst her kunne lovet noe annet
+  // enn det kunden faktisk faar.
   'Booking': [
-    { navn: 'Vilkår', type: 'Avtaletekst', synlig: 'Publisert', felter: [
-      { l: 'Avbestilling kurs og events', v: 'Mer enn 14 dager før: full refusjon. Mellom 14 og 7 dager før: 50 % refusjon. Mindre enn 7 dager før: kursavgiften refunderes ikke.', lang: true },
-      { l: 'Avbestilling drop-in', v: 'Ved avbestilling senere enn 24 timer før oppstart, eller ved manglende oppmøte, refunderes ikke betalingen. Har du blitt syk eller opplever noe uforutsett, ta kontakt så snart som mulig — vi gjør alltid vårt beste for å finne en god løsning. 🧡', lang: true },
-      { l: 'Bekreftelse', v: 'Kvittering sendes på e-post med en gang betalingen er gjennomført.', lang: true } ] },
-    { navn: 'Ordrekort', type: 'Tekster i kassen', synlig: 'Publisert', felter: [
-      { l: 'Overskrift', v: 'Din bestilling' },
-      { l: 'Betalingsvalg', v: 'Vipps' },
+    { navn: 'Avbestillingsvilkår', type: 'Står i Vilkår og angrerett', synlig: 'Publisert', felter: [] },
+    { navn: 'Kassen', type: 'Knapp', synlig: 'Publisert', felter: [
       { l: 'Knapp', v: 'Fullfør bestilling' } ] },
   ],
+  // «Innlogging» hadde to felter for knappeteksten. Vipps-knappen har sin
+  // egen merkevare og skal ikke kunne dopes om, og e-postknappen staar bare
+  // naar den er slaatt paa. Blokka er derfor en peker.
   'Logg inn': [
     { navn: 'Gul side', type: 'Tekst', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Verkstedet ditt, døgnet rundt' },
       { l: 'Tekst', v: 'Logg inn for å stemple inn, se timene dine, lese beskjeder og bestille leire og brenning.', lang: true } ] },
-    { navn: 'Innlogging', type: 'Knapper', synlig: 'Publisert', felter: [
-      { l: 'Primær', v: 'Fortsett med Vipps' },
-      { l: 'Alternativ', v: 'Logg inn med e-post' } ] },
+    { navn: 'Innloggingsknapper', type: 'Fast — Vipps-merkevare', synlig: 'Publisert', felter: [] },
   ],
+  // «Internbutikk» var en prisliste med de samme varene som ligger i
+  // butikken. To steder for den samme prisen; her sto de bare og saa riktige
+  // ut. Prisene redigeres der varene ligger.
   'Min side': [
     { navn: 'Ta med en venn', type: 'Gavekort', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Ta med en venn' },
       { l: 'Tekst', v: 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.', lang: true } ] },
-    { navn: 'Internbutikk', type: 'Priser', synlig: 'Publisert', felter: [
-      { l: 'Leire, stengods', v: 'kr. 290,-' },
-      { l: 'Leire, porselen', v: 'kr. 340,-' },
-      { l: 'Råbrann', v: 'kr. 150,-' },
-      { l: 'Glasurbrann', v: 'kr. 220,-' },
-      { l: 'Drop-in-time', v: 'kr. 490,-' },
-      { l: 'Gavekort', v: 'Valgfritt beløp' } ] },
-    { navn: 'Timer brukt opp', type: 'Varsel', synlig: 'Publisert', felter: [
-      { l: 'Tekst', v: 'Du kan ikke stemple inn før 1. september. Forny abonnementet, eller kjøp en drop-in-time.', lang: true } ] },
+    { navn: 'Internbutikk', type: 'Redigeres under Nettsiden → Butikk', synlig: 'Publisert', felter: [] },
   ],
+  // Blokk 0 er innledningen paa sida. Blokk 1-10 er de ti avsnittene, i
+  // samme rekkefolge som de staar.
   'Personvern': [
-    { navn: 'Innledning', type: 'Tekst', synlig: 'Publisert', felter: [
+  { navn: 'Innledning', type: 'Tekst', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Personvern' },
       { l: 'Ingress', v: 'Vi lagrer bare det vi trenger for å drive verkstedet, og vi selger aldri opplysninger videre.', lang: true },
       { l: 'Sist oppdatert', v: '25. august 2026' } ] },
-    { navn: 'Hvem er behandlingsansvarlig?', type: 'Avsnitt', synlig: 'Publisert', felter: [
+    { navn: 'Behandlingsansvarlig', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Hvem er behandlingsansvarlig?' },
       { l: 'Tekst', v: 'Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy. Kontakt oss på monica@lissom.no eller +47 94 13 46 01.', lang: true } ] },
-    { navn: 'Hva vi lagrer om deg', type: 'Avsnitt', synlig: 'Publisert', felter: [
+    { navn: 'Hva vi lagrer', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Hva vi lagrer om deg' },
       { l: 'Tekst', v: 'Navn, e-post, telefonnummer og hvilke kurs, events eller medlemskap du har kjøpt. For medlemmer lagrer vi i tillegg innstemplinger, timeforbruk og kjøp i internbutikken.', lang: true } ] },
     { navn: 'Betaling', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Betaling' },
       { l: 'Tekst', v: 'Betaling skjer gjennom Vipps. Vi ser hvem som har betalt og hvor mye, men vi lagrer aldri kortnummer eller kontoopplysninger.', lang: true } ] },
     { navn: 'Grønn prikk i verkstedet', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Grønn prikk i verkstedet' },
       { l: 'Tekst', v: 'Du velger selv om andre medlemmer skal se at du er innstemplet. Slår du det av, teller du fortsatt med i antallet, men navnet ditt vises ikke. Innstemplingen registreres uansett, fordi den trekker timer fra abonnementet ditt.', lang: true } ] },
     { navn: 'Hvor lenge vi lagrer', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Hvor lenge vi lagrer' },
       { l: 'Tekst', v: 'Kjøpshistorikk lagres i fem år som følge av bokføringsloven. Innstemplinger slettes etter tolv måneder. Sier du opp medlemskapet, sletter vi kontoen etter tre måneder hvis du ikke ber om noe annet.', lang: true } ] },
     { navn: 'Beskjeder og e-post', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Beskjeder og e-post' },
       { l: 'Tekst', v: 'Vi sender praktiske beskjeder om verkstedet og kursene dine. Nyhetsbrev sender vi bare hvis du har sagt ja, og du kan melde deg av når som helst.', lang: true } ] },
     { navn: 'Bilder fra verkstedet', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Bilder fra verkstedet' },
       { l: 'Tekst', v: 'Vi tar bilder på kurs og events. Si fra til oss hvis du ikke vil være med på bilder som brukes på nett eller i sosiale medier, så respekterer vi det.', lang: true } ] },
-    { navn: 'Besøksmåling', type: 'Avsnitt', synlig: 'Publisert', felter: [
-      { l: 'Tekst', v: 'Vi bruker Google Analytics til å telle hvor mange som besøker nettsiden og hvilke sider de leser. Det skjer bare hvis du sier ja til det første gang du er innom, og du kan la være — da virker alt akkurat som før. Vi ser aldri hvem den enkelte besøkende er, og IP-adressen din blir forkortet før den lagres. Vil du ombestemme deg, tømmer du nettleserdataene for lissom.no, så blir du spurt på nytt.', lang: true } ] },
+    { navn: 'Informasjonskapsler', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Informasjonskapsler' },
+      { l: 'Tekst', v: 'Logger du inn, får du én informasjonskapsel som holder deg innlogget. Den er nødvendig for at innloggingen skal virke, varer i tre timer uten aktivitet, og forsvinner når du logger ut. Den trenger vi ikke spørre om. Første gang du er innom spør vi derimot om vi får måle besøket med Google Analytics. Svarer du nei, lastes ingenting fra Google — vi lagrer bare selve svaret i nettleseren din, slik at du slipper å bli spurt hver gang. Svarer du ja, setter Google Analytics informasjonskapsler som teller besøket. Ingen måling skjer før du har sagt ja, og du kan ombestemme deg når som helst lenger ned på denne siden.', lang: true } ] },
+    { navn: 'Andre vi deler med', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Andre vi deler med' },
+      { l: 'Tekst', v: 'Vipps, for betaling og innlogging. E-post og SMS sendes gjennom leverandørene til webhotellet vårt. Nettsiden ligger hos Domene.no i Norge. Har du sagt ja til besøksmåling, deler vi i tillegg statistikk om besøket med Google Analytics: hvilke sider som blir lest, omtrent hvor i landet du er, og hva slags enhet du bruker. Vi ber om at IP-adressen din ikke lagres, og vi kobler ikke målingen til navnet ditt eller kontoen din. Facebook-piksel eller andre sporere har vi ikke, og skriftene på siden ligger på vår egen server nettopp for at ingen andre skal få vite at du var innom.', lang: true } ] },
     { navn: 'Rettighetene dine', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Rettighetene dine' },
       { l: 'Tekst', v: 'Du kan be om innsyn i det vi har lagret, få rettet feil, eller be om at opplysningene dine slettes. Send en e-post, så ordner vi det. Du kan også klage til Datatilsynet.', lang: true } ] },
   ],
   'Footer': [
-    { navn: 'Logo og undertekst', type: 'Tekst', synlig: 'Publisert', felter: [
+    { navn: 'Oppfordring', type: 'Tekst og knapp', synlig: 'Publisert', felter: [
+      { l: 'Knapp', v: 'Send oss en forespørsel' },
       { l: 'Undertekst', v: 'Et kreativt fristed for skaperglede, håndverk og fellesskap — på Teie, rett utenfor Tønsberg.', lang: true } ] },
-    { navn: 'Åpningstider', type: 'Liste', synlig: 'Publisert', felter: [
-      { l: 'Verkstedet', v: 'Etter avtale' },
-      { l: 'Kurs og events', v: 'Se datoer under kurs' },
-      { l: 'Medlemmer', v: 'Døgnåpent, 24 timer' } ] },
     { navn: 'Kontakt', type: 'Liste', synlig: 'Publisert', felter: [
       { l: 'Adresse', v: 'Nordre Løkkevei 15, 3120 Nøtterøy' },
       { l: 'Telefon', v: '+47 94 13 46 01' },
-      { l: 'E-post', v: 'monica@lissom.no' },
-      { l: 'Instagram', v: '@lissom_keramikk' },
-      { l: 'Facebook', v: 'lissomkeramikk' } ] },
+      { l: 'E-post', v: 'monica@lissom.no' } ] },
+    { navn: 'Åpningstid', type: 'To linjer', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Åpningstid' },
+      { l: 'Linje 1', v: 'Verkstedet: etter avtale' },
+      { l: 'Linje 2', v: 'Medlemmer: døgnåpent' } ] },
     { navn: 'Bunnlinje', type: 'Tekst', synlig: 'Publisert', felter: [
-      { l: 'Firmanavn', v: 'Lissom Keramikk & Håndverk AS' },
-      { l: 'Org. nr.', v: '938 280 819 MVA' },
-      // Sto som en egen blokk under «Forside». Teksten staar i bunnfeltet.
+      { l: 'Firmanavn', v: 'Lissom Keramikk & Håndverk AS — alle rettigheter forbeholdt' },
+      { l: 'Org. nr.', v: 'Org. nr. 938 280 819 MVA' },
       { l: 'Merkelinje', v: '100% håndlaget med kjærlighet' } ] },
   ],
 };
@@ -7514,23 +7530,14 @@ const SEO_DEFAULTS = {
   'Medlemskap': ['Medlemskap i keramikkverksted — fast plass i Tønsberg (Teie) | Lissom', 'Bli medlem og bruk verkstedet når det passer deg. Prøv 30 dager, 30 timer i måneden eller fri tilgang. Dørkode, brenning og fellesskap inkludert.'],
   'Butikk': ['Håndlaget keramikk — kopper, boller og fat | Lissom, Tønsberg', 'Kjøp håndlaget keramikk fra verkstedet på Teie. Hver kopp er unik. Spesialbestillinger til bryllup, jubileum og firmagaver.'],
   'Bedrift og event': ['Bedriftsevent og utdrikningslag med keramikk — Tønsberg', 'Samle kollegene eller vennegjengen rundt dreieskiven. Private events for 6–16 personer med alt inkludert. Send forespørsel, vi svarer raskt.'],
-  'Bedrift og event': [
-    { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Bedrift og event' },
-      { l: 'Overskrift', v: 'Samle gjengen rundt dreieskiven.' },
-      { l: 'Ingress', v: 'Private events for 6–16 personer: teambuilding, utdrikningslag, bursdager og venninnekvelder. Alt utstyr, veiledning og brenning er inkludert — dere tar bare med godt humør.', lang: true } ] },
-    { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
-      { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
-      { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
-      { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
-      { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
-      { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.', lang: true },
-      { l: 'Kort 2 pris', v: 'Fra kr. 990 per person' },
-      { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
-      { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
-      { l: 'Kort 3 pris', v: 'Fra kr. 990 per person' } ] },
-  ],
   'Om oss': ['Om Lissom Keramikk — verkstedet på Teie i Tønsberg', 'Et verksted for glede, kreativitet og fellesskap. Møt Monica og les historien bak Lissom Keramikk — kurs, medlemskap og håndlaget keramikk på Teie i Tønsberg.'],
+  // Sidene under manglet helt. De falt til ['', ''], og SEO-blokka i
+  // innholdsredigeringen sto tom for dem.
+  'Booking':   ['Book kurs, event eller drop-in | Lissom Keramikk', 'Velg dato og betal med Vipps. Leire, verktøy, glasur og brenning er inkludert.'],
+  'Logg inn':  ['Logg inn | Lissom Keramikk', 'Logg inn for å stemple inn, se timene dine og lese beskjeder fra verkstedet.'],
+  'Min side':  ['Min side | Lissom Keramikk', 'Timene dine, kursene du er påmeldt, beskjeder og kjøpshistorikk.'],
+  'Personvern': ['Personvern | Lissom Keramikk', 'Hva vi lagrer om deg, hvor lenge, og hvilke rettigheter du har.'],
+  'Footer':    ['Lissom Keramikk & Håndverk — Teie, Tønsberg', 'Keramikkverksted på Teie: kurs, events, medlemskap og håndlaget keramikk.'],
 };
 /**
  * Standardverdien for hvert felt i innholdsredigeringen.
@@ -7542,13 +7549,17 @@ const SEO_DEFAULTS = {
  */
 const INNHOLD_STANDARD = {};
 
+// SEO staar paa hver side i innholdsredigeringen som tre redigerbare felter.
+// De ble lagret under «Side/N/SEO-tittel» — en noekkel ingenting leser.
+// Sidetittel, metabeskrivelse og slug redigeres under Nettsiden → SEO, og
+// det er de verdiene som faktisk gaar ut. Blokka staar igjen som en peker,
+// slik at man ser at feltet finnes og hvor det redigeres.
 Object.keys(SIDEINNHOLD).forEach(k => {
   const d = SEO_DEFAULTS[k] || ['', ''];
-  SIDEINNHOLD[k].push({ navn: 'SEO', type: 'Tittel og metabeskrivelse', synlig: 'Publisert', felter: [
-    { l: 'SEO-tittel', v: d[0] },
-    { l: 'Meta-beskrivelse', v: d[1], lang: true },
-    { l: 'URL-slug', v: k === 'Forside' ? '/' : '/' + k.toLowerCase().replace(/ og /g, '-').replace(/[^a-zæøå0-9-]/g, '-') },
-  ] });
+  SIDEINNHOLD[k].push({
+    navn: 'SEO', type: 'Redigeres under Nettsiden → SEO', synlig: 'Publisert',
+    seoTittel: d[0], seoMeta: d[1], felter: [],
+  });
 });
 
 // Standardverdiene, med noekkelen nettsiden slaar opp paa.
@@ -16284,7 +16295,7 @@ class Component extends DCLogic {
         return this.erPublisert() ? 'Henter …' : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet');
       })(),
       vekslStempling: () => this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true),
-      aInvitasjon: this.apne('Ta med en venn', 'Én gratis drop-in for en venn i august', [
+      aInvitasjon: this.apne(this.innh('Min side/0/Overskrift'), 'Én gratis drop-in for en venn i august', [
         { navn: 'Vennens navn', verdi: '' },
         { navn: 'Vennens e-post', verdi: '' },
         { navn: 'Dato', verdi: '' },
@@ -16292,7 +16303,7 @@ class Component extends DCLogic {
       // Gavekampanjer gaar til alle som har vaert her, ikke bare medlemmene.
       harVennegave: !this.state.vennBrukt && this.state.visMinGave !== false,
       gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på kr. ' + (g.belop || '500') + ',-' : 'Ta med en venn'; })(),
-      gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.'; })(),
+      gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || this.innh('Min side/0/Tekst'); })(),
       aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || this.aktivPlan().navn)),
       aKjopDropin: () => this.leggTil('Drop-in-time'),
 
@@ -16805,17 +16816,20 @@ class Component extends DCLogic {
       tjue: 20,
       fjorten: 14,
       goPersonvern: this.go('personvern'),
+      // Avsnittene sto som fast tekst her, mens innholdsredigeringen hadde
+      // ti felter for de samme avsnittene som ingen leste. Teksten staar
+      // naa ett sted, og standardene ligger i SIDEINNHOLD.
       personvern: [
-        { h: 'Hvem er behandlingsansvarlig?', p: 'Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy. Kontakt oss på monica@lissom.no eller +47 94 13 46 01.' },
-        { h: 'Hva vi lagrer om deg', p: 'Navn, e-post, telefonnummer og hvilke kurs, events eller medlemskap du har kjøpt. For medlemmer lagrer vi i tillegg innstemplinger, timeforbruk og kjøp i internbutikken.' },
-        { h: 'Betaling', p: 'Betaling skjer gjennom Vipps. Vi ser hvem som har betalt og hvor mye, men vi lagrer aldri kortnummer eller kontoopplysninger.' },
-        { h: 'Grønn prikk i verkstedet', p: 'Du velger selv om andre medlemmer skal se at du er innstemplet. Slår du det av, teller du fortsatt med i antallet, men navnet ditt vises ikke. Innstemplingen registreres uansett, fordi den trekker timer fra abonnementet ditt.' },
-        { h: 'Hvor lenge vi lagrer', p: 'Kjøpshistorikk lagres i fem år som følge av bokføringsloven. Innstemplinger slettes etter tolv måneder. Sier du opp medlemskapet, sletter vi kontoen etter tre måneder hvis du ikke ber om noe annet.' },
-        { h: 'Beskjeder og e-post', p: 'Vi sender praktiske beskjeder om verkstedet og kursene dine. Nyhetsbrev sender vi bare hvis du har sagt ja, og du kan melde deg av når som helst.' },
-        { h: 'Bilder fra verkstedet', p: 'Vi tar bilder på kurs og events. Si fra til oss hvis du ikke vil være med på bilder som brukes på nett eller i sosiale medier, så respekterer vi det.' },
-        { h: 'Informasjonskapsler', p: 'Logger du inn, får du én informasjonskapsel som holder deg innlogget. Den er nødvendig for at innloggingen skal virke, varer i tre timer uten aktivitet, og forsvinner når du logger ut. Den trenger vi ikke spørre om. Første gang du er innom spør vi derimot om vi får måle besøket med Google Analytics. Svarer du nei, lastes ingenting fra Google — vi lagrer bare selve svaret i nettleseren din, slik at du slipper å bli spurt hver gang. Svarer du ja, setter Google Analytics informasjonskapsler som teller besøket. Ingen måling skjer før du har sagt ja, og du kan ombestemme deg når som helst lenger ned på denne siden.' },
-        { h: 'Andre vi deler med', p: 'Vipps, for betaling og innlogging. E-post og SMS sendes gjennom leverandørene til webhotellet vårt. Nettsiden ligger hos Domene.no i Norge. Har du sagt ja til besøksmåling, deler vi i tillegg statistikk om besøket med Google Analytics: hvilke sider som blir lest, omtrent hvor i landet du er, og hva slags enhet du bruker. Vi ber om at IP-adressen din ikke lagres, og vi kobler ikke målingen til navnet ditt eller kontoen din. Facebook-piksel eller andre sporere har vi ikke, og skriftene på siden ligger på vår egen server nettopp for at ingen andre skal få vite at du var innom.' },
-        { h: 'Rettighetene dine', p: 'Du kan be om innsyn i det vi har lagret, få rettet feil, eller be om at opplysningene dine slettes. Send en e-post, så ordner vi det. Du kan også klage til Datatilsynet.' },
+        { h: this.innh('Personvern/1/Overskrift'), p: this.innh('Personvern/1/Tekst') },
+        { h: this.innh('Personvern/2/Overskrift'), p: this.innh('Personvern/2/Tekst') },
+        { h: this.innh('Personvern/3/Overskrift'), p: this.innh('Personvern/3/Tekst') },
+        { h: this.innh('Personvern/4/Overskrift'), p: this.innh('Personvern/4/Tekst') },
+        { h: this.innh('Personvern/5/Overskrift'), p: this.innh('Personvern/5/Tekst') },
+        { h: this.innh('Personvern/6/Overskrift'), p: this.innh('Personvern/6/Tekst') },
+        { h: this.innh('Personvern/7/Overskrift'), p: this.innh('Personvern/7/Tekst') },
+        { h: this.innh('Personvern/8/Overskrift'), p: this.innh('Personvern/8/Tekst') },
+        { h: this.innh('Personvern/9/Overskrift'), p: this.innh('Personvern/9/Tekst') },
+        { h: this.innh('Personvern/10/Overskrift'), p: this.innh('Personvern/10/Tekst') },
       ],
       goLogin: this.go('login'),
       goOmOss: this.go('omoss'),
@@ -17622,6 +17636,53 @@ class Component extends DCLogic {
       mkTimerTittel: this.innh('Medlemskap/3/Overskrift'),
       mkSitat: this.innh('Medlemskap/4/Sitat'),
       mkSitatAvsender: this.innh('Medlemskap/4/Avsender'),
+      keKicker: this.innh('Kurs og events/0/Kicker'),
+      keIngress: this.innh('Kurs og events/0/Ingress'),
+      keDetaljVenstre: this.innh('Kurs og events/0/Detalj venstre'),
+      keDetaljHoyre: this.innh('Kurs og events/0/Detalj høyre'),
+      keVelkomstKicker: this.innh('Kurs og events/2/Kicker'),
+      keVelkomstTittel: this.innh('Kurs og events/2/Overskrift'),
+      keDropinTittel: this.innh('Kurs og events/3/Overskrift'),
+      keDropinIngress: this.innh('Kurs og events/3/Ingress'),
+      keStegKicker: this.innh('Kurs og events/4/Kicker'),
+      keStegTittel: this.innh('Kurs og events/4/Overskrift'),
+      kePasserTittel: this.innh('Kurs og events/4/Overskrift, passer for'),
+      keIkkeTittel: this.innh('Kurs og events/4/Overskrift, ikke for'),
+      btKicker: this.innh('Butikk/0/Kicker'),
+      btTittel: this.innh('Butikk/0/Overskrift'),
+      btIngress: this.innh('Butikk/0/Ingress'),
+      btKolleksjonTittel: this.innh('Butikk/1/Overskrift'),
+      btKolleksjonTekst: this.innh('Butikk/1/Tekst'),
+      btMedlemTittel: this.innh('Butikk/2/Overskrift'),
+      btMedlemTekst: this.innh('Butikk/2/Tekst'),
+      btSpesialKicker: this.innh('Butikk/3/Kicker'),
+      btSpesialKnapp: this.innh('Butikk/3/Knapp'),
+      ftKnapp: this.innh('Footer/0/Knapp'),
+      ftUndertekst: this.innh('Footer/0/Undertekst'),
+      ftAdresse: this.innh('Footer/1/Adresse'),
+      ftTelefon: this.innh('Footer/1/Telefon'),
+      ftEpost: this.innh('Footer/1/E-post'),
+      ftApningTittel: this.innh('Footer/2/Overskrift'),
+      ftApning1: this.innh('Footer/2/Linje 1'),
+      ftApning2: this.innh('Footer/2/Linje 2'),
+      ftFirmanavn: this.innh('Footer/3/Firmanavn'),
+      ftOrgnr: this.innh('Footer/3/Org. nr.'),
+      ftMerkelinje: this.innh('Footer/3/Merkelinje'),
+      liTittel: this.innh('Logg inn/0/Overskrift'),
+      liTekst: this.innh('Logg inn/0/Tekst'),
+      pvTittel: this.innh('Personvern/0/Overskrift'),
+      pvIngress: this.innh('Personvern/0/Ingress'),
+      pvSistOppdatert: this.innh('Personvern/0/Sist oppdatert'),
+      beKicker: this.innh('Bedrift og event/0/Kicker'),
+      beTittel: this.innh('Bedrift og event/0/Overskrift'),
+      beTittelKursiv: this.innh('Bedrift og event/0/Overskrift, kursiv del'),
+      beIngress: this.innh('Bedrift og event/0/Ingress'),
+      ooKicker: this.innh('Om oss/0/Kicker'),
+      ooTittel: this.innh('Om oss/0/Overskrift'),
+      ooFinnKicker: this.innh('Om oss/2/Kicker'),
+      ooAdresse: this.innh('Om oss/2/Adresse'),
+      ooVeibeskrivelse: this.innh('Om oss/2/Veibeskrivelse'),
+      kaKnapp: this.innh('Booking/1/Knapp'),
       goForesporsel: () => this.apneForesporsel(),
       goForesporselGammel: () => {
         this.setState({ side: 'kurs' });

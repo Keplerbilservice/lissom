@@ -26,6 +26,364 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#FBF6EE">
+<!-- ds-css:start — skrevet av bin/inline-css.php, ikke rediger her -->
+<style>
+/* ds-fonts.css */
+/* Lissom webfonts.
+   SUBSTITUTION NOTE: no original font binaries were supplied with the brand assets.
+   The lissom wordmark is a heavy Clarendon-style slab; Bitter (800) is the nearest
+   Google Fonts match and is used for display type. The letterspaced caps on the
+   letterhead and business cards are a warm humanist sans; Alegreya Sans is the
+   nearest match and is used for UI + body. Replace both if the real files surface.
+
+   Filene laa foer paa fonts.googleapis.com. Da ble IP-adressen til alle som
+   besokte lissom.no sendt til Google, uten at de hadde noe valg — det er en
+   overforing av personopplysninger vi ikke trenger. Fontene ligger naa paa vaar
+   egen server. Latin-utvalget holder for norsk; ae, oe og aa ligger i
+   U+0000-00FF. Fontene er Open Font License, samme filer som Google leverer,
+   hentet via @fontsource. */
+
+@font-face {
+  font-family: 'Bitter';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 400;
+  src: url(/fonts/bitter-latin-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Bitter';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 500;
+  src: url(/fonts/bitter-latin-500-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Bitter';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 600;
+  src: url(/fonts/bitter-latin-600-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Bitter';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 700;
+  src: url(/fonts/bitter-latin-700-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Bitter';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 800;
+  src: url(/fonts/bitter-latin-800-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Bitter';
+  font-style: italic;
+  font-display: fallback;
+  font-weight: 400;
+  src: url(/fonts/bitter-latin-400-italic.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Bitter';
+  font-style: italic;
+  font-display: fallback;
+  font-weight: 600;
+  src: url(/fonts/bitter-latin-600-italic.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 400;
+  src: url(/fonts/alegreya-sans-latin-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 500;
+  src: url(/fonts/alegreya-sans-latin-500-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 700;
+  src: url(/fonts/alegreya-sans-latin-700-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 800;
+  src: url(/fonts/alegreya-sans-latin-800-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: italic;
+  font-display: fallback;
+  font-weight: 400;
+  src: url(/fonts/alegreya-sans-latin-400-italic.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans';
+  font-style: italic;
+  font-display: fallback;
+  font-weight: 500;
+  src: url(/fonts/alegreya-sans-latin-500-italic.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans SC';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 400;
+  src: url(/fonts/alegreya-sans-sc-latin-400-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans SC';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 500;
+  src: url(/fonts/alegreya-sans-sc-latin-500-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face {
+  font-family: 'Alegreya Sans SC';
+  font-style: normal;
+  font-display: fallback;
+  font-weight: 700;
+  src: url(/fonts/alegreya-sans-sc-latin-700-normal.woff2) format('woff2');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* ds-colors.css */
+:root{
+/* ---- Brand core (sampled from the printed identity) ---- */
+--lissom-yellow:#FFCF38;      /* signage + letterhead field */
+--lissom-brown:#4D1D12;       /* wordmark, cup mark, all print ink */
+--lissom-brown-deep:#2E1002;  /* darkest ink, body text on light */
+
+/* ---- Yellow ramp ---- */
+--yellow-50:#FFF9E6;--yellow-100:#FFF0C2;--yellow-200:#FFE28C;--yellow-300:#FFD962;
+--yellow-400:#FFCF38;--yellow-500:#F0B81E;--yellow-600:#D19A0D;--yellow-700:#A87708;
+
+/* ---- Brown ramp ---- */
+--brown-50:#F6EDE6;--brown-100:#E9D6C7;--brown-200:#CBA88E;--brown-300:#A97656;
+--brown-400:#834A2B;--brown-500:#66300F;--brown-600:#4D1D12;--brown-700:#2E1002;
+
+/* ---- Clay neutrals (leire / naturtoner) ---- */
+--clay-50:#FBF6EE;   /* porselen */
+--clay-100:#F4EBDE;  /* bisque */
+--clay-200:#E8DBC8;  /* sand */
+--clay-300:#D6C4AB;  /* tørket leire */
+--clay-400:#B7A188;
+--clay-500:#94806A;
+--clay-600:#6F5D4C;  /* steintøy */
+--clay-700:#4F4136;
+--clay-800:#33291F;
+--clay-900:#1E1610;
+
+/* ---- Glaze accents ---- */
+--terracotta-100:#F5DED0;--terracotta-300:#DC9A74;--terracotta-500:#C0663A;--terracotta-600:#A2502B;
+--sage-100:#E5E8DD;--sage-300:#B3B9A4;--sage-500:#8A9078;--sage-600:#6E7460;
+--slip-100:#DDE4E4;--slip-500:#7E9291;--slip-600:#617573;
+
+/* ---- Semantic surfaces ---- */
+--surface-page:var(--clay-50);
+--surface-card:#FFFFFF;
+--surface-sunken:var(--clay-100);
+--surface-raised:#FFFFFF;
+--surface-brand:var(--lissom-yellow);
+--surface-ink:var(--lissom-brown);
+--surface-ink-deep:var(--brown-700);
+--surface-muted:var(--clay-200);
+
+/* ---- Semantic text ---- */
+--text-body:var(--brown-700);
+--text-heading:var(--lissom-brown);
+--text-muted:var(--clay-600);
+--text-faint:var(--clay-500);
+--text-inverse:var(--clay-50);
+--text-on-brand:var(--lissom-brown);
+--text-link:var(--lissom-brown);
+--text-link-hover:var(--terracotta-600);
+
+/* ---- Semantic borders ---- */
+--border-subtle:var(--clay-200);
+--border-default:var(--clay-300);
+--border-strong:var(--lissom-brown);
+--border-ink-rule:var(--lissom-brown);
+
+/* ---- Interactive ---- */
+--accent:var(--lissom-yellow);
+--accent-hover:var(--yellow-500);
+--accent-active:var(--yellow-600);
+--accent-fg:var(--lissom-brown);
+--focus-ring:var(--terracotta-500);
+
+/* ---- Status ---- */
+--success:var(--sage-600);--success-bg:var(--sage-100);
+--warning:var(--yellow-600);--warning-bg:var(--yellow-100);
+--danger:#9B3A2A;--danger-bg:var(--terracotta-100);
+--info:var(--slip-600);--info-bg:var(--slip-100);
+}
+
+/* Ink theme — full-bleed brown panels (footers, hero bands, slides) */
+[data-theme="ink"]{
+--surface-page:var(--lissom-brown);
+--surface-card:var(--brown-500);
+--surface-sunken:var(--brown-700);
+--text-body:var(--clay-100);
+--text-heading:var(--clay-50);
+--text-muted:var(--clay-300);
+--text-inverse:var(--lissom-brown);
+--text-link:var(--lissom-yellow);
+--text-link-hover:var(--yellow-200);
+--border-subtle:rgba(244,235,222,.18);
+--border-default:rgba(244,235,222,.3);
+--border-strong:var(--lissom-yellow);
+}
+
+/* Sun theme — yellow signage panels */
+[data-theme="sun"]{
+--surface-page:var(--lissom-yellow);
+--surface-card:var(--yellow-300);
+--surface-sunken:var(--yellow-500);
+--text-body:var(--lissom-brown);
+--text-heading:var(--lissom-brown);
+--text-muted:var(--brown-500);
+--text-link:var(--lissom-brown);
+--text-link-hover:var(--brown-700);
+--border-subtle:rgba(78,24,3,.2);
+--border-default:rgba(78,24,3,.35);
+--border-strong:var(--lissom-brown);
+--accent:var(--lissom-brown);
+--accent-hover:var(--brown-700);
+--accent-fg:var(--lissom-yellow);
+}
+
+/* ds-typography.css */
+:root{
+--font-display:"Bitter","Clarendon","Georgia",serif;
+--font-sans:"Alegreya Sans","Segoe UI",system-ui,sans-serif;
+--font-caps:"Alegreya Sans SC","Alegreya Sans",system-ui,sans-serif;
+--font-mono:ui-monospace,"SFMono-Regular","Menlo",monospace;
+
+--weight-regular:400;--weight-medium:500;--weight-semibold:600;--weight-bold:700;--weight-black:800;
+
+--text-2xs:12px;--text-xs:14px;--text-sm:15px;--text-base:17px;--text-lg:19px;
+--text-xl:22px;--text-2xl:27px;--text-3xl:34px;--text-4xl:44px;--text-5xl:56px;
+--text-6xl:72px;--text-7xl:92px;
+
+--leading-tight:1.04;--leading-snug:1.18;--leading-normal:1.5;--leading-relaxed:1.65;
+
+--tracking-display:-0.02em;   /* heavy slab sets tight */
+--tracking-normal:0em;
+--tracking-wide:0.06em;
+--tracking-caps:0.14em;       /* KERAMIKK & HÅNDVERK lockup spacing */
+--tracking-micro:0.2em;       /* smallest legal/address lines */
+
+/* Semantic roles */
+--type-hero:var(--weight-black) var(--text-6xl)/var(--leading-tight) var(--font-display);
+--type-h1:var(--weight-bold) var(--text-4xl)/var(--leading-snug) var(--font-display);
+--type-h2:var(--weight-bold) var(--text-3xl)/var(--leading-snug) var(--font-display);
+--type-h3:var(--weight-bold) var(--text-xl)/var(--leading-snug) var(--font-display);
+--type-body:var(--weight-regular) var(--text-base)/var(--leading-relaxed) var(--font-sans);
+--type-body-sm:var(--weight-regular) var(--text-sm)/var(--leading-normal) var(--font-sans);
+--type-label:var(--weight-bold) var(--text-xs)/1.2 var(--font-sans);
+--type-eyebrow:var(--weight-bold) var(--text-xs)/1.2 var(--font-sans);
+}
+
+/* ds-spacing.css */
+:root{
+--space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;
+--space-6:24px;--space-7:28px;--space-8:32px;--space-10:40px;--space-12:48px;
+--space-14:56px;--space-16:64px;--space-20:80px;--space-24:96px;--space-32:128px;--space-40:160px;
+
+--gutter:var(--space-6);
+--section-y:var(--space-24);
+--section-y-tight:var(--space-16);
+--card-pad:var(--space-6);
+--card-pad-lg:var(--space-8);
+--field-pad-x:var(--space-4);
+--field-pad-y:var(--space-3);
+
+--width-prose:64ch;
+--width-content:1120px;
+--width-wide:1360px;
+}
+
+/* ds-elevation.css */
+:root{
+--radius-xs:3px;--radius-sm:5px;--radius-md:9px;--radius-lg:14px;--radius-xl:22px;--radius-2xl:32px;
+--radius-pill:999px;
+--radius-thrown:62% 38% 55% 45% / 52% 58% 42% 48%;  /* organic, wheel-thrown silhouette */
+
+--border-width:1px;
+--border-width-ink:2px;   /* the printed brown rule */
+
+--shadow-none:none;
+--shadow-sm:0 1px 2px rgba(46,16,2,.08);
+--shadow-md:0 4px 14px -4px rgba(46,16,2,.16);
+--shadow-lg:0 18px 40px -12px rgba(46,16,2,.22);
+--shadow-inset:inset 0 1px 0 rgba(255,255,255,.55);
+--shadow-press:inset 0 2px 4px rgba(46,16,2,.18);
+--shadow-focus:0 0 0 3px rgba(192,102,58,.35);
+
+--scrim-bottom:linear-gradient(to top,rgba(46,16,2,.72),rgba(46,16,2,0)); /* @kind color */
+--scrim-warm:linear-gradient(to top,rgba(78,24,3,.6),rgba(78,24,3,0) 60%); /* @kind color */
+}
+
+/* ds-motion.css */
+:root{
+--duration-fast:120ms; /* @kind other */
+--duration-base:200ms; /* @kind other */
+--duration-slow:320ms; /* @kind other */
+--duration-slower:520ms; /* @kind other */
+--ease-clay:cubic-bezier(.2,.7,.3,1); /* @kind other */
+--ease-out:cubic-bezier(.16,1,.3,1); /* @kind other */
+--ease-in-out:cubic-bezier(.65,0,.35,1); /* @kind other */
+--transition-base:all var(--duration-base) var(--ease-clay);
+}
+@media (prefers-reduced-motion:reduce){:root{--duration-fast:0ms; /* @kind other */
+--duration-base:0ms; /* @kind other */
+--duration-slow:0ms; /* @kind other */
+--duration-slower:0ms /* @kind other */}}
+
+/* ds-base.css */
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--surface-page);color:var(--text-body);font:var(--type-body);-webkit-font-smoothing:antialiased;text-wrap:pretty}
+h1,h2,h3,h4{color:var(--text-heading);font-family:var(--font-display);letter-spacing:var(--tracking-display);margin:0 0 var(--space-4)}
+h1{font:var(--type-h1)}h2{font:var(--type-h2)}h3{font:var(--type-h3)}
+p{margin:0 0 var(--space-4);max-width:var(--width-prose)}
+a{color:var(--text-link);text-decoration-thickness:1px;text-underline-offset:3px;transition:color var(--duration-fast) var(--ease-clay)}
+a:hover{color:var(--text-link-hover)}
+small{font-size:var(--text-xs)}
+::selection{background:var(--lissom-yellow);color:var(--lissom-brown)}
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+img{max-width:100%;display:block}
+
+/* ds-styles.css */
+/* tokens lastes direkte */
+</style>
+<!-- ds-css:slutt -->
+
 <!-- Skriftene som brukes over skjermkanten, hentet med én gang.
      Uten dette tegnes overskriften i reserveskrifta, og hopper naar Bitter
      kommer — det var det som ga utseendeforskyvningen paa forsida. De to
@@ -33,15 +391,9 @@
 <link rel="preload" href="/fonts/bitter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/alegreya-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
-<!-- Stilarkene ligger i <helmet> og hentes derfra av dc-runtime, altsaa
-     etter at skriptet har kjort. Da staar nettleseren og venter to ganger.
-     Disse to linjene starter nedlastingen med det samme; <link> lenger nede
-     finner dem ferdige i mellomlageret. -->
-<link rel="preload" href="/ds-fonts.css" as="style">
-<link rel="preload" href="/ds-colors.css" as="style">
-<link rel="preload" href="/ds-typography.css" as="style">
-<link rel="preload" href="/ds-base.css" as="style">
-<link rel="preload" href="/ds-bundle.js" as="script">
+<!-- ds-bundle.js tegner komponentene og maa vaere der for foerste
+     tegning. Den varsles her saa nedlastingen starter med det samme. -->
+<link rel="preload" href="/ds-bundle.min.js" as="script">
 
 <script>
 // Bilder og rammer som faar adressen sin fra en mal.
@@ -84,20 +436,18 @@ window.__resources = {
   "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js": "/vendor/react-dom-18.3.1.min.js"
 };
 </script>
-<script src="./support.js"></script>
+<!-- Minifisert utgave. Kilden ligger som support.js ved siden av;
+     bin/minifiser.mjs lager denne. -->
+<script src="./support.min.js"></script>
 </head>
 <body>
 <x-dc>
 <helmet>
-  <link rel="stylesheet" href="ds-fonts.css">
-  <link rel="stylesheet" href="ds-colors.css">
-  <link rel="stylesheet" href="ds-typography.css">
-  <link rel="stylesheet" href="ds-spacing.css">
-  <link rel="stylesheet" href="ds-elevation.css">
-  <link rel="stylesheet" href="ds-motion.css">
-  <link rel="stylesheet" href="ds-base.css">
-  <link rel="stylesheet" href="ds-styles.css">
-  <script src="ds-bundle.js"></script>
+  <!-- Stilarkene ligger inne i <head>, lagt der av bin/inline-css.php.
+       Som egne filer sto de her, og dc-runtime flyttet dem opp etter at
+       support.js hadde kjort — nettleseren ventet i to omganger, over ett
+       sekund paa mobilnett, for noe ble tegnet. -->
+  <script src="ds-bundle.min.js"></script>
   <style>
     /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
        slik at plassen settes av for bildet er lastet. De skal ikke bestemme

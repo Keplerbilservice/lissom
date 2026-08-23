@@ -26,7 +26,10 @@ function lever(string $sti): never
 {
     header('Content-Type: image/jpeg');
     header('Content-Length: ' . filesize($sti));
-    header('Cache-Control: public, max-age=604800, immutable');
+    // Navnet er en hash av innholdet — en ny fil faar et nytt navn. Da kan
+    // nettleseren beholde den i et aar uten aa sporre igjen. Sto paa sju
+    // dager, og bildene ble hentet paa nytt hver uke uten grunn.
+    header('Cache-Control: public, max-age=31536000, immutable');
     header('X-Content-Type-Options: nosniff');
     readfile($sti);
     exit;

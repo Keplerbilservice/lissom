@@ -99,6 +99,17 @@ window.__resources = {
   <link rel="stylesheet" href="ds-styles.css">
   <script src="ds-bundle.js"></script>
   <style>
+    /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
+       slik at plassen settes av for bildet er lastet. De skal ikke bestemme
+       stoerrelsen.
+
+       Uten denne linja blir et bilde som bare har «width» i CSS tvunget til
+       hoyden fra attributtet: koppmerket bak toppbildet sto med 560 piksler
+       bredde og 112 hoyde i stedet for 327, og hjertet i bunnteksten var
+       trykket flatt. Inline-stil vinner over denne regelen, saa bildene som
+       med vilje har en fast hoyde beholder den. */
+    img { height: auto; }
+
     html { background: var(--lissom-brown); overflow-x: clip; max-width: 100%; }
     body { margin: 0; background: var(--clay-100); overflow-x: clip; --section-y: 96px; --text-2xs: 11px; --text-xs: 12px; --text-sm: 14px; --text-base: 15px; --text-lg: 17px; --text-xl: 19px; --text-2xl: 22px; --text-3xl: 27px; --text-4xl: 34px; --text-5xl: 44px; --text-6xl: 56px; --text-7xl: 72px; }
     h2 { font-size: clamp(30px, 2.4vw, 44px); letter-spacing: var(--tracking-display); }

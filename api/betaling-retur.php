@@ -14,20 +14,35 @@ require __DIR__ . '/_boot.php';
 Foresporsel::krevMetode('GET');
 
 $referanse = Foresporsel::tekst('ref');
-$tilbake = static fn(string $utfall): never =>
-    Svar::omdiriger(Config::nettsted() . '/#betaling=' . $utfall);
+$tilbake = static fn(string $utfall, string $ekstra = ''): never =>
+    Svar::omdiriger(Config::nettsted() . '/#betaling=' . $utfall . $ekstra);
 
 if ($referanse === '') {
     $tilbake('ukjent');
 }
 
-$betaling = DB::en('SELECT id, status FROM payments WHERE vipps_reference = :r', ['r' => $referanse]);
+$betaling = DB::en(
+    'SELECT id, status, belop_ore, formal FROM payments WHERE vipps_reference = :r',
+    ['r' => $referanse]
+);
 if ($betaling === null) {
     $tilbake('ukjent');
 }
 
+/**
+ * Det besoksmaalingen trenger for aa telle kjopet, og ikke noe mer.
+ *
+ * Uten belopet ser en solgt kursplass til 2 800 kroner ut som et gavekort
+ * til 300 — og da sier statistikken ingenting om hva som faktisk lonner seg.
+ * Vipps-referansen sendes ikke med; vaart eget radnummer holder for aa
+ * kjenne igjen det samme kjopet to ganger.
+ */
+$kvittering = static fn(array $b): string => '&kjop=' . (int) $b['id']
+    . '&belop=' . number_format((int) $b['belop_ore'] / 100, 2, '.', '')
+    . '&slag=' . rawurlencode((string) $b['formal']);
+
 if ($betaling['status'] === 'betalt') {
-    $tilbake('ok'); // webhooken rakk det først
+    $tilbake('ok', $kvittering($betaling)); // webhooken rakk det først
 }
 
 try {
@@ -51,7 +66,7 @@ if ($tilstand === 'AUTHORIZED') {
         logg_feil('Trekk feilet ved retur for ' . $referanse, $e);
     }
     Booking::markerBetalt($referanse);
-    $tilbake('ok');
+    $tilbake('ok', $kvittering($betaling));
 }
 
 if ($tilstand === 'TERMINATED' || $tilstand === 'ABORTED' || $tilstand === 'EXPIRED') {

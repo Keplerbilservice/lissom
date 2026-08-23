@@ -5130,6 +5130,27 @@ window.__resources = {
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ mkGaTekst }}</p>
             </div>
           </sc-if>
+
+          <!-- Er maalingen paa, forsvinner advarselen over — og da staar
+               eieren igjen uten aa vite hvor tallene ble av. De ligger hos
+               Google, ikke her, og det maa staa noe sted. -->
+          <sc-if value="{{ mkGaPaa }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 4px;">Besøkstallene ligger hos Google</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ mkGaHjelp }}</p>
+              <a href="https://analytics.google.com/" target="_blank" rel="noopener" style="display: inline-block; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 9px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading); text-decoration: none;">Åpne Google Analytics ↗</a>
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dette teller nettsiden selv</div>
+                <sc-for list="{{ mkGaHendelser }}" as="h" hint-placeholder-count="4">
+                  <div style="display: flex; gap: var(--space-4); padding: 6px 0; font-size: var(--text-sm);">
+                    <code style="font-family: var(--font-mono, monospace); color: var(--text-heading); flex: 0 0 130px;">{{ h.navn }}</code>
+                    <span style="color: var(--text-body); text-wrap: pretty;">{{ h.hva }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
           <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-xl);">Dette vet vi selv</h2>
           <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Hva folk faktisk har booket det siste året — hentet fra bookingene, ikke fra besøksstatistikk.</p>
           <sc-for list="{{ mkMestBookede }}" as="m" hint-placeholder-count="6">
@@ -8124,6 +8145,7 @@ class Component extends DCLogic {
         this._ktPagaar = false;
         if (!ok) { this.setState({ ktFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
         this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '' });
+        this.maal('generate_lead', { form: 'Kontaktskjema' });
         ferdig();
       })
       .catch(() => {
@@ -8157,6 +8179,7 @@ class Component extends DCLogic {
           fsSendt2: true, fsFeil: null,
           fsNavn: '', fsKontakt: '', fsMelding: '', fsAntall: null,
         });
+        this.maal('generate_lead', { form: s.fsType || 'Forespørsel' });
         clearTimeout(this._fsTimer);
         this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
       })
@@ -8324,6 +8347,7 @@ class Component extends DCLogic {
           kvittering: 'Søknaden er sendt',
           kvitteringDetalj: 'Vi ser på den og svarer deg på e-post.',
         });
+        this.maal('sign_up', { method: 'Medlemssøknad', form: this.state.bmType || '' });
       })
       .catch(() => {
         this._soknadPagaar = false;
@@ -8507,9 +8531,70 @@ class Component extends DCLogic {
     this.setState({ samtykkeSvart: '' });
   }
 
-  settOppAnalyse() {
+  /**
+   * Send en hendelse til besoksmaalingen.
+   *
+   * Gjor ingenting naar maalingen ikke er paa — ingen samtykke, ingen
+   * maale-ID, eller admin. Da finnes ikke window.gtag, og alt som kaller
+   * denne kan gjore det uten aa sporre om lov forst. En maaling som feiler
+   * skal aldri stoppe det den maaler, saa den svelger ogsaa feil.
+   */
+  maal(navn, felter) {
+    try {
+      if (typeof window.gtag !== 'function') return false;
+      window.gtag('event', navn, felter || {});
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /**
+   * Teller et gjennomfort kjop.
+   *
+   * Tallene kommer fra adressen Vipps sendte kunden tilbake til, og settes
+   * der av api/betaling-retur.php — som har spurt Vipps om betalingen
+   * virkelig gikk gjennom. Vi teller altsaa ikke et kjop fordi noen kom
+   * tilbake til sida, men fordi serveren har bekreftet at det er betalt.
+   */
+  maalKjop(hash) {
+    const id = (String(hash).match(/kjop=(\d+)/) || [])[1];
+    if (!id) return;
+    const belop = Number((String(hash).match(/belop=([\d.]+)/) || [])[1] || 0);
+    const slag = (String(hash).match(/slag=([a-z_]+)/) || [])[1] || 'kjop';
+
+    // Tilbakeknappen, en fane som aapnes paa nytt, en lenke som deles — det
+    // samme kjopet kan lande her flere ganger. Da skal det telles én.
+    // Uten lager teller vi heller én gang for mye enn ingen.
+    let talt = [];
+    try { talt = (localStorage.getItem('lissom-kjop') || '').split(',').filter(Boolean); } catch (e) { talt = []; }
+    if (talt.indexOf(id) !== -1) return;
+
+    const NAVN = {
+      booking: 'Kurs eller event', dropin: 'Drop-in', gavekort: 'Gavekort',
+      ordre: 'Butikk', medlemskap: 'Medlemskap',
+    };
+    const gikk = this.maal('purchase', {
+      transaction_id: 'L' + id,
+      value: belop,
+      currency: 'NOK',
+      items: [{ item_id: slag, item_name: NAVN[slag] || slag, price: belop, quantity: 1 }],
+    });
+
+    // Merkes bare naar det faktisk ble talt. Sto merket der uansett, ville
+    // et kjop gjort for noen sa ja til maaling vaert regnet som talt for
+    // alltid — og aldri kommet med etterpaa.
+    //
+    // Og gikk det ikke: legg det til side framfor aa kaste det. Kunden
+    // lander her rett fra Vipps, altsaa mens sida saavidt har startet —
+    // maale-ID-en hentes fra serveren og Google-taggen lastes ned forst
+    // etterpaa. Talte vi bare her, ville ingen kjop noensinne blitt talt.
+    if (!gikk) { this._ventendeKjop = hash; return; }
+    this._ventendeKjop = null;
+    try { localStorage.setItem('lissom-kjop', talt.concat(id).slice(-30).join(',')); } catch (e) { /* da telles det kanskje igjen */ }
+  }
+
+  settOppAnalyse(idFra) {
     if (!this.erPublisert() || this._gaSatt) return;
-    const id = ((this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
+    const id = String(idFra || (this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
     if (!/^G-[A-Z0-9]{6,20}$/i.test(id)) return;
     if ((this.state.side || '').indexOf('admin') === 0) return;
     // Ingen maaling for noen har sagt ja. Gtag legger igjen
@@ -8527,6 +8612,9 @@ class Component extends DCLogic {
     window.gtag('js', new Date());
     // "anonymize_ip": vi trenger ikke vite hvem som var her, bare hvor mange.
     window.gtag('config', id, { anonymize_ip: true });
+
+    // Et kjop som ventet paa at dette skulle bli klart, telles naa.
+    if (this._ventendeKjop) { this.maalKjop(this._ventendeKjop); }
   }
 
   hentNyheter() {
@@ -8800,7 +8888,12 @@ class Component extends DCLogic {
       .then(d => {
         if (d && d.innhold) {
           this.setState(s => ({ innholdLagret: Object.assign({}, d.innhold, s.innholdLagret) }));
-          this.settOppAnalyse();
+          // setState er ikke ferdig naar neste linje kjorer. Maale-ID-en ble
+          // derfor lest av en state som fortsatt var tom, og maalingen kom
+          // aldri i gang — bortsett fra i det ene oyeblikket noen trykket
+          // «ja» paa samtykkelinja, for der er ID-en alt kjent. Alle senere
+          // besok gikk utelt. Den leses naa fra svaret vi nettopp fikk.
+          this.settOppAnalyse((this.state.innholdLagret || {})['Marked/GA-id'] || d.innhold['Marked/GA-id']);
         }
       })
       .catch(() => {});
@@ -8841,9 +8934,13 @@ class Component extends DCLogic {
 
   // Retur fra Vipps: #betaling=ok / avbrutt / venter
   visBetalingsutfall() {
-    const m = String(window.location.hash || '').match(/betaling=([a-z]+)/);
+    // Hele hashen tas vare paa forst. Linja under stryker den fra adressen,
+    // og da er belopet borte for vi rekker aa telle kjopet.
+    const hash = String(window.location.hash || '');
+    const m = hash.match(/betaling=([a-z]+)/);
     if (!m) return;
     history.replaceState(null, '', window.location.pathname + window.location.search);
+    if (m[1] === 'ok') this.maalKjop(hash);
     const tekst = {
       ok: 'Betalingen er gjennomført — kvittering kommer på e-post',
       avbrutt: 'Betalingen ble avbrutt. Plassen er ikke reservert.',
@@ -11174,6 +11271,9 @@ class Component extends DCLogic {
                 this.setState({ vlFeil: (d && d.feil) || 'Noe gikk galt. Prøv igjen.' });
                 return;
               }
+              // Bare nye paameldinger telles. Den som melder seg paa igjen,
+              // er ikke en ny interessent.
+              if (!d.gjentakelse) this.maal('join_waitlist', { item_name: kat.tittel || '' });
               this.setState({
                 vlNavn: '', vlEpost: '', vlTlf: '', vlFeil: null,
                 kvittering: d.gjentakelse ? 'Du står allerede på ventelisten' : 'Du står nå på ventelisten',
@@ -14360,6 +14460,20 @@ class Component extends DCLogic {
           // ── Analyse ──
           mkGaMangler: !!(d.analyse && d.analyse.mangler),
           mkGaTekst: (d.analyse && d.analyse.mangler) || '',
+          mkGaPaa: !!(d.analyse && d.analyse.gaTilkoblet),
+          mkGaHjelp: 'Besøkstall, mest leste sider og hvor folk kommer fra ligger i Google Analytics, '
+            + 'ikke her. Måle-ID-en er ' + ((d.analyse && d.analyse.gaId) || '') + '. '
+            + 'Nettsiden sier fra til Google når noen faktisk fullfører noe, ikke bare når de klikker — '
+            + 'da ser du hvilke sider og hvilke kanaler som gir ekte påmeldinger.',
+          // Navnene staar her fordi det er dem hun maa lete etter i Google.
+          // «purchase» og «generate_lead» sier ingenting for den som ikke
+          // vet at det er Googles egne navn paa nettopp dette.
+          mkGaHendelser: [
+            { navn: 'purchase', hva: 'Gjennomført betaling — kurs, drop-in, gavekort, butikk. Med beløp, så du ser hva hver kanal er verdt i kroner.' },
+            { navn: 'generate_lead', hva: 'Kontaktskjema og forespørsel om bedriftsevent, bursdag eller utdrikningslag.' },
+            { navn: 'sign_up', hva: 'Sendt medlemssøknad.' },
+            { navn: 'join_waitlist', hva: 'Satt seg på venteliste til et fullt kurs.' },
+          ],
           mkMestBookede: (() => {
             const l = (d.analyse && d.analyse.mestBookede) || [];
             const topp = l.reduce((m, x) => Math.max(m, x.plasser), 0) || 1;

@@ -5,6 +5,7 @@
  *   POST handling=legg-til   { oktId, navn, epost, telefon, antall,
  *                              betaltMaate, belop, notat, varsle }
  *   POST handling=fjern      { id }
+ *   POST handling=flytt      { id, oktId }   samme person, ny dato
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
@@ -49,6 +50,74 @@ if ($handling === 'fjern') {
 
     revider('pamelding_fjernet', 'booking', $id, ['navn' => $b['gjest_navn']]);
     Svar::ok(['beskjed' => 'Plassen er frigitt.']);
+}
+
+// ------------------------------------------------------------ flytt plass
+//
+// Folk blir syke, og en kveld passer ikke lenger. Uten dette matte
+// verkstedet avbestille og legge inn paa nytt — og da mistet man betalingen,
+// notatet og sporet av at det var den samme personen.
+if ($handling === 'flytt') {
+    $tilOkt = Foresporsel::heltall('oktId');
+
+    $b = DB::en(
+        'SELECT b.id, b.antall, b.course_id, b.course_session_id, b.status,
+                COALESCE(m.navn, b.gjest_navn) AS navn
+           FROM bookings b
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.id = :i',
+        ['i' => $id]
+    );
+    if ($b === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+    if ($b['status'] === 'avbestilt') {
+        Svar::feil('Denne er avbestilt. Legg personen til på nytt i stedet.');
+    }
+
+    $okt = DB::en(
+        'SELECT cs.id, cs.course_id, cs.start_tid, cs.status, c.tittel
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.id = :o',
+        ['o' => $tilOkt]
+    );
+    if ($okt === null) {
+        Svar::feil('Fant ikke datoen.');
+    }
+    if ($okt['status'] === 'avlyst') {
+        Svar::feil('Den datoen er avlyst.');
+    }
+    if ((int) $okt['id'] === (int) $b['course_session_id']) {
+        Svar::feil('Personen står allerede på den datoen.');
+    }
+
+    // Plassen maa finnes. Uten sjekken kunne man flytte fem personer inn paa
+    // en kveld med to plasser, og verkstedet oppdaget det den kvelden.
+    $ledige = Booking::ledigePlasser($tilOkt);
+    $trenger = max(1, (int) $b['antall']);
+    if ($ledige < $trenger) {
+        Svar::feil($ledige <= 0
+            ? 'Den datoen er full.'
+            : 'Det er bare ' . $ledige . ' plass' . ($ledige === 1 ? '' : 'er')
+              . ' igjen, og denne påmeldingen trenger ' . $trenger . '.');
+    }
+
+    // Kurset foelger datoen. Flyttes noen til et annet kurs, skal
+    // paameldingen hore til det kurset — ellers staar den i feil liste.
+    DB::oppdater('bookings', [
+        'course_session_id' => $tilOkt,
+        'course_id'         => (int) $okt['course_id'],
+    ], ['id' => $id]);
+
+    revider('pamelding_flyttet', 'booking', $id, [
+        'fra' => (int) $b['course_session_id'],
+        'til' => $tilOkt,
+    ]);
+
+    Svar::ok(['beskjed' => ($b['navn'] ?: 'Påmeldingen') . ' er flyttet til '
+                         . $okt['tittel'] . ' ' . Booking::norskDato((string) $okt['start_tid'])
+                         . '. Husk å gi beskjed.']);
 }
 
 // ---------------------------------------------------------- endre status

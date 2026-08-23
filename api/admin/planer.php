@@ -47,6 +47,15 @@ if (Foresporsel::metode() === 'GET') {
             'sortering' => (int) $p['sortering'],
             'aktiv'     => (bool) $p['aktiv'],
             'medlemmer' => $brukt[(string) $p['navn']] ?? 0,
+            // Teksten kunden leser paa kortet. Uten den kunne verkstedet
+            // endre prisen, men ikke ett ord om hva de faar for den.
+            'merke'       => (string) ($p['merke'] ?? ''),
+            'undertekst'  => (string) ($p['undertekst'] ?? ''),
+            'beskrivelse' => (string) ($p['beskrivelse'] ?? ''),
+            'punkter'     => (string) ($p['punkter'] ?? ''),
+            'passerFor'   => (string) ($p['passer_for'] ?? ''),
+            'bilde'       => (string) ($p['bilde'] ?? ''),
+            'fremhevet'   => !empty($p['fremhevet']),
         ], $rader),
     ]);
 }
@@ -82,6 +91,11 @@ if ($handling === 'lagre') {
         Svar::feil('Medlemskapet må ha et navn.');
     }
 
+    // Ett kort kan vaere fremhevet — det morke, midt i rekka. Er to
+    // fremhevet, er ingen av dem det, saa den settes bare paa denne og
+    // tas av de andre lenger nede.
+    $fremhevet = !empty($kropp['fremhevet']) ? 1 : 0;
+
     $felter = [
         'pris_ore'    => $pris,
         'timer'       => $timer,
@@ -89,6 +103,13 @@ if ($handling === 'lagre') {
         'engangs'     => $engangs,
         'aktiv'       => $aktiv,
         'sortering'   => (int) ($kropp['sortering'] ?? 0),
+        'merke'       => mb_substr(trim((string) ($kropp['merke'] ?? '')), 0, 40),
+        'undertekst'  => mb_substr(trim((string) ($kropp['undertekst'] ?? '')), 0, 120),
+        'beskrivelse' => mb_substr(trim((string) ($kropp['beskrivelse'] ?? '')), 0, 400),
+        'punkter'     => implode("\n", Medlemskap::punkter((string) ($kropp['punkter'] ?? ''))),
+        'passer_for'  => mb_substr(trim((string) ($kropp['passerFor'] ?? '')), 0, 200),
+        'bilde'       => mb_substr(trim((string) ($kropp['bilde'] ?? '')), 0, 200),
+        'fremhevet'   => $fremhevet,
     ];
 
     // Ny plan.
@@ -97,6 +118,9 @@ if ($handling === 'lagre') {
             Svar::feil('Det finnes alt et medlemskap som heter «' . $navn . '».');
         }
         DB::settInn('membership_plans', $felter + ['navn' => $navn, 'intervall' => 'maaned']);
+        if ($fremhevet === 1) {
+            DB::kjor('UPDATE membership_plans SET fremhevet = 0 WHERE navn <> :n', ['n' => $navn]);
+        }
         revider('plan_opprettet', 'plan', null, ['navn' => $navn]);
         Svar::ok(['beskjed' => '«' . $navn . '» er lagt ut.']);
     }
@@ -123,6 +147,9 @@ if ($handling === 'lagre') {
     }
 
     DB::oppdater('membership_plans', $felter, ['navn' => $navn]);
+    if ($fremhevet === 1) {
+        DB::kjor('UPDATE membership_plans SET fremhevet = 0 WHERE navn <> :n', ['n' => $navn]);
+    }
     revider('plan_endret', 'plan', null, ['navn' => $navn, 'foer' => $foer]);
 
     Svar::ok(['beskjed' => $navn !== $foer

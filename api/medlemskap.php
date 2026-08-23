@@ -22,6 +22,15 @@ $planer = static fn(): array => array_map(static fn($p) => [
     'timer'    => $p['timer'] === null ? null : (int) $p['timer'],
     'binding'  => (int) $p['binding_mnd'],
     'engangs'  => (bool) $p['engangs'],
+    // Teksten kunden leser. Den staar i basen fordi verkstedet skal kunne
+    // skrive den om selv — «for 30 dager» sier ingenting om de ti timene.
+    'merke'      => (string) ($p['merke'] ?? ''),
+    'undertekst' => (string) ($p['undertekst'] ?? ''),
+    'beskrivelse'=> (string) ($p['beskrivelse'] ?? ''),
+    'punkter'    => Medlemskap::punkter($p['punkter'] ?? null),
+    'passerFor'  => (string) ($p['passer_for'] ?? ''),
+    'bilde'      => (string) ($p['bilde'] ?? ''),
+    'fremhevet'  => !empty($p['fremhevet']),
 ], Medlemskap::planer());
 
 // ------------------------------------------------------------------ lesing

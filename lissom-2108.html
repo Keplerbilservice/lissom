@@ -3324,6 +3324,203 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- Medlemskapene.
+       De laa som en smal boks nederst i hoyre kolonne paa kursskjermen, under
+       kurslista og datolista. Verkstedet fant dem ikke, og fant de dem, var
+       det fire tall der: pris, timer, binding, sortering. Ikke ett ord av det
+       kunden faktisk leser.
+       Naa er de en skjerm. Prisen staar til venstre, teksten til hoyre — det
+       er to ulike jobber, og de skal ikke ligge om hverandre. -->
+  <sc-if value="{{ erAdminMedlemskap }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – medlemskap" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
+          </div>
+        </div>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kurs og medlemskap</div>
+            <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Medlemskap</h1>
+            <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Det medlemmene kan kjøpe. Her setter du prisen og timene — og skriver teksten som står på kortet ute på nettsiden.</p>
+          </div>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ plNy }}" hint-size="auto,44px">Nytt medlemskap</x-import>
+        </div>
+
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="4">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Skjemaet. To kolonner fordi det er to jobber: hva det koster,
+             og hva det staar. Prover man aa gjore dem i samme kolonne, blir
+             prisfeltet borte mellom to tekstfelter. -->
+        <sc-if value="{{ plRedApen }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-6);">{{ plTittel }}</div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-8); align-items: start;">
+
+              <div>
+                <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+                  <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--lissom-brown); color: var(--clay-50); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); flex-shrink: 0;">1</span>
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Hva det koster</span>
+                </div>
+
+                <label style="{{ plEtikett }}">Navn</label>
+                <input value="{{ plNavn }}" onChange="{{ settPlNavn }}" placeholder="F.eks. 30 timer" style="{{ plFeltStil }}">
+                <div style="{{ plHjelp }}">Navnet står på kortet, på kvitteringen og på Min side. Endrer du det, følger medlemmene med.</div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-4);">
+                  <div>
+                    <label style="{{ plEtikett }}">Pris per måned (kr)</label>
+                    <input value="{{ plPris }}" onChange="{{ settPlPris }}" placeholder="2590" style="{{ plFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ plEtikett }}">Timer i måneden</label>
+                    <input value="{{ plTimer }}" onChange="{{ settPlTimer }}" placeholder="Tomt = fri tilgang" style="{{ plFeltStil }}">
+                  </div>
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Binding (måneder)</label>
+                  <input value="{{ plBinding }}" onChange="{{ settPlBinding }}" placeholder="0" style="{{ plFeltStil }}">
+                  <div style="{{ plHjelp }}">0 betyr måned til måned — de kan si opp når de vil.</div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-5);">
+                  <label style="{{ plAvkryss }}">
+                    <input type="checkbox" checked="{{ plEngangs }}" onChange="{{ vekslPlEngangs }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Prøveperiode — trekkes én gang og stopper av seg selv
+                  </label>
+                  <label style="{{ plAvkryss }}">
+                    <input type="checkbox" checked="{{ plAktiv }}" onChange="{{ vekslPlAktiv }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    I salg på nettsiden
+                  </label>
+                  <label style="{{ plAvkryss }}">
+                    <input type="checkbox" checked="{{ plFremhevet }}" onChange="{{ vekslPlFremhevet }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Fremhev dette kortet — det mørke midt i rekka
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-5);">
+                  <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--lissom-brown); color: var(--clay-50); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); flex-shrink: 0;">2</span>
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Det kunden leser</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                  <div>
+                    <label style="{{ plEtikett }}">Merkelapp</label>
+                    <input value="{{ plMerke }}" onChange="{{ settPlMerke }}" placeholder="F.eks. Mest valgt" style="{{ plFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ plEtikett }}">Linja under prisen</label>
+                    <input value="{{ plUndertekst }}" onChange="{{ settPlUndertekst }}" placeholder="F.eks. 10 timer, brukes i løpet av 30 dager" style="{{ plFeltStil }}">
+                  </div>
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Beskrivelse</label>
+                  <textarea value="{{ plBeskrivelse }}" onChange="{{ settPlBeskrivelse }}" rows="3" placeholder="En setning eller to om hva dette er." style="{{ plOmradeStil }}"></textarea>
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Punkter — ett per linje</label>
+                  <textarea value="{{ plPunkter }}" onChange="{{ settPlPunkter }}" rows="5" placeholder="30 verkstedtimer i måneden&#10;Egen hylle i verkstedet&#10;Tilgang 24/7 med dørkode" style="{{ plOmradeStil }}"></textarea>
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Passer for deg som …</label>
+                  <input value="{{ plPasserFor }}" onChange="{{ settPlPasserFor }}" placeholder="F.eks. vil ha fast plass i uka" style="{{ plFeltStil }}">
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Bilde</label>
+                  <input value="{{ plBilde }}" onChange="{{ settPlBilde }}" placeholder="uploads_shutterstock_2829103797.jpg" style="{{ plFeltStil }}">
+                  <div style="{{ plHjelp }}">Filnavnet på bildet slik det heter under Nettsiden → Bilder.</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ plLagre }}" hint-size="auto,44px">Lagre medlemskapet</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ plAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- Ett kort per medlemskap, med teksten kunden ser. Ser du kortet
+             her, vet du hva som staar ute — det var hele poenget. -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: stretch;">
+          <sc-for list="{{ adminPlaner }}" as="pl" hint-placeholder-count="4">
+            <div style="{{ pl.kortStil }}">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                <span style="{{ pl.merkeStil }}">{{ pl.merke }}</span>
+                <sc-if value="{{ pl.harMerkelapp }}" hint-placeholder-val="{{ true }}">
+                  <span style="{{ pl.merkelappStil }}">{{ pl.merkelapp }}</span>
+                </sc-if>
+              </div>
+
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading);">{{ pl.navn }}</div>
+              <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ pl.prisTekst }}</span>
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ pl.periodeTekst }}</span>
+              </div>
+              <div style="font-size: var(--text-sm); color: var(--terracotta-600); margin-top: 6px;">{{ pl.undertekst }}</div>
+
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ pl.beskrivelse }}</p>
+
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: var(--space-4);">
+                <sc-for list="{{ pl.punkter }}" as="p" hint-placeholder-count="4">
+                  <div style="display: flex; align-items: flex-start; gap: 8px; font-size: var(--text-sm); color: var(--text-body);">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); flex-shrink: 0; margin-top: 7px;"></span>
+                    <span>{{ p }}</span>
+                  </div>
+                </sc-for>
+              </div>
+
+              <sc-if value="{{ pl.manglerTekst }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--clay-100); font-size: var(--text-sm); color: var(--text-muted);">Ingen tekst er skrevet ennå. Kortet står tomt på nettsiden.</div>
+              </sc-if>
+
+              <div style="margin-top: auto; padding-top: var(--space-5);">
+                <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3);">{{ pl.fakta }}</div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="edit" on-click="{{ pl.rediger }}" hint-size="auto,40px">Rediger</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ pl.slett }}" hint-size="auto,40px">Slett</x-import>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ ingenPlaner }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10); text-align: center;">
+            <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: var(--space-2);">Ingen medlemskap ennå</div>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Lag det første, så dukker det opp på medlemskapssiden med det samme.</p>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ plNy }}" hint-size="auto,44px">Nytt medlemskap</x-import>
+          </div>
+        </sc-if>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdmin }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin" style="{{ adminGridStil }}">
 
@@ -3370,16 +3567,6 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-8);">
-          <sc-for list="{{ adminTall }}" as="t" hint-placeholder-count="4">
-            <div onClick="{{ t.velg }}" style="{{ t.kortStil }}">
-              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ t.merke }}</div>
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading); margin: 10px 0 4px;">{{ t.verdi }}</div>
-              <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</div>
-            </div>
-          </sc-for>
-        </div>
 
         <sc-if value="{{ kRed }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6);">
@@ -3570,9 +3757,7 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
-
-          <div style="min-width: 0;">
+        <div style="display: flex; flex-direction: column; gap: var(--space-6);">
           <!-- Kurslista.
                Sto som et rutenett med «min-width: 700px» inne i en boks som
                sjelden er saa bred. Da havnet «Rediger» og «Slett» utenfor
@@ -3610,7 +3795,7 @@ window.__resources = {
 
           <!-- Datoene som ligger ute naa. Kurset er én ting, datoen er den
                folk melder seg paa — og det er der en deltaker legges til. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-6);">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Datoer som ligger ute · {{ aktiveOkterAntall }}</div>
             <sc-for list="{{ aktiveOkter }}" as="o" hint-placeholder-count="5">
               <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
@@ -3642,95 +3827,6 @@ window.__resources = {
             </sc-if>
           </div>
 
-          <!-- Medlemskapene.
-               De laa bare i databasen, lagt inn av en migrasjon. Skulle
-               prisen endres, matte noen skrive SQL. De ligger her fordi det
-               er det samme arbeidet som kursene: hva verkstedet tilbyr, og
-               hva det koster. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-6);">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemskap</span>
-              <button type="button" onClick="{{ plNy }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Nytt medlemskap</button>
-            </div>
-
-            <sc-if value="{{ plRedApen }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); background: var(--clay-50);">
-                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: var(--space-4);">{{ plTittel }}</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
-                  <div>
-                    <label style="{{ plEtikett }}">Navn</label>
-                    <input value="{{ plNavn }}" onChange="{{ settPlNavn }}" placeholder="F.eks. 30 timer" style="{{ plFeltStil }}">
-                  </div>
-                  <div>
-                    <label style="{{ plEtikett }}">Pris per måned (kr)</label>
-                    <input value="{{ plPris }}" onChange="{{ settPlPris }}" placeholder="2590" style="{{ plFeltStil }}">
-                  </div>
-                  <div>
-                    <label style="{{ plEtikett }}">Timer i måneden</label>
-                    <input value="{{ plTimer }}" onChange="{{ settPlTimer }}" placeholder="Tomt = fri tilgang" style="{{ plFeltStil }}">
-                  </div>
-                  <div>
-                    <label style="{{ plEtikett }}">Binding (måneder)</label>
-                    <input value="{{ plBinding }}" onChange="{{ settPlBinding }}" placeholder="0" style="{{ plFeltStil }}">
-                  </div>
-                </div>
-                <div style="display: flex; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-4);">
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-                    <input type="checkbox" checked="{{ plEngangs }}" onChange="{{ vekslPlEngangs }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                    Prøveperiode — trekkes én gang og stopper av seg selv
-                  </label>
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-                    <input type="checkbox" checked="{{ plAktiv }}" onChange="{{ vekslPlAktiv }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                    I salg på nettsiden
-                  </label>
-                </div>
-                <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ plLagre }}" hint-size="auto,40px">Lagre</x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ghost" on-click="{{ plAvbryt }}" hint-size="auto,40px">Avbryt</x-import>
-                </div>
-              </div>
-            </sc-if>
-
-            <sc-for list="{{ adminPlaner }}" as="pl" hint-placeholder-count="4">
-              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <div style="flex: 1 1 220px; min-width: 0;">
-                  <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ pl.navn }}</span>
-                    <span style="{{ pl.merkeStil }}">{{ pl.merke }}</span>
-                  </div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ pl.detalj }}</div>
-                </div>
-                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
-                  <button type="button" onClick="{{ pl.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
-                  <button type="button" onClick="{{ pl.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
-                </div>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ingenPlaner }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen medlemskap er lagt ut ennå.</div>
-            </sc-if>
-          </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: var(--space-6);">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Interne samlinger · kun medlemmer</div>
-            <sc-for list="{{ internkursAdmin }}" as="k" hint-placeholder-count="3">
-              <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.naar }}</div>
-                </div>
-                <span style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ k.pameldte }}</span>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ingenInterne }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen interne samlinger er opprettet.</div>
-            </sc-if>
-            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ aNyIntern }}" hint-size="100%,40px">Ny intern samling</x-import>
-            </div>
-          </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</div>
@@ -3745,8 +3841,6 @@ window.__resources = {
             </sc-for>
             <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--sage-600); font-weight: 600;">Automatikk: ved avbestilling tilbys plassen automatisk til førstemann på listen.</div>
             <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Ingen er belastet. Tilbyr du plassen, har de 6 timer på å svare.</div>
-          </div>
-
           </div>
         </div>
       </main>
@@ -3783,6 +3877,10 @@ window.__resources = {
           <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Hurtig</span>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,40px">Nytt kurs</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
+          <!-- De to man gjor oftest og som ikke sto her: noen ringer og vil
+               ha en plass, noen staar i doera og vil bli medlem. -->
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovLeggTilDeltaker }}" hint-size="auto,40px">Legg til deltaker</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ ovNyttMedlem }}" hint-size="auto,40px">Nytt medlem</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ npApne }}" hint-size="auto,40px">Legg ut vare</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldDeltakere }}" hint-size="auto,40px">Til deltakere</x-import>
@@ -4245,16 +4343,6 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
-             denne gruppa, uten aa maatte ut av den. -->
-        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
-            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
-              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
-            </sc-for>
-          </div>
-        </sc-if>
-
         <!-- Paamelding lagt inn for haand. Ikke alle bestiller paa nett —
              noen ringer, noen staar i doera. Uten dette matte verkstedet
              fore en liste ved siden av, og den ene stemmer aldri. -->
@@ -4346,30 +4434,63 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
-          <div style="display: grid; grid-template-columns: 1.5fr 1.6fr 1.6fr 1fr 1.2fr; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
-            <span>Navn</span><span>Kontakt</span><span>Kurs</span><span>Beløp</span><span>Status</span>
-          </div>
+        <!-- Lista over de paameldte.
+             Sto som et rutenett med «min-width: 640px» i en boks med
+             sidelengs rulling. Handlingene ville havnet utenfor kanten paa
+             en vanlig skjerm — synlige, men umulige aa treffe. Raden bryter
+             i stedet, saa «Flytt» og «Avbestill» alltid er der. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Påmeldte · {{ pameldteAntall }}</div>
           <sc-for list="{{ pameldte }}" as="p" hint-placeholder-count="11">
-            <div onClick="{{ p.velg }}" style="display: grid; grid-template-columns: 1.5fr 1.6fr 1.6fr 1fr 1.2fr; min-width: 640px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
-              <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.navn }}</div>
-              <div style="min-width: 0;">
-                <div style="font-size: var(--text-sm); color: var(--text-body); overflow: hidden; text-overflow: ellipsis;">{{ p.epost }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.tlf }}</div>
+            <div style="border-top: 1px solid var(--border-subtle);">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6);">
+                <div onClick="{{ p.velg }}" style="flex: 1 1 190px; min-width: 0; cursor: pointer;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis;">{{ p.kontakt }}</div>
+                </div>
+                <div onClick="{{ p.velg }}" style="flex: 1 1 170px; min-width: 0; cursor: pointer;">
+                  <div style="font-size: var(--text-sm); color: var(--text-body);">{{ p.kurs }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.dato }}</div>
+                </div>
+                <div onClick="{{ p.velg }}" style="flex: 0 1 110px; cursor: pointer;">
+                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ p.sum }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.maate }}</div>
+                </div>
+                <div style="flex: 0 0 auto;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ p.tone }}" hint-size="auto,24px">{{ p.status }}</x-import>
+                </div>
+                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ p.flytt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Flytt</button>
+                  <button type="button" onClick="{{ p.avbestill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Avbestill</button>
+                </div>
               </div>
-              <div style="min-width: 0;">
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ p.kurs }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.dato }}</div>
-              </div>
-              <div>
-                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ p.sum }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.maate }}</div>
-              </div>
-              <div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ p.tone }}" hint-size="auto,24px">{{ p.status }}</x-import>
-              </div>
+
+              <!-- Flyttingen skjer paa raden. Ble den lagt i en egen skjerm,
+                   maatte man finne personen igjen der. -->
+              <sc-if value="{{ p.flyttApen }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 0 var(--space-6) var(--space-5); display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4);">
+                  <div style="flex: 1 1 320px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Flytt {{ p.navn }} til</label>
+                    <select value="{{ flyttOkt }}" onChange="{{ settFlyttOkt }}" style="{{ mpValgStil }}">
+                      <sc-for list="{{ flyttOkter }}" as="o" hint-placeholder-count="6">
+                        <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                      </sc-for>
+                    </select>
+                  </div>
+                  <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ flyttUtfor }}" hint-size="auto,40px">Flytt hit</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ghost" on-click="{{ flyttAvbryt }}" hint-size="auto,40px">Avbryt</x-import>
+                  </div>
+                </div>
+                <sc-if value="{{ ingenFlyttOkter }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 0 var(--space-6) var(--space-5); font-size: var(--text-sm); color: var(--terracotta-600);">Det finnes ingen annen dato å flytte til. Legg inn en dato på kurset først.</div>
+                </sc-if>
+              </sc-if>
             </div>
           </sc-for>
+          <sc-if value="{{ ingenPameldte }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen er meldt på ennå.</div>
+          </sc-if>
         </div>
         <p style="margin: var(--space-5) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Klikk på en rad for full kontaktinfo, betalingshistorikk og mulighet til å sende beskjed.</p>
       </main>
@@ -5201,15 +5322,6 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-5); margin-bottom: var(--space-8);">
-          <sc-for list="{{ dropinTall }}" as="t" hint-placeholder-count="4">
-            <div onClick="{{ t.velg }}" style="{{ t.kortStil }}">
-              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ t.merke }}</div>
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading); margin: 10px 0 4px;">{{ t.verdi }}</div>
-              <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</div>
-            </div>
-          </sc-for>
-        </div>
         <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
             <div style="display: grid; grid-template-columns: 1.4fr 1.2fr 1.4fr 1.1fr; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
@@ -8049,8 +8161,13 @@ class Component extends DCLogic {
     const p = this.priser();
     if (p[navn] != null) return p[navn];
 
-    // Medlemskapene staar i prislista med «Abonnement: » foran. Spor noen om
-    // «Prov Lissom», er det det samme de mener.
+    // Medlemskapene staar i kurven med «Abonnement: » foran navnet.
+    // Planen fra basen gaar foran prislista: den foelger med naar
+    // verkstedet endrer pris eller navn.
+    const utenPrefiks = String(navn).replace(/^Abonnement: /, '');
+    const plan = this.planer().find(x => x.navn === utenPrefiks);
+    if (plan && plan.prisOre != null) return Math.round(plan.prisOre / 100);
+
     if (p['Abonnement: ' + navn] != null) return p['Abonnement: ' + navn];
 
     const k = Object.keys(p).find(x => navn.indexOf(x) === 0);
@@ -8157,18 +8274,71 @@ class Component extends DCLogic {
     }));
   }
 
+  /**
+   * Medlemskapene slik de staar i basen.
+   *
+   * De sto som fire faste linjer her. Endret verkstedet navnet paa «30 timer»
+   * til «Basis 30», skjedde det ingenting ute: nettsiden slo fortsatt opp
+   * paa det gamle navnet, og fant det ikke. Prisen ble hentet fra en annen
+   * hardkodet liste, og teksten var ikke lagret noe sted i det hele tatt.
+   *
+   * Naa er basen kilden, og lista her er bare det som vises for svaret er
+   * kommet — og i forhaandsvisningen, der det ikke finnes noen server.
+   */
   planer() {
+    const fra = this.state.planListe;
+    if (fra && fra.length) {
+      return fra.map(p => {
+        const fri = p.timer === null || p.timer === undefined;
+        return {
+          navn: p.navn,
+          pris: p.pris,
+          prisOre: p.prisOre,
+          periode: p.undertekst || (p.engangs ? 'engangs' : 'per måned'),
+          intervall: p.engangs ? 'engangs' : 'per måned',
+          detalj: p.undertekst || (fri ? 'Ingen timebegrensning' : p.timer + ' timer i måneden'),
+          timer: fri ? null : p.timer,
+          binding: p.binding || 0,
+          engangs: !!p.engangs,
+          merke: p.merke || '',
+          beskrivelse: p.beskrivelse || '',
+          punkter: p.punkter || [],
+          passerFor: p.passerFor || '',
+          bilde: p.bilde || '',
+          fremhevet: !!p.fremhevet,
+          // Proveperioden kan bare kjopes én gang.
+          brukt: !!p.engangs && !!this.state.innlogget,
+        };
+      });
+    }
     return [
-      { navn: 'Prøv Lissom', pris: 'kr. 990,-', periode: '30 dager', detalj: 'Kan kun benyttes én gang', timer: 10, brukt: true },
-      { navn: '30 timer', pris: 'kr. 2 590,-', periode: 'per måned', detalj: '30 timer i måneden', timer: 30 },
-      { navn: 'Årsmedlemskap', pris: 'kr. 1 990,-', periode: 'per måned', detalj: '35 timer i måneden · årsavtale', timer: 35 },
-      { navn: 'Fri tilgang', pris: 'kr. 4 990,-', periode: 'per måned', detalj: 'Ingen timebegrensning', timer: null },
+      { navn: 'Prøv Lissom', pris: 'kr. 990,-', periode: '10 timer, brukes i løpet av 30 dager', intervall: 'engangs', detalj: '10 timer, brukes i løpet av 30 dager', timer: 10, engangs: true, brukt: true,
+        merke: 'Prøveperiode', beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.',
+        punkter: ['10 verkstedtimer', 'Leire og brenning kjøpes i tillegg', 'Kan kun benyttes én gang', 'Går ikke automatisk over til abonnement'],
+        passerFor: 'er nysgjerrig etter et kurs', bilde: 'uploads_shutterstock_2829104351.jpg' },
+      { navn: '30 timer', pris: 'kr. 2 590,-', periode: '30 timer i måneden', intervall: 'per måned', detalj: '30 timer i måneden', timer: 30, fremhevet: true,
+        merke: 'Mest valgt', beskrivelse: 'Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.',
+        punkter: ['30 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Ta med en venn én gang i måneden'],
+        passerFor: 'vil ha fast plass i uka', bilde: 'uploads_shutterstock_2829103797.jpg' },
+      { navn: 'Årsmedlemskap', pris: 'kr. 1 990,-', periode: '35 timer i måneden · årsavtale', intervall: 'per måned', detalj: '35 timer i måneden · årsavtale', timer: 35, binding: 12,
+        merke: 'Mest for pengene', beskrivelse: 'Få mer, betal mindre: 35 timer i måneden til lavere pris, med årsavtale.',
+        punkter: ['35 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Binding i 12 måneder'],
+        passerFor: 'bruker verkstedet fast hele året', bilde: 'uploads_shutterstock_2830613711.jpg' },
+      { navn: 'Fri tilgang', pris: 'kr. 4 990,-', periode: 'Ingen timebegrensning', intervall: 'per måned', detalj: 'Ingen timebegrensning', timer: null,
+        merke: 'Proff', beskrivelse: 'Ubegrenset verkstedtid for deg som jobber med keramikk fast.',
+        punkter: ['Ingen timebegrensning', 'Egen hylle og lagerplass', 'Tilgang 24/7 med dørkode', 'Rabatt på leire og brenning'],
+        passerFor: 'blir bitt av basillen', bilde: 'uploads_shutterstock_2829104157.jpg' },
     ];
   }
 
   aktivPlan() {
-    const navn = this.state.abo || '30 timer';
-    return this.planer().find(p => p.navn === navn) || this.planer()[1];
+    const alle = this.planer();
+    const navn = this.state.abo || '';
+    // Uten valgt medlemskap: forste loepende plan, ikke proveperioden.
+    return alle.find(p => p.navn === navn)
+        || alle.find(p => !p.engangs)
+        || alle[0]
+        || { navn: '', timer: null, pris: '', periode: '', detalj: '' };
   }
 
   kjopIntern(v) {
@@ -8306,7 +8476,9 @@ class Component extends DCLogic {
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
       { sti: '/admin',              side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
-      { sti: '/admin/kurs',         side: 'admin' },
+      { sti: '/admin/medlemskap',   side: 'adminmedlemskap' },
+      { sti: '/admin/kurs/alle',    side: 'admin' },
+      { sti: '/admin/kurs',         side: 'adminomrkurs' },
       { sti: '/admin/pameldte',     side: 'adminpameldte' },
       // Rekkefolgen betyr noe: forste treff vinner naar adressen skrives.
       // Lista maa derfor staa for forsida, ellers hadde begge to endt paa
@@ -12158,9 +12330,14 @@ class Component extends DCLogic {
     const fane = this.state.kursFane || 'alle';
     const intern = k => (k.tema || '') === 'Kun for medlemmer'
       || k.type === 'Kun for medlemmer' || k.type === 'Kun medlemmer';
+    // Nyeste kurs oeverst. Lista kom i den rekkefolgen basen ga den, saa
+    // kurset man nettopp laget havnet nederst — under kurs fra i fjor.
+    // Indeksen folger med paret, saa «Rediger» og «Slett» peker fortsatt paa
+    // riktig kurs etter sorteringa.
     return this.kursData()
       .map((k, i) => ({ k, i }))
-      .filter(({ k }) => fane === 'alle' || (fane === 'interne' ? intern(k) : !intern(k)));
+      .filter(({ k }) => fane === 'alle' || (fane === 'interne' ? intern(k) : !intern(k)))
+      .sort((a, b) => (b.k.id || 0) - (a.k.id || 0));
   }
 
   /**
@@ -12193,8 +12370,7 @@ class Component extends DCLogic {
       ['Oversikt',  'adminoversikt'],
       ['Deltakere', 'adminomrdeltakere'],
       ['Medlemmer', 'adminomrmedlemmer'],
-      ['Kurs og medlemskap', 'admin', { kursFane: 'alle' }],
-      ['Drop-in',   'admindropin'],
+      ['Kurs og medlemskap', 'adminomrkurs'],
       // Oppskriftene laa under Medlemmer, men de er verkstedets egne —
       // glasurene og leiretypene som staar paa veggen. De hoerer ikke til
       // én gruppe mennesker, og skal ikke ligge inne hos dem.
@@ -12239,6 +12415,16 @@ class Component extends DCLogic {
         ['Betalinger',   'adminokonomi',     { okonomiFor: 'medlemmer' }],
         ['Nyttig info',  'adminnyttig',      { nyttigFor: 'medlemmer' }],
       ],
+      // Kursene og medlemskapene er det samme arbeidet: hva verkstedet
+      // tilbyr, og hva det koster. Samlingene for medlemmene staar ikke her
+      // — de hoerer hjemme hos medlemmene, og bare der.
+      'Kurs og medlemskap': [
+        ['← Kurs og medlemskap', 'adminomrkurs'],
+        ['Alle kurs',     'admin',            { kursFane: 'alle' }],
+        ['Medlemskap',    'adminmedlemskap'],
+        ['Drop-in',       'admindropin'],
+        ['Påmeldte',      'adminpameldte'],
+      ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
@@ -12264,9 +12450,11 @@ class Component extends DCLogic {
 
     switch (st.side) {
       case 'adminoversikt':      return p('Oversikt');
-      case 'admindropin':        return p('Drop-in');
+      case 'admindropin':        return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Drop-in');
       case 'adminbrukere':       return p('Brukere');
       case 'adminomrdeltakere':  return p('Deltakere', '', '');
+      case 'adminomrkurs':       return p('Kurs og medlemskap', '', '');
+      case 'adminmedlemskap':    return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Medlemskap');
       case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
       case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
@@ -12279,7 +12467,7 @@ class Component extends DCLogic {
       case 'admin':
         if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
-        return p('Kurs og medlemskap');
+        return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Alle kurs');
       case 'adminbeskjeder':
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
           ? p('Deltakere', 'Deltakere', 'Beskjeder')
@@ -12843,7 +13031,8 @@ class Component extends DCLogic {
     if (this.erAdminSkjerm(side) && !this.state.adminData) {
       this.hentAdmin();
     }
-    if (side === 'admin' && !this.state.adminPlanerRaa) {
+    if (['admin', 'adminmedlemskap', 'adminomrkurs'].indexOf(side) !== -1
+        && !this.state.adminPlanerRaa) {
       this.hentPlaner();
     }
 
@@ -12899,18 +13088,24 @@ class Component extends DCLogic {
       },
     }));
 
+    // Kortet for ett medlemskap.
+    //
+    // Alt her sto foer i oppslag paa navnet: «Prov Lissom» ga ett bilde, «30
+    // timer» et annet, og oppsigelsesteksten var en if-setning paa navnet.
+    // Doepte verkstedet om et medlemskap, falt alt sammen ut — kortet mistet
+    // bildet, teksten og betingelsene sine.
+    //
+    // Naa folger alt med planen. Navnet er bare et navn.
     const abo = (o) => {
       const m = o.mork;
-      const passer = {
-        'Prøv Lissom': 'Passer for: deg som er nysgjerrig etter et kurs',
-        '30 timer': 'Passer for: deg som vil ha fast plass i uka',
-        'Årsmedlemskap': 'Passer for: deg som bruker verkstedet fast hele året',
-        'Fri tilgang': 'Passer for: deg som blir bitt av basillen',
-      }[o.navn] || '';
-      const punkter = o.navn !== 'Prøv Lissom' ? (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']) : (o.punkter || []);
-      const oppsigelse = o.navn === 'Prøv Lissom' ? 'Stopper av seg selv etter 30 dager' : o.navn === 'Årsmedlemskap' ? 'Årsavtale — binding i 12 måneder' : 'Måned til måned — si opp når du vil';
+      const passer = o.passerFor ? 'Passer for: deg som ' + o.passerFor : '';
+      // Salg gjennom lissom.no folger med medlemskapet, ikke proveperioden.
+      const punkter = o.engangs ? (o.punkter || []) : (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']);
+      const oppsigelse = o.engangs
+        ? 'Stopper av seg selv når perioden er over'
+        : (o.binding > 0 ? 'Årsavtale — binding i ' + o.binding + ' måneder' : 'Måned til måned — si opp når du vil');
       const visMer = () => {
-        const bilde = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'handbygging.jpg';
+        const bilde = o.bilde || FOTO + 'handbygging.jpg';
         const k = {
           level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
           status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
@@ -12936,7 +13131,7 @@ class Component extends DCLogic {
         dempetFarge: m ? 'var(--clay-300)' : 'var(--text-muted)',
         prikkFarge: m ? 'var(--lissom-yellow)' : 'var(--terracotta-500)',
         knapp: m ? 'primary' : 'secondary',
-        bilde: { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' }[o.navn] || FOTO + 'handbygging.jpg',
+        bilde: o.bilde || FOTO + 'handbygging.jpg',
         kjop: visMer,
         kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },
       }, o, { passer, punkter });
@@ -13516,8 +13711,9 @@ class Component extends DCLogic {
           },
         };
       })(),
-      aboFordeler: aboNavn === 'Fri tilgang' ? ['Ubegrenset verkstedtid', 'Dørkode og medlemspriser']
-        : aboNavn === 'Prøv Lissom' ? ['30 dager prøvetid', 'Tilgang til verksted og utstyr']
+      aboFordeler: (plan.punkter && plan.punkter.length) ? plan.punkter.slice(0, 2)
+        : plan.timer == null ? ['Ubegrenset verkstedtid', 'Dørkode og medlemspriser']
+        : plan.engangs ? [plan.detalj || 'Prøveperiode', 'Tilgang til verksted og utstyr']
         : ['30 verkstedtimer i måneden', 'Dørkode og medlemspriser'],
       byttAboApen: !!this.state.byttAboApen,
       vekslByttAbo: () => this.setState(s => ({ byttAboApen: !s.byttAboApen })),
@@ -13573,7 +13769,7 @@ class Component extends DCLogic {
       angreOppsigelse: () => this.setState({ oppsagt: false, kvittering: 'Abonnementet fortsetter som før' }),
       minePlaner: this.planer().map(p => Object.assign(p, { valgt: p.navn === aboNavn })).map(p => Object.assign(p, {
         velg: p.brukt
-          ? this.apne('Prøv Lissom', 'Ikke tilgjengelig', [
+          ? this.apne(p.navn, 'Ikke tilgjengelig', [
               { navn: 'Hvorfor', verdi: 'Prøveperioden kan kun benyttes én gang, og ikke når du allerede er medlem.' },
             ], 'Lukk')
           : p.valgt
@@ -13591,7 +13787,10 @@ class Component extends DCLogic {
               ], 'Legg i handlekurven', null, false, () => {
                 this.setState(s2 => {
                   const k = Object.assign({}, s2.kurv);
-                  delete k['Abonnement: 30 timer']; delete k['Abonnement: Fri tilgang']; delete k['Abonnement: Årsmedlemskap'];
+                  // Ett medlemskap om gangen. Navnene sto skrevet inn her,
+                  // saa et omdopt medlemskap ble liggende igjen ved siden av
+                  // det nye — og kunden betalte for begge.
+                  Object.keys(k).forEach(n => { if (n.indexOf('Abonnement: ') === 0) delete k[n]; });
                   k['Abonnement: ' + p.navn] = 1;
                   return { kurv: k };
                 });
@@ -14324,7 +14523,8 @@ class Component extends DCLogic {
       ...(() => {
         const erDeltakere = side === 'adminomrdeltakere';
         const erMedlemmer = side === 'adminomrmedlemmer';
-        if (!erDeltakere && !erMedlemmer) {
+        const erKurs = side === 'adminomrkurs';
+        if (!erDeltakere && !erMedlemmer && !erKurs) {
           return { erAdminOmraade: false, omrKort: [], omrHurtig: [] };
         }
 
@@ -14353,6 +14553,72 @@ class Component extends DCLogic {
         const intern = k => (k.tema || '') === 'Kun for medlemmer'
           || k.type === 'Kun for medlemmer' || k.type === 'Kun medlemmer';
         const kursData = this.kursData();
+
+        // Kurs og medlemskap.
+        //
+        // Skjermen aapnet foer rett i kurslista, med fire noekkeltall paa
+        // toppen — omsetning og ubesvarte meldinger, som ikke hoerer til
+        // her — og medlemskapene i en smal spalte nederst til hoyre. De
+        // ble aldri funnet.
+        if (erKurs) {
+          const kurs = kursData.filter(k => !intern(k));
+          const okter = this.state.adminOkter || [];
+          const planer = this.state.adminPlanerRaa
+            || (this.erPublisert() ? [] : [{}, {}]);
+          const nyttKurs = {
+            kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
+            kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8',
+            kBeskrivelse: '', kBekreftelse: '', kMva: false,
+            kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+            kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
+            kDatoer: [{ dato: '', fra: '', til: '' }],
+          };
+          const nyttMedlemskap = {
+            plRed: {
+              foer: '', navn: '', pris: '', timer: '', binding: '0',
+              engangs: false, aktiv: true, sortering: '0',
+              merke: '', undertekst: '', beskrivelse: '', punkter: '',
+              passerFor: '', bilde: '', fremhevet: false,
+            },
+          };
+          return {
+            erAdminOmraade: true,
+            adminNavOmraade: this.adminMeny(),
+            omrTittel: 'Kurs og medlemskap',
+            omrUnder: 'Alt verkstedet selger: kursene med datoene sine, og '
+              + 'medlemskapene med pris, timer og teksten kunden leser.',
+            omrHurtig: [
+              { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', nyttKurs) },
+              { navn: 'Nytt medlemskap', velg: () => this.gaaAdmin('adminmedlemskap', nyttMedlemskap) },
+              { navn: 'Legg til deltaker', velg: () => this.gaaAdmin('adminpameldte', { mpApen: true }) },
+            ],
+            omrKort: [
+              kort('Planlagte kurs',
+                   okter.length
+                     ? 'Kursene som er lagt ut, med datoene folk faktisk melder seg på — nyeste først.'
+                     : 'Kursene som er lagt ut. Ingen datoer ligger ute ennå.',
+                   kurs.length, 'admin', { kursFane: 'alle' }, 'Se kursene'),
+              kort('Opprett kurs',
+                   'Navn, pris, plasser og datoer i tre steg. Det ligger ute med det samme.',
+                   null, 'admin', nyttKurs, 'Lag et kurs'),
+              kort('Medlemskap',
+                   'Pris, timer og teksten som står på kortet ute på nettsiden.',
+                   planer.length, 'adminmedlemskap', {}, 'Se medlemskapene'),
+              kort('Nytt medlemskap',
+                   'Lag et nytt medlemskap — hva det koster, og hva de får for det.',
+                   null, 'adminmedlemskap', nyttMedlemskap, 'Lag et medlemskap'),
+              kort('Datoer som ligger ute',
+                   'Hver dato med plassene sine. Herfra legger du til, flytter og avbestiller deltakere.',
+                   okter.length, 'admin', { kursFane: 'alle' }, 'Se datoene'),
+              kort('Drop-in',
+                   'Åpningstidene for drop-in: legg ut en ny tid, endre den eller ta den bort.',
+                   null, 'admindropin', {}, 'Se tidene'),
+              kort('Påmeldte',
+                   'Alle som er meldt på, med hva de har betalt.',
+                   (this.state.adminDeltakere || []).length, 'adminpameldte', {}, 'Se påmeldingene'),
+            ],
+          };
+        }
 
         if (erDeltakere) {
           const deltakere = this.kursdeltakerRader();
@@ -14508,6 +14774,8 @@ class Component extends DCLogic {
       // medlemslista. Skulle du svare noen som ringte om kursbeviset sitt,
       // matte du lete i begge.
       erAdminKursdeltakere: side === 'adminkursdeltakere',
+      erAdminMedlemskap: side === 'adminmedlemskap',
+      adminNavMedlemskap: this.adminMeny(),
       adminNavKursdeltakere: this.adminMeny(),
       ...(() => {
         const sok = (this.state.kdSok || '').trim().toLowerCase();
@@ -14584,7 +14852,13 @@ class Component extends DCLogic {
       // «Medlemmer» var alle som noen gang hadde vaert det. Aktive og
       // sluttede sto om hverandre, og lista svarte ikke paa det man
       // spor om oftest: hvem betaler naa?
-      medlemFiltre: ['Alle', 'Aktive', 'Sluttet', 'Kursdeltakere', 'Admin', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
+      // Filtrene folger medlemskapene som faktisk finnes. De sto som faste
+      // navn, saa et nytt eller omdopt medlemskap ble ikke mulig aa filtrere
+      // paa — og et slettet ett sto igjen med null treff.
+      medlemFiltre: ['Alle', 'Aktive', 'Sluttet', 'Kursdeltakere', 'Admin']
+        .concat((this.state.adminPlanerRaa || []).map(pl => pl.navn))
+        .concat(this.state.adminPlanerRaa ? [] : ['30 timer', 'Fri tilgang', 'Prøv Lissom'])
+        .concat(['Inne nå']).map(n => {
         const valgt = (this.state.medlemFilter || 'Alle') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
@@ -14832,8 +15106,16 @@ class Component extends DCLogic {
       ...(() => {
         const r = this.state.adminPlanerRaa;
         const liste = r || (this.erPublisert() ? [] : [
-          { navn: 'Prøv Lissom', pris: 990, prisTekst: 'kr. 990,-', timer: 10, binding: 0, engangs: true, aktiv: true, medlemmer: 6, sortering: 1 },
-          { navn: '30 timer', pris: 2590, prisTekst: 'kr. 2 590,-', timer: 30, binding: 0, engangs: false, aktiv: true, medlemmer: 30, sortering: 2 },
+          { navn: 'Prøv Lissom', pris: 990, prisTekst: 'kr. 990,-', timer: 10, binding: 0, engangs: true, aktiv: true, medlemmer: 6, sortering: 1,
+            merke: 'Prøveperiode', undertekst: '10 timer, brukes i løpet av 30 dager',
+            beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.',
+            punkter: '10 verkstedtimer\nLeire og brenning kjøpes i tillegg\nKan kun benyttes én gang',
+            passerFor: 'er nysgjerrig etter et kurs', bilde: 'uploads_shutterstock_2829104351.jpg' },
+          { navn: '30 timer', pris: 2590, prisTekst: 'kr. 2 590,-', timer: 30, binding: 0, engangs: false, aktiv: true, medlemmer: 30, sortering: 2,
+            merke: 'Mest valgt', undertekst: '30 timer i måneden', fremhevet: true,
+            beskrivelse: 'Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.',
+            punkter: '30 verkstedtimer i måneden\nEgen hylle i verkstedet\nTilgang 24/7 med dørkode',
+            passerFor: 'vil ha fast plass i uka', bilde: 'uploads_shutterstock_2829103797.jpg' },
         ]);
         const red = this.state.plRed || null;
 
@@ -14842,58 +15124,118 @@ class Component extends DCLogic {
           borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
           background: 'var(--clay-50)', color: 'var(--text-heading)',
         };
+        // Ett felt som skrives i, ett som skrives i lengre. Samme ramme,
+        // ulik hoyde — ellers ser skjemaet ut som to skjemaer.
+        const omraade = Object.assign({}, felt, { resize: 'vertical', font: 'var(--type-body-sm)', lineHeight: 1.5 });
+
+        // Verdien i skjemaet, uten aa maatte skrive den samme setninga ti
+        // ganger. Feltet er tomt naar ingenting redigeres.
+        const v = n => (red && red[n] !== undefined && red[n] !== null) ? String(red[n]) : '';
+        const sett = n => e => {
+          const val = e.target.value;
+          this.setState(st => ({ plRed: Object.assign({}, st.plRed, { [n]: val }) }));
+        };
+        const veksle = n => () => this.setState(st => ({ plRed: Object.assign({}, st.plRed, { [n]: !st.plRed[n] }) }));
 
         return {
-          adminPlaner: liste.map(pl => Object.assign({}, pl, {
-            timerTekst: pl.timer === null || pl.timer === undefined ? 'Fri tilgang' : pl.timer + ' timer',
-            detalj: [
-              pl.prisTekst,
-              pl.timer === null || pl.timer === undefined ? 'fri tilgang' : pl.timer + ' timer i måneden',
-              pl.engangs ? 'engangs' : (pl.binding > 0 ? pl.binding + ' mnd binding' : 'måned til måned'),
-              pl.medlemmer === 1 ? '1 medlem' : pl.medlemmer + ' medlemmer',
-            ].join(' · '),
-            merke: pl.aktiv ? 'I salg' : 'Ikke i salg',
-            merkeStil: {
-              font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
-              textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
-              background: pl.aktiv ? 'var(--sage-100, #E3EDE4)' : 'var(--clay-200)',
-              color: pl.aktiv ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
-              whiteSpace: 'nowrap',
-            },
-            rediger: () => this.setState({ plRed: {
-              foer: pl.navn, navn: pl.navn, pris: String(pl.pris),
-              timer: pl.timer === null || pl.timer === undefined ? '' : String(pl.timer),
-              binding: String(pl.binding || 0), engangs: !!pl.engangs, aktiv: !!pl.aktiv,
-              sortering: String(pl.sortering || 0),
-            } }),
-            slett: () => {
-              if (!window.confirm('Slette medlemskapet «' + pl.navn + '»?\n\n'
-                  + (pl.medlemmer > 0
-                      ? 'Noen står på det, så det blir tatt ut av salg i stedet. De beholder prisen og timene sine.'
-                      : 'Det er ingen på det, så det forsvinner helt.'))) return;
-              this.planKall({ handling: 'slett', navn: pl.navn });
-            },
-          })),
+          adminPlaner: liste.map(pl => {
+            const punkter = String(pl.punkter || '').split('\n')
+              .map(s => s.replace(/^[\s\-\*•·]+/, '').trim()).filter(Boolean);
+            const fri = pl.timer === null || pl.timer === undefined;
+            return Object.assign({}, pl, {
+              punkter,
+              beskrivelse: pl.beskrivelse || '',
+              undertekst: pl.undertekst || (fri ? 'Ingen timebegrensning' : pl.timer + ' timer i måneden'),
+              periodeTekst: pl.engangs ? 'engangs' : 'per måned',
+              // Uten tekst staar kortet tomt ute paa nettsiden. Det skal
+              // sies her, ikke oppdages der.
+              manglerTekst: !(pl.beskrivelse || '').trim() && punkter.length === 0,
+              fakta: [
+                fri ? 'Fri tilgang' : pl.timer + ' timer i måneden',
+                pl.engangs ? 'Trekkes én gang' : (pl.binding > 0 ? pl.binding + ' måneders binding' : 'Måned til måned'),
+                pl.medlemmer === 1 ? '1 medlem' : (pl.medlemmer || 0) + ' medlemmer',
+              ].join(' · '),
+              kortStil: {
+                background: 'var(--surface-card)',
+                border: pl.fremhevet ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+                display: 'flex', flexDirection: 'column', height: '100%',
+                opacity: pl.aktiv ? 1 : 0.72,
+              },
+              merke: pl.aktiv ? 'I salg' : 'Ikke i salg',
+              merkeStil: {
+                font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+                textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
+                background: pl.aktiv ? 'var(--sage-100, #E3EDE4)' : 'var(--clay-200)',
+                color: pl.aktiv ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
+                whiteSpace: 'nowrap',
+              },
+              // Merkelappen kunden ser, ikke vaar egen salgsstatus.
+              harMerkelapp: !!(pl.merke || '').trim(),
+              merkelapp: pl.merke || '',
+              merkelappStil: {
+                font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+                textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
+                background: 'var(--clay-100)', color: 'var(--terracotta-600)', whiteSpace: 'nowrap',
+              },
+              rediger: () => {
+                this.setState({ side: 'adminmedlemskap', plRed: {
+                  foer: pl.navn, navn: pl.navn, pris: String(pl.pris),
+                  timer: fri ? '' : String(pl.timer),
+                  binding: String(pl.binding || 0), engangs: !!pl.engangs, aktiv: !!pl.aktiv,
+                  sortering: String(pl.sortering || 0),
+                  merke: pl.merke || '', undertekst: pl.undertekst || '',
+                  beskrivelse: pl.beskrivelse || '', punkter: String(pl.punkter || ''),
+                  passerFor: pl.passerFor || '', bilde: pl.bilde || '',
+                  fremhevet: !!pl.fremhevet,
+                } });
+                window.scrollTo(0, 0);
+              },
+              slett: () => {
+                if (!window.confirm('Slette medlemskapet «' + pl.navn + '»?\n\n'
+                    + (pl.medlemmer > 0
+                        ? 'Noen står på det, så det blir tatt ut av salg i stedet. De beholder prisen og timene sine.'
+                        : 'Det er ingen på det, så det forsvinner helt.'))) return;
+                this.planKall({ handling: 'slett', navn: pl.navn });
+              },
+            });
+          }),
           ingenPlaner: liste.length === 0,
-          plNy: () => this.setState({ plRed: { foer: '', navn: '', pris: '', timer: '',
-                                               binding: '0', engangs: false, aktiv: true, sortering: '0' } }),
+          antallPlaner: liste.length,
+          plNy: () => {
+            this.setState({ side: 'adminmedlemskap', plRed: {
+              foer: '', navn: '', pris: '', timer: '', binding: '0',
+              engangs: false, aktiv: true, sortering: '0',
+              merke: '', undertekst: '', beskrivelse: '', punkter: '',
+              passerFor: '', bilde: '', fremhevet: false,
+            } });
+            window.scrollTo(0, 0);
+          },
           plRedApen: !!red,
           plTittel: red && red.foer ? 'Rediger ' + red.foer : 'Nytt medlemskap',
           plFeltStil: felt,
+          plOmradeStil: omraade,
           plEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
                        color: 'var(--text-heading)', marginBottom: 6 },
-          plNavn: red ? red.navn : '',
-          settPlNavn: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { navn: v }) })); },
-          plPris: red ? red.pris : '',
-          settPlPris: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { pris: v }) })); },
-          plTimer: red ? red.timer : '',
-          settPlTimer: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { timer: v }) })); },
-          plBinding: red ? red.binding : '0',
-          settPlBinding: e => { const v = e.target.value; this.setState(st => ({ plRed: Object.assign({}, st.plRed, { binding: v }) })); },
-          plEngangs: !!(red && red.engangs),
-          vekslPlEngangs: () => this.setState(st => ({ plRed: Object.assign({}, st.plRed, { engangs: !st.plRed.engangs }) })),
-          plAktiv: !!(red && red.aktiv),
-          vekslPlAktiv: () => this.setState(st => ({ plRed: Object.assign({}, st.plRed, { aktiv: !st.plRed.aktiv }) })),
+          plHjelp: { fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 6 },
+          plAvkryss: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                       fontSize: 'var(--text-sm)', color: 'var(--text-heading)' },
+
+          plNavn: v('navn'),            settPlNavn: sett('navn'),
+          plPris: v('pris'),            settPlPris: sett('pris'),
+          plTimer: v('timer'),          settPlTimer: sett('timer'),
+          plBinding: red ? v('binding') : '0', settPlBinding: sett('binding'),
+          plMerke: v('merke'),          settPlMerke: sett('merke'),
+          plUndertekst: v('undertekst'), settPlUndertekst: sett('undertekst'),
+          plBeskrivelse: v('beskrivelse'), settPlBeskrivelse: sett('beskrivelse'),
+          plPunkter: v('punkter'),      settPlPunkter: sett('punkter'),
+          plPasserFor: v('passerFor'),  settPlPasserFor: sett('passerFor'),
+          plBilde: v('bilde'),          settPlBilde: sett('bilde'),
+
+          plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
+          plAktiv: !!(red && red.aktiv),         vekslPlAktiv: veksle('aktiv'),
+          plFremhevet: !!(red && red.fremhevet), vekslPlFremhevet: veksle('fremhevet'),
+
           plAvbryt: () => this.setState({ plRed: null }),
           plLagre: () => {
             const d = this.state.plRed || {};
@@ -14909,6 +15251,10 @@ class Component extends DCLogic {
               binding: parseInt(d.binding, 10) || 0,
               engangs: !!d.engangs, aktiv: !!d.aktiv,
               sortering: parseInt(d.sortering, 10) || 0,
+              merke: d.merke || '', undertekst: d.undertekst || '',
+              beskrivelse: d.beskrivelse || '', punkter: d.punkter || '',
+              passerFor: d.passerFor || '', bilde: d.bilde || '',
+              fremhevet: !!d.fremhevet,
             });
           },
         };
@@ -15187,6 +15533,10 @@ class Component extends DCLogic {
                                  : 'Ingenting denne måneden. Det neste som skjer:'),
         };
       })(),
+      ovLeggTilDeltaker: () => this.gaaAdmin('adminpameldte', { mpApen: true }),
+      ovNyttMedlem: () => this.gaaAdmin('adminmedlem', {
+        miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '',
+      }),
       ovGaKurs: this.go('admin'),
       ovGaButikk: this.go('adminbutikk'),
       ovGaMedlem: this.go('adminmedlem'),
@@ -15792,8 +16142,8 @@ class Component extends DCLogic {
         if (!st) return {
           timerIgjen: String(t.igjen).replace('.', ','),
           timerMaks: t.maks || 'av 30 timer',
-          timerUndertekst: aboNavn === 'Fri tilgang'
-            ? 'Fri tilgang har ingen timebegrensning. Du har brukt ' + t.brukt + ' timer denne måneden.'
+          timerUndertekst: plan.timer == null
+            ? plan.navn + ' har ingen timebegrensning. Du har brukt ' + t.brukt + ' timer denne måneden.'
             : 'Du har brukt ' + t.brukt + ' timer denne måneden. Nye timer 1. september.',
           timerBrukt: t.brukt,
         };
@@ -15864,7 +16214,7 @@ class Component extends DCLogic {
       harVennegave: !this.state.vennBrukt && this.state.visMinGave !== false,
       gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på kr. ' + (g.belop || '500') + ',-' : 'Ta med en venn'; })(),
       gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.'; })(),
-      aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || '30 timer')),
+      aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || this.aktivPlan().navn)),
       aKjopDropin: () => this.leggTil('Drop-in-time'),
 
       apneManuell: this.apne('Stemple inn manuelt', 'Koden står på skiltet ved døra og byttes hver dag. Glemmer du å stemple ut, stopper telleren automatisk ved stengetid.', [
@@ -15990,16 +16340,19 @@ class Component extends DCLogic {
       // et tomt felt tror noe er i stykker.
       harInternvarer: !this.erPublisert()
         || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer),
-      abonnementer: (() => {
-        const P = n => this.planer().find(p => p.navn === n) || {};
-        const BILDER = { 'Prøv Lissom': 'uploads_shutterstock_2829104351.jpg', '30 timer': 'uploads_shutterstock_2829103797.jpg', 'Årsmedlemskap': 'uploads_shutterstock_2830613711.jpg', 'Fri tilgang': 'uploads_shutterstock_2829104157.jpg' };
-        return [
-          abo({ merke: 'Prøveperiode', navn: 'Prøv Lissom', pris: P('Prøv Lissom').pris, periode: 'for ' + P('Prøv Lissom').periode, beskrivelse: 'En måned med verkstedtilgang, så du finner ut om dette er noe for deg.', punkter: ['10 verkstedtimer', 'Leire og brenning kjøpes i tillegg', 'Kan kun benyttes én gang', 'Går ikke automatisk over til abonnement'] }),
-          abo({ mork: true, merke: 'Mest valgt', navn: '30 timer', pris: P('30 timer').pris, periode: P('30 timer').periode, beskrivelse: 'Tretti timer i måneden, brukt når det passer deg. Fornyes automatisk.', punkter: ['30 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Ta med en venn én gang i måneden'] }),
-          abo({ merke: 'Mest for pengene', navn: 'Årsmedlemskap', pris: P('Årsmedlemskap').pris, periode: P('Årsmedlemskap').periode, beskrivelse: 'Få mer, betal mindre: 35 timer i måneden til lavere pris, med årsavtale.', punkter: ['35 verkstedtimer i måneden', 'Egen hylle i verkstedet', 'Tilgang 24/7 med dørkode', 'Binding i 12 måneder'] }),
-          abo({ merke: 'Proff', navn: 'Fri tilgang', pris: P('Fri tilgang').pris, periode: P('Fri tilgang').periode, beskrivelse: 'Ubegrenset verkstedtid for deg som jobber med keramikk fast.', punkter: ['Ingen timebegrensning', 'Egen hylle og lagerplass', 'Tilgang 24/7 med dørkode', 'Rabatt på leire og brenning'] }),
-        ];
-      })(),
+      // Kortene paa medlemskapssida.
+      //
+      // Sto som fire faste kall med navnet skrevet inn — «Prov Lissom», «30
+      // timer» — og teksten limt rett inn i kallet. Verkstedet kunne endre
+      // prisen i admin, men ikke navnet: gjorde de det, slo oppslaget feil og
+      // kortet sto igjen uten pris. Og teksten var ikke lagret noe sted.
+      //
+      // Naa er det basen som bestemmer bade hvilke kort som finnes og hva som
+      // staar paa dem.
+      abonnementer: this.planer().map(pl => abo(Object.assign({}, pl, {
+        mork: !!pl.fremhevet,
+        merke: pl.merke || (pl.engangs ? 'Prøveperiode' : ''),
+      }))),
       steg: [
         { nr: '1', tittel: 'Stemple inn med QR', tekst: 'Skann koden ved døra, eller trykk «Stemple inn» i appen. Timen starter når du stempler.' },
         { nr: '2', tittel: 'Se timene dine', tekst: 'Min side viser hvor mange timer du har igjen denne måneden, oppdatert i sanntid.' },
@@ -16560,9 +16913,63 @@ class Component extends DCLogic {
       })(),
       // Ekte paameldte naar serveren har svart. PAMELDTE er designdata og
       // brukes bare i forhandsvisningen, der det ikke finnes noen server.
+      // Flytting og avbestilling paa raden.
+      //
+      // «Noen kan ikke likevel, sett dem paa neste kveld» endte foer med at
+      // verkstedet fjernet dem og la dem inn paa nytt — betalingen fulgte
+      // ikke med, og plassen ble regnet feil begge steder.
+      ...(() => {
+        const okter = (this.state.adminOkter || []).map(o => ({
+          verdi: String(o.oktId),
+          navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
+        }));
+        return {
+          flyttOkter: okter,
+          ingenFlyttOkter: okter.length === 0,
+          flyttOkt: this.state.flyttOkt || (okter[0] ? okter[0].verdi : ''),
+          settFlyttOkt: e => this.setState({ flyttOkt: e.target.value }),
+          flyttAvbryt: () => this.setState({ flyttRad: null, flyttId: null }),
+          flyttUtfor: () => {
+            const id = this.state.flyttId;
+            const okt = this.state.flyttOkt || (okter[0] ? okter[0].verdi : '');
+            if (!id || !okt) return;
+            this.pameldingKall({ handling: 'flytt', id, oktId: parseInt(okt, 10) });
+            this.setState({ flyttRad: null, flyttId: null });
+          },
+        };
+      })(),
+      pameldteAntall: this.filtrerPameldte(
+        this.state.adminDeltakere || (this.erPublisert() ? [] : PAMELDTE)
+      ).length,
+      ingenPameldte: this.filtrerPameldte(
+        this.state.adminDeltakere || (this.erPublisert() ? [] : PAMELDTE)
+      ).length === 0,
       pameldte: this.filtrerPameldte(
         this.state.adminDeltakere || (this.erPublisert() ? [] : PAMELDTE)
       ).map(p => Object.assign({}, p, {
+        kontakt: [p.epost, p.tlf].filter(Boolean).join(' · '),
+        flyttApen: this.state.flyttRad != null && this.state.flyttRad === (p.id != null ? p.id : p.navn),
+        flytt: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          const rad = p.id != null ? p.id : p.navn;
+          this.setState(st => ({
+            flyttRad: st.flyttRad === rad ? null : rad,
+            flyttId: p.id,
+            // Forvalget er en annen dato enn den de staar paa — det er
+            // poenget med aa flytte.
+            flyttOkt: st.flyttOkt || String(
+              ((this.state.adminOkter || []).find(o => o.oktId !== p.oktId) || {}).oktId || ''
+            ),
+          }));
+        },
+        avbestill: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          if (!window.confirm('Avbestille plassen til ' + p.navn + '?\n\n'
+              + (p.manuell
+                  ? 'Påmeldingen er lagt inn for hånd, så det er ingenting å refundere. Plassen blir ledig igjen.'
+                  : 'Plassen blir ledig igjen og tilbys førstemann på ventelista. Betalingen må refunderes i Vipps.'))) return;
+          this.pameldingKall({ handling: 'fjern', id: p.id });
+        },
         velg: () => this.setState({
           detalj: {
             tittel: p.navn,
@@ -16859,12 +17266,6 @@ class Component extends DCLogic {
           { navn: 'Tekst', verdi: m.tekst },
         ], 'Lagre mal', null, true),
       })),
-      dropinTall: [
-        { merke: 'Booket i dag', verdi: '2 / 6', under: 'Begge er godkjent' },
-        { merke: 'Denne uka', verdi: '11', under: '6 alene, 5 med medlem' },
-        { merke: 'Omsetning i august', verdi: 'kr. 14 850,-', under: '33 drop-in totalt' },
-        { merke: 'Snittvurdering', verdi: '4,8', under: '19 tilbakemeldinger' },
-      ].map(t => this.erPublisert() ? Object.assign({}, t, { verdi: '–', under: 'Ikke koblet opp ennå' }) : t).map(t => Object.assign(t, { velg: this.go('admindropin'), kortStil: KORT_KLIKK })),
       dropinBookinger: this.klikkbar(this.erPublisert() ? [] : [
         { navn: 'Emma Bjørnstad', vert: 'Alene · godkjent', tid: 'I dag 10:00 – 13:00', status: 'Bekreftet', tone: 'success' },
         { navn: 'Håkon Five', vert: 'Jonas Five', tid: 'I dag 10:00 – 13:00', status: 'Bekreftet', tone: 'success' },

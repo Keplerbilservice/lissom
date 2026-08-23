@@ -33,6 +33,26 @@ final class Medlemskap
     }
 
     /**
+     * Punktlista paa kortet, ett punkt per linje.
+     *
+     * Verkstedet skriver den i et vanlig tekstfelt. Tomme linjer og
+     * kulepunkter de har skrevet selv fjernes — kortet setter sin egen prikk.
+     *
+     * @return list<string>
+     */
+    public static function punkter(?string $raa): array
+    {
+        $ut = [];
+        foreach (preg_split('/\r\n|\r|\n/', (string) $raa) ?: [] as $linje) {
+            $linje = trim((string) preg_replace('/^[\s\-\*\x{2022}\x{00b7}]+/u', '', $linje));
+            if ($linje !== '') {
+                $ut[] = $linje;
+            }
+        }
+        return $ut;
+    }
+
+    /**
      * Hvor mange timer i maaneden dette medlemmet har.
      *
      * «timer_per_mnd» paa medlemmet ble aldri fylt ut noe sted — den ble bare

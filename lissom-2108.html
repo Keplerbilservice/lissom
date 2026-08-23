@@ -1284,6 +1284,18 @@ window.__resources = {
               <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ a.p }}</p>
             </div>
           </sc-for>
+
+          <!-- Aa trekke tilbake et ja skal vaere like lett som aa gi det.
+               Sto valget bare i nettleserinnstillingene, ville det i praksis
+               vaere umulig for de fleste. -->
+          <sc-if value="{{ visAnalyseValg }}" hint-placeholder-val="{{ true }}">
+            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0;">
+              <h2 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ditt svar på besøksmåling</h2>
+              <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ analyseSvarTekst }}</p>
+              <button type="button" onClick="{{ endreAnalyse }}"
+                style="appearance: none; cursor: pointer; background: var(--surface-card); color: var(--text-heading); border: 1px solid var(--border-subtle); border-radius: var(--radius-full); padding: var(--space-3) var(--space-6); font-size: var(--text-sm); font-weight: 600;">Endre svaret mitt</button>
+            </div>
+          </sc-if>
         </div>
       </section>
     </div>
@@ -8374,7 +8386,33 @@ class Component extends DCLogic {
   settSamtykke(svar) {
     try { localStorage.setItem('lissom-analyse', svar); } catch (e) { /* da blir det nei */ }
     this.setState({ samtykkeSvart: svar });
+    this.gaAv(svar !== 'ja');
     if (svar === 'ja') this.settOppAnalyse();
+  }
+
+  /**
+   * Skru Google-taggen av eller paa der og da.
+   *
+   * Et script som er lastet, kan ikke lastes ut igjen. «ga-disable»-flagget
+   * er Googles egen maate aa stoppe den paa, og den leses for hvert kall —
+   * saa den som ombestemmer seg midt i et besok, slutter aa bli talt med en
+   * gang, uten aa maatte laste sida paa nytt.
+   */
+  gaAv(av) {
+    const id = ((this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
+    if (id) { try { window['ga-disable-' + id] = !!av; } catch (e) { /* da staar den som den star */ } }
+  }
+
+  /**
+   * Ta tilbake svaret paa besoksmaaling.
+   *
+   * Aa ombestemme seg skal vaere like lett som aa si ja. Valget slettes fra
+   * nettleseren, og linja kommer opp igjen slik at det kan svares paa nytt.
+   */
+  angreSamtykke() {
+    this.gaAv(true);
+    try { localStorage.removeItem('lissom-analyse'); } catch (e) { /* da blir det staaende */ }
+    this.setState({ samtykkeSvart: '' });
   }
 
   settOppAnalyse() {
@@ -8547,6 +8585,21 @@ class Component extends DCLogic {
       .then(() => this.setState({ mkLes: { id: u.id, tittel: u.tittel, tekst: u.tekst || '', type: u.type } }))
       .catch(() => {});
     this.setState({ mkLes: { id: u.id, tittel: u.tittel, tekst: u.tekst || '', type: u.type } });
+  }
+
+  /**
+   * Ore til kroner, skrevet slik en regning leses.
+   *
+   * Et AI-utkast koster smaapenger. Rundet til hele kroner ville alt under
+   * ti kroner blitt «kr 0», og da ser det gratis ut. Under ti kroner viser
+   * vi orene, over ti holder hele kroner.
+   */
+  kroner(ore) {
+    const kr = (Number(ore) || 0) / 100;
+    return 'kr ' + kr.toLocaleString('nb-NO', {
+      minimumFractionDigits: kr < 10 ? 2 : 0,
+      maximumFractionDigits: kr < 10 ? 2 : 0,
+    }).replace(/\u00a0/g, ' ');
   }
 
   hentInnhold() {
@@ -12768,6 +12821,16 @@ class Component extends DCLogic {
       godtaAnalyse: () => this.settSamtykke('ja'),
       avslaAnalyse: () => this.settSamtykke('nei'),
       samtykkeLesMer: this.go('personvern'),
+
+      // Angrevalget nederst paa personvernsida. Det vises bare naar det er
+      // noe aa angre paa — altsaa naar det finnes en maale-ID og et svar.
+      visAnalyseValg: this.erPublisert()
+        && /^G-[A-Z0-9]{6,20}$/i.test((((this.state.innholdLagret || {})['Marked/GA-id']) || '').trim())
+        && (this.state.samtykkeSvart || this.samtykke()) !== '',
+      analyseSvarTekst: (this.state.samtykkeSvart || this.samtykke()) === 'ja'
+        ? 'Du har sagt ja til at vi måler besøket. Vil du ombestemme deg, stopper målingen med en gang du trykker under.'
+        : 'Du har sagt nei, og ingenting blir målt. Trykker du under, kan du svare på nytt.',
+      endreAnalyse: () => this.angreSamtykke(),
       goForsideFra404: this.go('forside'),
       goKursFra404: this.go('kurs'),
       goKontaktFra404: this.go('kontakt'),
@@ -12863,8 +12926,8 @@ class Component extends DCLogic {
         { h: 'Hvor lenge vi lagrer', p: 'Kjøpshistorikk lagres i fem år som følge av bokføringsloven. Innstemplinger slettes etter tolv måneder. Sier du opp medlemskapet, sletter vi kontoen etter tre måneder hvis du ikke ber om noe annet.' },
         { h: 'Beskjeder og e-post', p: 'Vi sender praktiske beskjeder om verkstedet og kursene dine. Nyhetsbrev sender vi bare hvis du har sagt ja, og du kan melde deg av når som helst.' },
         { h: 'Bilder fra verkstedet', p: 'Vi tar bilder på kurs og events. Si fra til oss hvis du ikke vil være med på bilder som brukes på nett eller i sosiale medier, så respekterer vi det.' },
-        { h: 'Informasjonskapsler', p: 'Vi bruker ingen informasjonskapsler til statistikk, analyse eller markedsføring, og vi har ingen sporingsverktøy fra andre. Besøker du lissom.no uten å logge inn, lagres ingenting i nettleseren din, og siden henter ikke inn noe fra andre nettsteder. Logger du inn, får du én informasjonskapsel som holder deg innlogget. Den er nødvendig for at innloggingen skal virke, varer i tre timer uten aktivitet, og forsvinner når du logger ut. Derfor spør vi deg ikke om samtykke — vi har ikke noe å be om samtykke til.' },
-        { h: 'Andre vi deler med', p: 'Vipps, for betaling og innlogging. E-post og SMS sendes gjennom leverandørene til webhotellet vårt. Nettsiden ligger hos Domene.no i Norge. Utover dette deler vi ingenting — vi har verken Google Analytics, Facebook-piksel eller andre sporere, og skriftene på siden ligger på vår egen server nettopp for at ingen andre skal få vite at du var innom.' },
+        { h: 'Informasjonskapsler', p: 'Logger du inn, får du én informasjonskapsel som holder deg innlogget. Den er nødvendig for at innloggingen skal virke, varer i tre timer uten aktivitet, og forsvinner når du logger ut. Den trenger vi ikke spørre om. Første gang du er innom spør vi derimot om vi får måle besøket med Google Analytics. Svarer du nei, lastes ingenting fra Google — vi lagrer bare selve svaret i nettleseren din, slik at du slipper å bli spurt hver gang. Svarer du ja, setter Google Analytics informasjonskapsler som teller besøket. Ingen måling skjer før du har sagt ja, og du kan ombestemme deg når som helst lenger ned på denne siden.' },
+        { h: 'Andre vi deler med', p: 'Vipps, for betaling og innlogging. E-post og SMS sendes gjennom leverandørene til webhotellet vårt. Nettsiden ligger hos Domene.no i Norge. Har du sagt ja til besøksmåling, deler vi i tillegg statistikk om besøket med Google Analytics: hvilke sider som blir lest, omtrent hvor i landet du er, og hva slags enhet du bruker. Vi ber om at IP-adressen din ikke lagres, og vi kobler ikke målingen til navnet ditt eller kontoen din. Facebook-piksel eller andre sporere har vi ikke, og skriftene på siden ligger på vår egen server nettopp for at ingen andre skal få vite at du var innom.' },
         { h: 'Rettighetene dine', p: 'Du kan be om innsyn i det vi har lagret, få rettet feil, eller be om at opplysningene dine slettes. Send en e-post, så ordner vi det. Du kan også klage til Datatilsynet.' },
       ],
       goLogin: this.go('login'),

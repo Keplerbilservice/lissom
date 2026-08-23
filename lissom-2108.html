@@ -1700,8 +1700,8 @@ window.__resources = {
                   </div>
                 </sc-if>
                 <sc-for list="{{ kurvLinjer }}" as="v" hint-placeholder-count="1">
-                  <div class="lx-kurvrad" style="display: flex; align-items: center; gap: var(--space-5); padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
-                    <div class="lx-kurvnavn" style="flex: 1; min-width: 0;">
+                  <div class="lx-kurvrad" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: 8px; padding: var(--space-5) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+                    <div class="lx-kurvnavn" style="flex: 1 1 220px; min-width: 0;">
                       <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ v.navn }}</div>
                       <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ v.pris }}</div>
                     </div>
@@ -1710,7 +1710,7 @@ window.__resources = {
                       <span style="min-width: 18px; text-align: center; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ v.antall }}</span>
                       <button type="button" onClick="{{ v.pluss }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; color: var(--text-heading); font-size: 18px;">+</button>
                     </div>
-                    <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading); width: 92px; text-align: right;">{{ v.linjesum }}</div>
+                    <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading); margin-left: auto; text-align: right; white-space: nowrap;">{{ v.linjesum }}</div>
                     <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-sm);">Fjern</button>
                   </div>
                 </sc-for>
@@ -5586,7 +5586,7 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ kurvApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(300px, 92vw);">
+  <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(380px, 94vw);">
     <div class="lx-kurvpopup" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: 0 18px 50px rgba(46,16,2,.35);">
       <sc-if value="{{ kurvTellerVises }}" hint-placeholder-val="{{ false }}">
         <div style="text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3);">Lukkes automatisk om {{ kurvNedtelling }} sekunder — klikk for å beholde åpen</div>
@@ -5597,8 +5597,8 @@ window.__resources = {
       </div>
       <div style="display: flex; flex-direction: column;">
         <sc-for list="{{ kurvLinjer }}" as="l" hint-placeholder-count="1">
-          <div class="lx-kurvrad" style="display: flex; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-            <div class="lx-kurvnavn" style="flex: 1; min-width: 0;">
+          <div class="lx-kurvrad" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); row-gap: 6px; border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+            <div class="lx-kurvnavn" style="flex: 1 1 100%; min-width: 0;">
               <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ l.navn }}</div>
               <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.pris }}</div>
             </div>
@@ -5607,7 +5607,7 @@ window.__resources = {
               <span style="min-width: 18px; text-align: center; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ l.antall }}</span>
               <button type="button" onClick="{{ l.pluss }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 26px; height: 26px; color: var(--text-heading); font-size: 15px;">+</button>
             </div>
-            <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); width: 84px; text-align: right;">{{ l.linjesum }}</div>
+            <div class="lx-kurvsum" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-left: auto; text-align: right; white-space: nowrap;">{{ l.linjesum }}</div>
             <button type="button" onClick="{{ l.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); text-decoration: underline; text-underline-offset: 2px;">Fjern</button>
           </div>
         </sc-for>
@@ -5616,9 +5616,9 @@ window.__resources = {
         <span style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading);">Totalt</span>
         <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ kurvSum }}</span>
       </div>
-      <div class="lx-kurvknapper" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
-        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" full-width="{{ sant }}" on-click="{{ lukkKurv }}" hint-size="100%,48px">Fortsett å handle</x-import>
+      <div class="lx-kurvknapper" style="display: grid; grid-template-columns: 1fr; gap: var(--space-3);">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ tilKasse }}" hint-size="100%,48px">Gå til betaling</x-import>
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" full-width="{{ sant }}" on-click="{{ lukkKurv }}" hint-size="100%,48px">Fortsett å handle</x-import>
       </div>
     </div>
   </div>
@@ -11901,9 +11901,14 @@ class Component extends DCLogic {
         const navn = this.kurvNavn(nokkel);
         const pris = this.prisAv(nokkel);
         const antall = this.state.kurv[nokkel];
+        const kr = n => 'kr. ' + n.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-';
         return {
-          navn, antall: String(antall), pris: pris.toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
-          linjesum: (pris * antall).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+          navn, antall: String(antall),
+          // Stykkprisen bare naar den sier noe nytt. Med ett eksemplar er den
+          // det samme tallet som linjesummen til hoyre, og da sto prisen to
+          // ganger i samme rad — som saa ut som en feil.
+          pris: antall > 1 ? kr(pris) + ' per stk' : '',
+          linjesum: kr(pris * antall),
           pluss: () => this.iKurv(nokkel, 1),
           minus: () => this.iKurv(nokkel, -1),
           fjern: () => this.iKurv(nokkel, -999),

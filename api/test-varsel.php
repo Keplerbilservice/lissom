@@ -72,18 +72,25 @@ $svar = [
     ],
 ];
 
-$sisteFeil = DB::alle(
-    "SELECT kanal, mottaker, feilmelding, forsok, created_at
-       FROM notifications
-      WHERE feilmelding IS NOT NULL
-   ORDER BY id DESC LIMIT 5"
-);
-$svar['siste_feil'] = array_map(static fn(array $r): array => [
+// Feilmeldinga blir liggende igjen paa rada selv om neste forsok gikk bra.
+// Uten status ser gamle, loste feil ut som ferske problemer — og da leter man
+// etter noe som allerede er fikset.
+$feilListe = static fn (): array => array_map(static fn (array $r): array => [
     'kanal'    => $r['kanal'],
     'mottaker' => $r['mottaker'],
     'feil'     => $r['feilmelding'],
     'forsok'   => (int) $r['forsok'],
-], $sisteFeil);
+    'status'   => (string) $r['status'],
+    'nar'      => (string) $r['created_at'],
+    'lost'     => $r['status'] === 'sendt',
+], DB::alle(
+    "SELECT kanal, mottaker, feilmelding, forsok, status, created_at
+       FROM notifications
+      WHERE feilmelding IS NOT NULL
+   ORDER BY id DESC LIMIT 5"
+));
+
+$svar['siste_feil'] = $feilListe();
 
 $tilEpost = Foresporsel::tekst('epost');
 
@@ -173,13 +180,7 @@ $svar['ko'] = [
     'feilet'   => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'"),
     'gitt_opp' => (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'ko' AND forsok >= 5"),
 ];
-$svar['siste_feil'] = array_map(static fn(array $r): array => [
-    'kanal'    => $r['kanal'],
-    'mottaker' => $r['mottaker'],
-    'feil'     => $r['feilmelding'],
-    'forsok'   => (int) $r['forsok'],
-], DB::alle("SELECT kanal, mottaker, feilmelding, forsok FROM notifications
-              WHERE feilmelding IS NOT NULL ORDER BY id DESC LIMIT 5"));
+$svar['siste_feil'] = $feilListe();
 
 if ($tilEpost === '' && $tilSms === '') {
     $svar['hvordan'] = 'Legg til &epost=meg for å sende en test til din egen adresse, eller &sms=+4790000000 for SMS.';

@@ -57,6 +57,7 @@ require APP_DIR . '/lib/stempling.php';
 require APP_DIR . '/lib/bilder.php';
 require APP_DIR . '/lib/medlemskap.php';
 require APP_DIR . '/lib/tikk.php';
+require APP_DIR . '/lib/ai.php';
 
 // Vis aldri PHP-feil til publikum — de lekker filstier og SQL. De havner i
 // feilloggen på webhotellet i stedet.

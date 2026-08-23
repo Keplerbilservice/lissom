@@ -20,6 +20,28 @@ require __DIR__ . '/../_boot.php';
 
 krev_admin();
 
+/**
+ * Kolonnene migrasjon 032 la til.
+ *
+ * De kom i en egen migrasjon, og en migrasjon kan staa ukjort. Skrev vi til
+ * dem uansett, svarte basen «Unknown column 'merke'» og HELE lagringen falt —
+ * prisen ble ikke lagret heller. Leste vi fra dem, kom det tomt tilbake, og
+ * kortet ute paa nettsiden mistet bade bilde og tekst.
+ *
+ * Derfor spor vi basen for vi rorer dem. Mangler de, virker skjermen som for:
+ * pris, timer og binding lagres, og admin sier fra at det staar en oppdatering
+ * igjen.
+ */
+const TEKSTKOLONNER = ['merke', 'undertekst', 'beskrivelse', 'punkter', 'passer_for', 'bilde', 'fremhevet'];
+
+$harTekst = static function (): bool {
+    static $svar = null;
+    if ($svar === null) {
+        $svar = DB::harKolonne('membership_plans', 'beskrivelse');
+    }
+    return $svar;
+};
+
 if (Foresporsel::metode() === 'GET') {
     $rader = DB::alle('SELECT * FROM membership_plans ORDER BY sortering, navn');
 
@@ -36,6 +58,10 @@ if (Foresporsel::metode() === 'GET') {
     }
 
     Svar::json([
+        // Sier fra til admin at teksten ikke kan lagres for migrasjonen er
+        // kjort. Uten dette ser skjermen komplett ut, og feilen dukker
+        // forst opp naar noen trykker Lagre.
+        'tekstMulig' => $harTekst(),
         'planer' => array_map(static fn($p) => [
             'navn'      => (string) $p['navn'],
             'pris'      => (int) $p['pris_ore'] / 100,
@@ -112,17 +138,29 @@ if ($handling === 'lagre') {
         'fremhevet'   => $fremhevet,
     ];
 
+    // Staar migrasjonen ukjort, lagrer vi det vi kan i stedet for aa la alt
+    // falle. Prisen skal kunne endres selv om teksten maa vente.
+    if (!$harTekst()) {
+        foreach (TEKSTKOLONNER as $k) {
+            unset($felter[$k]);
+        }
+    }
+
     // Ny plan.
     if ($foer === '') {
         if (DB::en('SELECT navn FROM membership_plans WHERE navn = :n', ['n' => $navn]) !== null) {
             Svar::feil('Det finnes alt et medlemskap som heter «' . $navn . '».');
         }
         DB::settInn('membership_plans', $felter + ['navn' => $navn, 'intervall' => 'maaned']);
-        if ($fremhevet === 1) {
+        if ($fremhevet === 1 && $harTekst()) {
             DB::kjor('UPDATE membership_plans SET fremhevet = 0 WHERE navn <> :n', ['n' => $navn]);
         }
         revider('plan_opprettet', 'plan', null, ['navn' => $navn]);
-        Svar::ok(['beskjed' => '«' . $navn . '» er lagt ut.']);
+        Svar::ok([
+            'tekstMulig' => $harTekst(),
+            'beskjed' => '«' . $navn . '» er lagt ut.'
+                . ($harTekst() ? '' : ' Teksten ble ikke lagret: kjør databaseoppdateringene under Oversikt → Vedlikehold først.'),
+        ]);
     }
 
     if (DB::en('SELECT navn FROM membership_plans WHERE navn = :n', ['n' => $foer]) === null) {
@@ -147,14 +185,18 @@ if ($handling === 'lagre') {
     }
 
     DB::oppdater('membership_plans', $felter, ['navn' => $navn]);
-    if ($fremhevet === 1) {
+    if ($fremhevet === 1 && $harTekst()) {
         DB::kjor('UPDATE membership_plans SET fremhevet = 0 WHERE navn <> :n', ['n' => $navn]);
     }
     revider('plan_endret', 'plan', null, ['navn' => $navn, 'foer' => $foer]);
 
-    Svar::ok(['beskjed' => $navn !== $foer
-        ? 'Medlemskapet heter nå «' . $navn . '», og medlemmene følger med.'
-        : 'Endringene er lagret.']);
+    Svar::ok([
+        'tekstMulig' => $harTekst(),
+        'beskjed' => ($navn !== $foer
+            ? 'Medlemskapet heter nå «' . $navn . '», og medlemmene følger med.'
+            : 'Endringene er lagret.')
+            . ($harTekst() ? '' : ' Teksten ble ikke lagret: kjør databaseoppdateringene under Oversikt → Vedlikehold først.'),
+    ]);
 }
 
 if ($handling === 'slett') {

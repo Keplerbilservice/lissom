@@ -17,3 +17,4 @@ lokal-ruter.php
 
 # Utgaver api/bilde.php lager av opplastede bilder ved forste kall.
 opplastinger/avledet/
+ekte-ruter.php

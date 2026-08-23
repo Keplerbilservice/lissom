@@ -340,7 +340,10 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     // samme valgene som nettsida — ikke en liste skrevet av paa nytt.
     'planer' => array_map(static fn($p) => [
         'navn'  => (string) $p['navn'],
-        'timer' => $p['timer_per_mnd'] !== null ? (int) $p['timer_per_mnd'] : null,
+        // Kolonnen paa planen heter «timer». «timer_per_mnd» staar paa
+        // medlemmet, og finnes ikke her — oppslaget ga null for hver plan,
+        // saa innmelding for haand tilbod medlemskap uten timetall.
+        'timer' => $p['timer'] !== null ? (int) $p['timer'] : null,
         'pris'  => Booking::kroner((int) $p['pris_ore']),
     ], Medlemskap::planer()),
 ]);

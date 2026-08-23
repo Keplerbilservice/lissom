@@ -2193,6 +2193,10 @@ window.__resources = {
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
+              <!-- Hvem som er i verkstedet, og hva medlemmene skriver til
+                   hverandre, er internt. Det sto uten portvakt: en som hadde
+                   vaert paa ett kurs saa begge deler. -->
+              <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
@@ -2246,6 +2250,8 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ sendChat }}" hint-size="auto,38px">Send</x-import>
                 </div>
               </div>
+
+              </sc-if>
 
               <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -2301,6 +2307,7 @@ window.__resources = {
           </div>
 
 
+          <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
           <div id="minside-ordensregler" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);">
             <button type="button" onClick="{{ vekslOrdensregler }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); text-align: left;">
               <div>
@@ -2320,6 +2327,7 @@ window.__resources = {
             </div>
             </sc-if>
           </div>
+          </sc-if>
 
         </div>
       </section>
@@ -3269,6 +3277,9 @@ window.__resources = {
                 </sc-for>
               </div>
             </div>
+            <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
+            </sc-if>
             <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
               <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
@@ -4039,6 +4050,9 @@ window.__resources = {
                 </sc-if>
                 <sc-if value="{{ d.utenKonto }}" hint-placeholder-val="{{ false }}">
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">Ingen konto — ser ingenting ennå</span>
+                </sc-if>
+                <sc-if value="{{ d.harBevis }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ d.apneBevis }}" title="{{ d.bevisTittel }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">Kursbevis</button>
                 </sc-if>
                 <button type="button" onClick="{{ d.meldInn }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Meld inn</button>
               </div>
@@ -8847,14 +8861,33 @@ class Component extends DCLogic {
     const til = v === 'Denne uka' ? ukeSlutt : v === 'Denne måneden' ? mndSlutt : dagSlutt;
     const DAG = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
 
-    return okter
+    const medDato = okter
       .map(o => Object.assign({}, o, { d: oslo(new Date(o.startTid)) }))
-      .filter(o => o.d >= dagStart && o.d < til)
+      .filter(o => o.d >= dagStart);
+
+    let valgte = medDato.filter(o => o.d < til);
+
+    // Er det tomt i perioden, men noe lenger fram: vis det.
+    //
+    // Kortet sto tomt paa en dag uten kurs, selv om det var satt opp fire
+    // stykker neste uke. «Ingenting i dag» er sant, men ubrukelig — det du
+    // vil vite er naar det neste er.
+    const tomtNaa = valgte.length === 0 && medDato.length > 0;
+    if (tomtNaa) {
+      valgte = medDato.slice(0, 3);
+    }
+
+    return valgte
+      .map(o => Object.assign({}, o, { senere: tomtNaa }))
       .map(o => ({
         oktId: o.oktId || 0,
-        tid: v === 'I dag' ? (o.klokke || '') : DAG[o.d.getDay()] + ' ' + o.d.getDate() + '.',
+        senere: !!o.senere,
+        // Staar det noe lenger fram enn perioden, maa datoen staa der ogsaa
+        // paa «I dag» — ellers ser det ut som det skjer i dag.
+        tid: (v === 'I dag' && !o.senere) ? (o.klokke || '')
+          : DAG[o.d.getDay()] + ' ' + o.d.getDate() + '.',
         hva: o.tittel,
-        detalj: (v === 'I dag' ? '' : (o.klokke || '') + ' · ')
+        detalj: ((v === 'I dag' && !o.senere) ? '' : (o.klokke || '') + ' · ')
           + o.pameldte + ' av ' + o.kapasitet + ' påmeldte'
           + (o.pameldte >= o.kapasitet ? ' · fullbooket' : ''),
       }));
@@ -11521,7 +11554,12 @@ class Component extends DCLogic {
       ['Medlemmer', 'adminomrmedlemmer'],
       ['Kurs',      'admin',        { kursFane: 'alle' }],
       ['Drop-in',   'admindropin'],
+      // Oppskriftene laa under Medlemmer, men de er verkstedets egne —
+      // glasurene og leiretypene som staar paa veggen. De hoerer ikke til
+      // én gruppe mennesker, og skal ikke ligge inne hos dem.
+      ['Oppskrifter', 'adminoppskrifter'],
       ['Økonomi',   'adminokonomi', { okonomiFor: '' }],
+      ['Markedsføring', 'adminmarked'],
       ['Nettsiden', 'admininnhold'],
       ['Brukere',   'adminbrukere'],
     ];
@@ -11559,12 +11597,10 @@ class Component extends DCLogic {
         ['Beskjeder',    'adminbeskjeder',   { motValg: 'Alle aktive medlemmer' }],
         ['Betalinger',   'adminokonomi',     { okonomiFor: 'medlemmer' }],
         ['Nyttig info',  'adminnyttig',      { nyttigFor: 'medlemmer' }],
-        ['Oppskrifter',  'adminoppskrifter'],
       ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
-        ['Markedsføring', 'adminmarked'],
         ['SEO',           'adminseo'],
         ['Mobilvisning',  'adminmobilvis'],
       ],
@@ -11594,9 +11630,9 @@ class Component extends DCLogic {
       case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
       case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Alle medlemmer');
-      case 'adminoppskrifter':   return p('Medlemmer', 'Medlemmer', 'Oppskrifter');
+      case 'adminoppskrifter':   return p('Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
-      case 'adminmarked':        return p('Nettsiden', 'Nettsiden', 'Markedsføring');
+      case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':           return p('Nettsiden', 'Nettsiden', 'SEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'admin':
@@ -11929,8 +11965,12 @@ class Component extends DCLogic {
       const f = folk.get(k) || {
         medlemId: d.medlemId || 0, navn: d.navn || '(uten navn)',
         epost: d.epost || '', tlf: d.tlf || '', antall: 0, sisteKurs: '',
+        bevis: '', bevisKurs: '',
       };
       f.antall += 1;
+      // Kursbeviset paa selve raden. Laa bare inne i personruta, saa for aa
+      // se det matte man foerst aapne personen og lete i historikken.
+      if (!f.bevis && d.kursbevis) { f.bevis = d.kursbevis; f.bevisKurs = d.kurs || ''; }
       if (!f.sisteKurs) f.sisteKurs = (d.kurs || '') + ' · ' + (d.dato || '');
       if (!f.epost && d.epost) f.epost = d.epost;
       if (!f.tlf && d.tlf) f.tlf = d.tlf;
@@ -12914,7 +12954,9 @@ class Component extends DCLogic {
         && (!this.erPublisert() || (this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer')),
       visMinInternbutikk: this.bryterPaa('internbutikk'),
       // Bryteren maa vaere paa, og det maa finnes noe aa selge.
-      visInternbutikk: this.bryterPaa('internbutikk')
+      // Leire og brenning kjopes av medlemmer. Bryteren styrer om den
+      // vises i det hele tatt; medlemskapet om du er blant dem den gjelder.
+      visInternbutikk: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.bryterPaa('internbutikk')
         && (!this.erPublisert() || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer)),
       visMinSalg: this.bryterPaa('medlemssalg'),
       // Interne samlinger finnes ikke i basen ennaa. Paa den ekte siden viser
@@ -13720,9 +13762,6 @@ class Component extends DCLogic {
             kort('Nyttig info',
                  'Det medlemmene får lese: dørkode, ordensregler og verkstedinfo.',
                  null, 'adminnyttig', { nyttigFor: 'medlemmer' }, 'Rediger info'),
-            kort('Oppskrifter',
-                 'Glasurer og leiretyper, slik de står på veggen i verkstedet.',
-                 null, 'adminoppskrifter', {}, 'Se oppskriftene'),
           ],
         };
       })(),
@@ -13798,6 +13837,9 @@ class Component extends DCLogic {
             ? 'Ingen har vært på kurs ennå.'
             : 'Ingen treff på «' + (this.state.kdSok || '') + '».',
           kdRader: treff.map(p => Object.assign({}, p, {
+            harBevis: !!p.bevis,
+            bevisTittel: p.bevisKurs ? 'Kursbevis · ' + p.bevisKurs : 'Kursbevis',
+            apneBevis: () => { if (p.bevis) window.open(p.bevis, '_blank', 'noopener'); },
             // Har hen konto, kan vi vise akkurat det hen selv ser. Har hen
             // ikke det, er svaret «ingenting» — og det maa staa, ikke
             // gjettes paa.
@@ -14287,6 +14329,7 @@ class Component extends DCLogic {
       // skjerm og finne datoen paa nytt for aa legge til noen paa den.
       ovProgramListe: this.programListe().map(o => Object.assign({}, o, {
         harOkt: (o.oktId || 0) > 0,
+        senere: !!o.senere,
         utenOkt: !(o.oktId > 0),
         velg: () => {
           if (!(o.oktId > 0)) return;
@@ -14301,8 +14344,22 @@ class Component extends DCLogic {
       })),
       ingenProgram: this.erPublisert() && this.programListe().length === 0,
       ingenProgramTekst: (this.state.ovProgram || 'I dag') === 'I dag'
-        ? 'Ingenting på programmet i dag.'
-        : (this.state.ovProgram === 'Denne uka' ? 'Ingenting satt opp denne uka.' : 'Ingenting satt opp denne måneden.'),
+        ? 'Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.'
+        : (this.state.ovProgram === 'Denne uka'
+            ? 'Ingenting satt opp denne uka, og ingenting senere heller.'
+            : 'Ingenting satt opp denne måneden, og ingenting senere heller.'),
+      // Sier fra naar lista viser noe som ligger utenfor perioden man valgte.
+      ...(() => {
+        const v = this.state.ovProgram || 'I dag';
+        const liste = this.programListe();
+        const senere = liste.length > 0 && liste[0].senere;
+        return {
+          programSenere: senere,
+          programSenereTekst: v === 'I dag' ? 'Ingenting i dag. Det neste som skjer:'
+            : (v === 'Denne uka' ? 'Ingenting denne uka. Det neste som skjer:'
+                                 : 'Ingenting denne måneden. Det neste som skjer:'),
+        };
+      })(),
       ovGaKurs: this.go('admin'),
       ovGaButikk: this.go('adminbutikk'),
       ovGaMedlem: this.go('adminmedlem'),
@@ -14961,7 +15018,8 @@ class Component extends DCLogic {
         { navn: 'Vennens e-post', verdi: '' },
         { navn: 'Dato', verdi: '' },
       ], 'Send invitasjon', null, true, () => this.setState({ vennBrukt: true })),
-      harVennegave: (!this.erPublisert() || !!this.state.erMedlemBruker) && !this.state.vennBrukt && this.state.visMinGave !== false,
+      // Gavekampanjer gaar til alle som har vaert her, ikke bare medlemmene.
+      harVennegave: !this.state.vennBrukt && this.state.visMinGave !== false,
       gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på kr. ' + (g.belop || '500') + ',-' : 'Ta med en venn'; })(),
       gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || 'Én gratis drop-in for en venn i august. Vennen må være med deg hele tiden.'; })(),
       aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || '30 timer')),

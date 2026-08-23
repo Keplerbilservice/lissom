@@ -17,6 +17,18 @@ RewriteRule ^(.*)$ https://%1/$1 [R=301,L,NE]
 RewriteCond %{HTTPS} !=on
 RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 
+# Forsida er nettsida, ikke en omvei til den.
+#
+# «/» ble servert av index.html, som er en meta-refresh videre til
+# lissom-2108.html. Adressefeltet endte dermed paa filnavnet — det var det
+# PageSpeed maalte, og det er den adressen som ville blitt delt og indeksert.
+# En canonical som peker til «/» fra en side som selv heter noe annet, er
+# akkurat det Google klager paa.
+#
+# Naa serveres nettsida direkte paa «/». Ingen omdirigering, ett hopp
+# faerre, og adressen blir staaende slik den ble skrevet.
+DirectoryIndex lissom-2108.html index.html
+
 # Tegnkoding.
 #
 # Nettsiden er UTF-8, og sier det selv i <meta charset>. Men en Content-Type-
@@ -35,6 +47,15 @@ AddDefaultCharset UTF-8
 </IfModule>
 
 <IfModule mod_headers.c>
+    # HTTPS, ogsaa neste gang.
+    #
+    # Regelen over sender http til https, men foerste besok gaar likevel
+    # ukryptert ett hopp. Med denne husker nettleseren i et aar at dette
+    # nettstedet bare snakker https, og hopper rett dit. Sertifikatet
+    # fornyes av cPanel; skulle det likevel falle ut, er nettstedet
+    # utilgjengelig i den perioden — derfor uten includeSubDomains, saa en
+    # subdomene-feil ikke tar hovedsida med seg.
+    Header always set Strict-Transport-Security "max-age=31536000"
     Header always set X-Content-Type-Options "nosniff"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-Frame-Options "SAMEORIGIN"
@@ -72,11 +93,40 @@ AddDefaultCharset UTF-8
     <FilesMatch "\.(jpg|jpeg|png|gif|webp|avif|svg|ico|woff2?|ttf|otf)$">
         Header set Cache-Control "public, max-age=2592000"
     </FilesMatch>
+    # Skript og stilark manglet regel og fikk dermed ingen — nettleseren
+    # spurte om dem paa nytt ved hvert besok. De endres bare naar vi legger
+    # ut en ny utgave, og da med nytt innhold; en uke er trygt, og
+    # «must-revalidate» gjor at en endring likevel kommer fram med én gang
+    # den er eldre enn det.
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "public, max-age=604800, must-revalidate"
+    </FilesMatch>
     # Ingen regel for .php her med vilje. API-et setter sine egne headere:
     # «no-store» der eieren nettopp har lagret noe, og sju dagers
     # mellomlagring paa api/bilde.php, som serverer medlemmenes bilder. En
     # regel her ville overstyrt begge — og bildene ville blitt lastet ned paa
     # nytt ved hvert sidebesok.
+</IfModule>
+
+# Bilder i webp til dem som kan lese det.
+#
+# Fotografiene er en tredjedel mindre i webp, og det er det tyngste paa
+# sida. De ligger som «bilde.jpg.webp» ved siden av originalen, og Apache
+# velger ut fra hva nettleseren sier den tar imot. Ingen adresse i koden
+# endres, og bakgrunnsbilder i CSS faar det samme — de kan ikke bruke
+# <picture>.
+#
+# «Vary: Accept» maa staa, ellers kan en mellomlagring servere webp til en
+# nettleser som ikke leser det.
+<IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_ACCEPT} image/webp
+    RewriteCond %{DOCUMENT_ROOT}/$1.$2.webp -f
+    RewriteRule ^(.+)\.(jpe?g|png)$ /$1.$2.webp [T=image/webp,E=webp:1,L]
+</IfModule>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpe?g|png)$">
+        Header append Vary Accept
+    </FilesMatch>
 </IfModule>
 
 # Sidekartet bygges av det som ligger ute.

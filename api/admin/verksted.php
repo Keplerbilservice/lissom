@@ -40,7 +40,15 @@ $hent = static fn(): array => [
         'bilde'   => $a['bilde'],
         'innhold' => $a['innhold'],
         'status'  => $a['status'],
-    ], DB::alle('SELECT * FROM articles ORDER BY sortering, id DESC')),
+    // Bare verkstedets egne sider.
+    //
+    // Kunnskapsbanken under Markedsfoering skriver til den samme tabellen,
+    // og uten dette sto en artikkel om dreiekurs midt blant brennetabellen
+    // og trivselsreglene. De som hoerer til der har en kategori; disse har
+    // ingen.
+    ], DB::alle("SELECT * FROM articles
+                  WHERE kategori IS NULL OR kategori = ''
+               ORDER BY sortering, id DESC")),
 
     'lenker' => array_map(static fn($l) => [
         'id'   => (int) $l['id'],

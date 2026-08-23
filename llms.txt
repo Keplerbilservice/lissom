@@ -1,0 +1,44 @@
+# Lissom Keramikk & Håndverk
+
+> Keramikkverksted på Teie ved Tønsberg. Kurs i dreiing og plateteknikk,
+> kreative kvelder som Sip & Clay, Date Night og Paint on Pots, drop-in, og
+> medlemskap med fast plass i verkstedet. Vi tar imot folk fra hele Vestfold.
+
+Adresse: Nordre Løkkevei 15, 3120 Nøtterøy
+Telefon: +47 94 13 46 01
+E-post: monica@lissom.no
+Språk: norsk (bokmål)
+
+## Kurs og events
+
+- [Alle kurs og events](https://lissom.no/kurs): dreiekurs, plateteknikk, workshop og events, med datoer og ledige plasser
+- [Events](https://lissom.no/events): Sip & Clay, Date Night og Paint on Pots
+- [Paint on Pots](https://lissom.no/paint-on-pots): mal ferdigbrent keramikk, passer også barn
+- [Kalender](https://lissom.no/kalender): alt som skjer, uke for uke
+- [Drop-in](https://lissom.no/drop-in): én økt i verkstedet uten å binde seg til et kurs
+- [Bedrift og event](https://lissom.no/bedrift): teambuilding, julebord og kick-off
+
+Hvert kurs har sin egen side under /kurs/<navn>. Sidekartet på
+https://lissom.no/sitemap.xml er bygget av det som faktisk ligger ute, og
+er alltid oppdatert.
+
+## Medlemskap og butikk
+
+- [Medlemskap](https://lissom.no/medlemskap): fast plass i verkstedet, egen hylle og dørkode
+- [Butikk](https://lissom.no/butikk): håndlaget keramikk fra verkstedet
+- [Gavekort](https://lissom.no/gavekort): gjelder alle kurs, events og varer
+
+## Om oss
+
+- [Om verkstedet](https://lissom.no/om-oss)
+- [Kontakt og åpningstider](https://lissom.no/kontakt)
+- [Nyttig info](https://lissom.no/nyttig-info): brennetabell, cone-temperaturer og trivselsregler
+- [Guider og nyheter](https://lissom.no/nyheter)
+
+## Vilkår
+
+- [Personvern](https://lissom.no/personvern)
+- [Kjøpsvilkår](https://lissom.no/vilkar)
+
+Booking og betaling går gjennom Vipps. Admin, Min side og API-et er lukket
+og skal ikke gjennomsøkes — se https://lissom.no/robots.txt.

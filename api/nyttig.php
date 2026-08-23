@@ -14,7 +14,13 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
-$artikler = DB::alle("SELECT * FROM articles WHERE status = 'publisert' ORDER BY sortering, id DESC");
+// Samme skille som i admin: Nyttig info er verkstedets egne sider.
+// Guidene fra kunnskapsbanken staar under Nyheter.
+$artikler = DB::alle(
+    "SELECT * FROM articles
+      WHERE status = 'publisert' AND (kategori IS NULL OR kategori = '')
+   ORDER BY sortering, id DESC"
+);
 $lenker   = DB::alle('SELECT * FROM links ORDER BY sortering, navn');
 
 Svar::json([

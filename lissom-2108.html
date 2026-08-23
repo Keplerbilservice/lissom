@@ -5780,6 +5780,23 @@ window.__resources = {
 
 
 
+<!-- ── Samtykke til besoksmaaling ──────────────────────────────────────────
+     Analyse settes ikke i gang for noen har sagt ja. Uten dette ville
+     Google Analytics lagt igjen informasjonskapsler fra forste sidevisning,
+     og det har man ikke lov til i Norge uten aa spore forst. Valget lagres
+     lokalt i nettleseren, ikke hos oss. -->
+<sc-if value="{{ visSamtykke }}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; left: 0; right: 0; bottom: 0; z-index: 70; background: var(--lissom-brown); color: var(--clay-100); padding: var(--space-5) var(--space-6); box-shadow: 0 -6px 24px rgba(31, 17, 12, .22);">
+    <div style="max-width: 980px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+      <p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; max-width: 62ch; color: var(--clay-100);">Vi vil gjerne se hvor mange som besøker nettsiden, og hvilke sider de leser. Det krever informasjonskapsler fra Google Analytics. Sier du nei, virker alt akkurat som før — vi teller bare ikke besøket. <a href="/personvern" onClick="{{ samtykkeLesMer }}" style="color: var(--lissom-yellow); text-decoration: underline;">Les mer om personvern</a></p>
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ godtaAnalyse }}" hint-size="auto,40px">Ja, det er greit</x-import>
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ink" on-click="{{ avslaAnalyse }}" hint-size="auto,40px">Nei takk</x-import>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 <template id="__bundler_thumbnail">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
     <rect width="100" height="100" fill="#FFCF38"></rect>
@@ -5979,6 +5996,8 @@ const SIDEINNHOLD = {
       { l: 'Tekst', v: 'Vi sender praktiske beskjeder om verkstedet og kursene dine. Nyhetsbrev sender vi bare hvis du har sagt ja, og du kan melde deg av når som helst.', lang: true } ] },
     { navn: 'Bilder fra verkstedet', type: 'Avsnitt', synlig: 'Publisert', felter: [
       { l: 'Tekst', v: 'Vi tar bilder på kurs og events. Si fra til oss hvis du ikke vil være med på bilder som brukes på nett eller i sosiale medier, så respekterer vi det.', lang: true } ] },
+    { navn: 'Besøksmåling', type: 'Avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Tekst', v: 'Vi bruker Google Analytics til å telle hvor mange som besøker nettsiden og hvilke sider de leser. Det skjer bare hvis du sier ja til det første gang du er innom, og du kan la være — da virker alt akkurat som før. Vi ser aldri hvem den enkelte besøkende er, og IP-adressen din blir forkortet før den lagres. Vil du ombestemme deg, tømmer du nettleserdataene for lissom.no, så blir du spurt på nytt.', lang: true } ] },
     { navn: 'Rettighetene dine', type: 'Avsnitt', synlig: 'Publisert', felter: [
       { l: 'Tekst', v: 'Du kan be om innsyn i det vi har lagret, få rettet feil, eller be om at opplysningene dine slettes. Send en e-post, så ordner vi det. Du kan også klage til Datatilsynet.', lang: true } ] },
   ],
@@ -8341,11 +8360,32 @@ class Component extends DCLogic {
   // noe ble maalt — treg side og en informasjonskapsel ingen har nytte av.
   //
   // Admin holdes utenfor: eierens egne klikk skal ikke telle som besok.
+  /**
+   * Har den besokende sagt ja til besoksmaaling?
+   *
+   * Svaret ligger i nettleseren, ikke hos oss. Er localStorage utilgjengelig
+   * — privat vindu, eller en nettleser som sperrer det — er svaret nei. Det
+   * er den riktige veien aa feile: ingen maaling, framfor maaling uten ja.
+   */
+  samtykke() {
+    try { return localStorage.getItem('lissom-analyse') || ''; } catch (e) { return 'nei'; }
+  }
+
+  settSamtykke(svar) {
+    try { localStorage.setItem('lissom-analyse', svar); } catch (e) { /* da blir det nei */ }
+    this.setState({ samtykkeSvart: svar });
+    if (svar === 'ja') this.settOppAnalyse();
+  }
+
   settOppAnalyse() {
     if (!this.erPublisert() || this._gaSatt) return;
     const id = ((this.state.innholdLagret || {})['Marked/GA-id'] || '').trim();
     if (!/^G-[A-Z0-9]{6,20}$/i.test(id)) return;
     if ((this.state.side || '').indexOf('admin') === 0) return;
+    // Ingen maaling for noen har sagt ja. Gtag legger igjen
+    // informasjonskapsler med det samme det lastes, saa det holder ikke aa
+    // laste det og la vaere aa bruke det.
+    if (this.samtykke() !== 'ja') return;
     this._gaSatt = true;
 
     const s = document.createElement('script');
@@ -12709,6 +12749,17 @@ class Component extends DCLogic {
         };
       })(),
       erIkkeFunnet: side === 'ikkefunnet',
+
+      // Samtykkelinja vises bare naar den trengs: paa den publiserte siden,
+      // utenfor admin, naar det finnes en maale-ID aa spore med, og naar den
+      // besokende ikke allerede har svart.
+      visSamtykke: this.erPublisert()
+        && side.indexOf('admin') !== 0
+        && /^G-[A-Z0-9]{6,20}$/i.test((((this.state.innholdLagret || {})['Marked/GA-id']) || '').trim())
+        && (this.state.samtykkeSvart || this.samtykke()) === '',
+      godtaAnalyse: () => this.settSamtykke('ja'),
+      avslaAnalyse: () => this.settSamtykke('nei'),
+      samtykkeLesMer: this.go('personvern'),
       goForsideFra404: this.go('forside'),
       goKursFra404: this.go('kurs'),
       goKontaktFra404: this.go('kontakt'),

@@ -4271,7 +4271,7 @@ window.__resources = {
               <span>Produkt</span><span>Pris</span><span>På lager</span><span>Status</span><span></span>
             </div>
             <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
-              <div style="display: grid; grid-template-columns: 56px 2fr 1fr 1fr 1.1fr auto; min-width: 700px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center;">
+              <div style="display: grid; grid-template-columns: 56px 2fr 1fr 1fr 1.1fr auto; min-width: 820px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center;">
                 <!-- Bildet er det forste kunden ser i butikken. Uten en vei
                      hit fikk hver nye vare standardbildet, og alt saa likt ut. -->
                 <button type="button" onClick="{{ v.byttBilde }}" aria-label="Bytt bilde" style="{{ v.bildeStil }}"></button>
@@ -4281,7 +4281,14 @@ window.__resources = {
                 <div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
                 </div>
-                <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap; justify-self: end;">{{ v.bildeKnapp }}</button>
+                <!-- Hver linje skal kunne endres og fjernes der den staar.
+                     For laa redigeringen bare bak et klikk paa navnet, og
+                     ingenting viste at raden var klikkbar. -->
+                <div style="display: flex; gap: var(--space-2); align-items: center; justify-self: end; white-space: nowrap;">
+                  <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">{{ v.bildeKnapp }}</button>
+                  <button type="button" onClick="{{ v.velg }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading);">Rediger</button>
+                  <button type="button" onClick="{{ v.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px 6px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                </div>
               </div>
             </sc-for>
           </div>
@@ -9439,6 +9446,29 @@ class Component extends DCLogic {
   // «Legg ut i butikken» viste kvittering og skrev ingenting. Nye varer
   // forsvant ved neste sidelasting, og prisen kunden faktisk ble trukket sto
   // fortsatt i basen.
+  /**
+   * Fjern en vare fra butikken.
+   *
+   * Serveren avgjor om den kan slettes: en vare som er solgt, tas bare ned —
+   * ellers ville gamle kvitteringer mistet linjene sine. Beskjeden derfra
+   * sier hva som faktisk skjedde.
+   */
+  slettVare(id, navn) {
+    if (!window.confirm('Fjerne «' + navn + '» fra butikken?')) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: navn + ' er fjernet' }); return; }
+    fetch('/api/admin/produkter.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'slett', id: id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({ kvittering: ok ? 'Fjernet' : 'Gikk ikke', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentButikk(); }
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
   lagreVare() {
     const s = this.state;
     const navn = (s.npNavn || '').trim();
@@ -9457,7 +9487,11 @@ class Component extends DCLogic {
     if (this._vareLagres) return;
     this._vareLagres = true;
 
-    const fra = (this.state.adminProdukter || []).find(v => v.tittel === navn);
+    // Varen slaas opp paa nummer. Tidligere gikk det paa navn, og etter at
+    // to varer fikk lov til aa hete det samme, ville redigering av den andre
+    // skrevet over den forste.
+    const id = parseInt(String(s.npId || 0), 10) || 0;
+    const fra = (this.state.adminProdukter || []).find(v => v.id === id);
 
     fetch('/api/admin/produkter.php', {
       method: 'POST',
@@ -9465,7 +9499,7 @@ class Component extends DCLogic {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         handling: 'lagre',
-        id: fra ? fra.id : 0,
+        id: id,
         tittel: navn,
         beskrivelse: (s.npBeskrivelse || '').trim(),
         pris: parseInt(pris, 10),
@@ -12135,11 +12169,11 @@ class Component extends DCLogic {
         { navn: 'Bolle, liten', pris: 'kr. 340,-', antall: '0', tekst: 'Dreid stengods, 14 cm. Selges enkeltvis.' },
         { navn: 'Fat, 28 cm', pris: 'kr. 790,-', antall: '2', tekst: 'Dekorglasur. Ikke matsikret, ment som pyntefat.' },
       ]).map(v => Object.assign({}, v, {
-        velg: () => this.setState({ npApen: true, npRediger: true, npNavn: v.navn, npPris: v.pris.replace(/[^\d ]/g, '').trim(), npAntall: v.antall, npBeskrivelse: v.tekst }),
+        velg: () => this.setState({ npApen: true, npRediger: true, npId: v.id || 0, npNavn: v.navn, npPris: v.pris.replace(/[^\d ]/g, '').trim(), npAntall: v.antall, npBeskrivelse: v.tekst }),
       })),
       npApen: !!this.state.npApen,
       npLukk: () => this.setState({ npApen: false }),
-      npApne: () => this.setState({ npApen: true, npRediger: false, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '' }),
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '' }),
       npTittel: this.state.npRediger ? 'Rediger vare' : 'Ny vare',
       npHandling: this.state.npRediger ? 'Lagre endringer' : 'Legg ut i butikken',
       npNavn: this.state.npNavn || '',
@@ -14034,13 +14068,18 @@ class Component extends DCLogic {
                      backgroundSize: 'cover', backgroundPosition: 'center' },
         bildeKnapp: (v.raa && v.raa.bilde) ? 'Bytt bilde' : 'Velg bilde',
         byttBilde: () => { if (v.raa) this.apneBildevalg(v.raa.id, 'vare'); },
+        // Nummeret maa foelge med inn i skjemaet. Uten det ble varen slaatt
+        // opp paa navn ved lagring, og to kopper som het det samme kunne
+        // ikke lenger redigeres hver for seg — den forste vant alltid.
         velg: () => this.setState({
           npApen: true, npRediger: true,
+          npId: v.raa ? v.raa.id : 0,
           npNavn: v.navn,
           npPris: v.raa ? String(v.raa.pris) : String(v.pris).replace(/[^\d]/g, ''),
           npAntall: v.antall === null ? '' : String(v.antall),
           npBeskrivelse: v.raa ? (v.raa.beskrivelse || '') : '',
         }),
+        slett: () => { if (v.raa) this.slettVare(v.raa.id, v.navn); },
       })),
       ordrer: this.klikkbar((this.erPublisert() ? [] : [
         { nr: '#1042', navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', status: 'Sendt på e-post', tone: 'success' },

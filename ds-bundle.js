@@ -442,9 +442,18 @@ function Logo({
   ...rest
 }) {
   const file = (SRC[variant] || SRC.lockup)[tone] || SRC.lockup.brown;
+  // Forholdstallet per fil. Uten det settes ikke plassen av for bildet er
+  // lastet, og alt under hopper naar det kommer.
+  const MAAL = {
+    'wordmark-lissom.svg': [425, 86],
+    'wordmark-lissom-cream.svg': [425, 86],
+  };
+  const m = MAAL[file];
   return /*#__PURE__*/React.createElement("img", _extends({
     src: assetBase + file,
     alt: "lissom keramikk & h\xE5ndverk",
+    width: m ? m[0] : undefined,
+    height: m ? m[1] : undefined,
     style: {
       height,
       width: 'auto',
@@ -1316,11 +1325,15 @@ function NavBar({
     }, /*#__PURE__*/React.createElement("img", {
       src: assetBase + 'mark-cup-top.svg',
       alt: "",
+      width: 192,
+      height: 88,
       "data-logo-cup": true,
       style: { height: cupH * 0.786, width: 'auto', display: 'block', transition: 'transform 1600ms linear', transformOrigin: '50% 50%' }
     }), /*#__PURE__*/React.createElement("img", {
       src: assetBase + 'mark-cup-saucer.svg',
       alt: "",
+      width: 192,
+      height: 24,
       style: { height: cupH * 0.214, width: 'auto', display: 'block' }
     }));
   })(), /*#__PURE__*/React.createElement(__ds_scope.Logo, {

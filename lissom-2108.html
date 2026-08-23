@@ -3326,6 +3326,26 @@ window.__resources = {
               </div>
             </sc-for>
           </div>
+
+          <!-- Kursene, sett fra kurset og ikke fra datoen. Programmet over
+               sier hva som skjer naar; dette sier hva verkstedet tilbyr, og
+               tar deg rett inn i kurset for aa endre pris, tekst eller
+               datoer. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kurs</div>
+            <sc-if value="{{ ingenOvKurs }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs er lagt ut ennå.</div>
+            </sc-if>
+            <sc-for list="{{ ovKurs }}" as="k" hint-placeholder-count="4">
+              <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.detalj }}</div>
+                </div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ k.pameldte }}</span>
+              </div>
+            </sc-for>
+          </div>
         </div>
 
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Synlighet og innhold</div>
@@ -3672,6 +3692,16 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mpApne }}" hint-size="auto,44px">Legg til deltaker</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
+             ut i menyen for hver ting. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
@@ -4331,7 +4361,7 @@ window.__resources = {
       <main style="padding: var(--space-8) var(--space-8) var(--space-16); min-width: 0;">
         <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-5) var(--space-8); margin-bottom: var(--space-7);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ omrEyebrow }}</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Innhold</h1>
           </div>
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4);">
@@ -4339,6 +4369,16 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="eye" on-click="{{ aForhandsvis }}" hint-size="auto,44px">Se nettsiden</x-import>
           </div>
         </div>
+
+        <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
+             ut i menyen for hver ting. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div style="display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: var(--space-6); align-items: start;">
 
@@ -5352,6 +5392,16 @@ window.__resources = {
           </div>
         </div>
 
+        <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
+             ut i menyen for hver ting. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
         <!-- Fanene -->
         <div style="display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--border-subtle); padding-bottom: var(--space-4); margin-bottom: var(--space-6);">
           <sc-for list="{{ mkFaner }}" as="f" hint-placeholder-count="9">
@@ -5473,6 +5523,44 @@ window.__resources = {
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
           </div>
+          <!-- Redigering av artikkelen.
+               AI-en skriver et utkast, ikke en ferdig tekst. Uten dette
+               kunne den bare publiseres eller slettes — og en artikkel med
+               ett feil ord maatte skrives om fra bunnen. -->
+          <sc-if value="{{ abApen }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-5);">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+                <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Rediger artikkel</h2>
+                <button type="button" onClick="{{ abLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
+                  <div>
+                    <label style="{{ abEtikett }}">Tittel</label>
+                    <input value="{{ abTittel }}" onChange="{{ settAbTittel }}" style="{{ abFeltStil }}">
+                  </div>
+                  <div>
+                    <label style="{{ abEtikett }}">Kategori</label>
+                    <input value="{{ abKategori }}" onChange="{{ settAbKategori }}" placeholder="F.eks. Keramikk" style="{{ abFeltStil }}">
+                  </div>
+                </div>
+                <div>
+                  <label style="{{ abEtikett }}">Ingress — de to linjene som står under overskriften</label>
+                  <textarea value="{{ abIngress }}" onChange="{{ settAbIngress }}" rows="2" style="{{ abFeltStil }}"></textarea>
+                </div>
+                <div>
+                  <label style="{{ abEtikett }}">Tekst</label>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted);"># overskrift · ## mellomtittel · - punkt for lister</p>
+                  <textarea value="{{ abInnhold }}" onChange="{{ settAbInnhold }}" rows="18" style="{{ abTekstStil }}"></textarea>
+                </div>
+                <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ abLagre }}" hint-size="auto,44px">Lagre</x-import>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ abStatusTekst }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
           <sc-if value="{{ mkHarArtikler }}" hint-placeholder-val="{{ true }}">
             <sc-for list="{{ mkBank }}" as="a" hint-placeholder-count="5">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-3); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
@@ -5490,6 +5578,7 @@ window.__resources = {
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <button type="button" onClick="{{ a.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">{{ a.bildeKnapp }}</button>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ a.veksle }}" hint-size="auto,40px">{{ a.knapp }}</x-import>
+                  <button type="button" onClick="{{ a.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
                   <button type="button" onClick="{{ a.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                 </div>
               </div>
@@ -5705,6 +5794,16 @@ window.__resources = {
             <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 60ch;">Styr tittel, beskrivelse, søkeord og schema for hver side. «Foreslå SEO» fyller tomme felt med lokale, salgsklare forslag.</p>
           </div>
         </div>
+
+        <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
+             ut i menyen for hver ting. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
 
         <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); margin-bottom: var(--space-6);">
           <sc-for list="{{ seoDash }}" as="t" hint-placeholder-count="4">
@@ -9603,6 +9702,9 @@ class Component extends DCLogic {
           this._artiklerHentes = false; this.hentMarkedArtikler();
           // Nytt utkast: aapne det med det samme, saa det leses framfor aa bli liggende.
           if (!laget && d && d.id) this.setState({ mkLes: { id: d.id, tittel: d.tittel, tekst: d.tekst, type: kropp.handling } });
+          // «Lagt i kunnskapsbanken» — men hvor er den? Sto som en beskjed
+          // om et sted man selv maatte lete etter. Naa staar man i den.
+          if (kropp.handling === 'godkjenn') this.setState({ mkFane: 'bank' });
         }
       })
       .catch(() => {
@@ -10892,6 +10994,42 @@ class Component extends DCLogic {
     return { '@context': 'https://schema.org', '@graph': graf };
   }
 
+  /**
+   * Kvitteringen lukker seg selv i admin.
+   *
+   * «Utkastet er klart», «Lagret», «SEO er oppdatert» — de sto til man
+   * trykket dem bort, og la seg over det man holdt paa med. I admin lagrer
+   * man mange ting etter hverandre, og da er beskjeden noe man skal se, ikke
+   * noe man skal rydde etter.
+   *
+   * Bare i admin. Ute paa nettsida er kvitteringen ofte det eneste beviset
+   * kunden har paa at bookingen gikk gjennom, og den skal staa til den
+   * lukkes.
+   */
+  varselAutolukk() {
+    const tekst = this.state.kvittering || '';
+
+    if (!tekst || !this.erAdminSkjerm(this.state.side)) {
+      clearTimeout(this._kvittTimer);
+      this._kvittTimer = null;
+      this._kvittVist = '';
+      return;
+    }
+
+    // Samme beskjed som sist? Da gaar klokka alt.
+    const merke = tekst + '|' + (this.state.kvitteringDetalj || '');
+    if (this._kvittVist === merke) return;
+    this._kvittVist = merke;
+
+    clearTimeout(this._kvittTimer);
+    this._kvittTimer = setTimeout(() => {
+      this._kvittTimer = null;
+      // Bare den beskjeden vi startet klokka for. Kom det en ny imens, skal
+      // den faa sine egne tre sekunder.
+      this.setState(s => (s.kvittering === tekst ? { kvittering: '', kvitteringDetalj: '' } : {}));
+    }, 3000);
+  }
+
   seoSlug(t) {
     return (t || '').toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   }
@@ -11214,94 +11352,118 @@ class Component extends DCLogic {
   }
 
   /**
-   * Adminpanelet, delt etter hvem det gjelder.
+   * Sidemenyen i admin. Aatte punkter, og den skal bli vaerende paa aatte.
    *
-   * Ett sted for kursdeltakerne, ett for medlemmene. Inne i et omraade skal
-   * alt man trenger vaere for haanden: listene, beskjedene, betalingene,
-   * kursene og infoen. Foer laa dette spredt etter hva slags ting det var —
-   * alle beskjeder ett sted, all info et annet — og jobbet du med
-   * deltakerne, matte du ut av deres del for hver ting du skulle gjore.
+   * Den vokste hver gang det kom et verktoy til, og endte som en liste over
+   * alt systemet kunne. Da maatte man kjenne systemet for aa finne fram.
    *
-   * Derfor staar hvert punkt med sitt enkle navn: gruppa har alt sagt hvem
-   * det gjelder. «Beskjeder» under Kursdeltakere er beskjeder til dem.
-   * Samme navn finnes derfor flere steder, og noekkelen er «Gruppe/Navn».
-   *
-   * Denne tabellen er den ene kilden: bade sidemenyen og fanerekka oeverst
-   * paa hvert omraade bygges av den, saa de to aldri kan si ulike ting.
+   * Naa staar det bare steder her: Deltakere, Medlemmer, Nettsiden. Selve
+   * verktoyene ligger inne paa stedet de hoerer til, som faner oeverst paa
+   * sida — se ADMIN_FANER. Kommer det et nytt verktoy for deltakerne, blir
+   * det en fane der, ikke en ny linje her.
    */
-  static get ADMIN_OMRAADER() {
+  static get ADMIN_MENY() {
     return [
-      ['Daglig', [
-        ['Oversikt',      'adminoversikt'],
-        ['Kurs',          'admin',              { kursFane: 'alle' }],
-        ['Drop-in',       'admindropin'],
-        ['Økonomi',       'adminokonomi',       { okonomiFor: '' }],
-      ]],
-      ['Kursdeltakere', [
-        ['Deltakere',     'adminkursdeltakere'],
-        ['Påmeldte',      'adminpameldte'],
-        ['Kurs',          'admin',              { kursFane: 'apne' }],
-        ['Beskjeder',     'adminbeskjeder',     { motValg: 'Deltakere på et kurs' }],
-        ['Betalinger',    'adminokonomi',       { okonomiFor: 'deltakere' }],
-        ['Nyttig info',   'adminnyttig',        { nyttigFor: 'deltakere' }],
-      ]],
-      ['Medlemmer', [
-        ['Medlemmer',     'adminmedlem'],
-        ['Kurs',          'admin',              { kursFane: 'interne' }],
-        ['Butikk',        'adminbutikk',        { butikkFane: 'Medlemssalg' }],
-        ['Beskjeder',     'adminbeskjeder',     { motValg: 'Alle aktive medlemmer' }],
-        ['Betalinger',    'adminokonomi',       { okonomiFor: 'medlemmer' }],
-        ['Nyttig info',   'adminnyttig',        { nyttigFor: 'medlemmer' }],
-        ['Oppskrifter',   'adminoppskrifter'],
-      ]],
-      ['Nettsiden', [
-        ['Innhold',       'admininnhold'],
-        ['Butikk',        'adminbutikk',        { butikkFane: 'Butikken' }],
-        ['Markedsføring', 'adminmarked'],
-        ['SEO',           'adminseo'],
-        ['Mobilvisning',  'adminmobilvis'],
-      ]],
-      ['Tilgang', [
-        ['Brukere',       'adminbrukere'],
-      ]],
+      ['Oversikt',  'adminoversikt'],
+      ['Deltakere', 'adminkursdeltakere'],
+      ['Medlemmer', 'adminmedlem'],
+      ['Kurs',      'admin',        { kursFane: 'alle' }],
+      ['Drop-in',   'admindropin'],
+      ['Økonomi',   'adminokonomi', { okonomiFor: '' }],
+      ['Nettsiden', 'admininnhold'],
+      ['Brukere',   'adminbrukere'],
     ];
   }
 
   /**
-   * Hvilket punkt staar man paa naa, som «Gruppe/Navn».
+   * Verktoyene inne paa hvert sted.
    *
-   * Flere grupper deler skjerm — beskjedskjemaet er det samme enten det gaar
-   * til deltakere eller medlemmer. Da er det hva man kom fra som avgjor,
-   * og det ligger i state.
+   * Jobber du med kursdeltakerne, skal alt som gjelder dem vaere for haanden:
+   * hvem de er, hva de har meldt seg paa, hva de har betalt, hva de har faatt
+   * beskjed om. Foer laa det spredt paa fem skjermer i tre ulike deler av
+   * menyen, og hver ting du skulle gjore begynte med aa lete.
+   *
+   * Flere av fanene gaar til samme skjerm med ulikt utgangspunkt. «Beskjeder»
+   * er det samme skjemaet begge steder — men mottakergruppa er valgt paa
+   * forhaand, og «Betalinger» viser kurs og drop-in det ene stedet og
+   * medlemskapstrekkene det andre.
    */
-  adminAktiv() {
+  static get ADMIN_FANER() {
+    return {
+      'Deltakere': [
+        ['Deltakere',    'adminkursdeltakere'],
+        ['Påmeldte',     'adminpameldte'],
+        ['Kurs',         'admin',            { kursFane: 'apne' }],
+        ['Beskjeder',    'adminbeskjeder',   { motValg: 'Deltakere på et kurs' }],
+        ['Betalinger',   'adminokonomi',     { okonomiFor: 'deltakere' }],
+        ['Nyttig info',  'adminnyttig',      { nyttigFor: 'deltakere' }],
+      ],
+      'Medlemmer': [
+        ['Medlemmer',    'adminmedlem'],
+        ['Kurs',         'admin',            { kursFane: 'interne' }],
+        ['Internbutikk', 'adminbutikk',      { butikkFane: 'Medlemssalg' }],
+        ['Beskjeder',    'adminbeskjeder',   { motValg: 'Alle aktive medlemmer' }],
+        ['Betalinger',   'adminokonomi',     { okonomiFor: 'medlemmer' }],
+        ['Nyttig info',  'adminnyttig',      { nyttigFor: 'medlemmer' }],
+        ['Oppskrifter',  'adminoppskrifter'],
+      ],
+      'Nettsiden': [
+        ['Innhold',       'admininnhold'],
+        ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
+        ['Markedsføring', 'adminmarked'],
+        ['SEO',           'adminseo'],
+        ['Mobilvisning',  'adminmobilvis'],
+      ],
+    };
+  }
+
+  /**
+   * Hvor i panelet staar man naa?
+   *
+   * Flere steder deler skjerm — beskjedskjemaet er det samme enten det gaar
+   * til deltakere eller medlemmer. Hva man kom fra ligger i state, og det er
+   * det som avgjor bade hvilket menypunkt som lyser og hvilken fanerekke som
+   * staar oeverst.
+   *
+   * @return {{meny: string, omraade: string, fane: string}}
+   */
+  adminSted() {
     const st = this.state;
+    const p = (meny, omraade, fane) => ({ meny, omraade: omraade || '', fane: fane || '' });
+
     switch (st.side) {
-      case 'adminoversikt':      return 'Daglig/Oversikt';
-      case 'admindropin':        return 'Daglig/Drop-in';
-      case 'adminkursdeltakere': return 'Kursdeltakere/Deltakere';
-      case 'adminpameldte':      return 'Kursdeltakere/Påmeldte';
-      case 'adminmedlem':        return 'Medlemmer/Medlemmer';
-      case 'adminoppskrifter':   return 'Medlemmer/Oppskrifter';
-      case 'admininnhold':       return 'Nettsiden/Innhold';
-      case 'adminmarked':        return 'Nettsiden/Markedsføring';
-      case 'adminseo':           return 'Nettsiden/SEO';
-      case 'adminmobilvis':      return 'Nettsiden/Mobilvisning';
-      case 'adminbrukere':       return 'Tilgang/Brukere';
+      case 'adminoversikt':      return p('Oversikt');
+      case 'admindropin':        return p('Drop-in');
+      case 'adminbrukere':       return p('Brukere');
+      case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Deltakere');
+      case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
+      case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Medlemmer');
+      case 'adminoppskrifter':   return p('Medlemmer', 'Medlemmer', 'Oppskrifter');
+      case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
+      case 'adminmarked':        return p('Nettsiden', 'Nettsiden', 'Markedsføring');
+      case 'adminseo':           return p('Nettsiden', 'Nettsiden', 'SEO');
+      case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'admin':
-        return st.kursFane === 'interne' ? 'Medlemmer/Kurs'
-          : (st.kursFane === 'apne' ? 'Kursdeltakere/Kurs' : 'Daglig/Kurs');
+        if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
+        if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
+        return p('Kurs');
       case 'adminbeskjeder':
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
-          ? 'Kursdeltakere/Beskjeder' : 'Medlemmer/Beskjeder';
+          ? p('Deltakere', 'Deltakere', 'Beskjeder')
+          : p('Medlemmer', 'Medlemmer', 'Beskjeder');
       case 'adminokonomi':
-        return st.okonomiFor === 'deltakere' ? 'Kursdeltakere/Betalinger'
-          : (st.okonomiFor === 'medlemmer' ? 'Medlemmer/Betalinger' : 'Daglig/Økonomi');
+        if (st.okonomiFor === 'deltakere') return p('Deltakere', 'Deltakere', 'Betalinger');
+        if (st.okonomiFor === 'medlemmer') return p('Medlemmer', 'Medlemmer', 'Betalinger');
+        return p('Økonomi');
       case 'adminnyttig':
-        return st.nyttigFor === 'deltakere' ? 'Kursdeltakere/Nyttig info' : 'Medlemmer/Nyttig info';
+        return st.nyttigFor === 'deltakere'
+          ? p('Deltakere', 'Deltakere', 'Nyttig info')
+          : p('Medlemmer', 'Medlemmer', 'Nyttig info');
       case 'adminbutikk':
-        return st.butikkFane === 'Medlemssalg' ? 'Medlemmer/Butikk' : 'Nettsiden/Butikk';
-      default: return '';
+        return st.butikkFane === 'Medlemssalg'
+          ? p('Medlemmer', 'Medlemmer', 'Internbutikk')
+          : p('Nettsiden', 'Nettsiden', 'Butikk');
+      default: return p('');
     }
   }
 
@@ -11311,26 +11473,18 @@ class Component extends DCLogic {
     window.scrollTo(0, 0);
   }
 
-  /**
-   * Fanerekka oeverst paa omraadet man staar i.
-   *
-   * Sidemenyen er kartet; denne er verktoykassa. Uten den foeltes hvert
-   * bytte ut som aa forlate deltakerne for aa gjore noe med dem.
-   */
+  /** Fanerekka for stedet man staar paa. Tom paa de frittstaaende skjermene. */
   omraadeFaner() {
-    const aktiv = this.adminAktiv();
-    const omraade = aktiv.split('/')[0];
-    // «Daglig», «Nettsiden» og «Tilgang» er ikke noen man jobber med — de er
-    // enkeltverktoy, og en fanerekke der ville bare vaert stoy.
-    if (['Kursdeltakere', 'Medlemmer'].indexOf(omraade) === -1) {
+    const sted = this.adminSted();
+    const faner = Component.ADMIN_FANER[sted.omraade];
+    if (!faner) {
       return { harOmrFaner: false, omrNavn: '', omrFaner: [] };
     }
-    const gruppe = Component.ADMIN_OMRAADER.find(g => g[0] === omraade);
     return {
       harOmrFaner: true,
-      omrNavn: omraade,
-      omrFaner: gruppe[1].map(([navn, rute, forvalg]) => {
-        const valgt = aktiv === omraade + '/' + navn;
+      omrNavn: sted.omraade,
+      omrFaner: faner.map(([navn, rute, forvalg]) => {
+        const valgt = navn === sted.fane;
         return {
           navn,
           velg: () => this.gaaAdmin(rute, forvalg),
@@ -11348,45 +11502,20 @@ class Component extends DCLogic {
     };
   }
 
-  adminMeny(aktiv) {
-    // Paa mobil ligger menyen som en vannrett rad man drar i. Da tar
-    // overskriftene bare plass uten aa hjelpe, saa der utelates de.
-    const smal = (this.state.vw || 1400) < 980;
+  adminMeny() {
+    const aktiv = this.adminSted().meny;
 
-    const punkt = (gruppe, navn, rute, forvalg) => {
-      const valgt = aktiv === gruppe + '/' + navn;
-      return {
-        navn,
-        velg: !rute ? () => {} : () => this.gaaAdmin(rute, forvalg),
-        stil: {
-          appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
-          padding: '9px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
-          font: 'var(--type-body-sm)', fontWeight: valgt ? 700 : 500,
-          background: valgt ? 'var(--lissom-yellow)' : 'transparent',
-          color: valgt ? 'var(--lissom-brown)' : 'var(--clay-200)',
-        },
-      };
-    };
-
-    const grupper = Component.ADMIN_OMRAADER;
-
-    const overskrift = (tekst, forste) => ({
-      navn: tekst,
-      velg: () => {},
+    const rader = Component.ADMIN_MENY.map(([navn, rute, forvalg]) => ({
+      navn,
+      velg: () => this.gaaAdmin(rute, forvalg),
       stil: {
-        appearance: 'none', border: 'none', background: 'transparent', textAlign: 'left',
-        padding: '0 14px 4px', marginTop: forste ? 0 : 'var(--space-4)',
-        font: 'var(--type-eyebrow)', fontSize: 11, fontWeight: 700,
-        letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
-        color: 'var(--clay-400)', cursor: 'default', pointerEvents: 'none',
+        appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+        font: 'var(--type-body-sm)', fontWeight: navn === aktiv ? 700 : 500,
+        background: navn === aktiv ? 'var(--lissom-yellow)' : 'transparent',
+        color: navn === aktiv ? 'var(--lissom-brown)' : 'var(--clay-200)',
       },
-    });
-
-    const rader = [];
-    grupper.forEach(([tittel, punkter], i) => {
-      if (!smal) rader.push(overskrift(tittel, i === 0));
-      punkter.forEach(([navn, rute, forvalg]) => rader.push(punkt(tittel, navn, rute, forvalg)));
-    });
+    }));
 
     return rader.concat([
       // Ut av admin. To ting man vil ha for haanden hele tida, og som ikke
@@ -11779,6 +11908,9 @@ class Component extends DCLogic {
 
     // Tittel og metatagger folger siden man staar paa.
     this.seoTilHodet(side);
+
+    // Kvitteringer i admin lukker seg selv etter tre sekunder.
+    this.varselAutolukk();
 
     // Innstemplingsstatus hentes naar man er der den vises: Min side for
     // medlemmet selv, og admin-sidene for «i verkstedet naa».
@@ -13304,9 +13436,9 @@ class Component extends DCLogic {
       beskjedTittel: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
         ? 'Beskjed til kursdeltakere' : 'Beskjed til medlemmer',
       butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Butikk og medlemssalg' : 'Butikk',
-      adminNav: this.adminMeny(this.adminAktiv()),
-      adminNavMedlem: this.adminMeny(this.adminAktiv()),
-      adminNavOkonomi: this.adminMeny(this.adminAktiv()),
+      adminNav: this.adminMeny(),
+      adminNavMedlem: this.adminMeny(),
+      adminNavOkonomi: this.adminMeny(),
       medlemTall: (this.erPublisert() ? [] : [
         { merke: 'Aktive medlemmer', verdi: '47', under: '+3 siste 30 dager' },
         { merke: 'På prøve', verdi: '6', under: '4 utløper denne måneden' },
@@ -13349,7 +13481,7 @@ class Component extends DCLogic {
       // medlemslista. Skulle du svare noen som ringte om kursbeviset sitt,
       // matte du lete i begge.
       erAdminKursdeltakere: side === 'adminkursdeltakere',
-      adminNavKursdeltakere: this.adminMeny(this.adminAktiv()),
+      adminNavKursdeltakere: this.adminMeny(),
       ...(() => {
         const sok = (this.state.kdSok || '').trim().toLowerCase();
         const alle = this.kursdeltakerRader();
@@ -13829,6 +13961,15 @@ class Component extends DCLogic {
       bryterMinFrys: this.bryterPaa('frys'),
       vekslMinFrys: () => this.vekslBryter('frys', 'Frys av medlemskap'),
       visMinFrys: this.bryterPaa('frys'),
+      // Kursene paa forsida. Klikket foerer rett inn i kurset — det er der
+      // pris, tekst og datoer endres, og veien dit gikk foer om menyen.
+      ovKurs: this.kursData().slice(0, 6).map((k, i) => ({
+        navn: k.navn,
+        detalj: k.type + ' · ' + k.pris + ' · ' + (k.neste || 'ingen dato'),
+        pameldte: k.pameldte,
+        velg: () => { this.setState({ side: 'admin', kursFane: 'alle' }); this.apneKursRed(k, i); },
+      })),
+      ingenOvKurs: this.kursData().length === 0,
       ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovProgram: n }),
@@ -14741,7 +14882,7 @@ class Component extends DCLogic {
         { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: this.plakatPunkter('trivsel').length + ' enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
-      adminNavNyttig: this.adminMeny(this.adminAktiv()),
+      adminNavNyttig: this.adminMeny(),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },
       artikkelApen: this.state.artikkelValgt != null,
       artikkelListeVis: this.state.artikkelValgt == null,
@@ -15078,9 +15219,9 @@ class Component extends DCLogic {
         { verdi: '5 min', merke: 'Fra Tønsberg sentrum' },
         { verdi: '24/7', merke: 'Åpent for medlemmer' },
       ],
-      adminNavOversikt: this.adminMeny(this.adminAktiv()),
-      adminNavInnhold: this.adminMeny(this.adminAktiv()),
-      adminNavPameldte: this.adminMeny(this.adminAktiv()),
+      adminNavOversikt: this.adminMeny(),
+      adminNavInnhold: this.adminMeny(),
+      adminNavPameldte: this.adminMeny(),
       erAdminPameldte: side === 'adminpameldte',
       // Sto som «Uke 35 · 34 paameldte», fast, uansett uke og uansett tall.
       sidepanelUke: 'Uke ' + this.ukeNaa(),
@@ -15361,8 +15502,8 @@ class Component extends DCLogic {
       knappevarianter: ['Brun (ink)', 'Gul (primær)', 'Omriss', 'Tekstlenke'],
       overganger: ['Ingen', 'Mykt fall mot bunnen', 'Mykt fall mot toppen', 'Kopp som vannmerke'],
       hoyder: ['Lav', 'Normal', 'Høy', 'Full skjerm'],
-      adminNavDropin: this.adminMeny(this.adminAktiv()),
-      adminNavOppskrifter: this.adminMeny(this.adminAktiv()),
+      adminNavDropin: this.adminMeny(),
+      adminNavOppskrifter: this.adminMeny(),
       erAdminOppskrifter: side === 'adminoppskrifter',
       harOppskrifter: this.oppskriftData().length > 0,
       ingenOppskrifter: this.oppskriftData().length === 0,
@@ -15486,8 +15627,8 @@ class Component extends DCLogic {
         const fargeG = farger.reduce((s, f) => s + Math.round(m * f.pst / 100), 0);
         return (m + fargeG) + ' g tørrstoff';
       })(),
-      adminNavButikk: this.adminMeny(this.adminAktiv()),
-      adminNavBeskjeder: this.adminMeny(this.adminAktiv()),
+      adminNavButikk: this.adminMeny(),
+      adminNavBeskjeder: this.adminMeny(),
       erAdminDropin: side === 'admindropin',
       erAdminButikk: side === 'adminbutikk',
       erAdminBeskjeder: side === 'adminbeskjeder',
@@ -16111,7 +16252,7 @@ class Component extends DCLogic {
       },
       erAdminSeo: side === 'adminseo',
       erAdminMarked: side === 'adminmarked',
-      adminNavMarked: this.adminMeny(this.adminAktiv()),
+      adminNavMarked: this.adminMeny(),
 
       // ── Markedsforing ────────────────────────────────────────────────
       //
@@ -16268,7 +16409,59 @@ class Component extends DCLogic {
             knapp: a.status === 'publisert' ? 'Ta ned' : 'Publiser',
             veksle: () => this.artikkelKall({ handling: 'status', id: a.id, status: a.status === 'publisert' ? 'kladd' : 'publisert' }),
             slett: () => this.artikkelKall({ handling: 'slett', id: a.id }),
+            rediger: () => this.setState({
+              abId: a.id, abTittel: a.tittel, abKategori: a.kategori || '',
+              abIngress: a.ingress || '', abInnhold: a.innhold || '',
+              abStatus: a.status,
+            }),
           })),
+
+          // ── Redigering av en artikkel ──
+          //
+          // Utkastet fra AI-en er et utkast. Teksten maa kunne rettes for
+          // den gaar ut — ellers er valget mellom aa publisere noe man ikke
+          // staar for, og aa kaste alt og skrive selv.
+          ...(() => {
+            const felt = {
+              width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+              background: 'var(--clay-50)', color: 'var(--text-heading)', resize: 'vertical',
+            };
+            const id = this.state.abId || 0;
+            return {
+              abApen: id > 0,
+              abLukk: () => this.setState({ abId: 0 }),
+              abFeltStil: felt,
+              abTekstStil: Object.assign({}, felt, { font: '13px/1.6 ui-monospace, monospace' }),
+              abEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
+                           color: 'var(--text-heading)', marginBottom: 6 },
+              abTittel: this.state.abTittel || '',
+              settAbTittel: e => this.setState({ abTittel: e.target.value }),
+              abKategori: this.state.abKategori || '',
+              settAbKategori: e => this.setState({ abKategori: e.target.value }),
+              abIngress: this.state.abIngress || '',
+              settAbIngress: e => this.setState({ abIngress: e.target.value }),
+              abInnhold: this.state.abInnhold || '',
+              settAbInnhold: e => this.setState({ abInnhold: e.target.value }),
+              abStatusTekst: this.state.abStatus === 'publisert'
+                ? 'Artikkelen er ute. Endringen vises med én gang du lagrer.'
+                : 'Artikkelen er kladd. Den vises ikke på nettsiden før du publiserer den.',
+              abLagre: () => {
+                if (!(this.state.abTittel || '').trim()) {
+                  this.setState({ kvittering: 'Artikkelen må ha en tittel' });
+                  return;
+                }
+                this.artikkelKall({
+                  handling: 'lagre', id: id,
+                  tittel: (this.state.abTittel || '').trim(),
+                  kategori: (this.state.abKategori || '').trim(),
+                  ingress: (this.state.abIngress || '').trim(),
+                  innhold: this.state.abInnhold || '',
+                });
+                this.setState({ abId: 0 });
+              },
+            };
+          })(),
 
           // ── Nyhetsbrev ──
           mkBrevValg: [
@@ -16380,12 +16573,12 @@ class Component extends DCLogic {
           ),
         };
       })(),
-      adminNavSeo: this.adminMeny(this.adminAktiv()),
+      adminNavSeo: this.adminMeny(),
       erAdminMobilvis: side === 'adminmobilvis',
 
       // --- Brukere med innlogging til verkstedet ---------------------------
       erAdminBrukere: side === 'adminbrukere',
-      adminNavBrukere: this.adminMeny(this.adminAktiv()),
+      adminNavBrukere: this.adminMeny(),
       brukere: (this.state.adminBrukere || []).map(b => ({
         id: b.id,
         navn: b.navn,
@@ -16438,7 +16631,7 @@ class Component extends DCLogic {
       settBrPassord2: e => this.setState({ brPassord2: e.target.value, brFeil: null }),
       lagreNyttPassord: () => this.settNyttPassord(),
       avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brBrukernavn2: '', brFeil: null }),
-      adminNavMobilvis: this.adminMeny(this.adminAktiv()),
+      adminNavMobilvis: this.adminMeny(),
       // Den ekte forsiden, ikke designeksporten. «?forhands» gjor bare at
       // ramma lastes paa nytt naar man trykker Oppdater — adressen maa endre
       // seg, ellers rorer ikke nettleseren den.

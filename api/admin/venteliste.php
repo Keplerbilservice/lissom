@@ -58,6 +58,9 @@ switch (Foresporsel::tekst('handling')) {
         $lenke = Config::nettsted() . '/kurs';
 
         Varsel::mal('venteliste_ledig', [
+            // Navnet er med for at et varsel som maa tas for haand skal si
+            // hvem det gjelder, ikke bare et telefonnummer.
+            'navn'    => $rad['navn'],
             'epost'   => $rad['epost'],
             'telefon' => $rad['telefon'],
         ], [

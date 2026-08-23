@@ -5201,7 +5201,7 @@ window.__resources = {
       <main style="padding: var(--space-8); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">SEO</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Markedsføring</div>
             <h1 style="margin: 0; font-size: var(--text-3xl);">Søkemotoroppsett</h1>
             <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 60ch;">Styr tittel, beskrivelse, søkeord og schema for hver side. «Foreslå SEO» fyller tomme felt med lokale, salgsklare forslag.</p>
           </div>
@@ -14081,7 +14081,10 @@ class Component extends DCLogic {
           },
         };
       })(),
-      adminNavSeo: this.adminMeny('SEO'),
+      // Skjermen naas fra SEO-fanen inne i Markedsforing, og hører hjemme
+      // der. Uten dette staar hele menyen umarkert, og man tror man har
+      // havnet et helt annet sted.
+      adminNavSeo: this.adminMeny('Markedsføring'),
       erAdminMobilvis: side === 'adminmobilvis',
 
       // --- Brukere med innlogging til verkstedet ---------------------------

@@ -115,6 +115,8 @@ if ($mottakere === []) {
 
 $epost = 0;
 $antallSms = 0;
+/** @var list<string> $utenVei Mottakere beskjeden ikke naadde. */
+$utenVei = [];
 
 foreach ($mottakere as $m) {
     $personlig = str_replace('{navn}', (string) $m['navn'], $tekst);
@@ -124,8 +126,13 @@ foreach ($mottakere as $m) {
         $epost++;
     }
     if ($sms && !empty($m['telefon'])) {
-        Varsel::sms((string) $m['telefon'], $personlig, 'beskjed', null);
-        $antallSms++;
+        if (Varsel::sms((string) $m['telefon'], $personlig, 'beskjed', null) > 0) {
+            $antallSms++;
+        } elseif (empty($m['epost'])) {
+            // Verken e-post eller SMS naadde fram. Da maa hun faa vite hvem
+            // det gjelder — ellers tror hun beskjeden gikk ut til alle.
+            $utenVei[] = trim(((string) $m['navn']) . ' (' . (string) $m['telefon'] . ')');
+        }
     }
 }
 
@@ -135,20 +142,39 @@ revider('beskjed_sendt', null, null, ['til' => $hvem, 'epost' => $epost, 'sms' =
 // e-post» leses som at det gikk bra — det gjorde det ikke.
 if ($epost === 0 && $antallSms === 0) {
     Svar::feil(
-        count($mottakere) . ' mottakere i ' . $hvem
-        . ', men ingen av dem har e-post eller telefonnummer registrert.',
+        $sms && !Varsel::smsMulig() && $utenVei !== []
+            ? count($mottakere) . ' mottakere i ' . $hvem . ', men ingen av dem har e-postadresse, '
+              . 'og SMS er ikke satt opp. Disse må kontaktes direkte: '
+              . implode(', ', array_slice($utenVei, 0, 20))
+              . (count($utenVei) > 20 ? ' og ' . (count($utenVei) - 20) . ' til' : '') . '.'
+            : count($mottakere) . ' mottakere i ' . $hvem
+              . ', men ingen av dem har e-post eller telefonnummer registrert.',
         409
     );
 }
 
+$beskjed = sprintf(
+    'Lagt i kø: %d e-post%s til %s. De sendes i løpet av et minutt eller to.',
+    $epost,
+    $antallSms > 0 ? " og {$antallSms} SMS" : '',
+    $hvem
+);
+
+// Ble SMS huket av uten at SMS er satt opp, skal det staa her — ikke bare
+// mangle fra tallet. «Lagt i ko: 12 e-post» leses som at alt gikk ut.
+if ($sms && !Varsel::smsMulig()) {
+    $beskjed .= ' SMS er ikke satt opp, så ingen SMS ble sendt.';
+    if ($utenVei !== []) {
+        $beskjed .= ' Disse har verken e-post eller fikk SMS, og må kontaktes direkte: '
+            . implode(', ', array_slice($utenVei, 0, 20))
+            . (count($utenVei) > 20 ? ' og ' . (count($utenVei) - 20) . ' til' : '') . '.';
+    }
+}
+
 Svar::ok([
-    'hvem'    => $hvem,
-    'epost'   => $epost,
-    'sms'     => $antallSms,
-    'beskjed' => sprintf(
-        'Lagt i kø: %d e-post%s til %s. De sendes i løpet av et minutt eller to.',
-        $epost,
-        $antallSms > 0 ? " og {$antallSms} SMS" : '',
-        $hvem
-    ),
+    'hvem'     => $hvem,
+    'epost'    => $epost,
+    'sms'      => $antallSms,
+    'uten_vei' => $utenVei,
+    'beskjed'  => $beskjed,
 ]);

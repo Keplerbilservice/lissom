@@ -86,8 +86,27 @@ Varsel::epost(
     . "Hilsen Lissom Keramikk & Håndverk\nNordre Løkkevei 15, 3120 Nøtterøy"
 );
 
+// Beskjeden til verkstedet gaar paa e-post, og som SMS i tillegg naar det er
+// satt opp. E-posten er den som alltid kommer fram — en soknad som blir
+// liggende fordi ingen fikk vite om den, er verre enn en soknad for mye.
+$kort = "Ny medlemssøknad fra {$navn}" . ($type !== '' ? " ({$type})" : '') . '. Se Admin → Medlemmer.';
+
+Varsel::tilAdmin(
+    'Ny medlemssøknad fra ' . $navn,
+    "Det har kommet en ny medlemssøknad.\n\n"
+    . "Navn: {$navn}\n"
+    . 'E-post: ' . $epost . "\n"
+    . 'Telefon: ' . ($telefon !== '' ? $telefon : '(ikke oppgitt)') . "\n"
+    . ($type !== '' ? "Ønsket medlemskap: {$type}\n" : '')
+    . ($erfaring !== '' ? "\nErfaring:\n{$erfaring}\n" : '')
+    . ($melding !== '' ? "\nMelding:\n{$melding}\n" : '')
+    . "\nSøknaden ligger under Admin → Medlemmer, og venter på svar.",
+    'membership_application',
+    $id
+);
+
 foreach (Config::adminNumre() as $nr) {
-    Varsel::sms($nr, "Ny medlemssøknad fra {$navn}" . ($type !== '' ? " ({$type})" : '') . '. Se Admin → Medlemmer.');
+    Varsel::sms($nr, $kort);
 }
 
 revider('medlemssoknad_sendt', 'membership_application', $id, ['type' => $type]);

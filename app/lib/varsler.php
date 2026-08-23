@@ -23,7 +23,7 @@ final class Varsel
         return self::iKo('epost', $mottaker, $emne, $tekst, null, $refType, $refId);
     }
 
-    /** Legger en SMS i kø. */
+    /** Legger en SMS i kø. Returnerer 0 hvis SMS ikke kan sendes. */
     public static function sms(string $mottaker, string $tekst, ?string $refType = null, ?int $refId = null): int
     {
         $tlf = normaliser_telefon($mottaker);
@@ -31,7 +31,90 @@ final class Varsel
             logg('Hoppet over SMS til ugyldig nummer', ['mottaker' => $mottaker]);
             return 0;
         }
+        // Uten leverandor legger vi den ikke i ko i det hele tatt. For gjorde
+        // vi det: fem mislykkede forsok, deretter «feilet», og en advarsel i
+        // admin om at varsler ikke kom fram — for noe som aldri kunne sendes.
+        if (!self::smsMulig()) {
+            logg('Hoppet over SMS — ingen leverandør satt opp', ['til' => $tlf]);
+            return 0;
+        }
         return self::iKo('sms', $tlf, null, $tekst, null, $refType, $refId);
+    }
+
+    /**
+     * Kan vi i det hele tatt sende SMS?
+     *
+     * Svaret avgjor om en SMS-mal gaar ut som den er, eller om den maa finne
+     * en annen vei fram. Det er oppsettet som spor — ikke om forrige melding
+     * gikk bra.
+     */
+    public static function smsMulig(): bool
+    {
+        $lev = mb_strtolower((string) Config::hent('sms_leverandor', 'sveve'));
+        if ($lev === 'gatewayapi') {
+            return trim((string) Config::hent('gatewayapi_token', '')) !== '';
+        }
+        return trim((string) Config::hent('sveve_bruker', '')) !== ''
+            && trim((string) Config::hent('sveve_passord', '')) !== '';
+    }
+
+    /**
+     * Adressene som skal ha beskjed naar noe krever et menneske.
+     *
+     * Rekkefolgen er med vilje: staar det adresser i secrets.php, er det de
+     * som gjelder. Ellers gaar det til dem som faktisk er admin i databasen.
+     * Finnes ingen av delene, gaar det til verkstedets egen adresse — den er
+     * alltid satt, og da forsvinner beskjeden i hvert fall ikke.
+     *
+     * @return list<string>
+     */
+    public static function adminEposter(): array
+    {
+        $fra = Config::hent('admin_eposter', []);
+        $liste = is_array($fra) ? $fra : [];
+
+        if ($liste === []) {
+            $liste = array_column(
+                DB::alle("SELECT epost FROM members
+                           WHERE rolle = 'admin' AND epost IS NOT NULL AND epost <> ''
+                             AND anonymisert_at IS NULL"),
+                'epost'
+            );
+        }
+
+        if ($liste === []) {
+            $liste = [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))];
+        }
+
+        $rene = [];
+        foreach ($liste as $e) {
+            $e = trim((string) $e);
+            if (filter_var($e, FILTER_VALIDATE_EMAIL) && !in_array($e, $rene, true)) {
+                $rene[] = $e;
+            }
+        }
+        return $rene;
+    }
+
+    /**
+     * Beskjed til verkstedet om noe som maa tas for haand.
+     *
+     * Brukes der en melding ellers ville stoppet: kunden har ikke e-post, SMS
+     * er ikke satt opp, eller beskjeden gjelder driften og ikke kunden.
+     * Returnerer antall adresser som fikk den.
+     */
+    public static function tilAdmin(string $emne, string $tekst, ?string $refType = null, ?int $refId = null): int
+    {
+        $antall = 0;
+        foreach (self::adminEposter() as $adresse) {
+            if (self::epost($adresse, $emne, $tekst, $refType, $refId) > 0) {
+                $antall++;
+            }
+        }
+        if ($antall === 0) {
+            logg_feil('Fant ingen adresse å varsle admin på: ' . $emne);
+        }
+        return $antall;
     }
 
     /**
@@ -52,19 +135,62 @@ final class Varsel
         $tekst = self::flett((string) $mal['tekst'], $felter);
         $kanal = (string) $mal['kanal'];
 
+        $viaEpost = false;
         if ($kanal === 'epost' || $kanal === 'epost_sms') {
             if (!empty($mottaker['epost'])) {
                 self::iKo('epost', (string) $mottaker['epost'], $emne, $tekst, $malNavn, $refType, $refId);
+                $viaEpost = true;
             }
         }
+
+        $viaSms = false;
         if ($kanal === 'sms' || $kanal === 'epost_sms') {
-            if (!empty($mottaker['telefon'])) {
+            if (!empty($mottaker['telefon']) && self::smsMulig()) {
                 $tlf = normaliser_telefon((string) $mottaker['telefon']);
                 if ($tlf !== '') {
                     self::iKo('sms', $tlf, null, self::tilSmsTekst($tekst), $malNavn, $refType, $refId);
+                    $viaSms = true;
                 }
             }
         }
+
+        // En mal som bare finnes som SMS naar ingen SMS kan sendes: da er
+        // e-post bedre enn ingenting. Kunden skal faa beskjeden, ikke vente
+        // paa at oppsettet blir ferdig.
+        if (!$viaEpost && !$viaSms && $kanal === 'sms' && !empty($mottaker['epost'])) {
+            self::iKo(
+                'epost',
+                (string) $mottaker['epost'],
+                $emne !== '' ? $emne : 'Beskjed fra Lissom Keramikk',
+                $tekst,
+                $malNavn,
+                $refType,
+                $refId
+            );
+            $viaEpost = true;
+        }
+
+        if ($viaEpost || $viaSms) {
+            return;
+        }
+
+        // Ingen vei fram. «Plass ledig paa venteliste» og «keramikken er
+        // ferdig brent» finnes bare som SMS, og uten leverandor ville de
+        // stanset her uten at noen visste det. Da skal et menneske faa vite
+        // hvem som venter paa beskjed — med nummeret, slik at hun kan ringe.
+        self::tilAdmin(
+            'Varsel må sendes for hånd: ' . ($emne !== '' ? $emne : $malNavn),
+            "Dette varselet nådde ingen automatisk, og må tas for hånd.\n\n"
+            . 'Mottaker: ' . (string) ($mottaker['navn'] ?? '(uten navn)') . "\n"
+            . 'Telefon: ' . (!empty($mottaker['telefon']) ? (string) $mottaker['telefon'] : '(ikke registrert)') . "\n"
+            . 'E-post: ' . (!empty($mottaker['epost']) ? (string) $mottaker['epost'] : '(ikke registrert)') . "\n\n"
+            . "Meldingen som skulle gått ut:\n\n" . $tekst . "\n\n"
+            . (self::smsMulig()
+                ? 'Grunnen er at mottakeren mangler kontaktopplysninger.'
+                : 'Grunnen er at SMS ikke er satt opp. Legges nøklene inn i secrets.php, går slike varsler ut av seg selv igjen.'),
+            $refType,
+            $refId
+        );
     }
 
     /** @param array<string,string> $felter */

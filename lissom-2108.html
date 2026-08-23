@@ -2867,11 +2867,18 @@ window.__resources = {
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Kurs og events</h1>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ kursSkjermTittel }}</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ aDeltakerliste }}" hint-size="auto,44px">Deltakerliste</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,44px">Nytt kurs</x-import>
+            <!-- Star du i den interne lista, er det en intern samling du er
+                 ute etter — ikke et kurs som legges ut for alle. -->
+            <sc-if value="{{ kursFaneInterne }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyIntern }}" hint-size="auto,44px">Ny intern samling</x-import>
+            </sc-if>
+            <sc-if value="{{ kursFaneApen }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,44px">Nytt kurs</x-import>
+            </sc-if>
           </div>
         </div>
 
@@ -4108,44 +4115,7 @@ window.__resources = {
         </div>
 
         <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
-            <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
-              <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
-                <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
-              </sc-for>
-            </div>
-            <div style="display: grid; grid-template-columns: 1.8fr 1.2fr 1.3fr 1fr 36px; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
-              <button type="button" onClick="{{ sorterNavn }}" style="{{ sortKnappStil }}">Medlem {{ sortNavnPil }}</button><span>Abonnement</span><button type="button" onClick="{{ sorterTimer }}" style="{{ sortKnappStil }}">Timer brukt {{ sortTimerPil }}</button><span>Status</span><span></span>
-            </div>
-            <sc-for list="{{ medlemmer }}" as="m" hint-placeholder-count="6">
-              <div onClick="{{ m.velg }}" style="display: grid; grid-template-columns: 1.8fr 1.2fr 1.3fr 1fr 36px; min-width: 640px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
-                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                  <div style="position: relative; flex: 0 0 auto;">
-                    <div style="{{ m.avatarStil }}">{{ m.initial }}</div>
-                    <span style="{{ m.prikkStil }}"></span>
-                  </div>
-                  <div style="min-width: 0;">
-                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.epost }}</div>
-                  </div>
-                </div>
-                <div>
-                  <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.abonnement }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ m.gruppe }} · {{ m.kursTekst }}</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
-                    <div style="{{ m.barStil }}"></div>
-                  </div>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
-                </div>
-                <div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
-                </div>
-                <button type="button" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1; justify-self: end;">···</button>
-              </div>
-            </sc-for>
-          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
           <!-- Én person, slik hen selv ser det paa Min side.
                Verkstedet kunne se paameldinger per kurs, men ikke alt én
@@ -4186,6 +4156,45 @@ window.__resources = {
               </sc-for>
             </div>
           </sc-if>
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-subtle);">
+              <sc-for list="{{ medlemFiltre }}" as="fi" hint-placeholder-count="5">
+                <button type="button" onClick="{{ fi.velg }}" style="{{ fi.stil }}">{{ fi.navn }}</button>
+              </sc-for>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
+              <button type="button" onClick="{{ sorterNavn }}" style="{{ sortKnappStil }}">Medlem {{ sortNavnPil }}</button><button type="button" onClick="{{ sorterTimer }}" style="{{ sortKnappStil }}">Timer brukt {{ sortTimerPil }}</button>
+            </div>
+            <sc-for list="{{ medlemmer }}" as="m" hint-placeholder-count="6">
+              <div onClick="{{ m.velg }}" style="display: flex; flex-wrap: wrap; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 180px;">
+                  <div style="position: relative; flex: 0 0 auto;">
+                    <div style="{{ m.avatarStil }}">{{ m.initial }}</div>
+                    <span style="{{ m.prikkStil }}"></span>
+                  </div>
+                  <div style="min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.epost }}</div>
+                  </div>
+                </div>
+                <div style="flex: 0 1 130px; min-width: 0;">
+                  <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.abonnement }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ m.undertekst }}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 130px; min-width: 105px;">
+                  <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
+                    <div style="{{ m.barStil }}"></div>
+                  </div>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
+                </div>
+                <div style="margin-left: auto; flex: 0 0 auto;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
 
 
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -12885,6 +12894,9 @@ class Component extends DCLogic {
         if (fv === 'Admin') return !!m.erAdmin;
         return m.abonnement === fv;
       }).sort((a, b) => { const so = this.state.medlemSort || ''; if (so === 'navn') return a.navn.localeCompare(b.navn, 'no'); if (so === 'timer') return (b.andel || 0) - (a.andel || 0); return 0; }).map(m => Object.assign(m, {
+        // Én linje, ikke to felt limt sammen med et punktum som blir
+        // staaende alene naar det ene mangler.
+        undertekst: [m.gruppe, m.kursTekst].filter(Boolean).join(' · '),
         velg: () => this.apnePerson(m.id),
         detaljer: this.apne(m.navn, m.epost, [
           { navn: 'Hvem er dette', verdi: m.gruppe },
@@ -12984,7 +12996,11 @@ class Component extends DCLogic {
         const NAVN = { alle: 'Kurs og events', apne: 'Åpne kurs og datoer', interne: 'Interne kurs · kun medlemmer' };
         return {
           kursFane: fane,
+          kursFaneInterne: fane === 'interne',
+          kursFaneApen: fane !== 'interne',
           kursListeTittel: NAVN[fane] || NAVN.alle,
+          kursSkjermTittel: fane === 'interne' ? 'Interne kurs'
+            : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og events'),
           kursFaneValg: [['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
             navn,
             velg: () => this.setState({ kursFane: v }),

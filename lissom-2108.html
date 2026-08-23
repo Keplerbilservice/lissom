@@ -3073,6 +3073,7 @@ window.__resources = {
 
         <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
 
+          <div style="min-width: 0;">
           <!-- Kurslista.
                Sto som et rutenett med «min-width: 700px» inne i en boks som
                sjelden er saa bred. Da havnet «Rediger» og «Slett» utenfor
@@ -3106,6 +3107,34 @@ window.__resources = {
                 </div>
               </div>
             </sc-for>
+          </div>
+
+          <!-- Datoene som ligger ute naa. Kurset er én ting, datoen er den
+               folk melder seg paa — og det er der en deltaker legges til. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-6);">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Datoer som ligger ute · {{ aktiveOkterAntall }}</div>
+            <sc-for list="{{ aktiveOkter }}" as="o" hint-placeholder-count="5">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="flex: 1 1 200px; min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.naar }} · {{ o.ledigTekst }}</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 150px; min-width: 120px;">
+                  <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
+                    <div style="{{ o.barStil }}"></div>
+                  </div>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ o.plasser }}</span>
+                </div>
+                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
+                  <button type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ ingenAktiveOkter }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.</div>
+            </sc-if>
+          </div>
           </div>
 
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
@@ -3198,12 +3227,18 @@ window.__resources = {
               </div>
             </div>
             <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
-              <div style="display: flex; align-items: baseline; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
-                <span style="flex: 1; min-width: 0;">
+                <span style="flex: 1 1 140px; min-width: 0;">
                   <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
                   <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
                 </span>
+                <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
+                  <span style="display: flex; gap: var(--space-3); margin-left: auto;">
+                    <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
+                    <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                  </span>
+                </sc-if>
               </div>
             </sc-for>
             <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
@@ -6967,6 +7002,14 @@ class Component extends DCLogic {
   }
 
   filtrerPameldte(liste) {
+    // Én dato av gangen. Klikker du «Paameldte» paa en linje i programmet,
+    // er det de som staar paa akkurat den datoen du vil se — ikke alle
+    // paameldte i alle kurs framover.
+    const okt = this.state.pameldtOkt || 0;
+    if (okt > 0) {
+      liste = liste.filter(p => (p.oktId || 0) === okt);
+    }
+
     const f = this.state.pameldtFilter || 'Alle';
     if (f === 'Alle') return liste;
     if (f === 'Betalt') return liste.filter(p => p.status.indexOf('Betalt') === 0 || p.status === 'Godkjent' || p.status.indexOf('Med ') === 0);
@@ -8362,6 +8405,7 @@ class Component extends DCLogic {
       .map(o => Object.assign({}, o, { d: oslo(new Date(o.startTid)) }))
       .filter(o => o.d >= dagStart && o.d < til)
       .map(o => ({
+        oktId: o.oktId || 0,
         tid: v === 'I dag' ? (o.klokke || '') : DAG[o.d.getDay()] + ' ' + o.d.getDate() + '.',
         hva: o.tittel,
         detalj: (v === 'I dag' ? '' : (o.klokke || '') + ' · ')
@@ -12923,6 +12967,44 @@ class Component extends DCLogic {
           })),
         };
       })(),
+      // Datoene som faktisk ligger ute.
+      //
+      // Kurslista viser kurset; det er datoen folk melder seg paa. Skulle du
+      // legge til noen paa «Kurs boller torsdag», matte du foerst finne ut
+      // hvilken dato det var, paa en annen skjerm.
+      ...(() => {
+        const okter = (this.state.adminOkter || []).map(o => {
+          const tatt = (o.betalt || 0) + (o.reservert || 0);
+          const kap = o.kapasitet || 0;
+          return {
+            oktId: o.oktId,
+            tittel: o.tittel,
+            naar: o.naar,
+            plasser: tatt + ' / ' + (kap || '—'),
+            ledigTekst: o.ledige > 0
+              ? o.ledige + (o.ledige === 1 ? ' plass igjen' : ' plasser igjen')
+              : 'Fullbooket',
+            barStil: {
+              width: (kap > 0 ? Math.min(100, Math.round((tatt / kap) * 100)) : 0) + '%',
+              height: '100%', borderRadius: 999,
+              background: o.ledige > 0 ? 'var(--terracotta-500)' : 'var(--sage-500)',
+            },
+            leggTil: () => {
+              this.setState({ side: 'adminpameldte', mpApen: true, mpOkt: String(o.oktId) });
+              window.scrollTo(0, 0);
+            },
+            sePameldte: () => {
+              this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
+              window.scrollTo(0, 0);
+            },
+          };
+        });
+        return {
+          aktiveOkter: okter,
+          aktiveOkterAntall: okter.length,
+          ingenAktiveOkter: okter.length === 0,
+        };
+      })(),
       adminKursAntall: this.kursSynlige().length,
       adminKurs: this.kursSynlige().map(({ k, i }) => Object.assign({}, k, {
         velg: () => this.apneKursRed(k, i),
@@ -13135,7 +13217,23 @@ class Component extends DCLogic {
       })),
       // Programmet bygges av oktene serveren sender. Sto foer som tre faste
       // lister — de viste kurs som ikke fantes, paa datoer som var passert.
-      ovProgramListe: this.programListe(),
+      // Hver linje i programmet er en vei inn. Foer sto de som ren tekst:
+      // du saa at «Kurs boller» gikk klokka 17, men matte til en annen
+      // skjerm og finne datoen paa nytt for aa legge til noen paa den.
+      ovProgramListe: this.programListe().map(o => Object.assign({}, o, {
+        harOkt: (o.oktId || 0) > 0,
+        utenOkt: !(o.oktId > 0),
+        velg: () => {
+          if (!(o.oktId > 0)) return;
+          this.setState({ side: 'adminpameldte', mpApen: true, mpOkt: String(o.oktId) });
+          window.scrollTo(0, 0);
+        },
+        seDeltakere: () => {
+          if (!(o.oktId > 0)) return;
+          this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
+          window.scrollTo(0, 0);
+        },
+      })),
       ingenProgram: this.erPublisert() && this.programListe().length === 0,
       ingenProgramTekst: (this.state.ovProgram || 'I dag') === 'I dag'
         ? 'Ingenting på programmet i dag.'
@@ -14385,6 +14483,8 @@ class Component extends DCLogic {
         return {
           mpApen: !!this.state.mpApen,
           mpApne: () => this.setState({ mpApen: true }),
+          // Kom man hit fra en bestemt dato, er det den som skal staa valgt.
+          mpFraProgram: (this.state.mpOkt || '') !== '',
           mpLukk: () => this.setState({ mpApen: false }),
           mpEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
           mpFeltStil: feltStil,
@@ -14475,9 +14575,17 @@ class Component extends DCLogic {
         kortStil: Object.assign({}, KORT_KLIKK, (this.state.pameldtFilter || 'Alle') === (t.filter || 'Alle')
           ? { border: '2px solid var(--lissom-brown)' } : {}),
       })),
-      pameldtFilterNavn: this.state.pameldtFilter || 'Alle',
-      nullstillFilter: () => this.setState({ pameldtFilter: 'Alle' }),
-      harPameldtFilter: (this.state.pameldtFilter || 'Alle') !== 'Alle',
+      ...(() => {
+        const okt = this.state.pameldtOkt || 0;
+        const rad = okt ? (this.state.adminOkter || []).find(o => o.oktId === okt) : null;
+        const f = this.state.pameldtFilter || 'Alle';
+        return {
+          pameldtFilterNavn: [rad ? rad.tittel + ' · ' + rad.naar : null, f !== 'Alle' ? f : null]
+            .filter(Boolean).join(' · ') || 'Alle',
+          nullstillFilter: () => this.setState({ pameldtFilter: 'Alle', pameldtOkt: 0 }),
+          harPameldtFilter: f !== 'Alle' || okt > 0,
+        };
+      })(),
       // Ekte paameldte naar serveren har svart. PAMELDTE er designdata og
       // brukes bare i forhandsvisningen, der det ikke finnes noen server.
       pameldte: this.filtrerPameldte(

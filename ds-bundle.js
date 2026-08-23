@@ -1518,9 +1518,18 @@ function Media({
   src,
   alt
 }) {
+  // Kortet viser fotoet i 254 til 400 piksler. Uten srcset lastet det ned
+  // hele originalen paa 1200 og kastet det meste. Lista over hvilke
+  // stoerrelser som finnes ligger i sida — se window.lissomSrcset.
+  const srcSett = (typeof window !== 'undefined' && window.lissomSrcset)
+    ? window.lissomSrcset(src) : '';
   if (src) return /*#__PURE__*/React.createElement("img", {
     src: src,
+    srcSet: srcSett || undefined,
+    sizes: srcSett ? (window.LISSOM_SIZES_KORT || undefined) : undefined,
     alt: alt || '',
+    loading: "lazy",
+    decoding: "async",
     style: {
       width: '100%',
       aspectRatio: '16 / 10',

@@ -14,3 +14,6 @@ Thumbs.db
 # Bilder medlemmene laster opp. Ligger utenfor det som publiseres.
 opplastinger/
 lokal-ruter.php
+
+# Utgaver api/bilde.php lager av opplastede bilder ved forste kall.
+opplastinger/avledet/

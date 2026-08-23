@@ -99,6 +99,55 @@ final class DB
     }
 
     /** Kjører $arbeid inne i en transaksjon og ruller tilbake ved feil. */
+    /** @var array<string,bool> husker svaret, saa vi ikke sporr basen for hver rad */
+    private static array $skjema = [];
+
+    /**
+     * Finnes tabellen?
+     *
+     * Migrasjonene kjores fra adminpanelet, og adminpanelet er kode. Krever
+     * koden en tabell som migrasjonen ikke har laget ennaa, staar begge og
+     * venter paa hverandre — og eieren er laast ute. Derfor spor vi.
+     */
+    public static function harTabell(string $tabell): bool
+    {
+        $n = 'T:' . $tabell;
+        if (!array_key_exists($n, self::$skjema)) {
+            // information_schema framfor «SHOW TABLES LIKE ?»: MariaDB godtar
+            // ikke en parameter i SHOW, og et navn limt rett inn i teksten
+            // ville vaert en vei inn i basen.
+            try {
+                self::$skjema[$n] = self::verdi(
+                    'SELECT 1 FROM information_schema.TABLES
+                      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t LIMIT 1',
+                    ['t' => $tabell]
+                ) !== null;
+            } catch (Throwable) {
+                self::$skjema[$n] = false;
+            }
+        }
+        return self::$skjema[$n];
+    }
+
+    /** Finnes kolonnen? Samme grunn som over. */
+    public static function harKolonne(string $tabell, string $kolonne): bool
+    {
+        $n = 'K:' . $tabell . '.' . $kolonne;
+        if (!array_key_exists($n, self::$skjema)) {
+            try {
+                self::$skjema[$n] = self::verdi(
+                    'SELECT 1 FROM information_schema.COLUMNS
+                      WHERE TABLE_SCHEMA = DATABASE()
+                        AND TABLE_NAME = :t AND COLUMN_NAME = :k LIMIT 1',
+                    ['t' => $tabell, 'k' => $kolonne]
+                ) !== null;
+            } catch (Throwable) {
+                self::$skjema[$n] = false;
+            }
+        }
+        return self::$skjema[$n];
+    }
+
     public static function iTransaksjon(callable $arbeid): mixed
     {
         $pdo = self::kobling();

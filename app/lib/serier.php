@@ -22,6 +22,12 @@ final class Serier
      */
     public static function fyllPaa(?int $kursId = null): int
     {
+        // Tabellen kommer med migrasjon 029. Er den ikke kjort, finnes det
+        // ingen faste ukedager aa fylle paa — og cron skal ikke stoppe paa det.
+        if (!DB::harTabell('kurs_serier')) {
+            return 0;
+        }
+
         $regler = $kursId === null
             ? DB::alle('SELECT s.*, c.kapasitet AS kurs_kapasitet
                           FROM kurs_serier s JOIN courses c ON c.id = s.course_id
@@ -81,6 +87,9 @@ final class Serier
     /** Reglene for ett kurs, slik admin viser dem. */
     public static function forKurs(int $kursId): array
     {
+        if (!DB::harTabell('kurs_serier')) {
+            return [];
+        }
         $DAG = [1 => 'Mandag', 2 => 'Tirsdag', 3 => 'Onsdag', 4 => 'Torsdag',
                 5 => 'Fredag', 6 => 'Lørdag', 7 => 'Søndag'];
 

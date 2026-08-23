@@ -17,8 +17,12 @@ Foresporsel::krevMetode('GET');
 $erMedlem = ($m = Sesjon::medlem()) !== null && er_aktivt_medlem($m);
 $hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
 
+// Kolonna kommer med migrasjon 029. Er den ikke kjort, skal kurslista vises
+// som for framfor aa gi en tom side.
+$utenDatoFelt = DB::harKolonne('courses', 'vis_uten_dato') ? ', vis_uten_dato' : '';
+
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, vis_uten_dato
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse{$utenDatoFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -45,7 +49,7 @@ foreach ($kurs as $k) {
         // Kurs som skal staa paa nettsida ogsaa uten datoer. Date Night
         // forsvant helt da datoene tok slutt — det finnes fortsatt, det
         // settes bare opp naar noen sporr.
-        'utenDatoOk' => (bool) $k['vis_uten_dato'],
+        'utenDatoOk' => (bool) ($k['vis_uten_dato'] ?? 0),
         'pris'    => Booking::kroner((int) $k['pris_ore']),
         'prisOre' => (int) $k['pris_ore'],
         'om'      => $k['beskrivelse'],

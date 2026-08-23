@@ -109,7 +109,8 @@ switch ($handling) {
         // Bare naar feltet faktisk er med. Sto det her uansett, ville et
         // skjema som ikke kjenner feltet — kursredigeringen — slaatt det av
         // igjen hver gang kurset ble lagret, uten at noen ba om det.
-        if (array_key_exists('visUtenDato', Foresporsel::kropp())) {
+        if (array_key_exists('visUtenDato', Foresporsel::kropp())
+            && DB::harKolonne('courses', 'vis_uten_dato')) {
             $data['vis_uten_dato'] = Foresporsel::tekst('visUtenDato') === 'ja' ? 1 : 0;
         }
 
@@ -161,6 +162,11 @@ switch ($handling) {
     // «Hver torsdag 10:00» framfor én dato av gangen. Cron fyller paa
     // framover, saa kurset ikke gaar tomt og forsvinner fra nettsida.
     case 'serie':
+        // Tabellen kommer med migrasjon 029. Uten den er det bedre aa si hva
+        // som mangler enn aa la kallet doe paa en manglende tabell.
+        if (!DB::harTabell('kurs_serier')) {
+            Svar::feil('Faste ukedager krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        }
         $kursId = Foresporsel::heltall('kursId');
         if ($kursId <= 0 || DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
             Svar::feil('Ukjent kurs.');
@@ -201,6 +207,9 @@ switch ($handling) {
     // Fjern en fast ukedag. Oktene som alt er lagt ut, blir staaende — folk
     // kan ha booket dem, og de skal avlyses én og én med «avlys».
     case 'serieAv':
+        if (!DB::harTabell('kurs_serier')) {
+            Svar::feil('Faste ukedager krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        }
         $serieId = Foresporsel::heltall('serieId');
         $serie = DB::en('SELECT course_id FROM kurs_serier WHERE id = :i', ['i' => $serieId]);
         if ($serie === null) {

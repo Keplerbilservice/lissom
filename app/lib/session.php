@@ -36,14 +36,20 @@ final class Sesjon
         $token = bin2hex(random_bytes(32));
         $utloper = new DateTimeImmutable('+' . self::VARIGHET_TIMER . ' hours', new DateTimeZone('UTC'));
 
-        DB::settInn('sessions', [
+        $rad = [
             'token_hash' => hash('sha256', $token),
             'member_id'  => $medlemId,
-            'maate'      => $maate === 'passord' ? 'passord' : 'vipps',
             'expires_at' => $utloper->format('Y-m-d H:i:s'),
             'ip'         => Foresporsel::ipBinaer(),
             'user_agent' => Foresporsel::userAgent(),
-        ]);
+        ];
+        // Kolonna kommer med migrasjon 030. Er den ikke kjort ennaa, skal
+        // innloggingen virke likevel — migrasjonene kjores fra adminpanelet,
+        // og kommer man ikke inn, kommer de aldri til aa bli kjort.
+        if (DB::harKolonne('sessions', 'maate')) {
+            $rad['maate'] = $maate === 'passord' ? 'passord' : 'vipps';
+        }
+        DB::settInn('sessions', $rad);
 
         self::settCookie($token, $utloper->getTimestamp());
 
@@ -68,8 +74,9 @@ final class Sesjon
             return self::$medlem = null;
         }
 
+        $maateFelt = DB::harKolonne('sessions', 'maate') ? ', s.maate AS innlogging_maate' : '';
         $rad = DB::en(
-            'SELECT m.*, s.token_hash, s.maate AS innlogging_maate
+            'SELECT m.*, s.token_hash' . $maateFelt . '
                FROM sessions s
                JOIN members m ON m.id = s.member_id
               WHERE s.token_hash = :h
@@ -127,6 +134,12 @@ final class Sesjon
         }
         if (trim((string) ($m['passord_hash'] ?? '')) === '') {
             return true;   // ingen passord satt ennaa — se over
+        }
+        // Vet vi ikke hvordan sesjonen ble til — migrasjon 030 er ikke kjort —
+        // gjelder den gamle regelen. Ellers ville hele adminpanelet vaert
+        // stengt, ogsaa for den som skal kjore migrasjonen.
+        if (!array_key_exists('innlogging_maate', $m)) {
+            return true;
         }
         return ($m['innlogging_maate'] ?? 'vipps') === 'passord';
     }

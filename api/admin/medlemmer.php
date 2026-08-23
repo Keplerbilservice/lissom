@@ -7,8 +7,94 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
+$jeg = krev_admin();
+
+// ── Meld inn et medlem for haand ───────────────────────────────────────
+//
+//   POST handling=meld-inn  { navn, epost, telefon, type, notat, medlemId? }
+//
+// Ikke alle soker paa nett. Noen staar i doera, noen ringer, og noen har
+// vaert paa kurs i et halvt aar for de bestemmer seg. Uten dette matte
+// verkstedet be dem gaa hjem og fylle ut et skjema.
+//
+// Det opprettes ingen Vipps-avtale her. En manuell innmelding betales slik
+// verkstedet avtaler det — faktura, kontant, eller ingenting. Skal trekket
+// gaa av seg selv, maa medlemmet sette det opp selv fra Min side.
+if (Foresporsel::metode() === 'POST') {
+    Foresporsel::krevSammeOpphav();
+
+    if (Foresporsel::tekst('handling', 'meld-inn') !== 'meld-inn') {
+        Svar::feil('Ukjent handling.');
+    }
+
+    $navn    = mb_substr(trim(Foresporsel::tekst('navn')), 0, 191);
+    $epost   = mb_substr(trim(Foresporsel::tekst('epost')), 0, 191);
+    $telefon = normaliser_telefon(Foresporsel::tekst('telefon'));
+    $type    = mb_substr(trim(Foresporsel::tekst('type')), 0, 64);
+    $notat   = mb_substr(trim(Foresporsel::tekst('notat')), 0, 1000);
+    $id      = Foresporsel::heltall('medlemId');
+
+    if ($navn === '' && $id <= 0) {
+        Svar::feil('Vi trenger navnet.');
+    }
+    if ($epost !== '' && !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('E-postadressen ser ikke riktig ut.');
+    }
+
+    $plan = $type !== '' ? Medlemskap::plan($type) : null;
+    if ($type !== '' && $plan === null) {
+        Svar::feil('Ukjent medlemskap.');
+    }
+
+    // Samme person to ganger er verre enn ingen. Er hen alt i basen — som
+    // gjest paa et kurs, eller innlogget med Vipps — brukes den raden.
+    $fra = null;
+    if ($id > 0) {
+        $fra = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($fra === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+    } elseif ($telefon !== '') {
+        $fra = DB::en('SELECT * FROM members WHERE telefon = :t LIMIT 1', ['t' => $telefon]);
+    }
+    if ($fra === null && $epost !== '') {
+        $fra = DB::en('SELECT * FROM members WHERE epost = :e LIMIT 1', ['e' => $epost]);
+    }
+
+    $felter = [
+        'medlemskap_type' => $type !== '' ? $type : null,
+        'status'          => 'aktiv',
+        'start_dato'      => date('Y-m-d'),
+        'timer_per_mnd'   => $plan !== null && $plan['timer_per_mnd'] !== null
+                                ? (int) $plan['timer_per_mnd'] : null,
+    ];
+    if ($navn !== '')    { $felter['navn'] = $navn; }
+    if ($epost !== '')   { $felter['epost'] = $epost; }
+    if ($telefon !== '') { $felter['telefon'] = $telefon; }
+    if ($notat !== '')   { $felter['notat'] = $notat; }
+
+    if ($fra !== null) {
+        DB::oppdater('members', $felter, ['id' => (int) $fra['id']]);
+        $medlemId = (int) $fra['id'];
+        $nytt = false;
+    } else {
+        $medlemId = DB::settInn('members', $felter);
+        $nytt = true;
+    }
+
+    revider('medlem_meldt_inn', 'member', $medlemId, [
+        'type' => $type, 'nytt' => $nytt, 'av' => (int) $jeg['id'],
+    ]);
+
+    Svar::ok([
+        'id'      => $medlemId,
+        'nytt'    => $nytt,
+        'beskjed' => ($nytt ? 'Medlemmet er lagt inn.' : 'Personen sto der fra før og er nå medlem.')
+                   . ' Betalingen går ikke av seg selv — den avtaler dere selv.',
+    ]);
+}
+
 Foresporsel::krevMetode('GET');
-krev_admin();
 
 // ── Én person, slik hen selv ser det ────────────────────────────────────
 //
@@ -148,4 +234,12 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
     'erInne'     => isset($inne[(int) $m['id']]),
     'antallKurs' => $kurs[(int) $m['id']] ?? 0,
-], $medlemmer)]);
+], $medlemmer),
+    // Medlemskapene som finnes, saa innmelding for haand kan tilby de
+    // samme valgene som nettsida — ikke en liste skrevet av paa nytt.
+    'planer' => array_map(static fn($p) => [
+        'navn'  => (string) $p['navn'],
+        'timer' => $p['timer_per_mnd'] !== null ? (int) $p['timer_per_mnd'] : null,
+        'pris'  => Booking::kroner((int) $p['pris_ore']),
+    ], Medlemskap::planer()),
+]);

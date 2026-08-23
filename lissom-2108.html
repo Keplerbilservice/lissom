@@ -3079,7 +3079,14 @@ window.__resources = {
                kanten — knappene var der, men umulige aa treffe uten aa dra
                tabellen sidelengs. Naa bryter raden i stedet. -->
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kurs og events · {{ adminKursAntall }}</div>
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ kursListeTittel }} · {{ adminKursAntall }}</span>
+              <div style="display: flex; gap: 2px;">
+                <sc-for list="{{ kursFaneValg }}" as="f" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
             <sc-for list="{{ adminKurs }}" as="k" hint-placeholder-count="5">
               <div onClick="{{ k.velg }}" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="flex: 1 1 200px; min-width: 0;">
@@ -3712,6 +3719,156 @@ window.__resources = {
           </sc-for>
         </div>
         <p style="margin: var(--space-5) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Klikk på en rad for full kontaktinfo, betalingshistorikk og mulighet til å sende beskjed.</p>
+      </main>
+    </div>
+  </sc-if>
+
+  <!-- Kursdeltakere.
+       Alt som handler om dem som har vaert paa kurs, paa ett sted: hvem de
+       er, hva de har vaert paa, hva de selv ser paa Min side, kursbeviset —
+       og veien til aa melde dem inn som medlem. Foer laa dette spredt paa
+       to skjermer, og ingen av dem hadde hele bildet. -->
+  <sc-if value="{{ erAdminKursdeltakere }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – kursdeltakere" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Har vært på kurs</div>
+          <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ kdAntall }} personer</div>
+        </div>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kursdeltakere</div>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">Deltakere</h1>
+          </div>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ kdBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="plus" on-click="{{ miApne }}" hint-size="auto,44px">Meld inn medlem</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ kdLeggTil }}" hint-size="auto,44px">Legg til på kurs</x-import>
+          </div>
+        </div>
+
+        <sc-if value="{{ miApen }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 780px;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">Meld inn som medlem</h2>
+              <button type="button" onClick="{{ miLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+            </div>
+            <sc-if value="{{ miKjent }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body);">Personen står i registeret fra før. Kontoen beholdes — historikken og kursbevisene følger med.</p>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ miEtikett }}">Navn</label>
+                  <input value="{{ miNavn }}" onChange="{{ settMiNavn }}" placeholder="Fornavn Etternavn" style="{{ miFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ miEtikett }}">Telefon</label>
+                  <input value="{{ miTlf }}" onChange="{{ settMiTlf }}" placeholder="Valgfritt" style="{{ miFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ miEtikett }}">E-post</label>
+                  <input value="{{ miEpost }}" onChange="{{ settMiEpost }}" placeholder="Valgfritt" style="{{ miFeltStil }}">
+                </div>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ miEtikett }}">Medlemskap</label>
+                  <select value="{{ miType }}" onChange="{{ settMiType }}" style="{{ miFeltStil }}">
+                    <sc-for list="{{ miTyper }}" as="t" hint-placeholder-count="3">
+                      <option value="{{ t }}">{{ t }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+                <div>
+                  <label style="{{ miEtikett }}">Notat</label>
+                  <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
+                </div>
+              </div>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side.</p>
+              <div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ miLagre }}" hint-size="auto,44px">{{ miKnapp }}</x-import>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ visPerson }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
+              <div>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dette ser {{ personFornavn }} på Min side</div>
+                <h2 style="margin: 2px 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ personNavn }}</h2>
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ personDetalj }}</div>
+              </div>
+              <button type="button" onClick="{{ lukkPerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--text-muted); padding: 2px 8px;">×</button>
+            </div>
+            <sc-if value="{{ personHenter }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Henter historikken …</p>
+            </sc-if>
+            <sc-if value="{{ personTom }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen påmeldinger ennå. Da står Min side tom for denne personen.</p>
+            </sc-if>
+            <sc-for list="{{ personHistorikk }}" as="h" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0; flex-wrap: wrap;">
+                <div style="flex: 1 1 220px; min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ h.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ h.linje }}</div>
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ h.tone }}" hint-size="auto,24px">{{ h.status }}</x-import>
+                <sc-if value="{{ h.harBevis }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ h.apneBevis }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">Kursbevis</button>
+                </sc-if>
+                <sc-if value="{{ h.utenBevis }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.hvorforIkke }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <div style="max-width: 420px; margin-bottom: var(--space-6);">
+          <input value="{{ kdSok }}" onChange="{{ settKdSok }}" placeholder="Søk på navn, e-post, telefon eller kurs" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Har vært på kurs · {{ kdAntall }}</div>
+          <sc-for list="{{ kdRader }}" as="d" hint-placeholder-count="6">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <div style="flex: 1 1 220px; min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ d.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ d.kontakt }}</div>
+              </div>
+              <div style="flex: 1 1 200px; min-width: 0;">
+                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ d.kursTekst }} · {{ d.gruppe }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ d.sisteKurs }}</div>
+              </div>
+              <div style="display: flex; gap: var(--space-3); margin-left: auto; flex-wrap: wrap;">
+                <sc-if value="{{ d.harKonto }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ d.seMinSide }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se Min side</button>
+                </sc-if>
+                <sc-if value="{{ d.utenKonto }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">Ingen konto — ser ingenting ennå</span>
+                </sc-if>
+                <button type="button" onClick="{{ d.meldInn }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Meld inn</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ kdIngen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ kdIngenTekst }}</div>
+          </sc-if>
+        </div>
+
+        <p style="margin: var(--space-5) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Kursbeviset kommer av seg selv når kurset er gjennomført og betalt. «Se Min side» viser akkurat det personen selv ser når hen logger inn.</p>
       </main>
     </div>
   </sc-if>
@@ -7172,6 +7329,7 @@ class Component extends DCLogic {
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/kurs',         side: 'admin' },
       { sti: '/admin/pameldte',     side: 'adminpameldte' },
+      { sti: '/admin/deltakere',    side: 'adminkursdeltakere' },
       { sti: '/admin/medlemmer',    side: 'adminmedlem' },
       { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
@@ -10499,18 +10657,70 @@ class Component extends DCLogic {
     catch (e) { window.scrollTo(0, 0); }
   }
 
+  /**
+   * Kursene som skal staa i lista naa, med plassen sin i den hele lista.
+   *
+   * Indeksen maa foelge med: «Rediger» og «Slett» peker paa plassen i
+   * kursData(), og filtrerte man foerst, slettet man feil kurs.
+   */
+  kursSynlige() {
+    const fane = this.state.kursFane || 'alle';
+    const intern = k => (k.tema || '') === 'Kun for medlemmer'
+      || k.type === 'Kun for medlemmer' || k.type === 'Kun medlemmer';
+    return this.kursData()
+      .map((k, i) => ({ k, i }))
+      .filter(({ k }) => fane === 'alle' || (fane === 'interne' ? intern(k) : !intern(k)));
+  }
+
   adminMeny(aktiv) {
     // Menyen var én flat liste paa elleve punkter, og tre skjermer sto ikke
     // i den i det hele tatt — Oppskrifter, Nyttig info og SEO fantes bare for
     // den som kjente adressen. Naa er alt med, gruppert etter hva man holder
     // paa med: det man gjor daglig, verkstedet, og nettsiden utad.
-    const ruter = { 'Oversikt': 'adminoversikt', 'Innhold': 'admininnhold', 'Kurs og events': 'admin', 'Påmeldte': 'adminpameldte', 'Medlemmer': 'adminmedlem', 'Drop-in': 'admindropin', 'Butikk': 'adminbutikk', 'Økonomi': 'adminokonomi', 'Mobilvisning': 'adminmobilvis', 'Oppskrifter': 'adminoppskrifter', 'Nyttig info': 'adminnyttig', 'SEO': 'adminseo', 'Markedsføring': 'adminmarked', 'Beskjeder': 'adminbeskjeder', 'Brukere': 'adminbrukere' };
+    const ruter = {
+      'Oversikt': 'adminoversikt', 'Kurs og events': 'admin', 'Drop-in': 'admindropin',
+      'Økonomi': 'adminokonomi',
+      'Deltakere': 'adminkursdeltakere', 'Påmeldte': 'adminpameldte',
+      'Kurs og datoer': 'admin', 'Beskjed til deltakere': 'adminbeskjeder',
+      'Nyttig info': 'adminnyttig',
+      'Medlemmer': 'adminmedlem', 'Interne kurs': 'admin',
+      'Beskjed til medlemmer': 'adminbeskjeder', 'Oppskrifter': 'adminoppskrifter',
+      'Internbutikk': 'adminbutikk',
+      'Innhold': 'admininnhold', 'Markedsføring': 'adminmarked', 'Butikk': 'adminbutikk',
+      'SEO': 'adminseo', 'Mobilvisning': 'adminmobilvis',
+      'Brukere': 'adminbrukere',
+    };
 
+    // Menyen fulgte husets egen inndeling: alt som handlet om beskjeder laa
+    // ett sted, alt om info et annet. Jobber du med kursdeltakerne, matte du
+    // ut av den delen og inn i en annen for hver ting du skulle gjore.
+    //
+    // Naa foelger den hvem det gjelder. Kursdeltakere er ett sted, med
+    // deltakerne, paameldingene og beskjedene til dem. Internsiden er det
+    // medlemmene ser. Nettsiden er det alle andre ser.
     const grupper = [
-      ['Daglig',    ['Oversikt', 'Påmeldte', 'Kurs og events', 'Drop-in', 'Beskjeder', 'Økonomi']],
-      ['Verkstedet', ['Medlemmer', 'Oppskrifter', 'Brukere']],
-      ['Nettsiden',  ['Innhold', 'Nyttig info', 'Markedsføring', 'Butikk', 'Mobilvisning']],
+      ['Daglig',        ['Oversikt', 'Kurs og events', 'Drop-in', 'Økonomi']],
+      ['Kursdeltakere', ['Deltakere', 'Påmeldte', 'Kurs og datoer', 'Beskjed til deltakere', 'Nyttig info']],
+      ['Internsiden',   ['Medlemmer', 'Interne kurs', 'Beskjed til medlemmer', 'Oppskrifter', 'Internbutikk']],
+      ['Nettsiden',     ['Innhold', 'Markedsføring', 'Butikk', 'SEO', 'Mobilvisning']],
+      ['Tilgang',       ['Brukere']],
     ];
+
+    // Noen punkter gaar til samme skjerm, men med ulikt utgangspunkt: samme
+    // beskjedskjema, forskjellig mottakergruppe. Uten dette matte man velge
+    // gruppa paa nytt hver gang, og det var nettopp det som var tungvint.
+    const forvalg = {
+      'Beskjed til deltakere': { motValg: 'Deltakere på et kurs' },
+      'Beskjed til medlemmer': { motValg: 'Alle aktive medlemmer' },
+      'Internbutikk':          { butikkFane: 'Medlemssalg' },
+      'Butikk':                { butikkFane: 'Butikken' },
+      // Samme kursskjerm, tre innganger. «Interne kurs» er ikke en egen
+      // slags kurs — det er de som er merket «Kun for medlemmer», og de
+      // hoerer hjemme sammen med resten av det medlemmene ser.
+      'Kurs og events':        { kursFane: 'alle' },
+      'Kurs og datoer':        { kursFane: 'apne' },
+      'Interne kurs':          { kursFane: 'interne' },
+    };
 
     // Paa mobil ligger menyen som en vannrett rad man drar i. Da tar
     // overskriftene bare plass uten aa hjelpe, saa der utelates de.
@@ -10518,7 +10728,10 @@ class Component extends DCLogic {
 
     const punkt = navn => ({
       navn,
-      velg: ruter[navn] ? this.go(ruter[navn]) : () => {},
+      velg: !ruter[navn] ? () => {} : () => {
+        this.setState(Object.assign({ side: ruter[navn] }, forvalg[navn] || {}));
+        window.scrollTo(0, 0);
+      },
       stil: {
         appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
         padding: '9px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
@@ -10702,6 +10915,7 @@ class Component extends DCLogic {
         // deltaker for haand paa riktig dato.
         if (pameldte && pameldte.okter) ny.adminOkter = pameldte.okter;
         if (medlemmer && medlemmer.medlemmer) ny.adminMedlemmer = medlemmer.medlemmer;
+        if (medlemmer && medlemmer.planer) ny.adminPlaner = medlemmer.planer;
         if (betalinger && betalinger.betalinger) ny.adminBetalinger = betalinger.betalinger;
         if (soknader && soknader.soknader) ny.adminSoknader = soknader.soknader;
         if (brukere && brukere.brukere) ny.adminBrukere = brukere.brukere;
@@ -10777,6 +10991,115 @@ class Component extends DCLogic {
         this.setState(st => (st.personFor === id ? { personData: d || { historikk: [] } } : {}));
       })
       .catch(() => this.setState(st => (st.personFor === id ? { personData: { historikk: [] } } : {})));
+  }
+
+  /**
+   * Alle som har vaert paa kurs, én rad per person.
+   *
+   * To kilder, fordi ingen av dem er hele bildet: paameldingene viser hvem
+   * som kommer og hvem som nettopp var her, ogsaa gjester uten konto;
+   * medlemsregisteret vet hvor mange kurs hver konto har betalt for, ogsaa
+   * de som ligger langt tilbake. Slaas de ikke sammen, staar samme person
+   * to ganger — én gang med navn, én gang med historikk.
+   */
+  kursdeltakerRader() {
+    const folk = new Map();
+    const nokkel = d => d.medlemId
+      ? 'm' + d.medlemId
+      : 'g' + String(d.epost || d.tlf || d.navn || '').toLowerCase();
+
+    (this.state.adminDeltakere || []).forEach(d => {
+      const k = nokkel(d);
+      const f = folk.get(k) || {
+        medlemId: d.medlemId || 0, navn: d.navn || '(uten navn)',
+        epost: d.epost || '', tlf: d.tlf || '', antall: 0, sisteKurs: '',
+      };
+      f.antall += 1;
+      if (!f.sisteKurs) f.sisteKurs = (d.kurs || '') + ' · ' + (d.dato || '');
+      if (!f.epost && d.epost) f.epost = d.epost;
+      if (!f.tlf && d.tlf) f.tlf = d.tlf;
+      folk.set(k, f);
+    });
+
+    (this.state.adminMedlemmer || []).forEach(m => {
+      if (!(m.antallKurs > 0)) return;
+      const k = 'm' + m.id;
+      const f = folk.get(k) || {
+        medlemId: m.id, navn: m.navn || '(uten navn)',
+        epost: m.epost || '', tlf: m.telefon || '', antall: 0, sisteKurs: '',
+      };
+      // Registeret teller alt, ogsaa det som ligger utenfor paameldings-
+      // lista. Det hoyeste tallet er det sanne.
+      f.antall = Math.max(f.antall, m.antallKurs || 0);
+      f.erMedlem = ['prove', 'aktiv', 'pause'].indexOf(m.status) !== -1;
+      f.medlemskap = m.medlemskap || '';
+      folk.set(k, f);
+    });
+
+    const rader = Array.from(folk.values()).map(f => Object.assign(f, {
+      kursTekst: f.antall === 1 ? '1 kurs' : f.antall + ' kurs',
+      kontakt: [f.epost, f.tlf].filter(Boolean).join(' · ') || 'Ingen kontaktinfo',
+      gruppe: f.erMedlem ? ('Medlem · ' + (f.medlemskap || 'uten type')) : 'Kursdeltaker',
+      sisteKurs: f.sisteKurs || '',
+    }));
+
+    if (rader.length === 0 && !this.erPublisert()) {
+      return [
+        { medlemId: 0, navn: 'Tom Ødegård', epost: 'tom@epost.no', tlf: '', antall: 2, kursTekst: '2 kurs', kontakt: 'tom@epost.no', gruppe: 'Kursdeltaker', sisteKurs: 'Nybegynner dreiekurs · 19. aug' },
+        { medlemId: 0, navn: 'Petter Nes', epost: 'petter@epost.no', tlf: '', antall: 1, kursTekst: '1 kurs', kontakt: 'petter@epost.no', gruppe: 'Kursdeltaker', sisteKurs: 'Date Night · 28. aug' },
+      ];
+    }
+    return rader.sort((a, b) => a.navn.localeCompare(b.navn, 'no'));
+  }
+
+  /**
+   * Melder inn et medlem for haand.
+   *
+   * Det opprettes ingen Vipps-avtale. Betalingen avtaler verkstedet selv —
+   * aa late som noe trekkes automatisk ville vaert verre enn aa si fra.
+   */
+  meldInnMedlem(type) {
+    if (this.state.miLagrer) return;
+    const navn = (this.state.miNavn || '').trim();
+    if (!navn && !(this.state.miMedlemId > 0)) {
+      this.setState({ kvittering: 'Vi trenger navnet', kvitteringDetalj: 'Skriv inn hvem det gjelder.' });
+      return;
+    }
+    this.setState({ miLagrer: true });
+
+    fetch('/api/admin/medlemmer.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'meld-inn',
+        medlemId: this.state.miMedlemId || 0,
+        navn: navn,
+        epost: (this.state.miEpost || '').trim(),
+        telefon: (this.state.miTlf || '').trim(),
+        type: type,
+        notat: (this.state.miNotat || '').trim(),
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({ miLagrer: false });
+        if (!ok) {
+          this.setState({ kvittering: 'Fikk ikke meldt inn', kvitteringDetalj: d.feil || 'Prøv igjen.' });
+          return;
+        }
+        this.setState({
+          miApen: false, miNavn: '', miEpost: '', miTlf: '', miNotat: '', miMedlemId: 0,
+          kvittering: navn ? navn + ' er medlem nå' : 'Medlemskapet er lagt inn',
+          kvitteringDetalj: d.beskjed || '',
+        });
+        this._adminHentes = false;
+        this.hentAdmin();
+      })
+      .catch(() => this.setState({
+        miLagrer: false,
+        kvittering: 'Fikk ikke kontakt med serveren', kvitteringDetalj: 'Prøv igjen om litt.',
+      }));
   }
 
   medlemsrader() {
@@ -11741,7 +12064,7 @@ class Component extends DCLogic {
       // sidelasting.
       aNyIntern: () => {
         this.setState({
-          side: 'admin',
+          side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
           kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10',
           kBeskrivelse: '', kBekreftelse: '', kMva: false,
@@ -12344,7 +12667,10 @@ class Component extends DCLogic {
         { value: 'medlem', label: 'Medlem', icon: 'star' },
         { value: 'meg', label: 'Meg', icon: 'circle-user' },
       ],
-      adminNav: this.adminMeny('Kurs og events'),
+      adminNav: this.adminMeny(
+        this.state.kursFane === 'interne' ? 'Interne kurs'
+          : (this.state.kursFane === 'apne' ? 'Kurs og datoer' : 'Kurs og events')
+      ),
       adminNavMedlem: this.adminMeny('Medlemmer'),
       adminNavOkonomi: this.adminMeny('Økonomi'),
       medlemTall: (this.erPublisert() ? [] : [
@@ -12380,6 +12706,77 @@ class Component extends DCLogic {
             hvorforIkke: !x.betalt ? 'Bevis når det er betalt' : 'Bevis etter kurset',
             apneBevis: () => window.open(x.kursbevis, '_blank', 'noopener'),
           })),
+        };
+      })(),
+      // ── Kursdeltakere ────────────────────────────────────────────────
+      //
+      // Egen skjerm, fordi det er en egen jobb. Deltakerne laa spredt: én
+      // rad per paamelding under Paameldte, og bare de med konto i
+      // medlemslista. Skulle du svare noen som ringte om kursbeviset sitt,
+      // matte du lete i begge.
+      erAdminKursdeltakere: side === 'adminkursdeltakere',
+      adminNavKursdeltakere: this.adminMeny('Deltakere'),
+      ...(() => {
+        const sok = (this.state.kdSok || '').trim().toLowerCase();
+        const alle = this.kursdeltakerRader();
+        const treff = !sok ? alle : alle.filter(p =>
+          (p.navn + ' ' + p.epost + ' ' + p.tlf + ' ' + p.sisteKurs).toLowerCase().indexOf(sok) !== -1);
+
+        return {
+          kdSok: this.state.kdSok || '',
+          settKdSok: e => this.setState({ kdSok: e.target.value }),
+          kdAntall: alle.length,
+          kdIngen: treff.length === 0,
+          kdIngenTekst: alle.length === 0
+            ? 'Ingen har vært på kurs ennå.'
+            : 'Ingen treff på «' + (this.state.kdSok || '') + '».',
+          kdRader: treff.map(p => Object.assign({}, p, {
+            // Har hen konto, kan vi vise akkurat det hen selv ser. Har hen
+            // ikke det, er svaret «ingenting» — og det maa staa, ikke
+            // gjettes paa.
+            harKonto: p.medlemId > 0,
+            utenKonto: !(p.medlemId > 0),
+            seMinSide: () => this.apnePerson(p.medlemId),
+            meldInn: () => this.setState({
+              miApen: true, miMedlemId: p.medlemId || 0,
+              miNavn: p.navn, miEpost: p.epost, miTlf: p.tlf, miNotat: '',
+              kvittering: '', kvitteringDetalj: '',
+            }),
+          })),
+          kdLeggTil: () => { this.setState({ side: 'adminpameldte', mpApen: true }); window.scrollTo(0, 0); },
+          kdBeskjed: () => { this.setState({ side: 'adminbeskjeder', motValg: 'Deltakere på et kurs' }); window.scrollTo(0, 0); },
+        };
+      })(),
+
+      // ── Meld inn et medlem for haand ─────────────────────────────────
+      //
+      // Noen har vaert paa kurs i et halvt aar for de bestemmer seg. Uten
+      // dette matte de sende soknad paa nett som alle andre, mens de sto i
+      // doera og ville betale.
+      ...(() => {
+        const planer = (this.state.adminPlaner || []).map(pl => pl.navn);
+        const typer = planer.length ? planer : ['30 timer', 'Fri tilgang', 'Prøv Lissom'];
+        const valgt = this.state.miType || typer[0];
+        const felt = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          background: 'var(--clay-50)', color: 'var(--text-heading)',
+        };
+        return {
+          miApen: !!this.state.miApen,
+          miApne: () => this.setState({ miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '' }),
+          miLukk: () => this.setState({ miApen: false }),
+          miFeltStil: felt,
+          miEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
+          miNavn: this.state.miNavn || '', settMiNavn: e => this.setState({ miNavn: e.target.value }),
+          miEpost: this.state.miEpost || '', settMiEpost: e => this.setState({ miEpost: e.target.value }),
+          miTlf: this.state.miTlf || '', settMiTlf: e => this.setState({ miTlf: e.target.value }),
+          miNotat: this.state.miNotat || '', settMiNotat: e => this.setState({ miNotat: e.target.value }),
+          miType: valgt, settMiType: e => this.setState({ miType: e.target.value }),
+          miTyper: typer,
+          miKjent: (this.state.miMedlemId || 0) > 0,
+          miKnapp: this.state.miLagrer ? 'Melder inn …' : 'Meld inn',
+          miLagre: () => this.meldInnMedlem(valgt),
         };
       })(),
       medlemFiltre: ['Alle', 'Medlemmer', 'Kursdeltakere', 'Admin', '30 timer', 'Fri tilgang', 'Prøv Lissom', 'Inne nå'].map(n => {
@@ -12504,8 +12901,30 @@ class Component extends DCLogic {
       adminTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],
-      adminKursAntall: this.kursData().length,
-      adminKurs: this.kursData().map((k, i) => Object.assign({}, k, {
+      // Tre innganger til den samme lista: alt, det som er aapent for
+      // alle, og det som bare medlemmene ser. Filtreringen skjer ETTER at
+      // indeksen er satt — «Slett» og «Rediger» peker paa plassen i den
+      // hele lista, ikke i den man ser paa.
+      ...(() => {
+        const fane = this.state.kursFane || 'alle';
+        const NAVN = { alle: 'Kurs og events', apne: 'Åpne kurs og datoer', interne: 'Interne kurs · kun medlemmer' };
+        return {
+          kursFane: fane,
+          kursListeTittel: NAVN[fane] || NAVN.alle,
+          kursFaneValg: [['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
+            navn,
+            velg: () => this.setState({ kursFane: v }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none',
+              background: fane === v ? 'var(--lissom-brown)' : 'transparent',
+              color: fane === v ? 'var(--clay-50)' : 'var(--text-muted)',
+            },
+          })),
+        };
+      })(),
+      adminKursAntall: this.kursSynlige().length,
+      adminKurs: this.kursSynlige().map(({ k, i }) => Object.assign({}, k, {
         velg: () => this.apneKursRed(k, i),
         rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apneKursRed(k, i); },
         slett: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState(s => ({ adminKursListe: this.kursData().filter((_, j) => j !== i), kRed: s.kIndeks === i ? false : s.kRed })); },
@@ -14333,8 +14752,13 @@ class Component extends DCLogic {
         const fargeG = farger.reduce((s, f) => s + Math.round(m * f.pst / 100), 0);
         return (m + fargeG) + ' g tørrstoff';
       })(),
-      adminNavButikk: this.adminMeny('Butikk'),
-      adminNavBeskjeder: this.adminMeny('Beskjeder'),
+      adminNavButikk: this.adminMeny(
+        this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Butikk'
+      ),
+      adminNavBeskjeder: this.adminMeny(
+        (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
+          ? 'Beskjed til deltakere' : 'Beskjed til medlemmer'
+      ),
       erAdminDropin: side === 'admindropin',
       erAdminButikk: side === 'adminbutikk',
       erAdminBeskjeder: side === 'adminbeskjeder',

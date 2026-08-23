@@ -49,6 +49,7 @@ if ($oktId <= 0) {
     $alle = DB::alle(
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.folge_medlem,
                 b.betalt_maate, b.notat, b.lagt_inn_av,
+                b.member_id, b.course_session_id,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
                 COALESCE(m.telefon, b.gjest_telefon) AS telefon,
@@ -67,6 +68,14 @@ if ($oktId <= 0) {
     Svar::json([
         'deltakere' => array_map(static fn($d) => [
             'id'      => (int) $d['id'],
+            // Hvem raden gjelder, ikke bare hva den heter.
+            //
+            // Uten disse to kunne admin se en deltaker, men ikke slaa opp
+            // hva hen selv ser paa Min side, og ikke hoppe til datoen for
+            // aa legge til noen. Navn er ingen noekkel — to kan hete det
+            // samme, og en gjest har ingen konto i det hele tatt.
+            'medlemId' => $d['member_id'] !== null ? (int) $d['member_id'] : null,
+            'oktId'    => $d['course_session_id'] !== null ? (int) $d['course_session_id'] : null,
             'navn'    => $d['navn'],
             'epost'   => $d['epost'],
             'tlf'     => $d['telefon'],

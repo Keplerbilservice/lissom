@@ -5323,6 +5323,19 @@ window.__resources = {
           </div>
         </sc-if>
 
+        <!-- «Fyll inn» rorer bare tomme felt, og en side som staar paa 85
+             har ingen tomme felt — den har tekst som taper poeng. Denne
+             bytter den ut, og sier for du trykker hvilke sider det gjelder. -->
+        <sc-if value="{{ seoHarUnder100 }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <div style="min-width: 0;">
+              <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ seoLoftTittel }}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">{{ seoLoftHjelp }}</div>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="sparkles" on-click="{{ seoLoftAlle }}" hint-size="auto,44px">Løft dem til 100</x-import>
+          </div>
+        </sc-if>
+
         <sc-for list="{{ seoHandlinger }}" as="h" hint-placeholder-count="2">
           <button type="button" onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); width: 100%; appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-500); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 8px; font: var(--type-body-sm); color: var(--text-heading);">
             <span style="font-weight: 600;">{{ h.tekst }}</span>
@@ -7408,7 +7421,7 @@ class Component extends DCLogic {
       tittel: 'Kurskalender | Lissom Keramikk i Tønsberg',
       meta: 'Alt som skjer i keramikkverkstedet på Teie, uke for uke: kurs, events og drop-in. Se hvilke datoer som har ledige plasser og book direkte.',
       slug: 'kurskalender-keramikk',
-      h1: 'Alt som skjer, uke for uke',
+      h1: 'Kurskalender for keramikk i Tønsberg',
       sekundare: 'ledige datoer, keramikkurs når, kalender Vestfold',
       altTekst: 'Ukeoversikt over kurs og drop-in hos Lissom Keramikk',
       ogTittel: 'Kurskalender | Lissom Keramikk',
@@ -7420,13 +7433,13 @@ class Component extends DCLogic {
     },
     nyheter: {
       fokus: 'keramikk guider Tønsberg',
-      tittel: 'Nyheter og guider | Lissom Keramikk',
-      meta: 'Det vi skriver om leire, brenning, glasur og livet i verkstedet på Teie. Guider for deg som holder på med keramikk, enten du er nybegynner eller medlem.',
+      tittel: 'Keramikkguider og nyheter fra Tønsberg | Lissom',
+      meta: 'Det vi skriver om leire, brenning, glasur og livet i verkstedet på Teie. Se guidene våre, enten du er helt fersk med keramikk eller medlem hos oss.',
       slug: 'nyheter-keramikk',
-      h1: 'Nyheter og guider',
+      h1: 'Keramikkguider og nyheter fra verkstedet',
       sekundare: 'keramikkguide, leire tips, glasur, brenning, verksted Tønsberg',
       altTekst: 'Ferdig brente krukker på hylla i keramikkverkstedet',
-      ogTittel: 'Nyheter og guider | Lissom Keramikk',
+      ogTittel: 'Keramikkguider og nyheter fra Tønsberg | Lissom',
       ogBeskrivelse: 'Guider og nyheter fra keramikkverkstedet på Teie.',
       canonical: 'https://lissom.no/nyheter',
       internlenker: 'Kurs, Medlemskap, Nyttig info',
@@ -7435,13 +7448,13 @@ class Component extends DCLogic {
     },
     nyttig: {
       fokus: 'brennetabell keramikk',
-      tittel: 'Nyttig info om keramikk | Lissom',
-      meta: 'Brennetabell, cone-temperaturer, ordensregler og guider fra verkstedet på Teie. Skrevet for deg som jobber med leire, nybegynner som medlem.',
+      tittel: 'Brennetabell og keramikkguider | Lissom Tønsberg',
+      meta: 'Brennetabell, cone-temperaturer, ordensregler og guider fra keramikkverkstedet på Teie i Tønsberg. Se hva leira tåler før du setter den i ovnen.',
       slug: 'nyttig-info-keramikk',
-      h1: 'Nyttig å vite om keramikk',
+      h1: 'Brennetabell og nyttig info om keramikk',
       sekundare: 'cone temperatur, glasur, råbrenning, keramikkguide',
       altTekst: 'Oppslag med brennetabell og cone-temperaturer på verkstedveggen',
-      ogTittel: 'Nyttig info om keramikk | Lissom',
+      ogTittel: 'Brennetabell og keramikkguider | Lissom Tønsberg',
       ogBeskrivelse: 'Brennetabell, cone-temperaturer og guider fra keramikkverkstedet på Teie.',
       canonical: 'https://lissom.no/nyttig-info',
       internlenker: 'Kurs, Medlemskap, Om oss',
@@ -14601,9 +14614,14 @@ class Component extends DCLogic {
             const forslag = this.seoForslag(valgtSide);
             this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: Object.assign({}, forslag, this.seoData(valgtSide.id)) }) }));
           },
+          // Den ferdigskrevne teksten forst, malen bare der det ikke finnes
+          // en. Knappen hentet for bare fra malen, og gav derfor en tammere
+          // tekst enn den som alt laa klar til sida — samme knapp, daarligere
+          // resultat, uten at noe sa fra.
           seoOverskriv: () => {
-            const forslag = this.seoForslag(valgtSide);
-            this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: this.seoForslag(valgtSide) }) }));
+            const ferdig = Component.SEO_FERDIG[valgtSide.id];
+            const forslag = ferdig ? Object.assign({}, ferdig) : this.seoForslag(valgtSide);
+            this.setState(st => ({ seoUtkast: Object.assign({}, st.seoUtkast, { [valgtSide.id]: forslag }) }));
           },
           // Én knapp som fyller og lagrer alle sidene. Overskriver bare tomme
           // felt, saa det du selv har skrevet blir staaende.
@@ -14639,6 +14657,37 @@ class Component extends DCLogic {
             this._seoSatt = null;
             setTimeout(() => this.setState({ seoFyller: false }), 1200);
           },
+          // Sider som ligger under 100 og som har en ferdigskrevet tekst
+          // liggende. Uten den siste sjekken ville knappen lovet noe den
+          // ikke kunne holde.
+          ...(() => {
+            const under = alle.filter(x => x.sc.score < 100 && Component.SEO_FERDIG[x.s.id]);
+            const navn = under.map(x => x.s.navn);
+            return {
+              seoHarUnder100: under.length > 0,
+              seoLoftTittel: under.length === 1
+                ? 'Én side ligger under 100'
+                : under.length + ' sider ligger under 100',
+              seoLoftHjelp: 'Det gjelder ' + navn.join(', ') + '. Teksten på '
+                + (under.length === 1 ? 'den' : 'dem') + ' byttes ut med den ferdigskrevne '
+                + 'versjonen, som treffer alle reglene over. Sider som alt står på 100 røres ikke, '
+                + 'og du kan endre hver linje etterpå.',
+              seoLoftAlle: () => {
+                const endringer = {};
+                under.forEach(x => {
+                  // Den ferdige teksten vinner, men felt den ikke har —
+                  // delingsbilde, egne internlenker — blir staaende.
+                  endringer['SEO/' + x.s.id] = JSON.stringify(
+                    Object.assign({}, dataFor(x.s.id), Component.SEO_FERDIG[x.s.id])
+                  );
+                });
+                this.setState({ seoUtkast: {} });
+                this.lagreInnhold(endringer, under.length + (under.length === 1
+                  ? ' side er løftet til 100' : ' sider er løftet til 100'));
+                this._seoSatt = null;
+              },
+            };
+          })(),
           seoUlagret: !!utkast[valgtSide.id],
           seoLagreTekst: utkast[valgtSide.id] ? 'Lagre endringene' : 'Lagret',
           seoLagre: () => {

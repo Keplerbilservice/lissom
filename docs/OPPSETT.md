@@ -315,3 +315,111 @@ kan ikke besvares — det er greit her, for vi ber aldri om svar paa SMS.
 Den sender én melding med det oppsettet som gjelder, forteller hvilken vei
 den gikk, og viser de siste feilene fra koen. Krever noekkelen eller at du
 er innlogget som admin.
+
+---
+
+## 8. Flytte siden til lissom.no
+
+Til nå ligger den nye siden på `ny.lissom.no`, og en gammel WordPress på
+`lissom.no`. Dette er byttet.
+
+Rekkefølgen er ikke tilfeldig. Vipps-innlogging, betalingsreturer og
+lagringen i admin henger alle på hvilken adresse serveren mener er sin egen,
+og bytter man den før resten er på plass, slutter de å virke.
+
+### Før du begynner
+
+**Ta sikkerhetskopi av `public_html`.** cPanel → File Manager → merk
+`public_html` → Compress → last ned zip-fila. Den gamle siden finnes bare
+der.
+
+**Finn ut hva Google har indeksert på lissom.no.** Search Console → Sider.
+Adressene som står der, er de folk kan komme fra. De som ikke har en ny
+motsvarighet, bør sendes videre til forsida framfor å bli en feilside.
+
+### 1. Slipp begge adressene inn i admin, før byttet
+
+I `~/lissom-secrets/secrets.php`:
+
+```php
+'tillatte_opphav' => ['https://ny.lissom.no', 'https://lissom.no', 'https://www.lissom.no'],
+```
+
+Denne alene endrer ingenting utad. Den gjør bare at admin kan lagre fra begge
+adressene mens byttet står på — uten den får du «Forespørselen kom fra et
+ukjent nettsted» i det sekundet adressen endrer seg.
+
+### 2. Registrer den nye returadressen hos Vipps
+
+Vipps sender kunden tilbake til en adresse som må være registrert på forhånd.
+Står bare den gamle der, feiler innlogging med det samme.
+
+I Vipps' portal, under salgsenheten: legg til
+
+```
+https://lissom.no/api/vipps-callback.php
+```
+
+**La den gamle stå** til flyttingen er ferdig og verifisert.
+
+### 3. Pek lissom.no på den nye siden
+
+cPanel → **Domains** → `lissom.no` → **Manage**. Sett dokumentroten til:
+
+```
+public_html/ny.lissom.no
+```
+
+Går ikke det — noen oppsett låser hovedområdets dokumentrot — er alternativet
+å flytte filene i stedet: tøm `public_html` for WordPress (etter kopien i
+steg 0), flytt innholdet i `public_html/ny.lissom.no` opp ett nivå, og endre
+`server-dir` i `.github/workflows/deploy.yml` fra
+`public_html/ny.lissom.no/` til `public_html/`.
+
+Den første veien er å foretrekke: den kan reverseres på ett minutt.
+
+### 4. Bytt adressen serveren mener er sin egen
+
+I `~/lissom-secrets/secrets.php`:
+
+```php
+'nettsted' => 'https://lissom.no',
+```
+
+Dette styrer Vipps-returer, lenker i e-post, canonical-adresser og
+opphavssjekken. Gjør den **etter** steg 3, ikke før.
+
+### 5. Sjekk at det virker, før noe slettes
+
+- Åpne `https://lissom.no` — ny side, hengelås i adressefeltet.
+- Logg inn med Vipps. Dette er det som ryker først hvis steg 2 ble glemt.
+- Legg en vare i kurven og gå til Vipps. Avbryt før du betaler — poenget er
+  at du kommer tilbake til riktig sted.
+- Lagre noe i admin. Da vet du at opphavssjekken er i orden.
+- `https://www.lissom.no` skal havne på `https://lissom.no`.
+
+### 6. Send ny.lissom.no videre
+
+Nå peker begge adressene på det samme, og det er to nettsteder med samme
+innhold i Googles øyne. Legg dette øverst i `.htaccess`, rett etter
+`RewriteEngine On`:
+
+```apache
+RewriteCond %{HTTP_HOST} ^ny\.lissom\.no$ [NC]
+RewriteRule ^(.*)$ https://lissom.no/$1 [R=301,L,NE]
+```
+
+### 7. Fortell Google
+
+- Search Console → Sitemaps → send inn `https://lissom.no/sitemap.xml`.
+- Google Analytics → Datastrømmer → rett nettadressen til `lissom.no`.
+- Google Bedriftsprofil → nettsted → `https://lissom.no`.
+
+### 8. Rydd bort WordPress
+
+Vent noen dager. Er alt stabilt, slett WordPress-filene i `public_html` —
+**bortsett fra mappa `ny.lissom.no`**, som inneholder den levende siden.
+
+En WordPress som står uten oppdateringer er en vanlig vei inn for angripere,
+og her ville den delt konto med betalingsdata. Derfor skal den bort — men
+ikke før det nye har stått en stund.

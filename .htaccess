@@ -1,9 +1,21 @@
 # Lissom — oppsett for webroten (public_html) hos Domene.no.
 
-# Alltid HTTPS. Sertifikatet er gratis og ligger allerede i cPanel.
 RewriteEngine On
+
+# Én adresse, ikke to.
+#
+# www.lissom.no og lissom.no ville ellers vaert to nettsteder med samme
+# innhold. Google velger da selv hvilken som teller, og lenker og
+# besokstall deles paa to. Vi sender www til den uten.
+#
+# Den staar for HTTPS-regelen med vilje: http://www gaar da rett til
+# https:// uten www i ett hopp, framfor to.
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+RewriteRule ^(.*)$ https://%1/$1 [R=301,L,NE]
+
+# Alltid HTTPS. Sertifikatet er gratis og ligger allerede i cPanel.
 RewriteCond %{HTTPS} !=on
-RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 
 # Tegnkoding.
 #

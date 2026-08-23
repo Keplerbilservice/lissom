@@ -79,6 +79,14 @@ AddDefaultCharset UTF-8
     # nytt ved hvert sidebesok.
 </IfModule>
 
+# Sidekartet bygges av det som ligger ute.
+#
+# Kursene har hver sin adresse naa, og de kommer og gaar. En fil med faste
+# adresser blir feil samme dagen noen glemmer aa redigere den, saa
+# /sitemap.xml svares av PHP. Regelen maa staa for regelen under, som ellers
+# ville servert den gamle fila fordi den finnes.
+RewriteRule ^sitemap\.xml$ /api/sitemap.php [L]
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle

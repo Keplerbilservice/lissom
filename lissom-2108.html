@@ -6763,6 +6763,45 @@ class Component extends DCLogic {
 
   go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s }); window.scrollTo(0, 0); }; }
 
+  /**
+   * Alle kurskort, ufiltrert.
+   *
+   * Bygges ett sted fordi to ting trenger dem: kurslista som tegnes, og
+   * adressen /kurs/<slug>, som maa kunne finne kortet uten aa vite noe om
+   * hvilket filter som staar paa akkurat naa.
+   */
+  kursKort() {
+    this._kursListe = this.medUndertemaer([
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
+        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
+        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
+    ]);
+    this._alleKort = this.medBooking(
+      this._kursListe.concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe))
+    );
+    return this._alleKort;
+  }
+
+  /**
+   * Aapner kurset som hoerer til en adresse.
+   *
+   * Returnerer om det gikk. Katalogen kan vaere underveis naar adressen
+   * leses — da proever vi igjen naar den kommer.
+   */
+  aapneKursSlug(slug) {
+    const kort = this.kursKort().find(k => k.slug === slug);
+    if (!kort) return false;
+    this.setState({
+      side: 'booking', fra: 'kurs', valgtKurs: kort,
+      bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null,
+      ventelisteBekreftet: null,
+    });
+    return true;
+  }
+
   medBooking(liste) {
     return liste
       .map(k0 => this.medServerdata(k0))
@@ -6802,6 +6841,9 @@ class Component extends DCLogic {
         const KATEGORI = { 'Sip & Clay': 'Events', 'Date Night': 'Events', 'Workshop': 'Kurs' };
         const tema = KATEGORI[k.tema] || k.tema || 'Kurs';
         return {
+          slug: k.slug || '',
+          katId: k.id,
+          prisOre: k.prisOre,
           level: k.tema || (k.type === 'event' ? 'Event' : k.type === 'dropin' ? 'Drop-in' : 'Kurs'),
           tema: tema,
           temaer: this.undertemaer(k.tittel, k.tema),
@@ -6855,6 +6897,12 @@ class Component extends DCLogic {
     // tok slutt, og da fantes tilbudet ikke lenger for den som lette.
     if (datoer.length === 0 && kat.utenDatoOk) {
       return Object.assign({}, k, {
+        // Adressen kurset har. Uten den kan ikke kortet foere til en side
+        // som er verdt aa dele — og Google har ingenting aa vise fram ut
+        // over kurslista, der alle kursene deler én adresse.
+        slug: kat.slug || '',
+        katId: kat.id,
+        prisOre: kat.prisOre,
         price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
         status: 'Ta kontakt for dato',
         date: 'Etter avtale',
@@ -6866,6 +6914,9 @@ class Component extends DCLogic {
     }
 
     return Object.assign({}, k, {
+      slug: kat.slug || '',
+      katId: kat.id,
+      prisOre: kat.prisOre,
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
       status: this.plasstekst(datoer),
       date: (datoer[0] || {}).dato || k.date,
@@ -7522,6 +7573,17 @@ class Component extends DCLogic {
     const side = this.state.side;
     const filter = this.state.kursFilter;
 
+    // Venter vi paa katalogen for aa aapne /kurs/<slug>, skal adressen staa
+    // som den er. Ellers ville den blitt skrevet om til /kurs i mellomtiden,
+    // og den som delte lenken hadde sendt folk til feil sted.
+    if (this._ventendeSlug) return null;
+
+    // Et kurs med egen adresse skal ha den i feltet, ikke /booking.
+    if (side === 'booking' && !this.bookerDropin()) {
+      const slug = (this.state.valgtKurs || {}).slug;
+      if (slug) return '/kurs/' + slug;
+    }
+
     const treff = Component.STIER.find(r => {
       if (r.side !== side) return false;
       if (r.dropin) return this.bookerDropin();
@@ -7552,6 +7614,17 @@ class Component extends DCLogic {
     const treff = Component.STIER.find(r => r.sti === sti);
     if (treff) return treff;
 
+    // Hvert kurs sin egen adresse.
+    //
+    // Alle kurs delte /kurs. En lenke til dreiekurset og en til Date Night
+    // pekte samme sted, og i soket fantes bare ett treff for alt verkstedet
+    // holder paa med. Naa har hvert kurs en adresse som kan deles, bokmerkes
+    // og indekseres for seg.
+    const kursTreff = sti.match(/^\/(?:kurs|events)\/([a-z0-9-]+)$/);
+    if (kursTreff) {
+      return { sti, side: 'booking', kursSlug: kursTreff[1] };
+    }
+
     // Ingen treff. For sto skjermen igjen paa forsida, og den som hadde
     // skrevet feil trodde de var framme — og lette etter kurset som ikke var
     // der. Na sier sida fra. Adressen blir staaende som den er, fordi
@@ -7562,6 +7635,19 @@ class Component extends DCLogic {
   /** Tar brukeren dit adressen peker. */
   folgRute(rute) {
     if (!rute) return;
+
+    if (rute.kursSlug) {
+      if (this.aapneKursSlug(rute.kursSlug)) {
+        this._ventendeSlug = null;
+        return;
+      }
+      // Katalogen er ikke lastet ennaa. Vis kurslista imens, og aapne kurset
+      // naar den kommer — framfor en tom bookingskjerm eller en 404 paa noe
+      // som finnes.
+      this._ventendeSlug = rute.kursSlug;
+      this.setState({ side: 'kurs', kursFilter: 'Alle' });
+      return;
+    }
 
     if (rute.dropin) {
       const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
@@ -9645,6 +9731,22 @@ class Component extends DCLogic {
         // Rabattnivaaene kommer sammen med kursene. Uten dem regnet siden med
         // sine egne nivaaer, og viste en rabatt serveren ikke ga.
         this.setState(d.rabatter ? { katalog: d.kurs, rabatter: d.rabatter } : { katalog: d.kurs });
+
+        // Kom noen rett inn paa /kurs/<slug> for katalogen var lastet, staar
+        // de paa kurslista og venter. Kortene bygges av katalogen, saa vi
+        // maa vente til tilstanden er satt.
+        if (this._ventendeSlug) {
+          const slug = this._ventendeSlug;
+          setTimeout(() => {
+            if (this._ventendeSlug !== slug) return;
+            this._ventendeSlug = null;
+            if (!this.aapneKursSlug(slug)) {
+              // Kurset finnes ikke lenger. Da skal adressen si fra, ikke
+              // late som den traff kurslista.
+              this.setState({ side: 'ikkefunnet' });
+            }
+          }, 0);
+        }
       })
       .catch(() => {});
   }
@@ -10510,11 +10612,13 @@ class Component extends DCLogic {
     // Haandverk» og ingen beskrivelse — altsaa det som ville blitt vist i
     // sokeresultatet. Naa staar riktig tittel der fra forste tegning, uten
     // aa spore noen om noe.
-    const d = Object.assign({}, (id && Component.SEO_FERDIG[id]) || {}, id ? this.seoData(id) : {});
+    const kursSeo = this.seoKurs();
+    const d = kursSeo || Object.assign({}, (id && Component.SEO_FERDIG[id]) || {}, id ? this.seoData(id) : {});
     const std = (id && this.seoSider().find(x => x.id === id)) || null;
     const tittel = d.tittel
       || (std ? std.navn + ' | Lissom Keramikk & Håndverk' : this.seoStandardTittel(side));
-    const merke = side + '|' + tittel + '|' + (this.state.katalog || []).length;
+    const merke = side + '|' + tittel + '|' + (this.state.katalog || []).length
+      + '|' + ((this.state.valgtKurs || {}).slug || '');
     if (this._seoSatt === merke) return;
     this._seoSatt = merke;
 
@@ -10618,6 +10722,44 @@ class Component extends DCLogic {
    * aapningstider eller anmeldelser for aa fylle ut flere felter — feil
    * opplysninger i strukturerte data er verre enn ingen.
    */
+  /**
+   * Tittel og beskrivelse for et enkelt kurs.
+   *
+   * Kursene delte kurssidas tekst. En som soekte «dreiekurs Tonsberg» fikk
+   * dermed en side som handlet om alle kurs, og maatte lete videre. Naa
+   * skriver hvert kurs sin egen — av det som faktisk staar om det, ikke av
+   * en mal med kursnavnet satt inn.
+   */
+  seoKurs() {
+    const k = this.state.valgtKurs || {};
+    if (this.state.side !== 'booking' || !k.slug || this.bookerDropin()) return null;
+
+    const navn = k.title || k.tittel || '';
+    // Beskrivelsen skal vaere hel. Kuttet midt i en setning ser ut som en
+    // feil i sokeresultatet, saa vi kutter ved siste punktum som faar plass.
+    const om = String(k.om || '').replace(/\s+/g, ' ').trim();
+    let meta = om;
+    if (meta.length > 158) {
+      const kort = meta.slice(0, 158);
+      const punktum = kort.lastIndexOf('. ');
+      meta = punktum > 60 ? kort.slice(0, punktum + 1) : kort.trim() + ' …';
+    }
+    if (!meta) {
+      meta = navn + ' hos Lissom Keramikk på Teie ved Tønsberg. Leire, verktøy '
+           + 'og brenning er inkludert. Se ledige datoer og book plass.';
+    }
+
+    return {
+      tittel: navn + ' i Tønsberg | Lissom Keramikk',
+      meta: meta,
+      canonical: 'https://lissom.no/kurs/' + k.slug,
+      ogTittel: navn + ' i Tønsberg | Lissom Keramikk',
+      ogBeskrivelse: meta,
+      delingsbilde: k.image ? 'https://lissom.no/' + String(k.image).replace(/^\//, '') : '',
+      index: 'Index',
+    };
+  }
+
   seoStrukturert(d, tittel) {
     const rot = 'https://lissom.no';
     const sted = {
@@ -10709,6 +10851,40 @@ class Component extends DCLogic {
               } : undefined,
             })),
           },
+        })),
+      });
+    }
+
+    // Kurset man staar paa, med datoene sine. Det er dette som kan gi
+    // kurset en plass i Googles kursvisning framfor bare en blaa lenke.
+    const valgt = this.state.valgtKurs || {};
+    if (this.state.side === 'booking' && valgt.slug) {
+      const kat = (this.state.katalog || []).find(x => x.slug === valgt.slug) || {};
+      graf.push({
+        '@type': 'Course',
+        '@id': rot + '/kurs/' + valgt.slug + '#kurs',
+        name: valgt.title || valgt.tittel,
+        description: valgt.om || undefined,
+        url: rot + '/kurs/' + valgt.slug,
+        provider: { '@id': rot + '/#verksted' },
+        inLanguage: 'nb-NO',
+        hasCourseInstance: (kat.datoer || []).slice(0, 12).map(dt => ({
+          '@type': 'CourseInstance',
+          courseMode: 'Offline',
+          startDate: dt.startUtc ? String(dt.startUtc).replace(' ', 'T') + 'Z' : undefined,
+          location: {
+            '@type': 'Place',
+            name: 'Lissom Keramikk & Håndverk',
+            address: sted.address,
+          },
+          offers: kat.prisOre > 0 ? {
+            '@type': 'Offer',
+            price: String(kat.prisOre / 100),
+            priceCurrency: 'NOK',
+            availability: dt.ledige > 0
+              ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut',
+            url: rot + '/kurs/' + valgt.slug,
+          } : undefined,
         })),
       });
     }
@@ -12215,14 +12391,7 @@ class Component extends DCLogic {
           this.setState({ kursFilter: navn });
         },
       })),
-      kursAlle: this.medBooking(this.filtrerKurs((this._kursListe = this.medUndertemaer([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
-        { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
-        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
-        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
-      ])).concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe)))),
+      kursAlle: this.filtrerKurs(this.kursKort()),
       bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
       ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
       ktApen: !!this.state.ktApen,

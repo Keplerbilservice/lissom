@@ -1640,16 +1640,18 @@ window.__resources = {
 
       <div style="background: var(--clay-50); padding: var(--space-12) var(--space-10); display: flex; align-items: center; justify-content: center;">
         <div style="width: 100%; max-width: 400px;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Min side</div>
-          <h1 style="margin: 0 0 var(--space-8); font-size: var(--text-4xl);">Logg inn</h1>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ loginEyebrow }}</div>
+          <h1 style="margin: 0 0 var(--space-8); font-size: var(--text-4xl);">{{ loginTittel }}</h1>
 
-          <button type="button" onClick="{{ vippsStart }}" style="width: 100%; box-sizing: border-box; appearance: none; border: none; cursor: pointer; background: #FF5B24; color: #FFFFFF; border-radius: var(--radius-pill); padding: 15px 24px; font-family: var(--font-ui); font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 200ms var(--ease-clay);" style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span></button>
-          <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Rask og sikker innlogging med Vipps-appen</p>
-          <div style="display: flex; align-items: center; gap: var(--space-4); margin: var(--space-6) 0;">
-            <span style="flex: 1; height: 1px; background: var(--border-subtle);"></span>
-            <span style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">eller</span>
-            <span style="flex: 1; height: 1px; background: var(--border-subtle);"></span>
-          </div>
+          <sc-if value="{{ visVippsInnlogging }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ vippsStart }}" style="width: 100%; box-sizing: border-box; appearance: none; border: none; cursor: pointer; background: #FF5B24; color: #FFFFFF; border-radius: var(--radius-pill); padding: 15px 24px; font-family: var(--font-ui); font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 200ms var(--ease-clay);" style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span></button>
+            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Rask og sikker innlogging med Vipps-appen</p>
+            <div style="display: flex; align-items: center; gap: var(--space-4); margin: var(--space-6) 0;">
+              <span style="flex: 1; height: 1px; background: var(--border-subtle);"></span>
+              <span style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">eller</span>
+              <span style="flex: 1; height: 1px; background: var(--border-subtle);"></span>
+            </div>
+          </sc-if>
 
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Brukernavn" icon="user" placeholder="fornavn" value="{{ liBruker }}" on-change="{{ settLiBruker }}" hint-size="100%,66px"></x-import>
@@ -1661,16 +1663,18 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ loggInnEpost }}" hint-size="100%,52px">Logg inn</x-import>
           </div>
 
-          <div style="height: 1px; background: var(--border-subtle); margin: var(--space-8) 0;"></div>
-
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-            <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Ny hos oss?</h3>
-            <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Du oppretter konto når du melder deg på ditt første kurs. Medlemskap krever kurs hos oss eller erfaring fra før.</p>
-            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ goKurs }}" hint-size="auto,40px">Se kursene</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ goMedlemskap }}" hint-size="auto,40px">Om medlemskap</x-import>
+          <sc-if value="{{ visVippsInnlogging }}" hint-placeholder-val="{{ true }}">
+            <div style="height: 1px; background: var(--border-subtle); margin: var(--space-8) 0;"></div>
+  
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Ny hos oss?</h3>
+              <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Du oppretter konto når du melder deg på ditt første kurs. Medlemskap krever kurs hos oss eller erfaring fra før.</p>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ goKurs }}" hint-size="auto,40px">Se kursene</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ goMedlemskap }}" hint-size="auto,40px">Om medlemskap</x-import>
+              </div>
             </div>
-          </div>
+          </sc-if>
         </div>
       </div>
     </div>
@@ -7113,6 +7117,7 @@ class Component extends DCLogic {
       { sti: '/vilkar',        side: 'vilkar' },
       { sti: '/betaling',      side: 'vipps' },
       { sti: '/min-side',      side: 'minside' },
+      { sti: '/admin/logg-inn',     side: 'adminlogin' },
       { sti: '/admin',              side: 'adminoversikt' },
       { sti: '/admin/innhold',      side: 'admininnhold' },
       { sti: '/admin/kurs',         side: 'admin' },
@@ -8206,7 +8211,7 @@ class Component extends DCLogic {
         // holder. Serveren nekter uansett, men da moter man en tom skjerm
         // uten forklaring framfor beskjeden om hva som mangler.
         if ((this.state.side || '').indexOf('admin') === 0 && !d.erAdmin) {
-          ny.side = inne ? 'minside' : 'login';
+          ny.side = inne ? 'minside' : 'adminlogin';
           if (d.adminKreverPassord) {
             ny.kvittering = 'Adminpanelet krever passord';
             ny.kvitteringDetalj = 'Du er logget inn med Vipps. Logg inn med brukernavn og passord for å komme dit.';
@@ -10365,6 +10370,18 @@ class Component extends DCLogic {
     return ut;
   }
 
+  /**
+   * Er dette en av adminskjermene?
+   *
+   * Innloggingssida for admin ligger under /admin, men er ikke en adminskjerm:
+   * den skal kunne vises til en som ikke er logget inn, og skal ikke hente
+   * admindata. Uten dette svarte serveren 401 fire ganger paa selve
+   * innloggingssida, og sperren under sendte den bort fra seg selv.
+   */
+  erAdminSkjerm(side) {
+    return String(side || '').indexOf('admin') === 0 && side !== 'adminlogin';
+  }
+
   erSmal() { return (this.state.vw || (typeof window !== 'undefined' ? window.innerWidth : 1200)) <= 760; }
 
   mobilVis(nokkel) { return !(this.erSmal() && (this.mobilSkjul())[nokkel]); }
@@ -10678,7 +10695,7 @@ class Component extends DCLogic {
 
     // Innstemplingsstatus hentes naar man er der den vises: Min side for
     // medlemmet selv, og admin-sidene for «i verkstedet naa».
-    if ((side === 'minside' || side.indexOf('admin') === 0) && this.state.innlogget && !this.state.stempling) {
+    if ((side === 'minside' || this.erAdminSkjerm(side)) && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
     }
     if (side === 'minside' && this.state.innlogget && !this.state.mineKjop) {
@@ -10696,7 +10713,7 @@ class Component extends DCLogic {
     }
     // Godkjenningslista staar paa Drop-in-skjermen, ikke bare Butikk. Hentes
     // paa alle admin-sider — det er ett lite oppslag.
-    if (side.indexOf('admin') === 0 && !this.state.adminSalg) {
+    if (this.erAdminSkjerm(side) && !this.state.adminSalg) {
       this.hentAdminSalg();
     }
     if (side === 'nyheter' && !this.state.nyheter) {
@@ -10712,7 +10729,7 @@ class Component extends DCLogic {
     if (side === 'adminokonomi' && !this.state.okonomi) {
       this.hentOkonomi();
     }
-    if (side.indexOf('admin') === 0 && !this.state.rabattMaal) {
+    if (this.erAdminSkjerm(side) && !this.state.rabattMaal) {
       this.hentRabatter();
     }
 
@@ -10726,10 +10743,10 @@ class Component extends DCLogic {
       this.hentNyttig();
     }
 
-    if (side.indexOf('admin') === 0 && !this.state.migStatus) {
+    if (this.erAdminSkjerm(side) && !this.state.migStatus) {
       this.hentMigrasjoner();
     }
-    if (side.indexOf('admin') === 0 && !this.state.adminData) {
+    if (this.erAdminSkjerm(side) && !this.state.adminData) {
       this.hentAdmin();
     }
 
@@ -10745,8 +10762,8 @@ class Component extends DCLogic {
     // Samme sperre naar man navigerer dit etterpaa — via en lenke, et
     // bokmerke eller tilbakeknappen.
     if (this.erPublisert() && this.state.innloggingSjekket
-        && side.indexOf('admin') === 0 && !this.state.erAdminBruker) {
-      const til = this.state.innlogget ? 'minside' : 'login';
+        && this.erAdminSkjerm(side) && !this.state.erAdminBruker) {
+      const til = this.state.innlogget ? 'minside' : 'adminlogin';
       if (this.state.side !== til) {
         setTimeout(() => this.setState({
           side: til,
@@ -13526,7 +13543,14 @@ class Component extends DCLogic {
       // Innloggingsskjermen vises ogsaa naar noen ber om Min side uten aa
       // vaere innlogget. Adressen blir staaende, saa man havner riktig sted
       // etter innlogging.
-      erLogin: side === 'login' || (side === 'minside' && this.erPublisert() && !this.state.innlogget),
+      erLogin: side === 'login' || side === 'adminlogin'
+        || (side === 'minside' && this.erPublisert() && !this.state.innlogget),
+      // Adminpanelet krever brukernavn og passord. Da skal ikke Vipps staa
+      // der som forste valg heller — det ville sendt eieren en tur innom en
+      // innlogging som uansett ikke gir tilgang.
+      visVippsInnlogging: side !== 'adminlogin',
+      loginEyebrow: side === 'adminlogin' ? 'For verkstedet' : 'Min side',
+      loginTittel: side === 'adminlogin' ? 'Logg inn som admin' : 'Logg inn',
       erPersonvern: side === 'personvern',
 
       // ── Nyheter ──────────────────────────────────────────────────────
@@ -15344,7 +15368,7 @@ class Component extends DCLogic {
       // serveren som avgjor: bare den som er godkjent som medlem slipper inn.
       visAdminKreverPassord: this.erPublisert() && !!this.state.adminKreverPassord,
       visAdminUtenPassord: this.erPublisert() && !!this.state.adminUtenPassord,
-      tilPassordinnlogging: () => { this.setState({ side: 'login', liFeil: null }); window.scrollTo(0, 0); },
+      tilPassordinnlogging: () => { this.setState({ side: 'adminlogin', liFeil: null }); window.scrollTo(0, 0); },
       erMedlem: !this.erPublisert() || !!this.state.erMedlemBruker,
       visBliMedlem: this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker,
       bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',

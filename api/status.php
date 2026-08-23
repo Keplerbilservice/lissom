@@ -114,6 +114,21 @@ try {
 }
 
 // --- Hva som gjenstår å fylle ut ------------------------------------------
+// --- Vipps -----------------------------------------------------------------
+//
+// Returadressen maa staa ORDFOR ORD i Vipps-portalen, paa den salgsenheten
+// innloggingen bruker. Staar den ikke der, avviser Vipps med
+// «invalid_request ... redirect_uri». Den staar her for aa kunne kopieres
+// rett inn — aa skrive den av for haand er den vanligste feilkilden.
+$svar['vipps'] = [
+    'miljo'        => Config::miljo(),
+    'api'          => Config::vippsBase(),
+    'salgsenhet'   => (string) Config::hent('vipps_msn', ''),
+    'returadresse' => Vipps::returAdresse(),
+    'merk'         => 'Returadressen må være registrert i Vipps-portalen på salgsenheten over — '
+                    . 'nøyaktig slik den står her, uten skråstrek på slutten.',
+];
+
 $svar['nokler'] = [
     'vipps_msn'           => $fylt('vipps_msn'),
     'vipps_client_id'     => $fylt('vipps_client_id'),

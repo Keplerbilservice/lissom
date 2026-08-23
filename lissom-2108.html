@@ -4230,14 +4230,17 @@ window.__resources = {
               <span>Produkt</span><span>Pris</span><span>På lager</span><span>Status</span><span></span>
             </div>
             <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
-              <div onClick="{{ v.velg }}" style="display: grid; grid-template-columns: 2fr 1fr 1fr 1.1fr 36px; min-width: 640px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center; cursor: pointer;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ v.pris }}</div>
-                <div style="font-size: var(--text-sm); color: var(--text-body);">{{ v.antallTekst }}</div>
+              <div style="display: grid; grid-template-columns: 56px 2fr 1fr 1fr 1.1fr auto; min-width: 700px; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); align-items: center;">
+                <!-- Bildet er det forste kunden ser i butikken. Uten en vei
+                     hit fikk hver nye vare standardbildet, og alt saa likt ut. -->
+                <button type="button" onClick="{{ v.byttBilde }}" aria-label="Bytt bilde" style="{{ v.bildeStil }}"></button>
+                <div onClick="{{ v.velg }}" style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading); cursor: pointer;">{{ v.navn }}</div>
+                <div onClick="{{ v.velg }}" style="font-size: var(--text-sm); color: var(--text-body); cursor: pointer;">{{ v.pris }}</div>
+                <div onClick="{{ v.velg }}" style="font-size: var(--text-sm); color: var(--text-body); cursor: pointer;">{{ v.antallTekst }}</div>
                 <div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ v.tone }}" hint-size="auto,24px">{{ v.status }}</x-import>
                 </div>
-                <button type="button" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1; justify-self: end;">···</button>
+                <button type="button" onClick="{{ v.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap; justify-self: end;">{{ v.bildeKnapp }}</button>
               </div>
             </sc-for>
           </div>
@@ -5202,54 +5205,6 @@ window.__resources = {
         </sc-if>
 
         <!-- ── Utkast i full lengde ───────────────────────────────────── -->
-        <!-- ── Velg bilde til en artikkel ──────────────────────────────
-             Bildet er det forste folk ser i lista over artikler, og til naa
-             fikk alle det samme. -->
-        <sc-if value="{{ mkBildevalgApen }}" hint-placeholder-val="{{ false }}">
-          <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
-            <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-8);">
-              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6);">
-                <div>
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Bilde til artikkelen</div>
-                  <h2 style="margin: 0; font-size: var(--text-2xl);">{{ mkBildevalgTittel }}</h2>
-                </div>
-                <button type="button" onClick="{{ mkLukkBildevalg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 26px; line-height: 1; color: var(--text-muted); padding: 4px 10px;">×</button>
-              </div>
-
-              <label style="display: block; border: 2px dashed var(--lissom-brown); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-5); text-align: center; cursor: pointer; margin-bottom: var(--space-6); position: relative;">
-                <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ mkLastOppBilde }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
-                <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Last opp eget bilde</span>
-                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres ned og settes på artikkelen med en gang.</span>
-              </label>
-
-              <sc-if value="{{ mkBildeLaster }}" hint-placeholder-val="{{ false }}">
-                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Laster opp …</p>
-              </sc-if>
-              <sc-if value="{{ mkBildeHenter }}" hint-placeholder-val="{{ false }}">
-                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Henter bildene …</p>
-              </sc-if>
-
-              <sc-if value="{{ mkHarEgneBilder }}" hint-placeholder-val="{{ false }}">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dine egne</div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
-                  <sc-for list="{{ mkBildeEgne }}" as="b" hint-placeholder-count="4">
-                    <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
-                  </sc-for>
-                </div>
-              </sc-if>
-
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Bilder fra nettsiden</div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
-                <sc-for list="{{ mkBildeMedfolgende }}" as="b" hint-placeholder-count="12">
-                  <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
-                </sc-for>
-              </div>
-
-              <button type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk standardbildet i stedet</button>
-            </div>
-          </div>
-        </sc-if>
-
         <sc-if value="{{ mkLesApen }}" hint-placeholder-val="{{ false }}">
           <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
             <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 720px; width: 100%; padding: var(--space-8);">
@@ -5457,6 +5412,54 @@ window.__resources = {
 
 
 </div>
+
+<!-- ── Velg bilde til en artikkel eller en vare ──────────────────────────────
+     Ligger den inne i én skjerm, aapner den seg ikke fra den andre.
+     Den brukes baade fra Kunnskapsbanken og fra Butikk. -->
+<sc-if value="{{ mkBildevalgApen }}" hint-placeholder-val="{{ false }}">
+  <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
+    <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-8);">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6);">
+        <div>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">{{ mkBildevalgHva }}</div>
+          <h2 style="margin: 0; font-size: var(--text-2xl);">{{ mkBildevalgTittel }}</h2>
+        </div>
+        <button type="button" onClick="{{ mkLukkBildevalg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 26px; line-height: 1; color: var(--text-muted); padding: 4px 10px;">×</button>
+      </div>
+
+      <label style="display: block; border: 2px dashed var(--lissom-brown); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-5); text-align: center; cursor: pointer; margin-bottom: var(--space-6); position: relative;">
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ mkLastOppBilde }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+        <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Last opp eget bilde</span>
+        <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres ned og settes på artikkelen med en gang.</span>
+      </label>
+
+      <sc-if value="{{ mkBildeLaster }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Laster opp …</p>
+      </sc-if>
+      <sc-if value="{{ mkBildeHenter }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Henter bildene …</p>
+      </sc-if>
+
+      <sc-if value="{{ mkHarEgneBilder }}" hint-placeholder-val="{{ false }}">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dine egne</div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
+          <sc-for list="{{ mkBildeEgne }}" as="b" hint-placeholder-count="4">
+            <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Bilder fra nettsiden</div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
+        <sc-for list="{{ mkBildeMedfolgende }}" as="b" hint-placeholder-count="12">
+          <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
+        </sc-for>
+      </div>
+
+      <button type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk standardbildet i stedet</button>
+    </div>
+  </div>
+</sc-if>
 
 <sc-if value="{{ kurvApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(300px, 92vw);">
@@ -6698,13 +6701,36 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Varen bak en noekkel i handlekurven, eller null.
+   *
+   * Kurven inneholder to slag: varer fra butikken, som staar som «#17», og
+   * kurs, gavekort og abonnement, som staar med navnet sitt. Varene kan ikke
+   * staa med navn — ti kopper kan alle hete «Kopp», og da ville kurven ikke
+   * visst hvilken av dem som ble lagt i.
+   */
+  kurvVare(nokkel) {
+    const m = String(nokkel).match(/^#(\d+)$/);
+    if (!m) return null;
+    return (this.state.butikkvareListe || []).find(v => String(v.id) === m[1]) || null;
+  }
+
+  /** Navnet som skal staa paa linja i kurven. */
+  kurvNavn(nokkel) {
+    const v = this.kurvVare(nokkel);
+    return v ? v.tittel : String(nokkel);
+  }
+
   prisAv(navn) {
+    // Serverens pris gaar foran alt annet. Summen kunden ser i handlekurven
+    // maa vaere den serveren regner ut ved betaling — ellers staar det ett
+    // belop paa skjermen og et annet i Vipps.
+    const fraBasen = this.kurvVare(navn);
+    if (fraBasen) return Math.round(fraBasen.prisOre / 100);
+
     const gk = navn.match(/^Gavekort kr\. (\d[\d ]*),-$/);
     if (gk) return parseInt(gk[1].replace(/ /g, ''), 10);
 
-    // Serverens pris gaar foran designdataene. Summen kunden ser i
-    // handlekurven maa vaere den serveren regner ut ved betaling — ellers
-    // staar det ett belop paa skjermen og et annet i Vipps.
     const vare = (this.state.butikkvareListe || []).find(v => v.tittel === navn);
     if (vare) return Math.round(vare.prisOre / 100);
 
@@ -6738,12 +6764,19 @@ class Component extends DCLogic {
     if (this.state.kurvNedtelling != null) this.setState({ kurvNedtelling: null });
   }
 
-  iKurv(navn, delta) {
+  /**
+   * Legg til eller trekk fra i handlekurven.
+   *
+   * Noekkelen er «#17» for en vare fra butikken, og navnet for kurs, gavekort
+   * og abonnement. Varer kan ikke staa med navn: to kopper kan hete det
+   * samme, og da ville de blitt slaatt sammen til én linje med feil pris.
+   */
+  iKurv(nokkel, delta) {
     this.setState(s => {
       const k = Object.assign({}, s.kurv);
-      k[navn] = Math.max(0, (k[navn] || 0) + delta);
-      if (navn.indexOf('Abonnement: ') === 0 && k[navn] > 1) k[navn] = 1;
-      if (!k[navn]) delete k[navn];
+      k[nokkel] = Math.max(0, (k[nokkel] || 0) + delta);
+      if (String(nokkel).indexOf('Abonnement: ') === 0 && k[nokkel] > 1) k[nokkel] = 1;
+      if (!k[nokkel]) delete k[nokkel];
       return { kurv: k };
     });
   }
@@ -8415,10 +8448,13 @@ class Component extends DCLogic {
 
     const linjer = [];
     const ukjente = [];
-    Object.keys(kurv).forEach(navn => {
-      const v = varer.find(x => x.tittel === navn);
-      if (v) linjer.push({ id: v.id, antall: kurv[navn] });
-      else ukjente.push(navn);
+    Object.keys(kurv).forEach(nokkel => {
+      // Nyere linjer baerer varenummeret. Ligger det en gammel kurv igjen i
+      // nettleseren med bare navn, slaar vi opp paa navn som for — men da
+      // finner vi den forste med det navnet, og det er det beste vi kan gjore.
+      const v = this.kurvVare(nokkel) || varer.find(x => x.tittel === nokkel);
+      if (v) linjer.push({ id: v.id, antall: kurv[nokkel] });
+      else ukjente.push(nokkel);
     });
 
     if (ukjente.length) {
@@ -8671,16 +8707,83 @@ class Component extends DCLogic {
       .catch(() => { this._bilderHentes = false; });
   }
 
-  /** Aapner billedvalget for én artikkel. */
-  apneBildevalg(id) {
-    this.setState({ bildeFor: id });
+  /**
+   * Aapner billedvalget.
+   *
+   * Samme rute brukes til artikler og til varer i butikken — de trenger det
+   * samme, og to nesten like ruter blir fort to som oppforer seg ulikt.
+   */
+  apneBildevalg(id, slag) {
+    this.setState({ bildeFor: { id: id, slag: slag || 'artikkel' } });
     if (!this.state.bildeliste) this.hentBilder();
   }
 
-  /** Setter — eller fjerner, med tom streng — bildet paa en artikkel. */
-  settArtikkelBilde(id, url) {
+  /** Setter — eller fjerner, med tom streng — bildet. */
+  settValgtBilde(url) {
+    const v = this.state.bildeFor;
+    if (!v) return;
     this.setState({ bildeFor: null });
-    this.artikkelKall({ handling: 'bilde', id, bilde: url || '' });
+    if (v.slag === 'vare') {
+      this.vareBildeKall(v.id, url || '');
+      return;
+    }
+    this.artikkelKall({ handling: 'bilde', id: v.id, bilde: url || '' });
+  }
+
+  /**
+   * Verdiene billedruta trenger.
+   *
+   * De laa inne i Markedsforing-skjermen, men ruta brukes ogsaa fra Butikk.
+   * Sto de bare ett sted, ville ruta aapnet seg tom paa den andre skjermen.
+   */
+  bildevalgVals() {
+    const v = this.state.bildeFor;
+    const liste = this.state.bildeliste || { egne: [], medfolgende: [] };
+    const kilde = v && v.slag === 'vare'
+      ? (this.state.adminProdukter || []).map(x => ({ id: x.id, tittel: x.tittel, bilde: x.bilde }))
+      : (this.state.markedArtikler || []);
+    const valgt = (v && kilde.find(x => x.id === v.id)) || {};
+    const rute = (b) => ({
+      url: b.url,
+      stil: { appearance: 'none', cursor: 'pointer', padding: 0, height: 84, borderRadius: 'var(--radius-md)',
+              backgroundImage: "url('" + b.url + "')", backgroundSize: 'cover', backgroundPosition: 'center',
+              border: ((valgt.bilde || '') === b.url ? '3px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') },
+      velg: () => this.settValgtBilde(b.url),
+    });
+    return {
+      mkBildevalgApen: !!v,
+      mkBildeLaster: !!this.state.bildeLaster,
+      mkBildeHenter: !!v && !this.state.bildeliste,
+      mkBildevalgTittel: valgt.tittel || '',
+      mkBildeEgne: (liste.egne || []).map(rute),
+      mkHarEgneBilder: (liste.egne || []).length > 0,
+      mkBildeMedfolgende: (liste.medfolgende || []).map(rute),
+      mkLukkBildevalg: () => this.setState({ bildeFor: null }),
+      mkFjernBilde: () => this.settValgtBilde(''),
+      // Filfeltet nullstilles etter valget, ellers gir det samme bildet to
+      // ganger paa rad ingen hendelse — nettleseren ser ingen endring.
+      mkLastOppBilde: e => {
+        const fil = e.target.files && e.target.files[0];
+        e.target.value = '';
+        this.lastOppBilde(fil, this.state.bildeFor);
+      },
+    };
+  }
+
+  /** Bytter bildet paa en vare, og henter lista paa nytt saa raden viser det. */
+  vareBildeKall(id, url) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Lagret' }); return; }
+    fetch('/api/admin/produkter.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'bilde', id: id, bilde: url }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({ kvittering: ok ? 'Lagret' : 'Gikk ikke', kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentButikk(); }
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   /**
@@ -8689,7 +8792,7 @@ class Component extends DCLogic {
    * Aa laste opp og deretter maatte finne bildet igjen i lista ville vaert et
    * unodig steg — den som velger en fil, har alt bestemt seg.
    */
-  lastOppBilde(fil, forArtikkel) {
+  lastOppBilde(fil, forNoe) {
     if (!fil) return;
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden', kvitteringDetalj: 'Opplasting virker først når siden kjører på serveren.' });
@@ -8709,7 +8812,7 @@ class Component extends DCLogic {
         }
         this._bilderHentes = false;
         this.hentBilder();
-        if (forArtikkel) this.settArtikkelBilde(forArtikkel, d.url);
+        if (forNoe) this.settValgtBilde(d.url);
         else this.setState({ kvittering: 'Lastet opp', kvitteringDetalj: d.beskjed || '' });
       })
       .catch(() => this.setState({ bildeLaster: false, kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
@@ -11051,6 +11154,10 @@ class Component extends DCLogic {
           godkjenningErMedlem: valg === 'medlem',
         };
       })(),
+      // Billedruta naas fra baade Kunnskapsbanken og Butikk, saa verdiene
+      // ligger her framfor inne i én av skjermene.
+      ...this.bildevalgVals(),
+      mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen' : 'Bilde til artikkelen',
       sokApen: !!this.state.sokApen,
       lukkSok: () => this.setState({ sokApen: false }),
       sokTekst: this.state.sokTekst || '',
@@ -11401,15 +11508,16 @@ class Component extends DCLogic {
         },
       })),
       valgtBetaling: this.state.betaling || 'Vipps',
-      kurvLinjer: Object.keys(this.state.kurv || {}).map(navn => {
-        const pris = this.prisAv(navn);
-        const antall = this.state.kurv[navn];
+      kurvLinjer: Object.keys(this.state.kurv || {}).map(nokkel => {
+        const navn = this.kurvNavn(nokkel);
+        const pris = this.prisAv(nokkel);
+        const antall = this.state.kurv[nokkel];
         return {
           navn, antall: String(antall), pris: pris.toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
           linjesum: (pris * antall).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
-          pluss: () => this.iKurv(navn, 1),
-          minus: () => this.iKurv(navn, -1),
-          fjern: () => this.iKurv(navn, -999),
+          pluss: () => this.iKurv(nokkel, 1),
+          minus: () => this.iKurv(nokkel, -1),
+          fjern: () => this.iKurv(nokkel, -999),
         };
       }),
       kurvApen: !!this.state.kurvApen && Object.keys(this.state.kurv || {}).length > 0,
@@ -11458,7 +11566,7 @@ class Component extends DCLogic {
       betalKurv: () => {
         const k = this.state.kurv || {};
         const linjer = Object.keys(k).map(navn => ({
-          navn, antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+          navn: this.kurvNavn(navn), antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
           linjesum: (this.prisAv(navn) * k[navn]).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
         }));
         // Tom kurv: knappen gjorde ingenting i det hele tatt. Da tror man at
@@ -12470,7 +12578,7 @@ class Component extends DCLogic {
           piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin' : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : 'Sendes på e-post med en gang') : '',
           piBildeCss: p ? "url('" + p.image + "')" : 'none',
           piFokus: p ? this.fokusFor(p.title) : 'center',
-          piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.title); this.setState({ piProdukt: null }); } },
+          piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.id ? '#' + p.id : p.title); this.setState({ piProdukt: null }); } },
           piUtsolgt: !!(p && p.utsolgt),
         };
       })(),
@@ -12579,6 +12687,9 @@ class Component extends DCLogic {
         const fraBasen = (this.state.butikkvareListe || [])
           .filter(v => !v.kunMedlemmer)
           .map(v => ({
+            // Nummeret foelger med helt inn i kurven. To varer kan hete det
+            // samme; da er navnet ikke nok til aa vite hvilken som ble valgt.
+            id: v.id,
             title: v.tittel, detalj: v.detalj || '', pris: v.pris,
             image: v.bilde || FOTO + 'butikken.jpg',
             badge: v.kategori || '', kategori: v.kategori || 'Annet',
@@ -12595,7 +12706,7 @@ class Component extends DCLogic {
         ]).concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.title),
-          velgHandling: p.utsolgt ? (() => {}) : (() => this.leggTil(p.title)),
+          velgHandling: p.utsolgt ? (() => {}) : (() => this.leggTil(p.id ? '#' + p.id : p.title)),
           visInfo: () => this.setState({ piProdukt: p }),
         }));
         const medlem = this.galleriListe().filter(g => g.status === 'publisert').map(g => ({
@@ -12835,7 +12946,7 @@ class Component extends DCLogic {
         navn: v.tittel,
         detalj: [v.detalj, v.pris].filter(Boolean).join(' · '),
         knappetekst: v.utsolgt ? 'Tomt' : 'Legg til',
-        kjopNaa: v.utsolgt ? () => {} : () => this.leggTil(v.tittel),
+        kjopNaa: v.utsolgt ? () => {} : () => this.leggTil(v.id ? '#' + v.id : v.tittel),
       })),
       // Tom seksjon er verre enn ingen: et medlem som ser «Internbutikk» over
       // et tomt felt tror noe er i stykker.
@@ -13775,6 +13886,14 @@ class Component extends DCLogic {
           ])
       ).map(v => Object.assign(v, {
         antallTekst: v.antall === null ? 'Ubegrenset' : v.antall + ' stk',
+        // Uten eget bilde bruker butikken standardbildet. Det staar her ogsaa,
+        // saa raden viser det varen faktisk faar ute paa nettsida.
+        bildeStil: { width: 56, height: 44, appearance: 'none', padding: 0, cursor: 'pointer',
+                     borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
+                     backgroundImage: "url('" + ((v.raa && v.raa.bilde) || FOTO + 'butikken.jpg') + "')",
+                     backgroundSize: 'cover', backgroundPosition: 'center' },
+        bildeKnapp: (v.raa && v.raa.bilde) ? 'Bytt bilde' : 'Velg bilde',
+        byttBilde: () => { if (v.raa) this.apneBildevalg(v.raa.id, 'vare'); },
         velg: () => this.setState({
           npApen: true, npRediger: true,
           npNavn: v.navn,
@@ -14503,37 +14622,6 @@ class Component extends DCLogic {
           // er lastet opp. For den som velger er det samme sak, saa de vises
           // i samme rute — men opplastede kan slettes, og det kan ikke de
           // andre.
-          mkBildevalgApen: !!this.state.bildeFor,
-          mkBildeLaster: !!this.state.bildeLaster,
-          mkBildeHenter: !!this.state.bildeFor && !this.state.bildeliste,
-          ...(() => {
-            const valgt = (this.state.markedArtikler || []).find(a => a.id === this.state.bildeFor) || {};
-            const liste = this.state.bildeliste || { egne: [], medfolgende: [] };
-            const rute = (b) => ({
-              url: b.url,
-              valgt: (valgt.bilde || '') === b.url,
-              stil: { appearance: 'none', cursor: 'pointer', padding: 0, height: 84, borderRadius: 'var(--radius-md)',
-                      backgroundImage: "url('" + b.url + "')", backgroundSize: 'cover', backgroundPosition: 'center',
-                      border: ((valgt.bilde || '') === b.url ? '3px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') },
-              velg: () => this.settArtikkelBilde(this.state.bildeFor, b.url),
-            });
-            return {
-              mkBildevalgTittel: valgt.tittel || '',
-              mkBildeEgne: (liste.egne || []).map(rute),
-              mkHarEgneBilder: (liste.egne || []).length > 0,
-              mkBildeMedfolgende: (liste.medfolgende || []).map(rute),
-            };
-          })(),
-          mkLukkBildevalg: () => this.setState({ bildeFor: null }),
-          mkFjernBilde: () => this.settArtikkelBilde(this.state.bildeFor, ''),
-          // Filfeltet nullstilles etter valget, ellers gir det samme bildet to
-          // ganger paa rad ingen hendelse — nettleseren ser ingen endring.
-          mkLastOppBilde: e => {
-            const fil = e.target.files && e.target.files[0];
-            e.target.value = '';
-            this.lastOppBilde(fil, this.state.bildeFor);
-          },
-
           // ── Utkast i full lengde ──
           mkLesApen: !!this.state.mkLes,
           mkLesTittel: (this.state.mkLes || {}).tittel || '',

@@ -4,14 +4,16 @@
  *
  *   GET                          alle varer, ogsaa kladder
  *   POST handling=lagre          opprett eller endre en vare
+ *   POST handling=bilde          bytt bildet paa en vare
  *   POST handling=slett          fjern en vare
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved kjop — den sender hvilke varer, og serveren regner ut
  * summen selv.
  *
- * Tittelen er unik i basen. Lagres en vare med et navn som alt finnes, er det
- * den varen som endres — ikke en ny som legges ved siden av.
+ * Radnummeret er identiteten, ikke navnet. Et verksted lager ti kopper som
+ * alle heter «Kopp» — de er ikke den samme varen. Lagres en vare uten id, blir
+ * det en ny rad, ogsaa om navnet finnes fra for.
  */
 
 declare(strict_types=1);
@@ -68,6 +70,22 @@ Foresporsel::krevSammeOpphav();
 $handling = Foresporsel::tekst('handling', 'lagre');
 $id = Foresporsel::heltall('id');
 
+// ------------------------------------------------------------------ bildet
+//
+// For seg, fordi «lagre» krever navn og pris. Aa sende hele varen fram og
+// tilbake bare for aa bytte bilde er en unodig sjanse til aa skrive over noe
+// som ble endret imens — og et navn som kom tomt tilbake ville slettet det.
+if ($handling === 'bilde') {
+    if ($id <= 0 || DB::en('SELECT id FROM products WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke varen.');
+    }
+    $bilde = mb_substr(Foresporsel::tekst('bilde'), 0, 255);
+    // Tomt betyr «ingen egen» — da faller varen tilbake paa standardbildet.
+    DB::oppdater('products', ['bilde' => $bilde !== '' ? $bilde : null], ['id' => $id]);
+    revider('vare_bilde', 'product', $id, ['bilde' => $bilde]);
+    Svar::ok(['beskjed' => $bilde !== '' ? 'Bildet er byttet.' : 'Bildet er fjernet.']);
+}
+
 // ---------------------------------------------------------------- sletting
 if ($handling === 'slett') {
     if ($id <= 0) {
@@ -119,17 +137,13 @@ $data = [
                         ? Foresporsel::tekst('status') : 'publisert',
 ];
 
-// Tittelen er unik. Finnes den fra for, er det den raden som skal endres —
-// ellers ville lagring av samme navn stoppet paa noekkelen.
-$eksisterende = DB::en('SELECT id FROM products WHERE tittel = :t', ['t' => $tittel]);
-if ($id <= 0 && $eksisterende !== null) {
-    $id = (int) $eksisterende['id'];
-}
-if ($id > 0 && $eksisterende !== null && (int) $eksisterende['id'] !== $id) {
-    Svar::feil('En annen vare heter alt «' . $tittel . '».');
-}
-
+// Navnet avgjor ingenting. Tidligere ble en vare uten id slaatt sammen med
+// en som alt het det samme, og den forste ble stille overskrevet — to like
+// kopper kunne ikke ligge ute samtidig.
 if ($id > 0) {
+    if (DB::en('SELECT id FROM products WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke varen.');
+    }
     DB::oppdater('products', $data, ['id' => $id]);
     revider('vare_endret', 'product', $id, ['tittel' => $tittel]);
     Svar::ok(['id' => $id, 'beskjed' => $tittel . ' er lagret.']);

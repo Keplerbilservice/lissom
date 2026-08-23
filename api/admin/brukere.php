@@ -146,6 +146,25 @@ if (!$bruker) {
 if ($handling === 'endre') {
     $data = [];
 
+    // Brukernavnet kunne ikke endres. Ble det feil ved opprettelsen — og et
+    // navn skrevet inn i farten blir fort det — var eneste utvei aa slette
+    // brukeren og lage den paa nytt. Det gaar ikke paa din egen konto, og det
+    // ville dessuten mistet historikken.
+    $nyttBrukernavn = Foresporsel::tekst('brukernavn');
+    if ($nyttBrukernavn !== '') {
+        $b = $rensBrukernavn($nyttBrukernavn);
+        if ($b !== (string) ($bruker['brukernavn'] ?? '')) {
+            $opptatt = DB::verdi(
+                'SELECT COUNT(*) FROM members WHERE brukernavn = :b AND id <> :i',
+                ['b' => $b, 'i' => $id]
+            );
+            if ($opptatt) {
+                Svar::feil('Brukernavnet er opptatt.');
+            }
+            $data['brukernavn'] = $b;
+        }
+    }
+
     $nyttNavn = mb_substr(Foresporsel::tekst('navn'), 0, 191);
     if ($nyttNavn !== '') {
         $data['navn'] = $nyttNavn;
@@ -169,7 +188,8 @@ if ($handling === 'endre') {
     }
 
     if ($passord !== '') {
-        $sjekkPassord($passord, (string) ($bruker['brukernavn'] ?? ''));
+        // Mot det nye brukernavnet om det byttes i samme slengen.
+        $sjekkPassord($passord, (string) ($data['brukernavn'] ?? $bruker['brukernavn'] ?? ''));
         $data['passord_hash'] = password_hash($passord, PASSWORD_DEFAULT);
     }
 
@@ -179,7 +199,12 @@ if ($handling === 'endre') {
 
     DB::oppdater('members', $data, ['id' => $id]);
     revider('bruker_endret', 'member', $id, ['felter' => array_keys($data)]);
-    Svar::ok(['id' => $id]);
+    Svar::ok([
+        'id'      => $id,
+        'beskjed' => isset($data['brukernavn'])
+            ? 'Brukernavnet er nå «' . $data['brukernavn'] . '».'
+            : 'Endringene er lagret.',
+    ]);
 }
 
 if ($handling === 'slett') {

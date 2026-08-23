@@ -3745,7 +3745,7 @@ window.__resources = {
                 </div>
                 <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ b.tone }}" hint-size="auto,24px">{{ b.rolle }}</x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="lock" on-click="{{ b.settPassord }}" hint-size="auto,36px">Nytt passord</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="lock" on-click="{{ b.settPassord }}" hint-size="auto,36px">Endre</x-import>
                   <sc-if value="{{ b.kanSlettes }}" hint-placeholder-val="{{ true }}">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="trash-2" on-click="{{ b.slett }}" hint-size="auto,36px">Fjern</x-import>
                   </sc-if>
@@ -3759,9 +3759,16 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ visNyttPassord }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-bottom: var(--space-8); max-width: 520px;">
-            <h2 style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Sett nytt passord</h2>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Nytt passord" type="password" placeholder="Minst 12 tegn" value="{{ brPassord2 }}" on-change="{{ settBrPassord2 }}" hint-size="100%,66px"></x-import>
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6);">
+            <h2 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ brEndreTittel }}</h2>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Brukernavnet er det du skriver inn ved innlogging. La passordfeltet stå tomt hvis du bare skal endre brukernavnet.</p>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Brukernavn" icon="user" placeholder="fornavn" value="{{ brBrukernavn2 }}" on-change="{{ settBrBrukernavn2 }}" hint-size="100%,66px"></x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Nytt passord" type="password" placeholder="Minst 12 tegn — tomt = uendret" value="{{ brPassord2 }}" on-change="{{ settBrPassord2 }}" hint-size="100%,66px"></x-import>
+            </div>
+            <sc-if value="{{ brFeil }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-sm); color: var(--terracotta-600); margin-top: var(--space-3);">{{ brFeil }}</div>
+            </sc-if>
             <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagreNyttPassord }}" hint-size="auto,40px">Lagre</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ avbrytNyttPassord }}" hint-size="auto,40px">Avbryt</x-import>
@@ -8211,7 +8218,9 @@ class Component extends DCLogic {
         // holder. Serveren nekter uansett, men da moter man en tom skjerm
         // uten forklaring framfor beskjeden om hva som mangler.
         if ((this.state.side || '').indexOf('admin') === 0 && !d.erAdmin) {
-          ny.side = inne ? 'minside' : 'adminlogin';
+          // Alltid til admininnloggingen. Aa havne paa Min side med en
+          // beskjed er en blindvei — det man vil, er aa komme inn.
+          ny.side = 'adminlogin';
           if (d.adminKreverPassord) {
             ny.kvittering = 'Adminpanelet krever passord';
             ny.kvitteringDetalj = 'Du er logget inn med Vipps. Logg inn med brukernavn og passord for å komme dit.';
@@ -8395,7 +8404,17 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
         this._brukerKall = false;
-        if (!ok) { this.setState({ brFeil: d.feil || 'Det gikk ikke.' }); return; }
+        if (!ok) {
+          // Feilen skal ogsaa fram som kvittering. Sto den bare i boksen
+          // under skjemaet lenger nede, saa det ut som om knappen ikke
+          // gjorde noe i det hele tatt.
+          this.setState({
+            brFeil: d.feil || 'Det gikk ikke.',
+            kvittering: 'Gikk ikke',
+            kvitteringDetalj: d.feil || 'Prøv igjen om litt.',
+          });
+          return;
+        }
         etterpaa(d);
         this.hentBrukere();
       })
@@ -8421,15 +8440,32 @@ class Component extends DCLogic {
     }));
   }
 
+  /** Lagrer brukernavn og eventuelt nytt passord i samme kall. */
   settNyttPassord() {
+    const brukernavn = (this.state.brBrukernavn2 || '').trim();
+    const passord = this.state.brPassord2 || '';
+    if (!brukernavn && !passord) {
+      this.setState({ brFeil: 'Skriv et brukernavn eller et nytt passord.' });
+      return;
+    }
+    // Trykker man Lagre uten aa ha endret noe, er det ikke en feil. Serveren
+    // svarer «ingenting aa endre», og det kom fram som «Gikk ikke».
+    const fra = (this.state.adminBrukere || []).find(x => x.id === this.state.brNyttPassordFor);
+    if (!passord && fra && brukernavn === (fra.brukernavn === '—' ? '' : fra.brukernavn)) {
+      this.setState({ brNyttPassordFor: null, brBrukernavn2: '', brFeil: null,
+        kvittering: 'Ingenting endret', kvitteringDetalj: 'Brukernavnet står som før.' });
+      return;
+    }
     this.brukerKall({
       handling: 'endre',
       id: this.state.brNyttPassordFor,
-      passord: this.state.brPassord2 || '',
-    }, () => this.setState({
-      brNyttPassordFor: null, brPassord2: '', brFeil: null,
-      kvittering: 'Passordet er endret',
-      kvitteringDetalj: 'Den gamle innloggingen virker ikke lenger.',
+      brukernavn: brukernavn,
+      passord: passord,
+    }, (d) => this.setState({
+      brNyttPassordFor: null, brPassord2: '', brBrukernavn2: '', brFeil: null,
+      kvittering: 'Lagret',
+      kvitteringDetalj: (d && d.beskjed)
+        || (passord ? 'Den gamle innloggingen virker ikke lenger.' : ''),
     }));
   }
 
@@ -10763,14 +10799,12 @@ class Component extends DCLogic {
     // bokmerke eller tilbakeknappen.
     if (this.erPublisert() && this.state.innloggingSjekket
         && this.erAdminSkjerm(side) && !this.state.erAdminBruker) {
-      const til = this.state.innlogget ? 'minside' : 'adminlogin';
+      const til = 'adminlogin';
       if (this.state.side !== til) {
         setTimeout(() => this.setState({
           side: til,
-          kvittering: this.state.adminKreverPassord ? 'Adminpanelet krever passord' : 'Du har ikke tilgang',
-          kvitteringDetalj: this.state.adminKreverPassord
-            ? 'Logg inn med brukernavn og passord for å komme dit.'
-            : 'Denne siden er for verkstedet.',
+          kvittering: 'Adminpanelet krever passord',
+          kvitteringDetalj: 'Logg inn med brukernavn og passord for å komme dit.',
         }), 0);
       }
     }
@@ -13701,11 +13735,12 @@ class Component extends DCLogic {
       goAdminFooter: () => {
         if (!this.erPublisert()) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
         if (this.state.erAdminBruker) { this.setState({ side: 'adminoversikt' }); window.scrollTo(0, 0); return; }
-        if (!this.state.innlogget) { window.location.href = '/api/vipps-login.php?retur=/admin'; return; }
-        this.setState({
-          kvittering: 'Denne siden er for verkstedet',
-          kvitteringDetalj: 'Kontoen din har ikke admin-tilgang. Er det feil, si fra til Monica.',
-        });
+        // Ikke admin — av hvilken grunn som helst. Da er innloggingssida for
+        // verkstedet det riktige stedet aa havne. Den sendte for til Vipps
+        // eller til en beskjed uten vei videre, og Vipps gir uansett ikke
+        // adminpanelet lenger.
+        this.setState({ side: 'adminlogin', liFeil: null });
+        window.scrollTo(0, 0);
       },
       // Aarstallet i bunnteksten hentes fra klokka, saa det ikke blir staaende
       // og bli feil ved nyttaar.
@@ -15079,7 +15114,11 @@ class Component extends DCLogic {
         kanSlettes: !b.erDeg,
         merknad: b.fraNodluke ? 'Admin via nødluke-nummer i secrets.php' : '',
         harMerknad: !!b.fraNodluke,
-        settPassord: () => this.setState({ brNyttPassordFor: b.id, brPassord2: '', brFeil: null }),
+        settPassord: () => this.setState({
+          brNyttPassordFor: b.id, brPassord2: '', brFeil: null,
+          brBrukernavn2: b.brukernavn === '—' ? '' : b.brukernavn,
+          brEndrerNavn: b.navn,
+        }),
         slett: () => this.slettBruker(b.id, b.navn),
       })),
       harBrukere: (this.state.adminBrukere || []).length > 0,
@@ -15099,10 +15138,18 @@ class Component extends DCLogic {
       brOppretter: () => this.opprettBruker(),
 
       visNyttPassord: !!this.state.brNyttPassordFor,
+      brEndreTittel: 'Endre ' + (this.state.brEndrerNavn || 'bruker'),
+      brBrukernavn2: this.state.brBrukernavn2 || '',
+      // Samme rensing som serveren gjor. Da ser man med det samme at store
+      // bokstaver og mellomrom ikke gaar, framfor aa faa det som en feil.
+      settBrBrukernavn2: e => this.setState({
+        brBrukernavn2: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''),
+        brFeil: null,
+      }),
       brPassord2: this.state.brPassord2 || '',
       settBrPassord2: e => this.setState({ brPassord2: e.target.value, brFeil: null }),
       lagreNyttPassord: () => this.settNyttPassord(),
-      avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brFeil: null }),
+      avbrytNyttPassord: () => this.setState({ brNyttPassordFor: null, brPassord2: '', brBrukernavn2: '', brFeil: null }),
       adminNavMobilvis: this.adminMeny('Mobilvisning'),
       // Den ekte forsiden, ikke designeksporten. «?forhands» gjor bare at
       // ramma lastes paa nytt naar man trykker Oppdater — adressen maa endre

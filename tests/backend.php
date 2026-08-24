@@ -30,7 +30,7 @@ function nullstill(): void
     $bookinger = array_column(DB::alle(
         "SELECT b.id FROM bookings b
       LEFT JOIN courses c ON c.id = b.course_id
-          WHERE c.slug = 'testliten'
+          WHERE c.slug IN ('testliten', 'testgratis', 'testkapasitet')
              OR b.gjest_epost LIKE '%@example.com'
              OR b.gjest_navn IN ('Test', 'Utlopt', 'Forste', 'Andre')"
         . ($medlemmer ? ' OR b.member_id IN (' . implode(',', $medlemmer) . ')' : '')
@@ -51,8 +51,8 @@ function nullstill(): void
         DB::kjor('DELETE FROM payments WHERE member_id IN (' . implode(',', $medlemmer) . ')');
     }
 
-    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug = 'testliten')");
-    DB::kjor("DELETE FROM courses WHERE slug = 'testliten'");
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet'))");
+    DB::kjor("DELETE FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet')");
     DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'proev:%'");
 
     if ($medlemmer) {
@@ -79,8 +79,13 @@ $dropin = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c
 sjekk('drop-in har datoer', (int) $dropin > 0, $dropin . ' okter');
 
 echo "\n== Kapasitet ==\n";
-$okt = DB::en("SELECT cs.id, COALESCE(cs.kapasitet,c.kapasitet) kap FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='paint-on-pots' ORDER BY cs.start_tid LIMIT 1");
-$oktId = (int)$okt['id'];
+// Testen laante en oekt fra katalogen (Paint on Pots). Da verkstedet endret
+// datoene sine, sto kurset uten oekter — og testen sammenlignet null med null
+// og meldte «gronn». En test som gaar gronn paa manglende data, tester
+// ingenting. Riggen lages her og ryddes bort av nullstill().
+$kapKurs = DB::settInn('courses', ['slug'=>'testkapasitet','tittel'=>'Testkapasitet','type'=>'kurs','pris_ore'=>69000,'kapasitet'=>12,'status'=>'publisert']);
+$oktId = DB::settInn('course_sessions', ['course_id'=>$kapKurs,'start_tid'=>gmdate('Y-m-d H:i:s', time()+864000),'kapasitet'=>12]);
+$okt = ['id'=>$oktId, 'kap'=>12];
 sjekk('full kapasitet naar ingen har booket', Booking::ledigePlasser($oktId) === (int)$okt['kap'], Booking::ledigePlasser($oktId) . ' av ' . $okt['kap']);
 
 echo "\n== Medlem og sesjon ==\n";
@@ -95,7 +100,11 @@ sjekk('medlemmet gjenkjennes', (Sesjon::medlem()['id'] ?? 0) == $medlemId);
 sjekk('nummeret gir admin (nodluke)', Sesjon::erAdmin());
 
 echo "\n== Booking uten Vipps (gratis medlemsarrangement) ==\n";
-$gratisOkt = (int) DB::verdi("SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='medlemsfrokost' LIMIT 1");
+// Sto paa medlemsfrokosten. Den ble avlyst etter beskjed fra verkstedet
+// (migrasjon 037), og testen stoppet paa «Denne datoen kan ikke bookes».
+// Katalogen er verkstedets, ikke testens — riggen lages her.
+$gratisKurs = DB::settInn('courses', ['slug'=>'testgratis','tittel'=>'Testgratis','type'=>'event','pris_ore'=>0,'kapasitet'=>10,'status'=>'publisert']);
+$gratisOkt = DB::settInn('course_sessions', ['course_id'=>$gratisKurs,'start_tid'=>gmdate('Y-m-d H:i:s', time()+864000),'kapasitet'=>10]);
 $r = Booking::reserverOgBetal($gratisOkt, 1, 'Test Testesen', 'test@example.com', '+4791234567', $medlemId);
 sjekk('gratis booking uten betaling', $r['redirectUrl'] === '' && $r['bookingId'] > 0);
 sjekk('bookingen er betalt med en gang', DB::verdi('SELECT status FROM bookings WHERE id=:i',['i'=>$r['bookingId']]) === 'betalt');
@@ -104,7 +113,7 @@ sjekk('kvittering lagt i ko', (int)DB::verdi("SELECT COUNT(*) FROM notifications
 echo "\n== Betaling markeres som betalt, én gang ==\n";
 $ref = Vipps::nyReferanse();
 $pid = DB::settInn('payments', ['vipps_reference'=>$ref,'type'=>'epayment','formal'=>'booking','member_id'=>$medlemId,'belop_ore'=>69000,'status'=>'venter','idempotency_key'=>Vipps::uuid()]);
-$bid = DB::settInn('bookings', ['course_id'=>$pop['id'],'course_session_id'=>$oktId,'member_id'=>$medlemId,'gjest_navn'=>'Test','antall'=>1,'belop_ore'=>69000,'status'=>'reservert','payment_id'=>$pid,'reservert_til'=>gmdate('Y-m-d H:i:s', time()+1200)]);
+$bid = DB::settInn('bookings', ['course_id'=>$kapKurs,'course_session_id'=>$oktId,'member_id'=>$medlemId,'gjest_navn'=>'Test','antall'=>1,'belop_ore'=>69000,'status'=>'reservert','payment_id'=>$pid,'reservert_til'=>gmdate('Y-m-d H:i:s', time()+1200)]);
 sjekk('forste markering virker', Booking::markerBetalt($ref) === true);
 sjekk('bookingen ble betalt', DB::verdi('SELECT status FROM bookings WHERE id=:i',['i'=>$bid]) === 'betalt');
 sjekk('reservasjonsfristen er fjernet', DB::verdi('SELECT reservert_til FROM bookings WHERE id=:i',['i'=>$bid]) === null);
@@ -117,7 +126,7 @@ $forbrukt = Booking::ledigePlasser($oktId);
 sjekk('én plass er borte', $forbrukt === (int)$okt['kap'] - 1, "$forbrukt igjen av {$okt['kap']}");
 
 echo "\n== Utlopt reservasjon frigir plassen ==\n";
-$bid2 = DB::settInn('bookings', ['course_id'=>$pop['id'],'course_session_id'=>$oktId,'member_id'=>null,'gjest_navn'=>'Utlopt','antall'=>1,'belop_ore'=>69000,'status'=>'reservert','reservert_til'=>gmdate('Y-m-d H:i:s', time()-60)]);
+$bid2 = DB::settInn('bookings', ['course_id'=>$kapKurs,'course_session_id'=>$oktId,'member_id'=>null,'gjest_navn'=>'Utlopt','antall'=>1,'belop_ore'=>69000,'status'=>'reservert','reservert_til'=>gmdate('Y-m-d H:i:s', time()-60)]);
 sjekk('utlopt reservasjon teller ikke', Booking::ledigePlasser($oktId) === $forbrukt);
 
 echo "\n== Overbooking avvises ==\n";
@@ -386,7 +395,13 @@ DB::kjor("DELETE FROM discount_tiers");
 echo "\n== Medlemskap ==\n";
 
 sjekk('planene ligger i basen', count(Medlemskap::planer()) >= 4);
-sjekk('prisen leses fra basen', (int) (Medlemskap::plan('30 timer')['pris_ore'] ?? 0) === 259000);
+// Navnet paa planen sto her som tekst. Verkstedet doepte «30 timer» om til
+// «Basis 30» i admin — noe de har full rett til — og testen falt. Den skal
+// proeve oppslaget, ikke hva planen heter denne uka.
+$enPlan = DB::en("SELECT * FROM membership_plans WHERE aktiv = 1 AND engangs = 0 ORDER BY sortering LIMIT 1");
+sjekk('prisen leses fra basen',
+    (int) (Medlemskap::plan((string) $enPlan['navn'])['pris_ore'] ?? 0) === (int) $enPlan['pris_ore'],
+    $enPlan['navn'] . ' — ' . $enPlan['pris_ore'] . ' ore');
 sjekk('ukjent plan gir null', Medlemskap::plan('Finnes ikke') === null);
 sjekk('proveperioden er engangs', (int) (Medlemskap::plan('Prøv Lissom')['engangs'] ?? 0) === 1);
 sjekk('aarsavtalen har binding', (int) (Medlemskap::plan('Årsmedlemskap')['binding_mnd'] ?? 0) === 12);
@@ -453,11 +468,17 @@ DB::kjor('DELETE FROM members WHERE id = :m', ['m' => $avtaleMedlem]);
 
 echo "\n== Timer per maaned ==\n";
 
-sjekk('30 timer gir 30', Medlemskap::timerFor(['medlemskap_type' => '30 timer', 'timer_per_mnd' => null]) === 30);
-sjekk('aarsmedlemskap gir 35', Medlemskap::timerFor(['medlemskap_type' => 'Årsmedlemskap', 'timer_per_mnd' => null]) === 35);
-sjekk('proveperiode gir 8', Medlemskap::timerFor(['medlemskap_type' => 'Prøv Lissom', 'timer_per_mnd' => null]) === 8);
-sjekk('fri tilgang har ingen grense', Medlemskap::timerFor(['medlemskap_type' => 'Fri tilgang', 'timer_per_mnd' => null]) === null);
-sjekk('eget timetall gaar foran planen', Medlemskap::timerFor(['medlemskap_type' => '30 timer', 'timer_per_mnd' => 12]) === 12);
+// Timetallene sto her som tall. «Proev Lissom» ble satt opp fra 8 til 10
+// timer (migrasjon 031), og testen falt paa en endring den selv ba om.
+// Fasiten skal komme fra basen — det er den planen faktisk lover.
+foreach (DB::alle('SELECT navn, timer FROM membership_plans WHERE aktiv = 1 ORDER BY sortering') as $pl) {
+    $forventet = $pl['timer'] === null ? null : (int) $pl['timer'];
+    sjekk(
+        'planen «' . $pl['navn'] . '» gir ' . ($forventet === null ? 'ingen grense' : $forventet . ' timer'),
+        Medlemskap::timerFor(['medlemskap_type' => $pl['navn'], 'timer_per_mnd' => null]) === $forventet
+    );
+}
+sjekk('eget timetall gaar foran planen', Medlemskap::timerFor(['medlemskap_type' => (string) $enPlan['navn'], 'timer_per_mnd' => 12]) === 12);
 sjekk('ukjent plan gir ingen grense', Medlemskap::timerFor(['medlemskap_type' => 'Finnes ikke', 'timer_per_mnd' => null]) === null);
 sjekk('uten medlemskap ingen grense', Medlemskap::timerFor(['medlemskap_type' => '', 'timer_per_mnd' => null]) === null);
 

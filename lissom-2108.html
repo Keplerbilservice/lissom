@@ -681,7 +681,7 @@ window.__resources = {
       .lx-split { grid-template-columns: 1fr !important; }
       .lx-cols4 { grid-template-columns: 1fr 1fr !important; }
       .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
-      html, body { overflow-x: clip; max-width: 100%; }
+      html, body { overflow-x: clip; max-width: 100%; overscroll-behavior-x: none; }
       .lx-wrapm { white-space: normal !important; }
       .lx-band { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
       .lx-band > * { max-width: 100% !important; }
@@ -4106,6 +4106,9 @@ window.__resources = {
                 <div style="font-size: var(--text-sm); color: var(--text-body); white-space: nowrap;">{{ k.neste }}</div>
                 <div style="display: flex; gap: var(--space-3); margin-left: auto;">
                   <button type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
+                  <sc-if value="{{ k.harDato }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ k.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
+                  </sc-if>
                   <button type="button" onClick="{{ k.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Slett</button>
                 </div>
               </div>
@@ -10402,13 +10405,20 @@ class Component extends DCLogic {
     const ukeSlutt = new Date(ukeStart); ukeSlutt.setDate(ukeStart.getDate() + 7);
     const mndSlutt = new Date(naa.getFullYear(), naa.getMonth() + 1, 1);
     const dagSlutt = new Date(dagStart); dagSlutt.setDate(dagStart.getDate() + 1);
+    // «Neste måned» er en egen periode, ikke «alt framover»: den begynner
+    // der «denne måneden» slutter.
+    const nesteSlutt = new Date(naa.getFullYear(), naa.getMonth() + 2, 1);
 
-    const til = v === 'Denne uka' ? ukeSlutt : v === 'Denne måneden' ? mndSlutt : dagSlutt;
+    const fra = v === 'Neste måned' ? mndSlutt : dagStart;
+    const til = v === 'Denne uka' ? ukeSlutt
+              : v === 'Denne måneden' ? mndSlutt
+              : v === 'Neste måned' ? nesteSlutt
+              : dagSlutt;
     const DAG = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
 
     const medDato = okter
       .map(o => Object.assign({}, o, { d: oslo(new Date(o.startTid)) }))
-      .filter(o => o.d >= dagStart);
+      .filter(o => o.d >= fra);
 
     let valgte = medDato.filter(o => o.d < til);
 
@@ -17290,6 +17300,20 @@ class Component extends DCLogic {
       adminKurs: this.kursSynlige().map(({ k, i }) => Object.assign({}, k, {
         velg: () => this.apneKursRed(k, i),
         rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apneKursRed(k, i); },
+        // Kurslista hadde Rediger og Slett, men ingen vei til aa melde noen
+        // paa. Du maatte scrolle forbi hele lista til «Datoer som ligger ute»
+        // og finne riktig dato der. Naa aapner knappen paameldingen med
+        // kursets neste dato valgt — er det flere, byttes den i velgeren.
+        leggTil: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          const neste = (this.state.adminOkter || []).find(o => o.tittel === k.navn);
+          this.setState({
+            side: 'adminpameldte', mpApen: true,
+            mpOkt: neste ? String(neste.oktId) : '',
+          });
+          window.scrollTo(0, 0);
+        },
+        harDato: (this.state.adminOkter || []).some(o => o.tittel === k.navn),
         // «Slett» fjernet bare raden fra skjermbildet. Kurset var tilbake ved
         // neste sidelasting, for serveren hadde aldri hort om det.
         slett: (e) => {
@@ -17523,7 +17547,7 @@ class Component extends DCLogic {
         velg: () => { this.setState({ side: 'admin', kursFane: 'alle' }); this.apneKursRed(k, i); },
       })),
       ingenOvKurs: this.kursData().length === 0,
-      ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden'].map(n => ({
+      ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden', 'Neste måned'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovProgram: n }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovProgram || 'I dag') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovProgram || 'I dag') ? 'var(--clay-50)' : 'var(--text-muted)' },
@@ -17553,7 +17577,9 @@ class Component extends DCLogic {
         ? 'Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.'
         : (this.state.ovProgram === 'Denne uka'
             ? 'Ingenting satt opp denne uka, og ingenting senere heller.'
-            : 'Ingenting satt opp denne måneden, og ingenting senere heller.'),
+            : this.state.ovProgram === 'Neste måned'
+              ? 'Ingenting satt opp neste måned ennå.'
+              : 'Ingenting satt opp denne måneden, og ingenting senere heller.'),
       // Sier fra naar lista viser noe som ligger utenfor perioden man valgte.
       ...(() => {
         const v = this.state.ovProgram || 'I dag';
@@ -17562,8 +17588,9 @@ class Component extends DCLogic {
         return {
           programSenere: senere,
           programSenereTekst: v === 'I dag' ? 'Ingenting i dag. Det neste som skjer:'
-            : (v === 'Denne uka' ? 'Ingenting denne uka. Det neste som skjer:'
-                                 : 'Ingenting denne måneden. Det neste som skjer:'),
+            : v === 'Denne uka' ? 'Ingenting denne uka. Det neste som skjer:'
+            : v === 'Neste måned' ? 'Ingenting neste måned. Det neste som skjer:'
+            : 'Ingenting denne måneden. Det neste som skjer:',
         };
       })(),
       ovLeggTilDeltaker: () => this.gaaAdmin('adminpameldte', { mpApen: true }),
@@ -18146,10 +18173,30 @@ class Component extends DCLogic {
       },
       butikkLissomKant: (this.state.butikkKolleksjon || 'Lissom') !== 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
       butikkMedlemKant: (this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? 'var(--lissom-brown)' : 'var(--border-subtle)',
-      butikkFiltre: ((this.state.butikkKolleksjon || 'Lissom') === 'Medlem' ? ['Alt', 'Kopper', 'Boller', 'Fat'] : ['Alt', 'Kopper', 'Boller', 'Fat', 'Gavekort']).map(navn => ({
-        navn, valgt: (this.state.butikkFilter || 'Alt') === navn,
-        velg: () => this.setState({ butikkFilter: navn }),
-      })),
+      // Knappene sto som en fast liste: Alt, Kopper, Boller, Fat, Gavekort.
+      // Kategoriene i butikken settes i admin, og de andre — Vaser,
+      // Tallerkener, Materialer — hadde ingen knapp. «Boller» og «Fat»
+      // fantes det ingen varer i, saa de tommet skjermen. Det saa ut som om
+      // knappene ikke gjorde noe. Naa kommer de fra varene som faktisk ligger
+      // der.
+      butikkFiltre: (() => {
+        const erMedlem = (this.state.butikkKolleksjon || 'Lissom') === 'Medlem';
+        const kilde = erMedlem
+          ? this.galleriListe().filter(g => g.status === 'publisert').map(g => g.kategori)
+          : (this.erPublisert()
+              ? (this.state.butikkvareListe || []).filter(v => !v.kunMedlemmer).map(v => v.kategori)
+              : ['Kopper', 'Boller', 'Fat', 'Gavekort']);
+        const sett = [];
+        kilde.forEach(k => {
+          const n = (k || '').trim();
+          if (n && sett.indexOf(n) === -1) sett.push(n);
+        });
+        sett.sort((a, b) => a.localeCompare(b, 'nb'));
+        return ['Alt'].concat(sett).map(navn => ({
+          navn, valgt: (this.state.butikkFilter || 'Alt') === navn,
+          velg: () => this.setState({ butikkFilter: navn }),
+        }));
+      })(),
       butikkvarer: (() => {
         const filter = this.state.butikkFilter || 'Alt';
         // Varene kommer fra basen. Lista under er designdata, og den lever
@@ -21172,10 +21219,10 @@ class Component extends DCLogic {
         ? { display: 'block', minHeight: '100vh', background: 'var(--clay-100)' }
         : { display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh', background: 'var(--clay-100)' },
       adminAsideStil: (this.state.vw || 1400) < 980
-        ? { background: 'var(--lissom-brown)', padding: 'var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-5)', position: 'sticky', top: 0, zIndex: 30, overflowX: 'auto' }
+        ? { background: 'var(--lissom-brown)', padding: 'var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-5)', position: 'sticky', top: 0, zIndex: 30, overflowX: 'auto', overscrollBehaviorX: 'contain' }
         : { background: 'var(--lissom-brown)', padding: 'var(--space-8) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
       adminNavStil: (this.state.vw || 1400) < 980
-        ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', flex: 1 }
+        ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', overscrollBehaviorX: 'contain', flex: 1 }
         : { display: 'flex', flexDirection: 'column', gap: 2 },
       ordensregerApen: !!this.state.ordensApen,
       ordensPilRotasjon: this.state.ordensApen ? 'rotate(180deg)' : 'rotate(0deg)',

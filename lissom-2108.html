@@ -1836,7 +1836,33 @@ window.__resources = {
         </div>
       </section>
 
-      
+
+      <!-- Tilbudskortene.
+           bedriftTilbud ble regnet ut, og de ni feltene bak dem laa i
+           innholdsredigeringen — men ingenting viste dem. Sida var en hero
+           og en knapp: den som lurte paa hva et bedriftsevent koster, fant
+           ikke svaret noe sted. -->
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+        <div style="max-width: var(--width-content); margin: 0 auto;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ beTilbudKicker }}</div>
+          <h2 style="margin: 0 0 var(--space-8); font-size: var(--text-3xl);">{{ beTilbudTittel }}</h2>
+          <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8);">
+            <sc-for list="{{ bedriftTilbud }}" as="t" hint-placeholder-count="3">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column;">
+                <div style="background-image: {{ t.bildeCss }}; background-size: cover; background-position: center; aspect-ratio: 4 / 3;" role="img" aria-label="{{ t.navn }}"></div>
+                <div style="padding: var(--space-6); display: flex; flex-direction: column; flex: 1;">
+                  <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-wrap: balance;">{{ t.navn }}</h3>
+                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ t.tekst }}</p>
+                  <div style="margin-top: auto; font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--terracotta-600);">{{ t.pris }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top: var(--space-8);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ bedriftTilSkjema }}" hint-size="auto,56px">{{ beTilbudKnapp }}</x-import>
+          </div>
+        </div>
+      </section>
 
     </div>
   </sc-if>
@@ -7602,9 +7628,10 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Samle gjengen rundt' },
       { l: 'Overskrift, kursiv del', v: 'dreieskiven.' },
       { l: 'Ingress', v: 'Private events for 6–16 personer: teambuilding, utdrikningslag, bursdager og venninnekvelder. Alt utstyr, veiledning og brenning er inkludert — dere tar bare med godt humør.', lang: true } ] },
-    // Kortene ble tatt bort fra bedriftssida. Feltene staar igjen fordi det
-    // kan ligge lagret tekst i dem, men de vises ikke noe sted naa.
-    { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Vises ikke nå', felter: [
+    { navn: 'Tilbudskortene', type: 'Tre kort', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Hva vi tilbyr' },
+      { l: 'Overskrift', v: 'Tre måter å gjøre det på' },
+      { l: 'Knapp', v: 'Send en forespørsel' },
       { l: 'Kort 1 tittel', v: 'Bedriftsevent og teambuilding' },
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
       { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
@@ -9614,7 +9641,8 @@ class Component extends DCLogic {
 
   // Drop-in gaar rett i bookingen naar katalogen er lastet, ellers til
   // kurssiden med drop-in-filteret — samme vei som toppmenyen tar.
-  goDropinNaa() {
+  /** Bookingskjermen for drop-in. Brukes der teksten sier «Book». */
+  bookDropinNaa() {
     const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
     if (k) {
       this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false,
@@ -9622,6 +9650,18 @@ class Component extends DCLogic {
       window.scrollTo(0, 0);
       return;
     }
+    this.goNaa('kurs', 'Drop-in');
+  }
+
+  /**
+   * Drop-in-sida.
+   *
+   * Menypunktet heter «Drop-in» og gikk rett i bookingen. Drop-in krever at
+   * du har gaatt kurs hos oss eller kommer med et aktivt medlem — det sto
+   * forklart i en seksjon ingen kunne komme til. Naa gaar menypunktet dit,
+   * og «Book drop-in» derfra til bookingen.
+   */
+  goDropinNaa() {
     this.goNaa('kurs', 'Drop-in');
   }
 
@@ -13959,11 +13999,14 @@ class Component extends DCLogic {
         valgt: navn === this.state.kursFilter
           || (navn === 'Vis alle' && (!this.state.kursFilter || this.state.kursFilter === 'Alle')),
         velg: () => {
-          if (navn === 'Drop-in') {
-            const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
-            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); return; }
-          }
+          // «Drop-in» hoppet rett til bookingskjermen. Seksjonen som
+          // forklarer hva drop-in er — at det krever kurs hos oss eller et
+          // aktivt medlem, hva som er inkludert, og hvordan det foregaar —
+          // sto bak et flagg som aldri ble sant, og var derfor umulig aa
+          // komme til. Filteret blir staaende paa kurssida naa, og
+          // «Book drop-in» inne i seksjonen tar deg videre.
           this.setState({ kursFilter: navn });
+          window.scrollTo(0, 0);
         },
       })),
       kursAlle: this.filtrerKurs(this.kursKort()),
@@ -17533,7 +17576,15 @@ class Component extends DCLogic {
           { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra kr. 990 per person'), bilde: 'uploads_workshop4.jpg' },
           { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra kr. 990 per person'), bilde: 'uploads_datenight.jpg' },
           { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra kr. 990 per person'), bilde: 'uploads_barn2.jpg' },
-        ].map(t => { const sti = t.bilde.indexOf('/') >= 0 ? t.bilde : 'assets_photos_' + t.bilde; return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti }); });
+        ].map(t => {
+          // Filnavnene her begynner alt med «uploads_». Regelen la paa
+          // «assets_photos_» uansett, saa stien pekte paa en fil som ikke
+          // finnes — og kortene sto uten bilde.
+          const b = String(t.bilde || '');
+          const sti = (b.indexOf('/') >= 0 || b.startsWith('uploads_') || b.startsWith('assets_'))
+            ? b : 'assets_photos_' + b;
+          return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti });
+        });
       })(),
       vilkar: [
         { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 938 280 819 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
@@ -18482,6 +18533,9 @@ class Component extends DCLogic {
       beTittel: this.innh('Bedrift og event/0/Overskrift'),
       beTittelKursiv: this.innh('Bedrift og event/0/Overskrift, kursiv del'),
       beIngress: this.innh('Bedrift og event/0/Ingress'),
+      beTilbudKicker: this.innh('Bedrift og event/1/Kicker'),
+      beTilbudTittel: this.innh('Bedrift og event/1/Overskrift'),
+      beTilbudKnapp: this.innh('Bedrift og event/1/Knapp'),
       ooKicker: this.innh('Om oss/0/Kicker'),
       ooTittel: this.innh('Om oss/0/Overskrift'),
       ooFinnKicker: this.innh('Om oss/2/Kicker'),
@@ -18502,9 +18556,22 @@ class Component extends DCLogic {
       toggleVilkaar: () => this.setState(s => ({ vilkaarOk: !s.vilkaarOk })),
       goVilkar: this.go('vilkar'),
       goBedrift: this.go('bedrift'),
-      erDropinVisning: false,
+      // Seksjonen om drop-in staar paa kurssida naar man har filtrert paa
+      // den. Sto som «false» rett ut, og var da over hundre linjer markup
+      // ingen kunne se.
+      erDropinVisning: (this.state.kursFilter || '') === 'Drop-in',
       ikkeDropinVisning: true,
       dropinBook: () => {
+        // Det ekte drop-in-kurset fra katalogen naar det finnes: prisen der
+        // er den serveren faktisk krever. Objektet under er reserven for
+        // forhaandsvisningen, der det ikke finnes noen katalog.
+        const ekte = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
+        if (ekte) {
+          this.setState({ side: 'booking', fra: 'kurs', valgtKurs: ekte, bookOrdre: false,
+                          bookKvittert: false, bDato: null, ventelisteBekreftet: null });
+          window.scrollTo(0, 0);
+          return;
+        }
         const k = {
           level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer',
           price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in',
@@ -19628,7 +19695,9 @@ class Component extends DCLogic {
         el.style.color = 'var(--lissom-brown)'; el.style.webkitTextFillColor = '';
       },
       tjueseks: 26,
-      goDropin: () => this.goDropinNaa(),
+      // Teksten sier «Book», saa den gaar rett i bookingen. Menypunktet
+      // «Drop-in» viser i stedet hva drop-in er.
+      goDropin: () => this.bookDropinNaa(),
       // Kalenderen starter paa denne uka og lar deg bla ett aar framover.
       // Grensene sto paa 35–37, som var de tre ukene designdataene dekket.
       ...(() => {
@@ -19668,10 +19737,10 @@ class Component extends DCLogic {
       goNav: (lenke) => {
         if (lenke === 'Handlekurv') { this.apneKurvAuto(40); return; }
         if (lenke === 'Søk') { this.setState({ sokApen: true }); return; }
-        if (lenke === 'Drop-in') {
-          const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
-          if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); return; }
-        }
+        // «Drop-in» i menyen gikk rett i bookingen. Drop-in krever at du
+        // har gaatt kurs hos oss eller kommer med et aktivt medlem, og det
+        // sto forklart i en seksjon paa kurssida som ingen kunne komme til.
+        // Menypunktet gaar dit naa; «Book drop-in» derfra tar deg videre.
         const ruter = {
           'Forside': ['forside'],
           'Kurs': ['kurs', 'Kurs'], 'Våre kurs': ['kurs', 'Kurs'], 'Kurskalender': ['kalender'],

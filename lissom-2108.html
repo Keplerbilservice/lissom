@@ -4599,6 +4599,77 @@ window.__resources = {
                 <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</span>
               </div>
             </sc-for>
+            <!-- Skjemaet for én kursholder. Foer aapnet «Ny kursholder» en
+                 dialog som beskrev feltene og lukket seg igjen. -->
+            <sc-if value="{{ khApen }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-3);">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                  <input value="{{ khNavn }}" onChange="{{ settKh.navn }}" placeholder="Navn *" style="{{ khFeltStil }}">
+                  <input value="{{ khRolle }}" onChange="{{ settKh.rolle }}" placeholder="Rolle, f.eks. keramiker" style="{{ khFeltStil }}">
+                  <input value="{{ khEpost }}" onChange="{{ settKh.epost }}" placeholder="E-post" style="{{ khFeltStil }}">
+                  <input value="{{ khTelefon }}" onChange="{{ settKh.telefon }}" placeholder="Telefon" style="{{ khFeltStil }}">
+                </div>
+                <input value="{{ khKurs }}" onChange="{{ settKh.kurs }}" placeholder="Holder kursene, f.eks. Nybegynner dreiekurs, Date Night" style="{{ khFeltStil }}">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); align-items: center;">
+                  <input value="{{ khTimesats }}" onChange="{{ settKh.timesats }}" placeholder="Timesats i kroner" inputmode="numeric" style="{{ khFeltStil }}">
+                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                    <input type="checkbox" checked="{{ khVises }}" onChange="{{ vekslKhVises }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    <span>Vis på nettsiden</span>
+                  </label>
+                </div>
+                <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khLagre }}" hint-size="auto,38px">{{ khKnapp }}</x-import>
+                  <button type="button" onClick="{{ khLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                  <sc-if value="{{ khKanSlette }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ khSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Sluttet</button>
+                  </sc-if>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khBeskjed }}</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <!-- Timefoering. «Registrer arbeidstimer» aapnet ogsaa bare en
+                 dialog. Én rad per foering, saa en dag kan rettes uten aa
+                 regne om resten. -->
+            <sc-if value="{{ khTimeApen }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end;">
+                <div style="flex: 1 1 150px;">
+                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hvem</label>
+                  <select value="{{ khTimeHvem }}" onChange="{{ settKhTimeHvem }}" style="{{ khFeltStil }}">
+                    <sc-for list="{{ khValg }}" as="v" hint-placeholder-count="3">
+                      <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+                <div style="flex: 0 1 150px;">
+                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Dato</label>
+                  <input type="date" value="{{ khTimeDato }}" onChange="{{ settKhTimeDato }}" style="{{ khFeltStil }}">
+                </div>
+                <div style="flex: 0 1 100px;">
+                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Timer</label>
+                  <input value="{{ khTimeAntall }}" onChange="{{ settKhTimeAntall }}" placeholder="4,5" inputmode="decimal" style="{{ khFeltStil }}">
+                </div>
+                <div style="flex: 1 1 160px;">
+                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hva</label>
+                  <input value="{{ khTimeHva }}" onChange="{{ settKhTimeHva }}" placeholder="Kurs, forberedelse, brenning" style="{{ khFeltStil }}">
+                </div>
+                <div style="display: flex; gap: var(--space-3); align-items: center;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khTimeLagre }}" hint-size="auto,38px">Før timene</x-import>
+                  <button type="button" onClick="{{ khTimeLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Lukk</button>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khTimeBeskjed }}</span>
+                </div>
+              </div>
+              <sc-for list="{{ khSisteTimer }}" as="t" hint-placeholder-count="3">
+                <div style="padding: 8px var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; gap: var(--space-4); align-items: baseline; font-size: var(--text-xs); color: var(--text-muted);">
+                  <span style="min-width: 78px;">{{ t.dato }}</span>
+                  <span style="font-weight: 600; color: var(--text-heading);">{{ t.hvem }}</span>
+                  <span>{{ t.timer }} t</span>
+                  <span>{{ t.hva }}</span>
+                  <button type="button" onClick="{{ t.slett }}" style="margin-left: auto; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Fjern</button>
+                </div>
+              </sc-for>
+            </sc-if>
+
             <sc-if value="{{ ingenKursholdere }}" hint-placeholder-val="{{ false }}">
               <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kursholdere er lagt inn. Instruktør settes på hvert kurs under «Kurs og events».</div>
             </sc-if>
@@ -13334,6 +13405,49 @@ class Component extends DCLogic {
       });
   }
 
+  /** Kursholderne og timene deres. */
+  hentKursholdere() {
+    if (!this.erPublisert() || this._khHentes) return;
+    this._khHentes = true;
+    fetch('/api/admin/kursholdere.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._khHentes = false;
+        if (d && d.kursholdere) this.setState({ kursholderData: d });
+      })
+      .catch(() => { this._khHentes = false; });
+  }
+
+  /** Alt som endrer kursholdere eller timer gaar samme vei. */
+  kursholderKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ khBeskjed: 'Krever den ekte siden' }); return; }
+    if (this._khLagrer) return;
+    this._khLagrer = true;
+    const erTime = kropp.handling === 'timer' || kropp.handling === 'slettTime';
+    this.setState(erTime ? { khTimeBeskjed: 'Lagrer …' } : { khBeskjed: 'Lagrer …' });
+
+    fetch('/api/admin/kursholdere.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._khLagrer = false;
+        const melding = (d && (d.beskjed || d.feil)) || (ok ? 'Lagret.' : 'Gikk ikke.');
+        this.setState(erTime
+          ? { khTimeBeskjed: melding, khTimeAntall: ok ? '' : this.state.khTimeAntall }
+          : { khBeskjed: melding, khApen: ok ? false : true });
+        if (ok) { this._khHentes = false; this.hentKursholdere(); }
+      })
+      .catch(() => {
+        this._khLagrer = false;
+        this.setState(erTime
+          ? { khTimeBeskjed: 'Fikk ikke kontakt med serveren.' }
+          : { khBeskjed: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   hentUttak() {
     if (!this.erPublisert() || this._uttakHentes) return;
     this._uttakHentes = true;
@@ -14146,6 +14260,9 @@ class Component extends DCLogic {
     if (side === 'adminvarsler' && !this.state.varslerData) {
       this.hentVarsler();
     }
+    if (this.erAdminSkjerm(side) && !this.state.kursholderData) {
+      this.hentKursholdere();
+    }
     if (['admin', 'adminmedlemskap', 'adminomrkurs', 'adminnyreg'].indexOf(side) !== -1
         && !this.state.adminPlanerRaa) {
       this.hentPlaner();
@@ -14364,16 +14481,21 @@ class Component extends DCLogic {
         { navn: 'Synlighet', verdi: 'Åpent for alle, kun for medlemmer, eller kun for inviterte' },
         { navn: 'Publisering', verdi: 'Legges ut med en gang, eller som kladd' },
       ], 'Opprett serie'),
-      aDeltakerliste: this.apne('Deltakerliste', 'Last ned eller skriv ut', [
-        { navn: 'Format', verdi: 'PDF eller Excel' },
-        { navn: 'Innhold', verdi: 'Navn, telefon, e-post, betalt' },
-        { navn: 'Utvalg', verdi: 'Én dato, eller hele serien' },
-      ], 'Last ned'),
-      aSendBeskjed: this.apne('Send beskjed', 'Går til Min side, og på e-post', [
-        { navn: 'Mottakere', verdi: 'Alle aktive medlemmer' },
-        { navn: 'Kanal', verdi: this.smsAktivert() ? 'Min side, e-post og SMS' : 'Min side og e-post (SMS ikke aktivert)' },
-        { navn: 'Vises', verdi: 'Til medlemmet har lest den' },
-      ], 'Skriv beskjed'),
+      // Dialogen beskrev «PDF eller Excel» og lukket seg igjen naar man
+      // trykket «Last ned» — ingenting ble lastet ned, og verkstedet maatte
+      // skrive av navnene fra skjermen. Naa lastes lista ned som CSV med
+      // semikolon og BOM, som norsk Excel aapner rett.
+      //
+      // Staar man paa én dato, er det den lista gjelder. Ellers alt framover.
+      aDeltakerliste: () => {
+        if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+        const okt = this.state.pameldtOkt || 0;
+        window.location.href = '/api/admin/deltakerliste.php' + (okt ? '?okt=' + okt : '');
+      },
+      // Dialogen som sto her beskrev hvem meldingen ville gaa til, og hadde
+      // en knapp «Skriv beskjed» som bare lukket den igjen. Skjemaet som
+      // faktisk sender ligger under Beskjeder. Naa gaar knappen dit.
+      aSendBeskjed: () => { this.setState({ side: 'adminbeskjeder', motValg: 'Alle aktive medlemmer' }); window.scrollTo(0, 0); },
       aGiGave: () => { const g = this.state.gave || {}; this.setState({ gRed: true, gType: g.type || 'Ta med en venn', gMottaker: g.mottaker || 'Alle medlemmer', gMedlem: g.medlem || '', gTekst: g.tekst || '', gTimer: g.timer || '2', gBelop: g.belop || '500' }); },
       gRed: !!this.state.gRed,
       gTypeValg: ['Ta med en venn', 'Ekstra timer', 'Gavekort'].map(t => ({
@@ -14559,14 +14681,26 @@ class Component extends DCLogic {
         window.open('/', '_blank', 'noopener');
       },
       innholdSistEndret: this.state.innholdSistEndret || (this.erPublisert() ? 'Ikke endret ennå' : 'Vises når siden kjører'),
-      aNySide: this.apne('Ny side', 'Legges til i menyen når den publiseres', [
-        { navn: 'Mal', verdi: 'Tom side, tekstside eller landingsside' },
-        { navn: 'Adresse', verdi: 'lissom.no/…' },
-      ], 'Opprett side'),
-      aNySeksjon: this.apne('Legg til seksjon', 'Velg en ferdig blokk', [
-        { navn: 'Typer', verdi: 'Tekst, bilde, kurs, produkter, sitat, kontakt' },
-        { navn: 'Plassering', verdi: 'Nederst, dras deretter på plass' },
-      ], 'Legg til'),
+      // «Opprett side» beskrev maler og plasseringer, og knappen lukket seg
+      // igjen. Sidene og seksjonene er definert i koden (SIDEINNHOLD) —
+      // en ny side krever at feltene kobles til noe som tegner dem, og
+      // det kan ikke gjoeres fra en dialog. Knappen sier naa hva som
+      // gjelder framfor aa love noe.
+      aNySide: this.apne('Opprett side', 'Ikke mulig herfra ennå', [
+        { navn: 'Hvorfor', verdi: 'Sidene er bygget i koden, og en ny side må tegnes før den kan fylles.' },
+        { navn: 'Det du kan gjøre', verdi: 'Endre teksten på sidene som finnes, under Nettsiden → Innhold.' },
+        { navn: 'Trenger du en ny side', verdi: 'Si fra, så settes den opp.' },
+      ], 'Lukk'),
+      // «Legg til» beskrev maler og plasseringer, og knappen lukket seg
+      // igjen. Sidene og seksjonene er definert i koden (SIDEINNHOLD) —
+      // en ny side krever at feltene kobles til noe som tegner dem, og
+      // det kan ikke gjoeres fra en dialog. Knappen sier naa hva som
+      // gjelder framfor aa love noe.
+      aNySeksjon: this.apne('Legg til', 'Ikke mulig herfra ennå', [
+        { navn: 'Hvorfor', verdi: 'Sidene er bygget i koden, og en ny side må tegnes før den kan fylles.' },
+        { navn: 'Det du kan gjøre', verdi: 'Endre teksten på sidene som finnes, under Nettsiden → Innhold.' },
+        { navn: 'Trenger du en ny side', verdi: 'Si fra, så settes den opp.' },
+      ], 'Lukk'),
       // Dorkoden og wifi skrives inn for haand og lagres som intern tekst.
       // Noeklene ligger under «Privat/», og api/innhold.php slipper dem ikke
       // ut — de gaar bare til den som er innlogget som aktivt medlem.
@@ -17027,16 +17161,9 @@ class Component extends DCLogic {
       npTekstStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', color: 'var(--text-heading)', resize: 'vertical', fontFamily: 'inherit' },
       npKnappStil: { appearance: 'none', cursor: (this.state.npNavn && this.state.npPris) ? 'pointer' : 'not-allowed', opacity: (this.state.npNavn && this.state.npPris) ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
       npLeggUt: () => this.lagreVare(),
-      mobMeldDeltakere: this.apne('Melding til deltakere', this.smsAktivert()
-        ? 'Sendes på e-post og SMS til alle påmeldte på kurset'
-        : 'Sendes på e-post til alle påmeldte på kurset', [
-        { navn: 'Kurs', verdi: 'Nybegynner dreiekurs, 19. aug' },
-        { navn: 'Melding', verdi: '' },
-      ], 'Send melding', null, true),
-      mobMeldMedlemmer: this.apne('Melding til medlemmene', 'Vises på Min side og sendes på e-post', [
-        { navn: 'Mottakere', verdi: 'Alle aktive medlemmer' },
-        { navn: 'Melding', verdi: '' },
-      ], 'Send melding', null, true),
+      // Samme sak: beskrev en melding og sendte ingen.
+      mobMeldDeltakere: () => { this.setState({ side: 'adminbeskjeder', motValg: 'Deltakere på et kurs' }); window.scrollTo(0, 0); },
+      mobMeldMedlemmer: () => { this.setState({ side: 'adminbeskjeder', motValg: 'Alle aktive medlemmer' }); window.scrollTo(0, 0); },
       ...(() => {
         const apne = this.state.mobApne || {};
         const lag = (k) => {
@@ -17235,35 +17362,101 @@ class Component extends DCLogic {
       ovGaInnhold: this.go('admininnhold'),
       ovGaNyttig: this.go('adminnyttig'),
       ovGaOkonomi: this.go('adminokonomi'),
-      // Kursholderne med timer sto som tre faste navn, to av dem oppdiktede,
-      // med timetall ingen hadde fort. Timeforing finnes ikke i basen ennaa.
-      kursholdere: (this.erPublisert() ? [] : [
-        { navn: 'Monica', rolle: 'Eier og keramiker', kurs: 'Nybegynner dreiekurs · Kurs boller · Date Night', timerMnd: '34 t i august' },
-        { navn: 'Joakim', rolle: 'Keramiker', kurs: 'Store fat kurs · Paint on Pots', timerMnd: '18 t i august' },
-        { navn: 'Ada Foss', rolle: 'Vikar', kurs: 'Paint on Pots', timerMnd: '6 t i august' },
-      ]).map(h => Object.assign(h, {
-        velg: this.apne(h.navn, h.rolle + ' · ' + h.timerMnd, [
-          { navn: 'Navn', verdi: h.navn },
-          { navn: 'E-post', verdi: h.navn.split(' ')[0].toLowerCase() + '@lissom.no' },
-          { navn: 'Holder kursene', verdi: h.kurs.split(' · ').join(', ') },
-          { navn: 'Timesats', verdi: 'kr. 350,-' },
-          { navn: 'Vises på nettsiden', verdi: 'Ja' },
-        ], 'Lagre', null, true),
-      })),
-      aRegistrerTimer: this.apne('Registrer arbeidstimer', 'Føres på kursholderen og samles per måned', [
-        { navn: 'Kursholder', verdi: 'Monica' },
-        { navn: 'Dato', verdi: 'I dag' },
-        { navn: 'Timer', verdi: '' },
-        { navn: 'Hva', verdi: 'Kurs, forberedelse eller brenning' },
-      ], 'Registrer', null, true),
+      // Kursholderne, fra basen.
+      //
+      // Sto som tre faste navn — to av dem oppdiktede — med timetall ingen
+      // hadde foert, og knappene «Ny kursholder» og «Registrer arbeidstimer»
+      // aapnet dialoger som lukket seg igjen. Det fantes ingen tabell bak.
+      ...(() => {
+        const d = this.state.kursholderData || {};
+        const liste = d.kursholdere || [];
+        const u = this.state.khUtkast || {};
+        const felt = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '9px 12px', font: 'var(--type-body-sm)',
+          color: 'var(--text-heading)', background: 'var(--surface-page)',
+        };
+        const valgtHvem = this.state.khTimeHvem || (liste[0] ? String(liste[0].id) : '');
+        const aapne = (h) => () => this.setState({
+          khApen: true, khTimeApen: false, khId: h ? h.id : 0,
+          khUtkast: h ? {
+            navn: h.navn, rolle: h.rolle, epost: h.epost, telefon: h.telefon,
+            kurs: h.kurs, timesats: h.timesats, vises: h.vises,
+          } : { vises: true },
+          khBeskjed: '',
+        });
+
+        return {
+          kursholdere: liste.map(h => Object.assign({}, h, {
+            timerMnd: (h.timerMnd || '0') + ' t i ' + (d.maaned || 'måneden'),
+            velg: aapne(h),
+          })),
+          ingenKursholdere: this.erPublisert() && liste.length === 0,
+
+          khFeltStil: felt,
+          khApen: !!this.state.khApen,
+          khLukk: () => this.setState({ khApen: false, khBeskjed: '' }),
+          khKnapp: this.state.khId ? 'Lagre endringer' : 'Legg til kursholder',
+          khKanSlette: !!this.state.khId,
+          khBeskjed: this.state.khBeskjed || '',
+          khNavn: u.navn || '', khRolle: u.rolle || '', khEpost: u.epost || '',
+          khTelefon: u.telefon || '', khKurs: u.kurs || '', khTimesats: u.timesats || '',
+          khVises: u.vises !== false,
+          settKh: ['navn','rolle','epost','telefon','kurs','timesats'].reduce((m, n) => {
+            m[n] = e => this.setState(st => ({
+              khUtkast: Object.assign({}, st.khUtkast || {}, { [n]: e.target.value }),
+              khBeskjed: '',
+            }));
+            return m;
+          }, {}),
+          vekslKhVises: () => this.setState(st => ({
+            khUtkast: Object.assign({}, st.khUtkast || {}, { vises: !(st.khUtkast || {}).vises }),
+          })),
+          khLagre: () => this.kursholderKall(Object.assign({ handling: 'lagre', id: this.state.khId || 0 }, {
+            navn: (u.navn || '').trim(), rolle: u.rolle || '', epost: u.epost || '',
+            telefon: u.telefon || '', kurs: u.kurs || '', timesats: u.timesats || '',
+            vises: u.vises !== false ? 'ja' : 'nei',
+          })),
+          khSlett: () => {
+            if (!window.confirm('Ta ' + (u.navn || 'kursholderen') + ' ut av lista? Timene står igjen.')) return;
+            this.kursholderKall({ handling: 'slett', id: this.state.khId });
+          },
+
+          // Timefoeringen
+          khTimeApen: !!this.state.khTimeApen,
+          khTimeLukk: () => this.setState({ khTimeApen: false, khTimeBeskjed: '' }),
+          khValg: liste.map(h => ({ verdi: String(h.id), navn: h.navn })),
+          // Samme verdi til bade nedtrekket og lagringen. Foer regnet
+          // nedtrekket ut «forste i lista» mens lagringen leste tilstanden
+          // direkte — og den var ikke satt for man hadde byttet valg. Da sendte
+          // den id 0, og serveren svarte «Velg en kursholder forst» paa noe som
+          // sto valgt paa skjermen.
+          khTimeHvem: valgtHvem,
+          settKhTimeHvem: e => this.setState({ khTimeHvem: e.target.value, khTimeBeskjed: '' }),
+          khTimeDato: this.state.khTimeDato || new Date().toISOString().slice(0, 10),
+          settKhTimeDato: e => this.setState({ khTimeDato: e.target.value, khTimeBeskjed: '' }),
+          khTimeAntall: this.state.khTimeAntall || '',
+          settKhTimeAntall: e => this.setState({ khTimeAntall: e.target.value, khTimeBeskjed: '' }),
+          khTimeHva: this.state.khTimeHva || '',
+          settKhTimeHva: e => this.setState({ khTimeHva: e.target.value, khTimeBeskjed: '' }),
+          khTimeBeskjed: this.state.khTimeBeskjed || '',
+          khTimeLagre: () => this.kursholderKall({
+            handling: 'timer',
+            id: parseInt(valgtHvem || '0', 10) || 0,
+            dato: this.state.khTimeDato || '',
+            timer: this.state.khTimeAntall || '',
+            hva: this.state.khTimeHva || '',
+          }),
+          khSisteTimer: (d.timer || []).map(t => Object.assign({}, t, {
+            slett: () => this.kursholderKall({ handling: 'slettTime', timeId: t.id }),
+          })),
+
+          aRegistrerTimer: () => this.setState({ khTimeApen: true, khApen: false, khTimeBeskjed: '' }),
+          aNyKursholder: aapne(null),
+        };
+      })(),
       bryterVisKursholdere: this.bryterPaa('kursholdere'),
       vekslVisKursholdere: () => this.vekslBryter('kursholdere', 'Kursholderne'),
-      aNyKursholder: this.apne('Ny kursholder', 'Knyttes til kursene du skriver inn — vises på kurssidene', [
-        { navn: 'Navn', verdi: '' },
-        { navn: 'E-post', verdi: '' },
-        { navn: 'Telefon', verdi: '' },
-        { navn: 'Holder kursene', verdi: '' },
-      ], 'Ansett kursholder', null, true),
       ovOmsValg: ['I dag', 'Denne måneden'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovOms: n }),

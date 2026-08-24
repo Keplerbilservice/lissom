@@ -576,6 +576,23 @@ final class Booking
             'order',
             $ordreId
         );
+
+        // En gave krever en handling i verkstedet: pakke inn og skrive
+        // kortet. Haken og hilsenen naadde ikke serveren i det hele tatt for
+        // 24. august, saa ingen fikk vite det. Varsles bare naar det faktisk
+        // er en gave — ellers ville hver eneste bestilling gitt en e-post.
+        if ((int) ($o['gave'] ?? 0) === 1) {
+            Varsel::tilAdmin(
+                'Gave skal pakkes inn — ' . $o['ordrenr'],
+                'Bestilling ' . $o['ordrenr'] . ' fra ' . $o['kunde_navn'] . " er merket som gave.\n\n"
+                . implode("\n", $liste) . "\n\n"
+                . 'Hilsen på kortet: ' . (trim((string) ($o['gave_hilsen'] ?? '')) !== ''
+                        ? '«' . $o['gave_hilsen'] . '»'
+                        : '(ingen hilsen skrevet)'),
+                'order',
+                $ordreId
+            );
+        }
     }
 
     public static function kroner(int $ore): string

@@ -101,7 +101,18 @@ $ordrenr = 'B-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
 
 // Ordren lagres for vi sender kunden til Vipps, slik at webhooken alltid har
 // noe aa slaa opp i.
-$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr): array {
+// Gaveinnpakning og hilsen. Kolonnene kommer med migrasjon 041; uten den
+// skal en bestilling fortsatt gaa gjennom, bare uten gaveopplysningene.
+$gavefelt = [];
+if (DB::harKolonne('orders', 'gave')) {
+    $gavefelt = [
+        // JSON sender true, et skjema sender «1». Begge skal bety det samme.
+        'gave'        => in_array(Foresporsel::kropp()['gave'] ?? Foresporsel::tekst('gave'), [true, 1, '1', 'true'], true) ? 1 : 0,
+        'gave_hilsen' => mb_substr(trim(Foresporsel::tekst('hilsen')), 0, 300) ?: null,
+    ];
+}
+
+$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt): array {
     $betalingsfelt = [
         'vipps_reference' => $referanse,
         'type'            => 'epayment',
@@ -130,7 +141,7 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
         'sum_ore'       => $sum,
         'status'        => 'ny',
         'payment_id'    => $paymentId,
-    ]);
+    ] + $gavefelt);
 
     foreach ($rader as $r) {
         DB::settInn('order_lines', [

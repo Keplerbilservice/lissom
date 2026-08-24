@@ -30,6 +30,14 @@ const mal = s.slice(s.indexOf('<x-dc>'), s.indexOf('<script type="text/x-dc"'));
 /** Felter som med vilje staar uten binding, med grunnen. */
 const UNNTAK = [
   { treff: /type="file"/, grunn: 'filvelger — styres av onChange alene' },
+  {
+    treff: /Jeg godtar vilkårene for medlemskap/,
+    grunn: 'staar paa skjermen «Vipps-flyt», som ingenting lenker til. Eneste '
+         + 'vei inn er aa skrive /betaling manuelt. Skjermen viser hvordan '
+         + 'maanedstrekk skal se ut naar Vipps Recurring blir godkjent — det '
+         + 'er ikke godkjent enda, og hele flyten er en tegning. Roeres ikke '
+         + 'for eieren har tatt stilling til om skjermen skal staa eller gaa.',
+  },
 ];
 
 const utenEndring = [];

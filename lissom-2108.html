@@ -1497,7 +1497,11 @@ window.__resources = {
                   </div>
                   <div style="height: var(--space-4);"></div>
                   </sc-if>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
+                  <!-- Feltet var tegnet, men ikke koblet til noe: kvitteringen
+                       gikk til adressen fra Vipps-innloggingen uansett hva som
+                       ble skrevet. Naa staar innloggingens adresse her, og kan
+                       rettes. -->
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bEpost }}" on-change="{{ settBEpost }}" hint-size="100%,66px"></x-import>
                 </sc-if>
                 <sc-if value="{{ visIdentitet }}" hint-placeholder-val="{{ true }}">
                   <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-5); display: flex; align-items: center; gap: var(--space-4);">
@@ -1521,7 +1525,12 @@ window.__resources = {
                     </label>
                     <sc-if value="{{ godkjenningErMedlem }}" hint-placeholder-val="{{ false }}">
                       <div style="height: var(--space-4);"></div>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn på medlemmet" placeholder="Fornavn Etternavn" hint-size="100%,66px"></x-import>
+                      <!-- Navnet paa medlemmet ble aldri sendt. Kunden krysset
+                           av for «jeg kommer sammen med et aktivt medlem», skrev
+                           navnet, og verkstedet fikk en drop-in uten aa vite hvem
+                           som skulle vaere med. Feltet folge_medlem i basen sto
+                           tomt for alle. -->
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn på medlemmet" placeholder="Fornavn Etternavn" value="{{ bFolge }}" on-change="{{ settBFolge }}" hint-size="100%,66px"></x-import>
                       <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Medlemmet må være til stede hele tiden du er i verkstedet.</p>
                     </sc-if>
                   </div>
@@ -2292,10 +2301,18 @@ window.__resources = {
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Kontaktopplysninger</div>
                 <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" hint-size="100%,66px"></x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" hint-size="100%,66px"></x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottaker av gavekort" icon="gift" placeholder="navn@epost.no" hint-size="100%,66px"></x-import>
+                  <!-- Feltene var tegnet, men ikke koblet til noe: det man
+                       skrev ble kastet, og kvitteringen gikk til adressen fra
+                       Vipps-innloggingen uansett. Naa staar innloggingens
+                       verdier her, og kan rettes.
+
+                       «Mottaker av gavekort» sto her ogsaa. Gavekort selges
+                       ikke gjennom handlekurven — de kjopes paa gavekortsida,
+                       som har sine egne felter for mottaker og hilsen. Feltet
+                       kunne aldri ha gjort noe, og er tatt ut. -->
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ kaNavn }}" on-change="{{ settKaNavn }}" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" value="{{ kaTelefon }}" on-change="{{ settKaTelefon }}" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ kaEpost }}" on-change="{{ settKaEpost }}" hint-size="100%,66px"></x-import>
                 </div>
               </div>
             </div>
@@ -2327,7 +2344,7 @@ window.__resources = {
                 <span style="font-size: var(--text-sm); color: var(--text-heading);">Send som gave — vi pakker inn og legger ved en hilsen (gratis)</span>
               </label>
               <sc-if value="{{ gaveinnpakning }}" hint-placeholder-val="{{ false }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på kortet" placeholder="F.eks. «Gratulerer med dagen, mamma!»" hint-size="100%,66px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på kortet" placeholder="F.eks. «Gratulerer med dagen, mamma!»" value="{{ kaHilsen }}" on-change="{{ settKaHilsen }}" hint-size="100%,66px"></x-import>
                 <div style="height: var(--space-4);"></div>
               </sc-if>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
@@ -3993,7 +4010,12 @@ window.__resources = {
                   <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Bilde 2</div></div>
                   <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Bilde 3</div></div>
                 </div>
-                <div style="margin-top: var(--space-3);"><label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Alt-tekst (SEO)</label><input type="text" placeholder="Beskriv bildet, f.eks. «Håndlaget blå kopp i steingods»" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body); font-size: var(--text-sm);"></div>
+                <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
+                     hovedbilde», og det er den verdien som faktisk gaar ut.
+                     Her sto et felt til: det hadde ingen binding og ingen
+                     kolonne aa lagres i, saa alt man skrev ble kastet. To
+                     steder aa skrive samme tekst, der bare det ene virket. -->
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alt-tekst for hovedbildet redigeres under Nettsiden → SEO.</p>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Video (valgfritt)</label>
                 <div style="border: 1px dashed var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-5); text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">Slipp videofil her (MP4, maks 90 sek) — vises først i karusellen</div>
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
@@ -5702,7 +5724,12 @@ window.__resources = {
                 <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Slipp bilde</div></div>
                 <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Slipp bilde</div></div>
               </div>
-              <div style="margin-top: var(--space-3);"><label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Alt-tekst (SEO)</label><input type="text" placeholder="Beskriv bildet, f.eks. «Håndlaget blå kopp i steingods»" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body); font-size: var(--text-sm);"></div>
+              <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
+                     hovedbilde», og det er den verdien som faktisk gaar ut.
+                     Her sto et felt til: det hadde ingen binding og ingen
+                     kolonne aa lagres i, saa alt man skrev ble kastet. To
+                     steder aa skrive samme tekst, der bare det ene virket. -->
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alt-tekst for hovedbildet redigeres under Nettsiden → SEO.</p>
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Dra bilder rett inn i feltene, eller klikk for å velge fra maskinen. Bilder beskjæres automatisk.</p>
             </div>
 
@@ -5858,8 +5885,8 @@ window.__resources = {
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ butikkTittel }}</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="package" on-click="{{ aInternbutikk }}" hint-size="auto,44px">Internbutikk</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyttProdukt }}" hint-size="auto,44px">Nytt produkt</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="package" on-click="{{ npApneIntern }}" hint-size="auto,44px">Internbutikk</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ npApne }}" hint-size="auto,44px">Nytt produkt</x-import>
           </div>
         </div>
 
@@ -5965,7 +5992,7 @@ window.__resources = {
               </div>
             </sc-for>
             <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ aInternbutikk }}" hint-size="100%,40px">Legg til vare</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" full-width="{{ sant }}" on-click="{{ npApneIntern }}" hint-size="100%,40px">Legg til vare</x-import>
             </div>
           </div>
 
@@ -7408,6 +7435,13 @@ window.__resources = {
           <input type="checkbox" checked="{{ npMva }}" onChange="{{ toggleNpMva }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
           <span>{{ npMvaTekst }}</span>
         </label>
+        <!-- Internbutikken er de samme varene, men bare for medlemmer.
+             «Legg til vare» der aapnet foer en dialog som ikke opprettet
+             noe; naa aapner den dette skjemaet med haken satt. -->
+        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+          <input type="checkbox" checked="{{ npKunMedlemmer }}" onChange="{{ vekslNpKunMedlemmer }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+          <span>Kun for medlemmer (internbutikken)</span>
+        </label>
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-1);">
           <button type="button" onClick="{{ npLeggUt }}" style="{{ npKnappStil }}">{{ npHandling }}</button>
           <button type="button" onClick="{{ npLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
@@ -7641,44 +7675,12 @@ window.__resources = {
         </sc-for>
       </div>
     </sc-if>
-    <sc-if value="{{ detaljSkjema }}" hint-placeholder-val="{{ true }}">
-      <sc-if value="{{ detaljBilder }}" hint-placeholder-val="{{ true }}">
-      <div>
-        <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">Bilder</div>
-        <div style="display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: var(--space-3); align-items: start;">
-          <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Hovedbilde (1:1)</div></div>
-          <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">+</div></div>
-          <div style="position: relative; aspect-ratio: 1 / 1; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">+</div></div>
-        </div>
-        <div style="margin-top: var(--space-3);">
-          <div style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Fokuspunkt</div>
-          <div style="display: grid; grid-template-columns: repeat(3, 24px); gap: 4px;">
-            <sc-for list="{{ adminFokusValg }}" as="f" hint-placeholder-count="9">
-              <button type="button" onClick="{{ f.velg }}" aria-label="{{ f.navn }}" style="{{ f.stil }}"></button>
-            </sc-for>
-          </div>
-        </div>
-        <div style="margin-top: var(--space-3);"><label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Alt-tekst (SEO)</label><input type="text" placeholder="Beskriv bildet, f.eks. «Håndlaget blå kopp i steingods»" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body); font-size: var(--text-sm);"></div>
-        <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Bildene beskjæres automatisk til kvadrat (1:1). Første bilde vises i butikken.</p>
-      </div>
-      </sc-if>
-      <div id="detalj-skjema" style="display: flex; flex-direction: column; gap: var(--space-2);">
-      <sc-for list="{{ detaljFelter }}" as="f" hint-placeholder-count="4">
-        <sc-if value="{{ f.vanlig }}" hint-placeholder-val="{{ true }}">
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="{{ f.navn }}" default-value="{{ f.verdi }}" hint-size="100%,66px"></x-import>
-        </sc-if>
-        <sc-if value="{{ f.erMva }}" hint-placeholder-val="{{ false }}">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading); padding: 4px 0;">
-            <input type="checkbox" checked="{{ f.mvaHuket }}" onChange="{{ f.toggleMva }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-            Med 25 % mva
-          </label>
-        </sc-if>
-      </sc-for>
-      </div>
-      <sc-if value="{{ detaljBilder }}" hint-placeholder-val="{{ true }}">
-        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Beskrivelse" rows="3" placeholder="Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin." hint-size="100%,100px"></x-import>
-      </sc-if>
-    </sc-if>
+    <!-- Her sto en skjemautgave av dialogen: tomme bildefelter, et
+         fokuspunkt-rutenett og en tekstboks — fra designet, ikke koblet til
+         noe. «Nytt produkt» og «Legg til vare» aapnet den, og «Opprett
+         produkt» lukket den bare igjen. Begge knappene peker naa paa det
+         ekte vareskjemaet, og da var ingenting igjen som kunne aapne denne.
+         Fjernet 24. august. -->
     <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4); flex-wrap: wrap;">
       <!-- Ruter som bare viser noe, sender «Lukk» som handling. Da sto det
            to like knapper ved siden av hverandre, og den ene gjorde ikke
@@ -10798,6 +10800,11 @@ class Component extends DCLogic {
         // Gavekortet. Feltet i kassa var ikke koblet til noe: koden ble
         // skrevet inn, og kunden betalte full pris.
         gavekort: (this.state.gkKode || '').trim(),
+        navn: (this.state.kaNavn || '').trim(),
+        epost: (this.state.kaEpost || '').trim(),
+        telefon: (this.state.kaTelefon || '').trim(),
+        gave: !!this.state.gaveinnpakning,
+        hilsen: (this.state.kaHilsen || '').trim(),
       }),
     })
       .then(r => r.json())
@@ -11916,6 +11923,7 @@ class Component extends DCLogic {
         pris: parseInt(pris, 10),
         // Tomt antall betyr «ikke lagerstyrt», ikke «tomt paa lager».
         lager: (s.npAntall || '').trim(),
+        kunMedlemmer: s.npKunMedlemmer ? 'ja' : 'nei',
         kategori: (s.npKategori || '').trim(),
         mva: s.npMva === false ? 0 : 25,
         bilde: fra ? fra.bilde : '',
@@ -13650,6 +13658,9 @@ class Component extends DCLogic {
       body: JSON.stringify({
         oktId: oktId, antall: 1,
         gavekort: (this.state.gkKode || '').trim(),
+        epost: (this.state.bEpost || '').trim(),
+        // Bare naar man har krysset av for aa komme sammen med et medlem.
+        folgeMedlem: this.state.dropinGodkjenning === 'medlem' ? (this.state.bFolge || '').trim() : '',
       }),
     })
       .then(r => r.json())
@@ -14372,19 +14383,6 @@ class Component extends DCLogic {
         { navn: 'Unntak', verdi: 'Ferier og stengte dager' },
         { navn: 'Virkning', verdi: 'Fra og med neste uke' },
       ], 'Lagre tider'),
-      aNyttProdukt: this.apne('Nytt produkt', 'Legges i butikken på nett', [
-        { navn: 'Navn', verdi: '' },
-        { navn: 'Pris', verdi: '' },
-        { navn: 'Mva', verdi: 'Uten mva' },
-        { navn: 'På lager', verdi: '' },
-        { navn: 'Status', verdi: 'Matsikret' },
-      ], 'Opprett produkt', null, 'produkt'),
-      aInternbutikk: this.apne('Ny vare i internbutikken', 'Kun synlig for medlemmer', [
-        { navn: 'Navn', verdi: '' },
-        { navn: 'Detalj', verdi: '' },
-        { navn: 'Pris', verdi: '' },
-        { navn: 'Mva', verdi: 'Uten mva' },
-      ], 'Legg til vare', null, 'produkt'),
       // Siste kjop av medlemsvarer. Fire oppdiktede kjop med navn og
       // kvitteringsnummer sto her — ogsaa paa den ekte siden.
       internkjop: (this.state.adminInternkjop || (this.erPublisert() ? [] : [
@@ -15017,6 +15015,10 @@ class Component extends DCLogic {
         }, 4000);
       },
 
+      bEpost: this.state.bEpost ?? (this.state.medlemEpost || ''),
+      settBEpost: e => this.setState({ bEpost: e.target.value }),
+      bFolge: this.state.bFolge || '',
+      settBFolge: e => this.setState({ bFolge: e.target.value }),
       visIdentitet: (this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),
       visKontaktfelt: !(this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),
       betalKnapp: (this.state.valgtKurs && this.state.valgtKurs.price === 'Gratis') ? 'Meld meg på' : 'Betal ' + ((this.state.valgtKurs && this.state.valgtKurs.price) || '') + ' med Vipps',
@@ -16868,7 +16870,14 @@ class Component extends DCLogic {
       })),
       npApen: !!this.state.npApen,
       npLukk: () => this.setState({ npApen: false }),
-      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true }),
+      // «Nytt produkt» og «Internbutikk» aapnet en dialog fra designet: tomme
+      // bildefelter, en alt-tekst uten binding, og en «Opprett produkt»-knapp
+      // som bare lukket seg igjen. Det ekte skjemaet laa ved siden av. Naa
+      // peker knappene dit.
+      npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false }),
+      npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true }),
+      npKunMedlemmer: !!this.state.npKunMedlemmer,
+      vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
       npTittel: this.state.npRediger ? 'Rediger vare' : 'Ny vare',
       npHandling: this.state.npRediger ? 'Lagre endringer' : 'Legg ut i butikken',
       npNavn: this.state.npNavn || '',
@@ -17814,6 +17823,21 @@ class Component extends DCLogic {
         return this.erPublisert() ? 'Henter …' : '4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet';
       })(),
       ingenInne: this.state.stempling ? this.state.stempling.inne.antall === 0 : this.erPublisert(),
+      // Kontaktopplysningene i kassa. Feltene var tegnet, men ikke koblet
+      // til noe. Innloggingen fyller dem, og de kan rettes — kvitteringen
+      // skal kunne gaa til en annen adresse enn den Vipps kjenner.
+      kaNavn: this.state.kaNavn ?? (this.state.vippsNavn || ''),
+      settKaNavn: e => this.setState({ kaNavn: e.target.value }),
+      kaTelefon: this.state.kaTelefon ?? (this.state.medlemTelefon || ''),
+      settKaTelefon: e => this.setState({ kaTelefon: e.target.value }),
+      kaEpost: this.state.kaEpost ?? (this.state.medlemEpost || ''),
+      settKaEpost: e => this.setState({ kaEpost: e.target.value }),
+      // Hilsenen paa gaven. Haken «Send som gave» sto bare i nettleseren, og
+      // feltet var ikke koblet til noe — verkstedet fikk aldri vite at noe
+      // skulle pakkes inn.
+      kaHilsen: this.state.kaHilsen || '',
+      settKaHilsen: e => this.setState({ kaHilsen: e.target.value }),
+
       // Gavekort i kassa. Feltet var ikke koblet til noe: koden ble skrevet
       // inn, og kunden betalte full pris likevel. Saldoen sjekkes mot
       // serveren mens man skriver, saa man ser om kortet gjelder for man

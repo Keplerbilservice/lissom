@@ -6112,7 +6112,17 @@ window.__resources = {
         <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-              <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Forespørsler fra nettsiden</div>
+              <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Henvendelser</span>
+                <!-- Ett sted for begge slag. Meldinger fra medlemmene og
+                     foresporsler fra nettsiden laa i hver sin liste, men i
+                     samme tabell — saa de viste det samme. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ henvFiltre }}" as="hf" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ hf.velg }}" style="{{ hf.stil }}">{{ hf.navn }}</button>
+                  </sc-for>
+                </div>
+              </div>
               <sc-for list="{{ foresporsler }}" as="f" hint-placeholder-count="3">
                 <div style="border-top: 1px solid var(--border-subtle);">
                   <div onClick="{{ f.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); cursor: pointer;">
@@ -6165,19 +6175,11 @@ window.__resources = {
               </sc-for>
             </div>
 
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Fra medlemmene</div>
-              <div style="display: flex; flex-direction: column; gap: var(--space-5);">
-                <sc-for list="{{ innboks }}" as="m" hint-placeholder-count="3">
-                  <div onClick="{{ m.velg }}" style="{{ m.stil }}">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px;">
-                      <span style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</span>
-                      <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.tid }}</span>
-                    </div>
-                    <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ m.tekst }}</p>
-                  </div>
-                </sc-for>
-              </div>
+            <!-- Kortet «Fra medlemmene» sto her med sin egen liste. Den
+                 leste samme tabell som lista over, saa de to viste det samme —
+                 og «Svar» i den ene aapnet en dialog som bare lukket seg
+                 igjen. Naa er det én liste med et filter, og ett sted aa
+                 svare. Fjernet 24. august. -->
             </div>
           </div>
 
@@ -15389,7 +15391,14 @@ class Component extends DCLogic {
       // navn, saa lista saa travel ut selv om ingen hadde tatt kontakt.
       foresporsler: (this.state.adminForesporsler || (this.erPublisert() ? [] : [
         { navn: 'Kine Solheim', hva: 'Utdrikningslag, 12 personer', tid: 'i dag', status: 'Ubesvart', tone: 'warning', tekst: 'Vi er 12 stykker som onsker en kveld med dreiing i oktober.', epost: 'kine@epost.no', tlf: '' },
-      ])).map(f => Object.assign({}, f, {
+      ])).filter(f => {
+        // «Beskjed fra medlem» er det Min side sender. Alt annet kommer fra
+        // skjemaet paa nettsiden.
+        const fra = (this.state.henvFilter || 'Alle');
+        if (fra === 'Alle') return true;
+        const erMedlem = /medlem/i.test(f.hva || '');
+        return fra === 'Fra medlemmene' ? erMedlem : !erMedlem;
+      }).map(f => Object.assign({}, f, {
         erUbesvart: f.status === 'Ubesvart',
         // Raden aapner seg i stedet for aa aapne en dialog. Dialogen viste
         // det samme, men hadde ingen vei til aa svare — og et svar er hele
@@ -15405,6 +15414,19 @@ class Component extends DCLogic {
         merk: () => this.merkForesporsel(f.id, f.status === 'Ubesvart' ? 'besvart' : 'ubesvart'),
         merkTekst: f.status === 'Ubesvart' ? 'Merk som besvart uten å svare' : 'Merk som ubesvart igjen',
       })),
+      henvFiltre: ['Alle', 'Fra medlemmene', 'Fra nettsiden'].map(navn => {
+        const valgt = (this.state.henvFilter || 'Alle') === navn;
+        return {
+          navn,
+          velg: () => this.setState({ henvFilter: navn, henvApen: null }),
+          stil: {
+            appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+            padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none',
+            background: valgt ? 'var(--lissom-brown)' : 'transparent',
+            color: valgt ? 'var(--clay-50)' : 'var(--text-muted)',
+          },
+        };
+      }),
       henvSvar: this.state.henvSvar || '',
       settHenvSvar: e => this.setState({ henvSvar: e.target.value, henvBeskjed: '' }),
       henvBeskjed: this.state.henvBeskjed || '',
@@ -19103,7 +19125,27 @@ class Component extends DCLogic {
       settMedlemsBeskjed: (e) => this.setState({ medlemsBeskjed: e.target.value }),
       sendTilMonica: () => this.sendTilMonicaNaa(),
       monicaEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendTilMonicaNaa(); } },
-      innboks: ((this.state.nyInnboks || []).slice().reverse()).concat(this.erPublisert() ? [] : [
+      // Innboksen paa Oversikt.
+      //
+      // Den viste bare det man selv hadde skrevet i forhandsvisningen —
+      // «nyInnboks» fylles lokalt og naar aldri serveren. Paa den ekte siden
+      // sto den derfor tom, mens meldingene fra medlemmene laa som
+      // henvendelser under Beskjeder. To lister for det samme, der den
+      // synligste var tom.
+      //
+      // «Svar» aapnet en dialog som bare lukket seg igjen. Naa gaar den til
+      // henvendelsen med svarfeltet aapent.
+      innboks: (this.erPublisert()
+        ? (this.state.adminForesporsler || [])
+            .filter(f => f.status === 'Ubesvart')
+            .slice(0, 8)
+            .map(f => ({
+              id: f.id, navn: f.navn, tekst: f.tekst, tid: f.tid,
+              ny: true, epost: f.epost || '—', tlf: f.tlf || '—',
+              abonnement: f.hva || '',
+            }))
+        : []
+      ).concat(this.erPublisert() ? [] : [
         { navn: 'Ole Aarseth', tekst: 'Kan jeg forlenge prøvemedlemskapet en uke? Jeg rakk ikke å bruke alle timene i august.', tid: '2 timer siden', ny: true, epost: 'ole@epost.no', tlf: '+47 900 41 226', abonnement: 'Prøv Lissom, utløper 3. sep' },
         { navn: 'Emma Bjørnstad', tekst: 'Er koppene mine ferdig brent? Jeg var på drop-in for tre uker siden.', tid: 'I går', ny: true, epost: 'emma@epost.no', tlf: '+47 902 14 887', abonnement: 'Ikke medlem, drop-in-gjest' },
         { navn: 'Silje Bratt', tekst: 'Takk for sist, kjempefin kveld! Kommer tilbake på tirsdag.', tid: '20. aug', epost: 'silje@epost.no', tlf: '+47 971 22 508', abonnement: '30 timer' },
@@ -19116,7 +19158,11 @@ class Component extends DCLogic {
           { navn: 'Telefon', verdi: m.tlf },
           { navn: 'Abonnement', verdi: m.abonnement },
           { navn: 'Status', verdi: m.ny ? 'Ubesvart' : 'Besvart' },
-        ], 'Svar', null),
+        ], 'Svar', null, false, () => {
+          // Til henvendelsen, med raden aapen. Det er der svarfeltet er.
+          this.setState({ side: 'adminbeskjeder', henvApen: m.id || null, henvSvar: '', henvBeskjed: '' });
+          window.scrollTo(0, 0);
+        }),
         stil: {
           borderLeft: m.ny ? '3px solid var(--lissom-yellow)' : '3px solid var(--clay-200)',
           paddingLeft: 'var(--space-4)', cursor: 'pointer',

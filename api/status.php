@@ -60,14 +60,32 @@ try {
         'versjon'     => DB::kobling()->getAttribute(PDO::ATTR_SERVER_VERSION),
         'tabeller'    => count($navn),
         'migrasjoner' => $kjort,
+        // Tabellene koden faktisk bruker.
+        //
+        // Lista sjekket «checkins», som ble laget i 001_init og som ingenting
+        // leser. Innstemplingen ligger i «check_ins», laget paa nytt i
+        // migrasjon 016. Helsesjekken sa altsaa «alt i orden» selv om den
+        // ekte tabellen manglet — og ville sagt «mangler» om noen ryddet bort
+        // den doede.
+        //
+        // «hour_usage» og «gift_card_uses» sto her av samme grunn.
+        // gift_card_uses er tatt i bruk igjen fra 24. august: den er sporet
+        // over hva gavekort er brukt paa. hour_usage leses fortsatt ikke av
+        // noe — timene regnes ut fra check_ins — men tabellen staar, og den
+        // fjernes ikke uten at eieren har sagt fra.
         'mangler'     => array_values(array_diff([
             'members', 'sessions', 'login_states', 'courses', 'course_sessions',
             'payments', 'vipps_webhook_events', 'bookings', 'waitlist',
             'gift_cards', 'gift_card_uses', 'products', 'orders', 'order_lines',
-            'member_sales', 'checkins', 'hour_usage', 'content_blocks',
+            'member_sales', 'check_ins', 'content_blocks',
             'notification_templates', 'notifications', 'audit_log', 'rate_limits',
-            'membership_applications',
+            'membership_applications', 'innstillinger', 'chat_meldinger',
+            'foresporsel_svar',
         ], $navn)),
+        // Tabeller ingen kode leser. De staar igjen fra 001_init, og fjernes
+        // ikke uten beskjed: er det rader i dem paa den ekte tjeneren, er det
+        // historikk.
+        'ubrukte'     => array_values(array_intersect(['checkins', 'hour_usage'], $navn)),
     ];
 
     // Kolonner som kom med senere migrasjoner. Mangler de, er migreringen

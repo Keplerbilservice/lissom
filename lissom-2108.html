@@ -567,6 +567,18 @@ window.__resources = {
        det ingen meny aa holde musa over, saa den gjor det samme av seg selv
        — og hviler et par sekunder mellom hver runde, ellers blir det uro.
        40 % av 4 s er nettopp 1600 ms, saa farten er den samme. */
+    /* Nye meldinger i medlemschatten.
+       Prikken skal fange oyet uten aa mase: to sekunder per slag, og den
+       staar stille for den som har bedt om mindre bevegelse. */
+    @keyframes lx-puls {
+      0%, 100% { transform: scale(1);   opacity: 1; }
+      50%      { transform: scale(1.5); opacity: .45; }
+    }
+    .lx-puls { animation: lx-puls 2s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) {
+      .lx-puls { animation: none; }
+    }
+
     @keyframes lx-kopp-snurr {
       0%   { transform: perspective(600px) rotateY(0deg); }
       40%  { transform: perspective(600px) rotateY(720deg); }
@@ -1019,7 +1031,7 @@ window.__resources = {
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Paint on Pots</div>
             <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">Mal din egen keramikk</h1>
-            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">Velg en ferdig kopp, bolle eller et fat, mal den slik du vil — så glaserer og brenner vi den for deg. Ingen erfaring nødvendig, og alt utstyr er inkludert i prisen.</p>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">Velg et produkt fra vårt Paint on Pots-sortiment. Mal det slik du vil — så glaserer og brenner vi det for deg. Ingen erfaring nødvendig, og alt utstyr er inkludert i prisen.</p>
             <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); max-width: 50ch; text-wrap: pretty;">Passer for venner, familier med barn, par og små grupper. Ferdig brent keramikk henter du i verkstedet etter ca. to uker.</p>
             <div style="display: flex; gap: var(--space-4); flex-wrap: wrap;">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ popTilDatoer }}" hint-size="auto,56px">Se datoer og book</x-import>
@@ -2738,8 +2750,17 @@ window.__resources = {
 
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
-                  <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Medlemschat</span>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Lagres kun i din nettleser</span>
+                  <span style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">
+                    Medlemschat
+                    <!-- Prikken staar bare naar noen andre har skrevet noe du
+                         ikke har sett. Fram til 24. august laa meldingene i
+                         din egen nettleser: da kom det aldri noe inn, og det
+                         fantes ingenting aa varsle om. -->
+                    <sc-if value="{{ chatHarNytt }}" hint-placeholder-val="{{ false }}">
+                      <span class="lx-puls" style="width: 8px; height: 8px; border-radius: 50%; background: var(--terracotta-500); flex: 0 0 auto;"></span>
+                    </sc-if>
+                  </span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ chatStatus }}</span>
                 </div>
                 <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: var(--space-3); flex: 1; max-height: 220px; overflow-y: auto; align-content: flex-start;">
                   <sc-for list="{{ chatMeldinger }}" as="c" hint-placeholder-count="2">
@@ -9700,9 +9721,9 @@ class Component extends DCLogic {
           'Støv er den største risikoen: Tørr leire og glasurpulver kan inneholde kvarts som er skadelig å puste inn. Husk å bruke en fuktig klut, så du unngår at støvet virvler opp. Unngå sliping og pussing av leire, og bruk støvmaske hvis det er mye støv i lokalet.',
           'Glasur og kjemikalier: Bruk hansker ved glasering. Ikke spis eller drikk i glasurrommet. Sikkerhetsdatablad henger på veggen ved glasurhylla.',
           'Ovnen: Bare Monica starter ovnen. Ikke åpne en ovn som er varmere enn 100 °C. Sett aldri noe brennbart nærmere enn en meter fra ovnen.',
-          'Merk arbeidene dine: Skriv initialene dine i bunnen før tørking. Umerkede arbeider på fellehyllene kastes etter to måneder.',
+          'Merk arbeidene dine: Skriv initialene dine i bunnen før tørking. Umerkede arbeider på felleshyllene kastes etter to måneder.',
           'Hylla di: Medlemmer har egen hylle. Hold arbeidene innenfor din egen plass, og ta med ferdige ting hjem så det blir plass til andre.',
-          'Siste person låser: Sjekk at vinduene er lukket, vannet er avstengt og lyset er slukket. Døra låses automatisk, men dra i den for å være sikker.',
+          'Siste person låser: Sjekk at vinduene er lukket, vannet er avstengt og lyset er slukket. Er du den siste som forlater bygget, må du forsikre deg om at døra er låst — den låser seg ikke av seg selv.',
           'Ved uhell: Førstehjelpsskrin henger ved vasken, brannslukker ved utgangen. Meld fra til Monica på +47 94 13 46 01 ved skade, kutt eller søl av kjemikalier.',
         ],
       },
@@ -11426,10 +11447,6 @@ class Component extends DCLogic {
       const h = (location.hash || '').slice(1);
       if (h && h !== this.state.side) { this._fraPop = true; this.setState({ side: h }); }
     } catch (e) {}
-    try {
-      const c = JSON.parse(localStorage.getItem('lissom_chat') || '[]');
-      if (c.length) this.setState({ chat: c });
-    } catch (e) {}
   }
 
   componentWillUnmount() {
@@ -11448,6 +11465,7 @@ class Component extends DCLogic {
     clearTimeout(this._fsTimer);
     clearTimeout(this._ktTimer);
     clearInterval(this._kurvIntervall);
+    this.stoppChat();
     window.removeEventListener('resize', this._resize);
     document.removeEventListener('click', this._klikk, true);
     document.removeEventListener('keydown', this._esc);
@@ -11455,18 +11473,109 @@ class Component extends DCLogic {
 
   topNaa(offset) { return Math.max(20, (this._klikkY || 300) - (offset || 280)); }
 
+  /**
+   * Medlemschatten.
+   *
+   * Meldingene laa i localStorage — altsaa i nettleseren til den som skrev
+   * dem. Ingen andre saa dem noen gang. Chatten gikk én vei, og det kom
+   * aldri et varsel, fordi det aldri kom noe inn. Naa gaar de gjennom
+   * /api/chat.php, og alle med aktivt medlemskap leser det samme rommet.
+   */
+  hentChat(forste) {
+    if (!this.erPublisert() || this._chatHentes) return;
+    this._chatHentes = true;
+    const etter = forste ? 0 : (this.state.chatSiste || 0);
+    fetch('/api/chat.php' + (etter ? '?etter=' + etter : ''), {
+      credentials: 'same-origin', cache: 'no-store',
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._chatHentes = false;
+        if (!d || !d.meldinger) return;
+        this.setState(s => {
+          const gamle = forste ? [] : (s.chat || []);
+          const nye = d.meldinger.filter(m => !gamle.some(g => g.id === m.id));
+          // Bare det andre har skrevet teller som «nytt». Egne meldinger har
+          // man nettopp sendt selv.
+          const fraAndre = nye.filter(m => !m.egen).length;
+          return {
+            chat: gamle.concat(nye),
+            chatSiste: d.siste || s.chatSiste || 0,
+            chatNye: forste ? 0 : (s.chatNye || 0) + fraAndre,
+          };
+        });
+      })
+      .catch(() => { this._chatHentes = false; });
+  }
+
+  /** Spor etter nytt saa lenge Min side staar aapen. */
+  startChat() {
+    if (this._chatIntervall) return;
+    this.hentChat(true);
+    this._chatIntervall = setInterval(() => {
+      if ((this.state.side || '') !== 'minside') { this.stoppChat(); return; }
+      this.hentChat(false);
+    }, 20000);
+  }
+
+  stoppChat() {
+    if (this._chatIntervall) { clearInterval(this._chatIntervall); this._chatIntervall = null; }
+  }
+
   sendChatNaa() {
     const t = (this.state.chatTekst || '').trim();
     if (!t) return;
-    const naa = new Date();
-    this.setState(s => ({
-      chat: (s.chat || []).concat([{ navn: 'Deg', tekst: t, tid: naa.getHours() + ':' + String(naa.getMinutes()).padStart(2, '0'), egen: true }]),
-      chatTekst: '',
-    }), () => this.lagreChat());
+    if (!this.erPublisert()) { this.setState({ chatFeil: 'Krever den ekte siden' }); return; }
+    if (this._chatSender) return;
+    this._chatSender = true;
+    // Feltet tommes med det samme. Blir sendingen avvist, kommer teksten
+    // tilbake — det er verre aa miste det man skrev enn aa vente et oyeblikk.
+    this.setState({ chatTekst: '', chatFeil: '' });
+
+    fetch('/api/chat.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tekst: t }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._chatSender = false;
+        if (!ok) {
+          this.setState({ chatTekst: t, chatFeil: (d && d.feil) || 'Meldingen gikk ikke.' });
+          return;
+        }
+        this._chatHentes = false;
+        this.hentChat(false);
+      })
+      .catch(() => {
+        this._chatSender = false;
+        this.setState({ chatTekst: t, chatFeil: 'Fikk ikke kontakt med serveren.' });
+      });
   }
 
-  lagreChat() {
-    try { localStorage.setItem('lissom_chat', JSON.stringify(this.state.chat || [])); } catch (e) {}
+  /** Angrer sin egen melding. Andres kan ingen roere — det avviser serveren. */
+  angreChat(id) {
+    if (!this.erPublisert() || this._chatSender) return;
+    this._chatSender = true;
+    fetch('/api/chat.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'slett', id: id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._chatSender = false;
+        if (ok) {
+          this.setState(s => ({
+            chat: (s.chat || []).map(m => m.id === id
+              ? Object.assign({}, m, { tekst: 'Meldingen er slettet', slettet: true })
+              : m),
+          }));
+        } else {
+          this.setState({ chatFeil: (d && d.feil) || 'Gikk ikke.' });
+        }
+      })
+      .catch(() => { this._chatSender = false; });
   }
 
   // Oppskrifter, artikler og lenker.
@@ -13790,6 +13899,15 @@ class Component extends DCLogic {
     if (['admin', 'adminmedlemskap', 'adminomrkurs', 'adminnyreg'].indexOf(side) !== -1
         && !this.state.adminPlanerRaa) {
       this.hentPlaner();
+    }
+
+    // Chatten spor etter nytt saa lenge Min side staar aapen. Den stopper seg
+    // selv naar man gaar videre — 20 sekunder er ofte nok til at en samtale
+    // henger sammen, og sjelden nok til aa merkes.
+    if (side === 'minside' && this.state.innlogget) {
+      this.startChat();
+    } else if (side !== 'minside') {
+      this.stoppChat();
     }
 
     if (side === 'minside' && this.state.innlogget && !this.state.minePlasser && !this._plasserHentes) {
@@ -17540,17 +17658,25 @@ class Component extends DCLogic {
       visHandlevogn: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'omoss', 'personvern', 'vipps', 'kasse'].indexOf(side) >= 0,
       handlevognAntall: 3 + ((this.state.nyePaameldt || []).length),
       chatTekst: this.state.chatTekst ?? '',
-      settChatTekst: (e) => this.setState({ chatTekst: e.target.value }),
+      settChatTekst: (e) => this.setState({ chatTekst: e.target.value, chatNye: 0, chatFeil: '' }),
       sendChat: () => this.sendChatNaa(),
       chatEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendChatNaa(); } },
-      // Chatten ligger bare i denne nettleseren (localStorage). To oppdiktede
-      // meldinger fra «Kari» og «Jonas» var lagt inn som startinnhold.
-      chatMeldinger: (this.erPublisert() ? [] : [
+      // Meldingene kommer fra /api/chat.php. «Kari» og «Jonas» staar igjen som
+      // startinnhold i designvisningen, saa boblene har noe aa tegne — paa
+      // den ekte sida vises bare det som faktisk er skrevet.
+      // Nye meldinger fra andre siden sist man saa hit. Egne teller ikke —
+      // dem har man nettopp skrevet selv.
+      chatHarNytt: (this.state.chatNye || 0) > 0,
+      chatStatus: (this.state.chatFeil)
+        || ((this.state.chatNye || 0) > 0
+              ? (this.state.chatNye === 1 ? 'Én ny melding' : this.state.chatNye + ' nye meldinger')
+              : 'Synlig for alle medlemmer'),
+      chatMeldinger: (this.erPublisert() ? (this.state.chat || []) : [
         { navn: 'Kari', tekst: 'Noen som vet om det er ledig plass ved vinduet?', tid: '11:02', egen: false },
         { navn: 'Jonas', tekst: 'Jepp, jeg går om en halvtime — ta plassen min!', tid: '11:05', egen: false },
-      ]).concat((this.state.chat || []).map((m, i) => Object.assign({}, m, { indeks: i }))).map(m => Object.assign({}, m, {
-        kanAngre: !!m.egen,
-        angre: () => this.setState(s => ({ chat: (s.chat || []).filter((_, j) => j !== m.indeks) }), () => this.lagreChat()),
+      ]).map(m => Object.assign({}, m, {
+        kanAngre: !!m.egen && !m.slettet,
+        angre: () => this.angreChat(m.id),
         boble: {
           display: 'inline-block',
           background: m.egen ? 'var(--lissom-brown)' : 'var(--clay-100)',

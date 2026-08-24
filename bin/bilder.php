@@ -19,9 +19,13 @@
 declare(strict_types=1);
 
 const BREDDER = [400, 800];
+// «delingsbilde» staar her fordi den ikke skal ha en webp-tvilling. Den
+// hentes av Facebook, LinkedIn, Slack og WhatsApp, og finnes det en
+// «delingsbilde.jpg.webp» ved siden av, kan .htaccess servere den paa
+// .jpg-adressen — og da viser flere av dem ingenting.
 const HOPP = ['mark-', 'logo-', 'wordmark', 'favicon', 'icon-', 'apple-touch',
               'joika', 'e-post-', 'lissom-signatur', 'heart-logo', 'signatur-',
-              'assets_kursbevis'];
+              'assets_kursbevis', 'delingsbilde'];
 
 $rot = dirname(__DIR__);
 $laget = 0;

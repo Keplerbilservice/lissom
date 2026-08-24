@@ -1029,13 +1029,13 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-16); align-items: center;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Paint on Pots</div>
-            <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">Mal din egen keramikk</h1>
-            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">Velg et produkt fra vårt Paint on Pots-sortiment. Mal det slik du vil — så glaserer og brenner vi det for deg. Ingen erfaring nødvendig, og alt utstyr er inkludert i prisen.</p>
-            <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); max-width: 50ch; text-wrap: pretty;">Passer for venner, familier med barn, par og små grupper. Ferdig brent keramikk henter du i verkstedet etter ca. to uker.</p>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pHeroKicker }}</div>
+            <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ pHeroOverskrift }}</h1>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ pHeroBrodtekst }}</p>
+            <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); max-width: 50ch; text-wrap: pretty;">{{ pHeroUndertekst }}</p>
             <div style="display: flex; gap: var(--space-4); flex-wrap: wrap;">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ popTilDatoer }}" hint-size="auto,56px">Se datoer og book</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goForesporsel }}" hint-size="auto,56px">Book for gruppe</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ popTilDatoer }}" hint-size="auto,56px">{{ pHeroKnapp1 }}</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goForesporsel }}" hint-size="auto,56px">{{ pHeroKnapp2 }}</x-import>
             </div>
           </div>
           <img src="uploads_shutterstock_2830576853.jpg" srcset="uploads_shutterstock_2830576853-400.jpg 400w, uploads_shutterstock_2830576853-800.jpg 800w, uploads_shutterstock_2830576853.jpg 1024w" sizes="(max-width: 760px) 100vw, 700px" alt="Paint on Pots hos Lissom" style="width: 100%; height: 460px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" loading="lazy" decoding="async" width="1024" height="1024">
@@ -1057,25 +1057,25 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-12);">
         <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Paint on Pots</div>
-            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Noen ganger trenger man ikke et kurs. Man trenger bare en hyggelig pause.</h2>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pOmKicker }}</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">{{ pOmOverskrift }}</h2>
             <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">På Paint on Pots hos Lissom kan du stikke innom, finne en kopp, skål, vase eller annen keramikkgjenstand, sette deg ned med pensel og farger, og la kreativiteten få spille fritt. Kanskje har du en idé du har tenkt på lenge. Kanskje kommer inspirasjonen mens du sitter der.</p>
-            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det spiller ingen rolle om du er kunstner eller aldri har holdt en pensel før. Her handler det ikke om å prestere. Det handler om å kose seg, slappe av og skape noe som er helt ditt eget.</p>
-            <p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Når du er ferdig, glaserer og brenner vi gjenstanden for deg. Resultatet blir både et minne og en bruksgjenstand du kan ta med hjem og glede deg over i mange år.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ pOmAvsnitt1 }}</p>
+            <p style="margin: 0; color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ pOmAvsnitt2 }}</p>
           </div>
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">For dere to</div>
-            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">Date Night med mening</h2>
-            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Det er kanskje få aktiviteter som er mer naturlig romantiske enn dette.</p>
-            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Ingen skjermer. Ingen stress. Bare dere to rundt et bord, med noe godt i koppen og tid til å være sammen.</p>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pDateKicker }}</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl);">{{ pDateOverskrift }}</h2>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ pDateIngress }}</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ pDateAvsnitt1 }}</p>
             <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Mens dere maler, oppstår de gode samtalene helt av seg selv. Man senker skuldrene, ler litt mer og får vist sider av seg selv som kanskje ikke kommer frem i en travel hverdag. Det er rolig, ekte og uanstrengt.</p>
-            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">Enten dere er på første date eller har vært sammen i mange år, gir Paint on Pots en anledning til å skape noe sammen, samtidig som dere skaper nye minner.</p>
-            <p style="margin: 0; color: var(--text-heading); font-weight: 700; line-height: 1.65; text-wrap: pretty;">Kreativitet, nærvær og kvalitetstid. Det er den perfekte oppskriften på en annerledes date.</p>
+            <p style="margin: 0 0 var(--space-4); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ pDateAvsnitt2 }}</p>
+            <p style="margin: 0; color: var(--text-heading); font-weight: 700; line-height: 1.65; text-wrap: pretty;">{{ pDateAvsnitt3 }}</p>
           </div>
         </div>
         <div data-theme="sun" style="max-width: var(--width-content); margin: var(--space-10) auto 0; background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-8);">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Kort versjon</div>
-          <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--lissom-brown);">Mal din egen keramikk. Senk skuldrene. Kos deg.</h3>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">{{ pKortKicker }}</div>
+          <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--lissom-brown);">{{ pKortTekst }}</h3>
           <p style="margin: 0; color: var(--lissom-brown); line-height: 1.6; max-width: 72ch; text-wrap: pretty;">Velg din favorittgjenstand, finn frem fargene og skap noe unikt. Paint on Pots er en enkel og hyggelig aktivitet for venner, familie, kolleger eller en romantisk date. Ingen forkunnskaper nødvendig, bare lysten til å være kreativ og ha det gøy.</p>
         </div>
       </section>
@@ -1083,9 +1083,9 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Priser</div>
-            <h2 style="margin: 0 0 var(--space-5);">Du betaler for keramikken</h2>
-            <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 40ch; text-wrap: pretty;">Maling, pensler, glasering og brenning er inkludert. Du velger hva du vil male, og betaler kun for den.</p>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pPrisKicker }}</div>
+            <h2 style="margin: 0 0 var(--space-5);">{{ pPrisOverskrift }}</h2>
+            <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 40ch; text-wrap: pretty;">{{ pPrisBrodtekst }}</p>
             <div style="display: flex; flex-direction: column;">
               <sc-for list="{{ popPriser }}" as="p" hint-placeholder-count="4">
                 <div style="display: flex; justify-content: space-between; gap: var(--space-6); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0; font-size: var(--text-base);">
@@ -1096,8 +1096,8 @@ window.__resources = {
             </div>
           </div>
           <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Godt å vite</div>
-            <h2 style="margin: 0 0 var(--space-5);">Det folk lurer på</h2>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pFaqKicker }}</div>
+            <h2 style="margin: 0 0 var(--space-5);">{{ pFaqOverskrift }}</h2>
             <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-8);">
               <sc-for list="{{ popFaq }}" as="s" hint-placeholder-count="4">
                 <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
@@ -1114,10 +1114,10 @@ window.__resources = {
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
             <div>
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Datoer</div>
-              <h2 style="margin: 0;">Kommende Paint on Pots</h2>
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pDatoKicker }}</div>
+              <h2 style="margin: 0;">{{ pDatoOverskrift }}</h2>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goEvents }}" hint-size="auto,40px">Alle events</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goEvents }}" hint-size="auto,40px">{{ pDatoLenke }}</x-import>
           </div>
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
@@ -7907,6 +7907,45 @@ const SIDEINNHOLD = {
   ],
   // Blokk 0 er innledningen paa sida. Blokk 1-10 er de ti avsnittene, i
   // samme rekkefolge som de staar.
+  // Paint on Pots sto som fast tekst i malen. Skulle et punktum rettes,
+  // matte noen inn i kildekoden — og det er ikke en jobb for den som
+  // eier teksten. Verdiene under er nettopp det som sto der fra for.
+  'Paint on Pots': [
+    { navn: 'Hero', type: 'Tekst og knapper', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Paint on Pots' },
+      { l: 'Overskrift', v: 'Mal din egen keramikk' },
+      { l: 'Brødtekst', v: 'Velg et produkt fra vårt Paint on Pots-sortiment. Mal det slik du vil — så glaserer og brenner vi det for deg. Ingen erfaring nødvendig, og alt utstyr er inkludert i prisen.', lang: true },
+      { l: 'Undertekst', v: 'Passer for venner, familier med barn, par og små grupper. Ferdig brent keramikk henter du i verkstedet etter ca. to uker.', lang: true },
+      { l: 'Knapp 1', v: 'Se datoer og book' },
+      { l: 'Knapp 2', v: 'Book for gruppe' } ] },
+    { navn: 'Om Paint on Pots', type: 'To avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Paint on Pots' },
+      { l: 'Overskrift', v: 'Noen ganger trenger man ikke et kurs. Man trenger bare en hyggelig pause.' },
+      { l: 'Avsnitt 1', v: 'Det spiller ingen rolle om du er kunstner eller aldri har holdt en pensel før. Her handler det ikke om å prestere. Det handler om å kose seg, slappe av og skape noe som er helt ditt eget.', lang: true },
+      { l: 'Avsnitt 2', v: 'Når du er ferdig, glaserer og brenner vi gjenstanden for deg. Resultatet blir både et minne og en bruksgjenstand du kan ta med hjem og glede deg over i mange år.', lang: true } ] },
+    { navn: 'Date Night', type: 'Fire avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'For dere to' },
+      { l: 'Overskrift', v: 'Date Night med mening' },
+      { l: 'Ingress', v: 'Det er kanskje få aktiviteter som er mer naturlig romantiske enn dette.' },
+      { l: 'Avsnitt 1', v: 'Ingen skjermer. Ingen stress. Bare dere to rundt et bord, med noe godt i koppen og tid til å være sammen.', lang: true },
+      { l: 'Avsnitt 2', v: 'Enten dere er på første date eller har vært sammen i mange år, gir Paint on Pots en anledning til å skape noe sammen, samtidig som dere skaper nye minner.', lang: true },
+      { l: 'Avsnitt 3', v: 'Kreativitet, nærvær og kvalitetstid. Det er den perfekte oppskriften på en annerledes date.', lang: true } ] },
+    { navn: 'Kort versjon', type: 'Én linje', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Kort versjon' },
+      { l: 'Tekst', v: 'Mal din egen keramikk. Senk skuldrene. Kos deg.' } ] },
+    { navn: 'Priser', type: 'Tekst', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Priser' },
+      { l: 'Overskrift', v: 'Du betaler for keramikken' },
+      { l: 'Brødtekst', v: 'Maling, pensler, glasering og brenning er inkludert. Du velger hva du vil male, og betaler kun for den.', lang: true } ] },
+    { navn: 'Godt å vite', type: 'Overskrift over spørsmålene', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Godt å vite' },
+      { l: 'Overskrift', v: 'Det folk lurer på' } ] },
+    { navn: 'Datoer', type: 'Kurs, automatisk', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Datoer' },
+      { l: 'Overskrift', v: 'Kommende Paint on Pots' },
+      { l: 'Lenke', v: 'Alle events' },
+      { l: 'Tom liste', v: 'Ingen åpne datoer akkurat nå.' } ] },
+  ],
   'Personvern': [
   { navn: 'Innledning', type: 'Tekst', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Personvern' },
@@ -17780,6 +17819,48 @@ class Component extends DCLogic {
       ],
       erForside: side === 'forside',
       erPop: side === 'paintonpots',
+      // Tekstene paa sida, hentet fra innholdsredigeringen.
+      //
+      // De sto som fast tekst i malen. Skulle et punktum rettes, matte noen
+      // inn i kildekoden — og det er ikke en jobb for den som eier teksten.
+      // Standardverdiene i SIDEINNHOLD er nettopp det som sto der fra for,
+      // saa sida ser lik ut til noen velger aa endre noe.
+      ...(side !== 'paintonpots' ? {} : {
+        // Hero
+        pHeroKicker: this.innh('Paint on Pots/0/Kicker'),
+        pHeroOverskrift: this.innh('Paint on Pots/0/Overskrift'),
+        pHeroBrodtekst: this.innh('Paint on Pots/0/Brødtekst'),
+        pHeroUndertekst: this.innh('Paint on Pots/0/Undertekst'),
+        pHeroKnapp1: this.innh('Paint on Pots/0/Knapp 1'),
+        pHeroKnapp2: this.innh('Paint on Pots/0/Knapp 2'),
+        // Om Paint on Pots
+        pOmKicker: this.innh('Paint on Pots/1/Kicker'),
+        pOmOverskrift: this.innh('Paint on Pots/1/Overskrift'),
+        pOmAvsnitt1: this.innh('Paint on Pots/1/Avsnitt 1'),
+        pOmAvsnitt2: this.innh('Paint on Pots/1/Avsnitt 2'),
+        // Date Night
+        pDateKicker: this.innh('Paint on Pots/2/Kicker'),
+        pDateOverskrift: this.innh('Paint on Pots/2/Overskrift'),
+        pDateIngress: this.innh('Paint on Pots/2/Ingress'),
+        pDateAvsnitt1: this.innh('Paint on Pots/2/Avsnitt 1'),
+        pDateAvsnitt2: this.innh('Paint on Pots/2/Avsnitt 2'),
+        pDateAvsnitt3: this.innh('Paint on Pots/2/Avsnitt 3'),
+        // Kort versjon
+        pKortKicker: this.innh('Paint on Pots/3/Kicker'),
+        pKortTekst: this.innh('Paint on Pots/3/Tekst'),
+        // Priser
+        pPrisKicker: this.innh('Paint on Pots/4/Kicker'),
+        pPrisOverskrift: this.innh('Paint on Pots/4/Overskrift'),
+        pPrisBrodtekst: this.innh('Paint on Pots/4/Brødtekst'),
+        // Godt å vite
+        pFaqKicker: this.innh('Paint on Pots/5/Kicker'),
+        pFaqOverskrift: this.innh('Paint on Pots/5/Overskrift'),
+        // Datoer
+        pDatoKicker: this.innh('Paint on Pots/6/Kicker'),
+        pDatoOverskrift: this.innh('Paint on Pots/6/Overskrift'),
+        pDatoLenke: this.innh('Paint on Pots/6/Lenke'),
+        pDatoTomliste: this.innh('Paint on Pots/6/Tom liste'),
+      }),
       goPop: this.go('paintonpots'),
       tilbudKort: [
         { navn: 'Dreiekurs for nybegynnere og viderekomne', side: 'kurs', filter: 'Dreiing' },

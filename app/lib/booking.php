@@ -126,7 +126,8 @@ final class Booking
         string $epost,
         string $telefon,
         ?int $medlemId,
-        ?string $folgeMedlem = null
+        ?string $folgeMedlem = null,
+        string $gavekortKode = ''
     ): array {
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
@@ -162,12 +163,30 @@ final class Booking
         $rabatt = $pris['rabatt'];
         $referanse = Vipps::nyReferanse();
 
+        // Gavekortet. Feltet paa bookingsiden var ikke koblet til noe, saa en
+        // kode kunne skrives inn uten at den ble brukt til noe.
+        //
+        // Beloepet legges paa betalingen og trekkes forst naar den er
+        // bekreftet: en booking som blir liggende i Vipps skal ikke spise av
+        // saldoen.
+        $gavekortId = null;
+        $gavekortOre = 0;
+        if (!$gratis && trim($gavekortKode) !== '') {
+            $kort = self::finnGavekort($gavekortKode);
+            if ($kort === null) {
+                throw new RuntimeException('Fant ikke gavekortet, eller det er brukt opp.');
+            }
+            $gavekortId = $kort['id'];
+            $gavekortOre = min($kort['saldo_ore'], $belop);
+        }
+        $aBetale = $belop - $gavekortOre;
+
         // Reservasjonen foerst, i en kort transaksjon. Kallet til Vipps ligger
         // utenfor med vilje: et HTTP-kall kan ta tjue sekunder, og saa lenge
         // skal ingen databaselaas staa aapen.
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
-            $folgeMedlem, $gratis, $belop, $rabatt, $referanse
+            $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
@@ -177,15 +196,22 @@ final class Booking
 
             $paymentId = null;
             if (!$gratis) {
-                $paymentId = DB::settInn('payments', [
+                $felt = [
                     'vipps_reference' => $referanse,
                     'type'            => 'epayment',
                     'formal'          => $okt['type'] === 'dropin' ? 'dropin' : 'booking',
                     'member_id'       => $medlemId,
-                    'belop_ore'       => $belop,
+                    // Det kunden faktisk skal betale. Beloepet paa bookingen
+                    // er hele prisen — differansen er gavekortet.
+                    'belop_ore'       => $aBetale,
                     'status'          => 'opprettet',
                     'idempotency_key' => Vipps::uuid(),
-                ]);
+                ];
+                if (DB::harKolonne('payments', 'gavekort_id')) {
+                    $felt['gavekort_id'] = $gavekortId;
+                    $felt['gavekort_ore'] = $gavekortOre;
+                }
+                $paymentId = DB::settInn('payments', $felt);
             }
 
             $bookingId = DB::settInn('bookings', [
@@ -215,10 +241,17 @@ final class Booking
             return ['redirectUrl' => '', 'referanse' => '', 'bookingId' => $reservasjon['bookingId']];
         }
 
+        // Dekker gavekortet hele prisen, er det ingenting aa betale. Aa sende
+        // noen til Vipps for null kroner er en omvei til en feilmelding.
+        if ($aBetale <= 0) {
+            self::markerBetalt($referanse);
+            return ['redirectUrl' => '', 'referanse' => $referanse, 'bookingId' => $reservasjon['bookingId']];
+        }
+
         try {
             $betaling = Vipps::opprettBetaling(
                 $referanse,
-                $belop,
+                $aBetale,
                 mb_substr($okt['tittel'], 0, 100),
                 Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
                 $telefon
@@ -260,6 +293,10 @@ final class Booking
             }
 
             DB::oppdater('payments', ['status' => 'betalt'], ['id' => $betaling['id']]);
+
+            // Gavekortet trekkes her, ikke naar ordren ble opprettet. En
+            // handlekurv som blir forlatt i Vipps skal ikke spise av saldoen.
+            self::trekkGavekort((int) $betaling['id']);
 
             // En betaling hoerer enten til en booking eller en butikkordre.
             // Begge kommer inn her, fra webhook og fra returen.
@@ -316,6 +353,125 @@ final class Booking
             'ordre' => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . self::norskDato((string) $b['start_tid']) : ''),
             'belop' => self::kroner((int) $b['belop_ore']),
         ], 'booking', $bookingId);
+    }
+
+    /**
+     * Finner et gavekort som kan brukes naa.
+     *
+     * Koden leses opp over telefon og skrives inn for haand, saa den taaler
+     * smaa bokstaver og manglende bindestreker. Alt annet maa stemme:
+     * kortet maa vaere aktivt, ha saldo, og ikke ha gaatt ut paa dato.
+     *
+     * @return array{id:int,kode:string,saldo_ore:int}|null
+     */
+    public static function finnGavekort(string $kode): ?array
+    {
+        $rent = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $kode) ?? '');
+        if ($rent === '' || mb_strlen($rent) > 32) {
+            return null;
+        }
+        // Koden lagres med bindestreker. Vi sammenligner uten, saa «lis abc
+        // def ghj» og «LIS-ABC-DEF-GHJ» er samme kort.
+        $rad = DB::en(
+            "SELECT id, kode, saldo_ore, status, gyldig_til
+               FROM gift_cards
+              WHERE REPLACE(REPLACE(UPPER(kode), '-', ''), ' ', '') = :k
+              LIMIT 1",
+            ['k' => $rent]
+        );
+        if ($rad === null || $rad['status'] !== 'aktivt') {
+            return null;
+        }
+        if ((int) $rad['saldo_ore'] <= 0) {
+            return null;
+        }
+        if ($rad['gyldig_til'] !== null && $rad['gyldig_til'] < gmdate('Y-m-d')) {
+            return null;
+        }
+        return ['id' => (int) $rad['id'], 'kode' => (string) $rad['kode'], 'saldo_ore' => (int) $rad['saldo_ore']];
+    }
+
+    /**
+     * Trekker beloepet fra kortet, én gang.
+     *
+     * Kalles naar betalingen er bekreftet — ikke naar ordren opprettes. En
+     * handlekurv som blir forlatt i Vipps skal ikke spise av saldoen.
+     *
+     * Trekket er betinget i selve SQL-en: gaar saldoen ned et annet sted i
+     * mellomtiden, blir det null rader, og vi trekker ikke mer enn det som
+     * faktisk staar der.
+     */
+    public static function trekkGavekort(int $paymentId): void
+    {
+        if (!DB::harKolonne('payments', 'gavekort_id')) {
+            return;
+        }
+        $b = DB::en(
+            'SELECT id, gavekort_id, gavekort_ore FROM payments WHERE id = :i',
+            ['i' => $paymentId]
+        );
+        $kortId = (int) ($b['gavekort_id'] ?? 0);
+        $belop  = (int) ($b['gavekort_ore'] ?? 0);
+        if ($kortId <= 0 || $belop <= 0) {
+            return;
+        }
+        // Hva ble kortet brukt paa? Sporet skal si det — «betaling nr. 7»
+        // hjelper ingen som leter etter en ordre. ref_type er en enum fra
+        // 001_init med akkurat disse tre verdiene.
+        $refType = 'ordre';
+        $refId = 0;
+        $b = DB::en('SELECT id FROM bookings WHERE payment_id = :p', ['p' => $paymentId]);
+        if ($b !== null) {
+            $refType = 'booking';
+            $refId = (int) $b['id'];
+        } else {
+            $o = DB::en('SELECT id FROM orders WHERE payment_id = :p', ['p' => $paymentId]);
+            if ($o !== null) {
+                $refId = (int) $o['id'];
+            } else {
+                $s = DB::en('SELECT id FROM subscriptions WHERE id = (SELECT subscription_id FROM payments WHERE id = :p)', ['p' => $paymentId]);
+                if ($s !== null) {
+                    $refType = 'medlemskap';
+                    $refId = (int) $s['id'];
+                }
+            }
+        }
+
+        // Allerede trukket? Da staar bruken der fra for, og vi gjor ingenting.
+        // Webhooken og returen kan begge komme, og begge kan komme flere
+        // ganger.
+        if (DB::harTabell('gift_card_uses') && $refId > 0) {
+            $alt = DB::en(
+                'SELECT id FROM gift_card_uses
+                  WHERE gift_card_id = :k AND ref_type = :t AND ref_id = :r',
+                ['k' => $kortId, 't' => $refType, 'r' => $refId]
+            );
+            if ($alt !== null) {
+                return;
+            }
+        }
+
+        $rader = DB::kjor(
+            'UPDATE gift_cards SET saldo_ore = saldo_ore - :b
+              WHERE id = :i AND saldo_ore >= :b2',
+            ['b' => $belop, 'i' => $kortId, 'b2' => $belop]
+        )->rowCount();
+        if ($rader === 0) {
+            logg('Gavekort hadde ikke daekning ved trekk', ['kort' => $kortId, 'belop' => $belop]);
+            return;
+        }
+
+        if (DB::harTabell('gift_card_uses') && $refId > 0) {
+            DB::settInn('gift_card_uses', [
+                'gift_card_id' => $kortId,
+                'belop_ore'    => $belop,
+                'ref_type'     => $refType,
+                'ref_id'       => $refId,
+            ]);
+        }
+
+        // Tomt kort er brukt opp. Da skal det ikke ligge og se gyldig ut.
+        DB::kjor("UPDATE gift_cards SET status = 'brukt' WHERE id = :i AND saldo_ore <= 0", ['i' => $kortId]);
     }
 
     /**

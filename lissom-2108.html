@@ -1531,7 +1531,12 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg har lest vilkårene" checked="{{ vilkaarOk }}" on-change="{{ toggleVilkaar }}" hint-size="100%,24px"></x-import>
                   <button type="button" onClick="{{ goVilkar }}" style="appearance: none; background: transparent; border: none; padding: 0; margin: 6px 0 0 32px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Les vilkårene</button>
                   <div style="height: var(--space-5);"></div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode (valgfritt)" icon="gift" placeholder="Skriv koden" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode (valgfritt)" icon="gift" placeholder="Skriv koden" value="{{ gkKode }}" on-change="{{ settGkKode }}" hint-size="100%,66px"></x-import>
+                  <!-- Svaret kommer mens man skriver. «Fant ikke gavekortet»
+                       skal staa for man bestiller, ikke etterpaa. -->
+                  <sc-if value="{{ gkBeskjed }}" hint-placeholder-val="{{ false }}">
+                    <p style="{{ gkStil }}">{{ gkBeskjed }}</p>
+                  </sc-if>
                   <div style="height: var(--space-5);"></div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
                   
@@ -2275,7 +2280,12 @@ window.__resources = {
                       </sc-for>
                     </div>
                   </div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode" placeholder="Skriv koden" hint-size="100%,66px"></x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode" placeholder="Skriv koden" value="{{ gkKode }}" on-change="{{ settGkKode }}" hint-size="100%,66px"></x-import>
+                  <!-- Svaret kommer mens man skriver. «Fant ikke gavekortet»
+                       skal staa for man bestiller, ikke etterpaa. -->
+                  <sc-if value="{{ gkBeskjed }}" hint-placeholder-val="{{ false }}">
+                    <p style="{{ gkStil }}">{{ gkBeskjed }}</p>
+                  </sc-if>
                 </div>
               </div>
 
@@ -8766,6 +8776,23 @@ class Component extends DCLogic {
     });
   }
 
+  /**
+   * Sier fra om gavekortet gjelder, mens man skriver.
+   *
+   * «Fant ikke gavekortet» skal komme for man bestiller, ikke etterpaa.
+   * Serveren gir samme svar for ukjent, tomt og utloept kort, saa ingen kan
+   * gjette seg fram til gyldige koder.
+   */
+  sjekkGavekort(kode) {
+    if (!this.erPublisert() || !kode) return;
+    fetch('/api/gavekort.php?kode=' + encodeURIComponent(kode), {
+      credentials: 'same-origin', cache: 'no-store',
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d) this.setState({ gkSvar: d }); })
+      .catch(() => { /* da staar feltet uten svar, og bestillingen sier fra */ });
+  }
+
   betalKurv(linjer) {
     // Paa den publiserte siden gaar kjopet mot serveren. Simuleringen under
     // staar igjen for designverktoyets forhandsvisning, der det ikke finnes
@@ -10766,13 +10793,28 @@ class Component extends DCLogic {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ linjer: linjer }),
+      body: JSON.stringify({
+        linjer: linjer,
+        // Gavekortet. Feltet i kassa var ikke koblet til noe: koden ble
+        // skrevet inn, og kunden betalte full pris.
+        gavekort: (this.state.gkKode || '').trim(),
+      }),
     })
       .then(r => r.json())
       .then(d => {
         this._kjopPagaar = false;
         if (!d || !d.ok) {
           this.setState({ kvittering: 'Kunne ikke bestille', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
+          return;
+        }
+        // Dekket gavekortet hele kjopet, er det ingenting aa betale, og
+        // Vipps skal ikke inn i bildet.
+        if (d.ferdig || !d.url) {
+          this.setState({
+            kurv: {}, gkKode: '', gkSvar: null, kurvApen: false,
+            kvittering: 'Bestillingen er registrert',
+            kvitteringDetalj: d.beskjed || 'Gavekortet dekket hele bestillingen.',
+          });
           return;
         }
         window.location.href = d.url; // her overtar Vipps
@@ -13605,7 +13647,10 @@ class Component extends DCLogic {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ oktId: oktId, antall: 1 }),
+      body: JSON.stringify({
+        oktId: oktId, antall: 1,
+        gavekort: (this.state.gkKode || '').trim(),
+      }),
     })
       .then(r => r.json())
       .then(d => {
@@ -17769,6 +17814,25 @@ class Component extends DCLogic {
         return this.erPublisert() ? 'Henter …' : '4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet';
       })(),
       ingenInne: this.state.stempling ? this.state.stempling.inne.antall === 0 : this.erPublisert(),
+      // Gavekort i kassa. Feltet var ikke koblet til noe: koden ble skrevet
+      // inn, og kunden betalte full pris likevel. Saldoen sjekkes mot
+      // serveren mens man skriver, saa man ser om kortet gjelder for man
+      // bestiller — ikke etterpaa.
+      gkKode: this.state.gkKode || '',
+      settGkKode: (e) => {
+        const v = e.target.value;
+        this.setState({ gkKode: v, gkSvar: null });
+        clearTimeout(this._gkTimer);
+        if (v.trim().length < 6) return;
+        this._gkTimer = setTimeout(() => this.sjekkGavekort(v.trim()), 600);
+      },
+      gkBeskjed: (this.state.gkSvar && this.state.gkSvar.beskjed) || '',
+      gkGyldig: !!(this.state.gkSvar && this.state.gkSvar.gyldig),
+      gkStil: {
+        margin: '8px 0 0', fontSize: 'var(--text-xs)',
+        color: (this.state.gkSvar && this.state.gkSvar.gyldig)
+          ? 'var(--sage-500, #7f9c78)' : 'var(--terracotta-600)',
+      },
       visHandlevogn: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'omoss', 'personvern', 'vipps', 'kasse'].indexOf(side) >= 0,
       handlevognAntall: 3 + ((this.state.nyePaameldt || []).length),
       chatTekst: this.state.chatTekst ?? '',

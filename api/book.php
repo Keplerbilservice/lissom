@@ -68,7 +68,10 @@ try {
         $epost,
         normaliser_telefon($telefon),
         $medlem === null ? null : (int) $medlem['id'],
-        $folge !== '' ? $folge : null
+        $folge !== '' ? $folge : null,
+        // Gavekortet fra feltet paa bookingsiden. Det var ikke koblet til
+        // noe, saa koden ble skrevet inn og kunden betalte full pris.
+        Foresporsel::tekst('gavekort')
     );
 } catch (RuntimeException $e) {
     // Meldingene herfra er skrevet for aa vises til kunden.

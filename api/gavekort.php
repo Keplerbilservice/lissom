@@ -13,6 +13,29 @@ declare(strict_types=1);
 
 require __DIR__ . '/_boot.php';
 
+// Sjekk av en kode for kassa.
+//
+// Aapent for alle som er innlogget: den som skal bruke kortet, maa kunne se
+// hva som staar paa det for hen bestiller. Ratebegrenset, saa ingen kan
+// gjette seg fram til gyldige koder.
+if (Foresporsel::metode() === 'GET') {
+    krev_medlem();
+    Rate::sjekk('gavekortsjekk', maks: 12, vindu: 300);
+
+    $kort = Booking::finnGavekort(Foresporsel::tekst('kode'));
+    if ($kort === null) {
+        // Samme svar for ukjent, tomt og utloept kort. Ellers kunne noen
+        // kartlegge hvilke koder som finnes.
+        Svar::json(['gyldig' => false, 'beskjed' => 'Fant ikke gavekortet, eller det er brukt opp.']);
+    }
+    Svar::json([
+        'gyldig'    => true,
+        'saldo_ore' => $kort['saldo_ore'],
+        'saldo'     => 'kr. ' . number_format($kort['saldo_ore'] / 100, 0, ',', ' ') . ',-',
+        'beskjed'   => 'Gavekortet har kr. ' . number_format($kort['saldo_ore'] / 100, 0, ',', ' ') . ',- igjen.',
+    ]);
+}
+
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 Rate::sjekk('gavekort', maks: 10, vindu: 600);

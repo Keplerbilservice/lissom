@@ -75,21 +75,51 @@ if ($sum <= 0) {
     Svar::feil('Bestillingen har ingen sum.');
 }
 
+// --- Gavekort ------------------------------------------------------------
+//
+// Feltet i kassa var ikke koblet til noe, og saldoen ble aldri trukket ned.
+// Kortet kunne kjopes, men ikke brukes.
+//
+// Beloepet regnes ut her og legges paa betalingen. Selve trekket skjer forst
+// naar betalingen er bekreftet — en handlekurv som blir forlatt i Vipps skal
+// ikke spise av saldoen.
+$gavekortId = null;
+$gavekortOre = 0;
+$kode = trim(Foresporsel::tekst('gavekort'));
+if ($kode !== '') {
+    $kort = Booking::finnGavekort($kode);
+    if ($kort === null) {
+        Svar::feil('Fant ikke gavekortet, eller det er brukt opp.');
+    }
+    $gavekortId = $kort['id'];
+    $gavekortOre = min($kort['saldo_ore'], $sum);
+}
+$aBetale = $sum - $gavekortOre;
+
 $referanse = Vipps::nyReferanse('LIS');
 $ordrenr = 'B-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
 
 // Ordren lagres for vi sender kunden til Vipps, slik at webhooken alltid har
 // noe aa slaa opp i.
-$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr): array {
-    $paymentId = DB::settInn('payments', [
+$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr): array {
+    $betalingsfelt = [
         'vipps_reference' => $referanse,
         'type'            => 'epayment',
         'formal'          => 'ordre',
         'member_id'       => $medlem['id'] ?? null,
-        'belop_ore'       => $sum,
+        // Beloepet paa betalingen er det kunden faktisk skal betale. Summen
+        // paa ordren er hele kjopet — differansen er gavekortet.
+        'belop_ore'       => $aBetale,
         'status'          => 'opprettet',
         'idempotency_key' => Vipps::uuid(),
-    ]);
+    ];
+    // Kolonnene kommer med migrasjon 040. Uten den skal en bestilling uten
+    // gavekort fortsatt gaa gjennom.
+    if (DB::harKolonne('payments', 'gavekort_id')) {
+        $betalingsfelt['gavekort_id'] = $gavekortId;
+        $betalingsfelt['gavekort_ore'] = $gavekortOre;
+    }
+    $paymentId = DB::settInn('payments', $betalingsfelt);
 
     $ordreId = DB::settInn('orders', [
         'ordrenr'       => $ordrenr,
@@ -117,10 +147,27 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $navn, $epos
     return ['ordreId' => $ordreId, 'paymentId' => $paymentId];
 });
 
+// Dekker gavekortet hele kjopet, er det ingenting aa betale. Aa sende noen
+// til Vipps for null kroner ville vaert en omvei til en feilmelding.
+if ($aBetale <= 0) {
+    Booking::markerBetalt($referanse);
+    revider('ordre_opprettet', 'order', $opprettet['ordreId'], ['sum_ore' => $sum, 'gavekort_ore' => $gavekortOre]);
+    Svar::ok([
+        'url'        => null,
+        'referanse'  => $referanse,
+        'ordrenr'    => $ordrenr,
+        'sum'        => Booking::kroner($sum),
+        'gavekort'   => Booking::kroner($gavekortOre),
+        'aBetale'    => Booking::kroner(0),
+        'ferdig'     => true,
+        'beskjed'    => 'Gavekortet dekket hele bestillingen. Kvitteringen kommer på e-post.',
+    ]);
+}
+
 try {
     $betaling = Vipps::opprettBetaling(
         $referanse,
-        $sum,
+        $aBetale,
         'Lissom — bestilling ' . $ordrenr,
         Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
         $telefon
@@ -140,4 +187,6 @@ Svar::ok([
     'referanse' => $referanse,
     'ordrenr'   => $ordrenr,
     'sum'       => Booking::kroner($sum),
+    'gavekort'  => Booking::kroner($gavekortOre),
+    'aBetale'   => Booking::kroner($aBetale),
 ]);

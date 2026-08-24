@@ -36,6 +36,11 @@ if (Foresporsel::metode() === 'GET') {
             'tittel'     => $k['tittel'],
             'type'       => $k['type'],
             'tema'       => $k['tema'],
+            'bilde'      => (string) ($k['bilde'] ?? ''),
+            'bilder'     => (static function ($raa): array {
+                $l = json_decode((string) $raa, true);
+                return is_array($l) ? array_values(array_filter(array_map('strval', $l))) : [];
+            })($k['bilder'] ?? null),
             'pris'       => (int) $k['pris_ore'] / 100,
             'kapasitet'  => (int) $k['kapasitet'],
             'sms'        => (bool) $k['sms_paaminnelse'],
@@ -115,6 +120,26 @@ switch ($handling) {
         if (array_key_exists('visUtenDato', Foresporsel::kropp())
             && DB::harKolonne('courses', 'vis_uten_dato')) {
             $data['vis_uten_dato'] = Foresporsel::tekst('visUtenDato') === 'ja' ? 1 : 0;
+        }
+
+        // Bildene fra steg 3. Foerste er hovedbildet; hele lista er karusellen
+        // paa kurssida. Bare naar feltet er med — et skjema som ikke kjenner
+        // bilder skal ikke toemme dem.
+        //
+        // Bare filnavn vi selv har lagt ut: basename() klipper bort alt som
+        // ligner en sti eller en adresse utenfra.
+        if (array_key_exists('bilder', Foresporsel::kropp())) {
+            $rene = [];
+            foreach ((array) (Foresporsel::kropp()['bilder'] ?? []) as $f) {
+                $navn = basename(trim((string) $f));
+                if ($navn !== '') {
+                    $rene[] = mb_substr($navn, 0, 191);
+                }
+            }
+            $data['bilde'] = $rene[0] ?? null;
+            if (DB::harKolonne('courses', 'bilder')) {
+                $data['bilder'] = $rene ? json_encode(array_values($rene), JSON_UNESCAPED_SLASHES) : null;
+            }
         }
 
         if ($id > 0) {

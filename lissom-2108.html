@@ -4050,10 +4050,18 @@ window.__resources = {
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Bilder og video</span>
                 </div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilder — vises som karusell på kurssiden</label>
+                <!-- Rutene var tegning: ingen filopplasting, ingen handler, og
+                     api/admin/kurs.php tok ikke imot et bilde i det hele tatt.
+                     Naa aapner de den samme billedvelgeren som varer og
+                     artikler bruker. -->
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-bottom: var(--space-4);">
-                  <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Bilde 1</div></div>
-                  <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Bilde 2</div></div>
-                  <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Bilde 3</div></div>
+                  <sc-for list="{{ kBilderuter }}" as="kb" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ kb.velg }}" aria-label="{{ kb.merke }}" style="{{ kb.stil }}">
+                      <sc-if value="{{ kb.tom }}" hint-placeholder-val="{{ true }}">
+                        <span style="font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">{{ kb.merke }}</span>
+                      </sc-if>
+                    </button>
+                  </sc-for>
                 </div>
                 <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
                      hovedbilde», og det er den verdien som faktisk gaar ut.
@@ -4061,8 +4069,11 @@ window.__resources = {
                      kolonne aa lagres i, saa alt man skrev ble kastet. To
                      steder aa skrive samme tekst, der bare det ene virket. -->
                 <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alt-tekst for hovedbildet redigeres under Nettsiden → SEO.</p>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Video (valgfritt)</label>
-                <div style="border: 1px dashed var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-5); text-align: center; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">Slipp videofil her (MP4, maks 90 sek) — vises først i karusellen</div>
+                <!-- Feltet sa «Slipp videofil her» og tok ikke imot noe: det er
+                     ingen videoopplasting bak, og film paa et delt webhotell er
+                     en annen sak enn et bilde — plass, baandbredde og
+                     avspilling. Staar som en opplysning til det er bestilt. -->
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Video er ikke koblet opp ennå. Si fra om kursene skal kunne ha en kort film øverst i karusellen, så bygger vi det.</p>
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                   <div style="display: flex; align-items: center; gap: var(--space-2);">
                     <label style="font-size: var(--text-sm); color: var(--text-heading);">Sekunder per bilde</label>
@@ -8483,8 +8494,10 @@ class Component extends DCLogic {
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
           status: k.datoer.length ? this.plasstekst(k.datoer) : 'Ta kontakt for dato',
           kunKontakt: k.datoer.length === 0,
-          // Uten eget bilde faar kurset verkstedbildet framfor et tomt felt.
-          image: FOTO + 'handbygging.jpg',
+          // Bildet verkstedet har valgt i steg 3. Uten eget bilde faar kurset
+          // verkstedbildet framfor et tomt felt.
+          image: k.bilde || FOTO + 'handbygging.jpg',
+          bilder: (k.bilder || []).filter(Boolean),
           om: k.om || '',
           punkter: [],
         };
@@ -8538,6 +8551,8 @@ class Component extends DCLogic {
         date: 'Etter avtale',
         duration: '',
         om: kat.om || k.om,
+        image: kat.bilde || k.image,
+        bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
         utenDato: false,
         kunKontakt: true,
       });
@@ -8549,6 +8564,10 @@ class Component extends DCLogic {
       prisOre: kat.prisOre,
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
       status: this.plasstekst(datoer),
+      // Har verkstedet valgt bilder i admin, er det de som gjelder — ikke
+      // bildet som sto i designfila.
+      image: kat.bilde || k.image,
+      bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
       date: (datoer[0] || {}).dato || k.date,
       // Flere datoer enn den som staar? Si det, i stedet for aa la det se ut
       // som om kurset gaar én gang.
@@ -11372,8 +11391,17 @@ class Component extends DCLogic {
    * Samme rute brukes til artikler og til varer i butikken — de trenger det
    * samme, og to nesten like ruter blir fort to som oppforer seg ulikt.
    */
+  /**
+   * Aapner billedruta.
+   *
+   * Kalles med en id og et slag for varer og artikler — der lagres bildet
+   * med det samme. Kursskjemaet sender et helt objekt i stedet, fordi
+   * kurset kanskje ikke er lagret ennaa; da holdes valget i skjemaet til
+   * kurset lagres.
+   */
   apneBildevalg(id, slag) {
-    this.setState({ bildeFor: { id: id, slag: slag || 'artikkel' } });
+    const v = (id && typeof id === 'object') ? id : { id: id, slag: slag || 'artikkel' };
+    this.setState({ bildeFor: v });
     if (!this.state.bildeliste) this.hentBilder();
   }
 
@@ -11384,6 +11412,18 @@ class Component extends DCLogic {
     this.setState({ bildeFor: null });
     if (v.slag === 'vare') {
       this.vareBildeKall(v.id, url || '');
+      return;
+    }
+    // Kursbildene lagres sammen med kurset, ikke for seg: et nytt kurs har
+    // ingen id aa lagre paa foer det er opprettet.
+    if (v.slag === 'kurs') {
+      this.setState(s => {
+        const b = (s.kBilder || []).slice();
+        while (b.length < 3) { b.push(''); }
+        b[v.rute] = url || '';
+        // Tomme ruter midt i lista gir hull i karusellen.
+        return { kBilder: b.filter((x, i) => x || i < b.length) };
+      });
       return;
     }
     this.artikkelKall({ handling: 'bilde', id: v.id, bilde: url || '' });
@@ -11401,7 +11441,11 @@ class Component extends DCLogic {
     const kilde = v && v.slag === 'vare'
       ? (this.state.adminProdukter || []).map(x => ({ id: x.id, tittel: x.tittel, bilde: x.bilde }))
       : (this.state.markedArtikler || []);
-    const valgt = (v && kilde.find(x => x.id === v.id)) || {};
+    // Kursbildet ligger i skjemaet, ikke i en liste fra serveren — kurset er
+    // kanskje ikke lagret ennaa.
+    const valgt = (v && v.slag === 'kurs')
+      ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
+      : ((v && kilde.find(x => x.id === v.id)) || {});
     const rute = (b) => ({
       url: b.url,
       stil: { appearance: 'none', cursor: 'pointer', padding: 0, height: 84, borderRadius: 'var(--radius-md)',
@@ -12369,6 +12413,8 @@ class Component extends DCLogic {
         // kurset falt ut av sin egen kategori. Et tema vi ikke kan utlede av
         // typen, blir staaende som det er.
         tema: TEMA[rad.type] || (eksisterende && eksisterende.tema) || 'Kurs',
+        // Bildene fra steg 3. Tomme ruter faller bort; foerste er hovedbildet.
+        bilder: (rad.bilder || []).filter(Boolean),
         pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
         kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 8,
         sms: rad.sms === false ? 'nei' : 'ja',
@@ -13372,7 +13418,10 @@ class Component extends DCLogic {
    * foelelsen av at knappen ikke virket.
    */
   apneKursRed(k, i) {
+    // Bildene ligger paa den raa kursraden fra serveren, ikke paa kortet.
+    const raa = (this.state.adminKursRaa || []).find(x => x.tittel === k.navn) || {};
     this.setState({
+      kBilder: (raa.bilder && raa.bilder.length ? raa.bilder : (raa.bilde ? [raa.bilde] : [])).slice(0, 3),
       kRed: true, kSteg: 1, kIndeks: i,
       kNavn: k.navn, kType: k.type,
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
@@ -13819,6 +13868,10 @@ class Component extends DCLogic {
       // én gruppe mennesker, og skal ikke ligge inne hos dem.
       ['Oppskrifter', 'adminoppskrifter'],
       ['Økonomi',   'adminokonomi', { okonomiFor: '' }],
+      // Butikken laa bare under Nettsiden, som en fane ved siden av «Innhold».
+      // Den er et sted i seg selv — varer, priser, bilder og lager — og var
+      // ikke til aa finne uten aa vite hvor den var gjemt.
+      ['Butikk',    'adminbutikk', { butikkFane: 'Butikken' }],
       ['Markedsføring', 'adminmarked'],
       ['Nettsiden', 'admininnhold'],
       ['Brukere',   'adminbrukere'],
@@ -13935,9 +13988,11 @@ class Component extends DCLogic {
           ? p('Deltakere', 'Deltakere', 'Nyttig info')
           : p('Medlemmer', 'Medlemmer', 'Nyttig info');
       case 'adminbutikk':
+        // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
+        // fortsatt til medlemmene — det er varene deres.
         return st.butikkFane === 'Medlemssalg'
           ? p('Medlemmer', 'Medlemmer', 'Internbutikk')
-          : p('Nettsiden', 'Nettsiden', 'Butikk');
+          : p('Butikk', 'Nettsiden', 'Butikk');
       default: return p('');
     }
   }
@@ -15217,7 +15272,10 @@ class Component extends DCLogic {
       // Billedruta naas fra baade Kunnskapsbanken og Butikk, saa verdiene
       // ligger her framfor inne i én av skjermene.
       ...this.bildevalgVals(),
-      mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen' : 'Bilde til artikkelen',
+      mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
+        : (this.state.bildeFor || {}).slag === 'kurs'
+          ? ((this.state.bildeFor || {}).rute === 0 ? 'Hovedbilde til kurset' : 'Bilde til kurset')
+          : 'Bilde til artikkelen',
       sokApen: !!this.state.sokApen,
       lukkSok: () => this.setState({ sokApen: false }),
       sokTekst: this.state.sokTekst || '',
@@ -15396,7 +15454,7 @@ class Component extends DCLogic {
         this.setState({
           side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10',
+          kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10', kBilder: [],
           kBeskrivelse: '', kBekreftelse: '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -16098,7 +16156,7 @@ class Component extends DCLogic {
             || (this.erPublisert() ? [] : [{}, {}]);
           const nyttKurs = {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-            kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8',
+            kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [],
             kBeskrivelse: '', kBekreftelse: '', kMva: false,
             kGjentak: 'Ingen', kIntervall: '', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -16166,7 +16224,7 @@ class Component extends DCLogic {
               { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
               { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', {
                   kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
-                  kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8',
+                  kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [],
                   kBeskrivelse: '', kBekreftelse: '', kMva: false,
                   kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -16216,7 +16274,7 @@ class Component extends DCLogic {
             { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
             { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
-                kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10',
+                kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10', kBilder: [],
                 kBeskrivelse: '', kBekreftelse: '', kMva: false,
                 kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -16733,7 +16791,7 @@ class Component extends DCLogic {
 
         const nyttKurs = {
           kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8',
+          kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [],
           kBeskrivelse: '', kBekreftelse: '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17932,7 +17990,7 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBeskrivelse: '', kBekreftelse: '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [], kBeskrivelse: '', kBekreftelse: '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
@@ -18050,6 +18108,25 @@ class Component extends DCLogic {
       })(),
       kStyrke: this.state.kStyrke ?? 0,
       settKStyrke: (e) => this.setState({ kStyrke: e.target.value }),
+      // Bilderutene i steg 3. Foerste rute er hovedbildet — det som staar paa
+      // kurskortet — og alle tre er karusellen paa kurssida.
+      kBilderuter: [0, 1, 2].map(i => {
+        const valgt = (this.state.kBilder || [])[i] || '';
+        return {
+          merke: i === 0 ? 'Hovedbilde' : 'Bilde ' + (i + 1),
+          tom: !valgt,
+          velg: () => this.apneBildevalg({ slag: 'kurs', rute: i }),
+          stil: {
+            appearance: 'none', cursor: 'pointer', padding: 0, position: 'relative',
+            aspectRatio: '4 / 3', borderRadius: 12, overflow: 'hidden',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: valgt ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
+            background: valgt ? 'var(--clay-200)' : 'transparent',
+            backgroundImage: valgt ? "url('" + valgt + "')" : 'none',
+            backgroundSize: 'cover', backgroundPosition: 'center',
+          },
+        };
+      }),
       kSekunder: this.state.kSekunder ?? '5',
       settKSekunder: (e) => this.setState({ kSekunder: e.target.value }),
       toggleKFade: () => this.setState(s => ({ kFade: s.kFade === false ? true : false })),
@@ -18092,6 +18169,7 @@ class Component extends DCLogic {
           neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '', bekreftelse: this.state.kBekreftelse || '', mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms !== false, datoer, okter,
           sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
           gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
+          bilder: (this.state.kBilder || []).filter(Boolean),
         };
         if (this.erPublisert()) {
           this.lagreKurs(nytt, okter);

@@ -20,9 +20,12 @@ $hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
 // Kolonna kommer med migrasjon 029. Er den ikke kjort, skal kurslista vises
 // som for framfor aa gi en tom side.
 $utenDatoFelt = DB::harKolonne('courses', 'vis_uten_dato') ? ', vis_uten_dato' : '';
+// Kom med migrasjon 044. Uten sjekken faller hele katalogen naar den ikke er
+// kjoert — og det er katalogen kundene ser.
+$bilderFelt   = DB::harKolonne('courses', 'bilder') ? ', bilder' : '';
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse{$utenDatoFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -53,6 +56,14 @@ foreach ($kurs as $k) {
         'pris'    => Booking::kroner((int) $k['pris_ore']),
         'prisOre' => (int) $k['pris_ore'],
         'om'      => $k['beskrivelse'],
+        // Bildene verkstedet har valgt i admin. Foerste er hovedbildet;
+        // resten er karusellen paa kurssida. Er lista tom, faller nettsida
+        // tilbake paa bildet som hoerer til kurstypen.
+        'bilde'   => (string) ($k['bilde'] ?? ''),
+        'bilder'  => (static function ($raa): array {
+            $l = json_decode((string) $raa, true);
+            return is_array($l) ? array_values(array_filter(array_map('strval', $l))) : [];
+        })($k['bilder'] ?? null),
         'datoer'  => array_map(static fn($o) => [
             'oktId'  => (int) $o['id'],
             'dato'     => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),

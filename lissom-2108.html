@@ -2944,7 +2944,7 @@ window.__resources = {
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ butikkvarer }}" as="p" hint-placeholder-count="8">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
-              <div onClick="{{ p.visInfo }}" role="button" aria-label="Se mer om {{ p.title }}" style="width: 100%; aspect-ratio: 4 / 3; background-color: var(--clay-200); background-image: {{ p.imageCss }}; background-size: cover; background-position: {{ p.fokus }}; cursor: pointer;"></div>
+              <div onClick="{{ p.visInfo }}" role="button" aria-label="Se mer om {{ p.title }}" style="width: 100%; aspect-ratio: 1 / 1; background-color: var(--clay-200); background-image: {{ p.imageCss }}; background-size: cover; background-position: {{ p.fokus }}; cursor: pointer;"></div>
               <div style="padding: var(--space-5); display: flex; flex-direction: column; flex: 1; gap: 6px;">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.badge }}</div>
                 <div onClick="{{ p.visInfo }}" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); cursor: pointer;">{{ p.title }}</div>
@@ -6824,6 +6824,28 @@ window.__resources = {
               </div>
             </sc-for>
           </sc-if>
+          <!-- Godkjente utkast forsvant fra tavla i det de ble godkjent.
+               En artikkel havnet i kunnskapsbanken, men et nyhetsbrev eller
+               et innlegg gikk ingen steder. Naa blir de staaende her, med
+               teksten i behold, til de er tatt i bruk. -->
+          <sc-if value="{{ mkHarGodkjente }}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin: var(--space-8) 0 var(--space-4); font-size: var(--text-xl);">Godkjent — klar til bruk</h2>
+            <sc-for list="{{ mkGodkjente }}" as="g" hint-placeholder-count="2">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4);">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+                  <div style="min-width: 240px; flex: 1 1 340px;">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">{{ g.merke }}</div>
+                    <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ g.tittel }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 8px;">{{ g.detalj }}</div>
+                  </div>
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="eye" on-click="{{ g.les }}" hint-size="auto,40px">Les hele</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ g.bruk }}" hint-size="auto,40px">{{ g.brukKnapp }}</x-import>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
           <sc-if value="{{ mkIngenUtkast }}" hint-placeholder-val="{{ false }}">
             <div style="background: var(--surface-card); border: 1px dashed var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); text-align: center;">
               <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">Ingen utkast akkurat nå</div>
@@ -7425,7 +7447,7 @@ window.__resources = {
   <div onClick="{{ piLukk }}" style="position: fixed; inset: 0; z-index: 95; background: rgba(45,20,12,.45); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
     <div onClick="{{ stoppKlikk }}" style="background: var(--surface-card); border-radius: var(--radius-xl, 22px); width: min(560px, 100%); max-height: 88vh; overflow-y: auto; box-shadow: var(--shadow-lg); position: relative;">
       <button type="button" onClick="{{ piLukk }}" aria-label="Lukk" style="position: absolute; top: 12px; right: 14px; z-index: 2; appearance: none; border: none; background: var(--surface-card); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; color: var(--text-heading); font-size: 20px; line-height: 1;">×</button>
-      <div style="width: 100%; aspect-ratio: 4 / 3; background-color: var(--clay-200); background-image: {{ piBildeCss }}; background-size: cover; background-position: {{ piFokus }};" role="img" aria-label="{{ piTittel }}"></div>
+      <div style="width: 100%; aspect-ratio: 1 / 1; background-color: var(--clay-200); background-image: {{ piBildeCss }}; background-size: cover; background-position: {{ piFokus }};" role="img" aria-label="{{ piTittel }}"></div>
       <div style="padding: var(--space-7) var(--space-8) var(--space-8);">
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ piBadge }}</div>
         <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
@@ -10347,7 +10369,13 @@ class Component extends DCLogic {
   // serveren sender. Grensene folger norsk kalender: uka starter mandag.
   programListe() {
     const v = this.state.ovProgram || 'I dag';
-    const okter = ((this.state.adminData || {}).kommende || []).filter(o => o.startTid);
+    // En drop-in er en aapen doer, ikke en avtale. Staar det ingen paa den,
+    // skjer det ingenting den timen — og da skal den ikke ta plass i
+    // programmet. Kurs og samlinger staar uansett: de er satt opp, og noen
+    // skal vaere der enten det kommer paameldinger eller ikke.
+    const okter = ((this.state.adminData || {}).kommende || [])
+      .filter(o => o.startTid)
+      .filter(o => o.type !== 'dropin' || (o.pameldte || 0) > 0);
 
     if (!okter.length) {
       if (this.erPublisert()) return [];
@@ -11514,7 +11542,24 @@ class Component extends DCLogic {
           if (!laget && d && d.id) this.setState({ mkLes: { id: d.id, tittel: d.tittel, tekst: d.tekst, type: kropp.handling } });
           // «Lagt i kunnskapsbanken» — men hvor er den? Sto som en beskjed
           // om et sted man selv maatte lete etter. Naa staar man i den.
-          if (kropp.handling === 'godkjenn') this.setState({ mkFane: 'bank' });
+          //
+          // Og den sendte deg til kunnskapsbanken uansett hva du godkjente.
+          // Et nyhetsbrev blir aldri en artikkel, saa der sto du foran en
+          // liste uten brevet ditt, og teksten var borte. Naa foelger den
+          // med dit den skal brukes.
+          if (kropp.handling === 'godkjenn') {
+            if (d && d.tilBeskjed) {
+              this.setState({
+                side: 'adminbeskjeder',
+                motValg: 'Alle aktive medlemmer',
+                nbEmne: d.tittel || '',
+                nbTekst: d.tekst || '',
+              });
+              window.scrollTo(0, 0);
+            } else {
+              this.setState({ mkFane: d && d.artikkelId ? 'bank' : 'tavle' });
+            }
+          }
         }
       })
       .catch(() => {
@@ -11559,7 +11604,10 @@ class Component extends DCLogic {
    * utkast, men ikke lese det.
    */
   mkLes(id) {
-    const u = ((this.state.marked || {}).utkast || []).find(x => x.id === id);
+    const m = this.state.marked || {};
+    // Ogsaa de godkjente: de staar paa tavla til de er brukt, og skal kunne
+    // leses derfra.
+    const u = (m.utkast || []).concat(m.godkjente || []).find(x => x.id === id);
     if (!u) return;
     // Aapne med det vi alt vet, saa ruta ikke blinker tom mens teksten kommer.
     this.setState({ mkLes: { id: u.id, tittel: u.tittel, type: u.type, tekst: '', henter: true } });
@@ -11574,6 +11622,32 @@ class Component extends DCLogic {
       })
       .catch(() => this.setState(s => (gjelderFortsatt(s)
         ? { mkLes: Object.assign({}, s.mkLes, { henter: false, feil: true }) } : {})));
+  }
+
+  /**
+   * Tar et godkjent brev med til Beskjeder, med teksten klar.
+   *
+   * «Godkjenn» sa bare «utkastet er godkjent», og teksten var borte — brevet
+   * skulle sendes fra Beskjeder, men ingenting fulgte med dit.
+   */
+  brukUtkastSomBeskjed(id) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    this.setState({ kvittering: 'Henter teksten …' });
+    fetch('/api/admin/marked.php?utkast=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (!d || !d.utkast) throw new Error('tomt svar');
+        this.setState({
+          side: 'adminbeskjeder',
+          motValg: 'Alle aktive medlemmer',
+          nbEmne: d.utkast.tittel || '',
+          nbTekst: d.utkast.tekst || '',
+          kvittering: 'Teksten er klar',
+          kvitteringDetalj: 'Velg mottakere og trykk Send.',
+        });
+        window.scrollTo(0, 0);
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke hentet teksten.' }));
   }
 
   /**
@@ -12242,7 +12316,12 @@ class Component extends DCLogic {
         id: eksisterende ? eksisterende.id : 0,
         tittel: rad.navn,
         type: TYPE[rad.type] || 'kurs',
-        tema: TEMA[rad.type] || 'Kurs',
+        // «Kurs» finnes ikke i TEMA, saa dette falt tilbake til 'Kurs' — og
+        // et kurs med temaet «Plateteknikk» eller «Dreiing» mistet det i det
+        // du rettet prisen. Temaet styrer filteret ute paa nettsiden, saa
+        // kurset falt ut av sin egen kategori. Et tema vi ikke kan utlede av
+        // typen, blir staaende som det er.
+        tema: TEMA[rad.type] || (eksisterende && eksisterende.tema) || 'Kurs',
         pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
         kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 8,
         sms: rad.sms === false ? 'nei' : 'ja',
@@ -17314,7 +17393,16 @@ class Component extends DCLogic {
         navn: f.navn,
         hva: f.hva || 'Forespørsel',
         tid: f.tid || '',
-        velg: this.go('adminbeskjeder'),
+        // Gikk til Beskjeder-skjermen og stoppet der: du sto foran hele lista
+        // og maatte finne meldingen du nettopp trykket paa, en gang til. Naa
+        // aapner den seg, med svarfeltet klart.
+        velg: () => {
+          this.setState({
+            side: 'adminbeskjeder', henvFilter: 'Alle',
+            henvApen: f.id || null, henvSvar: '', henvBeskjed: '',
+          });
+          window.scrollTo(0, 0);
+        },
       })),
       ingenOvUbesvarte: this.erPublisert()
         && (this.state.adminForesporsler || []).filter(f => f.status === 'Ubesvart').length === 0,
@@ -20256,6 +20344,32 @@ class Component extends DCLogic {
             stil: { appearance: 'none', cursor: 'pointer', textAlign: 'left', background: 'var(--surface-card)',
                     border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)' },
           })),
+          // Godkjent, men ikke brukt. «Bruk» tar deg dit den hoerer hjemme:
+          // et brev til Beskjeder med teksten klar, en artikkel til
+          // kunnskapsbanken, et innlegg til lesevinduet der det kan kopieres.
+          ...(() => {
+            const g = d.godkjente || [];
+            const TIL_BREV = ['nyhetsbrev', 'medlemsbrev'];
+            return {
+              mkHarGodkjente: g.length > 0,
+              mkGodkjente: g.map(u => ({
+                tittel: u.tittel,
+                merke: MERKE[u.type] || u.type,
+                detalj: (u.kontekst ? u.kontekst + ' · ' : '')
+                      + (TIL_BREV.includes(u.type) ? 'sendes fra Beskjeder'
+                         : u.resultat_id ? 'ligger i kunnskapsbanken'
+                         : 'kopieres inn i kanalen selv'),
+                brukKnapp: TIL_BREV.includes(u.type) ? 'Send den'
+                         : u.resultat_id ? 'Se den' : 'Kopier teksten',
+                les: () => this.mkLes(u.id),
+                bruk: () => {
+                  if (TIL_BREV.includes(u.type)) { this.brukUtkastSomBeskjed(u.id); return; }
+                  if (u.resultat_id) { this.setState({ mkFane: 'bank' }); return; }
+                  this.mkLes(u.id);
+                },
+              })),
+            };
+          })(),
           mkHarUtkast: utkast.length > 0,
           mkIngenUtkast: utkast.length === 0,
           mkUtkast: utkast.map(u => ({

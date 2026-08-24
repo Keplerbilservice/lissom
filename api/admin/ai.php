@@ -412,11 +412,23 @@ switch ($handling) {
 
         DB::oppdater('ai_utkast', ['status' => 'godkjent', 'resultat_id' => $resultat], ['id' => $id]);
         revider('ai_godkjent', 'ai', $id, ['type' => $u['type']]);
+
+        // «Utkastet er godkjent» og ikke et ord om hvor det ble av. Et
+        // nyhetsbrev skal sendes fra Beskjeder, og da maa teksten foelge med
+        // dit — ellers maa den skrives opp igjen for haand.
+        $erBrev = in_array($u['type'], ['nyhetsbrev', 'medlemsbrev'], true);
         Svar::ok([
             'beskjed' => $resultat !== null
                 ? 'Lagt i kunnskapsbanken som kladd. Publiser den når du er klar.'
-                : 'Utkastet er godkjent.',
+                : ($erBrev
+                    ? 'Åpnet under Beskjeder, med teksten klar. Velg mottakere og send.'
+                    : 'Godkjent. Den ligger under «Godkjent» på tavla til du har brukt den.'),
             'artikkelId' => $resultat,
+            'type'       => $u['type'],
+            'tittel'     => (string) $u['tittel'],
+            // Bare tekst som skal videre et sted. En artikkel er alt lagret.
+            'tekst'      => $resultat === null ? (string) $u['tekst'] : '',
+            'tilBeskjed' => $erBrev,
         ]);
 
     case 'forkast':

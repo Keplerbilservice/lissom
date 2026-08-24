@@ -87,7 +87,7 @@ $ubetalte = (int) DB::verdi(
 // Fra midnatt i dag, ikke fra «naa». Programmet for i dag skal vise hele
 // dagen — ogsaa oktene som allerede er i gang eller nettopp ferdig.
 $kommende = DB::alle(
-    "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel,
+    "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.type,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
             cs.manuelt_opptatt
               + (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
@@ -196,6 +196,9 @@ Svar::json([
         return [
             'oktId'     => (int) $o['id'],
             'tittel'    => $o['tittel'],
+            // Programmet skjuler en drop-in ingen har meldt seg paa. Da maa
+            // det vite hva slags oekt det er.
+            'type'      => (string) $o['type'],
             'naar'      => Booking::norskDato((string) $o['start_tid']),
             'startTid'  => $start->format('c'),
             'klokke'    => $start->format('H:i'),

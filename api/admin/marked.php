@@ -213,6 +213,14 @@ if (Foresporsel::metode() === 'GET') {
             "SELECT id, type, tittel, kontekst, status, kostnad_ore, created_at
                FROM ai_utkast WHERE status = 'utkast' ORDER BY id DESC LIMIT 40"
         ),
+        // Godkjente utkast forsvant fra tavla i det de ble godkjent. En
+        // artikkel havnet i kunnskapsbanken, men et nyhetsbrev eller et
+        // innlegg gikk ingen steder — det sto bare «godkjent», og teksten var
+        // borte. Naa blir de staaende, med teksten i behold, til de er brukt.
+        'godkjente'   => DB::alle(
+            "SELECT id, type, tittel, kontekst, status, resultat_id, created_at
+               FROM ai_utkast WHERE status = 'godkjent' ORDER BY id DESC LIMIT 20"
+        ),
         'artikler'    => DB::alle(
             'SELECT id, tittel, kategori, slug, status, kilde, updated_at FROM articles ORDER BY sortering, id DESC'
         ),

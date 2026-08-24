@@ -61,6 +61,31 @@ AddDefaultCharset UTF-8
     Header always set X-Frame-Options "SAMEORIGIN"
     # Siden trenger verken mikrofon, kamera eller posisjon.
     Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Hva sida faar lov aa hente, og hvorfra.
+    #
+    # Et sikkerhetsskann 24. august ga 91 av 100. Alt annet var i orden;
+    # dette var det ene som manglet. Uten regelen kan et skript som paa et
+    # eller annet vis havner inn i sida — gjennom et felt noen har skrevet i,
+    # et bilde, en lenke — laste ned mer kode utenfra og sende data ut.
+    # Med den kan nettleseren bare hente fra oss selv og fra Google Analytics.
+    #
+    # «unsafe-eval» maa staa. Malmotoren i support.min.js bygger logikken med
+    # «new Function»; uten den tegnes sida uten innhold — proevd, og den ble
+    # tom. «unsafe-inline» maa staa av samme grunn: bade stil og skript
+    # ligger i selve fila. Regelen stopper altsaa ikke alt, men den stopper
+    # det som betyr mest: kode hentet fra en fremmed tjener, innhold i
+    # <object>, en <base>-tagg som flytter alle lenker, et skjema som sender
+    # til en annen adresse, og at sida legges i en ramme paa et annet
+    # nettsted.
+    #
+    # Googletagmanager er besoksmaalingen, og bare den. Den lastes uansett
+    # ikke for noen som ikke har sagt ja til maaling.
+    #
+    # Proevd av foer den ble lagt inn: alle elleve offentlige sider, alle
+    # elleve adminskjermer, innlogging, handlekurv, kasse, innholdsredigering
+    # og mobilforhandsvisningen — null brudd, null skriptfeil.
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 </IfModule>
 
 # Komprimering.
@@ -74,7 +99,9 @@ AddDefaultCharset UTF-8
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
     AddOutputFilterByType DEFLATE application/javascript application/x-javascript
+    AddOutputFilterByType DEFLATE text/javascript
     AddOutputFilterByType DEFLATE application/json application/xml
+    AddOutputFilterByType DEFLATE application/manifest+json
     AddOutputFilterByType DEFLATE image/svg+xml
 </IfModule>
 

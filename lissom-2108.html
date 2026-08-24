@@ -26,6 +26,36 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="theme-color" content="#FBF6EE">
+
+<!-- Tittel, beskrivelse og delingsbilde, i selve fila.
+     Alt dette ble satt av JavaScript etter at sida var lastet. Det virker
+     for en besokende, men ikke for en robot som ikke kjorer skript: naar
+     noen limte lissom.no inn i Facebook, LinkedIn, Slack eller en melding,
+     kom det opp uten tittel, uten tekst og uten bilde. Et sikkerhetsskann
+     24. august fant det samme — «Open Graph: mangler, Meta description:
+     mangler».
+     Verdiene her er forsidas. JavaScript skriver dem over med sidas egne
+     med det samme, saa dette er bunnen, ikke fasiten.
+
+     Med vilje uten <link rel="canonical"> og og:url: de peker paa én bestemt
+     adresse, og fila serveres paa alle. Da ville /kurs sagt om seg selv at
+     den egentlig er forsida — og en delt kurslenke i Facebook ville blitt
+     forsida. Uten dem bruker Facebook adressen den faktisk hentet, og Google
+     leser den riktige som skriptet setter inn. En tittel og et bilde som
+     hoerer til forsida er derimot et brukbart utgangspunkt for alle sider —
+     mye bedre enn en tom forhaandsvisning, som er det som er der naa. -->
+<title>Keramikkurs i Tønsberg | Lissom Keramikk</title>
+<meta name="description" content="Keramikkurs, dreiekurs og events på Teie ved Tønsberg — for hele Vestfold. Lag din egen keramikk fra første kveld. Leire, verktøy og brenning inkludert.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Lissom Keramikk &amp; Håndverk">
+<meta property="og:locale" content="nb_NO">
+<meta property="og:title" content="Keramikkurs i Tønsberg | Lissom Keramikk">
+<meta property="og:description" content="Kurs, events og medlemskap i keramikkverkstedet på Teie. Ingen forkunnskaper nødvendig — se datoer og book plass.">
+<meta property="og:image" content="https://lissom.no/assets_photos_dreiing-naerbilde.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta property="og:image:alt" content="Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg">
+<meta name="twitter:card" content="summary_large_image">
 <!-- ds-css:start — skrevet av bin/inline-css.php, ikke rediger her -->
 <style>
 /* ds-fonts.css */
@@ -11977,7 +12007,18 @@ class Component extends DCLogic {
     meta('robots', privat || (d.index || '').toLowerCase() === 'noindex' ? 'noindex,nofollow' : 'index,follow');
     meta('og:title', d.ogTittel || tittel, 'property');
     meta('og:description', d.ogBeskrivelse || d.meta, 'property');
-    meta('og:image', d.delingsbilde, 'property');
+    // Tom verdi skal ikke fjerne delingsbildet her. Det staar statisk i
+    // <head> nettopp fordi robotene som lager lenkeforhaandsvisninger i
+    // Facebook, LinkedIn og Slack ikke kjorer skript — fjerner vi det, blir
+    // det borte for alle andre uten aa gi noen noe tilbake. Har eieren lagt
+    // inn et eget bilde for sida, gjelder det, og maalene fra det statiske
+    // maa da vekk: de ville beskrevet feil bilde.
+    if (d.delingsbilde) {
+      meta('og:image', d.delingsbilde, 'property');
+      meta('og:image:width', '', 'property');
+      meta('og:image:height', '', 'property');
+      meta('og:image:alt', d.altTekst || '', 'property');
+    }
     meta('og:url', d.canonical, 'property');
     meta('og:type', 'website', 'property');
 

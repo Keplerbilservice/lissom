@@ -754,6 +754,20 @@ window.__resources = {
     @media (max-width: 560px) {
       .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
 
+      /* Butikken er en butikk, ikke en artikkelliste. Med ett kort i bredden
+         ble hver vare 350 x 550 piksler og hele sida 13 700 lang — nitten
+         varer er da tjue skjermhoyder med rulling. To i bredden er det en
+         nettbutikk pleier aa gjore, og det er hva folk leter etter: bildet,
+         navnet og prisen. Beskrivelsen staar i sin helhet naar du aapner
+         varen. */
+      .lx-varegrid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+      .lx-varekort > div:last-child { padding: 12px !important; gap: 4px !important; }
+      .lx-varetekst {
+        display: -webkit-box !important; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+        overflow: hidden; font-size: 12px !important; line-height: 1.45 !important;
+      }
+      .lx-varebunn { padding-top: 10px !important; gap: 8px !important; }
+
       /* Bunnteksten paa mobil.
          Stablet under hverandre ble den 1300 piksler lang — halvannen
          skjermhoyde med rulling forbi noe folk sjelden leser. «Besok oss» og
@@ -2941,15 +2955,15 @@ window.__resources = {
       </section>
 
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
-        <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+        <div class="lx-kortgrid lx-varegrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ butikkvarer }}" as="p" hint-placeholder-count="8">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
+            <div class="lx-varekort" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
               <div onClick="{{ p.visInfo }}" role="button" aria-label="Se mer om {{ p.title }}" style="width: 100%; aspect-ratio: 1 / 1; background-color: var(--clay-200); background-image: {{ p.imageCss }}; background-size: cover; background-position: {{ p.fokus }}; cursor: pointer;"></div>
               <div style="padding: var(--space-5); display: flex; flex-direction: column; flex: 1; gap: 6px;">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ p.badge }}</div>
                 <div onClick="{{ p.visInfo }}" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); cursor: pointer;">{{ p.title }}</div>
-                <p style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ p.detalj }}</p>
-                <div style="margin-top: auto; padding-top: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                <p class="lx-varetekst" style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ p.detalj }}</p>
+                <div class="lx-varebunn" style="margin-top: auto; padding-top: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ p.pris }}</span>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ p.velgHandling }}" hint-size="auto,36px">{{ p.cta }}</x-import>
                 </div>

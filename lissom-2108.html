@@ -16743,6 +16743,13 @@ class Component extends DCLogic {
                  'Hvem som holder kursene, og timene deres.',
                  null, 'Se kursholderne',
                  rullTil('KURSHOLDERE')),
+
+            // Det interne innholdet hadde ingen vei fra Oversikt — det laa
+            // inne under Medlemmer, og maatte letes fram.
+            kort('Intern side',
+                 'Det medlemmene ser: nyttige lenker, ordensregler og informasjon.',
+                 null, 'Se den interne siden',
+                 () => this.gaaAdmin('adminnyttig', {})),
           ],
           // Staar det ubetalte paameldinger, skal det staa her ogsaa — ikke
           // bare inne paa Paameldte.

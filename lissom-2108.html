@@ -2674,6 +2674,30 @@ window.__resources = {
                     </div>
                   </sc-for>
                 </div>
+                <!-- Det du har skrevet til Monica, med svarene.
+                     Foer sto det bare «Du faar svar paa e-post», og samtalen
+                     fantes ikke her — svaret kom et helt annet sted enn der
+                     spoersmaalet ble skrevet. -->
+                <sc-if value="{{ harMineSamtaler }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Dine meldinger til Monica</div>
+                    <sc-for list="{{ mineSamtaler }}" as="ms" hint-placeholder-count="1">
+                      <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
+                        <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Du skrev {{ ms.tid }}</div>
+                        <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ ms.tekst }}</p>
+                        <sc-for list="{{ ms.svar }}" as="sv" hint-placeholder-count="1">
+                          <div style="border-left: 3px solid var(--lissom-brown); padding: 2px 0 2px var(--space-4); margin-top: var(--space-3);">
+                            <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Monica svarte {{ sv.tid }}</div>
+                            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-heading); text-wrap: pretty;">{{ sv.tekst }}</p>
+                          </div>
+                        </sc-for>
+                        <sc-if value="{{ ms.venter }}" hint-placeholder-val="{{ false }}">
+                          <div style="font-size: var(--text-xs); color: var(--text-muted);">Ikke besvart ennå.</div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
                 <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
                   <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Send en beskjed til Monica</div>
                   <div style="display: flex; gap: var(--space-3); align-items: center;">
@@ -12126,6 +12150,19 @@ class Component extends DCLogic {
   // Verre: avsenderen sto som «Ingrid Hansen / ingrid@epost.no / 415 22 890»,
   // uansett hvem som var innlogget. Naa gaar den samme vei som forespørsler
   // fra nettsiden, med navnet til den som faktisk er innlogget.
+  /** Henter mine egne henvendelser og svarene paa dem. */
+  hentMineSamtaler() {
+    if (!this.erPublisert() || this._samtalerHentes) return;
+    this._samtalerHentes = true;
+    fetch('/api/foresporsel.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._samtalerHentes = false;
+        if (d && d.samtaler) this.setState({ mineSamtaler: d.samtaler });
+      })
+      .catch(() => { this._samtalerHentes = false; });
+  }
+
   sendTilMonicaNaa() {
     const tekst = (this.state.medlemsBeskjed || '').trim();
     if (!tekst) return;
@@ -12160,8 +12197,11 @@ class Component extends DCLogic {
         this.setState({
           medlemsBeskjed: ok ? '' : this.state.medlemsBeskjed,
           kvittering: ok ? 'Beskjeden er sendt til Monica' : 'Beskjeden ble ikke sendt',
-          kvitteringDetalj: ok ? 'Du får svar på e-post.' : ((d && d.feil) || 'Prøv igjen om litt.'),
+          kvitteringDetalj: ok ? 'Du får svar på e-post — og her på Min side.' : ((d && d.feil) || 'Prøv igjen om litt.'),
         });
+        // Traaden hentes paa nytt, saa den nye meldingen staar der med det
+        // samme framfor ved neste sidelasting.
+        if (ok) { this._samtalerHentes = false; this.hentMineSamtaler(); }
       })
       .catch(() => {
         this._beskjedPagaar = false;
@@ -14066,6 +14106,7 @@ class Component extends DCLogic {
     // henger sammen, og sjelden nok til aa merkes.
     if (side === 'minside' && this.state.innlogget) {
       this.startChat();
+      if (!this.state.mineSamtaler) this.hentMineSamtaler();
     } else if (side !== 'minside') {
       this.stoppChat();
     }
@@ -19123,6 +19164,12 @@ class Component extends DCLogic {
       ], 'Send påminnelse']),
       medlemsBeskjed: this.state.medlemsBeskjed ?? '',
       settMedlemsBeskjed: (e) => this.setState({ medlemsBeskjed: e.target.value }),
+      // Samtalene mine med verkstedet. Svaret gikk bare paa e-post for; naa
+      // staar det ogsaa der spoersmaalet ble skrevet.
+      mineSamtaler: (this.state.mineSamtaler || []).map(x => Object.assign({}, x, {
+        venter: !x.besvart,
+      })),
+      harMineSamtaler: (this.state.mineSamtaler || []).length > 0,
       sendTilMonica: () => this.sendTilMonicaNaa(),
       monicaEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendTilMonicaNaa(); } },
       // Innboksen paa Oversikt.

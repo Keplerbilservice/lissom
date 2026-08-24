@@ -14,6 +14,57 @@ declare(strict_types=1);
 
 require __DIR__ . '/_boot.php';
 
+// Mine egne henvendelser, med svarene.
+//
+// Et medlem som skrev til Monica fikk «Du faar svar paa e-post», og saa
+// ingenting mer der de skrev. Svaret gikk ut, men samtalen fantes ikke paa
+// Min side. Her henter vi den innloggedes egne henvendelser og det som er
+// svart paa dem.
+if (Foresporsel::metode() === 'GET') {
+    $medlem = krev_medlem();
+    $epost = trim((string) ($medlem['epost'] ?? ''));
+    $tlf   = normaliser_telefon((string) ($medlem['telefon'] ?? ''));
+    if ($epost === '' && $tlf === '') {
+        Svar::json(['samtaler' => []]);
+    }
+
+    $mine = DB::alle(
+        'SELECT id, type, melding, status, created_at
+           FROM enquiries
+          WHERE (epost <> \'\' AND epost = :e) OR (telefon <> \'\' AND telefon = :t)
+       ORDER BY id DESC
+          LIMIT 20',
+        ['e' => $epost, 't' => $tlf]
+    );
+
+    $svar = [];
+    if ($mine !== [] && DB::harTabell('foresporsel_svar')) {
+        $ider = implode(',', array_map(static fn($r) => (int) $r['id'], $mine));
+        foreach (DB::alle(
+            'SELECT enquiry_id, tekst, created_at FROM foresporsel_svar
+              WHERE enquiry_id IN (' . $ider . ') ORDER BY id'
+        ) as $r) {
+            $svar[(int) $r['enquiry_id']][] = $r;
+        }
+    }
+
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $naar = static fn(string $utc): string => (new DateTimeImmutable($utc, new DateTimeZone('UTC')))
+        ->setTimezone($oslo)->format('j.n. H:i');
+
+    Svar::json(['samtaler' => array_map(static fn(array $f): array => [
+        'id'      => (int) $f['id'],
+        'hva'     => (string) ($f['type'] ?? 'Melding'),
+        'tekst'   => (string) $f['melding'],
+        'tid'     => $naar((string) $f['created_at']),
+        'besvart' => $f['status'] === 'besvart',
+        'svar'    => array_map(static fn(array $r): array => [
+            'tekst' => (string) $r['tekst'],
+            'tid'   => $naar((string) $r['created_at']),
+        ], $svar[(int) $f['id']] ?? []),
+    ], $mine)]);
+}
+
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 Rate::sjekk('foresporsel', maks: 5, vindu: 3600);

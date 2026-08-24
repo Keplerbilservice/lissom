@@ -1867,9 +1867,9 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: 720px; margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Sist oppdatert 25. august 2026</div>
-          <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">Vilkår og angrerett</h1>
-          <p style="margin: 0 0 var(--space-10); color: var(--text-body); font-size: var(--text-lg); text-wrap: pretty;">Salgsvilkår for kurs, events, medlemskap og butikk hos Lissom Keramikk &amp; Håndverk AS. Alle priser vises inkl. mva der mva gjelder.</p>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ vk0Sistoppdatert }}</div>
+          <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ vk0Overskrift }}</h1>
+          <p style="margin: 0 0 var(--space-10); color: var(--text-body); font-size: var(--text-lg); text-wrap: pretty;">{{ vk0Brodtekst }}</p>
           <sc-for list="{{ vilkar }}" as="a" hint-placeholder-count="8">
             <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0;">
               <h2 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ a.h }}</h2>
@@ -1998,15 +1998,15 @@ window.__resources = {
       <section data-theme="sun" style="background: var(--lissom-yellow); padding: var(--section-y) var(--space-8); position: relative; overflow: hidden;">
         <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -120px; bottom: -160px; width: 520px; opacity: 0.09; pointer-events: none;" loading="lazy" decoding="async" width="192" height="112">
         <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">Gavekort</div>
-          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl); color: var(--lissom-brown);">Gavekort på keramikkurs</h1>
-          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Kan brukes på alle våre tjenester og produkter. Gavekortet sendes på e-post, eller hentes i verkstedet, med en personlig hilsen fra deg.</p>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500); margin-bottom: var(--space-3);">{{ gk0Kicker }}</div>
+          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl); color: var(--lissom-brown);">{{ gk0Overskrift }}</h1>
+          <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ gk0Brodtekst }}</p>
         </div>
       </section>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: var(--space-16); align-items: start;">
           <div>
-            <h2 style="margin: 0 0 var(--space-6); font-size: var(--text-3xl);">Slik fungerer det</h2>
+            <h2 style="margin: 0 0 var(--space-6); font-size: var(--text-3xl);">{{ gk1Slikfungererdet }}</h2>
             <div style="display: flex; flex-direction: column; gap: var(--space-4);">
               <sc-for list="{{ gvPunkter }}" as="p" hint-placeholder-count="4">
                 <div style="display: flex; gap: 12px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);">
@@ -2016,7 +2016,7 @@ window.__resources = {
               </sc-for>
             </div>
             <div style="margin-top: var(--space-8);">
-              <h3 style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ofte stilte spørsmål</h3>
+              <h3 style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ gk1Oftestiltesporsmal }}</h3>
               <sc-for list="{{ gvFaq }}" as="f" hint-placeholder-count="3">
                 <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
                   <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading); margin-bottom: 4px;">{{ f.sp }}</div>
@@ -2027,21 +2027,21 @@ window.__resources = {
             </div>
           </div>
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
-            <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg beløp</div>
-            <label style="display: block; margin-bottom: var(--space-2); font-size: var(--text-sm); color: var(--text-body);">Beløp i kroner</label>
+            <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">{{ gk2Tittel }}</div>
+            <label style="display: block; margin-bottom: var(--space-2); font-size: var(--text-sm); color: var(--text-body);">{{ gk2Feltnavn }}</label>
             <div style="position: relative; margin-bottom: var(--space-2);">
               <span style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: var(--text-lg); font-weight: 700; color: var(--text-muted); pointer-events: none;">kr.</span>
               <input type="number" inputmode="numeric" min="100" max="20000" step="10" placeholder="1490" value="{{ gvBelopFelt }}" onChange="{{ settGvBelop }}" aria-label="Beløp i kroner"
                 style="width: 100%; box-sizing: border-box; padding: 14px 16px 14px 52px; font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); background: var(--clay-50); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg);">
             </div>
-            <p style="margin: 0 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">Fra 100 til 20 000 kroner — du velger selv.</p>
+            <p style="margin: 0 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">{{ gk2Belopshjelp }}</p>
             <div style="display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-6);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens navn" placeholder="Fornavn Etternavn" value="{{ gvNavn }}" on-change="{{ settGvNavn }}" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens e-post" icon="mail" placeholder="navn@epost.no" value="{{ gvEpost }}" on-change="{{ settGvEpost }}" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på gavekortet" placeholder="F.eks. «Gratulerer med dagen!»" value="{{ gvHilsen }}" on-change="{{ settGvHilsen }}" hint-size="100%,66px"></x-import>
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ gvKjop }}" hint-size="100%,52px">Kjøp gavekort · {{ gvValgt }}</x-import>
-            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du betaler med Vipps i kassen. Gavekortet er gyldig i tre år.</p>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ gk2Betalingslinje }}</p>
           </div>
         </div>
       </section>
@@ -2053,21 +2053,21 @@ window.__resources = {
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kontakt</div>
-          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">Kontakt oss</h1>
-          <p style="margin: 0 0 var(--space-12); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Vi svarer som regel samme dag. Ring, send e-post, eller kom innom verkstedet på Teie.</p>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ kt0Kicker }}</div>
+          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ kt0Overskrift }}</h1>
+          <p style="margin: 0 0 var(--space-12); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ kt0Brodtekst }}</p>
           <div class="lx-split" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: var(--space-16); align-items: start;">
             <div style="display: flex; flex-direction: column; gap: var(--space-8);">
               <div>
-                <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Besøk oss</div>
-                <p style="margin: 0; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.6;">Lissom Keramikk & Håndverk AS<br>Nordre Løkkevei 15<br>3120 Nøtterøy — på Teie, rett utenfor Tønsberg sentrum</p>
+                <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ kt1Tittel }}</div>
+                <p style="margin: 0; font-size: var(--text-lg); color: var(--text-heading); line-height: 1.6;">{{ kt1Firmanavn }}<br>{{ kt1Gateadresse }}<br>{{ kt1Sted }}</p>
               </div>
               <div>
-                <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ring eller skriv</div>
-                <p style="margin: 0; font-size: var(--text-lg); line-height: 1.8;"><a href="tel:+4794134601" style="font-weight: 700;">+47 94 13 46 01</a><br><a href="mailto:monica@lissom.no" style="font-weight: 700;">monica@lissom.no</a></p>
+                <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ kt2Tittel }}</div>
+                <p style="margin: 0; font-size: var(--text-lg); line-height: 1.8;"><a href="tel:+4794134601" style="font-weight: 700;">{{ kt2Telefon }}</a><br><a href="mailto:monica@lissom.no" style="font-weight: 700;">{{ kt2Epost }}</a></p>
               </div>
               <div>
-                <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Åpningstider</div>
+                <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ kt3Tittel }}</div>
                 <div style="display: flex; flex-direction: column; gap: 8px; max-width: 380px;">
                   <sc-for list="{{ apningstider }}" as="a" hint-placeholder-count="3">
                     <div style="display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-base); color: var(--text-body);">
@@ -2080,19 +2080,19 @@ window.__resources = {
             <div style="display: flex; flex-direction: column; gap: var(--space-6);">
               <div data-theme="ink" style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
                 <div>
-                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--clay-50);">Lurer du på noe om kurs eller grupper?</div>
-                  <div style="font-size: var(--text-sm); color: var(--clay-300);">Send en uforpliktende forespørsel, så svarer vi med forslag.</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--clay-50);">{{ kt4Tittel }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--clay-300);">{{ kt4Brodtekst }}</div>
                 </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,52px">Send forespørsel</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ goForesporsel }}" hint-size="auto,52px">{{ kt4Knapp }}</x-import>
               </div>
               <div style="border-radius: var(--radius-xl, 22px); overflow: hidden; flex: 1; min-height: 440px; background-image: url('assets_photos_butikken.jpg'); background-size: cover; background-position: center; position: relative; display: flex; align-items: flex-end;">
                 <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(43,20,12,0.88) 0%, rgba(43,20,12,0.45) 45%, transparent 78%); pointer-events: none;"></div>
                 <div style="position: relative; padding: var(--space-8);">
-                  <p style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--clay-50);">Slik finner du oss: vi holder til i Nordre Løkkevei på Teie, fem minutter fra Tønsberg sentrum over Kanalbrua. Gratis parkering rett utenfor.</p>
+                  <p style="margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--clay-50);">{{ kt5Slikfinnerduoss }}</p>
                   <!-- Stedene folk kommer fra staar her fordi det er sant og
                        fordi det er her det hoerer hjemme — ikke som en ramse
                        med stedsnavn presset inn i en tekst om noe annet. -->
-                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--clay-200); text-wrap: pretty;">Vi tar imot folk fra hele Vestfold: Tønsberg, Nøtterøy, Tjøme, Horten, Sandefjord, Stokke, Revetal og Andebu.</p>
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--clay-200); text-wrap: pretty;">{{ kt5Nedslagsfelt }}</p>
                 </div>
               </div>
             </div>
@@ -8011,6 +8011,56 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Kommende Paint on Pots' },
       { l: 'Lenke', v: 'Alle events' },
       { l: 'Tom liste', v: 'Ingen åpne datoer akkurat nå.' } ] },
+  ],
+  // Kontakt sto som fast tekst i malen og kunne ikke rettes uten aa gaa i
+  // kildekoden. Verdiene under er det som sto der fra for.
+  'Kontakt': [
+    { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Kontakt' },
+      { l: 'Overskrift', v: 'Kontakt oss' },
+      { l: 'Brødtekst', v: 'Vi svarer som regel samme dag. Ring, send e-post, eller kom innom verkstedet på Teie.' } ] },
+    { navn: 'Besøk oss', type: 'Adresse', synlig: 'Publisert', felter: [
+      { l: 'Tittel', v: 'Besøk oss' },
+      { l: 'Firmanavn', v: 'Lissom Keramikk & Håndverk AS' },
+      { l: 'Gateadresse', v: 'Nordre Løkkevei 15' },
+      { l: 'Sted', v: '3120 Nøtterøy — på Teie, rett utenfor Tønsberg sentrum' } ] },
+    { navn: 'Ring eller skriv', type: 'Telefon og e-post', synlig: 'Publisert', felter: [
+      { l: 'Tittel', v: 'Ring eller skriv' },
+      { l: 'Telefon', v: '+47 94 13 46 01' },
+      { l: 'E-post', v: 'monica@lissom.no' } ] },
+    { navn: 'Åpningstider', type: 'Overskrift', synlig: 'Publisert', felter: [
+      { l: 'Tittel', v: 'Åpningstider' } ] },
+    { navn: 'Forespørsel', type: 'Oppfordring', synlig: 'Publisert', felter: [
+      { l: 'Tittel', v: 'Lurer du på noe om kurs eller grupper?' },
+      { l: 'Brødtekst', v: 'Send en uforpliktende forespørsel, så svarer vi med forslag.' },
+      { l: 'Knapp', v: 'Send forespørsel' } ] },
+    { navn: 'Veibeskrivelse', type: 'To avsnitt', synlig: 'Publisert', felter: [
+      { l: 'Slik finner du oss', v: 'Slik finner du oss: vi holder til i Nordre Løkkevei på Teie, fem minutter fra Tønsberg sentrum over Kanalbrua. Gratis parkering rett utenfor.', lang: true },
+      { l: 'Nedslagsfelt', v: 'Vi tar imot folk fra hele Vestfold: Tønsberg, Nøtterøy, Tjøme, Horten, Sandefjord, Stokke, Revetal og Andebu.', lang: true } ] },
+  ],
+  // Gavekort sto som fast tekst i malen og kunne ikke rettes uten aa gaa i
+  // kildekoden. Verdiene under er det som sto der fra for.
+  'Gavekort': [
+    { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Gavekort' },
+      { l: 'Overskrift', v: 'Gavekort på keramikkurs' },
+      { l: 'Brødtekst', v: 'En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Kan brukes på alle våre tjenester og produkter. Gavekortet sendes på e-post, eller hentes i verkstedet, med en personlig hilsen fra deg.', lang: true } ] },
+    { navn: 'Seksjonstitler', type: 'Overskrifter', synlig: 'Publisert', felter: [
+      { l: 'Slik fungerer det', v: 'Slik fungerer det' },
+      { l: 'Ofte stilte spørsmål', v: 'Ofte stilte spørsmål' } ] },
+    { navn: 'Kjøpsboks', type: 'Beløp og vilkår', synlig: 'Publisert', felter: [
+      { l: 'Tittel', v: 'Velg beløp' },
+      { l: 'Feltnavn', v: 'Beløp i kroner' },
+      { l: 'Beløpshjelp', v: 'Fra 100 til 20 000 kroner — du velger selv.' },
+      { l: 'Betalingslinje', v: 'Du betaler med Vipps i kassen. Gavekortet er gyldig i tre år.' } ] },
+  ],
+  // Vilkår sto som fast tekst i malen og kunne ikke rettes uten aa gaa i
+  // kildekoden. Verdiene under er det som sto der fra for.
+  'Vilkår': [
+    { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
+      { l: 'Sist oppdatert', v: 'Sist oppdatert 25. august 2026' },
+      { l: 'Overskrift', v: 'Vilkår og angrerett' },
+      { l: 'Brødtekst', v: 'Salgsvilkår for kurs, events, medlemskap og butikk hos Lissom Keramikk & Håndverk AS. Alle priser vises inkl. mva der mva gjelder.', lang: true } ] },
   ],
   'Personvern': [
   { navn: 'Innledning', type: 'Tekst', synlig: 'Publisert', felter: [
@@ -18372,6 +18422,14 @@ class Component extends DCLogic {
       goKursFra404: this.go('kurs'),
       goKontaktFra404: this.go('kontakt'),
       erVilkar: side === 'vilkar',
+      // Vilkaarsteksten fra innholdsredigeringen. Datoen «Sist oppdatert»
+      // sto som fast tekst — den maa kunne rettes uten en utvikler den dagen
+      // vilkaarene endres.
+      ...(side !== 'vilkar' ? {} : {
+        vk0Sistoppdatert: this.innh('Vilkår/0/Sist oppdatert'),
+        vk0Overskrift: this.innh('Vilkår/0/Overskrift'),
+        vk0Brodtekst: this.innh('Vilkår/0/Brødtekst'),
+      }),
       erBedrift: side === 'bedrift',
       bedriftTilbud: (() => {
         const il = this.state.innholdLagret || {};
@@ -19704,9 +19762,42 @@ class Component extends DCLogic {
         }]),
       })),
       erGavekortside: side === 'gavekortside',
+      // Tekstene paa gavekortsida, fra innholdsredigeringen.
+      ...(side !== 'gavekortside' ? {} : {
+        gk0Kicker: this.innh('Gavekort/0/Kicker'),
+        gk0Overskrift: this.innh('Gavekort/0/Overskrift'),
+        gk0Brodtekst: this.innh('Gavekort/0/Brødtekst'),
+        gk1Slikfungererdet: this.innh('Gavekort/1/Slik fungerer det'),
+        gk1Oftestiltesporsmal: this.innh('Gavekort/1/Ofte stilte spørsmål'),
+        gk2Tittel: this.innh('Gavekort/2/Tittel'),
+        gk2Feltnavn: this.innh('Gavekort/2/Feltnavn'),
+        gk2Belopshjelp: this.innh('Gavekort/2/Beløpshjelp'),
+        gk2Betalingslinje: this.innh('Gavekort/2/Betalingslinje'),
+      }),
       erKalenderside: side === 'kalender',
       goKalender: this.go('kalender'),
       erKontakt: side === 'kontakt',
+      // Tekstene paa kontaktsida, fra innholdsredigeringen. De sto som fast
+      // tekst i malen: skulle et telefonnummer eller en aapningstid rettes,
+      // matte noen inn i kildekoden.
+      ...(side !== 'kontakt' ? {} : {
+        kt0Kicker: this.innh('Kontakt/0/Kicker'),
+        kt0Overskrift: this.innh('Kontakt/0/Overskrift'),
+        kt0Brodtekst: this.innh('Kontakt/0/Brødtekst'),
+        kt1Tittel: this.innh('Kontakt/1/Tittel'),
+        kt1Firmanavn: this.innh('Kontakt/1/Firmanavn'),
+        kt1Gateadresse: this.innh('Kontakt/1/Gateadresse'),
+        kt1Sted: this.innh('Kontakt/1/Sted'),
+        kt2Tittel: this.innh('Kontakt/2/Tittel'),
+        kt2Telefon: this.innh('Kontakt/2/Telefon'),
+        kt2Epost: this.innh('Kontakt/2/E-post'),
+        kt3Tittel: this.innh('Kontakt/3/Tittel'),
+        kt4Tittel: this.innh('Kontakt/4/Tittel'),
+        kt4Brodtekst: this.innh('Kontakt/4/Brødtekst'),
+        kt4Knapp: this.innh('Kontakt/4/Knapp'),
+        kt5Slikfinnerduoss: this.innh('Kontakt/5/Slik finner du oss'),
+        kt5Nedslagsfelt: this.innh('Kontakt/5/Nedslagsfelt'),
+      }),
       goGavekort: this.go('gavekortside'),
       goKontakt: this.go('kontakt'),
       gvPunkter: [

@@ -1,11 +1,25 @@
 /**
- * Leter etter felter som ikke kan skrives i.
+ * Leter etter felter man ikke kan skrive i, og felter som ikke er koblet til
+ * noe i det hele tatt.
  *
  *   node bin/skjemasjekk.mjs
  *
  * Et felt i malen har to bindinger: value="{{ x }}" og onChange="{{ settX }}".
- * Mangler den siste, kan man klikke i feltet, men ikke endre noe — tastene
- * gjor ingenting, og det ser ut som skjermen har hengt seg.
+ * Mangler den siste, kan man klikke i feltet, men ikke endre noe.
+ *
+ * Mangler BEGGE, er feltet bare tegnet. Det ser ferdig ut, tar imot det man
+ * skriver, og kaster det. Det er verre enn et felt som ikke virker, for
+ * ingenting sier fra. Fram til 24. august hoppet dette skriptet over slike
+ * felter — kommentaren sa «helt ustyrt felt, f.eks. filvelger». Bak den
+ * setningen sto feltet «Gavekort eller rabattkode» i kassa i to maaneder,
+ * uten binding og uten noe endepunkt bak seg.
+ *
+ * Skriptet saa ogsaa bare paa raa <input>, <textarea> og <select>. Skjemaene
+ * er for det meste bygget av <x-import ... .Input>, og de var usynlige for
+ * det. De telles med naa.
+ *
+ * Filvelgere staar i UNNTAK: <input type="file"> styres av onChange alene,
+ * en value gir ikke mening, og de er kontrollert for haand.
  */
 
 import fs from 'node:fs';
@@ -13,30 +27,46 @@ import fs from 'node:fs';
 const s = fs.readFileSync(new URL('../lissom-2108.html', import.meta.url).pathname, 'utf8');
 const mal = s.slice(s.indexOf('<x-dc>'), s.indexOf('<script type="text/x-dc"'));
 
-const savn = [];
-let felter = 0, lesbare = 0;
+/** Felter som med vilje staar uten binding, med grunnen. */
+const UNNTAK = [
+  { treff: /type="file"/, grunn: 'filvelger — styres av onChange alene' },
+];
 
-for (const m of mal.matchAll(/<(input|textarea|select)\b([^>]*)>/g)) {
-  const [hele, tag, attr] = m;
-  const type = (attr.match(/type="(\w+)"/) || [])[1] || 'text';
-  if (type === 'hidden' || type === 'submit') continue;
+const utenEndring = [];
+const utenAlt = [];
+let felter = 0, hele = 0;
+
+const sjekk = (kode, navn) => {
+  const type = (kode.match(/type="(\w+)"/) || [])[1] || 'text';
+  if (type === 'hidden' || type === 'submit') return;
   felter++;
 
-  const harVerdi  = /(?:value|checked)="\{\{/.test(attr);
-  const harEndring = /on-?[Cc]hange="\{\{|on-?[Ii]nput="\{\{/.test(attr);
+  const harVerdi   = /(?:value|checked|selected)="\{\{/.test(kode);
+  const harEndring = /on-?[Cc]hange="\{\{|on-?[Ii]nput="\{\{|on-?[Cc]lick="\{\{/.test(kode);
 
-  if (!harVerdi && !harEndring) continue;   // helt ustyrt felt, f.eks. filvelger
-  if (harVerdi && !harEndring) {
-    savn.push({ tag, utdrag: hele.slice(0, 110) });
-  } else {
-    lesbare++;
-  }
+  if (harVerdi && harEndring) { hele++; return; }
+  if (UNNTAK.some(u => u.treff.test(kode))) { hele++; return; }
+  (harVerdi || harEndring ? utenEndring : utenAlt)
+    .push({ navn, utdrag: kode.replace(/\s+/g, ' ').slice(0, 130) });
+};
+
+for (const m of mal.matchAll(/<(input|textarea|select)\b[^>]*>/g)) {
+  sjekk(m[0], m[1]);
+}
+// Skjemaene er stort sett satt sammen av komponenter, ikke raa tagger.
+for (const m of mal.matchAll(/<x-import[^>]*\.(Input|Textarea|Select|Switch|Checkbox|Radio)"[^>]*>/g)) {
+  sjekk(m[0], m[1]);
 }
 
-console.log(`${felter} felter i malen, ${lesbare} kan bade leses og endres.`);
-if (savn.length) {
-  console.log('\nFelter med verdi, men uten onChange (kan ikke skrives i):');
-  savn.forEach(x => console.log('  ' + x.utdrag));
-  process.exit(1);
+console.log(`${felter} felter i malen, ${hele} er koblet opp.`);
+
+if (utenAlt.length) {
+  console.log(`\n${utenAlt.length} felt uten binding i det hele tatt — tar imot det som skrives og kaster det:`);
+  utenAlt.forEach(x => console.log('  ' + x.utdrag));
 }
-console.log('Ingen laaste felter.');
+if (utenEndring.length) {
+  console.log(`\n${utenEndring.length} felt med verdi, men uten onChange — kan ikke skrives i:`);
+  utenEndring.forEach(x => console.log('  ' + x.utdrag));
+}
+if (utenAlt.length || utenEndring.length) process.exit(1);
+console.log('Ingen felter uten funksjon.');

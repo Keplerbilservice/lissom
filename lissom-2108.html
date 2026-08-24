@@ -4059,9 +4059,35 @@ window.__resources = {
                   <button type="button" onClick="{{ o.flere }}" title="Én plass til" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; color: var(--text-heading); font-size: 17px;">+</button>
                 </div>
                 <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <button type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
                   <button type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
                 </div>
+
+                <!-- Redigering av selve datoen. Kunne ikke gjores for: ble
+                     klokkeslettet feil, var eneste vei aa avlyse og lage den
+                     paa nytt — og da mistet de paameldte plassen sin. -->
+                <sc-if value="{{ o.redigerer }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); padding-top: var(--space-4); border-top: 1px dashed var(--border-subtle);">
+                    <div style="flex: 0 1 180px;">
+                      <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
+                      <input type="date" value="{{ oktDato }}" onChange="{{ settOktDato }}" style="{{ oktFeltStil }}">
+                    </div>
+                    <div style="flex: 0 1 120px;">
+                      <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
+                      <input type="time" value="{{ oktFra }}" onChange="{{ settOktFra }}" style="{{ oktFeltStil }}">
+                    </div>
+                    <div style="flex: 0 1 120px;">
+                      <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
+                      <input type="time" value="{{ oktTil }}" onChange="{{ settOktTil }}" style="{{ oktFeltStil }}">
+                    </div>
+                    <div style="display: flex; gap: var(--space-3); align-items: center; margin-left: auto;">
+                      <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ oktBeskjed }}</span>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ o.lagreDato }}" hint-size="auto,36px">Lagre</x-import>
+                      <button type="button" onClick="{{ o.avbrytRediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Avbryt</button>
+                    </div>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
             <sc-if value="{{ ingenAktiveOkter }}" hint-placeholder-val="{{ false }}">
@@ -12711,6 +12737,58 @@ class Component extends DCLogic {
    * kurset for aa gi plass til én til paa torsdag — og da gjaldt det alle
    * datoene, ogsaa de som var fulle med vilje.
    */
+  /**
+   * Flytter én dato til et nytt tidspunkt.
+   *
+   * Datoene kunne legges til, faa flere plasser og avlyses — men ikke
+   * rettes. Ble klokkeslettet feil, matte oekta avlyses og lages paa nytt,
+   * og de som alt sto paa lista mistet plassen sin.
+   *
+   * De paameldte faar ingen beskjed av seg selv. Serveren teller dem og sier
+   * fra her, saa det ikke oppdages naar noen moeter opp paa feil klokkeslett.
+   */
+  lagreOktDato(oktId) {
+    if (!this.erPublisert()) {
+      this.setState({ oktBeskjed: 'Krever den ekte siden' });
+      return;
+    }
+    const s = this.state;
+    if (!s.oktDato) {
+      this.setState({ oktBeskjed: 'Velg en dato.' });
+      return;
+    }
+    if (this._oktLagrer) return;
+    this._oktLagrer = true;
+    this.setState({ oktBeskjed: 'Lagrer …' });
+
+    const fra = s.oktFra || '00:00';
+    fetch('/api/admin/kurs.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'endredato',
+        oktId: oktId,
+        start: s.oktDato + ' ' + fra,
+        slutt: s.oktTil ? (s.oktDato + ' ' + s.oktTil) : '',
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._oktLagrer = false;
+        this.setState({
+          oktBeskjed: (d && (d.beskjed || d.feil)) || (ok ? 'Lagret.' : 'Gikk ikke.'),
+          oktRediger: ok ? null : oktId,
+          kvittering: ok ? 'Datoen er flyttet' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
+      })
+      .catch(() => {
+        this._oktLagrer = false;
+        this.setState({ oktBeskjed: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   settPlasser(oktId, kapasitet) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden' });
@@ -16261,12 +16339,37 @@ class Component extends DCLogic {
               this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
               window.scrollTo(0, 0);
             },
+            // Én rad aapen om gangen. To aapne felter med hver sin dato er
+            // en feilkilde: det er ikke til aa se hvilken som lagres.
+            redigerer: this.state.oktRediger === o.oktId,
+            rediger: () => this.setState({
+              oktRediger: o.oktId,
+              oktDato: o.dato || '',
+              oktFra: o.fra || '',
+              oktTil: o.til || '',
+              oktBeskjed: '',
+            }),
+            avbrytRediger: () => this.setState({ oktRediger: null, oktBeskjed: '' }),
+            lagreDato: () => this.lagreOktDato(o.oktId),
           };
         });
         return {
           aktiveOkter: okter,
           aktiveOkterAntall: okter.length,
           ingenAktiveOkter: okter.length === 0,
+          oktDato: this.state.oktDato || '',
+          oktFra: this.state.oktFra || '',
+          oktTil: this.state.oktTil || '',
+          oktBeskjed: this.state.oktBeskjed || '',
+          settOktDato: e => this.setState({ oktDato: e.target.value, oktBeskjed: '' }),
+          settOktFra:  e => this.setState({ oktFra: e.target.value, oktBeskjed: '' }),
+          settOktTil:  e => this.setState({ oktTil: e.target.value, oktBeskjed: '' }),
+          oktFeltStil: {
+            boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-md)', padding: '9px 12px',
+            font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+            background: 'var(--surface-card)',
+          },
         };
       })(),
       // ── Medlemskapene som kan kjopes ────────────────────────────────

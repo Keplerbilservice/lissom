@@ -31,8 +31,16 @@ $kursbevis = static function (array $d): ?string {
 };
 
 if ($oktId <= 0) {
+    // Tidene ligger i UTC, som resten av basen. Skjemaet skriver norsk tid,
+    // saa de regnes om her — én gang, i stedet for i hvert felt.
+    $iOslo = static function (string $utc, string $format): string {
+        return (new DateTimeImmutable($utc, new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))
+            ->format($format);
+    };
+
     $okter = DB::alle(
-        "SELECT cs.id, cs.start_tid, c.tittel, c.type, c.tema,
+        "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.type, c.tema,
                 COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
                 (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
                   WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS betalt,
@@ -108,6 +116,14 @@ if ($oktId <= 0) {
         // av dem — alt sto i én lang liste.
         'type'      => (string) ($o['type'] ?? 'kurs'),
         'tema'      => (string) ($o['tema'] ?? ''),
+        // Datoen og klokkeslettet slik de staar i et dato- og et tidsfelt,
+        // i norsk tid. «naar» over er ferdig skrevet for aa leses; disse er
+        // for aa kunne rettes. Uten dem maatte skjemaet tolke «tirsdag 25.
+        // august, 10:00» tilbake til tall, og det er en feilkilde uten
+        // grunn.
+        'dato'      => $iOslo((string) $o['start_tid'], 'Y-m-d'),
+        'fra'       => $iOslo((string) $o['start_tid'], 'H:i'),
+        'til'       => $o['slutt_tid'] === null ? '' : $iOslo((string) $o['slutt_tid'], 'H:i'),
     ], $okter),
     ]);
 }

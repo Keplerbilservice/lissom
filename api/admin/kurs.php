@@ -6,6 +6,7 @@
  *   POST handling=lagre     opprett eller endre et kurs
  *   POST handling=nydato    legg til en dato
  *   POST handling=plasser   endre antall plasser paa én dato
+ *   POST handling=endredato endre tidspunktet paa én dato
  *   POST handling=avlys     avlys en dato
  *   POST handling=slett     fjern et kurs (avlyses om noen er paameldt)
  *
@@ -271,6 +272,61 @@ switch ($handling) {
             'beskjed'   => $kapasitet === null
                 ? 'Datoen følger kursets antall plasser igjen.'
                 : 'Datoen har nå ' . $kapasitet . ' plasser.',
+        ]);
+
+    // ------------------------------------------------- flytte en dato
+    //
+    // Datoene kunne legges til, faa flere plasser og avlyses — men ikke
+    // rettes. Ble klokkeslettet feil, var eneste vei aa avlyse og lage den
+    // paa nytt, og da mistet de paameldte plassen sin. Naa flyttes den.
+    case 'endredato':
+        $oktId = Foresporsel::heltall('oktId');
+        $okt = DB::en(
+            'SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.id = :o',
+            ['o' => $oktId]
+        );
+        if ($okt === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+
+        $start = $tilUtc(Foresporsel::tekst('start'));
+        $slutt = $tilUtc(Foresporsel::tekst('slutt'));
+        if ($start === null) {
+            Svar::feil('Skriv datoen som 2026-09-02 17:30.');
+        }
+        if ($slutt !== null && $slutt <= $start) {
+            Svar::feil('Slutt må være etter start.');
+        }
+
+        DB::oppdater(
+            'course_sessions',
+            ['start_tid' => $start, 'slutt_tid' => $slutt],
+            ['id' => $oktId]
+        );
+        revider('dato_flyttet', 'course_session', $oktId, [
+            'fra' => (string) $okt['start_tid'],
+            'til' => $start,
+        ]);
+
+        // De som alt staar paa lista faar ingen beskjed av seg selv. Det maa
+        // sies her, ikke oppdages naar noen moeter opp paa feil klokkeslett.
+        $berort = (int) DB::verdi(
+            "SELECT COALESCE(SUM(antall), 0) FROM bookings
+              WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+            ['o' => $oktId]
+        );
+
+        Svar::ok([
+            'naar'    => Booking::norskDato($start),
+            'berort'  => $berort,
+            'beskjed' => $berort === 0
+                ? 'Datoen er flyttet til ' . Booking::norskDato($start) . '.'
+                : 'Datoen er flyttet til ' . Booking::norskDato($start) . '. '
+                  . $berort . ($berort === 1 ? ' påmeldt' : ' påmeldte')
+                  . ' får ikke beskjed automatisk — send den under Påmeldte.',
         ]);
 
     case 'avlys':

@@ -19669,14 +19669,33 @@ class Component extends DCLogic {
         const d = dataFor(valgtSide.id);
         const sc = this.seoScore(d, valgtSide);
         const scoreFarge = n => n >= 80 ? 'var(--sage-500)' : n >= 55 ? 'var(--lissom-yellow)' : 'var(--terracotta-500)';
-        const alle = sider.map(s => ({ s, sc: this.seoScore(dataFor(s.id), s) }));
+        // Tallene skal maale det Google faktisk ser, ikke hvor mye eieren har
+        // skrevet inn for haand.
+        //
+        // Foer telte de bare det som laa lagret. De ferdigskrevne tekstene i
+        // SEO_FERDIG ble ikke regnet med — selv om det er nettopp de som
+        // legges i <head> naar ingenting er lagret. Skjermen meldte da at alle
+        // tjue sidene manglet tittel og beskrivelse, og satte snittet til 24
+        // av 100, mens sidene i virkeligheten hadde begge deler. Det er samme
+        // sammenslaaing som seoTilHodet gjor.
+        //
+        // Skjemaet under bruker fortsatt `dataFor` alene. Der skal feltene
+        // staa tomme til eieren skriver noe selv — ellers ville et trykk paa
+        // Lagre gjort standardteksten til deres egen, uten at noen ba om det.
+        const iBruk = id => Object.assign({}, Component.SEO_FERDIG[id] || {}, dataFor(id));
+        const alle = sider.map(s => ({ s, sc: this.seoScore(iBruk(s.id), s) }));
         const snitt = Math.round(alle.reduce((a, x) => a + x.sc.score, 0) / alle.length);
-        const utenMeta = alle.filter(x => !dataFor(x.s.id).meta);
-        const utenTittel = alle.filter(x => !dataFor(x.s.id).tittel);
-        const utenAlt = alle.filter(x => !dataFor(x.s.id).altTekst);
+        const utenMeta = alle.filter(x => !iBruk(x.s.id).meta);
+        const utenTittel = alle.filter(x => !iBruk(x.s.id).tittel);
+        const utenAlt = alle.filter(x => !iBruk(x.s.id).altTekst);
         const under70 = alle.filter(x => x.sc.score < 70);
         const velgSide = id => () => this.setState({ seoValgtId: id });
         return {
+          // Kortene her er snarveier til den foerste sida som har problemet.
+          // Er lista tom, er det ingenting aa gaa til — og da skal kortet
+          // heller ikke se ut som noe man kan trykke paa. Foer sto det
+          // «Klikk for aa fikse» under en null, med haandpeker og det hele,
+          // og trykket gjorde ingenting.
           seoDash: [
             { merke: 'Snittscore', verdi: snitt + '/100', under: sider.length + ' sider målt' },
             { merke: 'Sider under 70', verdi: String(under70.length), under: 'Bør fikses først' },
@@ -19684,9 +19703,15 @@ class Component extends DCLogic {
             { merke: 'Uten alt-tekst', verdi: String(utenAlt.length), under: 'Hovedbilder' },
           ].map((t, i) => {
             const kilde = [under70, under70, utenMeta, utenAlt][i];
+            const gaar = kilde.length > 0;
             return Object.assign(t, {
-              velg: kilde.length ? velgSide(kilde[0].s.id) : () => {},
-              kortStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', cursor: 'pointer' },
+              under: gaar ? t.under : (i === 0 ? t.under : 'Ingenting å ta tak i'),
+              velg: gaar ? velgSide(kilde[0].s.id) : null,
+              kortStil: {
+                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+                cursor: gaar ? 'pointer' : 'default',
+              },
             });
           }),
           seoHandlinger: [

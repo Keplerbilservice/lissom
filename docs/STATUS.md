@@ -1,12 +1,16 @@
-# Status — 22. august 2026
+# Status — 24. august 2026
 
-Oppdatert gjennom natta og morgenen. Dette er hva som virker, hva som ikke gjør det, og
-hva som venter på en avgjørelse.
+Hva som virker, hva som ikke gjør det, og hva som venter på en avgjørelse.
 
-**Kort sagt:** backend er nå testet mot en ekte database — det var den ikke da
-du gikk. Booking, betaling, venteliste, avbestilling, admin og innholds-
-redigering er koblet opp og verifisert. Det eneste som står igjen som ekte
-hindring, er at Vipps ikke slipper salgsenheten til ePayment.
+**Kort sagt:** hele veien fra admin til nettsiden er koblet opp og prøvd mot
+en ekte database. Det eneste som står igjen som ekte hindring, er at Vipps
+ikke slipper salgsenheten til ePayment.
+
+> **Om denne fila.** Utgaven fra 22. august motsa seg selv: tabellen sa at
+> e-post over SMTP virket, mens punkt 11 lenger nede sa at det ikke var satt
+> opp. Den motsigelsen ble stående i to dager og sendte arbeidet i feil
+> retning. Staar det noe her som ikke stemmer med det du ser paa skjermen, er
+> det skjermen som har rett — og da skal denne fila rettes samme dag.
 
 ---
 
@@ -40,7 +44,7 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Kursbevis på Min side og i admin | Virker |
 | Forespørsler fra nettsiden | Lagres, varsles, følges opp i admin |
 | Brukernavn og passord for verkstedet | Virker, med brukeradministrasjon |
-| E-post over SMTP | Virker — mail.lissom.no |
+| E-post over SMTP | Settes opp i admin — se punkt 11 |
 | Kursbevis fra admin | Virker |
 | Logg ut og «se nettsiden» i admin | Virker |
 | Ingen oppdiktede data på publisert side | Verifisert side for side |
@@ -51,17 +55,35 @@ hindring, er at Vipps ikke slipper salgsenheten til ePayment.
 | Ingen avhengighet til unpkg.com | React og ikoner ligger på egen server |
 | Mobilvisning verifisert i ekte nettleser | Se under |
 
+## Nytt 23.–24. august
+
+| Hva | Status |
+|---|---|
+| Oversikt bygget om: ni kort (Nytt kurs, Planlagte kurs, Medlemskap, Priser/tekst/bilder, Program, Ny registrering, Uttak butikk, Butikk, Kursholdere) | Virker |
+| Ny registrering — melde noen på kurs, event eller drop-in fra admin | Virker |
+| Uttak butikk — salg over disk, blir en vanlig ordre med betaling | Virker |
+| Hele admin virker paa mobil (den egne mobilsida er fjernet) | Verifisert i nettleser |
+| Alle 144 innholdsfeltene styrer noe paa nettsiden (var 6) | Kontrolleres av `bin/innholdssjekk.mjs` |
+| Content-Security-Policy | Lagt inn, prøvd mot alle sider og adminskjermer |
+| Tittel, beskrivelse og delingsbilde i selve HTML-en | Lagt inn — robotene kjører ikke skript |
+| E-post og SMS kan settes opp fra admin | **Nytt** — se under |
+
 ## Det som fortsatt er simulering
 
 **Medlemskap.** Månedstrekk krever Vipps Recurring, som er et eget produkt og
 en egen godkjenning. Knappen sier nå fra i stedet for å påstå at en avtale er
 opprettet.
 
-Admin-sidene for drop-in, beskjeder, oppskrifter og SEO viser fortsatt
-designdata.
+**Frys av medlemskap** finnes ikke. Bryteren som lovet det er erstattet med en
+setning som sier at det gjøres manuelt under Medlemmer.
 
 Timeforbruk på Min side står som «—». Innstempling er ikke koblet opp, og et
 tall der ville vært oppspinn.
+
+**Ikke lenger simulering:** admin-sidene for drop-in, beskjeder, oppskrifter og
+SEO henter alle fra sine egne endepunkter. Kontrollert 24. august ved aa laste
+hver skjerm i nettleser og se hvilke kall som faktisk gikk ut. Sto som
+«designdata» her fram til da; det var feil.
 
 ---
 
@@ -168,7 +190,13 @@ skal bygges.
 skriver meldingen er ikke koblet til ennå — endepunktet er klart og testet, men
 teksten fra dialogboksen når ikke fram. Det står igjen.
 
-**10. Migreringen er ajour.** 007 til 011 ble kjørt 22. august. Fram til da
+**10. Migreringene 032–036 er ikke kjørt.** De ligger klare i `db/migrations/`
+og kjøres fra Admin → Oversikt → Vedlikehold. Uten dem står medlemskapstekstene
+tomme i admin (032, 034), noen innholdsnøkler peker feil (033), disksalg kan
+ikke registreres (035), og oppsettet for e-post og SMS kan ikke lagres (036).
+Skjermene sier fra hver for seg.
+
+007 til 011 ble kjørt 22. august. Fram til da
 hadde databasen stått på 006 siden dagen før — det betyr at Paint on Pots
 sto til én krone i produksjon i mellomtiden, og at butikken var tom.
 Lærdommen er tatt inn i migrasjonene: 007, 010 og 011 tåler nå å kjøres om
@@ -178,11 +206,18 @@ Migreringen kjøres fra `/api/migrer.php?kjor=ja` når du er innlogget som
 admin. Nøkkelen fra secrets.php virker fortsatt, som reserve for den dagen
 innloggingen er ødelagt.
 
-**11. E-post og SMS må settes opp.** E-post går nå gjennom serverens egen
-`mail()`, som ikke sier fra når noe blir avvist. Sett opp SMTP og Sveve etter
-oppskriften i `docs/OPPSETT.md`, og sjekk med
-`/api/test-varsel.php?epost=din@adresse.no`. Uten dette går ingen
-kvitteringer, påminnelser eller varsler ut.
+**11. E-post og SMS settes opp i admin.** Gå til **Nettsiden → E-post og SMS**.
+Skjermen sier selv om e-post går over SMTP eller over serverens egen `mail()`,
+og en knapp sender en testmelding og forteller hva som faktisk skjedde.
+
+Står nøklene allerede i `secrets.php`, gjelder fila foran — og da sier skjermen
+at feltet er låst av den, i stedet for å la noen skrive i noe uten virkning.
+Skjermen er altså også svaret på spørsmålet «er dette satt opp?», som denne
+fila tidligere ga to motstridende svar på.
+
+Uten SMTP går e-post fortsatt gjennom `mail()`, som ofte kommer fram, men aldri
+sier fra når noe blir avvist. Uten Sveve sendes meldinger som skulle gått på
+SMS som e-post i stedet.
 
 **12. Ordensreglene om mat og drikke.** Du ba meg fjerne «ikke spis eller
 drikk ved arbeidsbenkene» og sofakroken. Det er gjort. Punktet «bruk hansker

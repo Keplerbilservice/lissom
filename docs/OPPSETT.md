@@ -243,7 +243,7 @@ er levert til koen paa serveren.
 
 Sett heller opp SMTP. Da vet vi om det gikk galt, og hvorfor.
 
-**Enkleste vei: Admin → Nettsiden → E-post og SMS.** Der fylles kontoen inn i
+**Enkleste vei: Admin → Markedsføring → E-post og SMS.** Der fylles kontoen inn i
 nettleseren, og en knapp sender en testmelding og sier hva som skjedde.
 Passordet lagres paa serveren og vises aldri igjen. Da trenger ingen aa ha
 FTP-tilgang for aa faa kvitteringer ut — som var grunnen til at dette sto
@@ -293,7 +293,7 @@ To leverandorer er stottet. Begge tar betaling per melding uten
 maanedsavgift, og begge er enkle HTTP-kall — aa bytte er en linje i
 oppsettet, ikke en jobb.
 
-Det samme gjelder her: **Admin → Nettsiden → E-post og SMS** har feltene for
+Det samme gjelder her: **Admin → Markedsføring → E-post og SMS** har feltene for
 Sveve, og da slipper du fila. Skal det i fil likevel:
 
 **Sveve** (norsk):

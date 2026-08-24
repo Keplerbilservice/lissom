@@ -4543,6 +4543,16 @@ window.__resources = {
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">Kvitteringer, påminnelser og varsler sendes herfra. Fyll inn kontoen dere allerede har — passordet lagres på serveren og vises aldri igjen.</p>
         </div>
 
+        <!-- Fanerekka for omraadet, saa veien tilbake til Markedsforing staar
+             der som paa de andre skjermene. Uten den var dette en blindvei. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="2">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
         <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div style="flex: 1 1 260px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid {{ vaEpostFarge }}; border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
             <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">E-post</div>
@@ -8952,7 +8962,7 @@ class Component extends DCLogic {
       { sti: '/admin/markedsforing', side: 'adminmarked' },
       { sti: '/admin/nyttig',       side: 'adminnyttig' },
       { sti: '/admin/mobilvisning', side: 'adminmobilvis' },
-      { sti: '/admin/e-post-og-sms', side: 'adminvarsler' },
+      { sti: '/admin/varsler',     side: 'adminvarsler' },
     ];
   }
 
@@ -13081,7 +13091,14 @@ class Component extends DCLogic {
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo'],
         ['Mobilvisning',  'adminmobilvis'],
-        ['E-post og SMS', 'adminvarsler'],
+      ],
+      // Markedsforing har faner og ellers ingen undermeny. E-post og SMS er
+      // en egen skjerm, saa raden vises bare der — med veien tilbake. Legger
+      // vi en undermeny paa selve markedsforingsskjermen ogsaa, faar den to
+      // rader med faner over hverandre.
+      'Markedsføring': [
+        ['← Markedsføring', 'adminmarked'],
+        ['E-post og SMS',   'adminvarsler'],
       ],
     };
   }
@@ -13118,7 +13135,7 @@ class Component extends DCLogic {
       case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':           return p('Nettsiden', 'Nettsiden', 'SEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
-      case 'adminvarsler':       return p('Nettsiden', 'Nettsiden', 'E-post og SMS');
+      case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
@@ -19241,6 +19258,12 @@ class Component extends DCLogic {
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'nyhetsbrev').length), tekst: 'nyhetsbrev klare', velg: () => this.setState({ mkFane: 'brev' }) },
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'sosialt').length), tekst: 'innlegg til sosiale medier', velg: () => this.setState({ mkFane: 'sosialt' }) },
             { merke: 'SEO', tall: String(muligheter.length), tekst: 'muligheter funnet i basen', velg: this.go('adminseo') },
+            // Uten dette kortet ville skjermen for e-post og SMS ikke vaert
+            // til aa finne: markedsforing har ingen undermeny aa henge den i.
+            { merke: 'Utsending',
+              tall: (((this.state.adminData || {}).utsending || {}).epost ? 'På' : 'Av'),
+              tekst: 'e-post og SMS til kundene',
+              velg: this.go('adminvarsler') },
             { merke: 'Kurs', tall: String(tomme.length), tekst: 'fylles tregt og trenger hjelp', velg: () => this.setState({ mkFane: 'kurs' }) },
             { merke: 'Kurs', tall: String(fulle.length), tekst: 'er snart fullbooket', velg: () => this.setState({ mkFane: 'kurs' }) },
           ].map(k => Object.assign({}, k, {

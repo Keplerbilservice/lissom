@@ -206,7 +206,7 @@ Migreringen kjøres fra `/api/migrer.php?kjor=ja` når du er innlogget som
 admin. Nøkkelen fra secrets.php virker fortsatt, som reserve for den dagen
 innloggingen er ødelagt.
 
-**11. E-post og SMS settes opp i admin.** Gå til **Nettsiden → E-post og SMS**.
+**11. E-post og SMS settes opp i admin.** Gå til **Markedsføring → E-post og SMS**.
 Skjermen sier selv om e-post går over SMTP eller over serverens egen `mail()`,
 og en knapp sender en testmelding og forteller hva som faktisk skjedde.
 

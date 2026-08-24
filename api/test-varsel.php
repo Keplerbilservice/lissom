@@ -137,7 +137,7 @@ if ($tilEpost !== '') {
     if (($rad['status'] ?? '') !== 'sendt') {
         $svar['epost_test']['hva_na'] = trim((string) Config::hent('smtp_vert', '')) === ''
             ? 'Utsendingen går gjennom serverens egen mail(), og den kom ikke fram. '
-              . 'Fyll inn e-postkontoen under Nettsiden → E-post og SMS i admin — '
+              . 'Fyll inn e-postkontoen under Markedsføring → E-post og SMS i admin — '
               . 'verdiene står under kontodetaljer for e-postkontoen hos webhotellet.'
             : 'SMTP er satt opp mot ' . Config::hent('smtp_vert', '') . '. Sjekk at brukernavnet er '
               . 'hele e-postadressen, at passordet stemmer, og at porten passer med sikkerheten '
@@ -159,7 +159,7 @@ if ($tilSms !== '') {
     }
     $id = Varsel::sms($nr, 'Testmelding fra lissom.no. Kom denne fram, virker SMS-utsendingen.');
     if ($id === 0) {
-        $svar['sms_test'] = ['til' => $nr, 'status' => 'ikke sendt', 'feil' => 'Sveve-innloggingen mangler. Fyll den inn under Nettsiden → E-post og SMS i admin.'];
+        $svar['sms_test'] = ['til' => $nr, 'status' => 'ikke sendt', 'feil' => 'Sveve-innloggingen mangler. Fyll den inn under Markedsføring → E-post og SMS i admin.'];
     } else {
         $resultat = Utsending::tomKo(5);
         $rad = DB::en('SELECT status, forsok, feilmelding FROM notifications WHERE id = :id', ['id' => $id]);

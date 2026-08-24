@@ -181,6 +181,13 @@ Svar::json([
     ],
     'venteliste' => $venteliste,
     'varsler'    => $varsler,
+    // Om utsendingen er skrudd paa. Ligger her fordi denne hentes paa hver
+    // adminskjerm — da kan kortet som peker til oppsettet vise hva som
+    // gjelder, uten et eget kall.
+    'utsending'  => [
+        'epost' => trim((string) Config::hent('smtp_vert', '')) !== '',
+        'sms'   => Varsel::smsMulig(),
+    ],
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren
         // kan sortere okten paa dag, uke og maaned uten aa tolke norsk tekst.

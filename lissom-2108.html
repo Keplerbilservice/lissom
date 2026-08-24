@@ -768,6 +768,13 @@ window.__resources = {
       }
       .lx-varebunn { padding-top: 10px !important; gap: 8px !important; }
 
+      /* Svarraden i kursvelgeren: felt, kursvalg og en sletteknapp paa 28 px.
+         I 230 pikslers bredde ble kursvalget 95 px, og «Nybegynner
+         dreiekurs» fikk plass til «Nybegynn». Feltene under hverandre, med
+         sletteknappen til hoyre for det siste. */
+      .lx-svarrad { grid-template-columns: 1fr 28px !important; }
+      .lx-svarrad > *:first-child { grid-column: 1 / -1 !important; }
+
       /* Bunnteksten paa mobil.
          Stablet under hverandre ble den 1300 piksler lang — halvannen
          skjermhoyde med rulling forbi noe folk sjelden leser. «Besok oss» og
@@ -4402,7 +4409,7 @@ window.__resources = {
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Svarene under «Hva vil du helst?» og hva hvert svar anbefaler. Antall personer og «kjæreste eller date» håndteres automatisk.</p>
               <sc-for list="{{ kvAdminRegler }}" as="r" hint-placeholder-count="3">
-                <div style="display: grid; grid-template-columns: 1.2fr 1fr 28px; gap: var(--space-3); align-items: center;">
+                <div class="lx-svarrad" style="display: grid; grid-template-columns: 1.2fr 1fr 28px; gap: var(--space-3); align-items: center;">
                   <input value="{{ r.navn }}" onChange="{{ r.settNavn }}" style="{{ skFeltStil }}">
                   <select value="{{ r.mal }}" onChange="{{ r.settMal }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
                     <sc-for list="{{ kvAdminMaal }}" as="m" hint-placeholder-count="5">
@@ -5544,7 +5551,7 @@ window.__resources = {
           </sc-for>
         </div>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
           <!-- Én person, slik hen selv ser det paa Min side.
@@ -5736,7 +5743,7 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: var(--space-6); align-items: start;">
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(190px, 260px) minmax(0, 1fr); gap: var(--space-6); align-items: start;">
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); position: sticky; top: var(--space-6);">
             <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); padding: 0 10px var(--space-3);">Sider</div>
@@ -5911,7 +5918,7 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.9fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto;">
             <div style="display: grid; grid-template-columns: 1.4fr 1.2fr 1.4fr 1.1fr; min-width: 640px; gap: var(--space-4); padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
               <span>Gjest</span><span>Vert / alene</span><span>Tid</span><span>Status</span>
@@ -6013,7 +6020,7 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Produkter i butikken</div>
             <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
@@ -6057,7 +6064,7 @@ window.__resources = {
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Svarene under «Hva vil du helst?» og hva hvert svar anbefaler. Antall personer og «kjæreste eller date» håndteres automatisk.</p>
               <sc-for list="{{ kvAdminRegler }}" as="r" hint-placeholder-count="3">
-                <div style="display: grid; grid-template-columns: 1.2fr 1fr 28px; gap: var(--space-3); align-items: center;">
+                <div class="lx-svarrad" style="display: grid; grid-template-columns: 1.2fr 1fr 28px; gap: var(--space-3); align-items: center;">
                   <input value="{{ r.navn }}" onChange="{{ r.settNavn }}" style="{{ skFeltStil }}">
                   <select value="{{ r.mal }}" onChange="{{ r.settMal }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
                     <sc-for list="{{ kvAdminMaal }}" as="m" hint-placeholder-count="5">
@@ -6222,7 +6229,7 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
               <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
@@ -6530,7 +6537,7 @@ window.__resources = {
           </div>
         </sc-if>
 
-        <div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8);">

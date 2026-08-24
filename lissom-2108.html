@@ -6077,12 +6077,40 @@ window.__resources = {
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
               <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Forespørsler fra nettsiden</div>
               <sc-for list="{{ foresporsler }}" as="f" hint-placeholder-count="3">
-                <div onClick="{{ f.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                  <div style="min-width: 0;">
-                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ f.navn }}</div>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.hva }} · {{ f.tid }}</div>
+                <div style="border-top: 1px solid var(--border-subtle);">
+                  <div onClick="{{ f.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); cursor: pointer;">
+                    <div style="min-width: 0;">
+                      <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ f.navn }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.hva }} · {{ f.tid }}</div>
+                    </div>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ f.tone }}" hint-size="auto,24px">{{ f.status }}</x-import>
                   </div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ f.tone }}" hint-size="auto,24px">{{ f.status }}</x-import>
+
+                  <!-- Selve svaret. Foer kunne en henvendelse bare merkes som
+                       besvart; svaret skulle skrives i e-postklienten, utenfor
+                       systemet. Da kunne man sende en ny melding til alle
+                       medlemmer, eller huke av at man hadde svart — men ikke
+                       svare den som spurte. -->
+                  <sc-if value="{{ f.apen }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 0 var(--space-6) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+                      <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ f.tekst }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.kontakt }}</div>
+
+                      <sc-for list="{{ f.svar }}" as="sv" hint-placeholder-count="1">
+                        <div style="border-left: 3px solid var(--sage-500, #7f9c78); padding: 4px 0 4px var(--space-4);">
+                          <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">{{ sv.av }} svarte {{ sv.tid }} · {{ sv.kanal }}</div>
+                          <div style="font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ sv.tekst }}</div>
+                        </div>
+                      </sc-for>
+
+                      <textarea value="{{ fsSvar }}" onChange="{{ settFsSvar }}" rows="3" placeholder="Skriv svaret her — det går som e-post til den som spurte" style="{{ fsFeltStil }}"></textarea>
+                      <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ f.sendSvar }}" hint-size="auto,38px">Send svar</x-import>
+                        <button type="button" onClick="{{ f.merk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">{{ f.merkTekst }}</button>
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fsBeskjed }}</span>
+                      </div>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-for>
             </div>
@@ -10299,6 +10327,41 @@ class Component extends DCLogic {
 
   // Merk en foresporsel som besvart. Svaret sendes fra e-postklienten som
   // vanlig — her holder vi bare styr paa hva som er tatt hand om.
+  /**
+   * Svarer den som spurte.
+   *
+   * Svaret gaar ut som e-post — og som SMS naar det ikke finnes en adresse —
+   * lagres paa henvendelsen, og merker den som besvart. Foer kunne den bare
+   * hukes av som besvart, mens selve svaret skulle skrives i e-postklienten.
+   */
+  svarForesporsel(id) {
+    const tekst = (this.state.fsSvar || '').trim();
+    if (!tekst) { this.setState({ fsBeskjed: 'Skriv svaret først.' }); return; }
+    if (!this.erPublisert()) { this.setState({ fsBeskjed: 'Krever den ekte siden' }); return; }
+    if (this._fsSender) return;
+    this._fsSender = true;
+    this.setState({ fsBeskjed: 'Sender …' });
+
+    fetch('/api/admin/foresporsler.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'svar', id: id, tekst: tekst }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._fsSender = false;
+        this.setState({
+          fsBeskjed: (d && (d.beskjed || d.feil)) || (ok ? 'Sendt.' : 'Gikk ikke.'),
+          fsSvar: ok ? '' : tekst,
+        });
+        if (ok) { this._adminHentes = false; this.hentAdmin(); }
+      })
+      .catch(() => {
+        this._fsSender = false;
+        this.setState({ fsBeskjed: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   merkForesporsel(id, status) {
     if (!id) return;
     fetch('/api/admin/foresporsler.php', {
@@ -15281,16 +15344,28 @@ class Component extends DCLogic {
         { navn: 'Kine Solheim', hva: 'Utdrikningslag, 12 personer', tid: 'i dag', status: 'Ubesvart', tone: 'warning', tekst: 'Vi er 12 stykker som onsker en kveld med dreiing i oktober.', epost: 'kine@epost.no', tlf: '' },
       ])).map(f => Object.assign({}, f, {
         erUbesvart: f.status === 'Ubesvart',
-        velg: this.apne(f.navn, f.hva + ' · ' + f.tid, [
-          { navn: 'FORESPØRSEL', verdi: '' },
-          { navn: f.tekst, verdi: ' ' },
-          { navn: 'KONTAKT', verdi: '' },
-          { navn: 'E-post', verdi: f.epost || '—' },
-          { navn: 'Telefon', verdi: f.tlf || '—' },
-          { navn: 'Status', verdi: f.status },
-        ], f.status === 'Ubesvart' ? 'Merk som besvart' : 'Merk som ubesvart', null, false,
-          () => this.merkForesporsel(f.id, f.status === 'Ubesvart' ? 'besvart' : 'ubesvart')),
+        // Raden aapner seg i stedet for aa aapne en dialog. Dialogen viste
+        // det samme, men hadde ingen vei til aa svare — og et svar er hele
+        // poenget med en henvendelse.
+        apen: this.state.fsApen === f.id,
+        kontakt: [f.epost || null, f.tlf || null].filter(Boolean).join(' · ') || 'Ingen kontaktopplysninger',
+        svar: (f.svar || []).map(sv => Object.assign({}, sv)),
+        velg: () => this.setState(st => ({
+          fsApen: st.fsApen === f.id ? null : f.id,
+          fsSvar: '', fsBeskjed: '',
+        })),
+        sendSvar: () => this.svarForesporsel(f.id),
+        merk: () => this.merkForesporsel(f.id, f.status === 'Ubesvart' ? 'besvart' : 'ubesvart'),
+        merkTekst: f.status === 'Ubesvart' ? 'Merk som besvart uten å svare' : 'Merk som ubesvart igjen',
       })),
+      fsSvar: this.state.fsSvar || '',
+      settFsSvar: e => this.setState({ fsSvar: e.target.value, fsBeskjed: '' }),
+      fsBeskjed: this.state.fsBeskjed || '',
+      fsFeltStil: {
+        width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+        color: 'var(--text-heading)', background: 'var(--surface-page)', resize: 'vertical',
+      },
       harForesporsler: (this.state.adminForesporsler || []).length > 0,
       ingenForesporsler: this.erPublisert() && (this.state.adminForesporsler || []).length === 0,
       // Ekte venteliste. «Tilby plass» sendte ingenting — endepunktet fantes,

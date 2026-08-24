@@ -2382,25 +2382,6 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,32px">Forny</x-import>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ vekslByttAbo }}" hint-size="auto,32px">Bytt abonnement</x-import>
               </div>
-              <sc-if value="{{ visMinFrys }}" hint-placeholder-val="{{ true }}">
-                <div style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border-subtle);">
-                  <sc-if value="{{ frysIkkeSokt }}" hint-placeholder-val="{{ true }}">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-                      <div style="min-width: 0;">
-                        <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">Frys medlemskapet</div>
-                        <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">To sammenhengende uker uten trekk — kan ikke deles opp. Må godkjennes av oss.</div>
-                      </div>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ aSokFrys }}" hint-size="auto,32px">Søk om frys</x-import>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{ frysVenter }}" hint-placeholder-val="{{ false }}">
-                    <div style="font-size: var(--text-xs); color: var(--text-body); background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">Søknad om frys er sendt — du får svar fra oss på e-post.</div>
-                  </sc-if>
-                  <sc-if value="{{ frysGodkjentVis }}" hint-placeholder-val="{{ false }}">
-                    <div style="font-size: var(--text-xs); color: var(--text-body); background: rgba(90,140,80,.12); border: 1px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">Frys godkjent — medlemskapet er frosset i to uker fra {{ frysFra }}. Neste trekk utsettes tilsvarende.</div>
-                  </sc-if>
-                </div>
-              </sc-if>
             </div>
             <div onClick="{{ goNyttig }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; cursor: pointer; transition: box-shadow var(--duration-fast, .15s) ease, transform var(--duration-fast, .15s) ease;" style-hover="box-shadow: var(--shadow-md, 0 6px 20px rgba(45,20,12,.1)); transform: translateY(-2px);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Intern info</div>
@@ -4221,7 +4202,18 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Internbutikken" checked="{{ bryterMinInternbutikk }}" on-change="{{ vekslMinInternbutikk }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Selg egne arbeider" checked="{{ bryterMinSalg }}" on-change="{{ vekslMinSalg }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Gaven («Ta med en venn»)" checked="{{ bryterMinGave }}" on-change="{{ vekslMinGave }}" hint-size="100%,28px"></x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Frys av medlemskap (2 uker)" checked="{{ bryterMinFrys }}" on-change="{{ vekslMinFrys }}" hint-size="100%,28px"></x-import>
+              <!-- «Frys av medlemskap» sto her som en bryter. Slo eieren den
+                   paa, fikk medlemmene en knapp «Sok om frys» paa Min side
+                   som ikke gjorde noe: det finnes ingen soknad, ingen
+                   godkjenning og ingen pause av trekket — hverken i basen
+                   eller i API-et. En bryter som lover en funksjon som ikke
+                   finnes er verre enn ingen bryter. -->
+              <div style="display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--clay-100);">
+                <div style="min-width: 0;">
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Frys av medlemskap</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Ikke koblet opp. Trekket kan ikke settes på pause automatisk ennå — gjør det manuelt under Medlemmer så lenge.</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -16367,9 +16359,6 @@ class Component extends DCLogic {
       vekslMinGave: () => this.vekslBryter('gaven', 'Gaven'),
       // Bryteren for frys sto uten kobling — den var tegnet, men verken
       // «checked» eller «on-change» pekte paa noe. Da gjorde den ingenting.
-      bryterMinFrys: this.bryterPaa('frys'),
-      vekslMinFrys: () => this.vekslBryter('frys', 'Frys av medlemskap'),
-      visMinFrys: this.bryterPaa('frys'),
       // Kursene paa forsida. Klikket foerer rett inn i kurset — det er der
       // pris, tekst og datoer endres, og veien dit gikk foer om menyen.
       ovKurs: this.kursData().slice(0, 6).map((k, i) => ({
@@ -17527,6 +17516,10 @@ class Component extends DCLogic {
         ? 'Du har sagt ja til at vi måler besøket. Vil du ombestemme deg, stopper målingen med en gang du trykker under.'
         : 'Du har sagt nei, og ingenting blir målt. Trykker du under, kan du svare på nytt.',
       endreAnalyse: () => this.angreSamtykke(),
+      // Sto som «goForside» paa kvitteringen etter booking og «goForsideFra404»
+      // paa 404-sida. Bare den siste fantes, saa knappen paa kvitteringen —
+      // den kunden ser rett etter aa ha betalt — gjorde ingenting.
+      goForside: this.go('forside'),
       goForsideFra404: this.go('forside'),
       goKursFra404: this.go('kurs'),
       goKontaktFra404: this.go('kontakt'),

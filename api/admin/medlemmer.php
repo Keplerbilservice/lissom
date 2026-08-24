@@ -166,8 +166,16 @@ if (Foresporsel::metode() === 'POST') {
         'status'          => $prove ? 'prove' : 'aktiv',
         'start_dato'      => date('Y-m-d'),
         'slutt_dato'      => $prove ? date('Y-m-d', strtotime('+1 month')) : null,
-        'timer_per_mnd'   => $plan !== null && $plan['timer_per_mnd'] !== null
-                                ? (int) $plan['timer_per_mnd'] : null,
+        // «timer_per_mnd» settes IKKE her.
+        //
+        // Kolonnen paa planen heter «timer»; «timer_per_mnd» staar paa
+        // medlemmet og fantes ikke i oppslaget — PHP skrev en advarsel midt
+        // i JSON-svaret, og verdien ble null hver gang.
+        //
+        // Den skal vaere null. Medlemsraden er en overstyring for én person;
+        // er den tom, bestemmer planen (se Medlemskap::timerFor). Kopierte
+        // vi timetallet inn her, ville medlemmet beholdt det gamle den dagen
+        // planen endres fra 30 til 35 timer.
     ];
     if ($navn !== '')    { $felter['navn'] = $navn; }
     if ($epost !== '')   { $felter['epost'] = $epost; }

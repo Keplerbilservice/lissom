@@ -103,11 +103,15 @@ switch ($type) {
         // null — en rad uten mengde er ingen raavare.
         $rene = [];
         foreach ($raa as $rad) {
-            if (!is_array($rad) || count($rad) < 2) {
+            // «count($rad) >= 2» alene var ikke nok: et objekt som
+            // {"navn": ..., "pst": ...} har ogsaa to elementer, og da traff
+            // ikke $rad[0]. PHP svarte med en advarsel midt i JSON-en i
+            // stedet for en feilmelding. Vi tar imot begge formene.
+            if (!is_array($rad)) {
                 continue;
             }
-            $r = trim((string) $rad[0]);
-            $m = (float) $rad[1];
+            $r = trim((string) ($rad[0] ?? $rad['navn'] ?? ''));
+            $m = (float) ($rad[1] ?? $rad['pst'] ?? 0);
             if ($r !== '' && $m > 0) {
                 $rene[] = [mb_substr($r, 0, 96), round($m, 2)];
             }

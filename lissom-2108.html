@@ -2475,7 +2475,7 @@ window.__resources = {
                 <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs);"><span style="color: var(--text-muted);">Betaling</span><span style="font-weight: 600; color: var(--text-heading);">Vipps</span></div>
               </div>
               <sc-if value="{{ erOppsagt }}" hint-placeholder-val="{{ false }}">
-                <div style="background: rgba(196,90,58,.1); border: 1px solid var(--terracotta-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-body);">Sagt opp — løper ut august. <button type="button" onClick="{{ angreOppsigelse }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--terracotta-600); text-decoration: underline;">Angre</button></div>
+                <div style="background: rgba(196,90,58,.1); border: 1px solid var(--terracotta-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-body);">{{ oppsigelseTekst }} <button type="button" onClick="{{ angreOppsigelse }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--terracotta-600); text-decoration: underline;">Angre</button></div>
               </sc-if>
               <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: auto; padding-top: var(--space-2); border-top: 1px solid var(--border-subtle);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,32px">Forny</x-import>
@@ -12272,6 +12272,29 @@ class Component extends DCLogic {
   // uansett hvem som var innlogget. Naa gaar den samme vei som forespørsler
   // fra nettsiden, med navnet til den som faktisk er innlogget.
   /** Henter mine egne henvendelser og svarene paa dem. */
+  /**
+   * Sier opp medlemsavtalen, paa ordentlig.
+   *
+   * Knappen satte en bryter i nettleseren og sa ingenting til serveren.
+   * Medlemmet trodde de hadde sagt opp, verkstedet visste ingenting, og
+   * avtalen i Vipps loep videre. Endepunktet har vaert der hele tiden.
+   */
+  harSagtOpp() {
+    const a = this.state.minAvtale;
+    return a ? (a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
+  }
+
+  siOppAbonnement() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
+    // medlemskapKall() henter avtalen paa nytt selv. Statusen paa Min side
+    // kommer i tillegg fra /api/meg.php, og uten en ny henting derfra ville
+    // skjermen sagt «Aktivt» til neste sidelasting.
+    return this.medlemskapKall({ handling: 'siOpp' }, 'Medlemskapet er sagt opp').then(ok => {
+      if (ok) this.hentInnlogget();
+      return ok;
+    });
+  }
+
   hentMineSamtaler() {
     if (!this.erPublisert() || this._samtalerHentes) return;
     this._samtalerHentes = true;
@@ -12976,7 +12999,7 @@ class Component extends DCLogic {
       .catch(() => { this._medlemskapHentes = false; });
   }
 
-  medlemskapKall(kropp) {
+  medlemskapKall(kropp, merkelapp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._medlemskapLagrer) return Promise.resolve(false);
     this._medlemskapLagrer = true;
@@ -12993,7 +13016,7 @@ class Component extends DCLogic {
         // Skal kunden til Vipps for aa godkjenne, sender vi hen dit.
         if (ok && d.url) { window.location.href = d.url; return true; }
         this.setState({
-          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvittering: ok ? (merkelapp || 'Lagret') : 'Gikk ikke',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
         });
         if (ok) { this._medlemskapHentes = false; this.hentMedlemskap(); }
@@ -14928,7 +14951,7 @@ class Component extends DCLogic {
       // tekst — en paastand om et trekk som ikke fantes noe sted.
       ...(() => {
         const a = this.state.minAvtale;
-        const oppsagt = a ? (a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
+        const oppsagt = this.harSagtOpp();
         const status = a
           ? ({
               aktiv:   a.nesteTrekk ? 'Trekkes automatisk i Vipps' : 'Aktiv',
@@ -14953,11 +14976,9 @@ class Component extends DCLogic {
           aboNesteTrekk: a
             ? (a.nesteTrekk ? a.nesteTrekk + ' · ' + a.pris : '—')
             : (this.erPublisert() ? 'Avtales med verkstedet' : '1. sep · ' + plan.pris),
-          aboKanSiOpp: !!(a && a.kanSiOpp),
-          aboSiOpp: () => {
-            if (!window.confirm('Si opp medlemskapet? Du blir ikke trukket igjen.')) return;
-            this.medlemskapKall({ handling: 'siOpp' });
-          },
+          oppsigelseTekst: a && a.status === 'utlopt'
+            ? 'Avtalen har løpt ut.'
+            : 'Sagt opp. Du blir ikke trukket igjen.',
         };
       })(),
       aboFordeler: (plan.punkter && plan.punkter.length) ? plan.punkter.slice(0, 2)
@@ -15015,7 +15036,17 @@ class Component extends DCLogic {
         };
       })(),
       stoppKlikk: (e) => e.stopPropagation(),
-      angreOppsigelse: () => this.setState({ oppsagt: false, kvittering: 'Abonnementet fortsetter som før' }),
+      // «Angre» sa «Abonnementet fortsetter som for» og satte en bryter i
+      // nettleseren. Den snakket ikke med serveren, og avtalen i Vipps var
+      // uroert — bade for og etter. En avtale som er stoppet i Vipps kan
+      // heller ikke startes igjen herfra: det maa en ny avtale til. Naa sier
+      // den det, framfor aa love at alt er som for.
+      angreOppsigelse: this.apne('Angre oppsigelsen', 'Vi ordner det for deg', [
+        { navn: 'Hvorfor ikke herfra', verdi: 'Avtalen er stoppet hos Vipps, og en stoppet avtale kan ikke startes igjen automatisk.' },
+        { navn: 'Slik gjør du', verdi: 'Send en melding under, eller ring 94 13 46 01, så setter vi den opp igjen.' },
+      ], 'Lukk'),
+      // Er avtalen alt sagt opp, har kortet for planen ingen oppsigelse aa
+      // tilby — serveren svarer «Du har ingen loepende avtale».
       minePlaner: this.planer().map(p => Object.assign(p, { valgt: p.navn === aboNavn })).map(p => Object.assign(p, {
         velg: p.brukt
           ? this.apne(p.navn, 'Ikke tilgjengelig', [
@@ -15027,7 +15058,10 @@ class Component extends DCLogic {
                 { navn: 'Inneholder', verdi: p.detalj },
                 { navn: 'Fornyes', verdi: '1. september' },
                 { navn: 'Oppsigelse', verdi: 'Gjelder fra månedsslutt. Du kan angre fram til da.' },
-              ], 'Si opp abonnementet', null, false, () => this.setState({ oppsagt: true }))
+              ],
+              this.harSagtOpp() ? 'Lukk' : 'Si opp abonnementet',
+              null, false,
+              this.harSagtOpp() ? null : () => this.siOppAbonnement())
             : this.apne(p.navn, 'Medlemskap · ' + p.pris + ' ' + p.periode, [
                 { navn: 'Pris', verdi: p.pris + ' ' + p.periode },
                 { navn: 'Inneholder', verdi: p.detalj },

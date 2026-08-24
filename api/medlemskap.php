@@ -39,7 +39,16 @@ if (Foresporsel::metode() === 'GET') {
     $min = null;
 
     if ($medlem !== null) {
-        $a = Medlemskap::avtale((int) $medlem['id']);
+        // Til visning tar vi ogsaa med en avtale som er stoppet eller utloept.
+        // Medlemskap::avtale() svarer bare paa «loeper det en avtale naa», og
+        // med den alene sa Min side «Aktivt» i det sekundet medlemmet hadde
+        // sagt opp — avtalen falt ut av svaret, og kortet gikk tilbake til
+        // standardteksten.
+        $a = Medlemskap::avtale((int) $medlem['id'])
+            ?? DB::en(
+                'SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+                ['m' => (int) $medlem['id']]
+            );
         if ($a !== null) {
             $min = [
                 'plan'       => $a['plan'],

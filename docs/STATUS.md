@@ -3,7 +3,8 @@
 Hva som virker, hva som ikke gjør det, og hva som venter på en avgjørelse.
 
 **Kort sagt:** hele veien fra admin til nettsiden er koblet opp og prøvd mot
-en ekte database. Det eneste som står igjen som ekte hindring, er at Vipps
+en ekte database. Arbeidet 24. august står oppsummert i
+[`SLUTTRAPPORT.md`](SLUTTRAPPORT.md). Det eneste som står igjen som ekte hindring, er at Vipps
 ikke slipper salgsenheten til ePayment.
 
 > **Om denne fila.** Utgaven fra 22. august motsa seg selv: tabellen sa at
@@ -66,7 +67,17 @@ ikke slipper salgsenheten til ePayment.
 | Alle 144 innholdsfeltene styrer noe paa nettsiden (var 6) | Kontrolleres av `bin/innholdssjekk.mjs` |
 | Content-Security-Policy | Lagt inn, prøvd mot alle sider og adminskjermer |
 | Tittel, beskrivelse og delingsbilde i selve HTML-en | Lagt inn — robotene kjører ikke skript |
-| E-post og SMS kan settes opp fra admin | **Nytt** — se under |
+| E-post og SMS kan settes opp fra admin | Virker — se punkt 11 |
+| Delingsbilde til Facebook og andre | Virker — robotene er unntatt webp-regelen |
+| Plasser paa kursene (12 / 8 dreiing / 8 drop-in), Medlemsfrokost stroket | Migrasjon 037 |
+| «Rediger» paa hver datorad, ikke bare noen | Virker |
+| Medlemschat begge veier, med varsel | Migrasjon 038 |
+| Monica kan svare paa henvendelser, og svaret vises paa Min side | Migrasjon 039 |
+| Gavekort kan brukes som betaling, med gavehilsen | Migrasjon 040, 041 |
+| Kursholdere og timene deres | Migrasjon 042 |
+| Paint on Pots, Kontakt, Gavekort og Vilkaar kan redigeres fra admin | Virker |
+| 15 felter og 9 knapper som ikke gjorde noe | Koblet opp |
+| Oppsigelse av medlemskap gaar til serveren | Virker — Vipps-trekket er ikke proevd |
 
 ## Det som fortsatt er simulering
 
@@ -92,8 +103,8 @@ hver skjerm i nettleser og se hvilke kall som faktisk gikk ut. Sto som
 Backend kjører nå mot en ekte MariaDB 10.11 — samme versjon som webhotellet.
 
 ```
-php tests/backend.php    56 sjekker, alle grønne
-tests/flyt.sh            10 sjekker, alle grønne
+php tests/backend.php    107 sjekker, alle grønne
+tests/flyt.sh             10 sjekker, alle grønne
 ```
 
 Fra 22. august kjøres nettsiden også mot den ekte backend-en lokalt, med
@@ -186,14 +197,17 @@ Paint on Pots tilbake til 690 kroner og avlyste testkurset.
 standard. Det finnes ingen måte å laste opp bilde i admin ennå — si fra om det
 skal bygges.
 
-**9. Beskjed-knappene i admin** sender nå på ordentlig, men skjemaet der man
-skriver meldingen er ikke koblet til ennå — endepunktet er klart og testet, men
-teksten fra dialogboksen når ikke fram. Det står igjen.
+**9. Beskjed-knappene i admin.** Gjort 24. august. Skjemaet er koblet til, og
+teksten du skriver når fram. Det sto to kopier av samme skjema, og den ene
+ignorerte mottakervalget og sendte alltid til alle medlemmer — den er borte.
 
-**10. Migreringene 032–036 er ikke kjørt.** De ligger klare i `db/migrations/`
+**10. Migreringene 032–042 er ikke kjørt.** De ligger klare i `db/migrations/`
 og kjøres fra Admin → Oversikt → Vedlikehold. Uten dem står medlemskapstekstene
 tomme i admin (032, 034), noen innholdsnøkler peker feil (033), disksalg kan
-ikke registreres (035), og oppsettet for e-post og SMS kan ikke lagres (036).
+ikke registreres (035), oppsettet for e-post og SMS kan ikke lagres (036),
+plassene på kursene står som før (037), medlemschatten har ingen tabell (038),
+henvendelser kan ikke besvares (039), gavekort kan ikke brukes som betaling
+(040), gavehilsen lagres ikke (041) og kursholdere finnes ikke (042).
 Skjermene sier fra hver for seg.
 
 007 til 011 ble kjørt 22. august. Fram til da
@@ -238,8 +252,9 @@ bør stå.
 ## Sikkerhet — verdt å vite
 
 **Vipps-nøkler i chatlogg.** Client secret, subscription key og databasepassordet
-ble limt inn i samtaler under oppsettet. Alle er byttet 22. august. De gamle
-verdiene i chatloggen er dermed verdiløse.
+ble limt inn i samtaler under oppsettet. Vipps-nøklene er byttet 22. august, og
+de gamle verdiene er dermed verdiløse. **Databasepassordet står igjen og bør
+byttes.**
 
 **Admin-markupen er offentlig.** Ingen kommer til dataene — alle admin-
 endepunkter krever admin-sesjon og svarer 404 til andre. Men selve HTML-en for

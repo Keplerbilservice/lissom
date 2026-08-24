@@ -6205,10 +6205,6 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
-          <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Ubesvart</div>
-          <div style="color: var(--clay-100); font-size: var(--text-sm);">2 meldinger</div>
-        </div>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -6244,7 +6240,7 @@ window.__resources = {
                 </div>
               </div>
               <sc-for list="{{ foresporsler }}" as="f" hint-placeholder-count="3">
-                <div style="border-top: 1px solid var(--border-subtle);">
+                <div id="{{ f.ankerId }}" style="border-top: 1px solid var(--border-subtle);">
                   <div onClick="{{ f.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); cursor: pointer;">
                     <div style="min-width: 0;">
                       <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ f.navn }}</div>
@@ -11656,6 +11652,26 @@ class Component extends DCLogic {
   }
 
   /**
+   * Ruller til en henvendelse etter at skjermen har tegnet seg.
+   *
+   * Skjermbyttet og utvidelsen skjer i samme rendring; elementet finnes ikke
+   * naar velg() kjorer. Vi proever noen ganger og gir oss.
+   */
+  rullTilHenvendelse(id) {
+    if (!id) return;
+    let forsok = 0;
+    const proev = () => {
+      const el = document.getElementById('henv-' + id);
+      if (el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        return;
+      }
+      if (++forsok < 20) { window.requestAnimationFrame(proev); }
+    };
+    window.requestAnimationFrame(proev);
+  }
+
+  /**
    * Tar et godkjent brev med til Beskjeder, med teksten klar.
    *
    * «Godkjenn» sa bare «utkastet er godkjent», og teksten var borte — brevet
@@ -15853,6 +15869,7 @@ class Component extends DCLogic {
         const erMedlem = /medlem/i.test(f.hva || '');
         return fra === 'Fra medlemmene' ? erMedlem : !erMedlem;
       }).map(f => Object.assign({}, f, {
+        ankerId: 'henv-' + (f.id || 0),
         erUbesvart: f.status === 'Ubesvart',
         // Raden aapner seg i stedet for aa aapne en dialog. Dialogen viste
         // det samme, men hadde ingen vei til aa svare — og et svar er hele
@@ -17446,14 +17463,18 @@ class Component extends DCLogic {
         hva: f.hva || 'Forespørsel',
         tid: f.tid || '',
         // Gikk til Beskjeder-skjermen og stoppet der: du sto foran hele lista
-        // og maatte finne meldingen du nettopp trykket paa, en gang til. Naa
-        // aapner den seg, med svarfeltet klart.
+        // og maatte finne meldingen du nettopp trykket paa, en gang til.
+        //
+        // Den aapnet seg, men vi rullet til toppen av skjermen — og da sto du
+        // foran overskrifter, filtre og «Ny beskjed», med meldingen din under
+        // skjermkanten. Naa hopper vi til selve meldingen.
         velg: () => {
           this.setState({
             side: 'adminbeskjeder', henvFilter: 'Alle',
             henvApen: f.id || null, henvSvar: '', henvBeskjed: '',
           });
           window.scrollTo(0, 0);
+          this.rullTilHenvendelse(f.id);
         },
       })),
       ingenOvUbesvarte: this.erPublisert()

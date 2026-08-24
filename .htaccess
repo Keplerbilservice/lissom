@@ -145,7 +145,20 @@ AddDefaultCharset UTF-8
 #
 # «Vary: Accept» maa staa, ellers kan en mellomlagring servere webp til en
 # nettleser som ikke leser det.
+#
+# Ett unntak: robotene som lager lenkeforhaandsvisninger.
+#
+# Facebook, LinkedIn, Slack, WhatsApp og de andre henter delingsbildet selv.
+# Sier en av dem at den tar imot webp, faar den webp servert paa en adresse
+# som slutter paa .jpg — og flere av dem viser da ikke bildet i det hele
+# tatt. Symptomet er en forhaandsvisning med tittel og tekst, men tomt der
+# bildet skulle vaert. Proevd her: samme adresse gir image/webp med
+# «Accept: image/webp» og image/jpeg uten.
+#
+# De faar originalen. Det er ett bilde per deling, ikke noe som teller paa
+# hvor fort sida laster.
 <IfModule mod_rewrite.c>
+    RewriteCond %{HTTP_USER_AGENT} !(facebookexternalhit|facebookcatalog|Facebot|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|WhatsApp|TelegramBot|Discordbot|Pinterest|redditbot|SkypeUriPreview|Applebot|vkShare|Iframely|Embedly) [NC]
     RewriteCond %{HTTP_ACCEPT} image/webp
     RewriteCond %{DOCUMENT_ROOT}/$1.$2.webp -f
     RewriteRule ^(.+)\.(jpe?g|png)$ /$1.$2.webp [T=image/webp,E=webp:1,L]

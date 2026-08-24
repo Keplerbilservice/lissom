@@ -78,6 +78,7 @@ ikke slipper salgsenheten til ePayment.
 | Paint on Pots, Kontakt, Gavekort og Vilkaar kan redigeres fra admin | Virker |
 | 15 felter og 9 knapper som ikke gjorde noe | Koblet opp |
 | Oppsigelse av medlemskap gaar til serveren | Virker — Vipps-trekket er ikke proevd |
+| Gaver fra verkstedet til medlemmene | Migrasjon 043 — gitt i admin, vises paa Min side |
 
 ## Det som fortsatt er simulering
 
@@ -103,7 +104,7 @@ hver skjerm i nettleser og se hvilke kall som faktisk gikk ut. Sto som
 Backend kjører nå mot en ekte MariaDB 10.11 — samme versjon som webhotellet.
 
 ```
-php tests/backend.php    107 sjekker, alle grønne
+php tests/backend.php    113 sjekker, alle grønne
 tests/flyt.sh             10 sjekker, alle grønne
 ```
 
@@ -201,13 +202,14 @@ skal bygges.
 teksten du skriver når fram. Det sto to kopier av samme skjema, og den ene
 ignorerte mottakervalget og sendte alltid til alle medlemmer — den er borte.
 
-**10. Migreringene 032–042 er ikke kjørt.** De ligger klare i `db/migrations/`
+**10. Migreringene 032–043 er ikke kjørt.** De ligger klare i `db/migrations/`
 og kjøres fra Admin → Oversikt → Vedlikehold. Uten dem står medlemskapstekstene
 tomme i admin (032, 034), noen innholdsnøkler peker feil (033), disksalg kan
 ikke registreres (035), oppsettet for e-post og SMS kan ikke lagres (036),
 plassene på kursene står som før (037), medlemschatten har ingen tabell (038),
 henvendelser kan ikke besvares (039), gavekort kan ikke brukes som betaling
-(040), gavehilsen lagres ikke (041) og kursholdere finnes ikke (042).
+(040), gavehilsen lagres ikke (041), kursholdere finnes ikke (042) og gaver
+til medlemmene kan ikke gis (043).
 Skjermene sier fra hver for seg.
 
 007 til 011 ble kjørt 22. august. Fram til da

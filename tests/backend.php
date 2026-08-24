@@ -54,6 +54,11 @@ function nullstill(): void
     DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet'))");
     DB::kjor("DELETE FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet')");
     DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'proev:%'");
+    if (DB::harTabell('medlemsgaver') && $medlemmer) {
+        DB::kjor('DELETE FROM medlemsgave_bruk WHERE member_id IN (' . implode(',', $medlemmer) . ')');
+        DB::kjor('DELETE FROM medlemsgaver WHERE gitt_av IN (' . implode(',', $medlemmer) . ')'
+               . ' OR member_id IN (' . implode(',', $medlemmer) . ')');
+    }
 
     if ($medlemmer) {
         DB::kjor('DELETE FROM membership_applications WHERE member_id IN (' . implode(',', $medlemmer) . ')');
@@ -206,6 +211,58 @@ if ($internOkt) {
             ['id' => $internOkt]
         ) === 'Kun for medlemmer');
 }
+
+// ── Gaver fra verkstedet ───────────────────────────────────────────────────
+//
+// «Send gaven» la gaven i nettleseren til den som trykket. Testen her spor om
+// gaven finner fram til medlemmet, og om den kan loeses inn mer enn én gang.
+
+echo "\n== Gaver til medlemmene ==\n";
+
+$idag = gmdate('Y-m-d');
+$gaveAlle = DB::settInn('medlemsgaver', [
+    'member_id' => null, 'type' => 'venn', 'gyldig_til' => gmdate('Y-m-t'), 'gitt_av' => $medlemId,
+]);
+
+// Samme utvalg som api/gave.php gjor, men avgrenset til gavene testen selv
+// har laget. Uten avgrensningen ville en ekte gave i basen — verkstedet gir
+// dem jo — avgjort svaret, og testen ville sagt fra om noe helt annet.
+$minGave = static function (int $megId, array $ider) use ($idag): ?array {
+    if (!$ider) { return null; }
+    return DB::en(
+        'SELECT g.* FROM medlemsgaver g
+          WHERE g.id IN (' . implode(',', array_map('intval', $ider)) . ')
+            AND (g.member_id = :m OR g.member_id IS NULL)
+            AND g.status = \'aktiv\' AND g.gyldig_til >= :idag
+            AND NOT EXISTS (SELECT 1 FROM medlemsgave_bruk b
+                             WHERE b.gave_id = g.id AND b.member_id = :m2)
+       ORDER BY g.member_id IS NULL, g.id DESC LIMIT 1',
+        ['m' => $megId, 'm2' => $megId, 'idag' => $idag]
+    );
+};
+
+sjekk('gave til alle naar medlemmet', (int) ($minGave($medlemId, [$gaveAlle])['id'] ?? 0) === $gaveAlle);
+
+// En personlig gave gaar foran fellesgaven.
+$gaveMin = DB::settInn('medlemsgaver', [
+    'member_id' => $medlemId, 'type' => 'gavekort', 'belop_ore' => 50000,
+    'gyldig_til' => gmdate('Y-m-t'), 'gitt_av' => $medlemId,
+]);
+sjekk('personlig gave gaar foran fellesgaven', (int) ($minGave($medlemId, [$gaveAlle, $gaveMin])['id'] ?? 0) === $gaveMin);
+
+DB::settInn('medlemsgave_bruk', ['gave_id' => $gaveMin, 'member_id' => $medlemId]);
+sjekk('brukt gave forsvinner', (int) ($minGave($medlemId, [$gaveAlle, $gaveMin])['id'] ?? 0) === $gaveAlle);
+
+$toGanger = false;
+try { DB::settInn('medlemsgave_bruk', ['gave_id' => $gaveMin, 'member_id' => $medlemId]); $toGanger = true; }
+catch (PDOException $e) { /* uniknoekkelen stopper den — som den skal */ }
+sjekk('samme gave kan ikke loeses inn to ganger', $toGanger === false);
+
+DB::oppdater('medlemsgaver', ['status' => 'trukket'], ['id' => $gaveAlle]);
+sjekk('trukket gave vises ikke', $minGave($medlemId, [$gaveAlle, $gaveMin]) === null);
+
+DB::oppdater('medlemsgaver', ['status' => 'aktiv', 'gyldig_til' => gmdate('Y-m-d', time() - 86400)], ['id' => $gaveAlle]);
+sjekk('utloept gave vises ikke', $minGave($medlemId, [$gaveAlle, $gaveMin]) === null);
 
 echo "\n== Kursbevis ==\n";
 

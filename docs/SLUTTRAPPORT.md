@@ -14,7 +14,7 @@ Nettsiden viste ingen feil, og det var nettopp problemet.
 
 Ingenting av det som ble bygget i dag virker på lissom.no før dette er gjort.
 
-**1. Kjør migreringene 032–042.** Admin → Oversikt → Vedlikehold, eller
+**1. Kjør migreringene 032–043.** Admin → Oversikt → Vedlikehold, eller
 `/api/migrer.php?kjor=ja` innlogget som admin. Uten dem:
 
 | Migrasjon | Hva som mangler uten den |
@@ -29,6 +29,7 @@ Ingenting av det som ble bygget i dag virker på lissom.no før dette er gjort.
 | 040 | Gavekort kan ikke brukes som betaling |
 | 041 | Gavehilsen på gavekort lagres ikke |
 | 042 | Kursholdere og timene deres finnes ikke |
+| 043 | Gaver til medlemmene lagres ikke — «Send gaven» får ingen tabell |
 
 Skjermene sier fra hver for seg når migrasjonen mangler, så du ser hvilken det
 gjelder hvis noe står tomt.
@@ -123,6 +124,16 @@ Dette er dagens største enkeltpost, og den ubehageligste.
 * **15 felter** tok imot det du skrev og kastet det ved lagring.
 * **9 knapper** beskrev en handling, viste en kvittering og lukket seg igjen
   uten å gjøre noe.
+* **«Send gaven»** i admin la gaven i Monicas egen nettleser. Hun så altså
+  sin egen gave på sin egen Min side; ingen medlemmer fikk noe. Kortet «Gave
+  fra Monica» sto samtidig hos alle medlemmer uansett — det var fast tekst,
+  ikke en gave noen hadde gitt. Årsaken var en navnekollisjon: en gammel,
+  død utgave av «Selg keramikk»-skjemaet brukte de samme navnene (`gSend`,
+  `gTekst`) og sto sist i koden, så den vant. Trykket Monica «Send gaven»,
+  kjørte hun i praksis en død innsending av en keramikkvare.
+  Gavene ligger i databasen nå (migrasjon 043): de vises for riktig medlem,
+  gjelder ut måneden, kan løses inn én gang, og verkstedet får e-post når
+  noen løser inn sin.
 * **«Si opp abonnementet»** endret bare medlemmets egen nettleser. Verkstedet
   fikk aldri vite at noen hadde sagt opp, og avtalen i Vipps løp videre.
   Endepunktet på serveren hadde ligget der hele tiden. «Angre» lovet at alt
@@ -152,7 +163,7 @@ lister også opp tabeller som ikke er i bruk.
 Alt under er kjørt, ikke resonnert fram.
 
 ```
-php tests/backend.php    107 av 107 grønne
+php tests/backend.php    113 av 113 grønne
 tests/flyt.sh             10 av 10 grønne
 ```
 
@@ -169,6 +180,12 @@ Tre av testene falt i dag fordi de lånte data fra katalogen: en booket
 medlemsfrokosten som du ba meg stryke, en lånte en økt fra Paint on Pots og
 gikk «grønn» på at det ikke fantes noen, og medlemskapstestene sto på det gamle
 navnet «30 timer». De lager sin egen rigg nå, og leser fasiten fra basen.
+
+Gaveflyten er prøvd hele veien: «Send gaven» i admin ga en POST til
+`/api/admin/gaver.php` og en rad i `medlemsgaver`; kortet dukket opp på Min
+side med riktig tekst og gyldighet; «Send invitasjon» ga en POST til
+`/api/gave.php`, en rad i `medlemsgave_bruk`, et varsel i køen til verkstedet,
+og kortet forsvant. Et nytt forsøk svarte «Du har ingen gave å løse inn».
 
 ### Dette er *ikke* prøvd
 
@@ -206,6 +223,11 @@ navnet «30 timer». De lager sin egen rigg nå, og leser fasiten fra basen.
   at du sier fra — data slettes ikke på min gjetning.
 * **«Vipps-flyt»-skjermen** nås ikke fra menyen, bare fra `/betaling`. Den
   venter på at du bestemmer om den skal være der.
+* **Varselmalene kan ikke redigeres.** Dialogen sa «Lagre mal», men det finnes
+  ingen vei til å lagre en mal — den viser nå malen slik den er. Malene endres
+  i databasen (`notification_templates`).
+* **En rest av gammel mobiladmin** (`mobAdminKurs`) ligger igjen i koden uten
+  at noe viser den. Den er ufarlig, men bør ryddes.
 
 ---
 
@@ -215,6 +237,13 @@ navnet «30 timer». De lager sin egen rigg nå, og leser fasiten fra basen.
 2. Skal `checkins` og `hour_usage` slettes?
 3. Skal «Vipps-flyt»-skjermen bli værende, eller ut?
 4. Skal jeg legge inn de ekte kursdatoene, eller gjør dere det i admin?
+5. **Skal et gavekort gitt til et medlem bli et ekte gavekort** som kan brukes
+   i kassa, og skal «Ekstra timer» legge seg til timekvoten? I dag er gaven et
+   kort på Min side som medlemmet tar med til verkstedet — det er nøyaktig det
+   skjermen lover, men den kan gjøres mer automatisk hvis dere vil.
+6. Skal admin ha en **liste over gitte gaver**, med mulighet til å trekke en
+   tilbake? Serveren støtter det allerede (`handling=trekk`); det mangler bare
+   en visning, og en ny visning er et designvalg jeg ikke tar alene.
 
 De øvrige åpne spørsmålene — samelue på logoen, gjestebooking uten innlogging,
 lagerstyring i butikken — står som før i `docs/STATUS.md` under «Må tas stilling

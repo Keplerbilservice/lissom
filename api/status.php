@@ -80,7 +80,8 @@ try {
             'member_sales', 'check_ins', 'content_blocks',
             'notification_templates', 'notifications', 'audit_log', 'rate_limits',
             'membership_applications', 'innstillinger', 'chat_meldinger',
-            'foresporsel_svar',
+            'foresporsel_svar', 'kursholdere', 'kursholder_timer',
+            'medlemsgaver', 'medlemsgave_bruk',
         ], $navn)),
         // Tabeller ingen kode leser. De staar igjen fra 001_init, og fjernes
         // ikke uten beskjed: er det rader i dem paa den ekte tjeneren, er det

@@ -2548,7 +2548,7 @@ window.__resources = {
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--lissom-brown);">{{ gaveTittel }}</span>
                 <span style="font-size: var(--text-sm); color: var(--brown-500);">{{ gaveTekstVis }}</span>
               </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ aInvitasjon }}" hint-size="auto,36px">Send invitasjon</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ aInvitasjon }}" hint-size="auto,36px">{{ gaveKnapp }}</x-import>
             </div>
           </sc-if>
           <sc-if value="{{ byttAboApen }}" hint-placeholder-val="{{ false }}">
@@ -10484,8 +10484,96 @@ class Component extends DCLogic {
         }
 
         this.setState(ny);
+        // Gaven hoerer til medlemskapet, og vi vet forst her om det finnes.
+        if (d.erMedlem) { this.hentGave(); }
       })
       .catch(() => {});
+  }
+
+  /**
+   * Gaven medlemmet har faatt fra verkstedet.
+   *
+   * Kortet «Gave fra Monica» sto oeverst paa Min side med fast tekst, og ble
+   * vist til alle — ogsaa til dem ingen hadde gitt noe. Naa vises det bare
+   * naar det finnes en gave, og det staar hva den er.
+   */
+  hentGave() {
+    if (!this.erPublisert() || this._gaveHentes) return;
+    this._gaveHentes = true;
+    fetch('/api/gave.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._gaveHentes = false;
+        // Er man ikke medlem, svarer endepunktet 403. Da er det ingen gave,
+        // og det er ikke en feil.
+        this.setState({ minGave: (d && d.gave) || null, minGaveHentet: true });
+      })
+      .catch(() => { this._gaveHentes = false; });
+  }
+
+  /** Loeser inn gaven. Verkstedet faar beskjed, og kortet forsvinner. */
+  brukGave() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._gaveBrukes) return;
+    this._gaveBrukes = true;
+
+    fetch('/api/gave.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'bruk' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._gaveBrukes = false;
+        this.setState({
+          kvittering: ok ? 'Verkstedet har fått beskjed' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._gaveHentes = false; this.hentGave(); }
+      })
+      .catch(() => {
+        this._gaveBrukes = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /** Gir en gave til ett medlem eller til alle. Skjermen «Gi gave» i admin. */
+  sendGave() {
+    if ((this.state.gMottaker || 'Alle medlemmer') === 'Ett medlem' && !this.state.gMedlem) {
+      this.setState({ kvittering: 'Velg hvem gaven skal gå til' });
+      return;
+    }
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._gaveSendes) return;
+    this._gaveSendes = true;
+
+    fetch('/api/admin/gaver.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'lagre',
+        type: this.state.gType || 'Ta med en venn',
+        mottaker: this.state.gMottaker || 'Alle medlemmer',
+        medlem: this.state.gMedlem || '',
+        timer: this.state.gTimer || '2',
+        belop: this.state.gBelop || '500',
+        hilsen: this.state.gTekst || '',
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._gaveSendes = false;
+        this.setState({
+          gRed: !ok,
+          kvittering: ok ? 'Gaven er sendt' : 'Gaven ble ikke sendt',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._gaveHentes = false; this.hentGave(); }
+      })
+      .catch(() => {
+        this._gaveSendes = false;
+        this.setState({ kvittering: 'Gaven ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
   }
 
   // Varene i butikken. Vi trenger dem for aa oversette et varenavn i
@@ -14519,7 +14607,9 @@ class Component extends DCLogic {
       // en knapp «Skriv beskjed» som bare lukket den igjen. Skjemaet som
       // faktisk sender ligger under Beskjeder. Naa gaar knappen dit.
       aSendBeskjed: () => { this.setState({ side: 'adminbeskjeder', motValg: 'Alle aktive medlemmer' }); window.scrollTo(0, 0); },
-      aGiGave: () => { const g = this.state.gave || {}; this.setState({ gRed: true, gType: g.type || 'Ta med en venn', gMottaker: g.mottaker || 'Alle medlemmer', gMedlem: g.medlem || '', gTekst: g.tekst || '', gTimer: g.timer || '2', gBelop: g.belop || '500' }); },
+      // Leste tidligere «forrige gave» fra nettleserens eget minne. Gaven
+      // ligger i basen naa, og skjemaet aapner tomt.
+      aGiGave: () => this.setState({ gRed: true, gType: 'Ta med en venn', gMottaker: 'Alle medlemmer', gMedlem: '', gTekst: '', gTimer: '2', gBelop: '500' }),
       gRed: !!this.state.gRed,
       gTypeValg: ['Ta med en venn', 'Ekstra timer', 'Gavekort'].map(t => ({
         navn: t, velg: () => this.setState({ gType: t }),
@@ -14553,15 +14643,10 @@ class Component extends DCLogic {
         return 'Du gir ' + gave + ' til ' + til + '.';
       })(),
       gAvbryt: () => this.setState({ gRed: false }),
-      gSend: () => {
-        if ((this.state.gMottaker || 'Alle medlemmer') === 'Ett medlem' && !this.state.gMedlem) return;
-        this.setState(s => ({
-          gRed: false,
-          gave: { type: s.gType || 'Ta med en venn', mottaker: s.gMottaker || 'Alle medlemmer', medlem: s.gMedlem || '', tekst: s.gTekst || '', timer: s.gTimer || '2', belop: s.gBelop || '500' },
-          vennBrukt: (s.gType || 'Ta med en venn') === 'Ta med en venn' ? false : s.vennBrukt,
-          kvittering: 'Gaven er sendt' + ((s.gMottaker || 'Alle medlemmer') === 'Ett medlem' ? ' til ' + s.gMedlem : ' til alle medlemmer'),
-        }));
-      },
+      // «Send gaven» la gaven i nettleseren til den som trykket og sa «Gaven
+      // er sendt til alle medlemmer». Monica saa altsaa sin egen gave paa sin
+      // egen Min side, og ingen andre fikk noe.
+      gSend: () => this.sendGave(),
       aNyKursdato: () => this.setState({ ndApen: true, ndVelgerApen: false, ndKurs: this.ndKursnavn()[0] || '', ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8', ndLagtTil: [], ndTop: this.topNaa(60) }),
       ndTop: this.state.ndTop ?? 80,
       ndVelgerApen: !!this.state.ndVelgerApen,
@@ -18124,15 +18209,36 @@ class Component extends DCLogic {
         return this.erPublisert() ? 'Henter …' : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet');
       })(),
       vekslStempling: () => this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true),
-      aInvitasjon: this.apne(this.innh('Min side/0/Overskrift'), 'Én gratis drop-in for en venn i august', [
-        { navn: 'Vennens navn', verdi: '' },
-        { navn: 'Vennens e-post', verdi: '' },
-        { navn: 'Dato', verdi: '' },
-      ], 'Send invitasjon', null, true, () => this.setState({ vennBrukt: true })),
-      // Gavekampanjer gaar til alle som har vaert her, ikke bare medlemmene.
-      harVennegave: !this.state.vennBrukt && this.state.visMinGave !== false,
-      gaveTittel: (() => { const g = this.state.gave || {}; return g.type === 'Ekstra timer' ? (g.timer || '2') + ' ekstra timer' : g.type === 'Gavekort' ? 'Gavekort på kr. ' + (g.belop || '500') + ',-' : 'Ta med en venn'; })(),
-      gaveTekstVis: (() => { const g = this.state.gave || {}; return g.tekst || this.innh('Min side/0/Tekst'); })(),
+      // Dialogen sto i skjemamodus og tegnet tre tomme rader — «Vennens navn»
+      // uten noe felt aa skrive i — og «Send invitasjon» satte en bryter i
+      // nettleseren. Verkstedet fikk aldri vite at noen hadde invitert en
+      // venn. Naa gaar innloesningen til serveren, og Monica faar beskjed.
+      ...(() => {
+        const g = this.state.minGave;
+        const gyldig = g && g.gyldigTil ? 'Gjelder ut ' + g.gyldigTil : 'Gjelder ut denne måneden';
+        return {
+          aInvitasjon: this.apne(
+            (g && g.tittel) || this.innh('Min side/0/Overskrift'),
+            'Gave fra verkstedet',
+            [
+              { navn: 'Hilsen', verdi: (g && g.hilsen) || this.innh('Min side/0/Tekst') },
+              { navn: 'Gyldig', verdi: gyldig },
+              { navn: 'Slik løser du den inn', verdi: g && g.harSkjema
+                  ? 'Trykk «Send invitasjon», så tar vi kontakt for å avtale dato for vennen din.'
+                  : 'Trykk under, så får verkstedet beskjed. Ta gaven med neste gang du er innom.' },
+            ],
+            (g && g.harSkjema) ? 'Send invitasjon' : 'Løs inn gaven',
+            null, false,
+            () => this.brukGave()
+          ),
+          // Kortet sto for alle, uansett om noen hadde gitt dem noe. Naa vises
+          // det bare naar det finnes en gave.
+          harVennegave: !!g,
+          gaveTittel: (g && g.tittel) || 'Ta med en venn',
+          gaveTekstVis: (g && g.hilsen) || this.innh('Min side/0/Tekst'),
+          gaveKnapp: (g && g.harSkjema) ? 'Send invitasjon' : 'Løs inn gaven',
+        };
+      })(),
       aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || this.aktivPlan().navn)),
       aKjopDropin: () => this.leggTil('Drop-in-time'),
 
@@ -19300,12 +19406,15 @@ class Component extends DCLogic {
         kanal: m.kanal.indexOf('SMS') === -1 || this.smsAktivert()
           ? m.kanal : m.kanal + ' (SMS ikke aktivert)',
       })).map(m => Object.assign(m, {
+        // Sto med «Lagre mal» i skjemamodus: dialogen tegnet ingen felter, og
+        // knappen lagret ingenting — det finnes ikke noe endepunkt for aa
+        // endre malene. Naa viser den malen slik den er.
         velg: this.apne(m.navn, 'Sendes automatisk · ' + m.kanal, m.emne ? [
           { navn: 'Emne', verdi: m.emne },
           { navn: 'Tekst', verdi: m.tekst },
         ] : [
           { navn: 'Tekst', verdi: m.tekst },
-        ], 'Lagre mal', null, true),
+        ], 'Lukk'),
       })),
       dropinBookinger: this.klikkbar(this.erPublisert() ? [] : [
         { navn: 'Emma Bjørnstad', vert: 'Alene · godkjent', tid: 'I dag 10:00 – 13:00', status: 'Bekreftet', tone: 'success' },
@@ -19973,21 +20082,14 @@ class Component extends DCLogic {
       gHarPubliserte: this.galleriListe().some(g => g.status === 'publisert'),
       gDelSendt: !!this.state.gDelSendt,
       gDelIkkeSendt: !this.state.gDelSendt,
-      gTittel: this.state.gTittel || '',
-      gTekst: this.state.gTekst || '',
-      gSkaper: this.state.gSkaper || '',
-      settGTittel: e => this.setState({ gTittel: e.target.value }),
-      settGTekst: e => this.setState({ gTekst: e.target.value }),
-      settGSkaper: e => this.setState({ gSkaper: e.target.value }),
-      gSend: () => this.setState(s => ({
-        gDelSendt: true,
-        galleriEndringer: (s.galleriEndringer || []).concat([{
-          id: 'ny-' + Date.now(), status: 'venter',
-          tittel: s.gTittel || 'Uten navn', tekst: s.gTekst || '',
-          laget: s.gSkaper ? 'Laget av ' + s.gSkaper : 'Laget av et medlem',
-          bilde: 'assets_photos_handbygging.jpg',
-        }]),
-      })),
+      // Her laa en eldre utgave av «Selg keramikk»: gTittel, gTekst, gSkaper og
+      // en gSend som la varen i en lokal liste. Skjemaet bruker skSend mot
+      // /api/medlemssalg.php naa, og ingenting i malen pekte hit lenger.
+      //
+      // Verre: navnene kolliderte. «Gi gave» i admin bruker ogsaa gTekst og
+      // gSend, og siden disse sto sist i det samme objektet, vant de. Trykket
+      // Monica «Send gaven», kjorte hun altsaa den doede innsendingen av en
+      // keramikkvare. Fjernet 24. august.
       erGavekortside: side === 'gavekortside',
       // Tekstene paa gavekortsida, fra innholdsredigeringen.
       ...(side !== 'gavekortside' ? {} : {

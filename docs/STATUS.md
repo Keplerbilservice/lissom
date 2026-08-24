@@ -159,12 +159,10 @@ Dette må løses med Vipps. Ingen kodeendring hjelper. I det øyeblikket 403 bli
 
 ## Må tas stilling til
 
-**1. Samelue på logoen.** Bedt om, ikke utført. To grunner: jeg vet ikke
-hvilken logo det gjelder eller hvordan den skal se ut, og samisk
-tradisjonsdrakt er kulturelt betydningsfull. Brukt dekorativt av en virksomhet
-uten samisk tilknytning kan det oppfattes som en tilegnelse. Er det en
-tilknytning her, eller er det ment til samefolkets dag 6. februar, er saken en
-annen — men det bør være et bevisst valg, ikke min gjetning.
+**1. Joika Design-logoen.** Gjort. Luen ligger som en gradert strektegning bak
+navnet, slik du ba om, og står i bunnteksten på nettsiden. Punktet sto her som
+«bedt om, ikke utført» helt til 24. august — det var feil, og fila sa det i to
+uker etter at logoen var laget.
 
 **2. Gjestebooking uten innlogging.** I dag sendes uinnloggede til Vipps Login
 før booking, fordi bookingskjemaet i designet ikke har felter for navn, e-post

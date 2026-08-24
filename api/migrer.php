@@ -40,7 +40,7 @@ $nokkel  = (string) Config::hent('cron_nokkel', '');
 $oppgitt = Foresporsel::tekst('nokkel');
 $medNokkel = $nokkel !== '' && $oppgitt !== '' && hash_equals($nokkel, $oppgitt);
 
-$fraEgenHand = in_array($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '', ['none', 'same-origin'], true);
+$fraEgenHand = fra_egen_side();
 
 // Uten noekkel maa du vaere admin. Punktum.
 if (!$medNokkel && !Sesjon::erAdmin()) {

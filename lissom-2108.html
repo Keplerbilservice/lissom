@@ -4526,6 +4526,115 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <sc-if value="{{ erAdminVarsler }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – e-post og SMS" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavVarsler }}" as="a" hint-placeholder-count="10">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">E-post og SMS</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">Kvitteringer, påminnelser og varsler sendes herfra. Fyll inn kontoen dere allerede har — passordet lagres på serveren og vises aldri igjen.</p>
+        </div>
+
+        <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-8);">
+          <div style="flex: 1 1 260px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid {{ vaEpostFarge }}; border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">E-post</div>
+            <div style="font-size: var(--text-lg); font-weight: 600;">{{ vaEpostStatus }}</div>
+            <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ vaEpostHjelp }}</p>
+          </div>
+          <div style="flex: 1 1 260px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid {{ vaSmsFarge }}; border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">SMS</div>
+            <div style="font-size: var(--text-lg); font-weight: 600;">{{ vaSmsStatus }}</div>
+            <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ vaSmsHjelp }}</p>
+          </div>
+          <div style="flex: 1 1 260px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Køen</div>
+            <div style="font-size: var(--text-lg); font-weight: 600;">{{ vaKoTekst }}</div>
+            <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ vaKoHjelp }}</p>
+          </div>
+        </div>
+
+        <sc-if value="{{ vaLaast }}">
+          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+            <strong style="display: block; margin-bottom: 4px;">Oppsettet står i secrets.php på serveren</strong>
+            <span style="font-size: var(--text-sm); color: var(--text-body);">Fila gjelder foran det som skrives her. Skal det endres herfra, må linjene tas ut av fila først.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ vaMangler }}">
+          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+            <strong style="display: block; margin-bottom: 4px;">Databasen mangler tabellen som lagrer dette</strong>
+            <span style="font-size: var(--text-sm); color: var(--text-body);">Kjør vedlikehold fra Oversikt, så kan oppsettet lagres.</span>
+          </div>
+        </sc-if>
+
+        <div class="lx-split" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start;">
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">E-postkontoen</div>
+            <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+              <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-4);">
+                <input value="{{ vaVert }}" onChange="{{ settVa.smtp_vert }}" placeholder="mail.lissom.no" aria-label="SMTP-server" style="{{ vaFeltStil }}">
+                <input value="{{ vaPort }}" onChange="{{ settVa.smtp_port }}" placeholder="587" inputmode="numeric" aria-label="Port" style="{{ vaFeltStil }}">
+              </div>
+              <input value="{{ vaBruker }}" onChange="{{ settVa.smtp_bruker }}" placeholder="post@lissom.no" aria-label="Brukernavn" style="{{ vaFeltStil }}">
+              <input type="password" value="{{ vaPassord }}" onChange="{{ settVa.smtp_passord }}" placeholder="{{ vaPassordHint }}" aria-label="Passord" style="{{ vaFeltStil }}">
+              <select value="{{ vaSikkerhet }}" onChange="{{ settVa.smtp_sikkerhet }}" aria-label="Kryptering" style="{{ vaFeltStil }}">
+                <sc-for list="{{ vaSikkerhetValg }}" as="v" hint-placeholder-count="3">
+                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                </sc-for>
+              </select>
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4);">
+                <input value="{{ vaFra }}" onChange="{{ settVa.epost_fra }}" placeholder="Avsenderadresse, f.eks. post@lissom.no" aria-label="Avsenderadresse" style="{{ vaFeltStil }}">
+                <input value="{{ vaFraNavn }}" onChange="{{ settVa.epost_fra_navn }}" placeholder="Avsendernavn, f.eks. Lissom Keramikk" aria-label="Avsendernavn" style="{{ vaFeltStil }}">
+                <input value="{{ vaSvarTil }}" onChange="{{ settVa.epost_svar_til }}" placeholder="Svar går til (valgfritt)" aria-label="Svaradresse" style="{{ vaFeltStil }}">
+              </div>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Serveren er som regel mail.lissom.no, ikke leverandørens egen adresse. Brukernavn og passord er innloggingen til selve e-postkontoen.</p>
+            </div>
+          </div>
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">SMS hos Sveve</div>
+            <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
+              <input value="{{ vaSveveBruker }}" onChange="{{ settVa.sveve_bruker }}" placeholder="Brukernavn hos Sveve" aria-label="Sveve-bruker" style="{{ vaFeltStil }}">
+              <input type="password" value="{{ vaSvevePassord }}" onChange="{{ settVa.sveve_passord }}" placeholder="{{ vaSvevePassordHint }}" aria-label="Sveve-passord" style="{{ vaFeltStil }}">
+              <input value="{{ vaSmsAvsender }}" onChange="{{ settVa.sms_avsender }}" placeholder="Avsendernavn på SMS, f.eks. Lissom" aria-label="SMS-avsender" style="{{ vaFeltStil }}">
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Uten dette går påminnelser og «keramikken er ferdig brent» bare på e-post. Kurspåminnelser sendes da som e-post alene.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center; margin-top: var(--space-8);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="save" on-click="{{ aLagreVarsler }}" hint-size="auto,44px">Lagre oppsettet</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ aTestEpost }}" hint-size="auto,44px">Send testmelding til meg</x-import>
+          <span style="font-size: var(--text-sm); color: var(--text-body);">{{ vaBeskjed }}</span>
+        </div>
+
+        <sc-if value="{{ vaHarFeil }}">
+          <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Siste meldinger som ikke gikk ut</div>
+            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-3);">
+              <sc-for list="{{ vaFeil }}" as="f" hint-placeholder-count="3">
+                <div style="display: flex; gap: var(--space-4); align-items: baseline; flex-wrap: wrap;">
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); min-width: 96px;">{{ f.nar }}</span>
+                  <span style="font-size: var(--text-sm); font-weight: 600;">{{ f.mottaker }}</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-body);">{{ f.feil }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminMobilvis }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – mobilvisning" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -8843,6 +8952,7 @@ class Component extends DCLogic {
       { sti: '/admin/markedsforing', side: 'adminmarked' },
       { sti: '/admin/nyttig',       side: 'adminnyttig' },
       { sti: '/admin/mobilvisning', side: 'adminmobilvis' },
+      { sti: '/admin/e-post-og-sms', side: 'adminvarsler' },
     ];
   }
 
@@ -12691,6 +12801,98 @@ class Component extends DCLogic {
   }
 
   /** Varene og dagens disksalg. */
+  /**
+   * Oppsettet for e-post og SMS, slik det gjelder naa.
+   *
+   * Passordene foelger aldri med tilbake — bare om de er utfylt. Skjermen
+   * trenger ikke vite hva de er for aa kunne si at de staar der.
+   */
+  hentVarsler() {
+    if (!this.erPublisert() || this._varslerHentes) return;
+    this._varslerHentes = true;
+    fetch('/api/admin/varsler.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._varslerHentes = false;
+        if (d && d.oppsett) this.setState({ varslerData: d });
+      })
+      .catch(() => { this._varslerHentes = false; });
+    // Feilene ligger hos test-varsel, som allerede skiller loste fra ferske.
+    fetch('/api/test-varsel.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d && d.siste_feil) this.setState({ varslerFeil: d.siste_feil }); })
+      .catch(() => { /* da staar lista tom, som for */ });
+  }
+
+  /**
+   * Lagrer oppsettet.
+   *
+   * Tomme passordfelter sendes ikke: paa serveren betyr et tomt passord «la
+   * det staa», og da ville en lagring av avsenderadressen ellers toemt
+   * innloggingen.
+   */
+  lagreVarsler() {
+    if (!this.erPublisert() || this._varslerLagrer) return;
+    const u = this.state.varslerUtkast || {};
+    if (!Object.keys(u).length) {
+      this.setState({ varslerBeskjed: 'Ingenting er endret.' });
+      return;
+    }
+    this._varslerLagrer = true;
+    this.setState({ varslerBeskjed: 'Lagrer …' });
+
+    const kropp = Object.assign({ handling: 'lagre' }, u);
+    fetch('/api/admin/varsler.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._varslerLagrer = false;
+        this.setState({
+          varslerBeskjed: (d && (d.beskjed || d.feil)) || (ok ? 'Lagret.' : 'Ble ikke lagret.'),
+          varslerUtkast: ok ? {} : u,
+        });
+        if (ok) { this._varslerHentes = false; this.hentVarsler(); }
+      })
+      .catch(() => {
+        this._varslerLagrer = false;
+        this.setState({ varslerBeskjed: 'Ble ikke lagret — serveren svarte ikke.' });
+      });
+  }
+
+  /**
+   * Sender én melding med oppsettet som gjelder, og sier hva som skjedde.
+   *
+   * Gaar til den innloggedes egen adresse. «Kom den fram?» er det eneste
+   * spoersmaalet som betyr noe, og da maa den gaa et sted man kan se etter.
+   */
+  testVarsel() {
+    if (!this.erPublisert() || this._varslerTester) return;
+    this._varslerTester = true;
+    this.setState({ varslerBeskjed: 'Sender …' });
+    fetch('/api/test-varsel.php?epost=meg', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._varslerTester = false;
+        const maate = ((d || {}).epost_oppsett || {}).maate || '';
+        const sagt = (d && (d.beskjed || d.feil || d.resultat)) || '';
+        this.setState({
+          varslerBeskjed: ok
+            ? (sagt || ('Sendt via ' + maate + '. Se etter den i innboksen din.'))
+            : (sagt || 'Kunne ikke sende.'),
+        });
+        this._varslerHentes = false;
+        this.hentVarsler();
+      })
+      .catch(() => {
+        this._varslerTester = false;
+        this.setState({ varslerBeskjed: 'Kunne ikke sende — serveren svarte ikke.' });
+      });
+  }
+
   hentUttak() {
     if (!this.erPublisert() || this._uttakHentes) return;
     this._uttakHentes = true;
@@ -12879,6 +13081,7 @@ class Component extends DCLogic {
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo'],
         ['Mobilvisning',  'adminmobilvis'],
+        ['E-post og SMS', 'adminvarsler'],
       ],
     };
   }
@@ -12915,6 +13118,7 @@ class Component extends DCLogic {
       case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':           return p('Nettsiden', 'Nettsiden', 'SEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
+      case 'adminvarsler':       return p('Nettsiden', 'Nettsiden', 'E-post og SMS');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
@@ -13484,6 +13688,9 @@ class Component extends DCLogic {
     }
     if (side === 'adminuttak' && !this.state.uttakData) {
       this.hentUttak();
+    }
+    if (side === 'adminvarsler' && !this.state.varslerData) {
+      this.hentVarsler();
     }
     if (['admin', 'adminmedlemskap', 'adminomrkurs', 'adminnyreg'].indexOf(side) !== -1
         && !this.state.adminPlanerRaa) {
@@ -19276,6 +19483,97 @@ class Component extends DCLogic {
       })(),
       adminNavSeo: this.adminMeny(),
       erAdminMobilvis: side === 'adminmobilvis',
+
+      // --- E-post og SMS ---------------------------------------------------
+      //
+      // Innloggingen til e-postkontoen har til naa maattet skrives inn i en
+      // fil paa serveren. I praksis betydde det at ingen kvitteringer gikk
+      // ut. Feltene her lagres i basen; secrets.php gjelder fortsatt foran,
+      // og da sier skjermen fra i stedet for aa la eieren skrive i noe som
+      // ikke faar virkning.
+      erAdminVarsler: side === 'adminvarsler',
+      adminNavVarsler: this.adminMeny(),
+      ...(side !== 'adminvarsler' ? {} : (() => {
+        const d = this.state.varslerData || {};
+        const o = d.oppsett || {};
+        const u = this.state.varslerUtkast || {};
+        const verdi = (n) => (u[n] !== undefined ? u[n] : ((o[n] || {}).verdi || ''));
+        const satt = (n) => !!((o[n] || {}).satt);
+        const smtpPaa = satt('smtp_vert');
+        const smsPaa = !!d.sms_klar;
+        const ko = d.ko || {};
+        const feil = (this.state.varslerFeil || []).filter(f => !f.lost);
+
+        return {
+          vaFeltStil: 'width: 100%; box-sizing: border-box; padding: 12px 14px;'
+            + ' border: 1px solid var(--border-subtle); border-radius: var(--radius-md);'
+            + ' font-size: var(--text-sm); font-family: inherit; background: var(--surface-page);'
+            + ' color: var(--text-heading);',
+
+          vaEpostStatus: smtpPaa ? 'Sendes med SMTP' : 'Ikke satt opp',
+          vaEpostFarge: smtpPaa ? 'var(--sage-500, #7f9c78)' : 'var(--terracotta-600)',
+          vaEpostHjelp: smtpPaa
+            ? 'Feil blir fanget opp og vist, i stedet for å forsvinne i stillhet.'
+            : 'Uten dette går e-post via serverens egen mail(), som ikke sier fra når noe blir avvist.',
+          vaSmsStatus: smsPaa ? 'Klar' : 'Ikke satt opp',
+          vaSmsFarge: smsPaa ? 'var(--sage-500, #7f9c78)' : 'var(--clay-400)',
+          vaSmsHjelp: smsPaa
+            ? 'Påminnelser og «ferdig brent» går som SMS.'
+            : 'Meldinger som skulle gått på SMS sendes som e-post i stedet.',
+          vaKoTekst: (ko.venter || 0) === 0 ? 'Tom' : (ko.venter + ' venter'),
+          vaKoHjelp: (ko.sendt || 0) + ' sendt, ' + (ko.feilet || 0) + ' feilet siden oppstart.',
+
+          // Staar noe i fila, er det den som gjelder — og da ville et felt her
+          // vaert en knapp uten virkning.
+          vaLaast: Object.keys(o).some(k => (o[k] || {}).fra_fil),
+          vaMangler: d.kan_lagre === false,
+
+          vaVert: verdi('smtp_vert'),
+          vaPort: verdi('smtp_port'),
+          vaBruker: verdi('smtp_bruker'),
+          vaPassord: u.smtp_passord || '',
+          vaPassordHint: satt('smtp_passord') ? 'Lagret — skriv bare hvis det skal byttes' : 'Passordet til e-postkontoen',
+          vaSikkerhet: verdi('smtp_sikkerhet') || 'starttls',
+          vaSikkerhetValg: [
+            { verdi: 'starttls', navn: 'STARTTLS (port 587)' },
+            { verdi: 'ssl', navn: 'SSL (port 465)' },
+            { verdi: 'ingen', navn: 'Ingen kryptering' },
+          ],
+          vaFra: verdi('epost_fra'),
+          vaFraNavn: verdi('epost_fra_navn'),
+          vaSvarTil: verdi('epost_svar_til'),
+
+          vaSveveBruker: verdi('sveve_bruker'),
+          vaSvevePassord: u.sveve_passord || '',
+          vaSvevePassordHint: satt('sveve_passord') ? 'Lagret — skriv bare hvis det skal byttes' : 'Passordet hos Sveve',
+          vaSmsAvsender: verdi('sms_avsender'),
+
+          settVa: [
+            'smtp_vert', 'smtp_port', 'smtp_bruker', 'smtp_passord', 'smtp_sikkerhet',
+            'epost_fra', 'epost_fra_navn', 'epost_svar_til',
+            'sveve_bruker', 'sveve_passord', 'sms_avsender',
+          ].reduce((m, n) => {
+            m[n] = (e) => this.setState({
+              varslerUtkast: Object.assign({}, this.state.varslerUtkast || {}, {
+                [n]: (e && e.target ? e.target.value : e),
+              }),
+              varslerBeskjed: '',
+            });
+            return m;
+          }, {}),
+
+          vaBeskjed: this.state.varslerBeskjed || '',
+          aLagreVarsler: () => this.lagreVarsler(),
+          aTestEpost: () => this.testVarsel(),
+
+          vaHarFeil: feil.length > 0,
+          vaFeil: feil.map(f => ({
+            nar: (f.nar || '').slice(0, 16).replace('T', ' '),
+            mottaker: f.mottaker || '',
+            feil: f.feil || '',
+          })),
+        };
+      })()),
 
       // --- Brukere med innlogging til verkstedet ---------------------------
       erAdminBrukere: side === 'adminbrukere',

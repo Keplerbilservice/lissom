@@ -17,9 +17,75 @@ final class Config
         self::$s = $hemmeligheter;
     }
 
+    /**
+     * Oppsett eieren kan endre selv, fra admin.
+     *
+     * Alt annet i denne klassen settes én gang av den som setter opp
+     * nettstedet, og hoerer hjemme i en fil. Innloggingen til e-postkontoen
+     * og til SMS-leverandoeren gjor ikke det: den byttes den dagen passordet
+     * byttes, av den som eier kontoen. Uten en vei dit har e-post og SMS
+     * staatt uvirksomt, fordi det ikke fantes noen maate aa skru det paa uten
+     * FTP-tilgang.
+     *
+     * Vipps-noeklene og databasepassordet staar med vilje ikke her. De skal
+     * ikke kunne endres fra en nettleser.
+     */
+    private const FRA_BASEN = [
+        'smtp_vert', 'smtp_port', 'smtp_bruker', 'smtp_passord', 'smtp_sikkerhet',
+        'epost_fra', 'epost_fra_navn', 'epost_svar_til',
+        'sms_leverandor', 'sveve_bruker', 'sveve_passord', 'sms_avsender',
+    ];
+
+    /** @var array<string,string>|null */
+    private static ?array $base = null;
+
     public static function hent(string $nokkel, mixed $standard = null): mixed
     {
+        // Fila gjelder foerst. Staar noekkelen der, er det den som teller —
+        // saa den som har satt opp serveren beholder kontrollen.
+        $fraFil = self::$s[$nokkel] ?? null;
+        if ($fraFil !== null && $fraFil !== '') {
+            return $fraFil;
+        }
+        if (in_array($nokkel, self::FRA_BASEN, true)) {
+            $v = self::fraBasen()[$nokkel] ?? '';
+            if ($v !== '') {
+                return $v;
+            }
+        }
         return self::$s[$nokkel] ?? $standard;
+    }
+
+    /**
+     * Leses én gang per forespoersel.
+     *
+     * Taaler at tabellen ikke finnes: en migrasjon som ikke er kjoert enda
+     * skal gi manglende oppsett, ikke en hvit side.
+     *
+     * @return array<string,string>
+     */
+    private static function fraBasen(): array
+    {
+        if (self::$base !== null) {
+            return self::$base;
+        }
+        self::$base = [];
+        try {
+            if (class_exists('DB', false) && DB::harTabell('innstillinger')) {
+                foreach (DB::alle('SELECT nokkel, verdi FROM innstillinger') as $r) {
+                    self::$base[(string) $r['nokkel']] = (string) ($r['verdi'] ?? '');
+                }
+            }
+        } catch (Throwable $e) {
+            // Uten base er det fila som gjelder, som foer.
+        }
+        return self::$base;
+    }
+
+    /** Kalles etter lagring, saa neste oppslag i samme forespoersel ser det nye. */
+    public static function glemBasen(): void
+    {
+        self::$base = null;
     }
 
     /** Kaster hvis nøkkelen mangler — brukes for verdier vi ikke kan klare oss uten. */

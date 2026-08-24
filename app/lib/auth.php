@@ -64,6 +64,50 @@ function krev_admin(): array
     return $m;
 }
 
+/**
+ * Kom kallet fra en side brukeren selv har aapnet?
+ *
+ * Verner mot at et annet nettsted lar en innlogget admins nettleser gjore noe
+ * paa vaare vegne. «Sec-Fetch-Site» er det presise svaret, og den skal foelges
+ * naar den er der: er den «cross-site», er det nettopp det vi vil stoppe.
+ *
+ * Men den er ikke alltid der. Safari fikk den foerst i 16.4, og nettlesere
+ * utelater den over vanlig http. Behandler vi fravaer som et angrep, stenger
+ * vi ute folk som ikke gjor noe galt — og en adminskjerm som er tom for hver
+ * tiende bruker er verre enn ingen skjerm, fordi feilen ikke ser ut som en
+ * feil. Da faller vi tilbake paa Origin eller Referer, som sier det samme naar
+ * de finnes.
+ *
+ * Er ingen av delene der, er det ingen nettleserside som staar bak — og en
+ * innlogget sesjon er da det vi har aa gaa etter.
+ */
+function fra_egen_side(): bool
+{
+    $sfs = (string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');
+    if ($sfs !== '') {
+        return $sfs === 'none' || $sfs === 'same-origin';
+    }
+
+    $opphav = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+    if ($opphav === '') {
+        $ref = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+        if ($ref !== '') {
+            $d = parse_url($ref);
+            $opphav = ($d['scheme'] ?? '') . '://' . ($d['host'] ?? '')
+                . (isset($d['port']) ? ':' . $d['port'] : '');
+        }
+    }
+    if ($opphav === '') {
+        return true;
+    }
+
+    $vaar = Config::nettsted();
+    // Vertsnavnet er det som betyr noe. Skjemaet kan vaere http lokalt og
+    // https ute, og porten foelger med bare naar den ikke er standard.
+    $vert = static fn(string $u): string => (string) (parse_url($u, PHP_URL_HOST) ?: '');
+    return $vert($opphav) !== '' && $vert($opphav) === $vert($vaar);
+}
+
 /** Skriver en linje i revisjonsloggen. */
 function revider(string $handling, ?string $objektType = null, ?int $objektId = null, array $detaljer = []): void
 {

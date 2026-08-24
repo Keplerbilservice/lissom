@@ -241,7 +241,17 @@ E-post gaar som standard gjennom serverens egen `mail()`. Det virker ofte,
 men du faar aldri vite om meldingen ble avvist — `mail()` svarer bare at den
 er levert til koen paa serveren.
 
-Sett heller opp SMTP. Da vet vi om det gikk galt, og hvorfor. Legg til i
+Sett heller opp SMTP. Da vet vi om det gikk galt, og hvorfor.
+
+**Enkleste vei: Admin → Nettsiden → E-post og SMS.** Der fylles kontoen inn i
+nettleseren, og en knapp sender en testmelding og sier hva som skjedde.
+Passordet lagres paa serveren og vises aldri igjen. Da trenger ingen aa ha
+FTP-tilgang for aa faa kvitteringer ut — som var grunnen til at dette sto
+uvirksomt.
+
+Skal det heller staa i fil, gaar det fortsatt: **`secrets.php` gjelder foran
+det som skrives i admin.** Staar noekkelen der, sier skjermen fra at feltet er
+laast av fila i stedet for aa la noen skrive i noe uten virkning. Legg da til i
 `~/lissom-secrets/secrets.php`:
 
 Utgaaende server staar under **kontodetaljer** for e-postkontoen i
@@ -282,6 +292,9 @@ har lov til aa sende paa vegne av Gmail.
 To leverandorer er stottet. Begge tar betaling per melding uten
 maanedsavgift, og begge er enkle HTTP-kall — aa bytte er en linje i
 oppsettet, ikke en jobb.
+
+Det samme gjelder her: **Admin → Nettsiden → E-post og SMS** har feltene for
+Sveve, og da slipper du fila. Skal det i fil likevel:
 
 **Sveve** (norsk):
 

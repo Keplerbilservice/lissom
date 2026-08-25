@@ -17170,7 +17170,15 @@ class Component extends DCLogic {
       // legge til noen paa «Kurs boller torsdag», matte du foerst finne ut
       // hvilken dato det var, paa en annen skjerm.
       ...(() => {
-        const okter = (this.state.adminOkter || []).map(o => {
+        // Datolista fulgte ikke fanen. Sto du under Medlemmer → Kurs for aa se
+        // samlingene deres, fikk du likevel alle seksten datoene under —
+        // drop-in og aapne kurs og alt sammen. Naa viser den datoene til de
+        // kursene som staar i lista over.
+        const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
+        const okter = (this.state.adminOkter || [])
+          .filter(o => (this.state.kursFane || 'alle') === 'alle'
+                    || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1)
+          .map(o => {
           const tatt = (o.betalt || 0) + (o.reservert || 0);
           const kap = o.kapasitet || 0;
 

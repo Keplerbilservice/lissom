@@ -1245,11 +1245,28 @@ window.__resources = {
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ keKicker }}</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ kursTittel }}</h1>
           <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">{{ keIngress }}</p>
+          <!-- Naar paa dagen. Ligger over kategoriene og virker sammen med
+               dem — folk vet naar de har fri, foer de vet hva de vil lage. -->
+          <div style="margin-bottom: var(--space-5);">
+            <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">{{ kursTidSporsmal }}</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <sc-for list="{{ kursTidFiltre }}" as="t" hint-placeholder-count="3">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ t.valgt }}" on-click="{{ t.velg }}" hint-size="auto,32px">{{ t.navn }}</x-import>
+              </sc-for>
+            </div>
+          </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <sc-for list="{{ kursFiltre }}" as="f" hint-placeholder-count="6">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ f.valgt }}" on-click="{{ f.velg }}" hint-size="auto,32px">{{ f.navn }}</x-import>
             </sc-for>
           </div>
+          <!-- Et filter kan gi null treff. Uten dette sto sida bare tom. -->
+          <sc-if value="{{ kursIngenTreff }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: var(--space-6); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+              <span style="font-size: var(--text-base); color: var(--text-body);">{{ kursTomTekst }}</span>
+              <button type="button" onClick="{{ kursNullstill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Vis alle kurs</button>
+            </div>
+          </sc-if>
           <div style="margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: var(--space-2) var(--space-3); flex-wrap: wrap; align-items: center;">
             <span>{{ keDetaljVenstre }}</span><span aria-hidden="true">·</span><span>{{ keDetaljHoyre }}</span>
           </div>
@@ -8669,6 +8686,7 @@ class Component extends DCLogic {
         om: kat.om || k.om,
         image: kat.bilde || k.image,
         bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
+        startTider: [],
         utenDato: false,
         kunKontakt: true,
       });
@@ -8679,6 +8697,9 @@ class Component extends DCLogic {
       katId: kat.id,
       prisOre: kat.prisOre,
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
+      // De raa starttidene folger med kortet. «man. 24. aug» kan ikke regnes
+      // paa, og uten disse kunne ikke kurslista skille dagtid fra kveldstid.
+      startTider: datoer.map(d => d.startUtc).filter(Boolean),
       status: this.plasstekst(datoer),
       // Har verkstedet valgt bilder i admin, er det de som gjelder — ikke
       // bildet som sto i designfila.
@@ -8839,15 +8860,73 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Naar paa dagen kurset gaar.
+   *
+   * Folk leter sjelden etter «plateteknikk» foerst. De vet naar de har fri,
+   * og maa i dag aapne hvert kort for aa se om tiden passer.
+   *
+   * Tre baas: dagtid (starter foer 16), kveldstid (16 eller senere) og helg
+   * (loerdag eller soendag, uansett klokkeslett). Et kurs hoerer til alle
+   * baasene datoene det har peker paa — gaar det baade tirsdag formiddag og
+   * loerdag kveld, skal det staa under alle tre.
+   *
+   * Tidene i basen staar i UTC. De regnes om til norsk tid foerst; ellers
+   * ville et kurs klokka 17 havnet paa dagtid halve aaret.
+   */
+  naarPaaDagen(k) {
+    const iOslo = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    const ut = [];
+    const legg = (d) => {
+      if (!d || isNaN(d.getTime())) return;
+      const dag = d.getDay();                      // 0 = soendag, 6 = loerdag
+      if (dag === 0 || dag === 6) ut.push('Helg');
+      ut.push(d.getHours() < 16 ? 'Dagtid' : 'Kveldstid');
+    };
+
+    // Den ekte siden: raa starttider fra basen.
+    (k.startTider || []).forEach(t => legg(iOslo(new Date(String(t).replace(' ', 'T') + 'Z'))));
+
+    // Designdataene har ingen tidsstempler, bare «Mandag 24. august» og
+    // «17:00 – 20:00». Da leses ukedagen og timen derfra, slik at knappene
+    // ogsaa virker i forhaandsvisningen.
+    if (!ut.length) {
+      const DAGER = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+      (k.datoer || []).forEach(d => {
+        const dagnavn = DAGER.findIndex(n => String(d.dato || '').toLowerCase().startsWith(n.toLowerCase()));
+        const time = /(\d{1,2}):\d{2}/.exec(String(d.tid || ''));
+        if (dagnavn === 0 || dagnavn === 6) ut.push('Helg');
+        if (time) ut.push(Number(time[1]) < 16 ? 'Dagtid' : 'Kveldstid');
+      });
+    }
+
+    return ut;
+  }
+
   filtrerKurs(liste) {
     const f = this.state.kursFilter;
-    if (!f || f === 'Alle' || f === 'Vis alle') return liste;
-    if (f === 'Kurs') {
-      // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
-      const utenom = ['Events', 'Event', 'Drop-in'];
-      return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1);
+    const naar = this.state.kursTid;
+
+    let ut = liste;
+    if (f && f !== 'Alle' && f !== 'Vis alle') {
+      if (f === 'Kurs') {
+        // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
+        const utenom = ['Events', 'Event', 'Drop-in'];
+        ut = ut.filter(k => utenom.indexOf(k.tema || k.level) === -1);
+      } else {
+        ut = ut.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
+      }
     }
-    return liste.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
+
+    // Tidspunktet legger seg oppaa kategorien, det erstatter den ikke: velger
+    // du «Dreiing» og «Kveldstid», er det dreiekursene paa kvelden du vil se.
+    if (naar) {
+      // Kurs som settes opp naar noen sporr har ingen tid enda. De skal ikke
+      // falle ut av et tidsvalg — tiden er jo opp til dere to.
+      ut = ut.filter(k => k.kunKontakt || this.naarPaaDagen(k).indexOf(naar) !== -1);
+    }
+
+    return ut;
   }
 
   /** Setter undertemaer paa hele lista, uten aa roere resten. */
@@ -15380,6 +15459,22 @@ class Component extends DCLogic {
         { hvem: 'Den enkleste', navn: 'Paint on Pots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.', pris: 'Fra kr. 690,-', cta: 'Les mer', gjor: () => { this.setState({ side: 'paintonpots' }); window.scrollTo(0, 0); } },
         { hvem: 'For gjengen', navn: 'Privat event', tekst: 'Utdrikningslag, bursdag eller teambuilding — fra 8 personer, kvelden er deres.', pris: 'Pris på forespørsel', cta: 'Les mer', gjor: () => { this.setState({ side: 'bedrift' }); window.scrollTo(0, 0); } },
       ].map(e => Object.assign(e, { velg: e.gjor })),
+      // Naar paa dagen. Folk leter sjelden etter «plateteknikk» foerst — de
+      // vet naar de har fri. Knappene ligger over kategoriene og virker
+      // sammen med dem. Trykker du paa den som alt er valgt, slaas den av.
+      kursTidSporsmal: 'Når på dagen passer det best for deg?',
+      kursTidFiltre: ['Dagtid', 'Kveldstid', 'Helg'].map(navn => ({
+        navn,
+        valgt: this.state.kursTid === navn,
+        velg: () => this.setState({ kursTid: this.state.kursTid === navn ? null : navn }),
+      })),
+      // Et filter kan gi null treff. Uten dette sto sida bare tom, og det
+      // ser ut som en feil framfor et svar.
+      kursIngenTreff: this.filtrerKurs(this.kursKort()).length === 0,
+      kursTomTekst: this.state.kursTid
+        ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen' }[this.state.kursTid] || '') + ' akkurat nå.'
+        : 'Ingen kurs i denne kategorien akkurat nå.',
+      kursNullstill: () => this.setState({ kursTid: null, kursFilter: 'Vis alle' }),
       kursFiltre: ['Vis alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop', 'Events', 'Sip & Clay', 'Date Night', 'Paint on pots', 'Drop-in'].map(navn => ({
         navn,
         valgt: navn === this.state.kursFilter

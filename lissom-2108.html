@@ -8686,7 +8686,7 @@ class Component extends DCLogic {
         om: kat.om || k.om,
         image: kat.bilde || k.image,
         bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
-        startTider: [],
+        okter: [],
         utenDato: false,
         kunKontakt: true,
       });
@@ -8697,9 +8697,10 @@ class Component extends DCLogic {
       katId: kat.id,
       prisOre: kat.prisOre,
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
-      // De raa starttidene folger med kortet. «man. 24. aug» kan ikke regnes
-      // paa, og uten disse kunne ikke kurslista skille dagtid fra kveldstid.
-      startTider: datoer.map(d => d.startUtc).filter(Boolean),
+      // Hele oktlista folger med kortet. «man. 24. aug» kan ikke regnes paa,
+      // og uten datoene kunne ikke kurslista skille dagtid fra kveldstid —
+      // og heller ikke vise den datoen som faktisk passer valget.
+      okter: datoer,
       status: this.plasstekst(datoer),
       // Har verkstedet valgt bilder i admin, er det de som gjelder — ikke
       // bildet som sto i designfila.
@@ -8860,32 +8861,40 @@ class Component extends DCLogic {
     };
   }
 
+  /** Norsk tid for en raa UTC-streng fra basen. */
+  osloTid(utc) {
+    const d = new Date(String(utc).replace(' ', 'T') + 'Z');
+    if (isNaN(d.getTime())) return null;
+    return new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+  }
+
   /**
-   * Naar paa dagen kurset gaar.
+   * Baasene ett tidspunkt hoerer til.
+   *
+   * Dagtid er start foer 16, kveldstid 16 eller senere, og helg er loerdag
+   * eller soendag uansett klokkeslett. En loerdag klokka 18 er baade helg og
+   * kveldstid — det er to forskjellige spoersmaal, og begge svarene er ja.
+   */
+  tidsbaas(d) {
+    if (!d || isNaN(d.getTime())) return [];
+    const ut = [];
+    const dag = d.getDay();                      // 0 = soendag, 6 = loerdag
+    if (dag === 0 || dag === 6) ut.push('Helg');
+    ut.push(d.getHours() < 16 ? 'Dagtid' : 'Kveldstid');
+    return ut;
+  }
+
+  /**
+   * Naar paa dagen kurset gaar — alle baasene datoene peker paa.
    *
    * Folk leter sjelden etter «plateteknikk» foerst. De vet naar de har fri,
-   * og maa i dag aapne hvert kort for aa se om tiden passer.
-   *
-   * Tre baas: dagtid (starter foer 16), kveldstid (16 eller senere) og helg
-   * (loerdag eller soendag, uansett klokkeslett). Et kurs hoerer til alle
-   * baasene datoene det har peker paa — gaar det baade tirsdag formiddag og
-   * loerdag kveld, skal det staa under alle tre.
-   *
-   * Tidene i basen staar i UTC. De regnes om til norsk tid foerst; ellers
-   * ville et kurs klokka 17 havnet paa dagtid halve aaret.
+   * og maatte for aapne hvert kort for aa se om tiden passet.
    */
   naarPaaDagen(k) {
-    const iOslo = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
     const ut = [];
-    const legg = (d) => {
-      if (!d || isNaN(d.getTime())) return;
-      const dag = d.getDay();                      // 0 = soendag, 6 = loerdag
-      if (dag === 0 || dag === 6) ut.push('Helg');
-      ut.push(d.getHours() < 16 ? 'Dagtid' : 'Kveldstid');
-    };
-
-    // Den ekte siden: raa starttider fra basen.
-    (k.startTider || []).forEach(t => legg(iOslo(new Date(String(t).replace(' ', 'T') + 'Z'))));
+    (k.okter || []).forEach(o => {
+      this.tidsbaas(this.osloTid(o.startUtc)).forEach(t => ut.push(t));
+    });
 
     // Designdataene har ingen tidsstempler, bare «Mandag 24. august» og
     // «17:00 – 20:00». Da leses ukedagen og timen derfra, slik at knappene
@@ -8893,14 +8902,60 @@ class Component extends DCLogic {
     if (!ut.length) {
       const DAGER = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
       (k.datoer || []).forEach(d => {
-        const dagnavn = DAGER.findIndex(n => String(d.dato || '').toLowerCase().startsWith(n.toLowerCase()));
+        const dagnr = DAGER.findIndex(n => String(d.dato || '').toLowerCase().startsWith(n.toLowerCase()));
         const time = /(\d{1,2}):\d{2}/.exec(String(d.tid || ''));
-        if (dagnavn === 0 || dagnavn === 6) ut.push('Helg');
+        if (dagnr === 0 || dagnr === 6) ut.push('Helg');
         if (time) ut.push(Number(time[1]) < 16 ? 'Dagtid' : 'Kveldstid');
       });
     }
 
     return ut;
+  }
+
+  /**
+   * Kortet, sett gjennom et tidsvalg.
+   *
+   * Et kurs gaar ofte baade onsdag kveld og loerdag formiddag. Uten dette
+   * sto kortet med den foerste datoen uansett: du trykket «Helg» og fikk et
+   * kort som sa «onsdag 3. september, 17:00». Filteret sa ett, kortet sa noe
+   * annet, og da er filteret verdilost.
+   *
+   * Kortet viser derfor den foerste datoen som faktisk passer, teller bare
+   * de datoene, og bookingen aapner paa den datoen kortet lovet.
+   *
+   * Returnerer null naar ingen av datoene passer.
+   */
+  medValgtTid(k, naar) {
+    // Kurs som settes opp naar noen sporr har ingen tid enda. Tiden er opp
+    // til dere, saa de faller ikke ut av et tidsvalg.
+    if (k.kunKontakt) return k;
+
+    const okter = k.okter || [];
+    if (!okter.length) {
+      // Forhaandsvisningen: designdata uten raa tider aa velge blant.
+      return this.naarPaaDagen(k).indexOf(naar) !== -1 ? k : null;
+    }
+
+    const treff = okter.filter(o => this.tidsbaas(this.osloTid(o.startUtc)).indexOf(naar) !== -1);
+    if (!treff.length) return null;
+
+    return Object.assign({}, k, {
+      okter: treff,
+      date: treff[0].dato || k.date,
+      duration: treff.length > 1 ? treff.length + ' datoer å velge mellom' : '',
+      status: this.plasstekst(treff),
+      // Kortet lover en dato. Da skal bookingen aapne paa den, ikke paa den
+      // foerste i rekka.
+      book: () => {
+        this.setState({
+          side: 'booking', fra: 'kurs', valgtKurs: k,
+          bookOrdre: false, bookKvittert: false,
+          bDato: treff[0].dato || null, bOktId: treff[0].oktId || null,
+          ventelisteBekreftet: null,
+        });
+        window.scrollTo(0, 0);
+      },
+    });
   }
 
   filtrerKurs(liste) {
@@ -8921,9 +8976,7 @@ class Component extends DCLogic {
     // Tidspunktet legger seg oppaa kategorien, det erstatter den ikke: velger
     // du «Dreiing» og «Kveldstid», er det dreiekursene paa kvelden du vil se.
     if (naar) {
-      // Kurs som settes opp naar noen sporr har ingen tid enda. De skal ikke
-      // falle ut av et tidsvalg — tiden er jo opp til dere to.
-      ut = ut.filter(k => k.kunKontakt || this.naarPaaDagen(k).indexOf(naar) !== -1);
+      ut = ut.map(k => this.medValgtTid(k, naar)).filter(Boolean);
     }
 
     return ut;

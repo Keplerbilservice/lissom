@@ -7,6 +7,7 @@
  *   POST handling=fjern      { id }
  *   POST handling=flytt      { id, oktId }   samme person, ny dato
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
+ *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
  * paa samme deltakerliste som alle andre — ellers foerer verkstedet to
@@ -139,6 +140,42 @@ if ($handling === 'status') {
 
     revider('pamelding_status', 'booking', $id, ['status' => $status]);
     Svar::ok(['beskjed' => 'Statusen er endret.']);
+}
+
+// ------------------------------------------------------------------ bevis
+//
+// Kursbeviset bygges av paameldingen, og det er riktig — helt til noe er feil.
+// Er navnet stavet feil, eller staar det feil kurs paa arket, hadde verkstedet
+// ingen vei til aa rette det. Og gikk noen fra kurset for tidlig, kunne
+// beviset ikke trekkes.
+if ($handling === 'bevis') {
+    if (!DB::harKolonne('bookings', 'bevis_navn')) {
+        Svar::feil('Retting av kursbevis krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.', 503);
+    }
+    if (DB::en('SELECT id FROM bookings WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+
+    $data = [];
+    if (array_key_exists('navn', Foresporsel::kropp())) {
+        $data['bevis_navn'] = mb_substr(trim(Foresporsel::tekst('navn')), 0, 191) ?: null;
+    }
+    if (array_key_exists('kurs', Foresporsel::kropp())) {
+        $data['bevis_kurs'] = mb_substr(trim(Foresporsel::tekst('kurs')), 0, 191) ?: null;
+    }
+    if (array_key_exists('sperret', Foresporsel::kropp())) {
+        $data['bevis_sperret'] = Foresporsel::tekst('sperret') === 'ja' ? 1 : 0;
+    }
+    if (!$data) {
+        Svar::feil('Ingenting å endre.');
+    }
+
+    DB::oppdater('bookings', $data, ['id' => $id]);
+    revider('kursbevis_endret', 'booking', $id, $data);
+
+    Svar::ok(['beskjed' => array_key_exists('bevis_sperret', $data)
+        ? ($data['bevis_sperret'] ? 'Kursbeviset er trukket tilbake.' : 'Kursbeviset er tilgjengelig igjen.')
+        : 'Kursbeviset er rettet.']);
 }
 
 // -------------------------------------------------------------- legg til

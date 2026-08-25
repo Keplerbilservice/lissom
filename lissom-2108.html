@@ -3266,6 +3266,45 @@ window.__resources = {
           </sc-for>
         </div>
 
+        <!-- Kursbevisene. De laa bare inne i hver enkelt person: skulle
+             verkstedet finne beviset noen ringte om, matte de foerst vite
+             hvem personen var. Her staar de samlet, med de samme knappene. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8); max-width: 760px; margin-bottom: var(--space-6);">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursbevis</div>
+            <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ bevisAntall }}</div>
+          </div>
+          <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Ett bevis per gjennomført og betalt kurs. Beviset bygges av påmeldingen — står det feil navn eller feil kurs på arket, rettes det her, og det gjelder med en gang også på Min side.</p>
+          <input value="{{ bevisSok }}" onChange="{{ settBevisSok }}" placeholder="Søk på navn eller kurs" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-4);">
+
+          <sc-if value="{{ bevisHenter }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Henter kursbevisene …</p>
+          </sc-if>
+          <sc-if value="{{ bevisTomt }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">{{ bevisTomTekst }}</p>
+          </sc-if>
+
+          <sc-for list="{{ bevisRader }}" as="b" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: var(--space-4); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0; flex-wrap: wrap;">
+              <div style="flex: 1 1 200px; min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ b.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ b.linje }}</div>
+              </div>
+              <sc-if value="{{ b.ikkeSperret }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ b.apne }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">Åpne beviset</button>
+              </sc-if>
+              <sc-if value="{{ b.sperret }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">Trukket tilbake</span>
+              </sc-if>
+              <button type="button" onClick="{{ b.rett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+              <button type="button" onClick="{{ b.sperr }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ b.sperrTekst }}</button>
+              <sc-if value="{{ b.harPerson }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ b.sePerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Se personen →</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8); max-width: 760px;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Nyttige lenker</div>
           <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6);">
@@ -5165,6 +5204,7 @@ window.__resources = {
             <h1 style="margin: 0; font-size: var(--text-4xl);">Deltakere</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ aGiGave }}" hint-size="auto,44px">Gi gave</x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ kdBeskjed }}" hint-size="auto,44px">Send beskjed</x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="plus" on-click="{{ miApne }}" hint-size="auto,44px">Meld inn medlem</x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ kdLeggTil }}" hint-size="auto,44px">Legg til på kurs</x-import>
@@ -5256,8 +5296,75 @@ window.__resources = {
                 <sc-if value="{{ h.utenBevis }}" hint-placeholder-val="{{ false }}">
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.hvorforIkke }}</span>
                 </sc-if>
+                <!-- Beviset bygges av paameldingen. Er navnet stavet feil, eller
+                     staar det feil kurs paa arket, maatte det for rettes i basen. -->
+                <sc-if value="{{ h.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+                  <button type="button" onClick="{{ h.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ h.sperrTekst }}</button>
+                </sc-if>
               </div>
             </sc-for>
+
+            <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
+                 innmeldingsskjemaet: sto det noe der, kunne det ikke endres
+                 etterpaa. Dette er internt — det staar ikke paa Min side. -->
+            <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Annen info om {{ personFornavn }}</div>
+              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted);">Bare verkstedet ser dette. Skal {{ personFornavn }} ha en beskjed, bruk knappen under.</p>
+              <textarea value="{{ personNotat }}" onChange="{{ settPersonNotat }}" rows="3" placeholder="F.eks. allergier, hvem hen kommer sammen med, avtaler" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-family: inherit; background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonNotat }}" hint-size="auto,36px">{{ personNotatKnapp }}</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ personBeskjed }}" hint-size="auto,36px">Send beskjed til {{ personFornavn }}</x-import>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- Samme gaveskjema som under Medlemmer. Verdiene er de samme —
+             ett skjema, to steder det kan aapnes — for en kursdeltaker med
+             konto er et medlem i registeret, og skal kunne faa en gave. -->
+        <sc-if value="{{ gRed }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6); max-width: 680px;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Gi gave — vises øverst på Min side</div>
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva vil du gi?</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <sc-for list="{{ gTypeValg }}" as="t" hint-placeholder-count="3">
+                <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+              </sc-for>
+            </div>
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvem skal få den?</label>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <sc-for list="{{ gMottakerValg }}" as="t" hint-placeholder-count="2">
+                <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ gEttMedlem }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                <sc-for list="{{ gMedlemValg }}" as="m" hint-placeholder-count="6">
+                  <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ gErTimer }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                <label style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Antall timer</label>
+                <input type="number" value="{{ gTimer }}" onChange="{{ settGTimer }}" min="1" style="width: 80px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              </div>
+            </sc-if>
+            <sc-if value="{{ gErGavekort }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+                <label style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Beløp (kr)</label>
+                <input type="number" value="{{ gBelop }}" onChange="{{ settGBelop }}" min="100" step="100" style="width: 100px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              </div>
+            </sc-if>
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hilsen (valgfritt)</label>
+            <textarea value="{{ gTekst }}" onChange="{{ settGTekst }}" rows="2" placeholder="F.eks. Tusen takk for at du er med — ta med en venn på huset i august!" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4); font-size: var(--text-sm); color: var(--text-heading); font-weight: 600; margin-bottom: var(--space-4);">{{ gOppsummering }}</div>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Gaven gjelder ut inneværende måned og vises som eget kort på medlemmets Min side.</p>
+            <div style="display: flex; gap: var(--space-3); align-items: center; border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="gift" on-click="{{ gSend }}" hint-size="auto,44px">Send gaven</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ gAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
           </div>
         </sc-if>
 
@@ -5595,8 +5702,27 @@ window.__resources = {
                   <sc-if value="{{ h.utenBevis }}" hint-placeholder-val="{{ false }}">
                     <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.hvorforIkke }}</span>
                   </sc-if>
+                  <!-- Beviset bygges av paameldingen. Er navnet stavet feil, eller
+                       staar det feil kurs paa arket, maatte det for rettes i basen. -->
+                  <sc-if value="{{ h.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+                    <button type="button" onClick="{{ h.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ h.sperrTekst }}</button>
+                  </sc-if>
                 </div>
               </sc-for>
+
+              <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
+                   innmeldingsskjemaet: sto det noe der, kunne det ikke endres
+                   etterpaa. Dette er internt — det staar ikke paa Min side. -->
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Annen info om {{ personFornavn }}</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted);">Bare verkstedet ser dette. Skal {{ personFornavn }} ha en beskjed, bruk knappen under.</p>
+                <textarea value="{{ personNotat }}" onChange="{{ settPersonNotat }}" rows="3" placeholder="F.eks. allergier, hvem hen kommer sammen med, avtaler" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-family: inherit; background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonNotat }}" hint-size="auto,36px">{{ personNotatKnapp }}</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ personBeskjed }}" hint-size="auto,36px">Send beskjed til {{ personFornavn }}</x-import>
+                </div>
+              </div>
             </div>
           </sc-if>
 
@@ -12148,6 +12274,121 @@ class Component extends DCLogic {
   // Legger inn, fjerner eller endrer en paamelding. Deltakerlista hentes paa
   // nytt etterpaa — antallet ledige plasser er endret, og det skal vises med
   // en gang.
+  /**
+   * Retter navnet eller kursnavnet paa et kursbevis.
+   *
+   * Beviset bygges av paameldingen, og det er riktig — helt til noe er feil.
+   * Er navnet stavet feil ved paamelding, sto det feil paa arket, og
+   * verkstedet hadde ingen vei til aa rette det.
+   */
+  rettKursbevis(x) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const navn = window.prompt('Navnet slik det skal stå på kursbeviset:', x.bevisNavn || '');
+    if (navn === null) return;
+    const kurs = window.prompt('Kurset slik det skal stå på kursbeviset:', x.bevisKurs || x.tittel || '');
+    if (kurs === null) return;
+    this.pameldingKall({ handling: 'bevis', id: x.id, navn: navn.trim(), kurs: kurs.trim() })
+      .then(ok => { if (ok) this.etterBevisendring(); });
+  }
+
+  /**
+   * Henter kursbevisene, samlet.
+   *
+   * Samme paameldinger og samme regler som ellers — bare samlet i én liste,
+   * saa det gaar an aa soke opp ett bevis uten aa vite hvem personen er.
+   */
+  hentBevis() {
+    if (!this.erPublisert()) { this.setState({ bevisListe: [] }); return; }
+    if (this._bevisHentes) return;
+    this._bevisHentes = true;
+
+    fetch('/api/admin/pameldte.php?bevis=1', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._bevisHentes = false;
+        this.setState({ bevisListe: (d && d.bevis) || [] });
+      })
+      .catch(() => { this._bevisHentes = false; this.setState({ bevisListe: [] }); });
+  }
+
+  /**
+   * Lagrer annen info om personen.
+   *
+   * Feltet fantes fra for i innmeldingsskjemaet, men bare der: sto det noe i
+   * det, kunne det aldri endres etterpaa. Alt verkstedet fikk vite i
+   * ettertid — allergier, at noen ikke vil staa paa bilder, hvem hen kommer
+   * sammen med — maatte skrives paa en lapp ved siden av.
+   *
+   * Det er internt. Det staar ikke paa Min side.
+   */
+  lagrePersonInfo() {
+    const id = this.state.personFor;
+    if (!id) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._personInfoLagrer) return;
+    this._personInfoLagrer = true;
+
+    fetch('/api/admin/medlemmer.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'notat', medlemId: id, notat: this.state.personNotat || '' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._personInfoLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        // Hentes paa nytt saa feltet viser det som faktisk staar i basen —
+        // ikke det vi tror vi sendte.
+        if (ok) { this.setState({ personNotat: null }); this.apnePerson(id); }
+      })
+      .catch(() => {
+        this._personInfoLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
+   * Aapner Beskjeder med denne personen som mottaker.
+   *
+   * «Én mottaker» fantes fra for, men navnet og adressen maatte skrives inn
+   * paa nytt for hver gang — enda de sto rett foran en paa skjermen.
+   */
+  beskjedTilPerson(p) {
+    this.setState({
+      side: 'adminbeskjeder',
+      motValg: 'Én mottaker',
+      nbNavn: p.navn || '',
+      nbEpost: p.epost || '',
+      nbTlf: p.telefon || '',
+    });
+    window.scrollTo(0, 0);
+  }
+
+  /** Trekker beviset tilbake, eller gir det tilbake. */
+  sperrKursbevis(x) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const trekk = !x.bevisSperret;
+    if (trekk && !window.confirm('Trekke kursbeviset for «' + (x.tittel || 'kurset') + '»?\n\n'
+        + 'Beviset forsvinner fra Min side, og lenken slutter å virke.')) return;
+    this.pameldingKall({ handling: 'bevis', id: x.id, sperret: trekk ? 'ja' : 'nei' })
+      .then(ok => { if (ok) this.etterBevisendring(); });
+  }
+
+  /**
+   * Etter en endring paa et bevis: hent det som viser beviset paa nytt.
+   *
+   * Beviset staar to steder — inne i personen og i lista under Nyttig info.
+   * Rettes det ett sted, skal begge vise det samme med en gang.
+   */
+  etterBevisendring() {
+    if (this.state.personFor) this.apnePerson(this.state.personFor);
+    if (this.state.bevisListe) { this._bevisHentes = false; this.setState({ bevisListe: null }); this.hentBevis(); }
+  }
+
   pameldingKall(kropp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._pameldingLagrer) return Promise.resolve(false);
@@ -13890,7 +14131,9 @@ class Component extends DCLogic {
         ['Kurs',         'admin',            { kursFane: 'apne' }],
         ['Beskjeder',    'adminbeskjeder',   { motValg: 'Deltakere på et kurs' }],
         ['Betalinger',   'adminokonomi',     { okonomiFor: 'deltakere' }],
-        ['Nyttig info',  'adminnyttig',      { nyttigFor: 'deltakere' }],
+        // «Nyttig info» sto her ogsaa. Det er medlemsstoff — dorkode,
+        // ordensregler og verkstedinfo — og hoerer til Medlemmer, ikke til
+        // dem som gaar paa kurs. Fjernet 24. august paa bestilling.
       ],
       'Medlemmer': [
         ['← Medlemmer',  'adminomrmedlemmer'],
@@ -14275,7 +14518,7 @@ class Component extends DCLogic {
    */
   apnePerson(id) {
     if (!id) return;
-    this.setState({ personFor: id, personData: null });
+    this.setState({ personFor: id, personData: null, personNotat: null });
     if (!this.erPublisert()) return;
     fetch('/api/admin/medlemmer.php?person=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -14532,6 +14775,12 @@ class Component extends DCLogic {
     }
     if ((side === 'adminoppskrifter' || side === 'adminnyttig') && !this.state.verksted) {
       this.hentVerksted();
+    }
+    // Kursbevisene staar samlet under Nyttig info. De laa bare inne i hver
+    // enkelt person for — skulle du finne beviset noen ringte om, matte du
+    // foerst vite hvem det var.
+    if (side === 'adminnyttig' && !this.state.bevisListe) {
+      this.hentBevis();
     }
     if (side === 'nyttig' && !this.state.offentligNyttig) {
       this.hentNyttig();
@@ -16256,9 +16505,9 @@ class Component extends DCLogic {
                    'Det som er betalt for kurs og drop-in.',
                    ubetalte || null, 'adminokonomi', { okonomiFor: 'deltakere' },
                    ubetalte ? 'Se de ubetalte' : 'Se betalingene', true),
-              kort('Nyttig info',
-                   'Sidene deltakerne får lese: brennetabell, trivselsregler og guider.',
-                   null, 'adminnyttig', { nyttigFor: 'deltakere' }, 'Rediger info'),
+              // «Nyttig info» sto her ogsaa. Det er medlemsstoff — dorkode,
+              // ordensregler og verkstedinfo — og hoerer til Medlemmer.
+              // Fjernet 24. august paa bestilling.
             ],
           };
         }
@@ -16358,18 +16607,36 @@ class Component extends DCLogic {
           personFornavn: (p.navn || '').split(' ')[0] || 'personen',
           personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
             .filter(Boolean).join(' · '),
-          lukkPerson: () => this.setState({ personFor: null, personData: null }),
+          lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null }),
+          // Annen info om personen. Internt — det staar ikke paa Min side.
+          // Feltet er tomt til noe hentes; da faller det tilbake paa basen.
+          personNotat: this.state.personNotat === null || this.state.personNotat === undefined
+            ? (p.notat || '') : this.state.personNotat,
+          settPersonNotat: e => this.setState({ personNotat: e.target.value }),
+          personNotatKnapp: this._personInfoLagrer ? 'Lagrer …' : 'Lagre info',
+          lagrePersonNotat: () => this.lagrePersonInfo(),
+          personBeskjed: () => this.beskjedTilPerson(p),
           personHistorikk: h.map(x => ({
+            id: x.id,
             tittel: x.tittel,
-            linje: x.naar + ' · ' + x.sum,
+            linje: x.naar + ' · ' + x.sum
+                 + (x.bevisNavn ? ' · bevis: ' + x.bevisNavn : ''),
             status: x.status,
             tone: x.betalt ? 'success' : (x.status === 'Avbestilt' ? 'neutral' : 'warning'),
             harBevis: !!x.kursbevis,
             utenBevis: !x.kursbevis,
             // Naar beviset ikke er der, er det alltid en grunn — og den er
             // verdt aa si, for det er den eieren blir spurt om paa telefonen.
-            hvorforIkke: !x.betalt ? 'Bevis når det er betalt' : 'Bevis etter kurset',
+            hvorforIkke: x.bevisSperret ? 'Beviset er trukket'
+              : !x.betalt ? 'Bevis når det er betalt' : 'Bevis etter kurset',
             apneBevis: () => window.open(x.kursbevis, '_blank', 'noopener'),
+            // Beviset bygges av paameldingen. Er navnet stavet feil, eller
+            // staar det feil kurs paa arket, maatte det foer rettes i basen.
+            kanRetteBevis: !!x.bevisMulig,
+            rettBevis: () => this.rettKursbevis(x),
+            bevisSperret: !!x.bevisSperret,
+            sperrTekst: x.bevisSperret ? 'Gi tilbake' : 'Trekk beviset',
+            sperrBevis: () => this.sperrKursbevis(x),
           })),
         };
       })(),
@@ -18854,6 +19121,48 @@ class Component extends DCLogic {
         velg: () => { this.setState({ artikkelValgt: i }); window.scrollTo(0, 0); },
       })),
       nyttigeLenker: this.lenkeData(),
+      // ── Kursbevisene, samlet ──────────────────────────────────────
+      //
+      // Bevisene laa bare inne i hver enkelt person. Skulle verkstedet finne
+      // det beviset noen ringte om, matte de foerst vite hvem personen var
+      // og aapne ruta hennes. Her staar de samlet — det er de samme
+      // paameldingene og de samme knappene, bare en annen vei inn.
+      ...(() => {
+        const sok = (this.state.bevisSok || '').trim().toLowerCase();
+        const alle = this.state.bevisListe || [];
+        const treff = sok === '' ? alle : alle.filter(b =>
+          (b.navn + ' ' + b.tittel).toLowerCase().indexOf(sok) !== -1);
+
+        return {
+          bevisSok: this.state.bevisSok || '',
+          settBevisSok: e => this.setState({ bevisSok: e.target.value }),
+          bevisHenter: !this.state.bevisListe,
+          bevisTomt: !!this.state.bevisListe && treff.length === 0,
+          bevisTomTekst: alle.length === 0
+            ? 'Ingen kursbevis ennå. De kommer når et kurs er holdt og betalt.'
+            : 'Ingen kursbevis passer søket.',
+          bevisAntall: alle.length === 0 ? '' : treff.length + ' av ' + alle.length,
+          bevisRader: treff.slice(0, 60).map(b => ({
+            navn: b.navn,
+            linje: b.tittel + ' · ' + b.dato,
+            sperret: !!b.sperret,
+            ikkeSperret: !b.sperret,
+            apne: () => { if (b.url) window.open(b.url, '_blank', 'noopener'); },
+            // Samme to kall som inne i personen — ett sted i koden, to
+            // steder det kan gjores fra.
+            rett: () => this.rettKursbevis(b),
+            sperrTekst: b.sperret ? 'Gi tilbake' : 'Trekk beviset',
+            sperr: () => this.sperrKursbevis({ id: b.id, tittel: b.tittel, bevisSperret: b.sperret }),
+            // Har personen konto, gaar veien videre til hele historikken.
+            harPerson: !!b.medlemId,
+            sePerson: () => {
+              if (!b.medlemId) return;
+              this.gaaAdmin('adminkursdeltakere', {});
+              this.apnePerson(b.medlemId);
+            },
+          })),
+        };
+      })(),
       adminArtRader: this.artikkelData().map((a, i) => ({
         tittel: a.tittel, dato: a.dato, ingress: a.ingress,
         rediger: () => this.setState({ artRed: true, artIndeks: i, artTittel: a.tittel, artDato: a.dato, artIngress: a.ingress, artBilde: a.bilde, artInnhold: a.innhold }),

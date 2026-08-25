@@ -15,6 +15,57 @@ krev_admin();
 
 $oktId = Foresporsel::heltall('oktId');
 
+// ── Kursbevisene, samlet ────────────────────────────────────────────────
+//
+//   ?bevis=1
+//
+// Bevisene laa bare inne i hver enkelt person: skulle verkstedet finne det
+// beviset noen ringte om, matte de foerst vite hvem personen var, og saa
+// aapne ruta hennes. Her staar de samlet — hele veien tilbake, ikke bare
+// det som ligger framfor oss — slik at det gaar an aa soke opp ett bevis.
+//
+// Ingen ny sannhet: det er de samme paameldingene, med de samme reglene for
+// naar et bevis finnes, og de rettes med det samme kallet som for.
+if (Foresporsel::heltall('bevis') === 1) {
+    $bevisFelt = DB::harKolonne('bookings', 'bevis_navn')
+        ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,' : '';
+
+    $rader = DB::alle(
+        "SELECT b.id, b.member_id, b.status, {$bevisFelt}
+                COALESCE(m.navn, b.gjest_navn) AS navn,
+                c.tittel, c.type, c.tema, cs.start_tid, cs.slutt_tid
+           FROM bookings b
+           JOIN courses c ON c.id = b.course_id
+      LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+      LEFT JOIN members m ON m.id = b.member_id
+          WHERE b.status = 'betalt'
+            AND c.type <> 'dropin'
+            AND (c.tema IS NULL OR c.tema NOT IN ('Drop-in', 'Kun for medlemmer'))
+            AND COALESCE(cs.slutt_tid, cs.start_tid) IS NOT NULL
+            AND COALESCE(cs.slutt_tid, cs.start_tid) < UTC_TIMESTAMP()
+       ORDER BY COALESCE(cs.slutt_tid, cs.start_tid) DESC, b.id DESC
+          LIMIT 300"
+    );
+
+    Svar::json([
+        'bevis' => array_map(static fn($d) => [
+            'id'        => (int) $d['id'],
+            'medlemId'  => $d['member_id'] !== null ? (int) $d['member_id'] : null,
+            // Navnet slik det faktisk staar paa arket: rettelsen gaar foran.
+            'navn'      => trim((string) ($d['bevis_navn'] ?? '')) ?: (string) $d['navn'],
+            'tittel'    => trim((string) ($d['bevis_kurs'] ?? '')) ?: (string) $d['tittel'],
+            'dato'      => Booking::norskDato((string) ($d['slutt_tid'] ?: $d['start_tid'])),
+            'bevisNavn' => (string) ($d['bevis_navn'] ?? ''),
+            'bevisKurs' => (string) ($d['bevis_kurs'] ?? ''),
+            'sperret'   => !empty($d['bevis_sperret']),
+            // Sperrede bevis har ingen lenke — den ville svart 404.
+            'url'       => empty($d['bevis_sperret'])
+                ? '/api/kursbevis.php?booking=' . (int) $d['id']
+                : null,
+        ], $rader),
+    ]);
+}
+
 /** Samme regel som paa Min side: betalt, gjennomfort, og et kurs. */
 $kursbevis = static function (array $d): ?string {
     if (($d['status'] ?? '') !== 'betalt') {

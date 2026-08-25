@@ -22,8 +22,15 @@ $medlem = krev_medlem();
 
 $bookingId = Foresporsel::heltall('booking');
 
+// Overstyringene kom med migrasjon 045. Uten sjekken faller beviset for alle
+// som ikke har kjort den.
+$bevisFelt = DB::harKolonne('bookings', 'bevis_navn')
+    ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,'
+    : '';
+
 $b = DB::en(
     "SELECT b.id, b.member_id, b.gjest_navn, b.status,
+            {$bevisFelt}
             c.tittel, c.type, c.instruktor, c.instruktor_signatur,
             cs.start_tid, cs.slutt_tid,
             m.navn AS medlem_navn
@@ -42,6 +49,11 @@ if ((int) ($b['member_id'] ?? 0) !== (int) $medlem['id'] && !Sesjon::erAdmin()) 
     // 404 og ikke 403: vi bekrefter ikke at en fremmed pamelding finnes.
     Svar::feil('Fant ikke påmeldingen.', 404);
 }
+if (!empty($b['bevis_sperret'])) {
+    // Verkstedet har trukket beviset — noen gikk fra kurset for tidlig, eller
+    // det ble utstedt ved en feil. Samme beskjed til alle: at det ikke finnes.
+    Svar::feil('Det er ikke utstedt kursbevis for denne påmeldingen.', 404);
+}
 if ($b['status'] !== 'betalt') {
     Svar::feil('Kursbeviset blir tilgjengelig når påmeldingen er betalt.', 409);
 }
@@ -51,8 +63,9 @@ if ($slutt === null || strtotime((string) $slutt) > time()) {
     Svar::feil('Kursbeviset blir tilgjengelig når kurset er gjennomført.', 409);
 }
 
-$navn = trim((string) ($b['medlem_navn'] ?: $b['gjest_navn']));
-$kurs = (string) $b['tittel'];
+// Rettet navn eller kursnavn gaar foran. Er de tomme, staar det som for.
+$navn = trim((string) ($b['bevis_navn'] ?? '')) ?: trim((string) ($b['medlem_navn'] ?: $b['gjest_navn']));
+$kurs = trim((string) ($b['bevis_kurs'] ?? '')) ?: (string) $b['tittel'];
 $dato = Booking::norskDatoKort((string) $slutt);
 
 $instruktor = trim((string) ($b['instruktor'] ?? '')) ?: 'Monica Væthe-Larsen';

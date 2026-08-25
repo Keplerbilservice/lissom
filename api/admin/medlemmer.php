@@ -15,6 +15,7 @@ $jeg = krev_admin();
 //   POST handling=avslutt    { medlemId }   medlemskapet tar slutt i dag
 //   POST handling=gjenapne   { medlemId }   aktivt igjen
 //   POST handling=slett      { medlemId }   personopplysningene fjernes
+//   POST handling=notat      { medlemId, notat }   annen info om personen
 //
 // Ikke alle soker paa nett. Noen staar i doera, noen ringer, og noen har
 // vaert paa kurs i et halvt aar for de bestemmer seg. Uten dette matte
@@ -119,6 +120,26 @@ if (Foresporsel::metode() === 'POST') {
                              . 'slik bokføringsloven krever.']);
     }
 
+    // ── Annen info om personen ────────────────────────────────────────
+    //
+    // Feltet «notat» fantes fra for, men bare i innmeldingsskjemaet: sto det
+    // noe der, kunne det aldri endres etterpaa. Alt verkstedet fikk vite om
+    // en person i ettertid — allergier, at hen ikke vil staa paa bilder,
+    // hvem hen kommer sammen med — matte skrives paa en lapp ved siden av.
+    //
+    // Det er internt. Det staar ikke paa Min side, og det sendes ikke til
+    // noen. Skal personen ha en beskjed, gaar den gjennom Beskjeder.
+    if ($handling === 'notat') {
+        $id = Foresporsel::heltall('medlemId');
+        if (DB::en('SELECT id FROM members WHERE id = :i', ['i' => $id]) === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+        $tekst = mb_substr(trim(Foresporsel::tekst('notat')), 0, 1000);
+        DB::oppdater('members', ['notat' => $tekst !== '' ? $tekst : null], ['id' => $id]);
+        revider('medlem_notat', 'member', $id);
+        Svar::ok(['beskjed' => $tekst !== '' ? 'Infoen er lagret.' : 'Infoen er fjernet.']);
+    }
+
     if ($handling !== 'meld-inn') {
         Svar::feil('Ukjent handling.');
     }
@@ -212,13 +233,17 @@ Foresporsel::krevMetode('GET');
 // som ringer og lurer paa kursbeviset sitt.
 if (Foresporsel::heltall('person') > 0) {
     $pid = Foresporsel::heltall('person');
-    $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status FROM members WHERE id = :i', ['i' => $pid]);
+    $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status, notat FROM members WHERE id = :i', ['i' => $pid]);
     if ($m === null) {
         Svar::feil('Fant ikke personen.', 404);
     }
 
+    // Rettelsene paa kursbeviset kom med migrasjon 045.
+    $bevisFelt = DB::harKolonne('bookings', 'bevis_navn')
+        ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,' : '';
+
     $rader = DB::alle(
-        "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
+        "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
                 c.tittel, c.type, cs.start_tid, p.vipps_reference
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
@@ -239,6 +264,8 @@ if (Foresporsel::heltall('person') > 0) {
             'telefon'    => $m['telefon'] ?: '',
             'medlemskap' => $m['medlemskap_type'] ?: 'Ingen',
             'status'     => $m['status'],
+            // Det verkstedet selv har notert. Internt, og bare her.
+            'notat'      => (string) ($m['notat'] ?? ''),
         ],
         'historikk' => array_map(static function (array $b) use ($naa): array {
             $holdt = $b['start_tid'] !== null
@@ -258,9 +285,16 @@ if (Foresporsel::heltall('person') > 0) {
                 'betalt'  => (string) $b['status'] === 'betalt',
                 // Samme regel som paa Min side: bevis naar kurset er holdt og
                 // betalt, og drop-in er ikke et kurs.
-                'kursbevis' => ($holdt && (string) $b['status'] === 'betalt' && (string) $b['type'] !== 'dropin')
+                'kursbevis' => ($holdt && (string) $b['status'] === 'betalt' && (string) $b['type'] !== 'dropin'
+                                && empty($b['bevis_sperret']))
                     ? '/api/kursbevis.php?booking=' . (int) $b['id']
                     : null,
+                // Kan kurset gi et bevis i det hele tatt? Drop-in gjor det
+                // ikke, og da er det ingenting aa rette heller.
+                'bevisMulig'  => $holdt && (string) $b['type'] !== 'dropin',
+                'bevisSperret' => !empty($b['bevis_sperret']),
+                'bevisNavn'   => (string) ($b['bevis_navn'] ?? ''),
+                'bevisKurs'   => (string) ($b['bevis_kurs'] ?? ''),
                 'referanse' => $b['vipps_reference'],
             ];
         }, $rader),

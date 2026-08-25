@@ -44,6 +44,11 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
     if (!$betalt) {
         return null;
     }
+    // Verkstedet kan ha trukket beviset. Da skal det heller ikke staa her —
+    // ellers ligger lenken igjen paa Min side og svarer 404 naar den trykkes.
+    if (!empty($b['bevis_sperret'])) {
+        return null;
+    }
     if (in_array((string) ($b['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) {
         return null;
     }
@@ -54,8 +59,11 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
     return '/api/kursbevis.php?booking=' . (int) $b['id'];
 };
 
+// Kom med migrasjon 045.
+$bevisFelt = DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret,' : '';
+
 $bookinger = DB::alle(
-    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at,
+    "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
             c.tittel, c.tema, cs.start_tid, cs.slutt_tid, p.vipps_reference
        FROM bookings b
        JOIN courses c ON c.id = b.course_id

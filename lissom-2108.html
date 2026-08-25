@@ -5285,7 +5285,7 @@ window.__resources = {
         </sc-if>
 
         <sc-if value="{{ visPerson }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
+          <div id="personrute" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8);">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
               <div>
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dette ser {{ personFornavn }} på Min side</div>
@@ -5392,7 +5392,7 @@ window.__resources = {
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Har vært på kurs · {{ kdAntall }} · kursbevis til høyre</div>
           <sc-for list="{{ kdRader }}" as="d" hint-placeholder-count="6">
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+            <div onClick="{{ d.velg }}" style="{{ d.radStil }}">
               <div style="flex: 1 1 220px; min-width: 0;">
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ d.navn }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ d.kontakt }}</div>
@@ -5689,7 +5689,7 @@ window.__resources = {
                person har gjort — og dermed heller ikke svare den som ringer
                og lurer paa kursbeviset sitt. -->
           <sc-if value="{{ visPerson }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
+            <div id="personrute" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
               <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap; margin-bottom: var(--space-2);">
                 <div>
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dette ser {{ personFornavn }} på Min side</div>
@@ -11949,6 +11949,21 @@ class Component extends DCLogic {
    * Skjermbyttet og utvidelsen skjer i samme rendring; elementet finnes ikke
    * naar velg() kjorer. Vi proever noen ganger og gir oss.
    */
+  /** Ruller til personruta naar den aapnes, saa den ikke aapner seg usett. */
+  rullTilPersonruta() {
+    let forsok = 0;
+    const proev = () => {
+      const el = [].slice.call(document.querySelectorAll('#personrute'))
+        .filter(e => e.offsetParent !== null)[0];
+      if (el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        return;
+      }
+      if (++forsok < 20) { window.requestAnimationFrame(proev); }
+    };
+    window.requestAnimationFrame(proev);
+  }
+
   rullTilHenvendelse(id) {
     if (!id) return;
     let forsok = 0;
@@ -14651,6 +14666,9 @@ class Component extends DCLogic {
   apnePerson(id) {
     if (!id) return;
     this.setState({ personFor: id, personData: null, personNotat: null });
+    // Ruta staar over lista. Aapnet du en person langt nede, skjedde alt
+    // utenfor skjermen — og da saa det ut som om ingenting hadde skjedd.
+    this.rullTilPersonruta();
     if (!this.erPublisert()) return;
     fetch('/api/admin/medlemmer.php?person=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
@@ -17321,18 +17339,36 @@ class Component extends DCLogic {
             bevisGrunn: p.antall === 0 ? 'Ingen kurs ennå'
               : 'Kursbevis kommer når kurset er gjennomført og betalt',
             bevisTittel: p.bevisKurs ? 'Kursbevis · ' + p.bevisKurs : 'Kursbevis',
-            apneBevis: () => { if (p.bevis) window.open(p.bevis, '_blank', 'noopener'); },
+            apneBevis: (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (p.bevis) window.open(p.bevis, '_blank', 'noopener'); },
             // Har hen konto, kan vi vise akkurat det hen selv ser. Har hen
             // ikke det, er svaret «ingenting» — og det maa staa, ikke
             // gjettes paa.
             harKonto: p.medlemId > 0,
             utenKonto: !(p.medlemId > 0),
-            seMinSide: () => this.apnePerson(p.medlemId),
-            meldInn: () => this.setState({
+            // Raden aapner personen, slik den gjor under Medlemmer.
+            //
+            // Det er den samme personen og den samme ruta — men her var raden
+            // doed, og hele veien inn laa bak lenken «Se Min side». Trykket du
+            // paa navnet, skjedde ingenting, og da saa det ut som om en
+            // kursdeltaker ikke kunne aapnes i det hele tatt: kursbeviset
+            // kunne rettes fra medlemslista og ikke herfra, enda det er
+            // noeyaktig samme rad.
+            velg: () => this.apnePerson(p.medlemId),
+            seMinSide: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apnePerson(p.medlemId); },
+            radStil: {
+              display: 'flex', flexWrap: 'wrap', alignItems: 'center',
+              gap: 'var(--space-4)', rowGap: 'var(--space-3)',
+              padding: 'var(--space-5) var(--space-6)',
+              borderTop: '1px solid var(--border-subtle)',
+              // Pekeren staar bare der raden faktisk gjor noe. En gjest uten
+              // konto har ingen rute aa aapne.
+              cursor: p.medlemId > 0 ? 'pointer' : 'default',
+            },
+            meldInn: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({
               miApen: true, miMedlemId: p.medlemId || 0,
               miNavn: p.navn, miEpost: p.epost, miTlf: p.tlf, miNotat: '',
               kvittering: '', kvitteringDetalj: '',
-            }),
+            }); },
           })),
           kdLeggTil: () => { this.setState({ side: 'adminpameldte', mpApen: true }); window.scrollTo(0, 0); },
           kdBeskjed: () => { this.setState({ side: 'adminbeskjeder', motValg: 'Deltakere på et kurs' }); window.scrollTo(0, 0); },

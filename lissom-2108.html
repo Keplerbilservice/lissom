@@ -5843,21 +5843,16 @@ window.__resources = {
               </div>
             </sc-for>
 
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Bilder på denne siden</div>
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4);">
-                <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Slipp bakgrunnsbilde</div></div>
-                <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Slipp bilde</div></div>
-                <div style="position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px;"><div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--border-subtle); border-radius: inherit; font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">Slipp bilde</div></div>
-              </div>
-              <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
-                     hovedbilde», og det er den verdien som faktisk gaar ut.
-                     Her sto et felt til: det hadde ingen binding og ingen
-                     kolonne aa lagres i, saa alt man skrev ble kastet. To
-                     steder aa skrive samme tekst, der bare det ene virket. -->
-                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alt-tekst for hovedbildet redigeres under Nettsiden → SEO.</p>
-              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted);">Dra bilder rett inn i feltene, eller klikk for å velge fra maskinen. Bilder beskjæres automatisk.</p>
-            </div>
+            <!-- Her sto «Bilder paa denne siden»: tre stiplede ruter merket
+                 «Slipp bakgrunnsbilde» og «Slipp bilde», med en setning om aa
+                 dra bilder rett inn. Ingen av dem gjorde noe — det var tegning
+                 fra designet, uten opplasting bak.
+                 Verre: det finnes bare ett billedfelt i hele innholdsmodellen
+                 (Forside/Hero-bilde), og det staar alt som et vanlig felt over.
+                 Alle andre sidebilder ligger i malen. Rutene lovte altsaa noe
+                 systemet ikke har noe sted aa lagre.
+                 Fjernet 24. august paa bestilling. Skal sidebildene kunne
+                 byttes fra admin, maa de foerst bli felter — side for side. -->
 
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="plus" on-click="{{ aNySeksjon }}" hint-size="auto,44px">Legg til seksjon</x-import>
             <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Endringene lagres med én gang du trykker Lagre, og er ute på nettsiden med det samme. Det finnes ingen kladd å publisere etterpå.</p>

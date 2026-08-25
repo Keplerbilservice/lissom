@@ -15687,9 +15687,15 @@ class Component extends DCLogic {
 
         return {
           kursTidSporsmal: 'Når på dagen passer det best for deg?',
-          kursTidFiltre: ['Dagtid', 'Kveldstid', 'Helg'].map(navn => ({
-            navn,
-            valgt: naar === navn,
+          // «Når som helst» staar foerst, som «Vis alle» i rada under.
+          //
+          // Veien tilbake til alle tidspunkt fantes fra for — du trykket paa
+          // den valgte knappen én gang til — men ingen gjetter seg til den.
+          // Rada under hadde en synlig knapp for det samme, og to rader rett
+          // over hverandre skal ikke virke forskjellig.
+          kursTidFiltre: [null, 'Dagtid', 'Kveldstid', 'Helg'].map(navn => ({
+            navn: navn || 'Når som helst',
+            valgt: naar === navn || (navn === null && !naar),
             velg: () => this.setState({ kursTid: naar === navn ? null : navn }),
           })),
           // Et filter kan gi null treff. Uten dette sto sida bare tom, og det

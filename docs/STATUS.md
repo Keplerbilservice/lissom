@@ -204,14 +204,19 @@ advarsel om å spare noe som ikke er der, er verre enn ingen advarsel.
 
 Igjen står to ting, ingen av dem akutte:
 
-*Filene* i `~/gammel-wordpress` tar plass og er en sikkerhetskopi. Slett dem
-når du er trygg på at ingenting derfra trengs. Ingenting på den nye siden peker
-dit — bildene ligger i repoet, og verken koden eller `.htaccess` nevner
-`wp-content`.
+*Filene* er slettet 25. august 2026, etter at mappa var pakket ned og lastet
+ned lokalt. Ingenting på den nye siden pekte dit — bildene ligger i repoet, og
+verken koden eller `.htaccess` nevner `wp-content`.
 
 *Tabellene* deler fortsatt database med betalingsdataene. Så lenge WordPress
 ikke kjøres, er de bare data som ligger der — men de bør ut når du rydder.
-De heter `wp_` etter mønsteret WordPress bruker.
+De heter `wp_` etter mønsteret WordPress bruker, og ingen av våre 44 tabeller
+gjør det.
+
+*Databasebrukeren.* Hadde WordPress sin egen, står den fortsatt i cPanel →
+MySQL-databaser, under «Current Users», med tilgang til basen der betalingene
+ligger. Det er det som er igjen av reell risiko her — en mappe som ligger
+stille er noe annet enn en innlogging ingen bruker.
 
 **Verifisert 25. august 2026:** `lissom.no/wp-login.php` svarer «siden finnes
 ikke». WordPress serveres ikke. Risikoen — at gammel PHP kunne kjøres fra

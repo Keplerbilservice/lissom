@@ -482,8 +482,9 @@ Utover det du meldte inn, er dette funnet ved å lete. Alle er rettet.
 2. Kursdatoene i katalogen er satt av meg ut fra designet. De må erstattes med
    de faktiske. Samme gjelder varer og priser i butikken.
 3. Databasepassordet ble limt inn i en samtale under oppsettet og bør byttes.
-4. Den gamle WordPress-installasjonen i `public_html` deler konto med
-   betalingsdataene og bør fjernes.
+4. Den gamle WordPress-installasjonen: filene er slettet 25. august, og
+   `wp-login.php` svarer «finnes ikke». Igjen står `wp_`-tabellene i basen og
+   en eventuell gammel databasebruker i cPanel.
 5. Gjestebooking uten innlogging — designvalg jeg ikke tar alene.
 6. Lagerstyring i butikken finnes ikke. Skal beholdningen telles?
 7. Skal Medlemmer vise bare faktiske medlemmer som standard, med

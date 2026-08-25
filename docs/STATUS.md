@@ -199,23 +199,21 @@ inni den mappa.
 **7. Testkurset og prisen på Paint on Pots.** Gjort. Migrasjon 008 satte
 Paint on Pots tilbake til 690 kroner og avlyste testkurset.
 
-**8. Nytt kurs uten bilde.** Kurs opprettet i admin får butikkbildet som
-standard. Det finnes ingen måte å laste opp bilde i admin ennå — si fra om det
-skal bygges.
+**8. Nytt kurs uten bilde.** Gjort. Et kurs kan ha tre bilder, valgt i steg 3
+i kursveiviseren (migrasjon 044), og egne bilder kan lastes opp fra admin —
+de havner utenfor det som publiseres, så de overlever neste utlegging.
+Punktet sto her som «finnes ikke» etter at det var bygget.
 
 **9. Beskjed-knappene i admin.** Gjort 24. august. Skjemaet er koblet til, og
 teksten du skriver når fram. Det sto to kopier av samme skjema, og den ene
 ignorerte mottakervalget og sendte alltid til alle medlemmer — den er borte.
 
-**10. Migreringene 032–043 er ikke kjørt.** De ligger klare i `db/migrations/`
-og kjøres fra Admin → Oversikt → Vedlikehold. Uten dem står medlemskapstekstene
-tomme i admin (032, 034), noen innholdsnøkler peker feil (033), disksalg kan
-ikke registreres (035), oppsettet for e-post og SMS kan ikke lagres (036),
-plassene på kursene står som før (037), medlemschatten har ingen tabell (038),
-henvendelser kan ikke besvares (039), gavekort kan ikke brukes som betaling
-(040), gavehilsen lagres ikke (041), kursholdere finnes ikke (042) og gaver
-til medlemmene kan ikke gis (043).
-Skjermene sier fra hver for seg.
+**10. Migreringene.** Kjørt. Kortet under Admin → Oversikt → Vedlikehold sa
+25. august at databasen var oppdatert og at ingenting ventet. Kortet leser
+`migrations`-tabellen mot filene på serveren, så det svaret er fasit.
+
+044 la til bilder på kursene, 045 la til feltene kursbeviset rettes med.
+Kommer det flere, sier kortet fra av seg selv — det er dit man går, ikke hit.
 
 007 til 011 ble kjørt 22. august. Fram til da
 hadde databasen stått på 006 siden dagen før — det betyr at Paint on Pots

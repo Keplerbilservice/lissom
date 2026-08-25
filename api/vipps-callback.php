@@ -47,45 +47,9 @@ try {
     $avbryt('kunne ikke hente profil');
 }
 
-$medlemId = DB::iTransaksjon(static function () use ($profil): int {
-    $medlem = DB::en('SELECT id, rolle FROM members WHERE vipps_sub = :s', ['s' => $profil['sub']]);
-
-    // Kjenner vi ikke sub-en, kan personen likevel finnes fra før — f.eks. som
-    // gjest på et kurs. Da knytter vi Vipps-kontoen til den raden i stedet for
-    // å lage en dublett.
-    if ($medlem === null && $profil['telefon'] !== '') {
-        $medlem = DB::en(
-            'SELECT id, rolle FROM members WHERE telefon = :t AND vipps_sub IS NULL AND anonymisert_at IS NULL LIMIT 1',
-            ['t' => $profil['telefon']]
-        );
-    }
-
-    $erAdminNummer = $profil['telefon'] !== ''
-        && in_array($profil['telefon'], Config::adminNumre(), true);
-
-    if ($medlem === null) {
-        return DB::settInn('members', [
-            'vipps_sub' => $profil['sub'],
-            'navn'      => $profil['navn'],
-            'epost'     => $profil['epost'] !== '' ? $profil['epost'] : null,
-            'telefon'   => $profil['telefon'] !== '' ? $profil['telefon'] : null,
-            'rolle'     => $erAdminNummer ? 'admin' : 'medlem',
-        ]);
-    }
-
-    $endringer = [
-        'vipps_sub' => $profil['sub'],
-        'navn'      => $profil['navn'],
-    ];
-    if ($profil['epost'] !== '')   { $endringer['epost'] = $profil['epost']; }
-    if ($profil['telefon'] !== '') { $endringer['telefon'] = $profil['telefon']; }
-    // Admin-rollen settes kun oppover herfra. Å ta den bort gjøres i admin,
-    // slik at et nummer som fjernes fra nødlista ikke mister tilgangen ved et uhell.
-    if ($erAdminNummer && $medlem['rolle'] !== 'admin') { $endringer['rolle'] = 'admin'; }
-
-    DB::oppdater('members', $endringer, ['id' => $medlem['id']]);
-    return (int) $medlem['id'];
-});
+// Én person, én rad. Oppslaget ligger i Vipps-klassen fordi det kan proeves
+// der — en OAuth-runde mot Vipps kan ikke kjores i en test, men oppslaget kan.
+$medlemId = DB::iTransaksjon(static fn(): int => Vipps::medlemFraProfil($profil));
 
 Sesjon::opprett($medlemId);
 revider('logg_inn', 'member', $medlemId, ['kilde' => 'vipps']);

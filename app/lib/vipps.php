@@ -113,6 +113,78 @@ final class Vipps
      *
      * @return array{sub:string,navn:string,epost:string,telefon:string}
      */
+    /**
+     * Finner eller oppretter medlemmet en Vipps-profil hoerer til.
+     *
+     * Tre veier inn til den samme personen, i denne rekkefolgen:
+     *
+     *   1. vipps_sub  — har hen logget inn for, er det henne
+     *   2. telefon    — meldt inn for haand, eller gjest paa et kurs
+     *   3. e-post     — det samme, naar nummeret mangler eller er et annet
+     *
+     * Uten den tredje sto den samme personen to ganger: meldt inn for haand
+     * med e-post og uten telefon, og saa en gang til den dagen hun logget inn
+     * med Vipps. Innmeldingsskjemaet slaar opp paa begge to; denne veien inn
+     * gjorde det bare paa nummeret.
+     *
+     * Vi knytter oss bare til rader som ikke alt hoerer til en annen
+     * Vipps-konto, og ikke til anonymiserte.
+     *
+     * Ligger metoden her og ikke i endepunktet, er det fordi den kan proeves:
+     * en OAuth-runde mot Vipps kan ikke kjores i en test, men dette kan.
+     *
+     * @param array{sub:string,navn:string,epost:string,telefon:string} $profil
+     */
+    public static function medlemFraProfil(array $profil): int
+    {
+        $medlem = DB::en('SELECT id, rolle FROM members WHERE vipps_sub = :s', ['s' => $profil['sub']]);
+
+        if ($medlem === null && ($profil['telefon'] ?? '') !== '') {
+            $medlem = DB::en(
+                'SELECT id, rolle FROM members
+                  WHERE telefon = :t AND vipps_sub IS NULL AND anonymisert_at IS NULL
+                  LIMIT 1',
+                ['t' => $profil['telefon']]
+            );
+        }
+
+        if ($medlem === null && ($profil['epost'] ?? '') !== '') {
+            $medlem = DB::en(
+                'SELECT id, rolle FROM members
+                  WHERE epost = :e AND vipps_sub IS NULL AND anonymisert_at IS NULL
+                  LIMIT 1',
+                ['e' => $profil['epost']]
+            );
+        }
+
+        $erAdminNummer = ($profil['telefon'] ?? '') !== ''
+            && in_array($profil['telefon'], Config::adminNumre(), true);
+
+        if ($medlem === null) {
+            return DB::settInn('members', [
+                'vipps_sub' => $profil['sub'],
+                'navn'      => $profil['navn'],
+                'epost'     => ($profil['epost'] ?? '') !== '' ? $profil['epost'] : null,
+                'telefon'   => ($profil['telefon'] ?? '') !== '' ? $profil['telefon'] : null,
+                'rolle'     => $erAdminNummer ? 'admin' : 'medlem',
+            ]);
+        }
+
+        $endringer = [
+            'vipps_sub' => $profil['sub'],
+            'navn'      => $profil['navn'],
+        ];
+        if (($profil['epost'] ?? '') !== '')   { $endringer['epost'] = $profil['epost']; }
+        if (($profil['telefon'] ?? '') !== '') { $endringer['telefon'] = $profil['telefon']; }
+        // Admin-rollen settes kun oppover herfra. Aa ta den bort gjores i
+        // admin, slik at et nummer som fjernes fra noedlista ikke mister
+        // tilgangen ved et uhell.
+        if ($erAdminNummer && $medlem['rolle'] !== 'admin') { $endringer['rolle'] = 'admin'; }
+
+        DB::oppdater('members', $endringer, ['id' => $medlem['id']]);
+        return (int) $medlem['id'];
+    }
+
     public static function hentProfil(string $kode): array
     {
         $svar = http_post_form(

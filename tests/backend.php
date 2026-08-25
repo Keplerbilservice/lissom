@@ -264,6 +264,64 @@ sjekk('trukket gave vises ikke', $minGave($medlemId, [$gaveAlle, $gaveMin]) === 
 DB::oppdater('medlemsgaver', ['status' => 'aktiv', 'gyldig_til' => gmdate('Y-m-d', time() - 86400)], ['id' => $gaveAlle]);
 sjekk('utloept gave vises ikke', $minGave($medlemId, [$gaveAlle, $gaveMin]) === null);
 
+echo "\n== Én person, én rad (Vipps-innlogging) ==\n";
+
+// Duplikater i medlemslista kom herfra. Innmeldingsskjemaet slaar opp paa
+// baade telefon og e-post for det lager en ny rad; Vipps-innloggingen slo bare
+// opp paa telefon. Meldt inn for haand med e-post og uten nummer, sto personen
+// der to ganger den dagen hun logget inn.
+//
+// En OAuth-runde mot Vipps kan ikke kjores her. Oppslaget som avgjor hvilken
+// rad profilen hoerer til, kan.
+
+$vippsRydd = static function (): void {
+    DB::kjor("DELETE FROM members WHERE epost LIKE 'vippstest%@example.test'");
+};
+$vippsRydd();
+
+// 1) Ingen fra for → ny rad
+$p1 = ['sub' => 'sub-test-1', 'navn' => 'Vipps Test',
+       'epost' => 'vippstest1@example.test', 'telefon' => '+4790000101'];
+$id1 = Vipps::medlemFraProfil($p1);
+sjekk('ukjent profil gir en ny rad', $id1 > 0, 'id ' . $id1);
+
+// 2) Samme sub igjen → samme rad, ikke en ny
+$id2 = Vipps::medlemFraProfil($p1);
+sjekk('samme sub gir samme rad', $id1 === $id2, 'id ' . $id2);
+
+// 3) Finnes fra for med telefon, uten sub → knyttes til den raden
+$telefonId = DB::settInn('members', [
+    'navn' => 'Meldt inn med nummer', 'telefon' => '+4790000102',
+    'epost' => 'vippstest2@example.test',
+]);
+$id3 = Vipps::medlemFraProfil(['sub' => 'sub-test-2', 'navn' => 'Vipps Test 2',
+    'epost' => 'vippstest2@example.test', 'telefon' => '+4790000102']);
+sjekk('kjent telefon gir ingen dublett', $id3 === $telefonId, 'id ' . $id3 . ' mot ' . $telefonId);
+
+// 4) Finnes fra for med e-post og UTEN telefon → skal ogsaa knyttes.
+//    Dette er tilfellet som laget duplikatene.
+$epostId = DB::settInn('members', [
+    'navn' => 'Meldt inn uten nummer', 'epost' => 'vippstest3@example.test',
+]);
+$id4 = Vipps::medlemFraProfil(['sub' => 'sub-test-3', 'navn' => 'Vipps Test 3',
+    'epost' => 'vippstest3@example.test', 'telefon' => '+4790000103']);
+sjekk('kjent e-post uten telefon gir ingen dublett', $id4 === $epostId, 'id ' . $id4 . ' mot ' . $epostId);
+
+// 5) En rad som alt hoerer til en annen Vipps-konto skal ikke kapres
+$annenId = DB::settInn('members', [
+    'navn' => 'Har egen Vipps', 'epost' => 'vippstest4@example.test',
+    'vipps_sub' => 'sub-test-annen',
+]);
+$id5 = Vipps::medlemFraProfil(['sub' => 'sub-test-5', 'navn' => 'Noen andre',
+    'epost' => 'vippstest4@example.test', 'telefon' => '']);
+sjekk('rad med annen Vipps-konto kapres ikke', $id5 !== $annenId, 'id ' . $id5 . ' mot ' . $annenId);
+
+// 6) Til slutt: hvor mange rader ble det egentlig?
+$antall = (int) DB::verdi("SELECT COUNT(*) FROM members WHERE epost LIKE 'vippstest%@example.test'");
+sjekk('fem profiler ga fem rader, ikke flere', $antall === 5, $antall . ' rader');
+
+$vippsRydd();
+
 echo "\n== Kursbevis ==\n";
 
 // Beviset skal finnes for et betalt kurs som har vaert, og ikke for noe annet.

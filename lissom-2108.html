@@ -4363,6 +4363,23 @@ window.__resources = {
             <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
               <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
             </sc-if>
+
+            <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
+                 kursene ikke skrives inn to steder. -->
+            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
+              <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
+              <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-4);">
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
+                  <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
+                    <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+                  </div>
+                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+                </div>
+              </sc-if>
+            </div>
           </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
@@ -18437,6 +18454,63 @@ class Component extends DCLogic {
         velg: () => { this.setState({ side: 'admin', kursFane: 'alle' }); this.apneKursRed(k, i); },
       })),
       ingenOvKurs: this.kursData().length === 0,
+      // ── Kalenderabonnement ───────────────────────────────────────────
+      //
+      // Telefonen henter programmet selv, saa kursene ikke skrives inn to
+      // steder — og en dato som avlyses i admin blir borte fra telefonen ved
+      // neste oppdatering.
+      //
+      // Telefonen sender ingen innlogging naar den henter. Den kjenner bare
+      // adressen, og derfor ligger tilgangen i adressen. Det maa staa der
+      // eieren ser det, ikke bare i en kommentar i koden.
+      ...(() => {
+        const adr = ((this.state.adminData || {}).kalenderAdresse) || '';
+        return {
+          kalApent: !!this.state.kalApent,
+          kalKnapp: this.state.kalApent ? 'Skjul kalenderadressen' : 'Legg programmet i telefonens kalender →',
+          kalVeksle: () => this.setState(st => ({ kalApent: !st.kalApent, kalKopiert: false })),
+          kalAdresse: adr,
+          kalForklaring: 'På iPhone: Innstillinger → Kalender → Kontoer → Legg til konto → Annet → '
+            + 'Legg til abonnementskalender, og lim inn adressen. Telefonen henter den på nytt av seg selv.',
+          kalAdvarsel: 'Den som har adressen, ser programmet — den spør ikke om innlogging. '
+            + 'Del den bare med dem som skal ha den. «Lag ny adresse» stopper alle gamle på én gang, '
+            + 'og da må abonnementene settes opp på nytt.',
+          kalKopiKnapp: this.state.kalKopiert ? 'Kopiert' : 'Kopier adressen',
+          kalKopier: () => {
+            if (!adr) return;
+            const ferdig = () => this.setState({ kalKopiert: true });
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(adr).then(ferdig, ferdig);
+            } else { ferdig(); }
+          },
+          // Feltet er til for aa leses og kopieres. Et readonly-felt uten
+          // onChange faller ut i skjemasjekken, saa den staar her og gjor
+          // ingenting — med vilje.
+          kalIngenting: () => {},
+          kalMerk: (e) => { if (e && e.target && e.target.select) e.target.select(); },
+          kalNyNokkel: () => {
+            if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+            if (!window.confirm('Lage ny kalenderadresse?\n\n'
+                + 'Den gamle slutter å virke med en gang, og abonnementer som bruker den '
+                + 'må settes opp på nytt.')) return;
+            fetch('/api/admin/oversikt.php', {
+              method: 'POST', credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ handling: 'kalendernokkel' }),
+            })
+              .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+              .then(({ ok, d }) => {
+                this.setState({
+                  kvittering: ok ? 'Ny adresse laget' : 'Gikk ikke',
+                  kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+                  kalKopiert: false,
+                });
+                if (ok) { this._adminHentes = false; this.hentAdmin(); }
+              })
+              .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+          },
+        };
+      })(),
       ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden', 'Neste måned'].map(n => ({
         navn: n,
         velg: () => this.setState({ ovProgram: n }),

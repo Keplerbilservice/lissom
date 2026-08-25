@@ -44,6 +44,12 @@ final class Config
         'regnskap_konto_gavekort', 'regnskap_mva_gavekort',
         'regnskap_motkonto_vipps', 'regnskap_motkonto_kontant',
         'regnskap_motkonto_faktura',
+        // Noekkelen kalenderabonnementet ligger bak. Den lages naar eieren
+        // ber om adressen, og kan byttes derfra — da slutter alle gamle
+        // adresser aa virke paa én gang. Den staar derfor i basen og ikke i
+        // fila: en noekkel som skal kunne byttes fra en knapp, kan ikke
+        // ligge et sted bare den som har serveren kommer til.
+        'kalender_nokkel', 'verksted_adresse',
     ];
 
     /** @var array<string,string>|null */

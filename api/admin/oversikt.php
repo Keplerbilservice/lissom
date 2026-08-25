@@ -7,8 +7,56 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-Foresporsel::krevMetode('GET');
 krev_admin();
+
+/**
+ * Adressen kalenderabonnementet ligger paa.
+ *
+ * Telefonen sender ingen innlogging naar den henter feeden — den kjenner
+ * bare adressen. Derfor ligger tilgangen i selve adressen, som en lang
+ * tilfeldig noekkel. Slik gjor Google, Outlook og de andre det ogsaa.
+ *
+ * Noekkelen lages foerste gang eieren ber om adressen, ikke i en migrasjon:
+ * en tilfeldig verdi som staar i en fil i kodelageret, er den samme for alle
+ * som har lest fila.
+ */
+$kalenderAdresse = static function (bool $lagNy = false): string {
+    if (!DB::harTabell('innstillinger')) {
+        return '';
+    }
+    $n = trim((string) Config::hent('kalender_nokkel', ''));
+    if ($n === '' || $lagNy) {
+        $n = bin2hex(random_bytes(24));
+        DB::kjor(
+            'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+            ['kalender_nokkel', $n, (int) (Sesjon::medlem()['id'] ?? 0) ?: null]
+        );
+        Config::glemBasen();
+    }
+    return Config::nettsted() . '/api/kalender-abonnement.php?nokkel=' . $n;
+};
+
+// Ny noekkel. Da slutter alle gamle adresser aa virke paa én gang — det er
+// hele poenget med aa kunne bytte den.
+if (Foresporsel::metode() === 'POST') {
+    Foresporsel::krevSammeOpphav();
+    if (Foresporsel::tekst('handling') !== 'kalendernokkel') {
+        Svar::feil('Ukjent handling.');
+    }
+    if (!DB::harTabell('innstillinger')) {
+        Svar::feil('Migrasjon 036 er ikke kjørt. Kjør vedlikehold først.');
+    }
+    $adresse = $kalenderAdresse(true);
+    revider('kalendernokkel_byttet');
+    Svar::ok([
+        'adresse' => $adresse,
+        'beskjed' => 'Ny adresse laget. Den gamle virker ikke lenger — '
+                   . 'abonnementer som bruker den må settes opp på nytt.',
+    ]);
+}
+
+Foresporsel::krevMetode('GET');
 
 $kroner = static fn(int $ore): string => Booking::kroner($ore);
 
@@ -188,6 +236,8 @@ Svar::json([
         'epost' => trim((string) Config::hent('smtp_vert', '')) !== '',
         'sms'   => Varsel::smsMulig(),
     ],
+    // Adressen telefonen kan abonnere paa. Lages foerste gang den spos etter.
+    'kalenderAdresse' => $kalenderAdresse(),
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren
         // kan sortere okten paa dag, uke og maaned uten aa tolke norsk tekst.

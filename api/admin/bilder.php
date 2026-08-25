@@ -22,6 +22,19 @@ require __DIR__ . '/../_boot.php';
 krev_admin();
 
 /** Bildene som foelger med nettsida, lest fra mappa framfor en liste her. */
+/**
+ * Bildene som foelger med nettsida.
+ *
+ * Hvert bilde ligger i tre stoerrelser paa disk: originalen, en paa 800 og en
+ * paa 400 piksler. Lista tok med alle tre, og da sto det samme bildet tre
+ * ganger etter hverandre i velgeren — 116 ruter der det egentlig var under
+ * foerti bilder. Umulig aa finne noe i, og paa mobil ble ruta seks tusen
+ * piksler hoy.
+ *
+ * Naa staar bildet én gang. Miniatyren peker paa 400-versjonen der den finnes
+ * — velgeren lastet foer originalene i full stoerrelse, alle sammen, hver gang
+ * ruta ble aapnet.
+ */
 $medfolgende = static function (): array {
     $rot = dirname(__DIR__, 2);
     $ut  = [];
@@ -32,7 +45,19 @@ $medfolgende = static function (): array {
             if (str_contains($navn, 'logo') || str_contains($navn, 'signatur')) {
                 continue;
             }
-            $ut[$navn] = ['url' => $navn, 'egen' => false];
+            // «-400» og «-800» er den samme fila, mindre. De hoerer ikke
+            // hjemme som egne valg.
+            if (preg_match('/-(400|800)\.jpg$/', $navn)) {
+                continue;
+            }
+            $liten = preg_replace('/\.jpg$/', '-400.jpg', $navn);
+            $ut[$navn] = [
+                'url'  => $navn,
+                // Det velgeren viser. Originalen kan vaere flere megabyte, og
+                // en rute paa 84 piksler trenger ikke det.
+                'mini' => is_file($rot . '/' . $liten) ? $liten : $navn,
+                'egen' => false,
+            ];
         }
     }
     ksort($ut);
@@ -46,6 +71,9 @@ $egne = static function (): array {
     usort($filer, static fn($a, $b) => filemtime($b) <=> filemtime($a));
     return array_map(static fn($sti) => [
         'url'  => 'api/bilde.php?artikkel=' . basename($sti),
+        // Opplastede bilder skaleres ned naar de tas imot, saa originalen er
+        // allerede liten nok til en miniatyr.
+        'mini' => 'api/bilde.php?artikkel=' . basename($sti),
         'navn' => basename($sti),
         'egen' => true,
     ], $filer);

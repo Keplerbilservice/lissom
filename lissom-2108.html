@@ -4105,7 +4105,10 @@ window.__resources = {
                      api/admin/kurs.php tok ikke imot et bilde i det hele tatt.
                      Naa aapner de den samme billedvelgeren som varer og
                      artikler bruker. -->
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-bottom: var(--space-4);">
+                <!-- Tre i bredden ble 73 x 54 piksler paa en telefon — for
+                     smaatt til aa se hva bildet er, og for smaatt til aa
+                     treffe. De bryter naa i stedet. -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
                   <sc-for list="{{ kBilderuter }}" as="kb" hint-placeholder-count="3">
                     <button type="button" onClick="{{ kb.velg }}" aria-label="{{ kb.merke }}" style="{{ kb.stil }}">
                       <sc-if value="{{ kb.tom }}" hint-placeholder-val="{{ true }}">
@@ -11802,10 +11805,13 @@ class Component extends DCLogic {
     const valgt = (v && v.slag === 'kurs')
       ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
       : ((v && kilde.find(x => x.id === v.id)) || {});
+    // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
+    // originalene i full stoerrelse — over hundre av dem, hver gang den ble
+    // aapnet — og paa mobil var det en telefon full av bilder ingen skulle se.
     const rute = (b) => ({
       url: b.url,
       stil: { appearance: 'none', cursor: 'pointer', padding: 0, height: 84, borderRadius: 'var(--radius-md)',
-              backgroundImage: "url('" + b.url + "')", backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundImage: "url('" + (b.mini || b.url) + "')", backgroundSize: 'cover', backgroundPosition: 'center',
               border: ((valgt.bilde || '') === b.url ? '3px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') },
       velg: () => this.settValgtBilde(b.url),
     });

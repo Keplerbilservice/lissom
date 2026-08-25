@@ -493,80 +493,9 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
       }
     }
   };
-  // Staaende bilder i liggende rammer.
-  //
-  // Rammene er 16:10 og fyller seg med «cover». For et liggende foto er det
-  // riktig: et par prosent i topp og bunn forsvinner, og ingen ser det. For
-  // et staaende foto er det ikke et lite kutt — det er en oppforstoerret
-  // flik av midten. Velger du et portrett, faar du en hals.
-  //
-  // Vi maaler bildet og lar det staa i fred naar det er liggende nok. Er det
-  // vesentlig smalere enn ramma, vises hele bildet i stedet, paa en rolig
-  // bunn. Bedre en ramme med litt luft enn et bilde der hodet er borte.
-  //
-  // Gjelder overalt uten unntak: kortene, karusellen paa kurssida og rutene
-  // i kursveiviseren. Da ser det du velger i admin likedan ut som det
-  // kunden faar se.
-  var formKjent = {};
-  var GRENSE = 0.8;
-
-  var settForm = function (el, src, rammeforhold) {
-    var f = formKjent[src];
-    if (f === undefined || f >= rammeforhold * GRENSE) return;
-    if (el.tagName === 'IMG') {
-      el.style.objectFit = 'contain';
-    } else {
-      el.style.backgroundSize = 'contain';
-      el.style.backgroundRepeat = 'no-repeat';
-    }
-    el.style.backgroundColor = 'var(--clay-200)';
-  };
-
-  var formSjekk = function () {
-    var alle = document.querySelectorAll('img, [style*="background-image"]');
-    for (var i = 0; i < alle.length; i++) {
-      var el = alle[i];
-      var r = el.getBoundingClientRect();
-      if (r.width < 40 || r.height < 30) continue;      // ikoner og prikker
-
-      var src = '';
-      if (el.tagName === 'IMG') {
-        if (getComputedStyle(el).objectFit !== 'cover') continue;
-        src = el.currentSrc || el.src || '';
-      } else {
-        var st = getComputedStyle(el);
-        if (st.backgroundSize !== 'cover') continue;
-        var m = /url\(["']?(.*?)["']?\)/.exec(st.backgroundImage || '');
-        src = m ? m[1] : '';
-      }
-      if (!src || src.indexOf('data:') === 0) continue;
-
-      var ramme = r.width / r.height;
-      if (formKjent[src] !== undefined) { settForm(el, src, ramme); continue; }
-
-      // Maales én gang per bilde. Nettleseren har det alt i hurtigminnet.
-      formKjent[src] = null;
-      (function (adresse, element, forhold) {
-        var proeve = new Image();
-        proeve.onload = function () {
-          formKjent[adresse] = proeve.naturalHeight > 0
-            ? proeve.naturalWidth / proeve.naturalHeight : 99;
-          settForm(element, adresse, forhold);
-        };
-        // Kommer bildet ikke fram, lar vi ramma vaere som den er.
-        proeve.onerror = function () { formKjent[adresse] = 99; };
-        proeve.src = adresse;
-      })(src, el, ramme);
-    }
-  };
-
-  var obs = new MutationObserver(function () { flytt(); formSjekk(); });
+  var obs = new MutationObserver(flytt);
   var start = function () {
     flytt();
-    formSjekk();
-    // Bilder som kommer inn etter foerste tegning, og rammer som endrer
-    // stoerrelse naar vinduet gjor det.
-    window.addEventListener('resize', formSjekk);
     obs.observe(document.body, { subtree: true, childList: true, attributes: true,
                                  attributeFilter: ['data-src'] });
   };

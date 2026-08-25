@@ -7671,6 +7671,16 @@ window.__resources = {
         <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres ned og settes på artikkelen med en gang.</span>
       </label>
 
+      <!-- Har du ikke et bilde selv, finner du et her. Soeket er allerede
+           fylt ut med navnet paa det du holder paa med. Innlogginga skjer hos
+           Shutterstock: er du logget inn der i nettleseren, aapner fana
+           ferdig innlogget, og du laster ned og velger «Last opp eget
+           bilde» over. -->
+      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6);">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkShutterstockSok }}" hint-size="auto,40px">Finn bilder på Shutterstock</x-import>
+        <span style="font-size: var(--text-xs); color: var(--text-muted);">Søker på «{{ mkShutterstockOrd }}». Last ned bildet, og legg det inn over.</span>
+      </div>
+
       <sc-if value="{{ mkBildeLaster }}" hint-placeholder-val="{{ false }}">
         <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Laster opp …</p>
       </sc-if>
@@ -11868,6 +11878,21 @@ class Component extends DCLogic {
       mkBildeMedfolgende: (liste.medfolgende || []).map(rute),
       mkLukkBildevalg: () => this.setState({ bildeFor: null }),
       mkFjernBilde: () => this.settValgtBilde(''),
+      // Finn bilder paa Shutterstock.
+      //
+      // Knappen sto bare under Markedsforing, og soekte alltid paa det samme.
+      // Naa staar den der bildet velges — kurs, events, varer og artikler — og
+      // soeker paa navnet paa det du holder paa med.
+      //
+      // Innlogginga skjer hos Shutterstock, i nettleseren. Vi kan ikke logge
+      // deg inn derfra og skal ikke oppbevare passordet ditt; er du logget inn
+      // paa shutterstock.com i samme nettleser, aapner fana ferdig innlogget.
+      mkShutterstockSok: () => {
+        const ord = (valgt.tittel || '').trim() || 'keramikk verksted';
+        window.open('https://www.shutterstock.com/nb/search/' + encodeURIComponent(ord),
+                    '_blank', 'noopener');
+      },
+      mkShutterstockOrd: (valgt.tittel || '').trim() || 'keramikk verksted',
       // Filfeltet nullstilles etter valget, ellers gir det samme bildet to
       // ganger paa rad ingen hendelse — nettleseren ser ingen endring.
       mkLastOppBilde: e => {

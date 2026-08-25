@@ -213,9 +213,9 @@ dit — bildene ligger i repoet, og verken koden eller `.htaccess` nevner
 ikke kjøres, er de bare data som ligger der — men de bør ut når du rydder.
 De heter `wp_` etter mønsteret WordPress bruker.
 
-**Sjekk først at den virkelig ikke serveres:** åpne `lissom.no/wp-login.php`.
-Får du «siden finnes ikke», er den ute av veien. Får du en innloggingsside,
-ligger den fortsatt ute et sted, og da haster det.
+**Verifisert 25. august 2026:** `lissom.no/wp-login.php` svarer «siden finnes
+ikke». WordPress serveres ikke. Risikoen — at gammel PHP kunne kjøres fra
+nettet — er dermed borte, og det som står igjen er opprydding uten hastverk.
 
 **7. Testkurset og prisen på Paint on Pots.** Gjort. Migrasjon 008 satte
 Paint on Pots tilbake til 690 kroner og avlyste testkurset.

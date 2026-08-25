@@ -15670,8 +15670,20 @@ class Component extends DCLogic {
           return ut.length > 0;
         };
 
-        const KATEGORIER = ['Vis alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop',
-                            'Events', 'Sip & Clay', 'Date Night', 'Paint on pots', 'Drop-in'];
+        // «Kurs» og «Events» sto her ogsaa. Begge var paraplyer over knapper
+        // som alt sto ved siden av: under Kurs laa dreiekursene,
+        // plateteknikken og workshopene, og under Events laa Sip & Clay,
+        // Date Night og Paint on Pots. Du fikk de samme kursene to ganger i
+        // den samme rada, og «Vis alle» gjor jobben til begge.
+        //
+        // «Drop-in» sto her ogsaa, og hoerer ikke hjemme i en kategorirad
+        // over kurs: det er ikke et kurs, men to timer i verkstedet med ditt
+        // eget arbeid. Det har sitt eget menypunkt.
+        //
+        // Sidene ligger der de laa, i toppmenyen. Det er bare knappene i
+        // kategorirada som er borte.
+        const KATEGORIER = ['Vis alle', 'Dreiing', 'Plateteknikk', 'Workshop',
+                            'Sip & Clay', 'Date Night', 'Paint on pots'];
 
         return {
           kursTidSporsmal: 'Når på dagen passer det best for deg?',

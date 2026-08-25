@@ -2291,16 +2291,11 @@ window.__resources = {
                     <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-sm);">Fjern</button>
                   </div>
                 </sc-for>
-                <sc-if value="{{ harKurv }}" hint-placeholder-val="{{ true }}">
-                  <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100);">
-                    <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Andre kjøper også</div>
-                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                      <sc-for list="{{ kasseForslag }}" as="f" hint-placeholder-count="3">
-                        <button type="button" onClick="{{ f.leggTil }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 8px 14px; font: var(--type-body-sm);">+ {{ f.navn }} · {{ f.pris }}</button>
-                      </sc-for>
-                    </div>
-                  </div>
-                </sc-if>
+                <!-- «Andre kjoper ogsaa» var en fast liste: Gavekort, leire og
+                     en drop-in-time. Leira er en internvare medlemmene handler,
+                     og drop-in er ikke noe man legger i en handlekurv med en
+                     kopp. Det var heller ingen som hadde kjopt dem sammen —
+                     lista var funnet paa. Fjernet 24. august paa bestilling. -->
                 <div class="lx-cols2" style="padding: var(--space-6); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);">
                   <div>
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Levering</label>
@@ -15689,10 +15684,6 @@ class Component extends DCLogic {
       kurvApen: !!this.state.kurvApen && Object.keys(this.state.kurv || {}).length > 0,
       lukkKurv: () => this.setState({ kurvApen: false }),
       tilKasse: () => { this.setState({ side: 'kasse', kurvApen: false }); window.scrollTo(0, 0); },
-      kasseForslag: ['Gavekort', 'Leire, stengods grå', 'Drop-in-time'].filter(n => !(this.state.kurv || {})[n]).map(n => ({
-        navn: n, pris: this.prisAv(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
-        leggTil: () => this.iKurv(n, 1),
-      })),
       harKurv: Object.keys(this.state.kurv || {}).length > 0,
       ordrePopup: Object.keys(this.state.kurv || {}).length > 0 && !!this.state.ordreApen,
       visKurvKnapp: Object.keys(this.state.kurv || {}).length > 0 && !this.state.kurvApen && side === 'minside',

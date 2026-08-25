@@ -46,17 +46,7 @@ $rensBrukernavn = static function (string $raa): string {
  * i secrets.php. Teller vi bare den forste gruppa, ville den siste konto-baserte
  * admin-en vaert umulig aa slette selv om eieren fortsatt kom inn med Vipps.
  */
-$antallAdmin = static function () use (&$antallAdmin): int {
-    $numre = Config::adminNumre();
-    if ($numre === []) {
-        return (int) DB::verdi("SELECT COUNT(*) FROM members WHERE rolle = 'admin'");
-    }
-    $plass = implode(',', array_fill(0, count($numre), '?'));
-    return (int) DB::verdi(
-        "SELECT COUNT(*) FROM members WHERE rolle = 'admin' OR telefon IN ({$plass})",
-        $numre
-    );
-};
+$antallAdmin = static fn(): int => antall_admin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Numrene i secrets.php er admin ved kjoring uten aa staa som det i

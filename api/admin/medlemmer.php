@@ -45,6 +45,21 @@ if (Foresporsel::metode() === 'POST') {
         if ((int) $m['id'] === (int) $jeg['id'] && $handling === 'slett') {
             Svar::feil('Du kan ikke slette din egen konto.');
         }
+        // Ingen med admintilgang slettes herfra.
+        //
+        // Medlemslista skjuler alt «Slett» paa admin-rader — men serveren
+        // gjorde det ikke, og et loefte skjermen gir uten at serveren holder
+        // det, er ikke et loefte. Et kall sendt direkte slettet raden.
+        //
+        // Adminkontoer hoerer hjemme under Brukere. Der staar reglene som
+        // hoerer til dem: den siste admin-en kan verken slettes eller settes
+        // ned, og noedluke-numrene i secrets.php teller med i den vurderingen.
+        // To doerer til den samme slettingen, med regler bare bak den ene, er
+        // hvordan man laaser seg ute av sitt eget adminpanel.
+        if ($handling === 'slett' && $m['rolle'] === 'admin') {
+            Svar::feil('Denne kontoen har tilgang til admin. '
+                     . 'Slike kontoer håndteres under Brukere, ikke herfra.');
+        }
 
         // Loper det en avtale i Vipps, blir kunden trukket videre selv om
         // vi setter statusen her. Da ville lista sagt «sluttet» mens
@@ -98,10 +113,27 @@ if (Foresporsel::metode() === 'POST') {
 
         DB::kjor('DELETE FROM sessions WHERE member_id = :id', ['id' => $id]);
 
+        // Vi proever aa slette raden, og lar basen si nei.
+        //
+        // Sjekken over teller paameldinger og betalinger. Men ti tabeller
+        // peker paa members — chat, innstemplinger, timer, gaver, soknader,
+        // medlemssalg, abonnementer — og pekte én av dem hit, feilet
+        // slettingen med en raa SQL-feil og et 500-svar. Det som sto igjen
+        // paa skjermen var «Gikk ikke», uten et ord om hvorfor.
+        //
+        // Aa telle opp alle ti hadde virket i dag og vaert feil igjen neste
+        // gang noen legger til en tabell. Basen vet allerede hvem som peker
+        // hit; vi spor den i stedet, og anonymiserer naar svaret er nei.
         if (!$harHistorikk) {
-            DB::kjor('DELETE FROM members WHERE id = :id', ['id' => $id]);
-            revider('medlem_slettet', 'member', $id, ['navn' => $m['navn']]);
-            Svar::ok(['beskjed' => 'Medlemmet er slettet.']);
+            try {
+                DB::kjor('DELETE FROM members WHERE id = :id', ['id' => $id]);
+                revider('medlem_slettet', 'member', $id, ['navn' => $m['navn']]);
+                Svar::ok(['beskjed' => 'Medlemmet er slettet.']);
+            } catch (Throwable $e) {
+                // Noe hoerer til personen likevel. Da anonymiseres raden, som
+                // under — det er den samme trygge utgangen.
+                logg('Medlem kunne ikke slettes helt, anonymiseres i stedet', ['id' => $id]);
+            }
         }
 
         DB::oppdater('members', [

@@ -81,6 +81,31 @@ function krev_admin(): array
  * Er ingen av delene der, er det ingen nettleserside som staar bak — og en
  * innlogget sesjon er da det vi har aa gaa etter.
  */
+/**
+ * Hvor mange som kan komme inn i admin.
+ *
+ * Bade de som staar som admin i databasen og de som er det via
+ * noedluke-numrene i secrets.php. Teller vi bare den forste gruppa, ville den
+ * siste konto-baserte admin-en vaert umulig aa slette selv om eieren fortsatt
+ * kom inn med Vipps.
+ *
+ * Ligger her og ikke i én skjerm fordi to skjermer kan slette den samme
+ * personen: Brukere og Medlemmer. Sto regelen bare det ene stedet, var det en
+ * tilfeldighet hvilken dor man gikk inn av naar man laaste seg selv ute.
+ */
+function antall_admin(): int
+{
+    $numre = Config::adminNumre();
+    if ($numre === []) {
+        return (int) DB::verdi("SELECT COUNT(*) FROM members WHERE rolle = 'admin'");
+    }
+    $plass = implode(',', array_fill(0, count($numre), '?'));
+    return (int) DB::verdi(
+        "SELECT COUNT(*) FROM members WHERE rolle = 'admin' OR telefon IN ({$plass})",
+        $numre
+    );
+}
+
 function fra_egen_side(): bool
 {
     $sfs = (string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');

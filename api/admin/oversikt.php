@@ -190,6 +190,15 @@ $nyeste = DB::alle(
   LEFT JOIN members m ON m.id = b.member_id
   LEFT JOIN payments p ON p.id = b.payment_id
       WHERE b.status IN ('betalt','reservert')
+        -- Bare paameldinger til noe som ikke har vaert.
+        --
+        -- Kortet tok de tolv siste uansett dato. Paa et verksted med jevn
+        -- paagang gaar de ut av seg selv, men her kunne en paamelding til et
+        -- kurs som ble holdt i forrige maaned bli staaende i ukevis under
+        -- «Nye paameldinger» — og det er ikke nytt, og det er ingenting aa
+        -- gjore med det.
+        AND (cs.start_tid IS NULL
+             OR COALESCE(cs.slutt_tid, cs.start_tid) > UTC_TIMESTAMP())
       ORDER BY b.id DESC
       LIMIT 12"
 );

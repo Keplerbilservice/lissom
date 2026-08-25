@@ -4398,6 +4398,49 @@ window.__resources = {
             </sc-for>
           </div>
 
+          <!-- Ventelista.
+               «Varsle» sier fra at det er ledig, og saa er det foerste mann
+               til moella. Ofte vet verkstedet hvem som skal ha plassen — og
+               da skal de kunne gi den, ikke sende en beskjed om aa kappes. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovVentelisteAntall }}</span>
+            </div>
+            <sc-if value="{{ ingenOvVenteliste }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen står på venteliste nå.</div>
+            </sc-if>
+            <sc-for list="{{ ovVenteliste }}" as="v" hint-placeholder-count="3">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                  <div style="min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
+                  </div>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.status }}</span>
+                </div>
+
+                <!-- Datoene hen kan settes rett inn paa. Bare de med plass —
+                     en liste med fulle kvelder er en knapp som sier nei. -->
+                <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: var(--space-3);">
+                    <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ dt.giPlass }}" style="appearance: none; cursor: pointer; border: 1px solid var(--lissom-brown); border-radius: var(--radius-pill); background: transparent; padding: 6px 12px; font: var(--type-body-sm); color: var(--lissom-brown); white-space: nowrap;">{{ dt.merke }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ v.utenPlass }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer på dette kurset nå.</div>
+                </sc-if>
+
+                <div style="display: flex; gap: var(--space-4); margin-top: var(--space-3);">
+                  <button type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
+                  <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Nye medlemskapsforespørsler</div>
             <sc-if value="{{ ingenOvMedlemskap }}" hint-placeholder-val="{{ false }}">
@@ -12550,6 +12593,48 @@ class Component extends DCLogic {
     if (kurs === null) return;
     this.pameldingKall({ handling: 'bevis', id: x.id, navn: navn.trim(), kurs: kurs.trim() })
       .then(ok => { if (ok) this.etterBevisendring(); });
+  }
+
+  /**
+   * Gir en fra ventelista plassen, paa en bestemt dato.
+   *
+   * Paameldingen blir en helt vanlig booking, reservert og ikke betalt — hen
+   * har ikke betalt noe enda, og det skal ikke se ut som hen har.
+   */
+  giVentelisteplass(v, d) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (!window.confirm('Gi ' + v.navn + ' plass på ' + v.kurs + ' ' + d.naar + '?\n\n'
+        + 'Plassen blir opptatt med en gang, og står som reservert til betalingen er gjort opp.')) return;
+    this.ventelisteKall({ handling: 'gi-plass', id: v.id, oktId: d.oktId });
+  }
+
+  /** Ett kall for hele ventelista — varsle, gi plass, ta av lista. */
+  ventelisteKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
+    if (this._ventelisteKall) return Promise.resolve(false);
+    this._ventelisteKall = true;
+
+    return fetch('/api/admin/venteliste.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._ventelisteKall = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        // Bade ventelista og deltakerlista er endret naar noen faar plass.
+        if (ok) { this._adminHentes = false; this.hentAdmin(); }
+        return ok;
+      })
+      .catch(() => {
+        this._ventelisteKall = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
   }
 
   /**
@@ -20856,6 +20941,35 @@ class Component extends DCLogic {
         { tekst: '2 ubesvarte meldinger fra medlemmer', merke: 'Svar', tone: 'info' },
         { tekst: 'Åpen dag 6. september er ikke lagt ut på nett', merke: 'Publiser', tone: 'neutral' },
       ], o => [o.merke, o.tekst, [{ navn: 'Prioritet', verdi: o.tone === 'danger' ? 'Haster' : o.tone === 'warning' ? 'Snart' : 'Når du har tid' }], o.merke, 'adminmedlem']),
+      // ── Ventelista paa Oversikt ──────────────────────────────────────
+      //
+      // «Varsle» sier fra at det er ledig, og saa er det foerste mann til
+      // moella. Det er riktig naar flere venter paa det samme. Men ofte vet
+      // verkstedet hvem som skal ha plassen — og da er et varsel en omvei, og
+      // en risiko for at feil person rekker det.
+      ...(() => {
+        const liste = this.state.adminVenteliste || [];
+        return {
+          ovVenteliste: liste.slice(0, 8).map(v => ({
+            navn: v.navn,
+            linje: v.kurs + ' · nr. ' + v.posisjon + ' · siden ' + v.siden,
+            status: v.status,
+            kanGiPlass: !!v.kanGiPlass,
+            utenPlass: !v.kanGiPlass,
+            datoer: (v.datoer || []).slice(0, 4).map(d => ({
+              merke: d.naar + ' · ' + d.ledige + ' ledig' + (d.ledige === 1 ? '' : 'e'),
+              giPlass: () => this.giVentelisteplass(v, d),
+            })),
+            varsle: () => this.ventelisteKall({ handling: 'varsle', id: v.id }),
+            fjern: () => {
+              if (!window.confirm('Ta ' + v.navn + ' av ventelista?')) return;
+              this.ventelisteKall({ handling: 'fjern', id: v.id });
+            },
+          })),
+          ovVentelisteAntall: liste.length === 0 ? '' : liste.length + ' venter',
+          ingenOvVenteliste: this.erPublisert() && liste.length === 0,
+        };
+      })(),
       nyePameldinger: this.klikkbar(
         // Ekte paameldinger naar serveren har svart. Lista under er designdata
         // og vises kun i forhandsvisningen, der det ikke finnes noen server.

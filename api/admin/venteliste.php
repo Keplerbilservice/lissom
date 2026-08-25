@@ -5,6 +5,7 @@
  *   GET                    hvem som venter, per kurs
  *   POST handling=varsle   gi beskjed om ledig plass  { id }
  *   POST handling=fjern    ta noen av lista           { id }
+ *   POST handling=gi-plass  sett hen rett inn paa en dato { id, oktId }
  *
  * Varsling sender SMS og e-post med en frist. Plassen holdes ikke av
  * automatisk — den forste som booker, faar den. Det staar ogsaa i meldingen,
@@ -26,17 +27,58 @@ if (Foresporsel::metode() === 'GET') {
           ORDER BY c.tittel, w.posisjon"
     );
 
-    Svar::json(['venteliste' => array_map(static fn($w) => [
-        'id'       => (int) $w['id'],
-        'navn'     => $w['navn'],
-        'epost'    => $w['epost'],
-        'telefon'  => $w['telefon'],
-        'kurs'     => $w['tittel'],
-        'posisjon' => (int) $w['posisjon'],
-        'status'   => $w['status'] === 'varslet' ? 'Varslet' : 'Venter',
-        'varslet'  => $w['varslet_at'] ? Booking::norskDato((string) $w['varslet_at']) : null,
-        'siden'    => Booking::norskDato((string) $w['created_at']),
-    ], $rader)]);
+    /**
+     * Datoene denne personen kan settes rett inn paa.
+     *
+     * Ventelista fantes for aa varsle om en ledig plass og haape at hen booket
+     * for noen andre rakk det. Men verkstedet vet ofte hvem som skal ha
+     * plassen — og da skal de kunne gi den, ikke sende en beskjed om aa
+     * kappes om den.
+     *
+     * Bare datoer det faktisk er plass paa. En liste med fulle kvelder er en
+     * knapp som sier nei.
+     */
+    $datoer = static function (int $kursId): array {
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT cs.id, cs.start_tid
+               FROM course_sessions cs
+              WHERE cs.course_id = :k AND cs.status = 'planlagt'
+                AND cs.start_tid > UTC_TIMESTAMP()
+           ORDER BY cs.start_tid",
+            ['k' => $kursId]
+        ) as $o) {
+            $ledige = Booking::ledigePlasser((int) $o['id']);
+            if ($ledige <= 0) {
+                continue;
+            }
+            $ut[] = [
+                'oktId'  => (int) $o['id'],
+                'naar'   => Booking::norskDato((string) $o['start_tid']),
+                'ledige' => $ledige,
+            ];
+        }
+        return $ut;
+    };
+
+    Svar::json(['venteliste' => array_map(static function ($w) use ($datoer) {
+        $valg = $datoer((int) $w['course_id']);
+        return [
+            'id'       => (int) $w['id'],
+            'navn'     => $w['navn'],
+            'epost'    => $w['epost'],
+            'telefon'  => $w['telefon'],
+            'kurs'     => $w['tittel'],
+            'kursId'   => (int) $w['course_id'],
+            'posisjon' => (int) $w['posisjon'],
+            'status'   => $w['status'] === 'varslet' ? 'Varslet' : 'Venter',
+            'varslet'  => $w['varslet_at'] ? Booking::norskDato((string) $w['varslet_at']) : null,
+            'siden'    => Booking::norskDato((string) $w['created_at']),
+            // Datoene hen kan settes rett inn paa, og den forste av dem.
+            'datoer'   => $valg,
+            'kanGiPlass' => $valg !== [],
+        ];
+    }, $rader)]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -81,6 +123,91 @@ switch (Foresporsel::tekst('handling')) {
         Svar::ok([
             'beskjed' => 'Beskjed lagt i kø til ' . $rad['navn']
                 . '. Plassen holdes ikke av automatisk — første som booker, får den.',
+        ]);
+
+    // ── Gi plassen ────────────────────────────────────────────────────
+    //
+    // «Varsle» sier fra at det er ledig, og saa er det foerste mann til
+    // moella. Det er riktig naar flere staar og venter paa det samme. Men
+    // ofte vet verkstedet hvem som skal ha plassen — og da er et varsel en
+    // omvei, og en risiko for at feil person rekker det.
+    //
+    // Dette er en helt vanlig paamelding, som en lagt inn for haand: den
+    // opptar en plass, teller i kapasiteten og staar paa deltakerlista.
+    // Reservert og ikke betalt — hen har ikke betalt noe enda, og det skal
+    // ikke se ut som hen har.
+    case 'gi-plass':
+        $oktId = Foresporsel::heltall('oktId');
+
+        $okt = DB::en(
+            "SELECT cs.id, cs.course_id, cs.start_tid, cs.status, c.tittel, c.pris_ore
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.id = :o",
+            ['o' => $oktId]
+        );
+        if ($okt === null) {
+            Svar::feil('Velg en dato som finnes.');
+        }
+        if ((int) $okt['course_id'] !== (int) $rad['course_id']) {
+            Svar::feil('Datoen hører til et annet kurs.');
+        }
+        if ($okt['status'] === 'avlyst') {
+            Svar::feil('Den datoen er avlyst.');
+        }
+
+        // Plassen maa finnes. Uten sjekken kunne to fra lista faa den samme
+        // stolen, og det oppdages foerst den kvelden.
+        if (Booking::ledigePlasser($oktId) < 1) {
+            Svar::feil('Den datoen er full nå. Velg en annen, eller varsle i stedet.');
+        }
+
+        $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $rad): int {
+            return DB::settInn('bookings', [
+                'course_id'         => (int) $okt['course_id'],
+                'course_session_id' => $oktId,
+                'member_id'         => null,
+                'gjest_navn'        => $rad['navn'],
+                'gjest_epost'       => $rad['epost'] ?: null,
+                'gjest_telefon'     => $rad['telefon'] ?: null,
+                'antall'            => 1,
+                'belop_ore'         => (int) $okt['pris_ore'],
+                // Ikke betalt enda. «Betalt» her ville satt et beloep i
+                // regnskapet for penger som ikke har kommet.
+                'status'            => 'reservert',
+                'betalt_maate'      => 'Betaler ved oppmøte',
+                'notat'             => 'Fra ventelista',
+                'reservert_til'     => null,
+            ]);
+        });
+
+        DB::oppdater('waitlist', ['status' => 'booket'], ['id' => $id]);
+
+        // Hen skal vite det. En plass ingen har fortalt om, er ingen plass.
+        $varslet = false;
+        if (($rad['epost'] ?? '') !== '' || ($rad['telefon'] ?? '') !== '') {
+            Varsel::mal('venteliste_ledig', [
+                'navn'    => $rad['navn'],
+                'epost'   => $rad['epost'],
+                'telefon' => $rad['telefon'],
+            ], [
+                'navn'  => (string) $rad['navn'],
+                'kurs'  => (string) $rad['tittel'],
+                'dato'  => Booking::norskDato((string) $okt['start_tid']),
+                'lenke' => Config::nettsted() . '/min-side',
+            ], 'booking', $bookingId);
+            $varslet = true;
+        }
+
+        revider('venteliste_gitt_plass', 'waitlist', $id, [
+            'booking' => $bookingId, 'okt' => $oktId,
+        ]);
+
+        Svar::ok([
+            'beskjed' => $rad['navn'] . ' har fått plass på ' . $okt['tittel'] . ' '
+                       . Booking::norskDato((string) $okt['start_tid'])
+                       . '. Står som reservert til betalingen er gjort opp.'
+                       . ($varslet ? ' Beskjed er lagt i kø.' : ''),
         ]);
 
     case 'fjern':

@@ -79,6 +79,13 @@ ikke slipper salgsenheten til ePayment.
 | 15 felter og 9 knapper som ikke gjorde noe | Koblet opp |
 | Oppsigelse av medlemskap gaar til serveren | Virker — Vipps-trekket er ikke proevd |
 | Gaver fra verkstedet til medlemmene | Migrasjon 043 — gitt i admin, vises paa Min side |
+| Bilder paa kursene, tre per kurs | Migrasjon 044 |
+| Butikk som eget punkt i menyen, med internbutikken som egen fane | Virker — internvarene var ikke til aa redigere noe sted for |
+| Kursbevis kan rettes og trekkes tilbake | Migrasjon 045 — fra personruta og fra Nyttig info |
+| Kursbevisene samlet under Nyttig info, med soek | Virker — samme paameldinger, samme knapper |
+| Deltakerruta: historikk, kursbevis, annen info og «Gi gave» | Virker — «Nyttig info» er fjernet derfra, det er medlemsstoff |
+| Annen info om en person kan endres etter innmelding | Virker — internt, staar ikke paa Min side |
+| «Send beskjed til …» fra personruta, med navn og adresse fylt inn | Virker |
 
 ## Det som fortsatt er simulering
 

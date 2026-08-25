@@ -22132,7 +22132,12 @@ class Component extends DCLogic {
         // Menypunktet gaar dit naa; «Book drop-in» derfra tar deg videre.
         const ruter = {
           'Forside': ['forside'],
-          'Kurs': ['kurs', 'Kurs'], 'Våre kurs': ['kurs', 'Kurs'], 'Kurskalender': ['kalender'],
+          // «Kurs» lander paa alle kursene, ikke paa et eget kursfilter.
+          // Filteret hadde ingen knapp i kategorirada lenger, saa du kom inn
+          // paa en avgrenset liste uten at noe sa hvorfor — og uten en knapp
+          // aa trykke tilbake paa. Nettadressen /kurs gjorde alt dette fra
+          // for; naa gjor menyen det samme.
+          'Kurs': ['kurs'], 'Våre kurs': ['kurs'], 'Kurskalender': ['kalender'],
           'Events': ['kurs', 'Events'], 'Drop-in': ['kurs', 'Drop-in'],
           // Ruten staar igjen selv om knappen er borte: en delt lenke til
           // /workshop skal fortsatt fore et sted, ikke til ingenting.

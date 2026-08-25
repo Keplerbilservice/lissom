@@ -34,6 +34,16 @@ final class Config
         'smtp_vert', 'smtp_port', 'smtp_bruker', 'smtp_passord', 'smtp_sikkerhet',
         'epost_fra', 'epost_fra_navn', 'epost_svar_til',
         'sms_leverandor', 'sveve_bruker', 'sveve_passord', 'sms_avsender',
+        // Kontoene og mva-kodene til regnskapet. De er ingen hemmelighet, og
+        // det er regnskapsforeren som eier dem — da skal de kunne endres fra
+        // admin, ikke ved en ny utlegging av nettsiden.
+        'regnskap_konto_kurs', 'regnskap_mva_kurs',
+        'regnskap_konto_medlemskap', 'regnskap_mva_medlemskap',
+        'regnskap_konto_butikk', 'regnskap_mva_butikk',
+        'regnskap_konto_dropin', 'regnskap_mva_dropin',
+        'regnskap_konto_gavekort', 'regnskap_mva_gavekort',
+        'regnskap_motkonto_vipps', 'regnskap_motkonto_kontant',
+        'regnskap_motkonto_faktura',
     ];
 
     /** @var array<string,string>|null */

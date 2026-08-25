@@ -6789,6 +6789,70 @@ window.__resources = {
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Skal det kobles mot Tripletex eller Fiken, sier du fra — det krever en API-nøkkel fra regnskapssystemet ditt.</p>
           </div>
 
+          <!-- Dagsoppgjor.
+               Regnskapsforeren ba om ett oppgjor per dag som bilag, framfor
+               at hvert enkelt salg opprettes som faktura. Kontoene staar i
+               oppsettet og ikke i koden — det er hun som eier dem. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dagsoppgjør</div>
+              <input type="month" value="{{ doMaaned }}" onChange="{{ settDoMaaned }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 7px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+            </div>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ doForklaring }}</p>
+
+            <sc-if value="{{ doMangler }}" hint-placeholder-val="{{ false }}">
+              <div style="border: 1px dashed var(--terracotta-600); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-600); margin-bottom: 4px;">Mangler konto</div>
+                <div style="font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ doManglerTekst }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ doTomt }}" hint-placeholder-val="{{ true }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">{{ doTomTekst }}</p>
+            </sc-if>
+
+            <sc-for list="{{ doBilag }}" as="bl" hint-placeholder-count="3">
+              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                  <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ bl.norsk }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-muted); font-variant-numeric: tabular-nums;">{{ bl.sum }} · {{ bl.antallTekst }}</div>
+                </div>
+                <sc-for list="{{ bl.rader }}" as="rd" hint-placeholder-count="4">
+                  <div style="display: flex; gap: var(--space-3); align-items: baseline; flex-wrap: wrap; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">
+                    <span style="min-width: 46px; color: var(--text-body);">{{ rd.side }}</span>
+                    <span style="{{ rd.kontoStil }}">{{ rd.konto }}</span>
+                    <span style="min-width: 54px;">{{ rd.mva }}</span>
+                    <span style="flex: 1 1 120px; min-width: 0;">{{ rd.hva }}</span>
+                    <span style="font-variant-numeric: tabular-nums; color: var(--text-heading);">{{ rd.belop }}</span>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ bl.ubalanse }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--terracotta-600);">Debet og kredit er ikke like store. Si fra — det er en feil i dataene, ikke i oppsettet.</div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-5);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ doLastNed }}" hint-size="auto,40px">Last ned bilagene</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ doVeksle }}" hint-size="auto,40px">{{ doOppsettKnapp }}</x-import>
+            </div>
+
+            <!-- Kontoene. De staar i basen, saa de kan endres uten en ny
+                 utlegging av nettsiden — det er regnskapsforeren som eier dem. -->
+            <sc-if value="{{ doOppsettApent }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-5); padding-top: var(--space-5);">
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Konto og mva-kode per inntektstype, og hvor pengene lander. Endrer regnskapsføreren mening, endres feltet her.</p>
+                <sc-for list="{{ doFelter }}" as="fe" hint-placeholder-count="6">
+                  <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                    <span style="flex: 1 1 150px; font-size: var(--text-sm); color: var(--text-heading);">{{ fe.navn }}</span>
+                    <input value="{{ fe.verdi }}" onChange="{{ fe.sett }}" placeholder="{{ fe.plassholder }}" style="width: 110px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 7px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  </div>
+                </sc-for>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ doLagreOppsett }}" hint-size="auto,40px">{{ doLagreKnapp }}</x-import>
+              </div>
+            </sc-if>
+          </div>
+
           
           </div>
         </div>
@@ -12466,6 +12530,60 @@ class Component extends DCLogic {
   }
 
   /**
+   * Henter dagsoppgjorene.
+   *
+   * Regnskapsforeren ba om ett oppgjor per dag som bilag, framfor at hvert
+   * enkelt salg opprettes som faktura. Serveren regner dem ut; her vises de.
+   */
+  hentDagsoppgjor() {
+    if (!this.erPublisert()) { this.setState({ dagsoppgjor: { bilag: [], manglerKonto: [] } }); return; }
+    if (this._doHentes) return;
+    this._doHentes = true;
+    const mnd = this.doMaanedNaa();
+
+    fetch('/api/admin/dagsoppgjor.php?maaned=' + encodeURIComponent(mnd), { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._doHentes = false;
+        this.setState({ dagsoppgjor: d || { bilag: [], manglerKonto: [] }, doHentetFor: mnd });
+      })
+      .catch(() => { this._doHentes = false; this.setState({ dagsoppgjor: { bilag: [], manglerKonto: [] }, doHentetFor: mnd }); });
+  }
+
+  /** Maaneden som vises. Staar den ikke, er det den vi er i. */
+  doMaanedNaa() {
+    if (this.state.doMaaned) return this.state.doMaaned;
+    const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  /** Lagrer kontoene. De staar i basen, ikke i koden — regnskapsforeren eier dem. */
+  lagreRegnskapsoppsett() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._doLagrer) return;
+    this._doLagrer = true;
+
+    fetch('/api/admin/dagsoppgjor.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(this.state.doOppsett || {}),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._doLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._doHentes = false; this.setState({ dagsoppgjor: null }); this.hentDagsoppgjor(); }
+      })
+      .catch(() => {
+        this._doLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
    * Henter kursbevisene, samlet.
    *
    * Samme paameldinger og samme regler som ellers — bare samlet i én liste,
@@ -15031,6 +15149,10 @@ class Component extends DCLogic {
     }
     if (side === 'adminokonomi' && !this.state.okonomi) {
       this.hentOkonomi();
+    }
+    if (side === 'adminokonomi'
+        && (!this.state.dagsoppgjor || this.state.doHentetFor !== this.doMaanedNaa())) {
+      this.hentDagsoppgjor();
     }
     if (this.erAdminSkjerm(side) && !this.state.rabattMaal) {
       this.hentRabatter();
@@ -20670,6 +20792,81 @@ class Component extends DCLogic {
           { navn: 'Referanse', verdi: n.referanse || '' },
         ], 'Lukk']),
       erAdminOkonomi: side === 'adminokonomi',
+      // ── Dagsoppgjor ──────────────────────────────────────────────────
+      //
+      // Regnskapsforeren ba om ett oppgjor per dag som bilag, framfor at
+      // hvert enkelt salg opprettes som faktura. Kontoene staar i basen og
+      // ikke i koden — det er hun som eier dem, og da skal de kunne endres
+      // uten en ny utlegging av nettsiden.
+      ...(() => {
+        const d = this.state.dagsoppgjor;
+        const bilag = (d && d.bilag) || [];
+        const mangler = (d && d.manglerKonto) || [];
+        const lagret = (d && d.oppsett) || {};
+        const kladd = this.state.doOppsett || {};
+        const verdi = (n) => (kladd[n] !== undefined ? kladd[n] : (lagret[n] || ''));
+
+        const FELT = [
+          ['Kurs og events — konto',   'regnskap_konto_kurs',       '3200'],
+          ['Kurs og events — mva-kode','regnskap_mva_kurs',         '6'],
+          ['Medlemskap — konto',       'regnskap_konto_medlemskap', '3000'],
+          ['Medlemskap — mva-kode',    'regnskap_mva_medlemskap',   '3'],
+          ['Butikksalg — konto',       'regnskap_konto_butikk',     '3000 el. 3001'],
+          ['Butikksalg — mva-kode',    'regnskap_mva_butikk',       '3'],
+          ['Drop-in — konto',          'regnskap_konto_dropin',     'ikke avklart'],
+          ['Drop-in — mva-kode',       'regnskap_mva_dropin',       'ikke avklart'],
+          ['Gavekort solgt — konto',   'regnskap_konto_gavekort',   'ikke avklart'],
+          ['Gavekort solgt — mva-kode','regnskap_mva_gavekort',     'ikke avklart'],
+          ['Motkonto Vipps',           'regnskap_motkonto_vipps',   'ikke avklart'],
+          ['Motkonto kontant',         'regnskap_motkonto_kontant', 'ikke avklart'],
+          ['Motkonto faktura',         'regnskap_motkonto_faktura', 'ikke avklart'],
+        ];
+
+        return {
+          doMaaned: this.doMaanedNaa(),
+          settDoMaaned: e => { this.setState({ doMaaned: e.target.value, dagsoppgjor: null }); this._doHentes = false; },
+          doForklaring: 'Ett bilag per dag, slik regnskapsføreren ba om — ikke én faktura per salg. '
+            + 'Medlemmenes egne salg er ikke med: de pengene går rett til selgeren.',
+          doTomt: !!d && bilag.length === 0,
+          doTomTekst: 'Ingen oppgjorte salg denne måneden.',
+          doMangler: mangler.length > 0,
+          doManglerTekst: mangler.join(', ') + '. Bilaget viser summen, men kontoen står tom '
+            + 'til den er avklart — en gjettet konto er verre enn en som sier fra.',
+          doBilag: bilag.map(b => ({
+            norsk: b.norsk,
+            sum: 'kr. ' + b.sum,
+            antallTekst: b.antall === 1 ? '1 salg' : b.antall + ' salg',
+            ubalanse: !b.balanse,
+            rader: b.linjer.map(l => ({
+              side: 'Kredit', konto: l.konto || 'mangler',
+              kontoStil: { minWidth: 62, fontVariantNumeric: 'tabular-nums',
+                color: l.mangler ? 'var(--terracotta-600)' : 'var(--text-heading)' },
+              mva: l.mvakode ? 'mva ' + l.mvakode : '',
+              hva: l.hva, belop: l.belop,
+            })).concat(b.inn.map(i => ({
+              side: 'Debet', konto: i.konto || 'mangler',
+              kontoStil: { minWidth: 62, fontVariantNumeric: 'tabular-nums',
+                color: i.mangler ? 'var(--terracotta-600)' : 'var(--text-heading)' },
+              mva: '', hva: 'Innbetalt · ' + i.maate, belop: i.belop,
+            }))),
+          })),
+          doLastNed: () => {
+            if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+            window.open('/api/admin/dagsoppgjor.php?csv=ja&maaned='
+              + encodeURIComponent(this.doMaanedNaa()), '_blank', 'noopener');
+          },
+          doOppsettApent: !!this.state.doOppsettApent,
+          doOppsettKnapp: this.state.doOppsettApent ? 'Skjul kontoene' : 'Kontoer og mva-koder',
+          doVeksle: () => this.setState(st => ({ doOppsettApent: !st.doOppsettApent })),
+          doFelter: FELT.map(([navn, nokkel, plassholder]) => ({
+            navn, plassholder, verdi: verdi(nokkel),
+            sett: e => { const v = e.target.value;
+              this.setState(st => ({ doOppsett: Object.assign({}, st.doOppsett, { [nokkel]: v }) })); },
+          })),
+          doLagreKnapp: this._doLagrer ? 'Lagrer …' : 'Lagre kontoene',
+          doLagreOppsett: () => this.lagreRegnskapsoppsett(),
+        };
+      })(),
       goKurs: this.go('kurs'),
       // Forsiden.
       //

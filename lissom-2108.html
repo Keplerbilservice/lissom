@@ -5319,6 +5319,11 @@ window.__resources = {
                   <button type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
                   <button type="button" onClick="{{ h.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ h.sperrTekst }}</button>
                 </sc-if>
+                <!-- Paameldingen staar i navnet til en gjest med samme e-post eller
+                     telefon. Den hoerer til personen, men ikke til kontoen. -->
+                <sc-if value="{{ h.losRad }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ h.knytt }}" title="Personen ser ikke dette kurset på Min side" style="appearance: none; background: transparent; border: 1px dashed var(--terracotta-600); border-radius: var(--radius-pill); cursor: pointer; padding: 6px 13px; font: var(--type-body-sm); color: var(--terracotta-600); white-space: nowrap;">Knytt til kontoen</button>
+                </sc-if>
               </div>
             </sc-for>
 
@@ -5724,6 +5729,11 @@ window.__resources = {
                   <sc-if value="{{ h.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
                     <button type="button" onClick="{{ h.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
                     <button type="button" onClick="{{ h.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ h.sperrTekst }}</button>
+                  </sc-if>
+                  <!-- Paameldingen staar i navnet til en gjest med samme e-post eller
+                       telefon. Den hoerer til personen, men ikke til kontoen. -->
+                  <sc-if value="{{ h.losRad }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ h.knytt }}" title="Personen ser ikke dette kurset på Min side" style="appearance: none; background: transparent; border: 1px dashed var(--terracotta-600); border-radius: var(--radius-pill); cursor: pointer; padding: 6px 13px; font: var(--type-body-sm); color: var(--terracotta-600); white-space: nowrap;">Knytt til kontoen</button>
                   </sc-if>
                 </div>
               </sc-for>
@@ -6423,7 +6433,10 @@ window.__resources = {
             </div>
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-              <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Sendt til medlemmene</div>
+              <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ sendtTittel }}</div>
+              <sc-if value="{{ ingenSendte }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenSendteTekst }}</div>
+              </sc-if>
               <sc-for list="{{ sendteBeskjeder }}" as="b" hint-placeholder-count="4">
                 <div onClick="{{ b.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                   <div style="min-width: 0;">
@@ -12459,6 +12472,39 @@ class Component extends DCLogic {
   }
 
   /**
+   * Beskjedene som er sendt i det omraadet du staar i.
+   *
+   * Deltakere og medlemmer er to grupper, og lista under Beskjeder viste den
+   * samme uansett hvor du kom fra. En beskjed til deltakerne paa en kveld
+   * hoerer ikke hjemme under Medlemmer, og omvendt. «Én mottaker» staar begge
+   * steder — den kan vaere hvem som helst.
+   */
+  sendteIOmraadet() {
+    const deltakere = (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs';
+    return (this.state.adminSendte || []).filter(b =>
+      b.gruppe === 'en' || (deltakere ? b.gruppe === 'deltakere' : b.gruppe === 'medlemmer'));
+  }
+
+  /**
+   * Knytter en gjestepaamelding til kontoen.
+   *
+   * Bestilte noen plassen for de opprettet konto — eller la verkstedet dem
+   * inn for haand — staar paameldingen i navnet til en gjest. Kurset staar
+   * da i deltakerlista, men ikke paa Min side, og kursbeviset kan personen
+   * ikke hente selv.
+   */
+  knyttPamelding(bookingId) {
+    const id = this.state.personFor;
+    if (!id || !bookingId) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (!window.confirm('Knytte denne påmeldingen til kontoen?\n\n'
+        + 'Da ser personen kurset og kursbeviset på Min side.')) return;
+
+    this.medlemKall({ handling: 'knytt', medlemId: id, bookingId: bookingId }, true)
+      .then(ok => { if (ok) this.apnePerson(id); });
+  }
+
+  /**
    * Lagrer annen info om personen.
    *
    * Feltet fantes fra for i innmeldingsskjemaet, men bare der: sto det noe i
@@ -14601,6 +14647,7 @@ class Component extends DCLogic {
         if (soknader && soknader.soknader) ny.adminSoknader = soknader.soknader;
         if (brukere && brukere.brukere) ny.adminBrukere = brukere.brukere;
         if (foresporsler && foresporsler.foresporsler) ny.adminForesporsler = foresporsler.foresporsler;
+        if (foresporsler && foresporsler.sendte) ny.adminSendte = foresporsler.sendte;
         // Kurskatalogen. Uten den falt admin tilbake paa to oppdiktede kurs,
         // og «Ny kursdato» tilbod datoer paa kurs som ikke fantes.
         if (venteliste && venteliste.venteliste) ny.adminVenteliste = venteliste.venteliste;
@@ -14690,14 +14737,40 @@ class Component extends DCLogic {
    */
   kursdeltakerRader() {
     const folk = new Map();
-    const nokkel = d => d.medlemId
-      ? 'm' + d.medlemId
-      : 'g' + String(d.epost || d.tlf || d.navn || '').toLowerCase();
+
+    // Hvem er hvem.
+    //
+    // En paamelding kan staa i navnet til en gjest selv om personen har konto
+    // — bestilte hen plassen for kontoen fantes, eller la verkstedet hen inn
+    // for haand, staar det ingen konto paa raden. Uten dette sto samme
+    // menneske to ganger i lista: én rad fra paameldingen, uten konto og uten
+    // vei inn til personruta, og én fra registeret. Kursbeviset kunne rettes
+    // fra medlemslista og ikke herfra, enda det var samme bevis.
+    //
+    // E-post og telefon er det verkstedet gjenkjenner folk paa. Nummeret
+    // sammenlignes paa de siste aatte sifrene, saa «91234567» og «+4791234567»
+    // er den samme.
+    const enkelTlf = t => String(t || '').replace(/\D/g, '').slice(-8);
+    const kontoer = new Map();
+    (this.state.adminMedlemmer || []).forEach(m => {
+      if (m.epost) kontoer.set('e' + String(m.epost).toLowerCase(), m.id);
+      const t = enkelTlf(m.telefon);
+      if (t.length === 8) kontoer.set('t' + t, m.id);
+    });
+    const kontoFor = d => d.medlemId
+      || kontoer.get('e' + String(d.epost || '').toLowerCase())
+      || kontoer.get('t' + enkelTlf(d.tlf))
+      || 0;
+
+    const nokkel = d => {
+      const id = kontoFor(d);
+      return id ? 'm' + id : 'g' + String(d.epost || d.tlf || d.navn || '').toLowerCase();
+    };
 
     (this.state.adminDeltakere || []).forEach(d => {
       const k = nokkel(d);
       const f = folk.get(k) || {
-        medlemId: d.medlemId || 0, navn: d.navn || '(uten navn)',
+        medlemId: kontoFor(d), navn: d.navn || '(uten navn)',
         epost: d.epost || '', tlf: d.tlf || '', antall: 0, sisteKurs: '',
         bevis: '', bevisKurs: '',
       };
@@ -14798,15 +14871,20 @@ class Component extends DCLogic {
    * Serveren avviser aa avslutte noen som har en loepende Vipps-avtale:
    * da ville lista sagt «sluttet» mens pengene fortsatt gikk.
    */
-  medlemKall(kropp) {
+  /**
+   * @param behold  La personruta staa aapen. Avslutt, gjenapne og slett
+   *                lukker den — da kan personen vaere en annen etterpaa. En
+   *                retting inne i ruta skal ikke kaste deg ut av den.
+   */
+  medlemKall(kropp, behold) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden' });
-      return;
+      return Promise.resolve(false);
     }
-    if (this._medlemKall) return;
+    if (this._medlemKall) return Promise.resolve(false);
     this._medlemKall = true;
 
-    fetch('/api/admin/medlemmer.php', {
+    return fetch('/api/admin/medlemmer.php', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(kropp),
@@ -14814,16 +14892,17 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
         this._medlemKall = false;
-        this.setState({
+        this.setState(Object.assign({
           kvittering: ok ? 'Lagret' : 'Gikk ikke',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
-          personFor: null, personData: null,
-        });
+        }, behold ? {} : { personFor: null, personData: null }));
         if (ok) { this._adminHentes = false; this.hentAdmin(); }
+        return ok;
       })
       .catch(() => {
         this._medlemKall = false;
         this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
       });
   }
 
@@ -16803,6 +16882,11 @@ class Component extends DCLogic {
             bevisSperret: !!x.bevisSperret,
             sperrTekst: x.bevisSperret ? 'Gi tilbake' : 'Trekk beviset',
             sperrBevis: () => this.sperrKursbevis(x),
+            // Paameldingen staar i navnet til en gjest med samme e-post eller
+            // telefon. Den hoerer til personen, men ikke til kontoen — og da
+            // ser hen den ikke paa Min side, og kan ikke hente beviset selv.
+            losRad: !!x.losRad,
+            knytt: () => this.knyttPamelding(x.id),
           })),
         };
       })(),
@@ -20326,7 +20410,25 @@ class Component extends DCLogic {
         { nr: '#1040', navn: 'Erik Dahl', hva: 'Bolle stor · pakke', status: 'Skal pakkes', tone: 'warning' },
         { nr: '#1039', navn: 'Nina Ruud', hva: 'Fat 28 cm · henting', status: 'Hentet', tone: 'neutral' },
       ]), o => [o.nr + ' · ' + o.navn, o.hva, [{ navn: 'Status', verdi: o.status }, { navn: 'Ordrenummer', verdi: o.nr }], 'Marker som hentet']),
-      sendteBeskjeder: this.klikkbar((this.erPublisert() ? [] : [
+      // Overskrifta over lista foelger omraadet. «Sendt til medlemmene» sto
+      // der ogsaa naar du kom fra deltakerne, og da ser det ut som om de to
+      // gruppene er den samme.
+      sendtTittel: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
+        ? 'Sendt til kursdeltakerne' : 'Sendt til medlemmene',
+      ingenSendte: this.erPublisert() && this.sendteIOmraadet().length === 0,
+      ingenSendteTekst: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
+        ? 'Ingen beskjeder er sendt til kursdeltakere ennå.'
+        : 'Ingen beskjeder er sendt til medlemmene ennå.',
+      sendteBeskjeder: this.erPublisert()
+        ? this.klikkbar(this.sendteIOmraadet(), b => [b.tittel, b.til + ' · ' + b.tid, [
+            { navn: 'MELDING', verdi: '' },
+            { navn: b.tekst, verdi: ' ' },
+            { navn: 'LEVERING', verdi: '' },
+            { navn: 'Mottakere', verdi: b.til },
+            { navn: 'Sendt', verdi: b.tid },
+            { navn: 'Kom fram', verdi: b.levert },
+          ].concat(b.feilet > 0 ? [{ navn: 'Kom ikke fram', verdi: b.feilet + '' }] : []), 'Lukk'])
+        : this.klikkbar((this.erPublisert() ? [] : [
         { tittel: 'Ovnen går natt til torsdag', til: 'Alle aktive medlemmer', tid: 'I dag 07:40', apnet: '31 av 47', ulest: '16 medlemmer', kanal: 'Min side og e-post', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med. Ovnen står på til fredag morgen, og skal ikke åpnes før den er under 100 grader.' },
         { tittel: 'Ny leire på lager', til: 'Alle aktive medlemmer', tid: '22. aug', apnet: '44 av 47', ulest: '3 medlemmer', kanal: 'Min side', tekst: 'Grå stengods 2 er tilbake. Ligger under trappa. Husk å registrere posene i internbutikken så det blir riktig på månedsoppgjøret.' },
         { tittel: 'Åpen dag 6. september', til: 'Alle aktive medlemmer', tid: '18. aug', apnet: '46 av 47', ulest: '1 medlem', kanal: 'Min side, e-post og SMS', tekst: 'Verkstedet er åpent for publikum 11–16. Medlemmer kan gjerne stå på stand og vise fram arbeider. Si fra til meg hvis du vil bidra.' },

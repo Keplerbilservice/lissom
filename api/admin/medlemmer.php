@@ -16,6 +16,7 @@ $jeg = krev_admin();
 //   POST handling=gjenapne   { medlemId }   aktivt igjen
 //   POST handling=slett      { medlemId }   personopplysningene fjernes
 //   POST handling=notat      { medlemId, notat }   annen info om personen
+//   POST handling=knytt      { medlemId, bookingId }  gjestepaamelding til konto
 //
 // Ikke alle soker paa nett. Noen staar i doera, noen ringer, og noen har
 // vaert paa kurs i et halvt aar for de bestemmer seg. Uten dette matte
@@ -140,6 +141,48 @@ if (Foresporsel::metode() === 'POST') {
         Svar::ok(['beskjed' => $tekst !== '' ? 'Infoen er lagret.' : 'Infoen er fjernet.']);
     }
 
+    // ── Knytt en gjestepaamelding til kontoen ─────────────────────────
+    //
+    // Bestilte noen plassen for de opprettet konto — eller la verkstedet dem
+    // inn for haand — staar paameldingen i navnet til en gjest. Da ser ikke
+    // personen kurset paa Min side, og kursbeviset kan hen ikke hente selv,
+    // enda det er samme menneske med samme e-post.
+    //
+    // Vi gjetter ikke: knytningen gjores av verkstedet, og bare naar e-posten
+    // eller telefonen er den samme. To personer kan dele en adresse, og da er
+    // det ikke systemet som skal bestemme hvem kurset tilhorer.
+    if ($handling === 'knytt') {
+        $id  = Foresporsel::heltall('medlemId');
+        $bid = Foresporsel::heltall('bookingId');
+
+        $m = DB::en('SELECT id, epost, telefon FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+        $b = DB::en('SELECT id, member_id, gjest_epost, gjest_telefon FROM bookings WHERE id = :i', ['i' => $bid]);
+        if ($b === null) {
+            Svar::feil('Fant ikke påmeldingen.', 404);
+        }
+        if ($b['member_id'] !== null) {
+            Svar::feil('Påmeldingen hører alt til en konto.');
+        }
+
+        $epost = trim((string) ($m['epost'] ?? ''));
+        $tlf   = trim((string) ($m['telefon'] ?? ''));
+        $sammeEpost = $epost !== '' && strcasecmp($epost, (string) ($b['gjest_epost'] ?? '')) === 0;
+        $sammeTlf   = $tlf !== '' && $tlf === (string) ($b['gjest_telefon'] ?? '');
+        if (!$sammeEpost && !$sammeTlf) {
+            Svar::feil('Påmeldingen står på en annen e-post og et annet telefonnummer. '
+                     . 'Da kan den ikke knyttes hit automatisk.');
+        }
+
+        DB::oppdater('bookings', ['member_id' => $id], ['id' => $bid]);
+        revider('pamelding_knyttet', 'booking', $bid, ['medlem' => $id]);
+
+        Svar::ok(['beskjed' => 'Påmeldingen er knyttet til kontoen. '
+                             . 'Nå ser personen kurset og kursbeviset på Min side.']);
+    }
+
     if ($handling !== 'meld-inn') {
         Svar::feil('Ukjent handling.');
     }
@@ -242,16 +285,38 @@ if (Foresporsel::heltall('person') > 0) {
     $bevisFelt = DB::harKolonne('bookings', 'bevis_navn')
         ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,' : '';
 
+    // Paameldinger gjort som gjest hoerer ogsaa hjemme her.
+    //
+    // Ringer noen om kurset sitt, er det den personen du slaar opp — ikke
+    // kontoen. Men historikken leste bare paameldinger med member_id, og
+    // bestilte du plassen for du opprettet konto, eller la verkstedet deg
+    // inn for haand, sto raden uten. Da var kurset usynlig i personruta,
+    // og kursbeviset kunne ikke rettes derfra — enda det sto med navnet
+    // ditt i deltakerlista.
+    //
+    // E-post og telefon er det verkstedet gjenkjenner folk paa fra for; det
+    // er de samme feltene deltakerlista slaar sammen paa.
+    $epost = trim((string) ($m['epost'] ?? ''));
+    $tlf   = trim((string) ($m['telefon'] ?? ''));
+
+    $ogsaa = [];
+    $param = ['m' => $pid];
+    if ($epost !== '') { $ogsaa[] = 'b.gjest_epost = :e';   $param['e'] = $epost; }
+    if ($tlf !== '')   { $ogsaa[] = 'b.gjest_telefon = :t'; $param['t'] = $tlf; }
+    $gjester = $ogsaa === []
+        ? ''
+        : ' OR (b.member_id IS NULL AND (' . implode(' OR ', $ogsaa) . '))';
+
     $rader = DB::alle(
-        "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
+        "SELECT b.id, b.member_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
                 c.tittel, c.type, cs.start_tid, p.vipps_reference
            FROM bookings b
            JOIN courses c ON c.id = b.course_id
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
       LEFT JOIN payments p ON p.id = b.payment_id
-          WHERE b.member_id = :m
+          WHERE (b.member_id = :m{$gjester})
        ORDER BY cs.start_tid IS NULL, cs.start_tid DESC, b.id DESC",
-        ['m' => $pid]
+        $param
     );
 
     $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -296,6 +361,11 @@ if (Foresporsel::heltall('person') > 0) {
                 'bevisNavn'   => (string) ($b['bevis_navn'] ?? ''),
                 'bevisKurs'   => (string) ($b['bevis_kurs'] ?? ''),
                 'referanse' => $b['vipps_reference'],
+                // Sto paameldingen i navnet til en gjest, ligger den her
+                // fordi e-posten eller telefonen er den samme — men den er
+                // ikke knyttet til kontoen. Da ser ikke personen den paa Min
+                // side, og kursbeviset kan hen ikke hente selv.
+                'losRad'    => $b['member_id'] === null,
             ];
         }, $rader),
     ]);

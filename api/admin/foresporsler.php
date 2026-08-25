@@ -51,7 +51,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
     }
 
+    // ── Beskjeder som er sendt ────────────────────────────────────────
+    //
+    // Kortet «Sendt til medlemmene» sto med tekst fra designfila: fire
+    // oppdiktede beskjeder i forhaandsvisningen, og ingenting paa den ekte
+    // sida. Beskjedene fantes — de laa i varselkoen — men ingen kunne se dem
+    // igjen etterpaa, og overskrifta sa «medlemmene» ogsaa naar du kom fra
+    // deltakerne.
+    //
+    // Én rad per beskjed, ikke per mottaker: samme emne, samme gruppe, samme
+    // minutt er den samme beskjeden sendt til flere.
+    $sendte = [];
+    foreach (DB::alle(
+        "SELECT ref_type, ref_id, emne, MIN(tekst) AS tekst,
+                MIN(created_at) AS naar,
+                COUNT(*) AS antall,
+                SUM(status = 'sendt') AS ute,
+                SUM(status = 'feilet') AS feilet
+           FROM notifications
+          WHERE ref_type IN ('beskjed', 'beskjed-medlem', 'beskjed-okt', 'beskjed-en')
+       GROUP BY ref_type, ref_id, emne, DATE_FORMAT(created_at, '%Y-%m-%d %H:%i')
+       ORDER BY naar DESC
+          LIMIT 40"
+    ) as $r) {
+        $okt = null;
+        if ($r['ref_type'] === 'beskjed-okt' && $r['ref_id']) {
+            $okt = DB::en(
+                'SELECT c.tittel, cs.start_tid FROM course_sessions cs
+                   JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i',
+                ['i' => (int) $r['ref_id']]
+            );
+        }
+
+        $sendte[] = [
+            // «beskjed» uten hale er de som ble sendt for gruppa ble lagret.
+            // De gikk til medlemmene — det var den eneste veien da.
+            'gruppe'  => $r['ref_type'] === 'beskjed-okt' ? 'deltakere'
+                       : ($r['ref_type'] === 'beskjed-en' ? 'en' : 'medlemmer'),
+            'tittel'  => (string) $r['emne'],
+            'tekst'   => (string) $r['tekst'],
+            'til'     => $okt !== null
+                ? $okt['tittel'] . ' — ' . Booking::norskDato((string) $okt['start_tid'])
+                : ($r['ref_type'] === 'beskjed-en' ? 'Én mottaker' : 'Medlemmene'),
+            'tid'     => Booking::norskDato((string) $r['naar']),
+            'antall'  => (int) $r['antall'],
+            // Hva som faktisk gikk ut. «Sendt til 12» er ikke sant hvis fire
+            // av dem feilet, og det er verkstedet som blir spurt.
+            'levert'  => (int) $r['ute'] . ' av ' . (int) $r['antall'],
+            'feilet'  => (int) $r['feilet'],
+        ];
+    }
+
     Svar::json([
+        'sendte' => $sendte,
         'foresporsler' => array_map(static fn(array $r): array => [
             'id'      => (int) $r['id'],
             'navn'    => (string) $r['navn'],

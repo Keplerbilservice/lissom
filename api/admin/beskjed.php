@@ -113,6 +113,16 @@ if ($mottakere === []) {
     Svar::feil('Ingen å sende til i denne gruppa.', 409);
 }
 
+// Hvem beskjeden gikk til, lagret paa varselet.
+//
+// Sendte beskjeder kunne ikke finnes igjen: koen visste hvem som fikk e-post,
+// men ikke om det var deltakerne paa en kveld eller alle medlemmene. Da sto
+// «Sendt til medlemmene» over lista uansett hvor du kom fra, og deltakerne og
+// medlemmene ble det samme.
+$refType = $til === 'okt' ? 'beskjed-okt'
+         : ($til === 'en' ? 'beskjed-en' : 'beskjed-medlem');
+$refId   = $til === 'okt' ? ($oktId ?? null) : null;
+
 $epost = 0;
 $antallSms = 0;
 /** @var list<string> $utenVei Mottakere beskjeden ikke naadde. */
@@ -122,11 +132,11 @@ foreach ($mottakere as $m) {
     $personlig = str_replace('{navn}', (string) $m['navn'], $tekst);
 
     if (!empty($m['epost'])) {
-        Varsel::epost((string) $m['epost'], $emne, $personlig . "\n\nHilsen Lissom Keramikk", 'beskjed', null);
+        Varsel::epost((string) $m['epost'], $emne, $personlig . "\n\nHilsen Lissom Keramikk", $refType, $refId);
         $epost++;
     }
     if ($sms && !empty($m['telefon'])) {
-        if (Varsel::sms((string) $m['telefon'], $personlig, 'beskjed', null) > 0) {
+        if (Varsel::sms((string) $m['telefon'], $personlig, $refType, $refId) > 0) {
             $antallSms++;
         } elseif (empty($m['epost'])) {
             // Verken e-post eller SMS naadde fram. Da maa hun faa vite hvem

@@ -89,12 +89,33 @@ Men det gir én felle å huske på, se neste avsnitt.
 
 ### Når WordPress skal fjernes
 
-`public_html` inneholder en gammel WordPress-installasjon som bør slettes når
-den nye siden er verifisert — en WordPress som står uten oppdateringer er en
-vanlig vei inn for angripere, og her ville den delt konto med betalingsdata.
+**Dette er gjort for filene sin del.** Da siden ble flyttet opp til
+`public_html` i august 2026, ble WordPress flyttet til `~/gammel-wordpress` —
+utenfor det som serveres. PHP-en der kan ikke lenger kjøres fra nettet.
 
-**Mappa `public_html/ny.lissom.no` må da spares.** Den inneholder den nye,
-levende nettsiden. Ta sikkerhetskopi av `public_html` før noe slettes.
+Avsnittet under sto igjen med den gamle teksten, og advarte mot å slette
+`public_html/ny.lissom.no`. Den mappa finnes ikke lenger.
+
+Det som gjenstår er opprydding, ikke sikkerhet:
+
+1. **Sjekk at den ikke serveres.** Åpne `lissom.no/wp-login.php`. «Siden
+   finnes ikke» er svaret du vil ha. Kommer det en innloggingsside, ligger
+   den fortsatt ute — da må den ut før noe annet.
+2. **Ta sikkerhetskopi** av `~/gammel-wordpress` og av databasen, i cPanel.
+3. **Slett mappa** `~/gammel-wordpress`.
+4. **Tabellene.** WordPress-tabellene heter `wp_`. Se hva som finnes og hvor
+   mye plass de tar før du rører dem:
+
+   ```sql
+   SELECT table_name, ROUND(data_length/1024/1024, 1) AS mb
+     FROM information_schema.tables
+    WHERE table_schema = DATABASE() AND table_name LIKE 'wp\_%'
+    ORDER BY data_length DESC;
+   ```
+
+   Våre egne tabeller heter noe annet — `bookings`, `courses`, `members`,
+   `payments` og resten. Ingen av dem begynner med `wp_`. Slett bare når
+   sikkerhetskopien er tatt og lastet ned.
 
 Når siden er ferdig testet, peker vi `lissom.no` hit. Det er en DNS-endring, og
 den kan reverseres umiddelbart hvis noe skulle vise seg å mangle.

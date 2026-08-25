@@ -191,10 +191,31 @@ endrer seg der.
 de faktiske kursdatoene deres, enten i admin eller ved at jeg legger dem inn.
 Det samme gjelder varene i butikken og prisene på dem.
 
-**6. WordPress i `public_html`.** En gammel installasjon som ikke oppdateres
-er en vanlig vei inn for angripere, og den deler konto med betalingsdataene.
-Bør fjernes — men `public_html/ny.lissom.no` må spares, den nye siden ligger
-inni den mappa.
+**6. Den gamle WordPress-installasjonen.** Halvveis gjort, og det som gjensto
+er mindre alvorlig enn det sto her.
+
+Da siden ble flyttet opp til `public_html` i august, ble WordPress flyttet ut —
+til `~/gammel-wordpress`, utenfor det som publiseres. Den serveres altså ikke
+lenger, og PHP-en der kan ikke kjøres fra nettet. Det var den delen som hastet.
+
+Punktet her sto igjen med den gamle teksten, inkludert advarselen om at
+`public_html/ny.lissom.no` måtte spares. Den mappa finnes ikke lenger, og en
+advarsel om å spare noe som ikke er der, er verre enn ingen advarsel.
+
+Igjen står to ting, ingen av dem akutte:
+
+*Filene* i `~/gammel-wordpress` tar plass og er en sikkerhetskopi. Slett dem
+når du er trygg på at ingenting derfra trengs. Ingenting på den nye siden peker
+dit — bildene ligger i repoet, og verken koden eller `.htaccess` nevner
+`wp-content`.
+
+*Tabellene* deler fortsatt database med betalingsdataene. Så lenge WordPress
+ikke kjøres, er de bare data som ligger der — men de bør ut når du rydder.
+De heter `wp_` etter mønsteret WordPress bruker.
+
+**Sjekk først at den virkelig ikke serveres:** åpne `lissom.no/wp-login.php`.
+Får du «siden finnes ikke», er den ute av veien. Får du en innloggingsside,
+ligger den fortsatt ute et sted, og da haster det.
 
 **7. Testkurset og prisen på Paint on Pots.** Gjort. Migrasjon 008 satte
 Paint on Pots tilbake til 690 kroner og avlyste testkurset.

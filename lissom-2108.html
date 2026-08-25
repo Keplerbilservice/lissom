@@ -20887,13 +20887,13 @@ class Component extends DCLogic {
           ['Medlemskap — mva-kode',    'regnskap_mva_medlemskap',   '3'],
           ['Butikksalg — konto',       'regnskap_konto_butikk',     '3000 el. 3001'],
           ['Butikksalg — mva-kode',    'regnskap_mva_butikk',       '3'],
-          ['Drop-in — konto',          'regnskap_konto_dropin',     'ikke avklart'],
-          ['Drop-in — mva-kode',       'regnskap_mva_dropin',       'ikke avklart'],
-          ['Gavekort solgt — konto',   'regnskap_konto_gavekort',   'ikke avklart'],
-          ['Gavekort solgt — mva-kode','regnskap_mva_gavekort',     'ikke avklart'],
-          ['Motkonto Vipps',           'regnskap_motkonto_vipps',   'ikke avklart'],
-          ['Motkonto kontant',         'regnskap_motkonto_kontant', 'ikke avklart'],
-          ['Motkonto faktura',         'regnskap_motkonto_faktura', 'ikke avklart'],
+          ['Drop-in — konto',          'regnskap_konto_dropin',     '3000'],
+          ['Drop-in — mva-kode',       'regnskap_mva_dropin',       '3'],
+          ['Gavekort — konto (gjeld)',  'regnskap_konto_gavekort',  '2905'],
+          ['Gavekort — mva-kode',       'regnskap_mva_gavekort',    'ingen'],
+          ['Motkonto Vipps',            'regnskap_motkonto_vipps',  '1510'],
+          ['Motkonto kontant',          'regnskap_motkonto_kontant','1900'],
+          ['Motkonto faktura',          'regnskap_motkonto_faktura','1920'],
         ];
 
         return {
@@ -20921,7 +20921,11 @@ class Component extends DCLogic {
               side: 'Debet', konto: i.konto || 'mangler',
               kontoStil: { minWidth: 62, fontVariantNumeric: 'tabular-nums',
                 color: i.mangler ? 'var(--terracotta-600)' : 'var(--text-heading)' },
-              mva: '', hva: 'Innbetalt · ' + i.maate, belop: i.belop,
+              mva: '',
+              // Et gavekort som loeses inn er ingen innbetaling. Det trekker
+              // ned gjelden fra den dagen kortet ble solgt.
+              hva: i.maate === 'Gavekort' ? 'Gavekort innløst' : 'Innbetalt · ' + i.maate,
+              belop: i.belop,
             }))),
           })),
           doLastNed: () => {

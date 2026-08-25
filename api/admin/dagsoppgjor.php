@@ -99,22 +99,29 @@ $OPPSETT = [
     'medlemskap' => ['navn' => 'Medlemskap',     'konto' => 'regnskap_konto_medlemskap', 'mva' => 'regnskap_mva_medlemskap'],
     'ordre'      => ['navn' => 'Butikksalg',     'konto' => 'regnskap_konto_butikk',     'mva' => 'regnskap_mva_butikk'],
     'dropin'     => ['navn' => 'Drop-in',        'konto' => 'regnskap_konto_dropin',     'mva' => 'regnskap_mva_dropin'],
-    'gavekort'   => ['navn' => 'Gavekort solgt', 'konto' => 'regnskap_konto_gavekort',   'mva' => 'regnskap_mva_gavekort'],
+    'gavekort'   => ['navn' => 'Gavekort solgt (gjeld)', 'konto' => 'regnskap_konto_gavekort', 'mva' => 'regnskap_mva_gavekort'],
 ];
 
 $MOTKONTO = [
     'Vipps'    => 'regnskap_motkonto_vipps',
     'Kontant'  => 'regnskap_motkonto_kontant',
     'Faktura'  => 'regnskap_motkonto_faktura',
+    // Et gavekort som loeses inn er ingen innbetaling. Det trekker ned
+    // gjelden fra den dagen kortet ble solgt — samme konto, andre vei.
+    'Gavekort' => 'regnskap_konto_gavekort',
 ];
 
 // ── Salgene ────────────────────────────────────────────────────────────
 //
 // Bare det som faktisk er gjort opp. Refusjoner trekkes fra samme dag som
 // selve betalingen staar, slik at dagen summerer til det som ble igjen.
+// Gavekortkolonnene kom med migrasjon 040. Uten dem er alt betalt med penger.
+$gavekortFelt = DB::harKolonne('payments', 'gavekort_ore')
+    ? 'p.gavekort_ore' : '0 AS gavekort_ore';
+
 $rader = DB::alle(
     "SELECT p.id, p.formal, p.type, p.belop_ore, p.refundert_ore, p.created_at,
-            o.betalt_maate
+            {$gavekortFelt}, o.betalt_maate
        FROM payments p
   LEFT JOIN orders o ON o.payment_id = p.id
       WHERE p.status IN ('betalt', 'delvis_refundert')
@@ -175,8 +182,15 @@ foreach ($manuelle as $m) {
 $dager = [];
 foreach ($rader as $r) {
     $d = (new DateTimeImmutable((string) $r['created_at'], $utc))->setTimezone($oslo)->format('Y-m-d');
-    $netto = (int) $r['belop_ore'] - (int) ($r['refundert_ore'] ?? 0);
-    if ($netto === 0) {
+
+    // «belop_ore» er det kunden faktisk betalte. Ble en del av prisen dekket
+    // av et gavekort, staar den delen for seg — og inntekten er summen av de
+    // to. Uten det ville et kurs til 1 490 betalt med et gavekort paa 1 000
+    // staatt som 490 i inntekt, og de tusen aldri blitt inntektsfoert i det
+    // hele tatt.
+    $penger   = (int) $r['belop_ore'] - (int) ($r['refundert_ore'] ?? 0);
+    $gavekort = (int) ($r['gavekort_ore'] ?? 0);
+    if ($penger === 0 && $gavekort === 0) {
         continue;
     }
 
@@ -184,10 +198,20 @@ foreach ($rader as $r) {
     $dager[$d]['antall']++;
 
     $f = (string) $r['formal'];
-    $dager[$d]['inntekt'][$f] = ($dager[$d]['inntekt'][$f] ?? 0) + $netto;
+    // Salg av et gavekort er ikke inntekt. Det er gjeld til den som eier
+    // kortet, og blir inntekt foerst den dagen det loeses inn — paa den
+    // kontoen det da brukes til.
+    $dager[$d]['inntekt'][$f] = ($dager[$d]['inntekt'][$f] ?? 0) + $penger + $gavekort;
 
+    // Pengene inn, og gavekortet som ble brukt. Gavekortet er ingen
+    // innbetaling: det trekker ned gjelden fra den dagen kortet ble solgt.
     $m = $maate($r);
-    $dager[$d]['inn'][$m] = ($dager[$d]['inn'][$m] ?? 0) + $netto;
+    if ($penger !== 0) {
+        $dager[$d]['inn'][$m] = ($dager[$d]['inn'][$m] ?? 0) + $penger;
+    }
+    if ($gavekort !== 0) {
+        $dager[$d]['inn']['Gavekort'] = ($dager[$d]['inn']['Gavekort'] ?? 0) + $gavekort;
+    }
 }
 
 krsort($dager);
@@ -269,7 +293,8 @@ if (Foresporsel::tekst('csv') === 'ja') {
         }
         foreach ($b['inn'] as $i) {
             fputcsv($f, [$b['dato'], $b['bilagstekst'], $i['konto'] ?: 'MANGLER',
-                         '', $i['belop'], '', 'Innbetalt · ' . $i['maate']], ';', '"', '');
+                         '', $i['belop'], '',
+                         $i['maate'] === 'Gavekort' ? 'Gavekort innløst' : 'Innbetalt · ' . $i['maate']], ';', '"', '');
         }
     }
     if ($ut === []) {

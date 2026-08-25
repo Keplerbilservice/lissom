@@ -5419,6 +5419,12 @@ window.__resources = {
                 <sc-if value="{{ d.utenBevis }}" hint-placeholder-val="{{ false }}">
                   <span style="font-size: var(--text-xs); color: var(--text-muted); max-width: 190px; text-wrap: pretty;">{{ d.bevisGrunn }}</span>
                 </sc-if>
+                <!-- Retting rett paa raden. Personruta bygges av kontoen, og
+                     en kursdeltaker uten konto har ingen. -->
+                <sc-if value="{{ d.kanRetteBevis }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ d.rettBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger bevis</button>
+                  <button type="button" onClick="{{ d.sperrBevis }}" style="appearance: none; background: transparent; border: none; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">{{ d.sperrTekst }}</button>
+                </sc-if>
                 <button type="button" onClick="{{ d.meldInn }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Meld inn</button>
               </div>
             </div>
@@ -8971,20 +8977,28 @@ class Component extends DCLogic {
     });
   }
 
+  /**
+   * Kursene i én kategori.
+   *
+   * Ligger for seg selv fordi to steder spor om det samme: lista under
+   * knappene, og knappene selv — en kategori skal ikke staa der naar det
+   * ikke er satt opp noe i den. Var regelen skrevet to ganger, ville et
+   * kurs kunne telle i knappen og mangle i lista.
+   */
+  kursIKategori(liste, f) {
+    if (!f || f === 'Alle' || f === 'Vis alle') return liste;
+    if (f === 'Kurs') {
+      // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
+      const utenom = ['Events', 'Event', 'Drop-in'];
+      return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1);
+    }
+    return liste.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
+  }
+
   filtrerKurs(liste) {
-    const f = this.state.kursFilter;
     const naar = this.state.kursTid;
 
-    let ut = liste;
-    if (f && f !== 'Alle' && f !== 'Vis alle') {
-      if (f === 'Kurs') {
-        // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
-        const utenom = ['Events', 'Event', 'Drop-in'];
-        ut = ut.filter(k => utenom.indexOf(k.tema || k.level) === -1);
-      } else {
-        ut = ut.filter(k => (k.tema || k.level) === f || (k.temaer || []).includes(f));
-      }
-    }
+    let ut = this.kursIKategori(liste, this.state.kursFilter);
 
     // Tidspunktet legger seg oppaa kategorien, det erstatter den ikke: velger
     // du «Dreiing» og «Kveldstid», er det dreiekursene paa kvelden du vil se.
@@ -14750,13 +14764,26 @@ class Component extends DCLogic {
     // E-post og telefon er det verkstedet gjenkjenner folk paa. Nummeret
     // sammenlignes paa de siste aatte sifrene, saa «91234567» og «+4791234567»
     // er den samme.
+    // Bare naar det ikke er tvil.
+    //
+    // To i samme hus kan dele telefonnummer, og noen deler e-post. Er det mer
+    // enn én konto paa den samme adressen eller det samme nummeret, vet vi
+    // ikke hvem kurset tilhorer — og da skal vi ikke velge. Raden staar som
+    // gjest, og verkstedet knytter den selv fra personruta.
     const enkelTlf = t => String(t || '').replace(/\D/g, '').slice(-8);
     const kontoer = new Map();
+    const doble = new Set();
     (this.state.adminMedlemmer || []).forEach(m => {
-      if (m.epost) kontoer.set('e' + String(m.epost).toLowerCase(), m.id);
+      const nokler = [];
+      if (m.epost) nokler.push('e' + String(m.epost).toLowerCase());
       const t = enkelTlf(m.telefon);
-      if (t.length === 8) kontoer.set('t' + t, m.id);
+      if (t.length === 8) nokler.push('t' + t);
+      nokler.forEach(n => {
+        if (kontoer.has(n) && kontoer.get(n) !== m.id) doble.add(n);
+        else kontoer.set(n, m.id);
+      });
     });
+    doble.forEach(n => kontoer.delete(n));
     const kontoFor = d => d.medlemId
       || kontoer.get('e' + String(d.epost || '').toLowerCase())
       || kontoer.get('t' + enkelTlf(d.tlf))
@@ -14772,12 +14799,22 @@ class Component extends DCLogic {
       const f = folk.get(k) || {
         medlemId: kontoFor(d), navn: d.navn || '(uten navn)',
         epost: d.epost || '', tlf: d.tlf || '', antall: 0, sisteKurs: '',
-        bevis: '', bevisKurs: '',
+        bevis: '', bevisKurs: '', bevisId: 0, bevisNavn: '', bevisSperret: false,
       };
       f.antall += 1;
       // Kursbeviset paa selve raden. Laa bare inne i personruta, saa for aa
       // se det matte man foerst aapne personen og lete i historikken.
       if (!f.bevis && d.kursbevis) { f.bevis = d.kursbevis; f.bevisKurs = d.kurs || ''; }
+      // Paameldingen beviset bygges av. Uten den kan raden vise beviset, men
+      // ikke rette det — og en gjest uten konto har ingen personrute aa gjore
+      // det fra. Foerste paamelding som kan gi bevis er den vi holder paa.
+      if (!f.bevisId && d.bevisMulig) {
+        f.bevisId = d.id;
+        f.bevisNavn = d.bevisNavn || '';
+        f.bevisSperret = !!d.bevisSperret;
+        if (!f.bevisKurs) f.bevisKurs = d.bevisKurs || d.kurs || '';
+        f.bevisTittelKurs = d.kurs || '';
+      }
       if (!f.sisteKurs) f.sisteKurs = (d.kurs || '') + ' · ' + (d.dato || '');
       if (!f.epost && d.epost) f.epost = d.epost;
       if (!f.tlf && d.tlf) f.tlf = d.tlf;
@@ -15612,34 +15649,66 @@ class Component extends DCLogic {
       // Naar paa dagen. Folk leter sjelden etter «plateteknikk» foerst — de
       // vet naar de har fri. Knappene ligger over kategoriene og virker
       // sammen med dem. Trykker du paa den som alt er valgt, slaas den av.
-      kursTidSporsmal: 'Når på dagen passer det best for deg?',
-      kursTidFiltre: ['Dagtid', 'Kveldstid', 'Helg'].map(navn => ({
-        navn,
-        valgt: this.state.kursTid === navn,
-        velg: () => this.setState({ kursTid: this.state.kursTid === navn ? null : navn }),
-      })),
-      // Et filter kan gi null treff. Uten dette sto sida bare tom, og det
-      // ser ut som en feil framfor et svar.
-      kursIngenTreff: this.filtrerKurs(this.kursKort()).length === 0,
-      kursTomTekst: this.state.kursTid
-        ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen' }[this.state.kursTid] || '') + ' akkurat nå.'
-        : 'Ingen kurs i denne kategorien akkurat nå.',
-      kursNullstill: () => this.setState({ kursTid: null, kursFilter: 'Vis alle' }),
-      kursFiltre: ['Vis alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop', 'Events', 'Sip & Clay', 'Date Night', 'Paint on pots', 'Drop-in'].map(navn => ({
-        navn,
-        valgt: navn === this.state.kursFilter
-          || (navn === 'Vis alle' && (!this.state.kursFilter || this.state.kursFilter === 'Alle')),
-        velg: () => {
-          // «Drop-in» hoppet rett til bookingskjermen. Seksjonen som
-          // forklarer hva drop-in er — at det krever kurs hos oss eller et
-          // aktivt medlem, hva som er inkludert, og hvordan det foregaar —
-          // sto bak et flagg som aldri ble sant, og var derfor umulig aa
-          // komme til. Filteret blir staaende paa kurssida naa, og
-          // «Book drop-in» inne i seksjonen tar deg videre.
-          this.setState({ kursFilter: navn });
-          window.scrollTo(0, 0);
-        },
-      })),
+      ...(() => {
+        // Katalogen bygges én gang. Bade lista, knapperadene og tomteksten
+        // spor om den, og den settes sammen paa nytt for hvert kall.
+        const alle = this.kursKort();
+        const naar = this.state.kursTid;
+        const valgt = this.state.kursFilter;
+        const erAlle = !valgt || valgt === 'Alle' || valgt === 'Vis alle';
+
+        // Er det satt opp noe i kategorien akkurat naa?
+        //
+        // Knapperada sto med de samme ti kategoriene uansett — ogsaa «Date
+        // Night» og «Paint on pots» naar det ikke var satt opp en eneste
+        // dato. Da trykker folk seg inn i en tom side og tror noe er i
+        // stykker. Tidsvalget teller med: har du valgt «Helg», skal ikke
+        // «Dreiing» staa der naar dreiekursene bare gaar paa hverdager.
+        const finnes = (navn) => {
+          let ut = this.kursIKategori(alle, navn);
+          if (naar) ut = ut.map(k => this.medValgtTid(k, naar)).filter(Boolean);
+          return ut.length > 0;
+        };
+
+        const KATEGORIER = ['Vis alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop',
+                            'Events', 'Sip & Clay', 'Date Night', 'Paint on pots', 'Drop-in'];
+
+        return {
+          kursTidSporsmal: 'Når på dagen passer det best for deg?',
+          kursTidFiltre: ['Dagtid', 'Kveldstid', 'Helg'].map(navn => ({
+            navn,
+            valgt: naar === navn,
+            velg: () => this.setState({ kursTid: naar === navn ? null : navn }),
+          })),
+          // Et filter kan gi null treff. Uten dette sto sida bare tom, og det
+          // ser ut som en feil framfor et svar.
+          kursIngenTreff: this.filtrerKurs(alle).length === 0,
+          kursTomTekst: naar
+            ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen' }[naar] || '') + ' akkurat nå.'
+            : 'Ingen kurs i denne kategorien akkurat nå.',
+          kursNullstill: () => this.setState({ kursTid: null, kursFilter: 'Vis alle' }),
+          kursFiltre: KATEGORIER
+            // «Vis alle» staar alltid. Den valgte staar ogsaa, selv naar den
+            // er tom — ellers forsvinner knappen du nettopp trykket paa, og
+            // du ser aldri hvorfor sida ble tom.
+            .filter(navn => navn === 'Vis alle' || navn === valgt || finnes(navn))
+            .map(navn => ({
+              navn,
+              valgt: navn === valgt || (navn === 'Vis alle' && erAlle),
+              velg: () => {
+                // «Drop-in» hoppet rett til bookingskjermen. Seksjonen som
+                // forklarer hva drop-in er — at det krever kurs hos oss eller
+                // et aktivt medlem, hva som er inkludert, og hvordan det
+                // foregaar — sto bak et flagg som aldri ble sant, og var
+                // derfor umulig aa komme til. Filteret blir staaende paa
+                // kurssida naa, og «Book drop-in» inne i seksjonen tar deg
+                // videre.
+                this.setState({ kursFilter: navn });
+                window.scrollTo(0, 0);
+              },
+            })),
+        };
+      })(),
       kursAlle: this.filtrerKurs(this.kursKort()),
       bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
       ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
@@ -17420,7 +17489,11 @@ class Component extends DCLogic {
             // grunnen verkstedet blir spurt om paa telefonen. Uten den saa
             // raden bare ut som om kursbeviset manglet.
             utenBevis: !p.bevis,
-            bevisGrunn: p.antall === 0 ? 'Ingen kurs ennå'
+            // Staar det ingen knapp, er det alltid en grunn — og etter at
+            // verkstedet trakk beviset, er ikke grunnen at kurset ikke er
+            // holdt. Da sto det en tekst som ikke var sann.
+            bevisGrunn: p.bevisSperret ? 'Beviset er trukket'
+              : p.antall === 0 ? 'Ingen kurs ennå'
               : 'Kursbevis kommer når kurset er gjennomført og betalt',
             bevisTittel: p.bevisKurs ? 'Kursbevis · ' + p.bevisKurs : 'Kursbevis',
             apneBevis: (e) => { if (e && e.stopPropagation) e.stopPropagation(); if (p.bevis) window.open(p.bevis, '_blank', 'noopener'); },
@@ -17429,6 +17502,20 @@ class Component extends DCLogic {
             // gjettes paa.
             harKonto: p.medlemId > 0,
             utenKonto: !(p.medlemId > 0),
+            // Retting rett paa raden.
+            //
+            // Beviset kunne bare rettes inne i personruta, og den bygges av
+            // kontoen. En kursdeltaker uten konto — de fleste av dem — hadde
+            // dermed ingen vei til aa faa rettet et navn som sto feil paa
+            // arket, enda knappen «Kursbevis» sto rett ved siden av.
+            kanRetteBevis: p.bevisId > 0,
+            rettBevis: (e) => { if (e && e.stopPropagation) e.stopPropagation();
+              this.rettKursbevis({ id: p.bevisId, bevisNavn: p.bevisNavn || p.navn,
+                bevisKurs: p.bevisKurs, tittel: p.bevisTittelKurs || p.bevisKurs }); },
+            sperrTekst: p.bevisSperret ? 'Gi tilbake' : 'Trekk beviset',
+            sperrBevis: (e) => { if (e && e.stopPropagation) e.stopPropagation();
+              this.sperrKursbevis({ id: p.bevisId, tittel: p.bevisTittelKurs || p.bevisKurs,
+                bevisSperret: p.bevisSperret }); },
             // Raden aapner personen, slik den gjor under Medlemmer.
             //
             // Det er den samme personen og den samme ruta — men her var raden

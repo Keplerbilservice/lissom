@@ -73,6 +73,11 @@ $kursbevis = static function (array $d): ?string {
     if (($d['status'] ?? '') !== 'betalt') {
         return null;
     }
+    // Er beviset trukket, skal lenken bort ogsaa her. Ellers staar knappen
+    // igjen i deltakerlista og svarer 404 naar den trykkes.
+    if (!empty($d['bevis_sperret'])) {
+        return null;
+    }
     // Drop-in er ikke et kurs — det er to timer i verkstedet med ditt eget
     // arbeid, og det er ingenting aa bevise. Interne samlinger er kurs, og
     // de gir bevis som alle andre: et medlem som har vaert paa glasurkveld
@@ -111,9 +116,13 @@ if ($oktId <= 0) {
     );
 
     // Flat liste over alle deltakere framover — det admin-siden viser.
+    // Rettelsene paa kursbeviset kom med migrasjon 045.
+    $bevisKol = DB::harKolonne('bookings', 'bevis_navn')
+        ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,' : '';
+
     $alle = DB::alle(
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.folge_medlem,
-                b.betalt_maate, b.notat, b.lagt_inn_av,
+                b.betalt_maate, b.notat, b.lagt_inn_av, {$bevisKol}
                 b.member_id, b.course_session_id,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
@@ -159,6 +168,15 @@ if ($oktId <= 0) {
             // Kursbevis for gjennomforte, betalte kurs. Verkstedet skal kunne
             // skrive ut for noen som ikke faar det til selv.
             'kursbevis' => $kursbevis($d),
+            // Og rette det. Beviset bygges av paameldingen, saa et navn som
+            // ble stavet feil ved paamelding sto feil paa arket. Rettingen
+            // laa bare inne i personruta — og en gjest uten konto har ingen.
+            'bevisMulig'   => (string) ($d['tema'] ?? '') !== 'Drop-in'
+                && $d['start_tid'] !== null
+                && strtotime((string) ($d['slutt_tid'] ?: $d['start_tid'])) < time(),
+            'bevisNavn'    => (string) ($d['bevis_navn'] ?? ''),
+            'bevisKurs'    => (string) ($d['bevis_kurs'] ?? ''),
+            'bevisSperret' => !empty($d['bevis_sperret']),
         ], $alle),
         'okter' => array_map(static fn($o) => [
         'oktId'     => (int) $o['id'],

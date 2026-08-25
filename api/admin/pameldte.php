@@ -40,7 +40,7 @@ if (Foresporsel::heltall('bevis') === 1) {
       LEFT JOIN members m ON m.id = b.member_id
           WHERE b.status = 'betalt'
             AND c.type <> 'dropin'
-            AND (c.tema IS NULL OR c.tema NOT IN ('Drop-in', 'Kun for medlemmer'))
+            AND (c.tema IS NULL OR c.tema <> 'Drop-in')
             AND COALESCE(cs.slutt_tid, cs.start_tid) IS NOT NULL
             AND COALESCE(cs.slutt_tid, cs.start_tid) < UTC_TIMESTAMP()
        ORDER BY COALESCE(cs.slutt_tid, cs.start_tid) DESC, b.id DESC
@@ -54,7 +54,9 @@ if (Foresporsel::heltall('bevis') === 1) {
             // Navnet slik det faktisk staar paa arket: rettelsen gaar foran.
             'navn'      => trim((string) ($d['bevis_navn'] ?? '')) ?: (string) $d['navn'],
             'tittel'    => trim((string) ($d['bevis_kurs'] ?? '')) ?: (string) $d['tittel'],
-            'dato'      => Booking::norskDato((string) ($d['slutt_tid'] ?: $d['start_tid'])),
+            // Naar kurset var, ikke naar det sluttet: «tirsdag 18. august,
+            // 21:00» er sluttiden, og det er ikke slik noen husker kvelden.
+            'dato'      => Booking::norskDato((string) ($d['start_tid'] ?: $d['slutt_tid'])),
             'bevisNavn' => (string) ($d['bevis_navn'] ?? ''),
             'bevisKurs' => (string) ($d['bevis_kurs'] ?? ''),
             'sperret'   => !empty($d['bevis_sperret']),
@@ -66,12 +68,16 @@ if (Foresporsel::heltall('bevis') === 1) {
     ]);
 }
 
-/** Samme regel som paa Min side: betalt, gjennomfort, og et kurs. */
+/** Samme regel som paa Min side: betalt, gjennomfort, og ikke drop-in. */
 $kursbevis = static function (array $d): ?string {
     if (($d['status'] ?? '') !== 'betalt') {
         return null;
     }
-    if (in_array((string) ($d['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) {
+    // Drop-in er ikke et kurs — det er to timer i verkstedet med ditt eget
+    // arbeid, og det er ingenting aa bevise. Interne samlinger er kurs, og
+    // de gir bevis som alle andre: et medlem som har vaert paa glasurkveld
+    // har vaert paa kurs, selv om samlingen ikke sto i den aapne lista.
+    if ((string) ($d['tema'] ?? '') === 'Drop-in') {
         return null;
     }
     $slutt = $d['slutt_tid'] ?: $d['start_tid'];

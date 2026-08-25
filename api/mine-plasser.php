@@ -26,15 +26,15 @@ $frist = static function (?string $startUtc): array {
     $dager = (strtotime($startUtc) - time()) / 86400;
 
     if ($dager > 14) {
-        return ['Full refusjon fram til 14 dager for kursstart.', true];
+        return ['Full refusjon fram til 14 dager før kursstart.', true];
     }
     if ($dager > 7) {
-        return ['50 % refusjon fram til 7 dager for kursstart.', true];
+        return ['50 % refusjon fram til 7 dager før kursstart.', true];
     }
     if ($dager > 0) {
-        return ['Naermere enn 7 dager refunderes ikke, men du kan gi plassen til en annen.', false];
+        return ['Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen.', false];
     }
-    return ['Kurset har vaert.', false];
+    return ['Kurset har vært.', false];
 };
 
 /**
@@ -49,7 +49,11 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
     if (!empty($b['bevis_sperret'])) {
         return null;
     }
-    if (in_array((string) ($b['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) {
+    // Drop-in er ikke et kurs — det er to timer i verkstedet med ditt eget
+    // arbeid, og det er ingenting aa bevise. Interne samlinger er kurs, og
+    // de gir bevis som alle andre: et medlem som har vaert paa glasurkveld
+    // har vaert paa kurs, selv om samlingen ikke sto i den aapne lista.
+    if ((string) ($b['tema'] ?? '') === 'Drop-in') {
         return null;
     }
     $slutt = $b['slutt_tid'] ?: $b['start_tid'];
@@ -88,7 +92,7 @@ foreach ($bookinger as $b) {
                             . ((int) $b['antall'] > 1 ? ' · ' . $b['antall'] . ' plasser' : ''),
         'status'        => $betalt ? 'Bekreftet' : 'Reservert — ikke betalt',
         'tone'          => $betalt ? 'success' : 'warning',
-        'frist'         => $betalt ? $fristTekst : 'Reservasjonen frigis om betalingen ikke fullfores.',
+        'frist'         => $betalt ? $fristTekst : 'Reservasjonen frigis om betalingen ikke fullføres.',
         'kanAvbestille' => $betalt && $kanAvbestille,
         'referanse'     => $b['vipps_reference'],
         // Kursbeviset dukker opp av seg selv naar kurset er gjennomfort og
@@ -112,13 +116,13 @@ foreach ($venteliste as $v) {
     $plasser[] = [
         'id'            => 0,
         'tittel'        => $v['tittel'],
-        'naar'          => 'Ingen dato ennaa',
+        'naar'          => 'Ingen dato ennå',
         'sum'           => 'Ingenting belastet',
         'status'        => $v['status'] === 'varslet'
                             ? 'Ledig plass — book nå'
                             : 'Venteliste, nr. ' . $v['posisjon'],
         'tone'          => 'info',
-        'frist'         => 'Du belastes forst naar en plass blir din.',
+        'frist'         => 'Du belastes først når en plass blir din.',
         'kanAvbestille' => false,
         'referanse'     => null,
         'kursbevis'     => null,

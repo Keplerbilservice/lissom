@@ -49,6 +49,11 @@ if ((int) ($b['member_id'] ?? 0) !== (int) $medlem['id'] && !Sesjon::erAdmin()) 
     // 404 og ikke 403: vi bekrefter ikke at en fremmed pamelding finnes.
     Svar::feil('Fant ikke påmeldingen.', 404);
 }
+if ((string) $b['type'] === 'dropin') {
+    // Drop-in er ikke et kurs — det er to timer i verkstedet med ditt eget
+    // arbeid. Lenken tilbys ingen steder, men den lot seg gjette.
+    Svar::feil('Det er ikke utstedt kursbevis for denne påmeldingen.', 404);
+}
 if (!empty($b['bevis_sperret'])) {
     // Verkstedet har trukket beviset — noen gikk fra kurset for tidlig, eller
     // det ble utstedt ved en feil. Samme beskjed til alle: at det ikke finnes.

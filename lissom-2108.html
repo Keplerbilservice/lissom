@@ -6016,8 +6016,8 @@ window.__resources = {
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ butikkTittel }}</h1>
           </div>
           <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="package" on-click="{{ npApneIntern }}" hint-size="auto,44px">Internbutikk</x-import>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ npApne }}" hint-size="auto,44px">Nytt produkt</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="package" on-click="{{ butikkBytt }}" hint-size="auto,44px">{{ butikkBytteKnapp }}</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ butikkNy }}" hint-size="auto,44px">{{ butikkNyKnapp }}</x-import>
           </div>
         </div>
 
@@ -6033,7 +6033,7 @@ window.__resources = {
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Produkter i butikken</div>
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ butikkListeTittel }}</div>
             <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
               <!-- Raden brekker framfor aa skli ut til hoyre.
                    Den sto som et rutenett med fast minstebredde inne i en
@@ -13927,6 +13927,13 @@ class Component extends DCLogic {
         ['SEO',           'adminseo'],
         ['Mobilvisning',  'adminmobilvis'],
       ],
+      // Butikken er eget menypunkt naa, og har to lister: den kundene ser, og
+      // internbutikken medlemmene handler leire og brenning i. Foer sto det
+      // bare én liste — internvarene var ikke til aa redigere noe sted.
+      'Butikk': [
+        ['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],
+        ['Internbutikk',  'adminbutikk',     { butikkFane: 'Medlemssalg' }],
+      ],
       // Markedsforing har faner og ellers ingen undermeny. E-post og SMS er
       // en egen skjerm, saa raden vises bare der — med veien tilbake. Legger
       // vi en undermeny paa selve markedsforingsskjermen ogsaa, faar den to
@@ -13991,8 +13998,8 @@ class Component extends DCLogic {
         // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
         // fortsatt til medlemmene — det er varene deres.
         return st.butikkFane === 'Medlemssalg'
-          ? p('Medlemmer', 'Medlemmer', 'Internbutikk')
-          : p('Butikk', 'Nettsiden', 'Butikk');
+          ? p('Butikk', 'Butikk', 'Internbutikk')
+          : p('Butikk', 'Butikk', 'Butikken');
       default: return p('');
     }
   }
@@ -14916,7 +14923,21 @@ class Component extends DCLogic {
           { navn: 'Ekstra glasurbrann', detalj: 'Per hylle', pris: 'kr. 220,-', lager: 'Ikke lagerstyrt' },
         ])
       ).map(v => Object.assign({}, v, {
-        velg: this.go('adminbutikk'),
+        // Sto som «gaa til butikkskjermen» og stoppet der — varen du trykket
+        // paa var ikke til aa redigere noe sted. Naa aapner den seg.
+        velg: () => {
+          const raa = (this.state.adminProdukter || []).find(x => x.id === v.id);
+          this.setState(Object.assign(
+            { side: 'adminbutikk', butikkFane: 'Medlemssalg' },
+            raa ? {
+              npApen: true, npRediger: true, npId: raa.id, npNavn: raa.tittel,
+              npPris: String(raa.pris ?? ''), npAntall: raa.lager === null ? '' : String(raa.lager),
+              npBeskrivelse: raa.beskrivelse || '', npKategori: raa.kategori || '',
+              npMva: (raa.mva ?? 25) > 0, npKunMedlemmer: true,
+            } : {}
+          ));
+          window.scrollTo(0, 0);
+        },
       })),
       ingenInternvarerAdmin: this.erPublisert()
         && !(this.state.adminProdukter || []).some(v => v.kunMedlemmer),
@@ -16317,7 +16338,17 @@ class Component extends DCLogic {
       omrEyebrow: this.omraadeFaner().omrNavn || 'Administrasjon',
       beskjedTittel: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
         ? 'Beskjed til kursdeltakere' : 'Beskjed til medlemmer',
-      butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Butikk og medlemssalg' : 'Butikk',
+      butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Butikk',
+      butikkListeTittel: this.state.butikkFane === 'Medlemssalg'
+        ? 'Varer i internbutikken' : 'Produkter i butikken',
+      // «Internbutikk»-knappen aapnet et skjema for en ny internvare. Den saa
+      // ut som en vei inn til internbutikken, og var det ikke — lista bak sto
+      // med de vanlige varene, og internvarene kunne ikke redigeres noe sted.
+      butikkBytteKnapp: this.state.butikkFane === 'Medlemssalg' ? 'Butikken' : 'Internbutikk',
+      butikkBytt: () => this.setState({
+        butikkFane: this.state.butikkFane === 'Medlemssalg' ? 'Butikken' : 'Medlemssalg',
+      }),
+      butikkNyKnapp: this.state.butikkFane === 'Medlemssalg' ? 'Ny vare i internbutikken' : 'Nytt produkt',
       adminNav: this.adminMeny(),
       adminNavMedlem: this.adminMeny(),
       adminNavOkonomi: this.adminMeny(),
@@ -17448,6 +17479,9 @@ class Component extends DCLogic {
       // peker knappene dit.
       npApne: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false }),
       npApneIntern: () => this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true }),
+      butikkNy: () => (this.state.butikkFane === 'Medlemssalg'
+        ? this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: true })
+        : this.setState({ npApen: true, npRediger: false, npId: 0, npNavn: '', npPris: '', npAntall: '', npBeskrivelse: '', npKategori: '', npMva: true, npKunMedlemmer: false })),
       npKunMedlemmer: !!this.state.npKunMedlemmer,
       vekslNpKunMedlemmer: () => this.setState(st => ({ npKunMedlemmer: !st.npKunMedlemmer })),
       npTittel: this.state.npRediger ? 'Rediger vare' : 'Ny vare',
@@ -19753,7 +19787,9 @@ class Component extends DCLogic {
       // Lageret, fra basen. Trykk paa en rad aapner skjemaet med varen i,
       // slik at «Lagre» faktisk endrer den raden.
       lager: (this.state.adminProdukter
-        ? this.state.adminProdukter.filter(v => !v.kunMedlemmer).map(v => ({
+        ? this.state.adminProdukter
+            .filter(v => (this.state.butikkFane === 'Medlemssalg') ? v.kunMedlemmer : !v.kunMedlemmer)
+            .map(v => ({
             navn: v.tittel,
             pris: v.pris === 0 ? 'Gratis' : 'kr. ' + String(v.pris).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
             antall: v.lager,

@@ -528,6 +528,28 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
     }
   };
 
+  // Innloggingen varer tre timer. Naar den gaar ut, svarer serveren 401 og
+  // «Du maa vaere logget inn» — men ingenting i sida hoerte etter. Admin saa
+  // innlogget ut, mens hvert eneste trykk stille feilet: billedlista sto paa
+  // «Henter bildene …» for alltid, og opplasting ga «Gikk ikke».
+  //
+  // Her, og ikke i hvert enkelt kall: det er over hundre steder som snakker
+  // med serveren, og ett av dem ville blitt glemt.
+  var opprinneligFetch = window.fetch ? window.fetch.bind(window) : null;
+  if (opprinneligFetch) {
+    window.fetch = function (adresse, valg) {
+      return opprinneligFetch(adresse, valg).then(function (svar) {
+        try {
+          var url = typeof adresse === 'string' ? adresse : (adresse && adresse.url) || '';
+          if (svar && svar.status === 401 && url.indexOf('/api/') !== -1) {
+            window.dispatchEvent(new CustomEvent('lissom:utlogget'));
+          }
+        } catch (e) { /* en helsesjekk skal aldri velte kallet den ser paa */ }
+        return svar;
+      });
+    };
+  }
+
   var obs = new MutationObserver(function () { flytt(); fokus(); });
   var start = function () {
     flytt();
@@ -12703,6 +12725,22 @@ class Component extends DCLogic {
     document.addEventListener('click', this._klikk, true);
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
+    // Innloggingen gikk ut. Si fra én gang, og send til innlogging — framfor
+    // aa la eieren staa og trykke paa knapper som ikke kan virke.
+    this._utlogget = () => {
+      if (this._sierUtlogget) return;
+      this._sierUtlogget = true;
+      this.setState({
+        innlogget: false,
+        kvittering: 'Du er logget ut',
+        kvitteringDetalj: 'Innloggingen varer i tre timer. Logg inn på nytt, så kan du fortsette.',
+      });
+      if (this.erAdminSkjerm(this.state.side)) {
+        setTimeout(() => { this.setState({ side: 'adminlogin' }); window.scrollTo(0, 0); }, 1200);
+      }
+      setTimeout(() => { this._sierUtlogget = false; }, 20000);
+    };
+    window.addEventListener('lissom:utlogget', this._utlogget);
     this._resize(); // startverdi — ellers vet vi ikke om vi er paa mobil for forste rotasjon
     this._kurvPuls = setInterval(() => {
       const harVarer = Object.keys(this.state.kurv || {}).length > 0;
@@ -12760,6 +12798,7 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     if (this._pop) window.removeEventListener('popstate', this._pop);
+    if (this._utlogget) window.removeEventListener('lissom:utlogget', this._utlogget);
     clearInterval(this._utgaveVakt);
     if (this._utgaveFokus) document.removeEventListener('visibilitychange', this._utgaveFokus);
     clearInterval(this._karusell);
@@ -13512,6 +13551,7 @@ class Component extends DCLogic {
     const nytt = {
       navn, type: this.state.kType || 'Kurs',
       kategori: this.state.kKategori || '',
+      utenDato: !!this.state.kUtenDato,
       pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
       gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
       pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
@@ -13573,6 +13613,10 @@ class Component extends DCLogic {
         om: rad.beskrivelse || '',
         bekreftelse: rad.bekreftelse || '',
         status: 'publisert',
+        // «Vis kurset uten datoer, med Kontakt oss». Haken lagret bare rett
+        // til serveren, og et kurs som ikke er opprettet ennaa har ingen id
+        // aa lagre paa — da lot den seg ikke huke av i det hele tatt.
+        visUtenDato: rad.utenDato ? 'ja' : 'nei',
       }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
@@ -14582,6 +14626,7 @@ class Component extends DCLogic {
       // Kategorien staar paa den raa raden. Uten denne mistet kurset
       // kategorien sin i det du rettet prisen.
       kKategori: this.kategoriFor(raa.tema || k.tema || '', k.type),
+      kUtenDato: !!raa.visUtenDato,
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
@@ -15004,14 +15049,14 @@ class Component extends DCLogic {
    * medlemmer» holdes utenfor den offentlige lista. «tema» er filteret.
    */
   static KATEGORI_BETYR = {
-    'Dreiing':       { type: 'Kurs',          tema: 'Dreiing' },
-    'Plateteknikk':  { type: 'Kurs',          tema: 'Plateteknikk' },
-    'Workshop':      { type: 'Workshop',      tema: 'Workshop' },
-    'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' },
-    'Date Night':    { type: 'Event',         tema: 'Date Night' },
-    'Paint on pots': { type: 'Event',         tema: 'Paint on pots' },
-    'Kun medlemmer': { type: 'Kun medlemmer', tema: 'Kun for medlemmer' },
-    'Drop-in':       { type: 'Drop-in',       tema: 'Drop-in' },
+    'Dreiing':       { type: 'Kurs',          tema: 'Dreiing' , plasser: 8 },
+    'Plateteknikk':  { type: 'Kurs',          tema: 'Plateteknikk' , plasser: 12 },
+    'Workshop':      { type: 'Workshop',      tema: 'Workshop' , plasser: 12 },
+    'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' , plasser: 12 },
+    'Date Night':    { type: 'Event',         tema: 'Date Night' , plasser: 12 },
+    'Paint on pots': { type: 'Event',         tema: 'Paint on pots' , plasser: 12 },
+    'Kun medlemmer': { type: 'Kun medlemmer', tema: 'Kun for medlemmer' , plasser: 12 },
+    'Drop-in':       { type: 'Drop-in',       tema: 'Drop-in' , plasser: 8 },
   };
 
   /** Kategorien et lagret kurs staar i, utledet av temaet det har. */
@@ -16866,7 +16911,7 @@ class Component extends DCLogic {
         this.setState({
           side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [],
+          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17575,7 +17620,7 @@ class Component extends DCLogic {
             || (this.erPublisert() ? [] : [{}, {}]);
           const nyttKurs = {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
+            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kGjentak: 'Ingen', kIntervall: '', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17643,7 +17688,7 @@ class Component extends DCLogic {
               { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
               { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', {
                   kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
-                  kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
+                  kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
                   kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
                   kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17693,7 +17738,7 @@ class Component extends DCLogic {
             { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
             { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
-                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [],
+                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
                 kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -18257,7 +18302,7 @@ class Component extends DCLogic {
 
         const nyttKurs = {
           kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
+          kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -19591,7 +19636,7 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
@@ -19632,6 +19677,10 @@ class Component extends DCLogic {
         velg: () => this.setState({
           kKategori: t,
           kType: (Component.KATEGORI_BETYR[t] || {}).type || 'Kurs',
+          // Plassene folger kategorien: Dreiing 8, resten 12. Skjemaet sto
+          // alltid paa 8, saa et nytt workshop ble lagret med aatte plasser
+          // stikk i strid med det som gjelder for kategorien.
+          kPlasser: String((Component.KATEGORI_BETYR[t] || {}).plasser || 12),
         }),
         stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid ' + ((this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: (this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kKategori || '') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
       })),
@@ -19719,14 +19768,26 @@ class Component extends DCLogic {
               ukerFram: Math.max(1, Math.min(52, parseInt(this.state.kSerieUker, 10) || 8)),
             });
           },
-          kUtenDato: kurs ? !!kurs.visUtenDato : false,
+          // Haken lagret rett til serveren, og et kurs du holder paa aa
+          // opprette finnes ikke der ennaa. «if (!kurs) return» gjorde at den
+          // ikke lot seg huke av i det hele tatt paa nye kurs — uten aa si fra.
+          //
+          // Naa staar valget i skjemaet, og lagres sammen med kurset. Paa et
+          // kurs som alt ligger ute gjelder den med det samme, som for.
+          kUtenDato: this.state.kUtenDato !== undefined
+            ? !!this.state.kUtenDato
+            : (kurs ? !!kurs.visUtenDato : false),
           toggleKUtenDato: () => {
+            const naa = this.state.kUtenDato !== undefined
+              ? !!this.state.kUtenDato
+              : (kurs ? !!kurs.visUtenDato : false);
+            this.setState({ kUtenDato: !naa });
             if (!kurs) return;
             this.kursSerieKall({ handling: 'lagre', id: kurs.id, tittel: kurs.tittel,
               pris: kurs.pris, kapasitet: kurs.kapasitet, type: kurs.type, tema: kurs.tema || '',
               om: kurs.om || '', bekreftelse: kurs.bekreftelse || '', status: kurs.status,
               sms: kurs.sms ? 'ja' : 'nei',
-              visUtenDato: kurs.visUtenDato ? 'nei' : 'ja' });
+              visUtenDato: naa ? 'nei' : 'ja' });
           },
         };
       })(),

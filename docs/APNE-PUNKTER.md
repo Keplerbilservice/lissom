@@ -52,6 +52,31 @@ Samme sak som over. Navn, pris, plasser, beskrivelse, bekreftelse, bilder og
 datoer kan redigeres. Punktlista — det kunden leser under «Alt som er
 inkludert» — kan ikke.
 
+### 3b. Bildesøk med API
+
+Lissom vil ha en API-løsning, ikke en lenke ut. Shutterstock har et API, men
+nedlasting av lisensierte bilder krever abonnement med API-tilgang; søk og
+miniatyrer er gratis. Unsplash og Pexels har gratis API-er med full
+nedlasting og fri kommersiell bruk.
+
+Venter på: skal Lissom betale for Shutterstock, eller bygges det mot en
+gratis kilde? Begge kan ligge side om side i billedvelgeren.
+
+Trengs når det bygges: API-nøkkel i `secrets.php` — aldri i en chat.
+
+### 3c. «Klar til henting»-liste
+
+Når arbeidene fra en kursdato er ferdig brent, skal det legges ut en melding
+på nettsiden. Varselmalen `ferdig_brent` finnes i basen fra migrasjon 002,
+men ingenting sender den — det finnes ingen knapp.
+
+Foreslått: en knapp per kursdato i admin som (1) sender e-post til alle på
+den datoen, (2) legger ut en linje på nettsiden, (3) fjerner linja etter tre
+uker.
+
+Venter på: hvor lista skal stå — egen side (`lissom.no/hentes`), under
+Nyttig info, eller øverst på forsiden.
+
 ### 3. «Fjern bildet»
 
 Knappen i billedvelgeren heter «Bruk standardbildet i stedet». Misvisende på
@@ -152,6 +177,16 @@ i plass, båndbredde og avspilling.
   brukt på kortene, i datovelgeren, på kurssida og i medlemslista.
 - **«Maks N deltakere» regnes ut av kurset.** Sto som fast tekst seks steder
   og spriket mot tallene under.
+- **Utløpt innlogging sier fra.** Innloggingen varer tre timer. Gikk den ut,
+  svarte serveren 401 og sida hørte ikke etter: admin så innlogget ut mens
+  hvert trykk stille feilet — billedlista sto på «Henter bildene …» for
+  alltid, og opplasting ga «Gikk ikke». Nå sier den fra og sender til
+  innlogging.
+- **Haken «vis kurset uten datoer» virker på nye kurs.** Den lagret rett til
+  serveren, og et kurs som ikke var opprettet ennå hadde ingen id å lagre på
+  — da lot den seg ikke huke av i det hele tatt.
+- **Plassene i skjemaet følger kategorien.** Sto alltid på 8; et nytt
+  workshop ble lagret med åtte plasser mot de tolv som gjelder.
 
 - **Migrasjon 046–051 er kjørt** på lissom.no. Dagsoppgjør, plasser på
   events, ventelistens e-posttekst, standard bekreftelsestekst og

@@ -83,8 +83,8 @@ Varsel::epost(
     'Du står på ventelisten hos Lissom',
     "Hei {$navn}!\n\n"
     . "Du er satt på ventelisten for {$kurs['tittel']}, som plass nummer {$posisjon}.\n\n"
-    . "Blir det ledig, gir vi beskjed på e-post og SMS. Du betaler ingenting "
-    . "før plassen er bekreftet.\n\n"
+    . "Blir det ledig, får du en e-post fra oss — eller vi forsøker å ringe deg. "
+    . "Du betaler ingenting før plassen er bekreftet.\n\n"
     . "Hilsen Lissom Keramikk",
     'waitlist',
     $id

@@ -3966,22 +3966,18 @@ window.__resources = {
                 </div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn på kurset</label>
                 <input value="{{ kNavn }}" onChange="{{ settKNavn }}" placeholder="F.eks. Nybegynner dreiekurs" style="width: 100%; box-sizing: border-box; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-4);">
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-4);">
-                  <sc-for list="{{ kTyper }}" as="t" hint-placeholder-count="4">
+                <!-- Kategorien kunden filtrerer paa ute paa «Vaare kurs», og
+                     samtidig hva slags kurs det er. Her sto det to rader:
+                     én med Kurs, Event, Kun medlemmer og Drop-in, og én med
+                     kategoriene. To valg for det samme, der bare det ene kom
+                     fram ute. -->
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kategori</label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-2);">
+                  <sc-for list="{{ kKategorier }}" as="t" hint-placeholder-count="8">
                     <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
                   </sc-for>
                 </div>
-                <!-- Kategorien kunden filtrerer paa ute paa «Vaare kurs».
-                     Uten den havnet alt under «Kurs», og et nytt dreiekurs
-                     kom aldri fram naar noen trykket «Dreiing». -->
-                <sc-if value="{{ kViserKategori }}" hint-placeholder-val="{{ true }}">
-                  <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kategori på nettsiden</label>
-                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-4);">
-                    <sc-for list="{{ kKategorier }}" as="t" hint-placeholder-count="6">
-                      <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
-                    </sc-for>
-                  </div>
-                </sc-if>
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">{{ kKategoriTekst }}</p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <div>
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Pris (kr, tomt = gratis)</label>
@@ -4070,7 +4066,7 @@ window.__resources = {
                 <sc-if value="{{ kHarKursId }}" hint-placeholder-val="{{ true }}">
                   <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); margin-top: var(--space-4);">
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">Fast ukedag</label>
-                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kurset legges ut på denne dagen hver uke, åtte uker fram. Nye datoer kommer av seg selv etter hvert.</p>
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kurset legges ut på denne dagen hver uke, så langt fram du velger under. Nye datoer kommer av seg selv etter hvert.</p>
 
                     <sc-if value="{{ kHarSerier }}" hint-placeholder-val="{{ false }}">
                       <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3);">
@@ -4093,6 +4089,15 @@ window.__resources = {
                       <span style="color: var(--text-muted);">–</span>
                       <input type="time" value="{{ kSerieTil }}" onChange="{{ settKSerieTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" icon="plus" on-click="{{ kLeggTilSerie }}" hint-size="auto,40px">Legg til fast dag</x-import>
+                    </div>
+                    <!-- Hvor langt fram datoene skal ligge ute. Sto fast paa
+                         aatte uker uten at noen kunne endre det, og den som
+                         planlegger hosten saa ingenting etter oktober. -->
+                    <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                      <label style="font-size: var(--text-sm); color: var(--text-heading);">Legg ut datoer</label>
+                      <input type="number" min="1" max="52" value="{{ kSerieUker }}" onChange="{{ settKSerieUker }}" style="width: 78px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <span style="font-size: var(--text-sm); color: var(--text-heading);">uker fram</span>
+                      <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kSerieUkerTekst }}</span>
                     </div>
                   </div>
                 </sc-if>
@@ -4429,8 +4434,8 @@ window.__resources = {
               <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen står på venteliste nå.</div>
             </sc-if>
             <sc-for list="{{ ovVenteliste }}" as="v" hint-placeholder-count="3">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <div onClick="{{ v.velg }}" style="{{ v.radStil }}">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; cursor: pointer;">
                   <div style="min-width: 0;">
                     <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
@@ -4438,23 +4443,51 @@ window.__resources = {
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.status }}</span>
                 </div>
 
-                <!-- Datoene hen kan settes rett inn paa. Bare de med plass —
-                     en liste med fulle kvelder er en knapp som sier nei. -->
-                <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: var(--space-3);">
-                    <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ dt.giPlass }}" style="appearance: none; cursor: pointer; border: 1px solid var(--lissom-brown); border-radius: var(--radius-pill); background: transparent; padding: 6px 12px; font: var(--type-body-sm); color: var(--lissom-brown); white-space: nowrap;">{{ dt.merke }}</button>
-                    </sc-for>
+                <!-- Alt om personen aapner seg her, i samme kort: hvordan du
+                     naar hen, datoene hen kan settes rett inn paa, og en
+                     e-post du kan skrive med det samme. -->
+                <sc-if value="{{ v.apen }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kontakt</div>
+                    <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; font-size: var(--text-sm); margin-bottom: var(--space-4);">
+                      <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
+                        <a href="{{ v.epostLenke }}" style="color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">{{ v.epost }}</a>
+                      </sc-if>
+                      <sc-if value="{{ v.harTelefon }}" hint-placeholder-val="{{ true }}">
+                        <a href="{{ v.telefonLenke }}" style="color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">{{ v.telefon }}</a>
+                      </sc-if>
+                      <sc-if value="{{ v.utenKontakt }}" hint-placeholder-val="{{ false }}">
+                        <span style="color: var(--text-muted);">Ingen kontaktopplysninger er lagret.</span>
+                      </sc-if>
+                    </div>
+
+                    <!-- Datoene hen kan settes rett inn paa. Bare de med plass —
+                         en liste med fulle kvelder er en knapp som sier nei. -->
+                    <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
+                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gi plass</div>
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                        <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
+                          <button type="button" onClick="{{ dt.giPlass }}" style="appearance: none; cursor: pointer; border: 1px solid var(--lissom-brown); border-radius: var(--radius-pill); background: transparent; padding: 6px 12px; font: var(--type-body-sm); color: var(--lissom-brown); white-space: nowrap;">{{ dt.merke }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ v.utenPlass }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer på dette kurset nå.</div>
+                    </sc-if>
+
+                    <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
+                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Skriv til {{ v.navn }}</div>
+                      <input value="{{ vlEmne }}" onChange="{{ settVlEmne }}" placeholder="Emne" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-2);">
+                      <textarea value="{{ vlMelding }}" onChange="{{ settVlMelding }}" rows="4" placeholder="Hei! Det ble ledig plass …" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-3);"></textarea>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.sendEpost }}" hint-size="auto,40px">Send e-post</x-import>
+                    </sc-if>
+
+                    <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
+                      <button type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
+                      <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
+                    </div>
                   </div>
                 </sc-if>
-                <sc-if value="{{ v.utenPlass }}" hint-placeholder-val="{{ false }}">
-                  <div style="margin-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer på dette kurset nå.</div>
-                </sc-if>
-
-                <div style="display: flex; gap: var(--space-4); margin-top: var(--space-3);">
-                  <button type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
-                  <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
-                </div>
               </div>
             </sc-for>
           </div>
@@ -12658,6 +12691,50 @@ class Component extends DCLogic {
   }
 
   /** Ett kall for hele ventelista — varsle, gi plass, ta av lista. */
+  /**
+   * E-post til én som staar paa ventelista.
+   *
+   * Gaar samme vei som «Beskjed til én person» ellers i panelet: inn i
+   * varselkoen, saa den taaler at e-posten er treg og kan forsokes paa nytt.
+   * En egen utsending her ville vaert et parallelt system for det samme.
+   */
+  sendVentelisteEpost(v) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const tekst = (this.state.vlMelding || '').trim();
+    if (tekst.length < 3) {
+      this.setState({ kvittering: 'Skriv en melding først', kvitteringDetalj: '' });
+      return;
+    }
+    if (this._vlSender) return;
+    this._vlSender = true;
+
+    fetch('/api/admin/beskjed.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        til: 'en',
+        navn: v.navn,
+        epost: v.epost,
+        telefon: v.telefon || '',
+        emne: (this.state.vlEmne || '').trim() || 'Beskjed fra Lissom',
+        tekst: tekst,
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._vlSender = false;
+        this.setState({
+          kvittering: ok ? 'E-posten er sendt' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          vlMelding: ok ? '' : tekst,
+        });
+      })
+      .catch(() => {
+        this._vlSender = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   ventelisteKall(kropp) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
     if (this._ventelisteKall) return Promise.resolve(false);
@@ -13125,9 +13202,10 @@ class Component extends DCLogic {
         // du rettet prisen. Temaet styrer filteret ute paa nettsiden, saa
         // kurset falt ut av sin egen kategori. Et tema vi ikke kan utlede av
         // typen, blir staaende som det er.
-        // Kategorien du velger i steg 1 er den kunden filtrerer paa ute.
-        // «Kun medlemmer» og «Drop-in» har sin egen kategori og overstyrer.
-        tema: TEMA[rad.type] || rad.kategori || (eksisterende && eksisterende.tema) || 'Kurs',
+        // Kategorien du velger i steg 1 avgjor baade filteret ute og hva
+        // slags kurs det er. Den gaar foran den gamle typeutledningen.
+        tema: ((Component.KATEGORI_BETYR[rad.kategori] || {}).tema)
+              || TEMA[rad.type] || (eksisterende && eksisterende.tema) || 'Kurs',
         // Bildene fra steg 3. Tomme ruter faller bort; foerste er hovedbildet.
         bilder: (rad.bilder || []).filter(Boolean),
         pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
@@ -14141,8 +14219,7 @@ class Component extends DCLogic {
       kNavn: k.navn, kType: k.type,
       // Kategorien staar paa den raa raden. Uten denne mistet kurset
       // kategorien sin i det du rettet prisen.
-      kKategori: (raa.tema || k.tema) === 'Kun for medlemmer' ? 'Kun medlemmer'
-        : (this.kursKategorier().includes(raa.tema || k.tema || '') ? (raa.tema || k.tema) : ''),
+      kKategori: this.kategoriFor(raa.tema || k.tema || '', k.type),
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
@@ -14548,9 +14625,40 @@ class Component extends DCLogic {
   kursKategorier(medInterne) {
     const ute = ['Dreiing', 'Plateteknikk', 'Workshop',
                  'Sip & Clay', 'Date Night', 'Paint on pots'];
-    // «Kun medlemmer» staar med i admin, men ikke i filterrada ute: den
-    // kategorien er ikke noe kundene skal kunne bla seg inn i.
-    return medInterne ? ute.concat('Kun medlemmer') : ute;
+    // «Kun medlemmer» og «Drop-in» staar med i admin, men ikke i filterrada
+    // ute: de er ikke kategorier kundene skal kunne bla seg inn i.
+    return medInterne ? ute.concat(['Kun medlemmer', 'Drop-in']) : ute;
+  }
+
+  /**
+   * Hva kategorien betyr for kurset.
+   *
+   * Foer sto det to rader over hverandre: en typerad med Kurs, Event, Kun
+   * medlemmer og Drop-in, og en kategorirad med det kundene filtrerer paa.
+   * To valg for det samme, der bare det ene kom fram ute. Kategorien avgjor
+   * naa begge deler.
+   *
+   * «type» styrer oppforsel — drop-in gir ikke kursbevis, «Kun for
+   * medlemmer» holdes utenfor den offentlige lista. «tema» er filteret.
+   */
+  static KATEGORI_BETYR = {
+    'Dreiing':       { type: 'Kurs',          tema: 'Dreiing' },
+    'Plateteknikk':  { type: 'Kurs',          tema: 'Plateteknikk' },
+    'Workshop':      { type: 'Workshop',      tema: 'Workshop' },
+    'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' },
+    'Date Night':    { type: 'Event',         tema: 'Date Night' },
+    'Paint on pots': { type: 'Event',         tema: 'Paint on pots' },
+    'Kun medlemmer': { type: 'Kun medlemmer', tema: 'Kun for medlemmer' },
+    'Drop-in':       { type: 'Drop-in',       tema: 'Drop-in' },
+  };
+
+  /** Kategorien et lagret kurs staar i, utledet av temaet det har. */
+  kategoriFor(tema, type) {
+    const B = Component.KATEGORI_BETYR;
+    const treff = Object.keys(B).find(k => B[k].tema === tema);
+    if (treff) return treff;
+    // Kurs lagret for kategoriene fantes. «Kurs» og «Events» var temaer da.
+    return Object.keys(B).find(k => B[k].type === type) || '';
   }
 
   /**
@@ -19099,21 +19207,23 @@ class Component extends DCLogic {
       // Kategorien kunden filtrerer paa ute. Skjules for «Kun medlemmer» og
       // «Drop-in» — de to staar ikke i den offentlige kurslista, og har sin
       // egen kategori av seg selv.
-      kViserKategori: (this.state.kType || 'Kurs') !== 'Drop-in',
       kKategorier: this.kursKategorier(true).map(t => ({
-        // «Kun medlemmer» er baade kategori og type: velger du den, skal
-        // samlinga ut av den offentlige kurslista med det samme.
-        navn: t, velg: () => this.setState({
+        // Kategorien setter ogsaa typen. «Kun medlemmer» holdes utenfor den
+        // offentlige lista, og drop-in gir ikke kursbevis — det avgjores her.
+        navn: t,
+        velg: () => this.setState({
           kKategori: t,
-          kType: t === 'Kun medlemmer' ? 'Kun medlemmer'
-               : ((this.state.kType || 'Kurs') === 'Kun medlemmer' ? 'Kurs' : (this.state.kType || 'Kurs')),
+          kType: (Component.KATEGORI_BETYR[t] || {}).type || 'Kurs',
         }),
-        stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + ((this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: (this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kKategori || '') === t ? 'var(--clay-50)' : 'var(--text-body)' },
+        stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid ' + ((this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: (this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kKategori || '') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
       })),
-      kTyper: ['Kurs', 'Event', 'Kun medlemmer', 'Drop-in'].map(t => ({
-        navn: t, velg: () => this.setState({ kType: t }),
-        stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: (this.state.kType || 'Kurs') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kType || 'Kurs') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
-      })),
+      kKategoriTekst: (() => {
+        const k = this.state.kKategori || '';
+        if (!k) return 'Velg en kategori. Den avgjør hvor kurset havner i filteret på «Våre kurs».';
+        if (k === 'Kun medlemmer') return 'Vises bare for medlemmer, ikke i den offentlige kurslista.';
+        if (k === 'Drop-in') return 'Drop-in i verkstedet. Gir ikke kursbevis.';
+        return 'Vises under «' + k + '» på «Våre kurs».';
+      })(),
       kGjentakValg: ['Ingen', 'Ukentlig', 'Månedlig', 'Egendefinert'].map(t => ({
         navn: t, velg: () => this.setState({ kGjentak: t }),
         stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: (this.state.kGjentak || 'Ingen') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kGjentak || 'Ingen') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
@@ -19165,6 +19275,17 @@ class Component extends DCLogic {
               color: valgt === nr ? 'var(--clay-50)' : 'var(--text-body)',
             },
           })),
+          // Serveren tar imot 1 til 52 uker. Aatte var forvalget, ikke en
+          // grense — det sto bare ingen steder aa endre det.
+          kSerieUker: this.state.kSerieUker ?? '8',
+          settKSerieUker: e => this.setState({ kSerieUker: e.target.value }),
+          kSerieUkerTekst: (() => {
+            const u = Math.max(1, Math.min(52, parseInt(this.state.kSerieUker, 10) || 8));
+            if (u >= 52) return 'et helt år fram';
+            if (u >= 26) return 'et halvt år fram';
+            if (u >= 13) return 'et kvartal fram';
+            return 'omtrent ' + Math.round(u / 4.3) + ' måned' + (u >= 9 ? 'er' : '') + ' fram';
+          })(),
           kSerieFra: this.state.kSerieFra || '10:00',
           settKSerieFra: e => this.setState({ kSerieFra: e.target.value }),
           kSerieTil: this.state.kSerieTil || '13:00',
@@ -19177,6 +19298,7 @@ class Component extends DCLogic {
               ukedag: this.state.kSerieDag ?? 4,
               fra: this.state.kSerieFra || '10:00',
               til: this.state.kSerieTil || '13:00',
+              ukerFram: Math.max(1, Math.min(52, parseInt(this.state.kSerieUker, 10) || 8)),
             });
           },
           kUtenDato: kurs ? !!kurs.visUtenDato : false,
@@ -21114,22 +21236,62 @@ class Component extends DCLogic {
       ...(() => {
         const liste = this.state.adminVenteliste || [];
         return {
-          ovVenteliste: liste.slice(0, 8).map(v => ({
+          ovVenteliste: liste.slice(0, 8).map(v => {
+            // Raden var en opplysning uten en vei videre: kontaktinfoen laa
+            // ikke framme noe sted, og skulle du skrive til hen maatte du
+            // finne adressen i basen. Naa aapner raden seg i kortet.
+            const apen = this.state.vlApen === v.id;
+            return {
             navn: v.navn,
             linje: v.kurs + ' · nr. ' + v.posisjon + ' · siden ' + v.siden,
             status: v.status,
+            apen: apen,
+            radStil: {
+              padding: 'var(--space-4) var(--space-6)',
+              borderTop: '1px solid var(--border-subtle)',
+              background: apen ? 'var(--clay-100)' : 'transparent',
+            },
+            velg: () => this.setState(st => ({
+              vlApen: st.vlApen === v.id ? null : v.id,
+              // Nytt navn i boksen, ny melding. Ellers staar teksten du
+              // skrev til forrige person igjen naar du aapner neste.
+              vlEmne: 'Ledig plass på ' + v.kurs,
+              vlMelding: '',
+            })),
+            epost: v.epost || '',
+            harEpost: !!v.epost,
+            epostLenke: 'mailto:' + (v.epost || ''),
+            telefon: v.telefon || '',
+            harTelefon: !!v.telefon,
+            telefonLenke: 'tel:' + String(v.telefon || '').replace(/\s/g, ''),
+            utenKontakt: !v.epost && !v.telefon,
             kanGiPlass: !!v.kanGiPlass,
             utenPlass: !v.kanGiPlass,
             datoer: (v.datoer || []).slice(0, 4).map(d => ({
               merke: d.naar + ' · ' + d.ledige + ' ledig' + (d.ledige === 1 ? '' : 'e'),
-              giPlass: () => this.giVentelisteplass(v, d),
+              giPlass: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.giVentelisteplass(v, d); },
             })),
-            varsle: () => this.ventelisteKall({ handling: 'varsle', id: v.id }),
-            fjern: () => {
+            // Samme vei som «Beskjed til én person» ellers i panelet, saa
+            // e-posten havner i varselkoen og kan forsokes paa nytt.
+            sendEpost: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
+              this.sendVentelisteEpost(v);
+            },
+            varsle: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
+              this.ventelisteKall({ handling: 'varsle', id: v.id });
+            },
+            fjern: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
               if (!window.confirm('Ta ' + v.navn + ' av ventelista?')) return;
               this.ventelisteKall({ handling: 'fjern', id: v.id });
             },
-          })),
+            };
+          }),
+          vlEmne: this.state.vlEmne || '',
+          settVlEmne: (e) => this.setState({ vlEmne: e.target.value }),
+          vlMelding: this.state.vlMelding || '',
+          settVlMelding: (e) => this.setState({ vlMelding: e.target.value }),
           ovVentelisteAntall: liste.length === 0 ? '' : liste.length + ' venter',
           ingenOvVenteliste: this.erPublisert() && liste.length === 0,
         };

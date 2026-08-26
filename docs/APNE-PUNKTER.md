@@ -64,18 +64,9 @@ gratis kilde? Begge kan ligge side om side i billedvelgeren.
 
 Trengs når det bygges: API-nøkkel i `secrets.php` — aldri i en chat.
 
-### 3c. «Klar til henting»-liste
+### 3c. ~~«Klar til henting»-liste~~ — gjort 26. august
 
-Når arbeidene fra en kursdato er ferdig brent, skal det legges ut en melding
-på nettsiden. Varselmalen `ferdig_brent` finnes i basen fra migrasjon 002,
-men ingenting sender den — det finnes ingen knapp.
-
-Foreslått: en knapp per kursdato i admin som (1) sender e-post til alle på
-den datoen, (2) legger ut en linje på nettsiden, (3) fjerner linja etter tre
-uker.
-
-Venter på: hvor lista skal stå — egen side (`lissom.no/hentes`), under
-Nyttig info, eller øverst på forsiden.
+Bygget og testet. Se «Ferdig» nederst.
 
 ### 3. «Fjern bildet»
 
@@ -175,6 +166,12 @@ i plass, båndbredde og avspilling.
   «Ledige plasser», 4–5 tallet, 1–3 «Få plasser». De andre: 7 og opp
   «Ledige plasser», 5–6 tallet, 1–4 «Få ledige plasser». Ett sted i koden,
   brukt på kortene, i datovelgeren, på kurssida og i medlemslista.
+- **«Klar til henting».** Kortet «Gjennomførte kurs» på Oversikt viser
+  kursdatoer som er ferdige, med antall deltakere. Ett trykk sender e-post
+  til alle på datoen og legger ut en melding på lissom.no/ferdigbrent i tre
+  uker. «Ta meldingen ned» angrer linja; e-post som er sendt står som sendt.
+  Varselmalen `ferdig_brent` hadde ligget i basen siden migrasjon 002 uten at
+  noe noen gang sendte den. Migrasjon 053.
 - **«Maks N deltakere» regnes ut av kurset.** Sto som fast tekst seks steder
   og spriket mot tallene under.
 - **Utløpt innlogging sier fra.** Innloggingen varer tre timer. Gikk den ut,

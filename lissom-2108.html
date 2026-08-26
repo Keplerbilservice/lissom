@@ -1827,6 +1827,36 @@ window.__resources = {
   </sc-if>
 
   <!-- Nyheter og guider. Artiklene som er publisert i kunnskapsbanken. -->
+  <sc-if value="{{ erFerdigbrent }}" hint-placeholder-val="{{ false }}">
+    <div role="main" data-screen-label="Klar til henting">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+        <div style="max-width: var(--width-content); margin: 0 auto;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Ferdig brent</div>
+          <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">Klar til henting</h1>
+          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-lg); max-width: 60ch; text-wrap: pretty;">{{ fbIngress }}</p>
+
+          <sc-if value="{{ fbHarNoe }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 68ch;">
+              <sc-for list="{{ fbListe }}" as="m" hint-placeholder-count="3">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+                  <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 4px;">{{ m.tittel }}</div>
+                  <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.tekst }}</div>
+                  <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: {{ m.fargen }};">{{ m.igjen }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ fbTomt }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-base); color: var(--text-muted); max-width: 60ch; text-wrap: pretty;">Ingenting står klart til henting akkurat nå. Vi legger det ut her så snart arbeidene fra et kurs er ferdig brent — og sender deg en e-post samtidig.</p>
+          </sc-if>
+        </div>
+      </section>
+
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erNyheter }}" hint-placeholder-val="{{ false }}">
     <div role="main" data-screen-label="Nyheter">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
@@ -4507,6 +4537,38 @@ window.__resources = {
                «Varsle» sier fra at det er ledig, og saa er det foerste mann
                til moella. Ofte vet verkstedet hvem som skal ha plassen — og
                da skal de kunne gi den, ikke sende en beskjed om aa kappes. -->
+          <!-- Gjennomfoerte kurs. Ett trykk sender e-post til deltakerne og
+               legger ut en linje paa lissom.no/ferdigbrent. -->
+          <div id="ov-ferdigbrent" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Gjennomførte kurs</span>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fbAdminAntall }}</span>
+            </div>
+            <sc-if value="{{ ingenGjennomforte }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed om at arbeidene er ferdige.</div>
+            </sc-if>
+            <sc-for list="{{ fbAdminListe }}" as="o" hint-placeholder-count="3">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                  <div style="min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
+                  </div>
+                  <span style="font-size: var(--text-xs); color: {{ o.merkeFarge }}; white-space: nowrap;">{{ o.merke }}</span>
+                </div>
+                <div style="display: flex; gap: var(--space-4); margin-top: var(--space-3); flex-wrap: wrap;">
+                  <sc-if value="{{ o.kanMelde }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ o.meld }}" hint-size="auto,36px">Meld klar til henting</x-import>
+                  </sc-if>
+                  <sc-if value="{{ o.erMeldt }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ o.angre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta meldingen ned</button>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Meldingen står på lissom.no/ferdigbrent i tre uker, og forsvinner av seg selv.</div>
+          </div>
+
           <div id="ov-venteliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
@@ -9921,6 +9983,9 @@ class Component extends DCLogic {
       { sti: '/paint-on-pots', side: 'paintonpots' },
       { sti: '/kalender',      side: 'kalender' },
       { sti: '/nyttig-info',   side: 'nyttig' },
+      // Klar til henting. Alle skal kunne sjekke selv om tingene deres er
+      // ferdige, uten aa logge inn og uten aa ringe.
+      { sti: '/ferdigbrent',   side: 'ferdigbrent' },
       { sti: '/nyheter',       side: 'nyheter' },
       // Plakatene hadde ingen adresse — de kunne bare naas ved aa klikke seg
       // inn fra Nyttig info, og lot seg derfor verken lenke til eller
@@ -11985,6 +12050,55 @@ class Component extends DCLogic {
 
     // Et kjop som ventet paa at dette skulle bli klart, telles naa.
     if (this._ventendeKjop) { this.maalKjop(this._ventendeKjop); }
+  }
+
+  /** Henter gjennomfoerte kursdatoer til kortet paa Oversikt. */
+  hentFerdigbrentAdmin() {
+    if (!this.erPublisert() || this._fbAdminHentes) return;
+    this._fbAdminHentes = true;
+    fetch('/api/admin/ferdigbrent.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._fbAdminHentes = false;
+        if (d && d.okter) this.setState({ ferdigbrentAdmin: d.okter });
+      })
+      .catch(() => { this._fbAdminHentes = false; });
+  }
+
+  ferdigbrentKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._fbKall) return;
+    this._fbKall = true;
+    fetch('/api/admin/ferdigbrent.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._fbKall = false;
+        this.setState({
+          kvittering: ok ? 'Beskjeden er sendt' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) { this._fbAdminHentes = false; this.hentFerdigbrentAdmin(); }
+      })
+      .catch(() => {
+        this._fbKall = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  hentFerdigbrent() {
+    if (!this.erPublisert() || this._fbHentes) return;
+    this._fbHentes = true;
+    fetch('/api/ferdigbrent.php', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._fbHentes = false;
+        if (d) this.setState({ ferdigbrent: d });
+      })
+      .catch(() => { this._fbHentes = false; });
   }
 
   hentNyheter() {
@@ -15968,8 +16082,16 @@ class Component extends DCLogic {
     if (this.erAdminSkjerm(side) && !this.state.adminSalg) {
       this.hentAdminSalg();
     }
+    if (side === 'adminoversikt' && !this.state.ferdigbrentAdmin) {
+      this.hentFerdigbrentAdmin();
+    }
     if (side === 'nyheter' && !this.state.nyheter) {
       this.hentNyheter();
+    }
+    // Klar til henting hentes hver gang sida aapnes. Den som staar i doera og
+    // lurer paa om koppen er ferdig, skal ikke se svaret fra i gaar.
+    if (side === 'ferdigbrent') {
+      this.hentFerdigbrent();
     }
     if (side === 'adminmarked') {
       if (!this.state.marked) this.hentMarked();
@@ -20770,6 +20892,30 @@ class Component extends DCLogic {
       loginTittel: side === 'adminlogin' ? 'Logg inn som admin' : 'Logg inn',
       erPersonvern: side === 'personvern',
 
+      // ── Klar til henting ─────────────────────────────────────────────
+      //
+      // Alle skal kunne sjekke selv om tingene deres er ferdige. Ingen navn
+      // og ingen antall staar her — bare kurset, datoen og at det er klart.
+      ...(() => {
+        if (side !== 'ferdigbrent') return { erFerdigbrent: false };
+        const d = this.state.ferdigbrent;
+        const liste = (d && d.meldinger) || [];
+        const uker = (d && d.uker) || 3;
+        return {
+          erFerdigbrent: true,
+          fbIngress: 'Her legger vi ut når arbeidene fra et kurs er ferdig brent. '
+            + 'Vi oppbevarer dem i ' + uker + ' uker, og sender deg en e-post samtidig.',
+          fbHarNoe: liste.length > 0,
+          fbTomt: !!d && liste.length === 0,
+          fbListe: liste.map(m => ({
+            tittel: m.kurs + ', ' + m.dato,
+            tekst: 'Gjenstandene fra dette kurset er klare til henting. Vi oppbevarer dem hos oss i ' + uker + ' uker.',
+            igjen: m.igjen,
+            fargen: m.snart ? 'var(--terracotta-600)' : 'var(--text-muted)',
+          })),
+        };
+      })(),
+
       // ── Nyheter ──────────────────────────────────────────────────────
       ...(() => {
         if (side !== 'nyheter') return { erNyheter: false };
@@ -20909,7 +21055,7 @@ class Component extends DCLogic {
         'Ovnen betjenes kun av oss. Hold en meters avstand når den er varm.',
         'Rydd og vask plassen din før du går.',
       ],
-      visFooter: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'kasse', 'omoss', 'personvern', 'nyttig', 'bedrift', 'vilkar', 'gavekortside', 'kontakt'].indexOf(side) !== -1,
+      visFooter: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'kasse', 'omoss', 'personvern', 'nyttig', 'bedrift', 'vilkar', 'gavekortside', 'kontakt', 'ferdigbrent'].indexOf(side) !== -1,
       apningstider: [
         { dag: 'Verkstedet', tid: 'Etter avtale' },
         { dag: 'Kurs og events', tid: 'Se datoer under kurs' },
@@ -21848,6 +21994,38 @@ class Component extends DCLogic {
           vlMelding: this.state.vlMelding || '',
           settVlMelding: (e) => this.setState({ vlMelding: e.target.value }),
           ovVentelisteAntall: liste.length === 0 ? '' : liste.length + ' venter',
+          // ── Gjennomfoerte kurs ─────────────────────────────────────────
+          //
+          // Varselmalen «ferdig_brent» har ligget i basen siden dag én uten
+          // at noe noen gang sendte den. Her er knappen.
+          ...(() => {
+            const okter = (this.state.ferdigbrentAdmin || []).slice(0, 12);
+            const uventet = okter.filter(o => !o.meldt).length;
+            return {
+              fbAdminAntall: okter.length === 0 ? ''
+                : (uventet > 0 ? uventet + ' venter på beskjed' : 'Alle er meldt'),
+              ingenGjennomforte: this.erPublisert() && okter.length === 0,
+              fbAdminListe: okter.map(o => ({
+                tittel: o.tittel,
+                linje: o.naar + ' · ' + o.deltakere
+                     + (o.deltakere === 1 ? ' deltaker' : ' deltakere'),
+                merke: o.meldt ? 'Meldt ' + o.meldtNaar : 'Ikke meldt',
+                merkeFarge: o.meldt ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
+                kanMelde: !o.meldt,
+                erMeldt: !!o.meldt,
+                meld: () => {
+                  if (!window.confirm('Melde at arbeidene fra «' + o.tittel + '», ' + o.naar + ' er ferdige?\n\n'
+                      + 'Alle deltakerne får e-post, og det legges ut en melding på lissom.no/ferdigbrent i tre uker.')) return;
+                  this.ferdigbrentKall({ handling: 'meld', oktId: o.oktId });
+                },
+                angre: () => {
+                  if (!window.confirm('Ta meldingen ned fra nettsiden?\n\n'
+                      + 'E-post som alt er sendt, kan ikke hentes tilbake.')) return;
+                  this.ferdigbrentKall({ handling: 'angre', oktId: o.oktId });
+                },
+              })),
+            };
+          })(),
           ingenOvVenteliste: this.erPublisert() && liste.length === 0,
         };
       })(),

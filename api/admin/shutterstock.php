@@ -30,18 +30,47 @@ require __DIR__ . '/../_boot.php';
 
 krev_admin();
 
+// http_kall() kaster naar tilkoblingen ikke gaar gjennom — og uten dette blir
+// «webhotellet naar ikke ut paa nettet» til en 500 med filsti og linjenummer
+// i svaret. Eieren sitter da igjen med «app/lib/nett.php:96» framfor hva som
+// er galt.
+set_exception_handler(static function (Throwable $e): void {
+    if ($e instanceof RuntimeException) {
+        logg('Shutterstock-kall stoppet', ['feil' => $e->getMessage()]);
+        Svar::feil($e->getMessage(), 400);
+    }
+    logg_feil('Uventet feil i Shutterstock-kall', $e);
+    Svar::feil('Noe gikk galt. Prøv igjen, eller si fra hvis det gjentar seg.', 500);
+});
+
 /** Endepunktene. Samlet her, så de er ett sted å rette hvis de flyttes. */
 const SS_SOK      = 'https://api.shutterstock.com/v2/images/search';
 const SS_LISENS   = 'https://api.shutterstock.com/v2/images/licenses';
 
-$nokkel = trim((string) Config::hent('shutterstock_token', ''));
-if ($nokkel === '') {
+// To måter å bevise hvem vi er, og begge virker.
+//
+// Shutterstock gir deg tre verdier på appsiden: en forbrukernøkkel, et
+// forbrukerpassord, og et personlig token. Tokenet er det enkleste, men det
+// er ikke alltid lett å finne — og da skal ikke nøkkel og passord være
+// verdiløse. De to gjør nøyaktig samme nytte, med HTTP Basic.
+$token   = trim((string) Config::hent('shutterstock_token', ''));
+$nokkel  = trim((string) Config::hent('shutterstock_nokkel', ''));
+$passord = trim((string) Config::hent('shutterstock_passord', ''));
+
+if ($token === '' && ($nokkel === '' || $passord === '')) {
     Svar::feil(
         'Shutterstock er ikke koblet til ennå. Legg inn shutterstock_token i '
-        . 'secrets.php. Nøkkelen lages på developers.shutterstock.com.',
+        . 'secrets.php — eller shutterstock_nokkel og shutterstock_passord, '
+        . 'som er forbrukernøkkelen og forbrukerpassordet fra appen din på '
+        . 'developers.shutterstock.com.',
         400
     );
 }
+
+/** Hodet som beviser hvem vi er. Token først; ellers nøkkel og passord. */
+$auth = $token !== ''
+    ? 'Authorization: Bearer ' . $token
+    : 'Authorization: Basic ' . base64_encode($nokkel . ':' . $passord);
 
 /**
  * Ett kall mot Shutterstock.
@@ -52,13 +81,13 @@ if ($nokkel === '') {
  *
  * @return array{status:int, json:array}
  */
-$kall = static function (string $url, ?array $kropp = null) use ($nokkel): array {
+$kall = static function (string $url, ?array $kropp = null) use ($auth): array {
     $svar = http_kall(
         $url,
         $kropp === null ? 'GET' : 'POST',
         $kropp === null ? null : json_encode($kropp, JSON_UNESCAPED_UNICODE),
         array_filter([
-            'Authorization: Bearer ' . $nokkel,
+            $auth,
             'Accept: application/json',
             $kropp === null ? null : 'Content-Type: application/json',
         ]),
@@ -76,7 +105,8 @@ $feiltekst = static function (int $status, array $json): string {
     }
     return match (true) {
         $status === 401 || $status === 403
-            => 'Shutterstock godtok ikke nøkkelen. Sjekk shutterstock_token i secrets.php.'
+            => 'Shutterstock godtok ikke nøkkelen. Sjekk shutterstock_token — eller '
+               . 'shutterstock_nokkel og shutterstock_passord — i secrets.php.'
                . ($detalj !== '' ? ' (' . $detalj . ')' : ''),
         $status === 429
             => 'For mange søk på kort tid. Vent litt og prøv igjen.',

@@ -94,5 +94,10 @@ return [
     // Søk og miniatyrer følger med nøkkelen og koster ingenting. Å laste ned
     // et lisensiert bilde krever et abonnement med API-tilgang — uten det
     // virker søket, men «Bruk dette bildet» sier fra.
+    // Enten dette tokenet …
     'shutterstock_token' => '',
+    // … eller disse to. Forbrukernøkkel og forbrukerpassord fra samme
+    // appside. Virker like godt; tokenet er bare litt kortere å sette opp.
+    'shutterstock_nokkel'  => '',
+    'shutterstock_passord' => '',
 ];

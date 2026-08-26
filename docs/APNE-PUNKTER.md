@@ -13,7 +13,22 @@ Sist gjennomgått: 26. august 2026.
 
 ## Bestilt, ikke gjort
 
-### 1. Punktlista på kursene ligger fast i koden
+### 1. ~~Punktlista på kursene ligger fast i koden~~ — gjort 26. august
+
+Plasstallet regnes nå ut av kurset, og «Maks 8 deltakere» sto i seks ulike
+tekster som ikke fulgte med når plassene ble endret. Se «Ferdig» nederst.
+
+### 1b. Resten av punktlista kan fortsatt ikke redigeres
+
+Plasslinja er løst, men de andre punktene — «Leire, verktøy, glasur og
+brenning er inkludert», «Du tar med deg to til tre boller hjem» — ligger
+fortsatt fast i koden. Lissom ba også om å fjerne «verktøy» fra hva som er
+inkludert på Kurs boller. Det står igjen.
+
+Løsningen er den samme: flytte punktene til databasen med et felt i
+kursveiviseren.
+
+### 1c. Gammelt punkt (beholdt for historikken)
 
 På Kurs boller står det i dag, rett over hverandre på samme side:
 
@@ -43,11 +58,13 @@ Knappen i billedvelgeren heter «Bruk standardbildet i stedet». Misvisende på
 bilderute 2 og 3, der det ikke finnes noe standardbilde. Skal hete «Fjern
 bildet» der.
 
-### 4. Hva som skal stå i stedet for «10 ledige»
+### 4. ~~Hva som skal stå i stedet for «10 ledige»~~ — gjort 26. august
 
-Lissom ba om dette før samtalen ble komprimert, og den opprinnelige ordlyden
-er borte. Må bekreftes før noe gjøres: skal det stå ingenting, «Ledig» /
-«Fullbooket» uten tall, eller noe annet?
+Bestilt og bygget. Se «Ferdig» nederst.
+
+Én ting å bekrefte: teksten når det er få igjen står som «Få plasser» på
+Dreiing og «Få ledige plasser» på de andre — slik Lissom skrev det. Skal de
+være like?
 
 ---
 
@@ -123,6 +140,18 @@ i plass, båndbredde og avspilling.
 ---
 
 ## Ferdig, men verdt å vite
+
+- **Plassene følger kategorien** (migrasjon 052): Dreiing 8, og
+  Plateteknikk, Workshop, Sip & Clay, Date Night og Paint on pots 12.
+  Gjelder kursene, datoene som ligger ute, og de faste ukedagene.
+- **Date Night og Paint on Pots lå i kategorien «Events»**, som ble fjernet
+  25. august. De var usynlige under sine egne filtre. Flyttet i 052.
+- **Ledige plasser vises etter regel, ikke som råtall.** Dreiing: 6 og opp
+  «Ledige plasser», 4–5 tallet, 1–3 «Få plasser». De andre: 7 og opp
+  «Ledige plasser», 5–6 tallet, 1–4 «Få ledige plasser». Ett sted i koden,
+  brukt på kortene, i datovelgeren, på kurssida og i medlemslista.
+- **«Maks N deltakere» regnes ut av kurset.** Sto som fast tekst seks steder
+  og spriket mot tallene under.
 
 - **Migrasjon 046–051 er kjørt** på lissom.no. Dagsoppgjør, plasser på
   events, ventelistens e-posttekst, standard bekreftelsestekst og

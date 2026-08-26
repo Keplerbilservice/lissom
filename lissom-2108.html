@@ -8366,7 +8366,9 @@ const SIDEINNHOLD = {
     { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Kurs og events' },
       { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true },
-      { l: 'Detalj venstre', v: 'Maks 8 deltakere' },
+      // Sto med ett tall for alle kategoriene. Dreiing tar 8, resten 12 —
+      // ett tall her ville vaert feil for den ene eller den andre.
+      { l: 'Detalj venstre', v: 'Små grupper' },
       { l: 'Detalj høyre', v: 'Leire, glasur og brenning inkludert' } ] },
     { navn: 'Kurslisten', type: 'Automatisk fra Kurs og medlemskap', synlig: 'Publisert', felter: [] },
     { navn: 'Velkommen til Lissom', type: 'Tekstseksjon', synlig: 'Publisert', felter: [
@@ -8833,12 +8835,12 @@ class Component extends DCLogic {
    */
   kursKort() {
     this._kursListe = this.medUndertemaer([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Maks åtte deltakere, så alle får veiledning ved skiva.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks åtte deltakere.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Maks seks deltakere.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
         { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
-        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Maks seks gjester samtidig.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
+        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
     ]);
     this._alleKort = this.medBooking(
       this._kursListe.concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe))
@@ -8912,7 +8914,7 @@ class Component extends DCLogic {
           date: k.datoer.length ? k.datoer[0].dato : 'Etter avtale',
           duration: k.datoer.length > 1 ? k.datoer.length + ' datoer å velge mellom' : '',
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
-          status: k.datoer.length ? this.plasstekst(k.datoer) : 'Ta kontakt for dato',
+          status: k.datoer.length ? this.plasstekst(k.datoer, k.plasser) : 'Ta kontakt for dato',
           kunKontakt: k.datoer.length === 0,
           // Bildet verkstedet har valgt i steg 3. Uten eget bilde faar kurset
           // verkstedbildet framfor et tomt felt.
@@ -8933,12 +8935,43 @@ class Component extends DCLogic {
   // «12 plasser igjen» under «onsdag 9. september» var summen av alle datoer.
   // Kortet viser én dato, og tallet maa gjelde den — ellers loves det plasser
   // paa en kveld som er full.
-  plasstekst(datoer) {
+  /**
+   * Hvor mange plasser som er igjen, slik kunden skal se det.
+   *
+   * Verkstedet vil ikke vise det noeyaktige tallet naar det er god plass —
+   * «8 plasser igjen» tre uker for kurset sier bare at ingen har meldt seg
+   * paa. Naermere fullt er tallet derimot verdt aa vite.
+   *
+   *   6 og opp   «Ledige plasser»
+   *   4 til 5    det faktiske tallet
+   *   1 til 3    «Faa plasser»
+   *   0          «Fullbooket»
+   *
+   * Ett sted, fordi tallet vises paa kortene, i datovelgeren, paa kurssida
+   * og i medlemslista — og fire steder som regner hver for seg blir fire
+   * steder som etter hvert sier noe forskjellig.
+   */
+  ledigTekst(ledige, kapasitet) {
+    const l = parseInt(ledige, 10);
+    if (isNaN(l) || l <= 0) return 'Fullbooket';
+    const kap = parseInt(kapasitet, 10) || 12;
+
+    // Dreiing tar aatte, resten tolv. Grensene folger derfor plassene, ikke
+    // kategorinavnet — da treffer de ogsaa et kurs som settes til noe annet.
+    if (kap <= 8) {
+      if (l <= 3) return 'Få plasser';
+      if (l <= 5) return l + (l === 1 ? ' ledig plass' : ' ledige plasser');
+      return 'Ledige plasser';
+    }
+    if (l <= 4) return 'Få ledige plasser';
+    if (l <= 6) return l + ' ledige plasser';
+    return 'Ledige plasser';
+  }
+
+  plasstekst(datoer, kapasitet) {
     const neste = (datoer || [])[0];
     if (!neste) return 'Ingen datoer ennå';
-    const l = neste.ledige;
-    if (l <= 0) return 'Fullbooket';
-    return l + (l === 1 ? ' plass igjen' : ' plasser igjen');
+    return this.ledigTekst(neste.ledige, neste.plasser || kapasitet);
   }
 
   medServerdata(k) {
@@ -8971,6 +9004,7 @@ class Component extends DCLogic {
         date: 'Etter avtale',
         duration: '',
         om: kat.om || k.om,
+        plasser: kat.plasser || 0,
         image: kat.bilde || k.image,
         bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
         okter: [],
@@ -8982,13 +9016,17 @@ class Component extends DCLogic {
     return Object.assign({}, k, {
       slug: kat.slug || '',
       katId: kat.id,
+      // Antall plasser, fra basen. Sto som fast tekst i punktlista —
+      // «Maks aatte deltakere» — mens tallet ved datoen kom herfra. De to
+      // sto rett over hverandre og var uenige.
+      plasser: kat.plasser || 0,
       prisOre: kat.prisOre,
       price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
       // Hele oktlista folger med kortet. «man. 24. aug» kan ikke regnes paa,
       // og uten datoene kunne ikke kurslista skille dagtid fra kveldstid —
       // og heller ikke vise den datoen som faktisk passer valget.
       okter: datoer,
-      status: this.plasstekst(datoer),
+      status: this.plasstekst(datoer, kat.plasser),
       // Har verkstedet valgt bilder i admin, er det de som gjelder — ikke
       // bildet som sto i designfila.
       image: kat.bilde || k.image,
@@ -9230,7 +9268,7 @@ class Component extends DCLogic {
       okter: treff,
       date: treff[0].dato || k.date,
       duration: treff.length > 1 ? treff.length + ' datoer å velge mellom' : '',
-      status: this.plasstekst(treff),
+      status: this.plasstekst(treff, k.plasser),
       // Kortet lover en dato. Da skal bookingen aapne paa den, ikke paa den
       // foerste i rekka.
       book: () => {
@@ -12559,7 +12597,7 @@ class Component extends DCLogic {
       dato: d.dato,
       oktId: d.oktId,
       tid: '',
-      plasser: String(d.ledige),
+      plasser: this.ledigTekst(d.ledige, d.plasser || kat.plasser),
       full: d.ledige <= 0,
       valgt: i === 0,
     }));
@@ -16349,6 +16387,11 @@ class Component extends DCLogic {
         sporsmal.push({ tittel: flertall ? 'Hva vil dere helst?' : 'Hva vil du helst?', valgt: hva, valg: regler.map(r => chip(r.navn, 'kvHva', hva)) });
         const steg = Math.min(this.state.kvSteg || 0, sporsmal.length);
         const ferdig = steg >= sporsmal.length;
+        // Plassene paa dreiekursene, slik de faktisk staar i basen.
+        const dreiePlasser = (() => {
+          const d = (this.state.katalog || []).filter(k => (k.tema || '') === 'Dreiing' && k.plasser > 0);
+          return d.length ? Math.max(...d.map(k => k.plasser)) : 8;
+        })();
         const rec = (() => {
           if (!ferdig) return null;
           if (n > 12) return { navn: 'Privat event', tekst: 'For grupper over 12 skreddersyr vi kvelden — utdrikningslag, bursdag eller teambuilding.', gaTil: 'bedrift' };
@@ -16356,7 +16399,9 @@ class Component extends DCLogic {
           const regel = regler.find(r => r.navn === hva);
           const fallTekst = 'Basert på svarene deres er dette det beste valget.';
           if (regel && regel.mal.indexOf('SIDE:') === 0) return { navn: ({ 'SIDE:paintonpots': 'Paint on Pots', 'SIDE:bedrift': 'Privat event' })[regel.mal] || regel.navn, tekst: regel.tekst || fallTekst, gaTil: regel.mal.slice(5) };
-          if (n > 8) return { navn: 'Privat event', tekst: 'Dreiekursene tar maks 8 personer — for dere passer et privat event best.', gaTil: 'bedrift' };
+          // Tallet leses av kursene, ikke skrevet inn her. Endrer verkstedet
+          // plassene paa dreiekursene, folger denne setningen med.
+          if (n > dreiePlasser) return { navn: 'Privat event', tekst: 'Dreiekursene tar maks ' + dreiePlasser + ' personer — for dere passer et privat event best.', gaTil: 'bedrift' };
           if (regel) return { navn: regel.mal, tekst: regel.tekst || fallTekst, kurs: regel.mal };
           return { navn: 'Nybegynner dreiekurs', tekst: 'To økter over to dager der du lærer å sentrere, dreie og trimme.', kurs: 'Nybegynner dreiekurs' };
         })();
@@ -16759,7 +16804,7 @@ class Component extends DCLogic {
                   date: d ? d.dato : 'Dato kommer',
                   duration: '',
                   price: k.prisOre === 0 ? 'Gratis' : k.pris,
-                  status: d ? (d.ledige > 0 ? d.ledige + ' plasser igjen' : 'Fullt') : 'Åpen påmelding',
+                  status: d ? this.ledigTekst(d.ledige, d.plasser || k.plasser) : 'Åpen påmelding',
                   image: FOTO + 'handbygging.jpg',
                   om: k.om || '',
                   timer: 'Nei, samlingen kommer i tillegg til timene dine',
@@ -17378,16 +17423,23 @@ class Component extends DCLogic {
         };
       })(),
       bBilde: (this.state.valgtKurs && this.state.valgtKurs.image) || 'uploads_shutterstock_2630283113.jpg',
-      bookingPunkter: (this.state.valgtKurs && this.state.valgtKurs.punkter) || ((this.state.valgtKurs || {}).level === 'Event' ? [
+      // Plasslinja regnes ut av kurset, og legges foran de andre punktene.
+      // Skrevet inn som tekst sto den og sa «Maks aatte deltakere» over et
+      // felt som sa «Maks 12 plasser paa dette kurset».
+      bookingPunkter: (() => {
+        const k = this.state.valgtKurs || {};
+        const fast = k.punkter || (k.level === 'Event' ? [
         'Ingen erfaring nødvendig — vi viser deg alt underveis.',
         'Leire, materialer, glasering og brenning er inkludert.',
         'Passer venninnekvelder, utdrikningslag, bedrifter og par.',
         'Arbeidene brennes og er klare til henting etter 2–3 uker.',
       ] : [
         'Leire, verktøy, glasur og brenning er inkludert.',
-        'Maks åtte deltakere.',
         'Ingen forkunnskaper nødvendig.',
-      ]),
+      ]);
+        const p = parseInt(k.plasser, 10) || 0;
+        return p > 0 ? ['Maks ' + p + ' deltakere.'].concat(fast) : fast;
+      })(),
       // Ingen datoer fra serveren betyr ingen datoer. Fallet tilbake paa
       // designlista viste «Onsdag 19. august · 3 av 8 plasser» — en dato som
       // var passert, med plasser som ikke fantes, og en knapp som booket dem.
@@ -17410,8 +17462,12 @@ class Component extends DCLogic {
             ).map(d => { const valgtNaa = this.state.bDato ? d.dato === this.state.bDato : !!d.valgt; return Object.assign({}, d, {
         valgt: valgtNaa,
         velg: () => { if (!d.full) this.setState({ bDato: d.dato, bOktId: d.oktId || null }); },
-        plasserTekst: d.full ? 'Fullbooket' : ((d.plasser || '').match(/^\d+( av \d+)?/) ? (d.plasser.match(/^\d+( av \d+)?/)[0] + ' ledige') : (d.plasser || 'Ledig')),
-        prikk: d.full ? 'var(--clay-400)' : ((parseInt(d.plasser, 10) || 9) <= 3 ? 'var(--terracotta-500)' : 'var(--sage-500)'),
+        // Teksten er alt regnet ut av ledigTekst() — «Faa plasser», tallet,
+        // eller «Ledige plasser». Her sto en egen utregning som klipte tall
+        // ut av strengen og la paa « ledige», og som dermed sa noe annet enn
+        // kortet gjorde for det samme kurset.
+        plasserTekst: d.full ? 'Fullbooket' : (d.plasser || 'Ledig'),
+        prikk: d.full ? 'var(--clay-400)' : (/^Få plasser/.test(d.plasser || '') ? 'var(--terracotta-500)' : 'var(--sage-500)'),
         stil: {
           appearance: 'none', cursor: d.full ? 'not-allowed' : 'pointer', textAlign: 'left',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,

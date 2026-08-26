@@ -34,7 +34,7 @@ $kurs = DB::alle(
 $ut = [];
 foreach ($kurs as $k) {
     $okter = DB::alle(
-        "SELECT id, start_tid, slutt_tid
+        "SELECT id, start_tid, slutt_tid, kapasitet
            FROM course_sessions
           WHERE course_id = :c
             AND status = 'planlagt'
@@ -56,6 +56,10 @@ foreach ($kurs as $k) {
         'pris'    => Booking::kroner((int) $k['pris_ore']),
         'prisOre' => (int) $k['pris_ore'],
         'om'      => $k['beskrivelse'],
+        // Antall plasser kurset har. Nettsida skrev det som fast tekst —
+        // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
+        // sto rett over hverandre og var uenige. Naa kommer begge herfra.
+        'plasser' => (int) $k['kapasitet'],
         // Bildene verkstedet har valgt i admin. Foerste er hovedbildet;
         // resten er karusellen paa kurssida. Er lista tom, faller nettsida
         // tilbake paa bildet som hoerer til kurstypen.
@@ -71,6 +75,8 @@ foreach ($kurs as $k) {
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],
             'ledige'   => Booking::ledigePlasser((int) $o['id']),
+            // Datoen kan ha faerre plasser enn kurset ellers.
+            'plasser'  => (int) ($o['kapasitet'] ?: $k['kapasitet']),
         ], $okter),
     ];
 }

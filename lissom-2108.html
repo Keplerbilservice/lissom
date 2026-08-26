@@ -1540,9 +1540,13 @@ window.__resources = {
               <button type="button" onClick="{{ kursNullstill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Vis alle kurs</button>
             </div>
           </sc-if>
-          <div style="margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: var(--space-2) var(--space-3); flex-wrap: wrap; align-items: center;">
-            <span>{{ keDetaljVenstre }}</span><span aria-hidden="true">·</span><span>{{ keDetaljHoyre }}</span>
-          </div>
+          <!-- Staar det ingenting i feltene, skal ikke prikken staa igjen
+               alene. Linja kommer tilbake i det noen skriver noe der. -->
+          <sc-if value="{{ keHarDetalj }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: var(--space-6); font-size: var(--text-sm); color: var(--text-muted); display: flex; gap: var(--space-2) var(--space-3); flex-wrap: wrap; align-items: center;">
+              <span>{{ keDetaljVenstre }}</span><sc-if value="{{ keHarBeggeDetaljer }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true">·</span></sc-if><span>{{ keDetaljHoyre }}</span>
+            </div>
+          </sc-if>
         </div>
       </section>
 
@@ -3862,6 +3866,37 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- ── Videokurs ────────────────────────────────────────────────────
+       Ikke bygget. Skjermen staar her fordi kortet under «Kurs og
+       medlemskap» maa foere et sted — en knapp som ikke gjor noe er verre
+       enn en skjerm som sier hva som mangler. -->
+  <sc-if value="{{ erAdminVideokurs }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – videokurs" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavVideokurs }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <button type="button" onClick="{{ vkTilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">← Kurs og medlemskap</button>
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-4) 0 var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Videokurs</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Her skal videokursene ligge. Ingenting er bygget ennå.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8); max-width: 62ch;">
+          <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Film på et delt webhotell er noe annet enn et bilde — det er plass, båndbredde og avspilling. Det må bestemmes hvor filmene skal ligge før noe kan bygges.</p>
+          <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Si fra når det skal settes opp, så bygges det her.</p>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <!-- Ferdig glassert.
        To seksjoner: det som venter paa beskjed, og det som er gjort. Et kurs
        flyttes over foerst naar alle paa datoen har faatt beskjed — er noen
@@ -5225,9 +5260,6 @@ window.__resources = {
                 <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ mndNavn }}</span>
                 <button type="button" onClick="{{ mndNeste }}" aria-label="Neste måned" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 8px; font-size: var(--text-lg); line-height: 1; color: var(--lissom-brown);">›</button>
               </div>
-            </sc-if>
-            <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
             </sc-if>
             <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
               <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
@@ -9002,9 +9034,11 @@ const SIDEINNHOLD = {
       { l: 'Kicker', v: 'Kurs og events' },
       { l: 'Ingress', v: 'Leire, verktøy, glasur og brenning er inkludert i alle kurs. Du får låne forkle av oss, men regn med å bli litt skitten.', lang: true },
       // Sto med ett tall for alle kategoriene. Dreiing tar 8, resten 12 —
-      // ett tall her ville vaert feil for den ene eller den andre.
-      { l: 'Detalj venstre', v: 'Små grupper' },
-      { l: 'Detalj høyre', v: 'Leire, glasur og brenning inkludert' } ] },
+      // ett tall her ville vaert feil for den ene eller den andre. Teksten er
+      // tatt bort etter bestilling; feltene staar igjen slik at det kan
+      // skrives noe annet der uten aa gaa i koden.
+      { l: 'Detalj venstre', v: '' },
+      { l: 'Detalj høyre', v: '' } ] },
     { navn: 'Kurslisten', type: 'Automatisk fra Kurs og medlemskap', synlig: 'Publisert', felter: [] },
     { navn: 'Velkommen til Lissom', type: 'Tekstseksjon', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Velkommen til Lissom' },
@@ -10563,6 +10597,7 @@ class Component extends DCLogic {
       { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
+      { sti: '/admin/videokurs',    side: 'adminvideokurs' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -16351,6 +16386,7 @@ class Component extends DCLogic {
       case 'adminnyreg':         return p('Oversikt');
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
+      case 'adminvideokurs':     return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Videokurs');
       case 'adminventeliste':    return p('Oversikt');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
@@ -18843,6 +18879,13 @@ class Component extends DCLogic {
               kort('Påmeldte',
                    'Alle som er meldt på, med hva de har betalt.',
                    (this.state.adminDeltakere || []).length, 'adminpameldte', {}, 'Se påmeldingene'),
+              // Videokurs er ikke bygget. Kortet staar her fordi det er her
+              // det skal staa naar det kommer — og skjermen bak sier rett ut
+              // at det ikke finnes noe der ennaa, framfor aa se tom ut som om
+              // noe var i stykker.
+              kort('Videokurs',
+                   'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.',
+                   null, 'adminvideokurs', {}, 'Se hva som mangler'),
             ],
           };
         }
@@ -20537,18 +20580,6 @@ class Component extends DCLogic {
                 const d = new Date(naa.getFullYear(), naa.getMonth() + (this.state.ovMnd || 0), 1);
                 return 'Ingenting satt opp i ' + MND[d.getMonth()] + '.';
               })()),
-      // Sier fra naar lista viser noe som ligger utenfor perioden man valgte.
-      ...(() => {
-        const v = this.state.ovProgram || 'I dag';
-        const liste = this.programListe();
-        const senere = liste.length > 0 && liste[0].senere;
-        return {
-          programSenere: senere,
-          programSenereTekst: v === 'I dag' ? 'Ingenting i dag. Det neste som skjer:'
-            : v === 'Uke' ? 'Ingenting denne uka. Det neste som skjer:'
-            : 'Ingenting denne måneden. Det neste som skjer:',
-        };
-      })(),
       ovLeggTilDeltaker: () => this.gaaAdmin('adminpameldte', { mpApen: true }),
       ovNyttMedlem: () => this.gaaAdmin('adminmedlem', {
         miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '',
@@ -21776,6 +21807,9 @@ class Component extends DCLogic {
         { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: this.plakatPunkter('trivsel').length + ' enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
+      erAdminVideokurs: side === 'adminvideokurs',
+      adminNavVideokurs: this.adminMeny(),
+      vkTilbake: () => this.gaaAdmin('adminomrkurs', {}),
       erAdminFerdigbrent: side === 'adminferdigbrent',
       adminNavFerdigbrent: this.adminMeny(),
       // ── Skjermen «Ferdig glassert» ───────────────────────────────────
@@ -23358,6 +23392,8 @@ class Component extends DCLogic {
       keIngress: this.innh('Kurs og events/0/Ingress'),
       keDetaljVenstre: this.innh('Kurs og events/0/Detalj venstre'),
       keDetaljHoyre: this.innh('Kurs og events/0/Detalj høyre'),
+      keHarDetalj: !!(this.innh('Kurs og events/0/Detalj venstre') || this.innh('Kurs og events/0/Detalj høyre')),
+      keHarBeggeDetaljer: !!(this.innh('Kurs og events/0/Detalj venstre') && this.innh('Kurs og events/0/Detalj høyre')),
       keVelkomstKicker: this.innh('Kurs og events/2/Kicker'),
       keVelkomstTittel: this.innh('Kurs og events/2/Overskrift'),
       keDropinTittel: this.innh('Kurs og events/3/Overskrift'),

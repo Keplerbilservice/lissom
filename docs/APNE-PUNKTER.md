@@ -84,7 +84,12 @@ være like?
 serveren og lagres ingen steder. Feltet gjør ingenting. Skal det kobles opp
 så det lager datoene, eller fjernes?
 
-### 6. Datoene fra den første katalogen
+### 6. ~~Datoene fra den første katalogen~~ — avklart 26. august
+
+Lissom: «alt kan stå, for nå er det jo redigerbart, og vi styrer det fra
+admin.» Ingen migrasjon som sletter noe. Punktet er lukket.
+
+### 6b. Gammelt punkt (beholdt for historikken)
 
 `db/migrations/003_kurs.sql`, 21. august: jeg fylte katalogen fra
 designutkastet og publiserte den med datoer jeg fant på — Paint on Pots
@@ -102,19 +107,25 @@ verkstedet 10 000 kroner i innleid kursholder før den ble slettet.
 Bokføres mot Vipps (1510) i dagsoppgjøret. Skal den heller kreve at
 betalingsmåte er satt?
 
+Lissom 26. august: «denne må jeg komme tilbake til senere.» Ligger til hen
+har bestemt seg.
+
 ---
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–055 må kjøres
+### 7b. Migrasjon 052–056 må kjøres
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
-dem framfor å virke.
+dem framfor å virke. 056 gir gjentakelsen i steg 2 «annenhver uke» og
+«månedlig» — uten den virker bare det ukentlige, og skjermen sier fra.
 
-### 8. Nøklene byttes
+### 8. ~~Nøklene byttes~~ — gjort 26. august
 
-Ble limt inn i en chat 26. august og er kompromittert:
+Lissom: «nøklene er byttet.» Tabellen står igjen for historikken.
+
+Ble limt inn i en chat 26. august og var kompromittert:
 
 | Nøkkel | Hvor |
 |---|---|
@@ -151,9 +162,13 @@ Det står nå i salgsvilkårene, begge steder, og er publisert. Venter på svar.
 
 ### 12. Video på kurs
 
-Ikke bygget. Feltet i veiviseren sier fra at det ikke er koblet opp. Venter
-på bestilling — film på et delt webhotell er en annen sak enn et bilde, både
-i plass, båndbredde og avspilling.
+Ikke bygget. Feltet i veiviseren sier fra at det ikke er koblet opp. Film på
+et delt webhotell er en annen sak enn et bilde, både i plass, båndbredde og
+avspilling — det må bestemmes hvor filmene skal ligge før noe kan bygges.
+
+Lissom 26. august: «videokurs er noe vi kan se på senere, men du kan bygge et
+kort under kurs og medlemskap som heter videokurs, og la det være tomt.»
+Kortet står der nå, og fører til en skjerm som sier hva som mangler.
 
 ---
 
@@ -193,6 +208,20 @@ i plass, båndbredde og avspilling.
   uker. «Ta meldingen ned» angrer linja; e-post som er sendt står som sendt.
   Varselmalen `ferdig_brent` hadde ligget i basen siden migrasjon 002 uten at
   noe noen gang sendte den. Migrasjon 053.
+- **Gjentakelse i steg 2 legger endelig ut datoer** (migrasjon 056).
+  «Ukentlig / Månedlig / Egendefinert» og «Antall ganger» lot seg trykke på,
+  men ble aldri sendt til serveren — den som satte «Ukentlig · 10 ganger» og
+  trodde høsten var planlagt, fikk en tom kalender. «Egendefinert» var
+  fritekst som ingen maskin kan lese. Valgene er nå Ingen, Ukentlig,
+  Annenhver uke og Månedlig, og de mater den samme regelen i `kurs_serier`
+  som allerede lå der — ikke et system nummer to ved siden av.
+- **Notisen «Ingenting denne måneden. Det neste som skjer:»** er tatt bort
+  fra programmodulen. Lista over hva som kommer står som før, og den tomme
+  tilstanden «Ingenting satt opp i september» likeså.
+- **«Små grupper · Leire, glasur og brenning inkludert»** er tatt bort fra
+  kurssida. Feltene står igjen under Nettsiden → Innhold, tomme, så det kan
+  skrives noe annet der uten å gå i koden. Prikken mellom dem vises bare når
+  det faktisk står noe på begge sider.
 - **«Ferdig glassert» går nå på deltakeren, ikke på datoen** (migrasjon 055).
   Hver deltaker har egen status, egen meldingshistorikk med kanal, tekst og
   feil, internt notat som bare verkstedet ser, og «hentet». Beskjed kan sendes

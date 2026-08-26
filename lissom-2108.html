@@ -3506,6 +3506,63 @@ window.__resources = {
        det, og tallene i Okonomi var lavere enn det som faktisk var solgt.
        Salget blir en helt vanlig ordre med en betaling — samme rader som et
        nettsalg, saa det telles ett sted. -->
+  <!-- Gjennomfoerte kurs.
+       Laa som et panel nederst paa Oversikt, bak et hoyt programkort. Ett
+       trykk her sender e-post til alle som var paa datoen og legger ut en
+       linje paa lissom.no/ferdigbrent. -->
+  <sc-if value="{{ erAdminFerdigbrent }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – gjennomførte kurs" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavFerdigbrent }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Gjennomførte kurs</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Kursdatoene som er ferdige. Ett trykk sender e-post til alle som var der, og legger ut en melding på lissom.no/ferdigbrent om at arbeidene kan hentes.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venter på beskjed</span>
+            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fbAdminAntall }}</span>
+          </div>
+<sc-if value="{{ ingenGjennomforte }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed om at arbeidene er ferdige.</div>
+          </sc-if>
+          <sc-for list="{{ fbAdminListe }}" as="o" hint-placeholder-count="3">
+            <!-- Samme form som naboene: navn og en linje til venstre,
+                 status og handling til hoeyre. Foer laa knappen paa en egen
+                 rad under, og kortet ble dobbelt saa hoyt som de andre i
+                 rutenettet. -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
+              </div>
+              <sc-if value="{{ o.kanMelde }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ o.meld }}" hint-size="auto,34px">Meld klar</x-import>
+              </sc-if>
+              <sc-if value="{{ o.erMeldt }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
+                  <span style="font-size: var(--text-xs); color: {{ o.merkeFarge }};">{{ o.merke }}</span>
+                  <button type="button" onClick="{{ o.angre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta meldingen ned</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Meldingen står på lissom.no/ferdigbrent i tre uker og forsvinner av seg selv.</div>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminUttak }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – uttak butikk" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -4635,40 +4692,6 @@ window.__resources = {
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
               </div>
             </sc-for>
-          </div>
-
-          <!-- Gjennomfoerte kurs. Ett trykk sender e-post til deltakerne og
-               legger ut en linje paa lissom.no/ferdigbrent. -->
-          <div id="ov-ferdigbrent" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Gjennomførte kurs</span>
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fbAdminAntall }}</span>
-            </div>
-            <sc-if value="{{ ingenGjennomforte }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed om at arbeidene er ferdige.</div>
-            </sc-if>
-            <sc-for list="{{ fbAdminListe }}" as="o" hint-placeholder-count="3">
-              <!-- Samme form som naboene: navn og en linje til venstre,
-                   status og handling til hoeyre. Foer laa knappen paa en egen
-                   rad under, og kortet ble dobbelt saa hoyt som de andre i
-                   rutenettet. -->
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
-                </div>
-                <sc-if value="{{ o.kanMelde }}" hint-placeholder-val="{{ true }}">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ o.meld }}" hint-size="auto,34px">Meld klar</x-import>
-                </sc-if>
-                <sc-if value="{{ o.erMeldt }}" hint-placeholder-val="{{ false }}">
-                  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
-                    <span style="font-size: var(--text-xs); color: {{ o.merkeFarge }};">{{ o.merke }}</span>
-                    <button type="button" onClick="{{ o.angre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta meldingen ned</button>
-                  </div>
-                </sc-if>
-              </div>
-            </sc-for>
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Meldingen står på lissom.no/ferdigbrent i tre uker og forsvinner av seg selv.</div>
           </div>
 
           <!-- Kursene, sett fra kurset og ikke fra datoen. Programmet over
@@ -10054,6 +10077,7 @@ class Component extends DCLogic {
       { sti: '/admin/medlemmer',      side: 'adminomrmedlemmer' },
       { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
+      { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
       { sti: '/admin/butikk',       side: 'adminbutikk' },
       { sti: '/admin/okonomi',      side: 'adminokonomi' },
       { sti: '/admin/beskjeder',    side: 'adminbeskjeder' },
@@ -15632,6 +15656,7 @@ class Component extends DCLogic {
       case 'adminmedlemskap':    return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Medlemskap');
       case 'adminnyreg':         return p('Oversikt');
       case 'adminuttak':         return p('Oversikt');
+      case 'adminferdigbrent':   return p('Oversikt');
       case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
       case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
@@ -16251,7 +16276,8 @@ class Component extends DCLogic {
     if (this.erAdminSkjerm(side) && !this.state.adminSalg) {
       this.hentAdminSalg();
     }
-    if (side === 'adminoversikt' && !this.state.ferdigbrentAdmin) {
+    if ((side === 'adminoversikt' || side === 'adminferdigbrent')
+        && !this.state.ferdigbrentAdmin) {
       this.hentFerdigbrentAdmin();
     }
     if (side === 'nyheter' && !this.state.nyheter) {
@@ -18798,7 +18824,7 @@ class Component extends DCLogic {
                    ? 'Ett kurs venter på beskjed om at arbeidene er ferdige.'
                    : venterMelding + ' kurs venter på beskjed om at arbeidene er ferdige.',
                  venterMelding, 'Meld dem klare',
-                 rullTil('GJENNOMFØRTE KURS', 'ov-ferdigbrent'))] : []),
+                 () => this.gaaAdmin('adminferdigbrent', {}))] : []),
             ];
 
             // Paa en telefon ser du tre kort om gangen, ikke ti. Da avgjor
@@ -20945,6 +20971,8 @@ class Component extends DCLogic {
         { eyebrow: 'Verkstedet', navn: 'Trivselsregler', om: this.plakatPunkter('trivsel').length + ' enkle regler før du går for dagen — og det viktigste av alt.', side: 'plakattrivsel' },
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
+      erAdminFerdigbrent: side === 'adminferdigbrent',
+      adminNavFerdigbrent: this.adminMeny(),
       adminNavNyttig: this.adminMeny(),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },
       artikkelApen: this.state.artikkelValgt != null,

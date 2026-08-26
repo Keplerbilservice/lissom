@@ -4233,6 +4233,12 @@ window.__resources = {
                 <sc-if value="{{ kSteg3 }}" hint-placeholder-val="{{ false }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ kLagre }}" hint-size="auto,44px">Lagre kurs</x-import>
                 </sc-if>
+                <!-- Retter du en tekst paa et kurs som alt ligger ute, skal du
+                     slippe aa klikke deg gjennom til steg 3 og bli sendt ut av
+                     skjemaet for aa se om det gikk. -->
+                <sc-if value="{{ kKanLagreHer }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="check" on-click="{{ kLagreBli }}" hint-size="auto,44px">Lagre endringene</x-import>
+                </sc-if>
               </div>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ kAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
             </div>
@@ -13442,7 +13448,58 @@ class Component extends DCLogic {
   //
   // «Lagre og publiser» viste kvittering og skrev ingenting. Serveren har
   // stottet dette hele tida — knappen var bare ikke koblet til.
-  lagreKurs(rad, okter) {
+  /**
+   * Lagrer kurset fra skjemaet.
+   *
+   * @param {boolean} behold la skjemaet staa aapent etterpaa
+   */
+  kLagreKurs(behold) {
+    const navn = (this.state.kNavn || '').trim();
+    if (!navn) {
+      this.setState({ kvittering: 'Kurset må ha et navn', kvitteringDetalj: '' });
+      return;
+    }
+    const fmt = (d) => {
+      if (!d.dato) return '';
+      const dt = new Date(d.dato + 'T12:00');
+      const tekst = isNaN(dt) ? d.dato : dt.toLocaleDateString('nb-NO', { weekday: 'short', day: 'numeric', month: 'short' });
+      return tekst + (d.fra ? ' ' + d.fra : '') + (d.til ? ' – ' + d.til : '');
+    };
+    const okter = (this.state.kDatoer ?? []).filter(d => d.dato);
+    const datoer = okter.map(fmt);
+    let gjentak = this.state.kGjentak || 'Ingen';
+    if (gjentak === 'Egendefinert') gjentak = (this.state.kIntervall || '').trim() || 'Egendefinert';
+    if (gjentak !== 'Ingen' && (this.state.kAntall || '').trim()) gjentak += ' · ' + this.state.kAntall.trim() + ' ganger';
+    const prisRaa = (this.state.kPris || '').trim();
+    const nytt = {
+      navn, type: this.state.kType || 'Kurs',
+      kategori: this.state.kKategori || '',
+      pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
+      gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
+      pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
+      neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '',
+      bekreftelse: this.state.kBekreftelse || '',
+      mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms === true, datoer, okter,
+      sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
+      gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
+      bilder: (this.state.kBilder || []).filter(Boolean),
+    };
+    if (this.erPublisert()) {
+      this.lagreKurs(nytt, okter, behold);
+      return;
+    }
+    this.setState(s => {
+      const alle = this.kursData().slice();
+      const idx = s.kIndeks ?? -1;
+      if (idx >= 0) { nytt.pameldte = alle[idx].pameldte; nytt.andel = alle[idx].andel; alle[idx] = nytt; } else { alle.push(nytt); }
+      const pub = this.tilPublisert(nytt);
+      const nye = (s.nyeKurs || []).filter(k => k.title !== (idx >= 0 ? (this.kursData()[idx] || {}).navn : navn) && k.title !== navn);
+      return { adminKursListe: alle, kRed: behold ? s.kRed : false, nyeKurs: nye.concat([pub]),
+               kvittering: navn + ' er lagret' };
+    });
+  }
+
+  lagreKurs(rad, okter, behold) {
     if (this._kursLagres) return;
     this._kursLagres = true;
 
@@ -13505,7 +13562,10 @@ class Component extends DCLogic {
           .then(() => {
             this._kursLagres = false;
             this.setState({
-              kRed: false,
+              // «Lagre endringene» lar skjemaet staa: retter du en tekst paa
+              // et kurs som alt ligger ute, skal du se at det gikk uten aa bli
+              // sendt ut av skjemaet.
+              kRed: behold ? true : false,
               kvittering: rad.navn + ' er lagret',
               kvitteringDetalj: nye.length
                 ? nye.length + (nye.length === 1 ? ' dato' : ' datoer') + ' lagt ut.'
@@ -19688,45 +19748,11 @@ class Component extends DCLogic {
       kNesteSteg: () => this.setState(s => ({ kSteg: Math.min(3, (s.kSteg ?? 1) + 1) })),
       kForrigeSteg: () => this.setState(s => ({ kSteg: Math.max(1, (s.kSteg ?? 1) - 1) })),
       kAvbryt: () => this.setState({ kRed: false }),
-      kLagre: () => {
-        const navn = (this.state.kNavn || '').trim();
-        if (!navn) return;
-        const fmt = (d) => {
-          if (!d.dato) return '';
-          const dt = new Date(d.dato + 'T12:00');
-          const tekst = isNaN(dt) ? d.dato : dt.toLocaleDateString('nb-NO', { weekday: 'short', day: 'numeric', month: 'short' });
-          return tekst + (d.fra ? ' ' + d.fra : '') + (d.til ? ' – ' + d.til : '');
-        };
-        const okter = (this.state.kDatoer ?? []).filter(d => d.dato);
-        const datoer = okter.map(fmt);
-        let gjentak = this.state.kGjentak || 'Ingen';
-        if (gjentak === 'Egendefinert') gjentak = (this.state.kIntervall || '').trim() || 'Egendefinert';
-        if (gjentak !== 'Ingen' && (this.state.kAntall || '').trim()) gjentak += ' · ' + this.state.kAntall.trim() + ' ganger';
-        const prisRaa = (this.state.kPris || '').trim();
-        const nytt = {
-          navn, type: this.state.kType || 'Kurs',
-          kategori: this.state.kKategori || '',
-          pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
-          gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
-          pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
-          neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '', bekreftelse: this.state.kBekreftelse || '', mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms === true, datoer, okter,
-          sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
-          gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
-          bilder: (this.state.kBilder || []).filter(Boolean),
-        };
-        if (this.erPublisert()) {
-          this.lagreKurs(nytt, okter);
-          return;
-        }
-        this.setState(s => {
-          const alle = this.kursData().slice();
-          const idx = s.kIndeks ?? -1;
-          if (idx >= 0) { nytt.pameldte = alle[idx].pameldte; nytt.andel = alle[idx].andel; alle[idx] = nytt; } else { alle.push(nytt); }
-          const pub = this.tilPublisert(nytt);
-          const nye = (s.nyeKurs || []).filter(k => k.title !== (idx >= 0 ? (this.kursData()[idx] || {}).navn : navn) && k.title !== navn);
-          return { adminKursListe: alle, kRed: false, nyeKurs: nye.concat([pub]), kvittering: navn + ' er lagret og publisert' };
-        });
-      },
+      // «Lagre endringene» staar bare naar kurset alt ligger ute. Et nytt
+      // kurs skal gjennom alle tre stegene foer det publiseres.
+      kKanLagreHer: (this.state.kIndeks ?? -1) >= 0 && (this.state.kSteg ?? 1) < 3,
+      kLagreBli: () => this.kLagreKurs(true),
+      kLagre: () => this.kLagreKurs(false),
       ...(() => {
         const p = this.state.piProdukt || null;
         return {

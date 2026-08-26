@@ -4882,25 +4882,29 @@ window.__resources = {
                     <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
                   </sc-for>
                 </div>
-                <sc-if value="{{ kEgendefinert }}" hint-placeholder-val="{{ false }}">
-                  <input value="{{ kIntervall }}" onChange="{{ settKIntervall }}" placeholder="F.eks. annenhver uke, eller første lørdag i måneden" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-3);">
-                </sc-if>
                 <sc-if value="{{ kGjentar }}" hint-placeholder-val="{{ false }}">
-                  <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+                  <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap;">
                     <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Antall ganger</label>
                     <input value="{{ kAntall }}" onChange="{{ settKAntall }}" placeholder="F.eks. 10" style="width: 90px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
                   </div>
+                  <!-- Gjentakelsen sier hvor ofte. Dagen og klokkeslettet
+                       staar rett under, og det er de to sammen som legger ut
+                       datoene. -->
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kGjentakHjelp }}</p>
                 </sc-if>
 
-                <!-- Faste ukedager.
-                     Feltene over er tekst til deg selv. Dette er det som
-                     faktisk legger ut datoer: velg ukedag og klokkeslett, saa
-                     ligger de ute aatte uker fram, og fylles paa av seg selv. -->
+                <!-- Dagen gjentakelsen skal treffe.
+                     Gjentakelsen over sier hvor ofte; her staar hvilken dag
+                     og hvilket klokkeslett. Det er de to sammen som legger ut
+                     datoene, og de fylles paa av seg selv etter hvert. -->
+                <sc-if value="{{ kUtenKursId }}" hint-placeholder-val="{{ false }}">
+                  <p style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Lagre kurset først. Da kan du sette hvilken dag det går, og datoene legges ut.</p>
+                </sc-if>
                 <sc-if value="{{ kHarKursId }}" hint-placeholder-val="{{ true }}">
                   <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); margin-top: var(--space-4);">
-                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">Fast ukedag</label>
-                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kurset legges ut på denne dagen hver uke, så langt fram du velger under. Nye datoer kommer av seg selv etter hvert.</p>
+                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">{{ kSerieTittel }}</label>
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kSerieHjelp }}</p>
 
                     <sc-if value="{{ kHarSerier }}" hint-placeholder-val="{{ false }}">
                       <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3);">
@@ -4913,11 +4917,23 @@ window.__resources = {
                       </div>
                     </sc-if>
 
-                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
-                      <sc-for list="{{ kSerieDager }}" as="d" hint-placeholder-count="7">
-                        <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.kort }}</button>
-                      </sc-for>
-                    </div>
+                    <sc-if value="{{ kSerieUkedag }}" hint-placeholder-val="{{ true }}">
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                        <sc-for list="{{ kSerieDager }}" as="d" hint-placeholder-count="7">
+                          <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.kort }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <!-- Manedlig gaar paa datoen, ikke paa ukedagen. Den 6.
+                         faller paa ulik ukedag fra maned til maned. -->
+                    <sc-if value="{{ kSerieDato }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); flex-wrap: wrap;">
+                        <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Den</label>
+                        <input value="{{ kSerieDagIMnd }}" onChange="{{ settKSerieDagIMnd }}" placeholder="6" style="width: 70px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        <span style="font-size: var(--text-sm); color: var(--text-heading);">i hver måned</span>
+                      </div>
+                      <p style="margin: -4px 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kSerieDatoHjelp }}</p>
+                    </sc-if>
                     <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
                       <input type="time" value="{{ kSerieFra }}" onChange="{{ settKSerieFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                       <span style="color: var(--text-muted);">–</span>
@@ -14627,7 +14643,6 @@ class Component extends DCLogic {
     const okter = (this.state.kDatoer ?? []).filter(d => d.dato);
     const datoer = okter.map(fmt);
     let gjentak = this.state.kGjentak || 'Ingen';
-    if (gjentak === 'Egendefinert') gjentak = (this.state.kIntervall || '').trim() || 'Egendefinert';
     if (gjentak !== 'Ingen' && (this.state.kAntall || '').trim()) gjentak += ' · ' + this.state.kAntall.trim() + ' ganger';
     const prisRaa = (this.state.kPris || '').trim();
     const nytt = {
@@ -15713,9 +15728,23 @@ class Component extends DCLogic {
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
       kMva: k.mva === '25 % mva', kSms: k.sms === true,
-      kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0
-        ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'),
-      kIntervall: k.gjentas, kAntall: '',
+      // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
+      // Ligger det en regel der, er det den som gjelder.
+      ...(() => {
+        const r = ((raa.serier || [])[0]) || null;
+        if (!r) {
+          return { kGjentak: k.gjentas === 'Engangs' ? 'Ingen' : 'Ingen', kAntall: '' };
+        }
+        const NAVN = { ukentlig: 'Ukentlig', annenhver: 'Annenhver uke', manedlig: 'Månedlig' };
+        return {
+          kGjentak: NAVN[r.monster] || 'Ukentlig',
+          kAntall: r.antall ? String(r.antall) : '',
+          kSerieDag: r.ukedag || 4,
+          kSerieDagIMnd: r.dagIMaaned ? String(r.dagIMaaned) : '',
+          kSerieFra: r.fra, kSerieTil: r.til,
+          kSerieUker: String(r.ukerFram || 8),
+        };
+      })(),
       kSekunder: String(k.sekunder || 5), kFade: k.fade !== false,
       kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40,
       kDatoer: (k.okter && k.okter.length
@@ -18010,7 +18039,7 @@ class Component extends DCLogic {
           kRed: true, kSteg: 1, kIndeks: -1,
           kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-          kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+          kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
           kDatoer: [{ dato: '', fra: '', til: '' }],
           kvittering: 'Fyll ut samlingen',
@@ -18763,7 +18792,7 @@ class Component extends DCLogic {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
             kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-            kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+            kGjentak: 'Ingen', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
             kDatoer: [{ dato: '', fra: '', til: '' }],
           };
@@ -18835,7 +18864,7 @@ class Component extends DCLogic {
                   kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
                   kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
                   kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-                  kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+                  kGjentak: 'Ingen', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
                   kDatoer: [{ dato: '', fra: '', til: '' }],
                 }) },
@@ -18885,7 +18914,7 @@ class Component extends DCLogic {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
                 kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-                kGjentak: 'Ingen', kIntervall: '', kAntall: '',
+                kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
                 kDatoer: [{ dato: '', fra: '', til: '' }],
               }) },
@@ -20817,7 +20846,7 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
@@ -20872,13 +20901,21 @@ class Component extends DCLogic {
         if (k === 'Drop-in') return 'Drop-in i verkstedet. Gir ikke kursbevis.';
         return 'Vises under «' + k + '» på «Våre kurs».';
       })(),
-      kGjentakValg: ['Ingen', 'Ukentlig', 'Månedlig', 'Egendefinert'].map(t => ({
+      // «Egendefinert» var et fritekstfelt: «F.eks. annenhver uke, eller
+      // forste lordag i maneden». Ingen maskin kan lese det, og feltet ble
+      // aldri sendt til serveren i det hele tatt. De tre som staar her er de
+      // som faktisk kan legge ut datoer.
+      kGjentakValg: ['Ingen', 'Ukentlig', 'Annenhver uke', 'Månedlig'].map(t => ({
         navn: t, velg: () => this.setState({ kGjentak: t }),
         stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: (this.state.kGjentak || 'Ingen') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kGjentak || 'Ingen') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
       })),
       kGjentar: (this.state.kGjentak || 'Ingen') !== 'Ingen',
-      kEgendefinert: (this.state.kGjentak || 'Ingen') === 'Egendefinert',
-      kIntervall: this.state.kIntervall ?? '', settKIntervall: (e) => this.setState({ kIntervall: e.target.value }),
+      kGjentakHjelp: (() => {
+        const g = this.state.kGjentak || 'Ingen';
+        if (g === 'Månedlig') return 'Velg hvilken dato i måneden kurset går, under.';
+        if (g === 'Annenhver uke') return 'Velg hvilken ukedag kurset går, under. Det legges ut annenhver uke fra i dag.';
+        return 'Velg hvilken ukedag kurset går, under.';
+      })(),
       kAntall: this.state.kAntall ?? '', settKAntall: (e) => this.setState({ kAntall: e.target.value }),
       kDatoer: (this.state.kDatoer ?? []).filter(d => d.dato).map((d, i) => ({
         dato: d.dato, fra: d.fra, til: d.til,
@@ -20903,11 +20940,33 @@ class Component extends DCLogic {
         const kurs = (this.state.adminKursRaa || []).find(k => k.tittel === navn);
         const DAG = [[1, 'Man'], [2, 'Tir'], [3, 'Ons'], [4, 'Tor'], [5, 'Fre'], [6, 'Lør'], [7, 'Søn']];
         const valgt = this.state.kSerieDag ?? 4;
+        // Gjentakelsen over avgjor hva som skal fylles ut her: en ukedag
+        // for det som gaar hver uke eller annenhver, en dato for det
+        // manedlige. To felt for det samme ville bare kunne si hver sitt.
+        const MONSTER = { 'Ukentlig': 'ukentlig', 'Annenhver uke': 'annenhver', 'Månedlig': 'manedlig' };
+        const gjentak = this.state.kGjentak || 'Ingen';
+        const monster = MONSTER[gjentak] || 'ukentlig';
+        const manedlig = monster === 'manedlig';
+        const dagIMnd = Math.max(1, Math.min(31, parseInt(this.state.kSerieDagIMnd, 10) || 1));
         return {
           // Serien trenger et kurs aa henge paa. Et helt nytt kurs som ikke er
           // lagret ennaa har ikke noe nummer, og da skjules feltet framfor aa
           // vise en knapp som ikke kan virke.
           kHarKursId: !!kurs,
+          kUtenKursId: !kurs,
+          kSerieTittel: manedlig ? 'Fast dato' : 'Fast ukedag',
+          kSerieHjelp: manedlig
+            ? 'Kurset legges ut på denne datoen hver måned, så langt fram du velger under. Nye datoer kommer av seg selv etter hvert.'
+            : (monster === 'annenhver'
+                ? 'Kurset legges ut på denne dagen annenhver uke, så langt fram du velger under. Nye datoer kommer av seg selv etter hvert.'
+                : 'Kurset legges ut på denne dagen hver uke, så langt fram du velger under. Nye datoer kommer av seg selv etter hvert.'),
+          kSerieUkedag: !manedlig,
+          kSerieDato: manedlig,
+          kSerieDagIMnd: this.state.kSerieDagIMnd ?? '',
+          settKSerieDagIMnd: e => this.setState({ kSerieDagIMnd: e.target.value }),
+          kSerieDatoHjelp: dagIMnd > 28
+            ? 'Den ' + dagIMnd + '. finnes ikke i alle måneder. De månedene hoppes over framfor at kurset flyttes til en annen dato.'
+            : 'Faller på ulik ukedag fra måned til måned.',
           kSerier: ((kurs || {}).serier || []).map(r => Object.assign({}, r, {
             fjern: () => this.kursSerieKall({ handling: 'serieAv', serieId: r.id }),
           })),
@@ -20943,7 +21002,14 @@ class Component extends DCLogic {
             this.kursSerieKall({
               handling: 'serie',
               kursId: kurs.id,
+              // Monsteret kommer fra Gjentakelse i steg 2. Sto det «Ingen»,
+              // har du likevel bedt om en fast dag her — da er det ukentlig,
+              // som er det denne knappen alltid har gjort.
+              monster: monster,
               ukedag: this.state.kSerieDag ?? 4,
+              dagIMaaned: manedlig ? dagIMnd : 0,
+              // «Antall ganger» fra steg 2. Tomt betyr «til du stopper det».
+              antall: Math.max(0, Math.min(500, parseInt(this.state.kAntall, 10) || 0)),
               fra: this.state.kSerieFra || '10:00',
               til: this.state.kSerieTil || '13:00',
               ukerFram: Math.max(1, Math.min(52, parseInt(this.state.kSerieUker, 10) || 8)),

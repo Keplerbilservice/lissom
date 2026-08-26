@@ -204,10 +204,34 @@ switch ($handling) {
         if ($kursId <= 0 || DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
             Svar::feil('Ukjent kurs.');
         }
-        $ukedag = Foresporsel::heltall('ukedag');
-        if ($ukedag < 1 || $ukedag > 7) {
-            Svar::feil('Velg en ukedag.');
+        // Gjentakelsen fra steg 2. Kolonnene kommer med migrasjon 056; uten
+        // dem kan bare det ukentlige lagres, og det sier vi fra om framfor aa
+        // late som om «annenhver uke» ble tatt vare paa.
+        $utvidet = DB::harKolonne('kurs_serier', 'monster');
+        $monster = Foresporsel::tekst('monster') ?: 'ukentlig';
+        if (!in_array($monster, ['ukentlig', 'annenhver', 'manedlig'], true)) {
+            $monster = 'ukentlig';
         }
+        if (!$utvidet && $monster !== 'ukentlig') {
+            Svar::feil('Annenhver uke og månedlig krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        }
+
+        $ukedag = Foresporsel::heltall('ukedag');
+        $dagIMaaned = Foresporsel::heltall('dagIMaaned');
+        if ($monster === 'manedlig') {
+            if ($dagIMaaned < 1 || $dagIMaaned > 31) {
+                Svar::feil('Velg hvilken dato i måneden kurset går, fra 1 til 31.');
+            }
+            // Ukedagen betyr ingenting for en manedlig regel. Den staar som 0
+            // slik at den unike noekkelen ikke blander sammen to regler.
+            $ukedag = 0;
+        } else {
+            if ($ukedag < 1 || $ukedag > 7) {
+                Svar::feil('Velg en ukedag.');
+            }
+            $dagIMaaned = 0;
+        }
+
         $klokke = static function (string $t): ?string {
             return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t) === 1 ? $t . ':00' : null;
         };
@@ -217,19 +241,50 @@ switch ($handling) {
             Svar::feil('Skriv klokkeslettene som 10:00 og 13:00.');
         }
 
-        DB::kjor(
-            'INSERT INTO kurs_serier (course_id, ukedag, fra, til, kapasitet, uker_fram, aktiv)
-             VALUES (:c, :d, :f, :t, :k, :u, 1)
-             ON DUPLICATE KEY UPDATE til = VALUES(til), kapasitet = VALUES(kapasitet),
-                                     uker_fram = VALUES(uker_fram), aktiv = 1',
-            [
-                'c' => $kursId, 'd' => $ukedag, 'f' => $fra, 't' => $til,
-                'k' => Foresporsel::heltall('kapasitet') ?: null,
-                'u' => max(1, min(52, Foresporsel::heltall('ukerFram', 8))),
-            ]
-        );
+        // «Antall ganger». Tomt betyr «til noen tar regelen bort» — det er
+        // slik feltet i veiviseren sier det, og slik det virket for.
+        $antall = Foresporsel::heltall('antall');
+        if ($antall < 0 || $antall > 500) {
+            Svar::feil('Antall ganger må være mellom 1 og 500, eller stå tomt.');
+        }
+
+        if ($utvidet) {
+            DB::kjor(
+                'INSERT INTO kurs_serier (course_id, monster, ukedag, dag_i_maaned, fra, til,
+                                          kapasitet, uker_fram, antall, start_dato, aktiv)
+                 VALUES (:c, :m, :d, :dm, :f, :t, :k, :u, :n, :sd, 1)
+                 ON DUPLICATE KEY UPDATE til = VALUES(til), kapasitet = VALUES(kapasitet),
+                                         uker_fram = VALUES(uker_fram), antall = VALUES(antall),
+                                         aktiv = 1',
+                [
+                    'c' => $kursId, 'm' => $monster, 'd' => $ukedag, 'dm' => $dagIMaaned,
+                    'f' => $fra, 't' => $til,
+                    'k' => Foresporsel::heltall('kapasitet') ?: null,
+                    'u' => max(1, min(52, Foresporsel::heltall('ukerFram', 8))),
+                    'n' => $antall > 0 ? $antall : null,
+                    // Holdepunktet for «annenhver uke». Settes én gang, ved
+                    // opprettelsen — flyttet det seg, ville annenhver uke
+                    // byttet uke hver gang noen rorte regelen.
+                    'sd' => gmdate('Y-m-d'),
+                ]
+            );
+        } else {
+            DB::kjor(
+                'INSERT INTO kurs_serier (course_id, ukedag, fra, til, kapasitet, uker_fram, aktiv)
+                 VALUES (:c, :d, :f, :t, :k, :u, 1)
+                 ON DUPLICATE KEY UPDATE til = VALUES(til), kapasitet = VALUES(kapasitet),
+                                         uker_fram = VALUES(uker_fram), aktiv = 1',
+                [
+                    'c' => $kursId, 'd' => $ukedag, 'f' => $fra, 't' => $til,
+                    'k' => Foresporsel::heltall('kapasitet') ?: null,
+                    'u' => max(1, min(52, Foresporsel::heltall('ukerFram', 8))),
+                ]
+            );
+        }
+
         $laget = Serier::fyllPaa($kursId);
-        revider('serie_lagret', 'course', $kursId, ['ukedag' => $ukedag, 'fra' => $fra]);
+        revider('serie_lagret', 'course', $kursId,
+                ['monster' => $monster, 'ukedag' => $ukedag, 'dagIMaaned' => $dagIMaaned, 'fra' => $fra]);
         Svar::ok([
             'serier'  => Serier::forKurs($kursId),
             'beskjed' => $laget > 0

@@ -177,7 +177,7 @@ i plass, båndbredde og avspilling.
   valgt — skriptet som legger på utsnittet ser bare på `<img>`, og rutene er
   knapper med bakgrunnsbilde. Karusellen på kurssida hadde samme hull
   motsatt vei. Bilder uten valgt utsnitt står som før.
-- **«Klar til henting».** Kortet «Gjennomførte kurs» på Oversikt viser
+- **«Klar til henting».** Kortet «Ferdig glassert» på Oversikt viser
   kursdatoer som er ferdige, med antall deltakere. Ett trykk sender e-post
   til alle på datoen og legger ut en melding på lissom.no/ferdigbrent i tre
   uker. «Ta meldingen ned» angrer linja; e-post som er sendt står som sendt.

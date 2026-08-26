@@ -3835,7 +3835,7 @@ window.__resources = {
   </sc-if>
 
   <sc-if value="{{ erAdminFerdigbrent }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Admin – gjennomførte kurs" style="{{ adminGridStil }}">
+    <div data-screen-label="Admin – ferdig glassert" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
         <nav style="{{ adminNavStil }}">
@@ -3848,7 +3848,7 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Gjennomførte kurs</h1>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Ferdig glassert</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Kursdatoene som er ferdige. Ett trykk sender e-post til alle som var der, og legger ut en melding på lissom.no/ferdigbrent om at arbeidene kan hentes.</p>
         </div>
 
@@ -19176,7 +19176,7 @@ class Component extends DCLogic {
             //
             // Samme regel som ventelista: staar bare naar noe faktisk venter.
             // Et kort som hver dag sier «ingen», er ett kort mer aa lese forbi.
-            ...(venterMelding ? [kort('Gjennomførte kurs',
+            ...(venterMelding ? [kort('Ferdig glassert',
                  venterMelding === 1
                    ? 'Ett kurs venter på beskjed om at arbeidene er ferdige.'
                    : venterMelding + ' kurs venter på beskjed om at arbeidene er ferdige.',
@@ -19206,8 +19206,15 @@ class Component extends DCLogic {
             // som gjelder. Kort som ikke staar i lista — nye siden sist, eller
             // noe som bare dukker opp naar det venter — legger seg bakerst i
             // den rekkefolgen de er bygget.
-            const egen = this.state.ovRekkefolge
-              || ((this.state.adminData || {}).kortrekkefolge || []);
+            // Rekkefolgen ligger lagret som navn. Doper vi om et kort, staar
+            // det gamle navnet igjen i lista, og kortet ville lagt seg bakerst
+            // som om det var splitter nytt. «Gjennomfoerte kurs» ble «Ferdig
+            // glassert» 26. august; den som hadde dratt det paa plass skal
+            // finne det der det sto.
+            const DOEPT = { 'Gjennomførte kurs': 'Ferdig glassert' };
+            const egen = (this.state.ovRekkefolge
+              || ((this.state.adminData || {}).kortrekkefolge || []))
+              .map(n => DOEPT[n] || n);
             if (egen.length) {
               const nr = (k) => {
                 const i = egen.indexOf(k.navn);
@@ -19223,7 +19230,7 @@ class Component extends DCLogic {
             if ((this.state.vw || 1400) >= 980) return alle;
 
             const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
-                         'Gjennomførte kurs', 'Nye påmeldinger', 'Planlagte kurs',
+                         'Ferdig glassert', 'Nye påmeldinger', 'Planlagte kurs',
                          'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);

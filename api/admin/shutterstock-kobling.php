@@ -26,6 +26,38 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
+// ── Noen har aapnet adressen selv ──────────────────────────────────────────
+//
+// Returadressen ser ut som en lenke, og da blir den limt inn i nettleseren
+// for aa se om den virker. Foer sto det {"feil":"Mangler koden fra
+// Shutterstock."} — teknisk riktig og til ingen nytte.
+//
+// Dette staar foer innloggingssjekken med vilje: Shutterstock kan selv slaa
+// paa adressen naar den registreres, og da skal de faa et svar, ikke en 401.
+// Sida viser ingenting som ikke allerede staar i adressefeltet.
+if (Foresporsel::metode() === 'GET'
+    && Foresporsel::tekst('code') === ''
+    && Foresporsel::tekst('error') === ''
+    && Foresporsel::tekst('start') !== '1') {
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<!doctype html><html lang="no"><meta charset="utf-8">'
+       . '<meta name="viewport" content="width=device-width, initial-scale=1">'
+       . '<title>Returadresse for Shutterstock</title>'
+       . '<style>body{font:16px/1.6 system-ui,sans-serif;max-width:34em;'
+       . 'margin:12vh auto;padding:0 1.5rem;color:#2b2320}'
+       . 'h1{font-size:1.25rem;margin:0 0 1rem}p{margin:0 0 1rem}'
+       . 'a{color:#a4552f}</style>'
+       . '<h1>Dette er returadressen, ikke en side å besøke</h1>'
+       . '<p>Adressen hører til tilkoblingen mellom Lissom og Shutterstock. '
+       . 'Den skal stå som <strong>Callback URL</strong> på appen din hos '
+       . 'Shutterstock, og det er de som sender deg hit — ikke du selv.</p>'
+       . '<p>Skal du koble til, gjør du det inne i admin: åpne et kurs, gå til '
+       . 'bildene, og trykk <strong>Koble til Shutterstock</strong> under '
+       . 'søkefeltet.</p>'
+       . '<p><a href="/admin">Til admin</a></p>';
+    exit;
+}
+
 krev_admin();
 
 // Naar webhotellet ikke naar ut paa nettet, kaster http_kall(). Uten dette

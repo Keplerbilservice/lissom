@@ -62,15 +62,50 @@ final class Bilder
             throw new RuntimeException('Fant ikke bildet.');
         }
 
-        // Vi stoler ikke paa filnavn eller Content-Type. Bildet aapnes, og
-        // klarer ikke GD det, er det ikke et bilde.
+        // Vi stoler ikke paa filnavn eller Content-Type. Bildet aapnes i
+        // fraFil(), og klarer ikke GD det, er det ikke et bilde.
+        return self::fraFil($sti, $under);
+    }
+
+    /**
+     * Lagrer et bilde vi selv har hentet, framfor en opplasting.
+     *
+     * taImot() krever is_uploaded_file() — og det er riktig for noe som kommer
+     * fra en nettleser. Et bilde vi har lisensiert og lastet ned fra
+     * Shutterstock kommer ikke den veien, og skal likevel gjennom nøyaktig
+     * samme kontroll: at det er et bilde, at det ikke er urimelig stort, og at
+     * det skaleres til 1400 piksler som alt annet.
+     *
+     * @param string $data selve bildet
+     * @return string filnavnet det fikk
+     */
+    public static function taImotData(string $data, string $under): string
+    {
+        if (strlen($data) > self::MAKS_BYTES * 4) {
+            throw new RuntimeException('Bildet er for stort.');
+        }
+        $tmp = tempnam(sys_get_temp_dir(), 'lissom');
+        if ($tmp === false || file_put_contents($tmp, $data) === false) {
+            throw new RuntimeException('Fikk ikke lagret bildet midlertidig.');
+        }
+        try {
+            return self::fraFil($tmp, $under);
+        } finally {
+            @unlink($tmp);
+        }
+    }
+
+    /**
+     * Selve arbeidet: les, kontroller, skaler, lagre.
+     *
+     * Sto inne i taImot() og kunne bare naas gjennom en opplasting.
+     */
+    private static function fraFil(string $sti, string $under): string
+    {
         $info = @getimagesize($sti);
         if ($info === false || !isset(self::TYPER[$info[2]])) {
             throw new RuntimeException('Filen må være JPG, PNG eller WEBP.');
         }
-
-        // Et bilde paa 20 000 × 20 000 piksler er 1,2 GB i minnet uansett hvor
-        // liten fila er. Stopp for vi aapner det.
         if ($info[0] * $info[1] > 40_000_000) {
             throw new RuntimeException('Bildet har for mange piksler.');
         }
@@ -87,7 +122,6 @@ final class Bilder
         $nh = max(1, (int) round($h * $skala));
 
         $ut = imagecreatetruecolor($nb, $nh);
-        // Hvit bunn: PNG med gjennomsiktighet blir ellers svart som JPEG.
         imagefill($ut, 0, 0, imagecolorallocate($ut, 255, 255, 255));
         imagecopyresampled($ut, $kilde, 0, 0, 0, 0, $nb, $nh, $b, $h);
         imagedestroy($kilde);

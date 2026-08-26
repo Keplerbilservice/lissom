@@ -7810,15 +7810,30 @@ window.__resources = {
         <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Store bilder krympes automatisk, så et kjøpt bilde fra Shutterstock går rett inn.</span>
       </label>
 
-      <!-- Har du ikke et bilde selv, finner du et her. Soeket er allerede
-           fylt ut med navnet paa det du holder paa med. Innlogginga skjer hos
-           Shutterstock: er du logget inn der i nettleseren, aapner fana
-           ferdig innlogget, og du laster ned og velger «Last opp eget
-           bilde» over. -->
-      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6);">
-        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkShutterstockSok }}" hint-size="auto,40px">Finn bilder på Shutterstock</x-import>
-        <span style="font-size: var(--text-xs); color: var(--text-muted);">Søker på «{{ mkShutterstockOrd }}». Last ned bildet, og legg det inn over.</span>
+      <!-- Soek hos Shutterstock, uten aa forlate sida. Treffene er
+           forhaandsvisninger med vannmerke; foerst naar du velger ett blir
+           det lisensiert, lastet ned og lagt i biblioteket. -->
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Søk hos Shutterstock</div>
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+        <input value="{{ ssOrd }}" onChange="{{ settSsOrd }}" onKeyDown="{{ ssTast }}" placeholder="Hva leter du etter?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="search" on-click="{{ ssSok }}" hint-size="auto,40px">{{ ssKnapp }}</x-import>
       </div>
+      <sc-if value="{{ ssMelding }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ssMeldingTekst }}</p>
+      </sc-if>
+      <sc-if value="{{ ssHarTreff }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-3);">
+          <sc-for list="{{ ssTreff }}" as="t" hint-placeholder-count="8">
+            <button type="button" onClick="{{ t.velg }}" aria-label="{{ t.tekst }}" title="{{ t.tekst }}" style="{{ t.stil }}"></button>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <span style="font-size: var(--text-xs); color: var(--text-muted);">Trykk et bilde for å lisensiere og legge det inn. Miniatyrene har vannmerke — det ferdige bildet har ikke.</span>
+          <sc-if value="{{ ssFlere }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ ssNeste }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Flere treff</button>
+          </sc-if>
+        </div>
+      </sc-if>
 
       <!-- Utsnittet. Vises naar et bilde er valgt: her ser du ramma slik
            kunden faar den, og trykker der motivet skal ligge. -->
@@ -12041,6 +12056,9 @@ class Component extends DCLogic {
    * kurset lagres.
    */
   apneBildevalg(id, slag) {
+    // Nytt sted, nytt soek. Sto treffene fra forrige rute igjen, saa det ut
+    // som de hoerte til det du naa holder paa med.
+    this.setState({ ssTreff: [], ssMelding: '', ssSide: 1, ssFlere: false, ssOrd: undefined });
     const v = (id && typeof id === 'object') ? id : { id: id, slag: slag || 'artikkel' };
     this.setState({ bildeFor: v });
     if (!this.state.bildeliste) this.hentBilder();
@@ -12107,21 +12125,37 @@ class Component extends DCLogic {
       mkBildeMedfolgende: (liste.medfolgende || []).map(rute),
       mkLukkBildevalg: () => this.setState({ bildeFor: null }),
       mkFjernBilde: () => this.settValgtBilde(''),
-      // Finn bilder paa Shutterstock.
+      // ── Soek hos Shutterstock ────────────────────────────────────────
       //
-      // Knappen sto bare under Markedsforing, og soekte alltid paa det samme.
-      // Naa staar den der bildet velges — kurs, events, varer og artikler — og
-      // soeker paa navnet paa det du holder paa med.
+      // Knappen aapnet fanen deres i en ny fane, og du maatte laste ned
+      // bildet og laste det opp igjen. Naa gjor serveren jobben: soeker,
+      // lisensierer og legger bildet i biblioteket.
       //
-      // Innlogginga skjer hos Shutterstock, i nettleseren. Vi kan ikke logge
-      // deg inn derfra og skal ikke oppbevare passordet ditt; er du logget inn
-      // paa shutterstock.com i samme nettleser, aapner fana ferdig innlogget.
-      mkShutterstockSok: () => {
-        const ord = (valgt.tittel || '').trim() || 'keramikk verksted';
-        window.open('https://www.shutterstock.com/nb/search/' + encodeURIComponent(ord),
-                    '_blank', 'noopener');
-      },
-      mkShutterstockOrd: (valgt.tittel || '').trim() || 'keramikk verksted',
+      // Noekkelen ligger i secrets.php og forlater aldri serveren. Treffene
+      // er forhaandsvisninger med vannmerke — foerst naar du velger ett blir
+      // det lisensiert, og bare det lisensierte bildet legges ut.
+      ssOrd: this.state.ssOrd !== undefined
+        ? this.state.ssOrd
+        : ((valgt.tittel || '').trim() || 'keramikk verksted'),
+      settSsOrd: (e) => this.setState({ ssOrd: e.target.value }),
+      ssTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sokShutterstock(1); } },
+      ssKnapp: this.state.ssSoker ? 'Søker …' : 'Søk',
+      ssSok: () => this.sokShutterstock(1),
+      ssNeste: () => this.sokShutterstock((this.state.ssSide || 1) + 1),
+      ssFlere: !!this.state.ssFlere,
+      ssMelding: !!this.state.ssMelding,
+      ssMeldingTekst: this.state.ssMelding || '',
+      ssHarTreff: (this.state.ssTreff || []).length > 0,
+      ssTreff: (this.state.ssTreff || []).map(t => ({
+        tekst: t.tekst || 'Bilde fra Shutterstock',
+        velg: () => this.hentShutterstock(t.id),
+        stil: {
+          appearance: 'none', cursor: 'pointer', padding: 0, height: 96,
+          borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
+          backgroundImage: "url('" + t.mini + "')", backgroundSize: 'cover',
+          backgroundPosition: 'center', backgroundColor: 'var(--clay-200)',
+        },
+      })),
       // ── Utsnittet ────────────────────────────────────────────────────
       //
       // Rammene har faste former: kurskortene 16:10, butikken 1:1. Et bilde
@@ -12190,6 +12224,82 @@ class Component extends DCLogic {
    * Aa laste opp og deretter maatte finne bildet igjen i lista ville vaert et
    * unodig steg — den som velger en fil, har alt bestemt seg.
    */
+  /**
+   * Soeker hos Shutterstock.
+   *
+   * Serveren gjor kallet, ikke nettleseren: noekkelen skal ikke ligge i
+   * JavaScript der hvem som helst kan lese den.
+   */
+  sokShutterstock(side) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const ord = (this.state.ssOrd !== undefined
+      ? this.state.ssOrd
+      : ((this.state.bildeFor && this.state.kNavn) || '')).trim();
+    if (!ord) { this.setState({ ssMelding: 'Skriv hva du leter etter.' }); return; }
+    if (this.state.ssSoker) return;
+    this.setState({ ssSoker: true, ssMelding: '' });
+
+    fetch('/api/admin/shutterstock.php?sok=' + encodeURIComponent(ord) + '&side=' + (side || 1),
+          { credentials: 'same-origin' })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) {
+          this.setState({ ssSoker: false, ssTreff: [], ssFlere: false,
+                          ssMelding: (d && d.feil) || 'Søket gikk ikke.' });
+          return;
+        }
+        const treff = d.treff || [];
+        this.setState({
+          ssSoker: false,
+          ssSide: d.side || 1,
+          ssFlere: !!d.flere,
+          // «Flere treff» legger paa, framfor aa bytte ut — ellers mister du
+          // det du saa paa da du trykket.
+          ssTreff: (side || 1) > 1 ? (this.state.ssTreff || []).concat(treff) : treff,
+          ssMelding: treff.length ? '' : 'Ingen treff på «' + ord + '». Prøv et annet ord.',
+        });
+      })
+      .catch(() => this.setState({ ssSoker: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Lisensierer et bilde og legger det inn.
+   *
+   * Det er her det koster. Rekker ikke abonnementet, sier serveren fra med
+   * det Shutterstock faktisk svarte — framfor aa lagre en forhaandsvisning
+   * med vannmerke, som ville vaert et brudd paa lisensen.
+   */
+  hentShutterstock(id) {
+    if (this._ssHenter) return;
+    this._ssHenter = true;
+    const forNoe = this.state.bildeFor;
+    this.setState({ bildeLaster: true, ssMelding: 'Lisensierer bildet …' });
+
+    fetch('/api/admin/shutterstock.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'hent', id: id }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this._ssHenter = false;
+        this.setState({ bildeLaster: false });
+        if (!ok) {
+          this.setState({ ssMelding: (d && d.feil) || 'Bildet ble ikke hentet.' });
+          return;
+        }
+        this._bilderHentes = false;
+        this.hentBilder();
+        this.setState({ ssMelding: '', kvittering: 'Bildet er lagt inn',
+                        kvitteringDetalj: d.beskjed || '' });
+        if (forNoe) this.settValgtBilde(d.url);
+      })
+      .catch(() => {
+        this._ssHenter = false;
+        this.setState({ bildeLaster: false, ssMelding: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   /**
    * Krymper bildet for det sendes.
    *

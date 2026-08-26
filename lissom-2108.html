@@ -3563,6 +3563,280 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <sc-if value="{{ erAdminProgram }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – program" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavProgram }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Program</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Hva som skjer i dag, denne uka og denne måneden. Herfra legger du til deltakere på en dato, eller ser hvem som er påmeldt.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
+            <div style="display: flex; gap: 2px;">
+              <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
+                <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
+          </sc-if>
+          <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
+              <span style="flex: 1 1 140px; min-width: 0;">
+                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
+                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
+              </span>
+              <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
+                <span style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
+                  <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                </span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
+          </sc-if>
+
+          <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
+               kursene ikke skrives inn to steder. -->
+          <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
+            <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
+            <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-4);">
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
+                <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
+                  <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+                </div>
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminVenteliste }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – venteliste" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavVenteliste }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Venteliste</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">De som står og venter på plass. Du kan varsle om at det er ledig, eller gi plassen til én bestemt person.</p>
+        </div>
+
+        <div id="ov-venteliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px; scroll-margin-top: 90px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
+            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovVentelisteAntall }}</span>
+          </div>
+          <sc-if value="{{ ingenOvVenteliste }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen står på venteliste nå.</div>
+          </sc-if>
+          <sc-for list="{{ ovVenteliste }}" as="v" hint-placeholder-count="3">
+            <div onClick="{{ v.velg }}" style="{{ v.radStil }}">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; cursor: pointer;">
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
+                </div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.status }}</span>
+              </div>
+
+              <!-- Alt om personen aapner seg her, i samme kort: hvordan du
+                   naar hen, datoene hen kan settes rett inn paa, og en
+                   e-post du kan skrive med det samme. -->
+              <sc-if value="{{ v.apen }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kontakt</div>
+                  <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; font-size: var(--text-sm); margin-bottom: var(--space-4);">
+                    <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
+                      <a href="{{ v.epostLenke }}" style="color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">{{ v.epost }}</a>
+                    </sc-if>
+                    <sc-if value="{{ v.harTelefon }}" hint-placeholder-val="{{ true }}">
+                      <a href="{{ v.telefonLenke }}" style="color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">{{ v.telefon }}</a>
+                    </sc-if>
+                    <sc-if value="{{ v.utenKontakt }}" hint-placeholder-val="{{ false }}">
+                      <span style="color: var(--text-muted);">Ingen kontaktopplysninger er lagret.</span>
+                    </sc-if>
+                  </div>
+
+                  <!-- Datoene hen kan settes rett inn paa. Bare de med plass —
+                       en liste med fulle kvelder er en knapp som sier nei. -->
+                  <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gi plass</div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                      <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ dt.giPlass }}" style="appearance: none; cursor: pointer; border: 1px solid var(--lissom-brown); border-radius: var(--radius-pill); background: transparent; padding: 6px 12px; font: var(--type-body-sm); color: var(--lissom-brown); white-space: nowrap;">{{ dt.merke }}</button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ v.utenPlass }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer på dette kurset nå.</div>
+                  </sc-if>
+
+                  <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Skriv til {{ v.navn }}</div>
+                    <input value="{{ vlEmne }}" onChange="{{ settVlEmne }}" placeholder="Emne" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-2);">
+                    <textarea value="{{ vlMelding }}" onChange="{{ settVlMelding }}" rows="4" placeholder="Hei! Det ble ledig plass …" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-3);"></textarea>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.sendEpost }}" hint-size="auto,40px">Send e-post</x-import>
+                  </sc-if>
+
+                  <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
+                    <button type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
+                    <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminKursholdere }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – kursholdere" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavKursholdere }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kursholdere</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Hvem som holder kursene, timene deres, og om de skal stå på nettsiden.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kursholdere</span>
+            <button type="button" onClick="{{ aRegistrerTimer }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Registrer timer</button>
+          </div>
+          <sc-for list="{{ kursholdere }}" as="h" hint-placeholder-count="3">
+            <div onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ h.navn }} · {{ h.rolle }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.kurs }}</div>
+                <div style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">{{ h.timerMnd }}</div>
+              </div>
+              <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</span>
+            </div>
+          </sc-for>
+          <!-- Skjemaet for én kursholder. Foer aapnet «Ny kursholder» en
+               dialog som beskrev feltene og lukket seg igjen. -->
+          <sc-if value="{{ khApen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-3);">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+                <input value="{{ khNavn }}" onChange="{{ settKh.navn }}" placeholder="Navn *" style="{{ khFeltStil }}">
+                <input value="{{ khRolle }}" onChange="{{ settKh.rolle }}" placeholder="Rolle, f.eks. keramiker" style="{{ khFeltStil }}">
+                <input value="{{ khEpost }}" onChange="{{ settKh.epost }}" placeholder="E-post" style="{{ khFeltStil }}">
+                <input value="{{ khTelefon }}" onChange="{{ settKh.telefon }}" placeholder="Telefon" style="{{ khFeltStil }}">
+              </div>
+              <input value="{{ khKurs }}" onChange="{{ settKh.kurs }}" placeholder="Holder kursene, f.eks. Nybegynner dreiekurs, Date Night" style="{{ khFeltStil }}">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); align-items: center;">
+                <input value="{{ khTimesats }}" onChange="{{ settKh.timesats }}" placeholder="Timesats i kroner" inputmode="numeric" style="{{ khFeltStil }}">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                  <input type="checkbox" checked="{{ khVises }}" onChange="{{ vekslKhVises }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  <span>Vis på nettsiden</span>
+                </label>
+              </div>
+              <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khLagre }}" hint-size="auto,38px">{{ khKnapp }}</x-import>
+                <button type="button" onClick="{{ khLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                <sc-if value="{{ khKanSlette }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ khSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Sluttet</button>
+                </sc-if>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khBeskjed }}</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <!-- Timefoering. «Registrer arbeidstimer» aapnet ogsaa bare en
+               dialog. Én rad per foering, saa en dag kan rettes uten aa
+               regne om resten. -->
+          <sc-if value="{{ khTimeApen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end;">
+              <div style="flex: 1 1 150px;">
+                <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hvem</label>
+                <select value="{{ khTimeHvem }}" onChange="{{ settKhTimeHvem }}" style="{{ khFeltStil }}">
+                  <sc-for list="{{ khValg }}" as="v" hint-placeholder-count="3">
+                    <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                  </sc-for>
+                </select>
+              </div>
+              <div style="flex: 0 1 150px;">
+                <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Dato</label>
+                <input type="date" value="{{ khTimeDato }}" onChange="{{ settKhTimeDato }}" style="{{ khFeltStil }}">
+              </div>
+              <div style="flex: 0 1 100px;">
+                <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Timer</label>
+                <input value="{{ khTimeAntall }}" onChange="{{ settKhTimeAntall }}" placeholder="4,5" inputmode="decimal" style="{{ khFeltStil }}">
+              </div>
+              <div style="flex: 1 1 160px;">
+                <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hva</label>
+                <input value="{{ khTimeHva }}" onChange="{{ settKhTimeHva }}" placeholder="Kurs, forberedelse, brenning" style="{{ khFeltStil }}">
+              </div>
+              <div style="display: flex; gap: var(--space-3); align-items: center;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khTimeLagre }}" hint-size="auto,38px">Før timene</x-import>
+                <button type="button" onClick="{{ khTimeLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Lukk</button>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khTimeBeskjed }}</span>
+              </div>
+            </div>
+            <sc-for list="{{ khSisteTimer }}" as="t" hint-placeholder-count="3">
+              <div style="padding: 8px var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; gap: var(--space-4); align-items: baseline; font-size: var(--text-xs); color: var(--text-muted);">
+                <span style="min-width: 78px;">{{ t.dato }}</span>
+                <span style="font-weight: 600; color: var(--text-heading);">{{ t.hvem }}</span>
+                <span>{{ t.timer }} t</span>
+                <span>{{ t.hva }}</span>
+                <button type="button" onClick="{{ t.slett }}" style="margin-left: auto; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Fjern</button>
+              </div>
+            </sc-for>
+          </sc-if>
+
+          <sc-if value="{{ ingenKursholdere }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kursholdere er lagt inn. Instruktør settes på hvert kurs under «Kurs og events».</div>
+          </sc-if>
+          <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-4);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ aNyKursholder }}" hint-size="auto,40px">Ny kursholder</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis kursholderne på nettsiden" checked="{{ bryterVisKursholdere }}" on-change="{{ vekslVisKursholdere }}" hint-size="100%,28px"></x-import>
+          </div>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminUttak }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – uttak butikk" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -4529,54 +4803,6 @@ window.__resources = {
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Krever handling</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start; margin-bottom: var(--space-5);">
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
-              <div style="display: flex; gap: 2px;">
-                <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
-                  <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
-                </sc-for>
-              </div>
-            </div>
-            <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
-            </sc-if>
-            <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
-              <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
-                <span style="flex: 1 1 140px; min-width: 0;">
-                  <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
-                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
-                </span>
-                <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
-                  <span style="display: flex; gap: var(--space-3); margin-left: auto;">
-                    <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
-                    <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
-                  </span>
-                </sc-if>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
-            </sc-if>
-
-            <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
-                 kursene ikke skrives inn to steder. -->
-            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
-              <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
-              <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
-                <div style="margin-top: var(--space-4);">
-                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
-                  <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
-                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
-                    <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
-                  </div>
-                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
-                </div>
-              </sc-if>
-            </div>
-          </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Nye påmeldinger</div>
@@ -4595,72 +4821,6 @@ window.__resources = {
                «Varsle» sier fra at det er ledig, og saa er det foerste mann
                til moella. Ofte vet verkstedet hvem som skal ha plassen — og
                da skal de kunne gi den, ikke sende en beskjed om aa kappes. -->
-          <div id="ov-venteliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovVentelisteAntall }}</span>
-            </div>
-            <sc-if value="{{ ingenOvVenteliste }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen står på venteliste nå.</div>
-            </sc-if>
-            <sc-for list="{{ ovVenteliste }}" as="v" hint-placeholder-count="3">
-              <div onClick="{{ v.velg }}" style="{{ v.radStil }}">
-                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; cursor: pointer;">
-                  <div style="min-width: 0;">
-                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
-                  </div>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.status }}</span>
-                </div>
-
-                <!-- Alt om personen aapner seg her, i samme kort: hvordan du
-                     naar hen, datoene hen kan settes rett inn paa, og en
-                     e-post du kan skrive med det samme. -->
-                <sc-if value="{{ v.apen }}" hint-placeholder-val="{{ true }}">
-                  <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kontakt</div>
-                    <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; font-size: var(--text-sm); margin-bottom: var(--space-4);">
-                      <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
-                        <a href="{{ v.epostLenke }}" style="color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">{{ v.epost }}</a>
-                      </sc-if>
-                      <sc-if value="{{ v.harTelefon }}" hint-placeholder-val="{{ true }}">
-                        <a href="{{ v.telefonLenke }}" style="color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">{{ v.telefon }}</a>
-                      </sc-if>
-                      <sc-if value="{{ v.utenKontakt }}" hint-placeholder-val="{{ false }}">
-                        <span style="color: var(--text-muted);">Ingen kontaktopplysninger er lagret.</span>
-                      </sc-if>
-                    </div>
-
-                    <!-- Datoene hen kan settes rett inn paa. Bare de med plass —
-                         en liste med fulle kvelder er en knapp som sier nei. -->
-                    <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
-                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gi plass</div>
-                      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
-                        <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
-                          <button type="button" onClick="{{ dt.giPlass }}" style="appearance: none; cursor: pointer; border: 1px solid var(--lissom-brown); border-radius: var(--radius-pill); background: transparent; padding: 6px 12px; font: var(--type-body-sm); color: var(--lissom-brown); white-space: nowrap;">{{ dt.merke }}</button>
-                        </sc-for>
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{ v.utenPlass }}" hint-placeholder-val="{{ false }}">
-                      <div style="margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer på dette kurset nå.</div>
-                    </sc-if>
-
-                    <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
-                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Skriv til {{ v.navn }}</div>
-                      <input value="{{ vlEmne }}" onChange="{{ settVlEmne }}" placeholder="Emne" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-2);">
-                      <textarea value="{{ vlMelding }}" onChange="{{ settVlMelding }}" rows="4" placeholder="Hei! Det ble ledig plass …" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-3);"></textarea>
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.sendEpost }}" hint-size="auto,40px">Send e-post</x-import>
-                    </sc-if>
-
-                    <div style="display: flex; gap: var(--space-4); margin-top: var(--space-4);">
-                      <button type="button" onClick="{{ v.varsle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Varsle om ledig</button>
-                      <button type="button" onClick="{{ v.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted);">Ta av lista</button>
-                    </div>
-                  </div>
-                </sc-if>
-              </div>
-            </sc-for>
-          </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Nye medlemskapsforespørsler</div>
@@ -4916,7 +5076,7 @@ window.__resources = {
           </div>
         </div>
 
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Medlemmer og kursholdere</div>
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Medlemmer</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start; margin-bottom: var(--space-10);">
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
@@ -4960,100 +5120,6 @@ window.__resources = {
             </div>
           </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kursholdere</span>
-              <button type="button" onClick="{{ aRegistrerTimer }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Registrer timer</button>
-            </div>
-            <sc-for list="{{ kursholdere }}" as="h" hint-placeholder-count="3">
-              <div onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ h.navn }} · {{ h.rolle }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.kurs }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">{{ h.timerMnd }}</div>
-                </div>
-                <span style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</span>
-              </div>
-            </sc-for>
-            <!-- Skjemaet for én kursholder. Foer aapnet «Ny kursholder» en
-                 dialog som beskrev feltene og lukket seg igjen. -->
-            <sc-if value="{{ khApen }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-3);">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
-                  <input value="{{ khNavn }}" onChange="{{ settKh.navn }}" placeholder="Navn *" style="{{ khFeltStil }}">
-                  <input value="{{ khRolle }}" onChange="{{ settKh.rolle }}" placeholder="Rolle, f.eks. keramiker" style="{{ khFeltStil }}">
-                  <input value="{{ khEpost }}" onChange="{{ settKh.epost }}" placeholder="E-post" style="{{ khFeltStil }}">
-                  <input value="{{ khTelefon }}" onChange="{{ settKh.telefon }}" placeholder="Telefon" style="{{ khFeltStil }}">
-                </div>
-                <input value="{{ khKurs }}" onChange="{{ settKh.kurs }}" placeholder="Holder kursene, f.eks. Nybegynner dreiekurs, Date Night" style="{{ khFeltStil }}">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); align-items: center;">
-                  <input value="{{ khTimesats }}" onChange="{{ settKh.timesats }}" placeholder="Timesats i kroner" inputmode="numeric" style="{{ khFeltStil }}">
-                  <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-                    <input type="checkbox" checked="{{ khVises }}" onChange="{{ vekslKhVises }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                    <span>Vis på nettsiden</span>
-                  </label>
-                </div>
-                <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khLagre }}" hint-size="auto,38px">{{ khKnapp }}</x-import>
-                  <button type="button" onClick="{{ khLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
-                  <sc-if value="{{ khKanSlette }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ khSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Sluttet</button>
-                  </sc-if>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khBeskjed }}</span>
-                </div>
-              </div>
-            </sc-if>
-
-            <!-- Timefoering. «Registrer arbeidstimer» aapnet ogsaa bare en
-                 dialog. Én rad per foering, saa en dag kan rettes uten aa
-                 regne om resten. -->
-            <sc-if value="{{ khTimeApen }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end;">
-                <div style="flex: 1 1 150px;">
-                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hvem</label>
-                  <select value="{{ khTimeHvem }}" onChange="{{ settKhTimeHvem }}" style="{{ khFeltStil }}">
-                    <sc-for list="{{ khValg }}" as="v" hint-placeholder-count="3">
-                      <option value="{{ v.verdi }}">{{ v.navn }}</option>
-                    </sc-for>
-                  </select>
-                </div>
-                <div style="flex: 0 1 150px;">
-                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Dato</label>
-                  <input type="date" value="{{ khTimeDato }}" onChange="{{ settKhTimeDato }}" style="{{ khFeltStil }}">
-                </div>
-                <div style="flex: 0 1 100px;">
-                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Timer</label>
-                  <input value="{{ khTimeAntall }}" onChange="{{ settKhTimeAntall }}" placeholder="4,5" inputmode="decimal" style="{{ khFeltStil }}">
-                </div>
-                <div style="flex: 1 1 160px;">
-                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hva</label>
-                  <input value="{{ khTimeHva }}" onChange="{{ settKhTimeHva }}" placeholder="Kurs, forberedelse, brenning" style="{{ khFeltStil }}">
-                </div>
-                <div style="display: flex; gap: var(--space-3); align-items: center;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ khTimeLagre }}" hint-size="auto,38px">Før timene</x-import>
-                  <button type="button" onClick="{{ khTimeLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Lukk</button>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ khTimeBeskjed }}</span>
-                </div>
-              </div>
-              <sc-for list="{{ khSisteTimer }}" as="t" hint-placeholder-count="3">
-                <div style="padding: 8px var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; gap: var(--space-4); align-items: baseline; font-size: var(--text-xs); color: var(--text-muted);">
-                  <span style="min-width: 78px;">{{ t.dato }}</span>
-                  <span style="font-weight: 600; color: var(--text-heading);">{{ t.hvem }}</span>
-                  <span>{{ t.timer }} t</span>
-                  <span>{{ t.hva }}</span>
-                  <button type="button" onClick="{{ t.slett }}" style="margin-left: auto; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm);">Fjern</button>
-                </div>
-              </sc-for>
-            </sc-if>
-
-            <sc-if value="{{ ingenKursholdere }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kursholdere er lagt inn. Instruktør settes på hvert kurs under «Kurs og events».</div>
-            </sc-if>
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-4);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ aNyKursholder }}" hint-size="auto,40px">Ny kursholder</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis kursholderne på nettsiden" checked="{{ bryterVisKursholdere }}" on-change="{{ vekslVisKursholdere }}" hint-size="100%,28px"></x-import>
-            </div>
-          </div>
         </div>
 
         <!-- Databaseoppdateringer.
@@ -10078,6 +10144,9 @@ class Component extends DCLogic {
       { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
+      { sti: '/admin/program',      side: 'adminprogram' },
+      { sti: '/admin/venteliste',   side: 'adminventeliste' },
+      { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/butikk',       side: 'adminbutikk' },
       { sti: '/admin/okonomi',      side: 'adminokonomi' },
       { sti: '/admin/beskjeder',    side: 'adminbeskjeder' },
@@ -15657,6 +15726,9 @@ class Component extends DCLogic {
       case 'adminnyreg':         return p('Oversikt');
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
+      case 'adminprogram':       return p('Oversikt');
+      case 'adminventeliste':    return p('Oversikt');
+      case 'adminkursholdere':   return p('Oversikt');
       case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
       case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
@@ -18704,28 +18776,10 @@ class Component extends DCLogic {
           stil: kortStil, velg,
         });
 
-        // Ruller til et panel lenger nede paa den samme sida. Byttet vi
-        // skjerm her, matte man tilbake for aa se resten av oversikten.
-        // Kortene ruller ned til sin egen liste lenger nede paa sida.
-        //
-        // Det ble gjort ved aa lete etter en tekst — foerste element som
-        // begynte med «VENTELISTE». Men kortet heter det samme som lista, og
-        // kortet staar foerst: trykket rullet deg til kortet du nettopp
-        // trykket paa. Det saa ut som ingenting skjedde.
-        //
-        // Har maalet en id, brukes den. Ellers leter vi som for, men hopper
-        // over elementer inne i kortene selv.
-        const rullTil = (merke, id) => (e) => {
-          const el = (id && document.getElementById(id))
-            || [...document.querySelectorAll('*')].find(
-                 x => x.children.length === 0
-                   && (x.textContent || '').trim().toUpperCase().indexOf(merke) === 0
-                   && !(e && e.currentTarget && e.currentTarget.contains(x))
-               );
-          if (!el) return;
-          const y = el.getBoundingClientRect().top + window.scrollY - 90;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        };
+        // Her sto rullTil(): kortene rullet ned til et panel lenger nede paa
+        // Oversikt framfor aa aapne noe. «Scroller bare ned» var det Lissom
+        // ba om aa bli kvitt — panelene har egne skjermer naa, og kortene
+        // gaar dit.
 
         const nyttKurs = {
           kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
@@ -18751,7 +18805,7 @@ class Component extends DCLogic {
                    ? ventende[0].navn + ' venter på ' + ventende[0].kurs + '.'
                    : ventende.length + ' står og venter på plass.',
                  ventende.length, 'Gi dem plass',
-                 rullTil('VENTELISTE', 'ov-venteliste'))] : []),
+                 () => this.gaaAdmin('adminventeliste', {}))] : []),
 
             kort('Nytt kurs',
                  'Navn, pris, plasser og datoer i tre steg.',
@@ -18776,7 +18830,7 @@ class Component extends DCLogic {
             kort('Program',
                  'Hva som skjer i dag, denne uka og denne måneden.',
                  null, 'Se programmet',
-                 rullTil('PROGRAM')),
+                 () => this.gaaAdmin('adminprogram', {})),
 
             kort('Ny registrering',
                  'Meld noen på kurs, event, drop-in eller medlemskap.',
@@ -18799,7 +18853,7 @@ class Component extends DCLogic {
             kort('Kursholdere',
                  'Hvem som holder kursene, og timene deres.',
                  null, 'Se kursholderne',
-                 rullTil('KURSHOLDERE')),
+                 () => this.gaaAdmin('adminkursholdere', {})),
 
             // Det interne innholdet hadde ingen vei fra Oversikt — det laa
             // inne under Medlemmer, og maatte letes fram.
@@ -20973,6 +21027,12 @@ class Component extends DCLogic {
       erAdminNyttig: side === 'adminnyttig',
       erAdminFerdigbrent: side === 'adminferdigbrent',
       adminNavFerdigbrent: this.adminMeny(),
+      erAdminProgram: side === 'adminprogram',
+      adminNavProgram: this.adminMeny(),
+      erAdminVenteliste: side === 'adminventeliste',
+      adminNavVenteliste: this.adminMeny(),
+      erAdminKursholdere: side === 'adminkursholdere',
+      adminNavKursholdere: this.adminMeny(),
       adminNavNyttig: this.adminMeny(),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },
       artikkelApen: this.state.artikkelValgt != null,

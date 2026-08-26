@@ -66,6 +66,22 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
 // Kom med migrasjon 045.
 $bevisFelt = DB::harKolonne('bookings', 'bevis_sperret') ? 'b.bevis_sperret,' : '';
 
+/** Bildene deltakeren har lagt inn paa én paamelding. Kom med migrasjon 055. */
+$bilder = static function (int $bookingId): array {
+    if (!DB::harTabell('deltaker_bilder')) {
+        return [];
+    }
+    return array_map(
+        static fn($b) => [
+            'id'        => (int) $b['id'],
+            'url'       => 'api/bilde.php?deltaker=' . $b['fil'],
+            'kanSlette' => $b['lastet_opp_av'] !== null,
+        ],
+        DB::alle('SELECT id, fil, lastet_opp_av FROM deltaker_bilder
+                   WHERE booking_id = :b ORDER BY id', ['b' => $bookingId])
+    );
+};
+
 $bookinger = DB::alle(
     "SELECT b.id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
             c.tittel, c.tema, cs.start_tid, cs.slutt_tid, p.vipps_reference
@@ -98,6 +114,9 @@ foreach ($bookinger as $b) {
         // Kursbeviset dukker opp av seg selv naar kurset er gjennomfort og
         // betalt. Drop-in er ikke et kurs, saa der gis det ikke bevis.
         'kursbevis'     => $kursbevis($b, $betalt),
+        // Bildene deltakeren har tatt av keramikken sin. Verkstedet bruker dem
+        // til aa finne ut hvem som har laget hva for de sier fra om henting.
+        'bilder'        => $bilder((int) $b['id']),
     ];
 }
 
@@ -126,6 +145,7 @@ foreach ($venteliste as $v) {
         'kanAvbestille' => false,
         'referanse'     => null,
         'kursbevis'     => null,
+        'bilder'        => [],
     ];
 }
 

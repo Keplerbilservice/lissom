@@ -99,6 +99,37 @@ function lever(string $sti): never
     exit;
 }
 
+// ── Bilder deltakeren har tatt av keramikken sin ───────────────────────────
+//
+// Disse er private. Bare deltakeren selv og verkstedet skal se dem — et bilde
+// av noen andres skaal er ikke noe en fremmed skal kunne be om.
+//
+// Filnavnet er 32 tilfeldige tegn, men det holder ikke som sperre: den som
+// har sett ett navn skal ikke kunne bruke det etter at plassen er avbestilt,
+// og en lenke som lekker skal ikke aapne noe. Derfor sjekkes eierskapet mot
+// bookingen paa hver forespoersel.
+$deltaker = Foresporsel::tekst('deltaker');
+if ($deltaker !== '') {
+    $sti = Bilder::sti($deltaker, 'deltakere');
+    if ($sti === null || !DB::harTabell('deltaker_bilder')) {
+        Svar::feil('Fant ikke bildet.', 404);
+    }
+    $eier = DB::en(
+        'SELECT b.member_id FROM deltaker_bilder db
+           JOIN bookings b ON b.id = db.booking_id
+          WHERE db.fil = :f',
+        ['f' => $deltaker]
+    );
+    $m = Sesjon::medlem();
+    $egen = $eier !== null && $m !== null
+         && $eier['member_id'] !== null
+         && (int) $eier['member_id'] === (int) $m['id'];
+    if (!$egen && !Sesjon::erAdmin()) {
+        Svar::feil('Fant ikke bildet.', 404);
+    }
+    lever($sti);
+}
+
 // Bilder til artikler er aapne for alle — de staar paa nettsida uansett.
 $artikkel = Foresporsel::tekst('artikkel');
 if ($artikkel !== '') {

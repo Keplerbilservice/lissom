@@ -93,7 +93,7 @@ $feiltekst = static function (int $status, array $json): string {
 // Et søk etter ett bilde er det billigste spørsmålet vi kan stille. Svarer
 // det, er nøkkelen god.
 if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('test') === '1') {
-    $r = $kall(SS_SOK . '?per_page=1&query=keramikk');
+    $r = $kall(SS_SOK . '?per_page=1&query=ceramics&view=full');
     if ($r['status'] !== 200) {
         Svar::feil($feiltekst($r['status'], $r['json']), 400);
     }
@@ -115,6 +115,9 @@ if (Foresporsel::metode() === 'GET') {
         'image_type' => 'photo',
         'safe'       => 'true',
         'sort'       => 'popular',
+        // «minimal» er standarden, og da foelger ikke «assets» med — altsaa
+        // ingen miniatyrer aa vise. «full» gir dem.
+        'view'       => 'full',
     ]));
     if ($r['status'] !== 200) {
         Svar::feil($feiltekst($r['status'], $r['json']), 400);

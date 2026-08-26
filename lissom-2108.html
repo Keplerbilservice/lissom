@@ -14676,7 +14676,7 @@ class Component extends DCLogic {
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
-        ['SEO',           'adminseo'],
+        ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
       ],
       // Butikken er eget menypunkt naa, og har to lister: den kundene ser, og
@@ -14693,6 +14693,10 @@ class Component extends DCLogic {
       'Markedsføring': [
         ['← Markedsføring', 'adminmarked'],
         ['E-post og SMS',   'adminvarsler'],
+        // SEO hoerer hjemme baade her og under Nettsiden. Kom du fra
+        // markedsforingsfanene, byttet hele sidemenyen til «Nettsiden», og
+        // veien tilbake fantes ikke uten aa gaa om menyen paa nytt.
+        ['SEO',             'adminseo',     { seoFra: 'marked' }],
       ],
     };
   }
@@ -14727,7 +14731,10 @@ class Component extends DCLogic {
       case 'adminoppskrifter':   return p('Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
       case 'adminmarked':        return p('Markedsføring');
-      case 'adminseo':           return p('Nettsiden', 'Nettsiden', 'SEO');
+      case 'adminseo':
+        return st.seoFra === 'marked'
+          ? p('Markedsføring', 'Markedsføring', 'SEO')
+          : p('Nettsiden', 'Nettsiden', 'SEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
       case 'admin':
@@ -21759,7 +21766,9 @@ class Component extends DCLogic {
         return {
           mkFaner: FANER.map(([n, navn]) => ({
             navn, stil: faneStil(fane === n),
-            velg: n === 'seo' ? this.go('adminseo') : () => this.setState({ mkFane: n }),
+            velg: n === 'seo'
+              ? () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); }
+              : () => this.setState({ mkFane: n }),
           })),
           mkFaneTittel: (FANER.find(f => f[0] === fane) || [, 'Tavle'])[1],
           mkErTavle: fane === 'tavle',
@@ -21787,7 +21796,8 @@ class Component extends DCLogic {
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'artikkel').length), tekst: 'nye artikkelutkast', velg: () => this.setState({ mkFane: 'tavle' }) },
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'nyhetsbrev').length), tekst: 'nyhetsbrev klare', velg: () => this.setState({ mkFane: 'brev' }) },
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'sosialt').length), tekst: 'innlegg til sosiale medier', velg: () => this.setState({ mkFane: 'sosialt' }) },
-            { merke: 'SEO', tall: String(muligheter.length), tekst: 'muligheter funnet i basen', velg: this.go('adminseo') },
+            { merke: 'SEO', tall: String(muligheter.length), tekst: 'muligheter funnet i basen',
+              velg: () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); } },
             // Uten dette kortet ville skjermen for e-post og SMS ikke vaert
             // til aa finne: markedsforing har ingen undermeny aa henge den i.
             { merke: 'Utsending',

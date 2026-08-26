@@ -4239,13 +4239,6 @@ window.__resources = {
                     </button>
                   </sc-for>
                 </div>
-                <!-- Har du ikke et bilde selv, finner du et her uten aa maatte
-                     aapne en av rutene foerst. Soeket er fylt ut med
-                     kursnavnet. -->
-                <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3);">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ kFinnBilder }}" hint-size="auto,40px">Finn bilder på Shutterstock</x-import>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Søker på «{{ kFinnBilderOrd }}». Last ned bildet, og legg det inn i en av rutene over.</span>
-                </div>
                 <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
                      hovedbilde», og det er den verdien som faktisk gaar ut.
                      Her sto et felt til: det hadde ingen binding og ingen
@@ -20138,14 +20131,6 @@ class Component extends DCLogic {
       settKStyrke: (e) => this.setState({ kStyrke: e.target.value }),
       // Bilderutene i steg 3. Foerste rute er hovedbildet — det som staar paa
       // kurskortet — og alle tre er karusellen paa kurssida.
-      // Samme knapp som i billedvelgeren, men rett paa steg 3 — du skal
-      // slippe aa aapne en rute foerst for aa komme deg til Shutterstock.
-      kFinnBilderOrd: (this.state.kNavn || '').trim() || 'keramikk verksted',
-      kFinnBilder: () => {
-        const ord = (this.state.kNavn || '').trim() || 'keramikk verksted';
-        window.open('https://www.shutterstock.com/nb/search/' + encodeURIComponent(ord),
-                    '_blank', 'noopener');
-      },
       kBilderuter: [0, 1, 2].map(i => {
         const valgt = (this.state.kBilder || [])[i] || '';
         return {

@@ -260,9 +260,14 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('test') === '1') {
     } elseif ($kanLisensiere) {
         $linjer[] = 'Nøkkelen har rettigheten «licenses.create» — den kan laste ned.';
     } else {
+        // Lista over hva noekkelen faktisk har staar her. Uten den er svaret
+        // «noe mangler», og den som skal rette det ser ikke hva som er der.
         $linjer[] = 'Nøkkelen mangler rettigheten «licenses.create», og da blir '
                   . 'nedlasting avvist uansett abonnement. Lag tokenet på nytt på '
                   . 'developers.shutterstock.com og huk av for den rettigheten.';
+        $linjer[] = $rettigheter === []
+            ? 'Nøkkelen har ingen rettigheter oppført.'
+            : 'Den har: ' . implode(', ', array_map('strval', $rettigheter)) . '.';
     }
     if ($abo['status'] !== 200) {
         $linjer[] = 'Fikk ikke lest abonnementet (' . $abo['status'] . ').';

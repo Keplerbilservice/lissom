@@ -18794,7 +18794,6 @@ class Component extends DCLogic {
 
         const d = this.state.adminData || null;
         const okter = (this.state.adminOkter || []);
-        const planer = this.state.adminPlanerRaa || [];
         const deltakere = this.state.adminDeltakere || [];
         const varer = (this.state.adminProdukter || []);
         // Ventelista. Kortet staar bare naar noen faktisk venter.
@@ -18826,15 +18825,6 @@ class Component extends DCLogic {
         // ba om aa bli kvitt — panelene har egne skjermer naa, og kortene
         // gaar dit.
 
-        const nyttKurs = {
-          kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
-          kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-          kGjentak: 'Ingen', kIntervall: '', kAntall: '',
-          kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
-          kDatoer: [{ dato: '', fra: '', til: '' }],
-        };
-
         const ubetalte = deltakere.filter(x => x.status !== 'Betalt').length;
         // Kursdatoer som er gjennomfoert og ikke meldt fra om ennaa.
         const venterMelding = (this.state.ferdigbrentAdmin || []).filter(o => !o.meldt).length;
@@ -18848,6 +18838,9 @@ class Component extends DCLogic {
 
         return {
           ovKort: (() => {
+            // Her sto «Nytt kurs», «Medlemskap» og «Priser, tekst og bilder».
+            // Fjernet 26. august paa bestilling. Alle tre naas fortsatt fra
+            // menyen til venstre: Kurs og medlemskap, og Nettsiden.
             const alle = [
             // Ventelista staar bare naar noen faktisk venter. Et kort som
             // alltid staar der og sier «ingen», er ett kort mer aa lese
@@ -18859,25 +18852,10 @@ class Component extends DCLogic {
                  ventende.length, 'Gi dem plass',
                  () => this.gaaAdmin('adminventeliste', {}))] : []),
 
-            kort('Nytt kurs',
-                 'Navn, pris, plasser og datoer i tre steg.',
-                 null, 'Lag et kurs',
-                 () => this.gaaAdmin('admin', nyttKurs)),
-
             kort('Planlagte kurs',
                  okter.length ? 'Datoene som ligger ute, nærmeste først.' : 'Ingen datoer ligger ute ennå.',
                  okter.length, 'Se kursene',
                  () => this.gaaAdmin('admin', { kursFane: 'alle' })),
-
-            kort('Medlemskap',
-                 'Pris, timer og teksten på kortet ute.',
-                 planer.length || null, 'Se medlemskapene',
-                 () => this.gaaAdmin('adminmedlemskap', {})),
-
-            kort('Priser, tekst og bilder',
-                 'Tekstene på nettsiden, side for side.',
-                 null, 'Rediger innholdet',
-                 () => this.gaaAdmin('admininnhold', {})),
 
             kort('Program',
                  'Hva som skjer i dag, denne uka og denne måneden.',
@@ -18958,7 +18936,7 @@ class Component extends DCLogic {
             if ((this.state.vw || 1400) >= 980) return alle;
 
             const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
-                         'Gjennomførte kurs', 'Nye påmeldinger', 'Nytt kurs', 'Planlagte kurs',
+                         'Gjennomførte kurs', 'Nye påmeldinger', 'Planlagte kurs',
                          'Program', 'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);

@@ -3971,6 +3971,17 @@ window.__resources = {
                     <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
                   </sc-for>
                 </div>
+                <!-- Kategorien kunden filtrerer paa ute paa «Vaare kurs».
+                     Uten den havnet alt under «Kurs», og et nytt dreiekurs
+                     kom aldri fram naar noen trykket «Dreiing». -->
+                <sc-if value="{{ kViserKategori }}" hint-placeholder-val="{{ true }}">
+                  <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kategori på nettsiden</label>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                    <sc-for list="{{ kKategorier }}" as="t" hint-placeholder-count="6">
+                      <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <div>
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Pris (kr, tomt = gratis)</label>
@@ -4116,6 +4127,13 @@ window.__resources = {
                       </sc-if>
                     </button>
                   </sc-for>
+                </div>
+                <!-- Har du ikke et bilde selv, finner du et her uten aa maatte
+                     aapne en av rutene foerst. Soeket er fylt ut med
+                     kursnavnet. -->
+                <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ kFinnBilder }}" hint-size="auto,40px">Finn bilder på Shutterstock</x-import>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Søker på «{{ kFinnBilderOrd }}». Last ned bildet, og legg det inn i en av rutene over.</span>
                 </div>
                 <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
                      hovedbilde», og det er den verdien som faktisk gaar ut.
@@ -4722,7 +4740,13 @@ window.__resources = {
                   <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.naar }}</div>
                 </div>
-                <span style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ k.pameldte }}</span>
+                <div style="display: flex; align-items: center; gap: var(--space-4); white-space: nowrap;">
+                  <span style="font-size: var(--text-sm); color: var(--text-heading);">{{ k.pameldte }}</span>
+                  <!-- Raden foerte til admin og stoppet der. Endre og fjerne
+                       maatte gjores i kurslista, som ingen fant. -->
+                  <button type="button" onClick="{{ k.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                  <button type="button" onClick="{{ k.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted);">Slett</button>
+                </div>
               </div>
             </sc-for>
             <sc-if value="{{ ingenInterne }}" hint-placeholder-val="{{ false }}">
@@ -13101,7 +13125,9 @@ class Component extends DCLogic {
         // du rettet prisen. Temaet styrer filteret ute paa nettsiden, saa
         // kurset falt ut av sin egen kategori. Et tema vi ikke kan utlede av
         // typen, blir staaende som det er.
-        tema: TEMA[rad.type] || (eksisterende && eksisterende.tema) || 'Kurs',
+        // Kategorien du velger i steg 1 er den kunden filtrerer paa ute.
+        // «Kun medlemmer» og «Drop-in» har sin egen kategori og overstyrer.
+        tema: TEMA[rad.type] || rad.kategori || (eksisterende && eksisterende.tema) || 'Kurs',
         // Bildene fra steg 3. Tomme ruter faller bort; foerste er hovedbildet.
         bilder: (rad.bilder || []).filter(Boolean),
         pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
@@ -14113,6 +14139,10 @@ class Component extends DCLogic {
       kBilder: (raa.bilder && raa.bilder.length ? raa.bilder : (raa.bilde ? [raa.bilde] : [])).slice(0, 3),
       kRed: true, kSteg: 1, kIndeks: i,
       kNavn: k.navn, kType: k.type,
+      // Kategorien staar paa den raa raden. Uten denne mistet kurset
+      // kategorien sin i det du rettet prisen.
+      kKategori: (raa.tema || k.tema) === 'Kun for medlemmer' ? 'Kun medlemmer'
+        : (this.kursKategorier().includes(raa.tema || k.tema || '') ? (raa.tema || k.tema) : ''),
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
@@ -14507,6 +14537,37 @@ class Component extends DCLogic {
    * Indeksen maa foelge med: «Rediger» og «Slett» peker paa plassen i
    * kursData(), og filtrerte man foerst, slettet man feil kurs.
    */
+  /**
+   * Kategoriene et kurs kan staa i.
+   *
+   * Filterknappene paa «Vaare kurs» og valget i kursveiviseren leste to ulike
+   * lister: ute sto Dreiing og Plateteknikk, mens du inne bare kunne velge
+   * Kurs, Event, Kun medlemmer og Drop-in. Da fantes det ingen vei til aa
+   * legge et nytt kurs i en kategori kundene faktisk kan filtrere paa.
+   */
+  kursKategorier(medInterne) {
+    const ute = ['Dreiing', 'Plateteknikk', 'Workshop',
+                 'Sip & Clay', 'Date Night', 'Paint on pots'];
+    // «Kun medlemmer» staar med i admin, men ikke i filterrada ute: den
+    // kategorien er ikke noe kundene skal kunne bla seg inn i.
+    return medInterne ? ute.concat('Kun medlemmer') : ute;
+  }
+
+  /**
+   * Interne samlinger: vanlige kurs merket «Kun for medlemmer».
+   *
+   * Lista paa Medlemmer og «Ingen interne samlinger er opprettet» leste to
+   * ulike kilder — den offentlige katalogen og admin-lista. Sletta du den
+   * siste samlinga, sto lista tom uten at meldinga kom fram.
+   */
+  interneKurs() {
+    return this.kursData()
+      .map((k, i) => ({ k, i }))
+      .filter(({ k }) => (k.tema || '') === 'Kun for medlemmer'
+                      || k.type === 'Kun for medlemmer'
+                      || k.type === 'Kun medlemmer');
+  }
+
   kursSynlige() {
     const fane = this.state.kursFane || 'alle';
     const intern = k => (k.tema || '') === 'Kun for medlemmer'
@@ -15937,8 +15998,7 @@ class Component extends DCLogic {
         //
         // Sidene ligger der de laa, i toppmenyen. Det er bare knappene i
         // kategorirada som er borte.
-        const KATEGORIER = ['Vis alle', 'Dreiing', 'Plateteknikk', 'Workshop',
-                            'Sip & Clay', 'Date Night', 'Paint on pots'];
+        const KATEGORIER = ['Vis alle'].concat(this.kursKategorier());
 
         return {
           kursTidSporsmal: 'Når på dagen passer det best for deg?',
@@ -16274,26 +16334,42 @@ class Component extends DCLogic {
           window.scrollTo(0, 0);
         },
       })),
-      ingenInterne: this.erPublisert()
-        && !(this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer'),
+      ingenInterne: this.interneKurs().length === 0,
       ingenKursholdere: this.erPublisert() && (this.state.nyeKursholdere || []).length === 0,
       // Admin-lista over interne samlinger. Samme kurs, samme editor —
       // de er vanlige kurs merket «Kun for medlemmer».
-      internkursAdmin: ((this.state.adminKursListe || [])
-        .filter(k => (k.tema || '') === 'Kun for medlemmer' || k.type === 'Kun for medlemmer')
-        .map(k => ({
-          navn: k.navn,
-          naar: k.neste || 'Ingen dato satt',
-          pris: k.pris,
-          pameldte: k.pameldte,
-          gjentas: k.gjentas || 'Ikke',
-        }))
-        .concat(this.erPublisert() ? [] : [
-          { navn: 'Glasurkveld for medlemmer', naar: 'Onsdag 26. august, 18:00 – 21:00', pris: 'Gratis', pameldte: '4 / 10', gjentas: 'Siste onsdag i måneden' },
-        ])
-      ).map(k => Object.assign({}, k, {
-        velg: this.go('admin'),
-      })),
+      internkursAdmin: (
+        this.interneKurs()
+          .map(({ k, i }) => ({
+            navn: k.navn,
+            naar: k.neste || 'Ingen dato satt',
+            pris: k.pris,
+            pameldte: k.pameldte,
+            gjentas: k.gjentas || 'Ikke',
+            // Raden foerte til admin og stoppet der: ingen vei til aa endre
+            // eller fjerne samlinga uten aa lete den opp i kurslista.
+            velg: () => { this.setState({ side: 'admin', kursFane: 'interne' }); this.apneKursRed(k, i); },
+            rediger: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
+              this.setState({ side: 'admin', kursFane: 'interne' });
+              this.apneKursRed(k, i);
+            },
+            // Samme kall som «Slett» i kurslista, med samme vern: har noen
+            // meldt seg paa, avlyses samlinga i stedet for aa forsvinne.
+            slett: (e) => {
+              if (e && e.stopPropagation) e.stopPropagation();
+              if (!window.confirm('Slette «' + k.navn + '»?\n\n'
+                  + 'Datoene forsvinner sammen med samlinga. Har noen meldt seg på, '
+                  + 'blir den avlyst i stedet — da må du gi beskjed selv.')) return;
+              const kurs = (this.state.adminKursRaa || []).find(x => x.tittel === k.navn);
+              if (!kurs) {
+                this.setState({ adminKursListe: this.kursData().filter((_, j) => j !== i) });
+                return;
+              }
+              this.kursKall({ handling: 'slett', id: kurs.id });
+            },
+          }))
+      ),
       // Aapner det vanlige kursskjemaet, forhaandsutfylt som medlemssamling.
       // Popup-en her lagde bare en linje i skjermbildet som forsvant ved neste
       // sidelasting.
@@ -16301,7 +16377,7 @@ class Component extends DCLogic {
         this.setState({
           side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10', kBilder: [],
+          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [],
           kBeskrivelse: '', kBekreftelse: '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -16999,7 +17075,7 @@ class Component extends DCLogic {
             || (this.erPublisert() ? [] : [{}, {}]);
           const nyttKurs = {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-            kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [],
+            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
             kBeskrivelse: '', kBekreftelse: '', kMva: false,
             kGjentak: 'Ingen', kIntervall: '', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17067,7 +17143,7 @@ class Component extends DCLogic {
               { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
               { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', {
                   kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
-                  kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [],
+                  kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
                   kBeskrivelse: '', kBekreftelse: '', kMva: false,
                   kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17117,7 +17193,7 @@ class Component extends DCLogic {
             { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
             { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
-                kNavn: '', kType: 'Kun medlemmer', kPris: '0', kPlasser: '10', kBilder: [],
+                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [],
                 kBeskrivelse: '', kBekreftelse: '', kMva: false,
                 kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -17669,7 +17745,7 @@ class Component extends DCLogic {
 
         const nyttKurs = {
           kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [],
+          kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
           kBeskrivelse: '', kBekreftelse: '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -19003,7 +19079,7 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kPris: '', kPlasser: '8', kBilder: [], kBeskrivelse: '', kBekreftelse: '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kBeskrivelse: '', kBekreftelse: '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
@@ -19013,6 +19089,20 @@ class Component extends DCLogic {
       toggleKSms: () => this.setState(s => ({ kSms: s.kSms === false })),
       kMva: !!this.state.kMva,
       toggleKMva: () => this.setState(s => ({ kMva: !s.kMva })),
+      // Kategorien kunden filtrerer paa ute. Skjules for «Kun medlemmer» og
+      // «Drop-in» — de to staar ikke i den offentlige kurslista, og har sin
+      // egen kategori av seg selv.
+      kViserKategori: (this.state.kType || 'Kurs') !== 'Drop-in',
+      kKategorier: this.kursKategorier(true).map(t => ({
+        // «Kun medlemmer» er baade kategori og type: velger du den, skal
+        // samlinga ut av den offentlige kurslista med det samme.
+        navn: t, velg: () => this.setState({
+          kKategori: t,
+          kType: t === 'Kun medlemmer' ? 'Kun medlemmer'
+               : ((this.state.kType || 'Kurs') === 'Kun medlemmer' ? 'Kurs' : (this.state.kType || 'Kurs')),
+        }),
+        stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + ((this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: (this.state.kKategori || '') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kKategori || '') === t ? 'var(--clay-50)' : 'var(--text-body)' },
+      })),
       kTyper: ['Kurs', 'Event', 'Kun medlemmer', 'Drop-in'].map(t => ({
         navn: t, velg: () => this.setState({ kType: t }),
         stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: (this.state.kType || 'Kurs') === t ? 'var(--lissom-brown)' : 'transparent', color: (this.state.kType || 'Kurs') === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
@@ -19123,6 +19213,14 @@ class Component extends DCLogic {
       settKStyrke: (e) => this.setState({ kStyrke: e.target.value }),
       // Bilderutene i steg 3. Foerste rute er hovedbildet — det som staar paa
       // kurskortet — og alle tre er karusellen paa kurssida.
+      // Samme knapp som i billedvelgeren, men rett paa steg 3 — du skal
+      // slippe aa aapne en rute foerst for aa komme deg til Shutterstock.
+      kFinnBilderOrd: (this.state.kNavn || '').trim() || 'keramikk verksted',
+      kFinnBilder: () => {
+        const ord = (this.state.kNavn || '').trim() || 'keramikk verksted';
+        window.open('https://www.shutterstock.com/nb/search/' + encodeURIComponent(ord),
+                    '_blank', 'noopener');
+      },
       kBilderuter: [0, 1, 2].map(i => {
         const valgt = (this.state.kBilder || [])[i] || '';
         return {
@@ -19176,6 +19274,7 @@ class Component extends DCLogic {
         const prisRaa = (this.state.kPris || '').trim();
         const nytt = {
           navn, type: this.state.kType || 'Kurs',
+          kategori: this.state.kKategori || '',
           pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
           gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
           pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,

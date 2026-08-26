@@ -531,18 +531,31 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
   // ── Dra kortene paa admin-forsiden ──────────────────────────────────
   //
   // Rekkefolgen var den koden ga dem. Verkstedet bruker ikke kortene like
-  // mye, og det som brukes hver dag skal ligge foerst.
+  // mye, og det som gjoeres hver dag skal ligge foerst.
+  //
+  // Slik det virker: hold inne paa et kort et oyeblikk, og det loefter seg.
+  // Da folger det pekeren dit du drar — opp, ned, til siden — og en strek
+  // viser hvilken plass det havner paa. Slipp, og det legger seg der.
   //
   // Pekerhendelser og ikke nettleserens egen draging: den siste virker ikke
-  // paa beroeringsskjerm i det hele tatt, og lar seg ikke proeve ut. Dette
-  // virker med mus, penn og finger, og kan testes.
+  // paa beroeringsskjerm i det hele tatt, og lar seg ikke proeve ut.
   //
-  // Lyttingen henger paa rutenettet og ikke paa hvert kort. dc bygger
-  // kortene paa nytt hver gang noe endrer seg i skjermbildet, og lyttere
-  // satt paa dem ville forsvunnet med dem.
-  var dratt = null;      // kortet som floyttes
-  var dragStart = null;  // der pekeren gikk ned
-  var drar = false;      // har vi passert terskelen?
+  // Lyttingen henger paa rutenettet og ikke paa hvert kort, og merket for
+  // «her har vi koblet oss paa» ligger paa selve objektet og ikke som et
+  // attributt. dc lager rutenettet paa nytt ved hver tegning og tar
+  // attributtene med seg — lytterne blir ikke med.
+  var dratt = null;       // kortet som holdes
+  var kopi = null;        // det som folger pekeren
+  var grep = null;        // hvor paa kortet du tok tak
+  var dragStart = null;
+  var holdTid = null;
+  var drar = false;
+  var maal = null;
+  var maalEtter = false;
+
+  // Hvor lenge du maa holde for aa ta tak. Kort nok til aa kjennes med én
+  // gang, langt nok til at et vanlig klikk ikke blir en draging.
+  var HOLD_MS = 180;
 
   var kortAv = function (el) {
     while (el && el !== document) {
@@ -552,122 +565,168 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
     return null;
   };
 
-  // Hvor kortet havner hvis du slipper naa.
-  //
-  // Foerste utgave flyttet kortet for hver eneste bevegelse. Da endret
-  // rutenettet seg under pekeren, naboene fikk nye plasser, og kortet endte
-  // et helt annet sted enn der du slapp det. Naa flyttes ingenting foer du
-  // slipper — det eneste som skjer underveis er en strek der kortet skal inn.
-  var maal = null;   // kortet vi legger oss ved
-  var maalEtter = false;
-
-  var visStrek = function (el, etter) {
-    if (!el) return;
-    el.style.boxShadow = etter
-      ? 'inset -3px 0 0 0 var(--lissom-brown)'
-      : 'inset 3px 0 0 0 var(--lissom-brown)';
-  };
   var visketUt = function (r) {
     var kort = r.querySelectorAll('[data-kort]');
     for (var i = 0; i < kort.length; i++) kort[i].style.boxShadow = '';
   };
 
+  // Streken der kortet havner. Staar kortet i en annen rad, skal streken
+  // ligge over eller under — ikke til siden. Ellers peker den paa en kant
+  // som ikke betyr noe der.
+  var visStrek = function (el, etter, loddrett) {
+    if (!el) return;
+    el.style.boxShadow = loddrett
+      ? (etter ? 'inset 0 -3px 0 0 var(--lissom-brown)' : 'inset 0 3px 0 0 var(--lissom-brown)')
+      : (etter ? 'inset -3px 0 0 0 var(--lissom-brown)' : 'inset 3px 0 0 0 var(--lissom-brown)');
+  };
+
+  var flyttKopi = function (e) {
+    if (!kopi) return;
+    kopi.style.left = (e.clientX - grep.x) + 'px';
+    kopi.style.top  = (e.clientY - grep.y) + 'px';
+  };
+
+  var taTak = function (e) {
+    drar = true;
+    var boks = dratt.getBoundingClientRect();
+    grep = { x: e.clientX - boks.left, y: e.clientY - boks.top };
+
+    // En kopi folger pekeren. Originalen blir staaende og blekner, saa du ser
+    // hullet kortet kom fra. Kopien ligger paa <body> og ikke i rutenettet:
+    // dc eier rutenettet og tegner det paa nytt hele tida.
+    kopi = dratt.cloneNode(true);
+    kopi.style.position = 'fixed';
+    kopi.style.margin = '0';
+    kopi.style.width = boks.width + 'px';
+    kopi.style.height = boks.height + 'px';
+    kopi.style.left = boks.left + 'px';
+    kopi.style.top = boks.top + 'px';
+    kopi.style.pointerEvents = 'none';
+    kopi.style.zIndex = '9999';
+    kopi.style.opacity = '0.95';
+    kopi.style.transform = 'scale(1.03) rotate(-1deg)';
+    kopi.style.boxShadow = '0 18px 40px rgba(46,16,2,.35)';
+    kopi.style.cursor = 'grabbing';
+    document.body.appendChild(kopi);
+
+    dratt.style.opacity = '0.25';
+    document.body.style.userSelect = 'none';
+    flyttKopi(e);
+  };
+
   var merkMaal = function (r, e) {
-    // Pekeren staar over kortet som dras, saa det maa gjemmes et oyeblikk
-    // for aa se hva som ligger under.
+    visketUt(r);
+    maal = null;
+
+    // Kopien ligger under pekeren, og den skal ikke telle. Den har ingen
+    // pointer-events, saa elementFromPoint ser rett gjennom den — men
+    // originalen staar der ogsaa, og den skal heller ikke telle.
     var synlig = dratt.style.visibility;
     dratt.style.visibility = 'hidden';
     var under = kortAv(document.elementFromPoint(e.clientX, e.clientY));
     dratt.style.visibility = synlig;
+    if (!under || under === dratt || under.parentNode !== r) return;
 
-    visketUt(r);
-    if (!under || under === dratt || under.parentNode !== r) {
-      maal = null;
-      return;
-    }
     var boks = under.getBoundingClientRect();
     maal = under;
-    maalEtter = (e.clientX - boks.left) > boks.width / 2;
-    visStrek(under, maalEtter);
+
+    // Rutenettet bryter i flere rader. Er kortet du staar over i en annen
+    // rad enn der du tok tak, avgjor hoyden om du legger deg over eller
+    // under. Innenfor samme rad er det venstre og hoyre som gjelder.
+    var sammeRad = Math.abs(boks.top - dratt.getBoundingClientRect().top) < boks.height / 2;
+    if (sammeRad) {
+      maalEtter = (e.clientX - boks.left) > boks.width / 2;
+      visStrek(under, maalEtter, false);
+    } else {
+      maalEtter = (e.clientY - boks.top) > boks.height / 2;
+      visStrek(under, maalEtter, true);
+    }
+  };
+
+  var rydd = function (r) {
+    if (kopi && kopi.parentNode) kopi.parentNode.removeChild(kopi);
+    kopi = null;
+    if (dratt) dratt.style.opacity = '';
+    document.body.style.userSelect = '';
+    if (r) { visketUt(r); r.style.touchAction = ''; }
+    clearTimeout(holdTid);
+    holdTid = null;
+    dratt = null;
+    dragStart = null;
+    grep = null;
+    drar = false;
+    maal = null;
   };
 
   var kobleDraging = function () {
     var r = document.getElementById('ov-kortrutenett');
-    if (!r) return;
-    // Merket maa ligge paa selve objektet, ikke som et attributt. dc lager
-    // rutenettet paa nytt ved hver tegning og tar attributtene med seg —
-    // lytterne blir ikke med. Et attributt som merke gjorde at vi trodde vi
-    // alt hadde koblet oss paa, mens kortene laa der uten en eneste lytter.
-    if (r.lissomDraKoblet) return;
+    if (!r || r.lissomDraKoblet) return;
     r.lissomDraKoblet = true;
 
     r.addEventListener('pointerdown', function (e) {
-      // Hoyreklikk og midtklikk skal ikke dra noe.
       if (e.button !== 0) return;
       var k = kortAv(e.target);
       if (!k) return;
       dratt = k;
       drar = false;
       dragStart = { x: e.clientX, y: e.clientY };
+
+      // Holder du inne, tar du tak. Uten dette maatte du bevege deg foerst,
+      // og paa en telefon ville sida rullet i stedet.
+      clearTimeout(holdTid);
+      var punkt = { x: e.clientX, y: e.clientY, pointerId: e.pointerId };
+      holdTid = setTimeout(function () {
+        if (!dratt || drar) return;
+        r.style.touchAction = 'none';
+        try { dratt.setPointerCapture(punkt.pointerId); } catch (x) {}
+        taTak(punkt);
+      }, HOLD_MS);
     });
 
     r.addEventListener('pointermove', function (e) {
-      if (!dratt || !dragStart) return;
+      if (!dratt) return;
 
       if (!drar) {
-        // Under terskelen er det et trykk, ikke en draging. Uten dette ville
-        // hver liten skjelving paa musa gjort et klikk om til et flytt.
+        // Med mus holder det aa dra i vei — da trenger du ikke vente. Paa en
+        // finger maa holdet fullfoeres, ellers ville hver rulling av sida
+        // blitt til en draging.
         var avstand = Math.abs(e.clientX - dragStart.x) + Math.abs(e.clientY - dragStart.y);
         if (avstand < 8) return;
-        drar = true;
-        dratt.style.opacity = '0.35';
-        dratt.style.transform = 'scale(0.98)';
-        // Paa en telefon ville sida rullet under fingeren ellers.
+        if (e.pointerType === 'touch') { clearTimeout(holdTid); rydd(r); return; }
+        clearTimeout(holdTid);
         r.style.touchAction = 'none';
         try { dratt.setPointerCapture(e.pointerId); } catch (x) {}
+        taTak(e);
       }
 
       e.preventDefault();
+      flyttKopi(e);
       merkMaal(r, e);
     });
 
     var slipp = function (e) {
       if (!dratt) return;
-      var floyttet = drar;
-      dratt.style.opacity = '';
-      dratt.style.transform = '';
-      try { dratt.releasePointerCapture(e.pointerId); } catch (x) {}
-      r.style.touchAction = '';
+      if (!drar) { rydd(r); return; }
 
-      // Rekkefolgen regnes ut, men ingen noder flyttes.
-      //
-      // Foerste utgave gjorde selve flyttingen i sida med insertBefore. Da
-      // sto vi og dro i noder dc selv eier: den tegner rutenettet paa nytt ut
-      // fra sine egne lister, og etter en manuell flytting stemte ikke de to
-      // overens. Rekkefolgen ble riktig i basen og feil paa skjermen, helt
-      // til sida ble lastet paa nytt.
-      //
-      // Naa sier vi bare hva den nye rekkefolgen er. dc tegner den.
+      // Rekkefolgen regnes ut, men ingen noder flyttes. dc eier rutenettet og
+      // tegner det ut fra sine egne lister; flytter vi noder selv, stemmer
+      // ikke de to overens, og skjermen viser noe annet enn basen.
       var ny = null;
-      if (floyttet && maal && maal !== dratt && maal.parentNode === r) {
+      if (maal && maal !== dratt && maal.parentNode === r) {
         var navn = [];
         var kort = r.querySelectorAll('[data-kort]');
         for (var i = 0; i < kort.length; i++) navn.push(kort[i].getAttribute('data-kort'));
-        var fra = navn.indexOf(dratt.getAttribute('data-kort'));
+        var mitt = dratt.getAttribute('data-kort');
+        var fra = navn.indexOf(mitt);
         if (fra !== -1) navn.splice(fra, 1);
         var til = navn.indexOf(maal.getAttribute('data-kort'));
         if (til !== -1) {
-          navn.splice(maalEtter ? til + 1 : til, 0, dratt.getAttribute('data-kort'));
+          navn.splice(maalEtter ? til + 1 : til, 0, mitt);
           ny = navn;
         }
       }
-      visketUt(r);
-      maal = null;
 
-      dratt = null;
-      dragStart = null;
-      drar = false;
-      if (!floyttet) return;
+      try { dratt.releasePointerCapture(e.pointerId); } catch (x) {}
 
       // Slipper du etter aa ha dratt, skal kortet ikke ogsaa aapne seg.
       r.addEventListener('click', function stopp(ev) {
@@ -675,11 +734,13 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
         ev.preventDefault();
         r.removeEventListener('click', stopp, true);
       }, true);
+
+      rydd(r);
       if (ny && window.lissomLagreKortrekkefolge) window.lissomLagreKortrekkefolge(ny);
     };
 
     r.addEventListener('pointerup', slipp);
-    r.addEventListener('pointercancel', slipp);
+    r.addEventListener('pointercancel', function () { rydd(r); });
   };
 
   // Innloggingen varer tre timer. Naar den gaar ut, svarer serveren 401 og
@@ -19031,7 +19092,7 @@ class Component extends DCLogic {
         return {
           ovDraHjelp: this.state.ovRekkefolgeLagret
         ? 'Rekkefølgen er lagret.'
-        : 'Dra kortene dit du vil ha dem. Rekkefølgen huskes til neste gang.',
+        : 'Hold inne på et kort og dra det dit du vil ha det. Rekkefølgen huskes til neste gang.',
       ovKort: (() => {
             // Her sto «Nytt kurs», «Medlemskap» og «Priser, tekst og bilder».
             // Fjernet 26. august paa bestilling. Alle tre naas fortsatt fra

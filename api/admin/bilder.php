@@ -110,18 +110,61 @@ switch ($handling) {
         ]);
 
     case 'slett':
-        $navn = (string) ($_POST['navn'] ?? '');
+        $navn = (string) ($_POST['navn'] ?? Foresporsel::kropp()['navn'] ?? '');
         if (Bilder::sti($navn, 'artikler') === null) {
             Svar::feil('Fant ikke bildet.');
         }
-        // Et bilde som staar i en artikkel skal ikke kunne forsvinne under
-        // foettene paa den. Da staar det en tom ramme paa nettsida.
+
+        // Et bilde som staar et sted skal ikke kunne forsvinne under foettene
+        // paa det. Da staar det en tom ramme paa nettsida, og ingen vet hvor
+        // den kom fra.
+        //
+        // Sjekken saa bare i artikler. Bildet kan ligge fem andre steder —
+        // paa et kurs, i karusellen paa kurssida, paa en vare, paa et
+        // medlemskap eller paa et medlemssalg — og et kursbilde slettet
+        // herfra ville tatt hovedbildet av kurset uten et ord.
         $url = 'api/bilde.php?artikkel=' . $navn;
-        $brukt = DB::alle('SELECT tittel FROM articles WHERE bilde = :b', ['b' => $url]);
-        if ($brukt !== []) {
-            Svar::feil('Bildet er i bruk i «' . $brukt[0]['tittel'] . '». Bytt bilde der først.');
+        $ibruk = [];
+        foreach ([
+            ['articles',         'tittel', 'bilde',  'artikkelen'],
+            ['courses',          'tittel', 'bilde',  'kurset'],
+            ['products',         'tittel', 'bilde',  'varen'],
+            ['membership_plans', 'navn',   'bilde',  'medlemskapet'],
+            ['member_sales',     'tittel', 'bilde',  'medlemssalget'],
+        ] as [$tabell, $navnefelt, $felt, $ord]) {
+            // Tabellene heter ikke det samme: fem av seks har «tittel», ett
+            // har «navn». Sjekkes her, saa en manglende kolonne blir til at
+            // tabellen hoppes over framfor en 500 med SQL-en i svaret.
+            if (!DB::harTabell($tabell)
+                || !DB::harKolonne($tabell, $felt)
+                || !DB::harKolonne($tabell, $navnefelt)) {
+                continue;
+            }
+            $rad = DB::en("SELECT `$navnefelt` AS n FROM `$tabell` WHERE `$felt` = :b LIMIT 1",
+                          ['b' => $url]);
+            if ($rad !== null) {
+                $ibruk[] = $ord . ' «' . $rad['n'] . '»';
+            }
         }
+        // Karusellen paa kurssida er en JSON-liste, ikke én kolonne.
+        if (DB::harTabell('courses') && DB::harKolonne('courses', 'bilder')) {
+            $rad = DB::en('SELECT tittel FROM courses WHERE bilder LIKE :b LIMIT 1',
+                          ['b' => '%' . $navn . '%']);
+            if ($rad !== null) {
+                $ibruk[] = 'bildene til kurset «' . $rad['tittel'] . '»';
+            }
+        }
+
+        if ($ibruk !== []) {
+            Svar::feil('Bildet er i bruk i ' . implode(' og ', array_unique($ibruk))
+                     . '. Bytt bilde der først.');
+        }
+
         Bilder::slett($navn, 'artikler');
+        // Utsnittet hoerer til bildet og har ingenting aa gjore uten det.
+        if (DB::harTabell('bilde_fokus')) {
+            DB::kjor('DELETE FROM bilde_fokus WHERE fil = :f', ['f' => $url]);
+        }
         revider('bilde_slettet', 'bilde', null, ['navn' => $navn]);
         Svar::ok(['beskjed' => 'Bildet er slettet.']);
 

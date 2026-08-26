@@ -7926,7 +7926,13 @@ window.__resources = {
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dine egne</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-6);">
           <sc-for list="{{ mkBildeEgne }}" as="b" hint-placeholder-count="4">
-            <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
+            <!-- Krysset staar utenfor velgeknappen, ikke inni: en knapp inni
+                 en knapp er ikke gyldig, og da blir det tilfeldig hva et
+                 trykk treffer. -->
+            <div style="position: relative;">
+              <button type="button" onClick="{{ b.velg }}" aria-label="Velg dette bildet" style="{{ b.stil }}"></button>
+              <button type="button" onClick="{{ b.slett }}" aria-label="Slett dette bildet" title="Slett bildet" style="{{ b.slettStil }}">×</button>
+            </div>
           </sc-for>
         </div>
       </sc-if>
@@ -7938,7 +7944,10 @@ window.__resources = {
         </sc-for>
       </div>
 
-      <button type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk standardbildet i stedet</button>
+      <!-- Het «Bruk standardbildet i stedet». Paa bilderute 2 og 3 finnes det
+           ikke noe standardbilde, og da lovet knappen noe den ikke gjor. Den
+           tommer ruta — det er alt den gjor, og det er det den sier naa. -->
+      <button type="button" onClick="{{ mkFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet fra ruta</button>
     </div>
   </div>
 </sc-if>
@@ -12168,6 +12177,50 @@ class Component extends DCLogic {
   }
 
   /**
+   * Sletter et bilde eieren har lastet opp.
+   *
+   * Bestilt fordi et bilde lastet opp ved en feil ble liggende i velgeren for
+   * alltid — det fantes ingen vei ut. Endepunktet har kunnet slette hele
+   * tiden; det var aldri noen knapp.
+   *
+   * Serveren nekter aa slette et bilde som staar paa et kurs, en vare, en
+   * artikkel, et medlemskap eller i karusellen, og sier hvor det staar. Da
+   * blir det ingen tomme rammer paa nettsida av et uhell her.
+   */
+  slettBilde(b) {
+    const navn = (b && b.navn) || '';
+    if (!navn) return;
+    if (!window.confirm('Slette bildet? Det kan ikke angres.')) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+
+    fetch('/api/admin/bilder.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'slett', navn: navn }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) {
+          this.setState({ kvittering: 'Bildet ble ikke slettet',
+                          kvitteringDetalj: (d && d.feil) || '' });
+          return;
+        }
+        // Ut av lista med det samme, framfor aa vente paa at den hentes paa
+        // nytt — ellers staar bildet der et oeyeblikk etter at det er borte.
+        this.setState(st => ({
+          bildeliste: {
+            egne: ((st.bildeliste || {}).egne || []).filter(x => x.navn !== navn),
+            medfolgende: (st.bildeliste || {}).medfolgende || [],
+          },
+          kvittering: 'Bildet er slettet',
+        }));
+        this.hentBilder();
+      })
+      .catch(() => this.setState({ kvittering: 'Bildet ble ikke slettet',
+                                   kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
    * Aapner billedvalget.
    *
    * Samme rute brukes til artikler og til varer i butikken — de trenger det
@@ -12247,7 +12300,19 @@ class Component extends DCLogic {
       mkBildeLaster: !!this.state.bildeLaster,
       mkBildeHenter: !!v && !this.state.bildeliste,
       mkBildevalgTittel: valgt.tittel || '',
-      mkBildeEgne: (liste.egne || []).map(rute),
+      // Dine egne bilder kan slettes. De medfoelgende kan ikke — de ligger i
+      // repoet og kommer tilbake ved neste utlegging uansett.
+      mkBildeEgne: (liste.egne || []).map(b => Object.assign(rute(b), {
+        stil: Object.assign(rute(b).stil, { width: '100%' }),
+        slett: () => this.slettBilde(b),
+        slettStil: {
+          position: 'absolute', top: 4, right: 4, width: 24, height: 24,
+          appearance: 'none', cursor: 'pointer', padding: 0, lineHeight: '22px',
+          borderRadius: '50%', border: '1px solid var(--border-subtle)',
+          background: 'var(--surface-card)', color: 'var(--text-heading)',
+          font: 'var(--type-body-sm)', fontWeight: 700,
+        },
+      })),
       mkHarEgneBilder: (liste.egne || []).length > 0,
       mkBildeMedfolgende: (liste.medfolgende || []).map(rute),
       mkLukkBildevalg: () => this.setState({ bildeFor: null }),
@@ -20146,7 +20211,18 @@ class Component extends DCLogic {
             aspectRatio: '16 / 10', borderRadius: 12, overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: valgt ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
-            background: valgt ? 'var(--clay-200)' : 'transparent',
+            // «background» og ikke «backgroundColor» er hele feilen her.
+            //
+            // Kortformen «background: var(--clay-200)» kan ikke regnes ut av
+            // nettleseren for variabelen er slaatt opp, og da settes alle de
+            // andre background-verdiene til tomt — ogsaa «cover». Bildet ble
+            // staaende i sin egen stoerrelse, 1400 piksler i en rute paa 200,
+            // saa det du saa var oeverste venstre hjoerne av bildet. Er hjoernet
+            // moerkt, ser ruta helt sort ut.
+            //
+            // Billedvelgeren har alltid brukt «backgroundColor» og har derfor
+            // alltid vist bildet riktig. Det var forskjellen.
+            backgroundColor: valgt ? 'var(--clay-200)' : 'transparent',
             backgroundImage: valgt ? "url('" + valgt + "')" : 'none',
             backgroundSize: 'cover', backgroundPosition: this.fokusFor(valgt),
           },

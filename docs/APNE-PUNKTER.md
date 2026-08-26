@@ -7,7 +7,7 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 26. august 2026.
+Sist gjennomgått: 26. august 2026, etter at «Ferdig glassert» ble bygd ferdig.
 
 ---
 
@@ -106,7 +106,13 @@ betalingsmåte er satt?
 
 ## Må gjøres av Lissom
 
-### 8. Fire nøkler byttes
+### 7b. Migrasjon 052–055 må kjøres
+
+Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
+`internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
+dem framfor å virke.
+
+### 8. Nøklene byttes
 
 Ble limt inn i en chat 26. august og er kompromittert:
 
@@ -116,6 +122,7 @@ Ble limt inn i en chat 26. august og er kompromittert:
 | `vipps_client_secret` | portal.vipps.no → Utvikler |
 | `smtp_passord` | cPanel → Email Accounts |
 | `cron_nokkel` | `php -r "echo bin2hex(random_bytes(24));"` |
+| Shutterstock consumer key og secret | shutterstock.com → appen din |
 
 `claude_api_key` er allerede byttet.
 
@@ -138,6 +145,9 @@ Ligger igjen i databasen fra den forrige nettsiden. Kan fjernes i cPanel.
 
 ePayment svarer 403 på salgsenhet 1142801. Recurring er ikke godkjent.
 Betaling virker ikke før Vipps åpner. Ingenting å gjøre i koden.
+
+Vipps ba 26. august om å se hvor og hvordan kunden sier opp medlemskapet.
+Det står nå i salgsvilkårene, begge steder, og er publisert. Venter på svar.
 
 ### 12. Video på kurs
 
@@ -183,6 +193,18 @@ i plass, båndbredde og avspilling.
   uker. «Ta meldingen ned» angrer linja; e-post som er sendt står som sendt.
   Varselmalen `ferdig_brent` hadde ligget i basen siden migrasjon 002 uten at
   noe noen gang sendte den. Migrasjon 053.
+- **«Ferdig glassert» går nå på deltakeren, ikke på datoen** (migrasjon 055).
+  Hver deltaker har egen status, egen meldingshistorikk med kanal, tekst og
+  feil, internt notat som bare verkstedet ser, og «hentet». Beskjed kan sendes
+  til én eller til alle som mangler. Kurset flytter seg til «Sendt beskjed»
+  først når alle har fått den. Deltakeren legger selv inn bilder av
+  keramikken sin under Min side — det er det som avgjør hvem som har laget
+  hva når det står tjue ting på hylla. Hele testresultatet står i
+  `docs/FERDIG-GLASSERT.md`.
+- **«Send til alle» sendte til den som alt stod i køen.** Vi hoppet over dem
+  som var *levert*, ikke dem som var *sendt herfra*. En beskjed som lå i køen
+  så ut som om den ikke fantes, og deltakeren fikk to like e-poster. Funnet
+  av testen, ikke av en kunde.
 - **«Maks N deltakere» regnes ut av kurset.** Sto som fast tekst seks steder
   og spriket mot tallene under.
 - **Utløpt innlogging sier fra.** Innloggingen varer tre timer. Gikk den ut,

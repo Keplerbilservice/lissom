@@ -7883,7 +7883,7 @@ window.__resources = {
       <!-- Soeket sendes med norsk som spraak, saa «keramikk» virker. Ordene
            i biblioteket er likevel skrevet paa engelsk, og et engelsk ord
            treffer derfor bredere enn oversettelsen av det. -->
-      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button></p>
+      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button> · <button type="button" onClick="{{ ssKoble }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ ssKobleTekst }}</button></p>
       <sc-if value="{{ ssMelding }}" hint-placeholder-val="{{ false }}">
         <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ssMeldingTekst }}</p>
       </sc-if>
@@ -12260,6 +12260,8 @@ class Component extends DCLogic {
       ssKnapp: this.state.ssSoker ? 'Søker …' : 'Søk',
       ssSok: () => this.sokShutterstock(1),
       ssSjekk: () => this.sjekkShutterstock(),
+      ssKoble: () => this.kobleShutterstock(),
+      ssKobleTekst: this.state.ssKobler ? 'Sender deg til Shutterstock …' : 'Koble til Shutterstock',
       ssNeste: () => this.sokShutterstock((this.state.ssSide || 1) + 1),
       ssFlere: !!this.state.ssFlere,
       ssMelding: !!this.state.ssMelding,
@@ -12379,6 +12381,33 @@ class Component extends DCLogic {
         });
       })
       .catch(() => this.setState({ ssSoker: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Sender Lissom gjennom Shutterstock sin egen innlogging.
+   *
+   * A soke og a laste ned er to ulike ting hos dem. Soket spor om
+   * biblioteket, og der holder det at appen var viser hvem den er. A
+   * lisensiere trekker pa et abonnement, og et abonnement horer til et
+   * menneske — ikke en app. Derfor ma Lissom si ja en gang, hos dem.
+   *
+   * Etterpa sendes du tilbake hit, og tokenet ligger lagret pa serveren.
+   */
+  kobleShutterstock() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this.state.ssKobler) return;
+    this.setState({ ssKobler: true, ssMelding: '' });
+    fetch('/api/admin/shutterstock-kobling.php?start=1', { credentials: 'same-origin' })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok || !d.url) {
+          this.setState({ ssKobler: false,
+                          ssMelding: (d && d.feil) || 'Fikk ikke startet tilkoblingen.' });
+          return;
+        }
+        window.location.href = d.url;
+      })
+      .catch(() => this.setState({ ssKobler: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
   }
 
   /**
@@ -12896,6 +12925,19 @@ class Component extends DCLogic {
     if (tekst) this.setState({ kvittering: tekst, kvitteringDetalj: detalj });
   }
 
+  // Retur fra Shutterstock: ?shutterstock=koblet
+  //
+  // Tilkoblingen skjer utenfor nettsiden, og du kommer tilbake til en adresse
+  // som ikke sier noe. Uten dette ser det ut som ingenting skjedde.
+  visShutterstockutfall() {
+    if (String(window.location.search || '').indexOf('shutterstock=koblet') === -1) return;
+    history.replaceState(null, '', window.location.pathname + window.location.hash);
+    this.setState({
+      kvittering: 'Shutterstock-kontoen er koblet til',
+      kvitteringDetalj: 'Nå kan bilder lastes ned rett inn i biblioteket fra billedvelgeren.',
+    });
+  }
+
   componentDidMount() {
     // #innlogget settes av vipps-callback.php ved retur fra Vipps. Den sier
     // bare at vi skal hente profilen — hvilken side man skal til, staar i
@@ -12950,6 +12992,7 @@ class Component extends DCLogic {
     this.hentInnhold();
     this.hentButikk();
     this.visBetalingsutfall();
+    this.visShutterstockutfall();
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
     }, 1000);

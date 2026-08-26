@@ -67,10 +67,35 @@ if ($token === '' && ($nokkel === '' || $passord === '')) {
     );
 }
 
-/** Hodet som beviser hvem vi er. Token først; ellers nøkkel og passord. */
-$auth = $token !== ''
-    ? 'Authorization: Bearer ' . $token
-    : 'Authorization: Basic ' . base64_encode($nokkel . ':' . $passord);
+/**
+ * Tokenet fra tilkoblingen — Lissom sin egen konto hos Shutterstock.
+ *
+ * Det ligger i basen, ikke i secrets.php, fordi det byttes ut naar det gaar
+ * ut. Det settes av shutterstock-kobling.php og er tomt til noen har trykket
+ * «Koble til Shutterstock».
+ *
+ * Hvorfor det trengs: aa soeke spoer om biblioteket, og der holder det at
+ * appen viser hvem den er. Aa lisensiere trekker paa et abonnement, og et
+ * abonnement tilhoerer et menneske — ikke en app. En noekkel fra appsida kan
+ * derfor soeke saa mye den vil og likevel bli avvist paa nedlasting.
+ */
+$kundetoken = '';
+try {
+    if (DB::harTabell('innstillinger')) {
+        $kundetoken = trim((string) (DB::verdi(
+            "SELECT verdi FROM innstillinger WHERE nokkel = 'shutterstock_kunde_token'"
+        ) ?? ''));
+    }
+} catch (Throwable $e) {
+    $kundetoken = '';
+}
+
+/** Hodet som beviser hvem vi er. Kundetokenet foerst, saa appens egen noekkel. */
+$auth = $kundetoken !== ''
+    ? 'Authorization: Bearer ' . $kundetoken
+    : ($token !== ''
+        ? 'Authorization: Bearer ' . $token
+        : 'Authorization: Basic ' . base64_encode($nokkel . ':' . $passord));
 
 // ── Miniatyrene gaar gjennom oss ───────────────────────────────────────────
 //
@@ -218,6 +243,16 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('test') === '1') {
     $abonnementer = $abo['status'] === 200 ? (array) ($abo['json']['data'] ?? []) : [];
 
     $linjer = ['Søket virker.'];
+    if ($kundetoken !== '') {
+        $linjer[] = 'Kontoen din er koblet til.';
+    } else {
+        // Returadressen maa staa registrert paa appen hos Shutterstock foer
+        // tilkoblingen gaar gjennom. Den staar her, saa den kan kopieres.
+        $linjer[] = 'Kontoen din er ikke koblet til ennå. Før du trykker «Koble til '
+                  . 'Shutterstock» må denne adressen stå som returadresse på appen din '
+                  . 'hos dem: ' . rtrim((string) Config::hent('nettsted', ''), '/')
+                  . '/api/admin/shutterstock-kobling.php';
+    }
     if ($konto['status'] !== 200) {
         $linjer[] = 'Fikk ikke lest hva nøkkelen har lov til '
                   . '(' . $konto['status'] . '). Bruker du forbrukernøkkel og '
@@ -358,16 +393,45 @@ if ($id === '') {
 $lisens = $kall(SS_LISENS, ['images' => [['image_id' => $id]]]);
 if ($lisens['status'] !== 200 && $lisens['status'] !== 201) {
     logg('Shutterstock avviste lisensieringen', ['status' => $lisens['status'], 'id' => $id]);
-    Svar::feil(
-        $lisens['status'] === 403 || $lisens['status'] === 402
-            ? 'Shutterstock avviste nedlastingen. To ting kan mangle, og de er ulike: '
-              . 'nøkkelen må ha rettigheten «licenses.create», og abonnementet må '
-              . 'dekke nedlasting gjennom API-et. Trykk «Sjekk tilkoblingen» — den '
-              . 'sier hvilken av dem det er. Inntil videre kan bildet lastes ned på '
-              . 'shutterstock.com og legges inn med «Last opp eget bilde».'
-            : $feiltekst($lisens['status'], $lisens['json']),
-        400
-    );
+
+    if ($lisens['status'] !== 403 && $lisens['status'] !== 402) {
+        Svar::feil($feiltekst($lisens['status'], $lisens['json']), 400);
+    }
+
+    // Et avslag her betyr én av to ting, og de har hver sin løsning. Framfor
+    // å be eieren trykke på en knapp til for å finne ut hvilken, spør vi med
+    // det samme. Svaret koster ett kall og sparer en runde fram og tilbake.
+    $rettigheter = [];
+    $konto = $kall('https://api.shutterstock.com/v2/user/access_token');
+    if ($konto['status'] === 200) {
+        $rettigheter = (array) ($konto['json']['scopes'] ?? []);
+    }
+    $abo = $kall('https://api.shutterstock.com/v2/user/subscriptions');
+    $abonnementer = $abo['status'] === 200 ? (array) ($abo['json']['data'] ?? []) : [];
+
+    $manglerRettighet = $rettigheter !== [] && !in_array('licenses.create', $rettigheter, true);
+    $manglerAbonnement = $abo['status'] === 200 && $abonnementer === [];
+
+    if ($manglerRettighet) {
+        $beskjed = 'Nøkkelen mangler rettigheten «licenses.create», og da avvises '
+                 . 'nedlasting uansett abonnement. Det er ikke noe galt med kontoen '
+                 . 'din — en nøkkel fra appsida får ikke lov til å bruke abonnementet '
+                 . 'ditt før du selv har sagt ja én gang. Trykk «Koble til '
+                 . 'Shutterstock» under søkefeltet.';
+    } elseif ($manglerAbonnement) {
+        $beskjed = 'Kontoen har ingen abonnement API-et kan bruke. Da går søk, men '
+                 . 'ikke nedlasting. Last ned bildet på shutterstock.com og legg det '
+                 . 'inn med «Last opp eget bilde» — eller si fra, så legger jeg inn '
+                 . 'en gratis bildekilde ved siden av.';
+    } else {
+        $beskjed = 'Shutterstock avviste nedlastingen'
+                 . (!empty($lisens['json']['message']) ? ': ' . $lisens['json']['message'] : '.')
+                 . ' Har du ikke koblet til kontoen din ennå, gjør det med «Koble til '
+                 . 'Shutterstock» under søkefeltet. Inntil videre kan bildet lastes '
+                 . 'ned på shutterstock.com og legges inn med «Last opp eget bilde».';
+    }
+
+    Svar::feil($beskjed, 400);
 }
 
 $last = $lisens['json']['data'][0]['download']['url'] ?? '';

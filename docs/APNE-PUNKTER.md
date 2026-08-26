@@ -66,11 +66,19 @@ krever to ting for nedlasting som søket ikke krever:
 Knappen «Sjekk tilkoblingen» i billedvelgeren spør Shutterstock om begge og
 sier hvilken som mangler. **Det svaret avgjør hva som bygges videre.**
 
-Mangler bare rettigheten, er neste steg en «Koble til Shutterstock»-knapp
-som sender Lissom gjennom innloggingen deres og henter et token med de rette
-rettighetene (`authorizationCode`-flyten: `/v2/oauth/authorize` →
-`/v2/oauth/access_token`). Da trengs også en returadresse registrert på appen
-hos dem.
+**«Koble til Shutterstock» er bygget** (26. august). Knappen står under
+søkefeltet og sender Lissom gjennom innloggingen deres, ber om
+`licenses.create`, og lagrer tokenet i basen.
+
+Før den virker må to ting på plass hos Lissom:
+
+1. `shutterstock_nokkel` og `shutterstock_passord` i `~/lissom-secrets/secrets.php`
+   — forbrukernøkkelen og forbrukerpassordet fra appen. Tokenet alene holder
+   ikke: tilkoblingen må bevise hvilken app den kommer fra.
+2. Returadressen `https://lissom.no/api/admin/shutterstock-kobling.php`
+   registrert på appen hos dem. Uten den avviser Shutterstock tilkoblingen.
+
+«Sjekk tilkoblingen» skriver ut adressen så den kan kopieres.
 
 Mangler abonnementet, hjelper ingen kode. Da er valget å oppgradere hos
 Shutterstock, eller å legge Unsplash og Pexels ved siden av i velgeren —

@@ -89,6 +89,9 @@ $kall = static function (string $url, ?array $kropp = null) use ($auth): array {
         array_filter([
             $auth,
             'Accept: application/json',
+            // Shutterstock avviser kall uten dette: «User-Agent header
+            // required». De vil vite hvem som ringer.
+            'User-Agent: Lissom/1.0 (+https://lissom.no)',
             $kropp === null ? null : 'Content-Type: application/json',
         ]),
         30

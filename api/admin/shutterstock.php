@@ -143,6 +143,9 @@ if (Foresporsel::metode() === 'GET') {
 
     $r = $kall(SS_SOK . '?' . http_build_query([
         'query'      => mb_substr($sok, 0, 120),
+        // Biblioteket er merket paa engelsk. «keramikk» gir null treff uten
+        // dette; med det oversetter Shutterstock soekeordet selv.
+        'language'   => 'no',
         'per_page'   => 24,
         'page'       => $side,
         'image_type' => 'photo',
@@ -156,16 +159,20 @@ if (Foresporsel::metode() === 'GET') {
         Svar::feil($feiltekst($r['status'], $r['json']), 400);
     }
 
+    $raa = $r['json']['data'] ?? [];
     $treff = [];
-    foreach (($r['json']['data'] ?? []) as $bilde) {
-        // Forhaandsvisningen. Feltnavnene varierer litt mellom bildetypene,
-        // saa vi tar den foerste som finnes framfor aa hoppe over treffet.
-        $a = $bilde['assets'] ?? [];
-        $mini = $a['large_thumb']['url']
-            ?? $a['huge_thumb']['url']
-            ?? $a['preview']['url']
-            ?? $a['small_thumb']['url']
-            ?? '';
+    foreach ($raa as $bilde) {
+        // Forhaandsvisningen. Feltnavnene varierer mellom bildetyper og
+        // abonnement, saa vi leter etter den foerste adressen som finnes
+        // framfor aa gjette paa navnene. Ei fast liste ville gjort at hvert
+        // treff falt ut, og soeket sett tomt ut selv med hundre treff.
+        $mini = '';
+        foreach (($bilde['assets'] ?? []) as $del) {
+            if (is_array($del) && !empty($del['url']) && is_string($del['url'])) {
+                $mini = $del['url'];
+                break;
+            }
+        }
         if ($mini === '') {
             continue;
         }
@@ -174,6 +181,20 @@ if (Foresporsel::metode() === 'GET') {
             'mini'  => $mini,
             'tekst' => mb_substr((string) ($bilde['description'] ?? ''), 0, 120),
         ];
+    }
+
+    // Kom det treff uten at vi fant en eneste forhaandsvisning, er det noe
+    // annet enn «ingen treff» — og da skal det staa noe annet.
+    if ($raa !== [] && $treff === []) {
+        logg('Shutterstock ga treff uten forhaandsvisninger', [
+            'antall' => count($raa),
+            'felter' => array_keys((array) ($raa[0]['assets'] ?? [])),
+        ]);
+        Svar::feil(
+            'Shutterstock ga ' . count($raa) . ' treff, men ingen bilder å vise. '
+            . 'Abonnementet gir kanskje ikke forhåndsvisninger gjennom API-et.',
+            400
+        );
     }
 
     Svar::json([

@@ -52,47 +52,9 @@ Samme sak som over. Navn, pris, plasser, beskrivelse, bekreftelse, bilder og
 datoer kan redigeres. Punktlista — det kunden leser under «Alt som er
 inkludert» — kan ikke.
 
-### 3b. Bildesøk med API — søket virker, nedlasting gjenstår
+### 3b. ~~Bildesøk med API~~ — gjort 26. august
 
-Bygget og i drift. Søket ligger i billedvelgeren og henter miniatyrer rett
-fra Shutterstock.
-
-Å laste ned er noe annet enn å søke, og det er der det står. Shutterstock
-krever to ting for nedlasting som søket ikke krever:
-
-1. Nøkkelen må ha rettigheten `licenses.create`.
-2. Abonnementet må dekke lisensiering gjennom API-et.
-
-Knappen «Sjekk tilkoblingen» i billedvelgeren spør Shutterstock om begge og
-sier hvilken som mangler. **Det svaret avgjør hva som bygges videre.**
-
-**«Koble til Shutterstock» er bygget** (26. august). Knappen står under
-søkefeltet og sender Lissom gjennom innloggingen deres, ber om
-`licenses.create`, og lagrer tokenet i basen.
-
-Før den virker må to ting på plass hos Lissom:
-
-1. `shutterstock_nokkel` og `shutterstock_passord` i `~/lissom-secrets/secrets.php`
-   — forbrukernøkkelen og forbrukerpassordet fra appen. Tokenet alene holder
-   ikke: tilkoblingen må bevise hvilken app den kommer fra.
-2. Returadressen `https://lissom.no/api/admin/shutterstock-kobling.php`
-   registrert på appen hos dem. Uten den avviser Shutterstock tilkoblingen.
-
-«Sjekk tilkoblingen» skriver ut adressen så den kan kopieres.
-
-Mangler abonnementet, hjelper ingen kode. Da er valget å oppgradere hos
-Shutterstock, eller å legge Unsplash og Pexels ved siden av i velgeren —
-gratis API-er med full nedlasting og fri kommersiell bruk.
-
-Til det er avklart: last ned bildet på shutterstock.com og legg det inn med
-«Last opp eget bilde». Store bilder krympes automatisk.
-
-**client_id og client_secret er forbrukernøkkelen og forbrukerpassordet**
-fra appen på developers.shutterstock.com. Det er de samme to verdiene, med
-andre navn — Shutterstock kaller dem det ene i API-utforskeren og det andre
-på appsida.
-
-Trengs når det bygges: nøkler i `secrets.php` — aldri i en chat.
+Søk og nedlasting virker begge veier. Se «Ferdig» nederst.
 
 ### 3c. ~~«Klar til henting»-liste~~ — gjort 26. august
 
@@ -203,6 +165,18 @@ i plass, båndbredde og avspilling.
   signert adresse, framfor å åpne regelen for hele nettstedet.
 - **Søket går på norsk.** Språkkoden er `nb`. Svarer Shutterstock 400 på
   den, søkes det uten framfor å gi en feilmelding.
+- **Bildesøk hos Shutterstock, med nedlasting.** Søket ligger i
+  billedvelgeren og henter bildet rett inn i biblioteket, lisensiert.
+  Tre ting måtte på plass før det gikk: språkkoden `nb` (norsk gir null treff
+  uten), miniatyrene måtte gjennom vår egen tjener fordi `img-src 'self'`
+  blokkerte dem, og nedlasting krever at Lissom selv har sagt ja én gang hos
+  Shutterstock — en nøkkel fra appsida får ikke bruke abonnementet. Den
+  tilkoblingen gjøres med «Koble til Shutterstock» og lagres i basen.
+- **Forhåndsvisninga i steg 3 viste et annet bilde enn kortet.** Ramma var
+  4:3 mot kortets 16:10, og utsnittet sto låst i midten uansett hva som var
+  valgt — skriptet som legger på utsnittet ser bare på `<img>`, og rutene er
+  knapper med bakgrunnsbilde. Karusellen på kurssida hadde samme hull
+  motsatt vei. Bilder uten valgt utsnitt står som før.
 - **«Klar til henting».** Kortet «Gjennomførte kurs» på Oversikt viser
   kursdatoer som er ferdige, med antall deltakere. Ett trykk sender e-post
   til alle på datoen og legger ut en melding på lissom.no/ferdigbrent i tre

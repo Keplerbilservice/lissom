@@ -3944,15 +3944,15 @@ window.__resources = {
                   <!-- Datoene hen kan settes rett inn paa. Bare de med plass —
                        en liste med fulle kvelder er en knapp som sier nei. -->
                   <sc-if value="{{ v.kanGiPlass }}" hint-placeholder-val="{{ true }}">
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gi plass</div>
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Tildel kurs</div>
                     <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
                       <sc-for list="{{ v.datoer }}" as="dt" hint-placeholder-count="2">
-                        <button type="button" onClick="{{ dt.giPlass }}" style="appearance: none; cursor: pointer; border: 1px solid var(--lissom-brown); border-radius: var(--radius-pill); background: transparent; padding: 6px 12px; font: var(--type-body-sm); color: var(--lissom-brown); white-space: nowrap;">{{ dt.merke }}</button>
+                        <button type="button" onClick="{{ dt.giPlass }}" style="{{ dt.stil }}">{{ dt.merke }}</button>
                       </sc-for>
                     </div>
                   </sc-if>
                   <sc-if value="{{ v.utenPlass }}" hint-placeholder-val="{{ false }}">
-                    <div style="margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer på dette kurset nå.</div>
+                    <div style="margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen ledige datoer i programmet nå.</div>
                   </sc-if>
 
                   <sc-if value="{{ v.harEpost }}" hint-placeholder-val="{{ true }}">
@@ -13778,7 +13778,11 @@ class Component extends DCLogic {
    */
   giVentelisteplass(v, d) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    if (!window.confirm('Gi ' + v.navn + ' plass på ' + v.kurs + ' ' + d.naar + '?\n\n'
+    // Kurset som staar paa knappen, ikke det hen venter paa. Gir du en plass
+    // paa noe annet, skal spoersmaalet si hva.
+    const kurs = d.eget ? v.kurs : d.kurs;
+    if (!window.confirm('Gi ' + v.navn + ' plass på ' + kurs + ' ' + d.naar + '?\n\n'
+        + (d.eget ? '' : 'Hen står på ventelista til ' + v.kurs + ' og blir tatt av den.\n\n')
         + 'Plassen blir opptatt med en gang, og står som reservert til betalingen er gjort opp.')) return;
     this.ventelisteKall({ handling: 'gi-plass', id: v.id, oktId: d.oktId });
   }
@@ -22635,8 +22639,24 @@ class Component extends DCLogic {
             utenKontakt: !v.epost && !v.telefon,
             kanGiPlass: !!v.kanGiPlass,
             utenPlass: !v.kanGiPlass,
-            datoer: (v.datoer || []).slice(0, 4).map(d => ({
-              merke: d.naar + ' · ' + d.ledige + ' ledig' + (d.ledige === 1 ? '' : 'e'),
+            // Datoene hun kan settes rett inn paa — hele programmet, ikke
+            // bare kurset hun venter paa. Sier hun at hun heller vil paa noe
+            // annet, skal det gaa uten aa legge henne inn for haand og slette
+            // ventelisteoppforingen etterpaa.
+            //
+            // Hennes eget kurs staar foerst og uten kursnavn; det er
+            // underforstaatt. De andre staar med navnet, ellers ser to
+            // datoer like ut og du vet ikke hva du gir bort.
+            datoer: (v.datoer || []).slice(0, 8).map(d => ({
+              merke: (d.eget ? '' : d.kurs + ' · ')
+                   + d.naar + ' · ' + d.ledige + ' ledig' + (d.ledige === 1 ? '' : 'e'),
+              stil: {
+                appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                background: 'transparent', padding: '6px 12px', font: 'var(--type-body-sm)',
+                whiteSpace: 'nowrap',
+                border: '1px solid ' + (d.eget ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                color: d.eget ? 'var(--lissom-brown)' : 'var(--text-muted)',
+              },
               giPlass: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.giVentelisteplass(v, d); },
             })),
             // Samme vei som «Beskjed til én person» ellers i panelet, saa

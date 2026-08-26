@@ -41,12 +41,14 @@ if (Foresporsel::metode() === 'GET') {
     $datoer = static function (int $kursId): array {
         $ut = [];
         foreach (DB::alle(
-            "SELECT cs.id, cs.start_tid
+            "SELECT cs.id, cs.start_tid, cs.course_id, c.tittel
                FROM course_sessions cs
-              WHERE cs.course_id = :k AND cs.status = 'planlagt'
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt'
                 AND cs.start_tid > UTC_TIMESTAMP()
-           ORDER BY cs.start_tid",
-            ['k' => $kursId]
+                AND c.type <> 'dropin'
+           ORDER BY cs.start_tid
+              LIMIT 60"
         ) as $o) {
             $ledige = Booking::ledigePlasser((int) $o['id']);
             if ($ledige <= 0) {
@@ -54,10 +56,17 @@ if (Foresporsel::metode() === 'GET') {
             }
             $ut[] = [
                 'oktId'  => (int) $o['id'],
+                'kurs'   => (string) $o['tittel'],
                 'naar'   => Booking::norskDato((string) $o['start_tid']),
                 'ledige' => $ledige,
+                // Er datoen paa kurset hen faktisk venter paa? Da hoerer den
+                // hjemme foerst i lista.
+                'eget'   => (int) $o['course_id'] === $kursId,
             ];
         }
+        // Hennes eget kurs foerst, resten etter dato. Rekkefolgen er en
+        // anbefaling, ikke en sperre — alt som har plass staar der.
+        usort($ut, static fn($a, $b) => ($b['eget'] <=> $a['eget']));
         return $ut;
     };
 
@@ -149,9 +158,11 @@ switch (Foresporsel::tekst('handling')) {
         if ($okt === null) {
             Svar::feil('Velg en dato som finnes.');
         }
-        if ((int) $okt['course_id'] !== (int) $rad['course_id']) {
-            Svar::feil('Datoen hører til et annet kurs.');
-        }
+        // Her sto en sperre mot datoer paa andre kurs. Den var riktig saa
+        // lenge lista bare tilbod hennes eget — men sier hun at hun heller
+        // vil paa plateteknikk til uka, skal hun kunne settes rett inn der.
+        // Bookinga gaar uansett paa kurset datoen hoerer til, ikke paa det
+        // hun sto og ventet paa.
         if ($okt['status'] === 'avlyst') {
             Svar::feil('Den datoen er avlyst.');
         }
@@ -186,13 +197,22 @@ switch (Foresporsel::tekst('handling')) {
         // Hen skal vite det. En plass ingen har fortalt om, er ingen plass.
         $varslet = false;
         if (($rad['epost'] ?? '') !== '' || ($rad['telefon'] ?? '') !== '') {
-            Varsel::mal('venteliste_ledig', [
+            // Egen mal for en plass som er gitt. «venteliste_ledig» sier
+            // «foerst til moella — book her», og det er feil naar stolen alt
+            // er hennes: beskjeden ba henne kappes om noe hun hadde faatt.
+            // Faller tilbake paa den gamle om migrasjon 054 ikke er kjort.
+            Varsel::mal(
+                DB::verdi("SELECT navn FROM notification_templates WHERE navn = 'venteliste_tildelt' AND aktiv = 1")
+                    ? 'venteliste_tildelt' : 'venteliste_ledig',
+            [
                 'navn'    => $rad['navn'],
                 'epost'   => $rad['epost'],
                 'telefon' => $rad['telefon'],
             ], [
                 'navn'  => (string) $rad['navn'],
-                'kurs'  => (string) $rad['tittel'],
+                // Kurset hun fikk, ikke det hun sto paa lista til. Fikk hun
+                // plass paa noe annet, ville beskjeden ellers sagt feil kurs.
+                'kurs'  => (string) $okt['tittel'],
                 'dato'  => Booking::norskDato((string) $okt['start_tid']),
                 'lenke' => Config::nettsted() . '/min-side',
             ], 'booking', $bookingId);
@@ -200,13 +220,21 @@ switch (Foresporsel::tekst('handling')) {
         }
 
         revider('venteliste_gitt_plass', 'waitlist', $id, [
-            'booking' => $bookingId, 'okt' => $oktId,
+            'booking' => $bookingId,
+            'okt'     => $oktId,
+            'kurs'    => $okt['tittel'],
+            // Sto hun paa lista til noe annet, skal det staa hva.
+            'ventet_paa' => (int) $okt['course_id'] === (int) $rad['course_id']
+                ? null : $rad['tittel'],
         ]);
 
+        $annet = (int) $okt['course_id'] !== (int) $rad['course_id'];
         Svar::ok([
             'beskjed' => $rad['navn'] . ' har fått plass på ' . $okt['tittel'] . ' '
                        . Booking::norskDato((string) $okt['start_tid'])
                        . '. Står som reservert til betalingen er gjort opp.'
+                       . ($annet ? ' Hen sto på ventelista til ' . $rad['tittel']
+                                 . ', og er tatt av den.' : '')
                        . ($varslet ? ' Beskjed er lagt i kø.' : ''),
         ]);
 

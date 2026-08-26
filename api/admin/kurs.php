@@ -9,6 +9,7 @@
  *   POST handling=endredato endre tidspunktet paa én dato
  *   POST handling=avlys     avlys en dato
  *   POST handling=slett     fjern et kurs (avlyses om noen er paameldt)
+ *   POST handling=bekreftelseStandard  lagre teksten nye kurs fylles ut med
  *
  * Prisen som settes her er den kunden faktisk trekkes. Nettleseren sender
  * aldri belop ved booking — den slaas opp herfra.
@@ -58,7 +59,11 @@ if (Foresporsel::metode() === 'GET') {
                 'ledige'    => Booking::ledigePlasser((int) $o['id']),
             ], $okter),
         ];
-    }, $kurs)]);
+    }, $kurs),
+    // Standardteksten nye kurs fylles ut med. Ligger i innstillinger, saa
+    // eieren kan endre den uten en ny utlegging av nettsiden.
+    'bekreftelseStandard' => (string) Config::hent('kurs_bekreftelse', ''),
+    ]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -369,6 +374,26 @@ switch ($handling) {
             'beskjed' => $antall > 0
                 ? "Datoen er avlyst. {$antall} har betalt og må refunderes manuelt under Økonomi."
                 : 'Datoen er avlyst.',
+        ]);
+
+    // ------------------------------------------- standard bekreftelsestekst
+    //
+    // Teksten eieren slipper aa skrive paa nytt for hvert kurs. Lagres naar
+    // hun sier at akkurat denne skal vaere standarden.
+    case 'bekreftelseStandard':
+        $tekst = trim(mb_substr(Foresporsel::tekst('tekst'), 0, 4000));
+        DB::kjor(
+            'INSERT INTO innstillinger (nokkel, verdi) VALUES (:n, :v)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)',
+            ['n' => 'kurs_bekreftelse', 'v' => $tekst]
+        );
+        Config::glemBasen();
+        revider('bekreftelse_standard', 'innstilling', 0, ['lengde' => mb_strlen($tekst)]);
+        Svar::ok([
+            'bekreftelseStandard' => $tekst,
+            'beskjed' => $tekst === ''
+                ? 'Standardteksten er tømt. Nye kurs starter med et tomt felt.'
+                : 'Teksten er lagret som standard for nye kurs.',
         ]);
 
     // ------------------------------------------------- slett et kurs

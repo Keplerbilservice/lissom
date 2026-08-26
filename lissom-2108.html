@@ -3993,9 +3993,23 @@ window.__resources = {
                   </div>
                 </div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
-                <textarea value="{{ kBeskrivelse }}" onChange="{{ settKBeskrivelse }}" rows="4" placeholder="Hva lærer man, hva er inkludert, hvem passer det for?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
+                <textarea value="{{ kBeskrivelse }}" onChange="{{ settKBeskrivelse }}" rows="4" placeholder="Hva lærer man, hva er inkludert, hvem passer det for?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
+                <!-- AI-en leser beskrivelsene som alt staar ute og skriver i
+                     samme stil. Forslaget havner i feltet, ikke ute paa
+                     nettsida: du leser og retter for du lagrer. -->
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ kForeslaaTekst }}" hint-size="auto,40px">{{ kForeslaaMerke }}</x-import>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kForeslaaHjelp }}</span>
+                </div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bekreftelsestekst — vises på skjermen etter kjøp og i e-postkvitteringen</label>
-                <textarea value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
+                <textarea value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
+                <!-- Standardteksten fylles ut paa nye kurs. Her endrer du den
+                     for alle nye, eller henter den tilbake om du har slettet
+                     for mye paa dette kurset. -->
+                <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                  <button type="button" onClick="{{ kHentStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                  <button type="button" onClick="{{ kLagreStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk denne som standard</button>
+                </div>
                 <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
                   <input type="checkbox" checked="{{ kSms }}" onChange="{{ toggleKSms }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                   Send SMS-påminnelse til deltakerne 24 timer før — {{ smsMerke }}
@@ -7725,7 +7739,7 @@ window.__resources = {
       <label style="display: block; border: 2px dashed var(--lissom-brown); border-radius: var(--radius-md); background: var(--clay-100); padding: var(--space-5); text-align: center; cursor: pointer; margin-bottom: var(--space-6); position: relative;">
         <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ mkLastOppBilde }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
         <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Last opp eget bilde</span>
-        <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Maks 8 MB. Bildet skaleres ned og settes på artikkelen med en gang.</span>
+        <span style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">JPG, PNG eller WEBP. Store bilder krympes automatisk, så et kjøpt bilde fra Shutterstock går rett inn.</span>
       </label>
 
       <!-- Har du ikke et bilde selv, finner du et her. Soeket er allerede
@@ -11982,16 +11996,80 @@ class Component extends DCLogic {
    * Aa laste opp og deretter maatte finne bildet igjen i lista ville vaert et
    * unodig steg — den som velger en fil, har alt bestemt seg.
    */
+  /**
+   * Krymper bildet for det sendes.
+   *
+   * Serveren skalerer til 1400 piksler — men foerst etter at fila er tatt
+   * imot, og den tar ikke imot noe over 8 MB. Et bilde kjopt hos Shutterstock
+   * er gjerne 15–30 MB, og da fikk du «Bildet er for stort» uten at noe var
+   * galt med bildet. Nettleseren gjor jobben foerst: samme grense som
+   * serveren, saa resultatet blir det samme, bare uten aa sende 30 MB over
+   * linja.
+   *
+   * Gaar noe galt — et format nettleseren ikke kan tegne — sendes originalen
+   * som for. Da er vi ikke daarligere stilt enn i dag.
+   */
+  krympBilde(fil) {
+    const MAKS = 1400;
+    const OK_TYPER = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!fil || !OK_TYPER.includes(fil.type)) return Promise.resolve(fil);
+    // Smaa bilder roeres ikke: en ny koding gjor dem bare daarligere.
+    if (fil.size < 1.5 * 1024 * 1024) return Promise.resolve(fil);
+
+    const tegn = (bredde, hoyde, tegner) => {
+      const skala = Math.min(1, MAKS / Math.max(bredde, hoyde));
+      const lerret = document.createElement('canvas');
+      lerret.width = Math.max(1, Math.round(bredde * skala));
+      lerret.height = Math.max(1, Math.round(hoyde * skala));
+      const ctx = lerret.getContext('2d');
+      ctx.imageSmoothingQuality = 'high';
+      tegner(ctx, lerret.width, lerret.height);
+      return new Promise(ferdig => {
+        // JPEG for foto. PNG beholdes bare naar den blir liten nok av seg
+        // selv — en avfotografert PNG paa 1400 piksler kan fortsatt vaere
+        // tyngre enn hele grensa.
+        lerret.toBlob(blob => {
+          if (!blob) { ferdig(fil); return; }
+          const navn = (fil.name || 'bilde').replace(/\.[^.]+$/, '') + '.jpg';
+          ferdig(new File([blob], navn, { type: 'image/jpeg' }));
+        }, 'image/jpeg', 0.85);
+      });
+    };
+
+    // createImageBitmap snur bildet riktig vei etter EXIF. Uten det ligger
+    // et portrettfoto fra telefonen paa siden.
+    if (typeof createImageBitmap === 'function') {
+      return createImageBitmap(fil, { imageOrientation: 'from-image' })
+        .then(bm => tegn(bm.width, bm.height, (ctx, b, h) => { ctx.drawImage(bm, 0, 0, b, h); bm.close && bm.close(); }))
+        .catch(() => fil);
+    }
+    return new Promise(ferdig => {
+      const adresse = URL.createObjectURL(fil);
+      const bilde = new Image();
+      bilde.onload = () => {
+        tegn(bilde.naturalWidth, bilde.naturalHeight, (ctx, b, h) => ctx.drawImage(bilde, 0, 0, b, h))
+          .then(ut => { URL.revokeObjectURL(adresse); ferdig(ut); });
+      };
+      bilde.onerror = () => { URL.revokeObjectURL(adresse); ferdig(fil); };
+      bilde.src = adresse;
+    });
+  }
+
   lastOppBilde(fil, forNoe) {
     if (!fil) return;
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden', kvitteringDetalj: 'Opplasting virker først når siden kjører på serveren.' });
       return;
     }
+    this.setState({ bildeLaster: true });
+    this.krympBilde(fil).then(klar => this.senteBilde(klar, forNoe));
+  }
+
+  /** Sender bildet som er klart til aa lastes opp. */
+  senteBilde(fil, forNoe) {
     const skjema = new FormData();
     skjema.append('handling', 'last-opp');
     skjema.append('bilde', fil);
-    this.setState({ bildeLaster: true });
     fetch('/api/admin/bilder.php', { method: 'POST', credentials: 'same-origin', body: skjema })
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
       .then(({ ok, d }) => {
@@ -12733,6 +12811,58 @@ class Component extends DCLogic {
         this._vlSender = false;
         this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
       });
+  }
+
+  /**
+   * Ber AI-en foreslaa beskrivelsen til kurset.
+   *
+   * Svarer med teksten selv og ikke som utkast: den skal rett inn i feltet,
+   * der eieren leser og retter for hun lagrer. Utkastkoen under
+   * Markedsforing er for det som gaar ut av seg selv.
+   */
+  foreslaaKursbeskrivelse() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    const tittel = (this.state.kNavn || '').trim();
+    if (!tittel) {
+      this.setState({ kvittering: 'Skriv navnet på kurset først', kvitteringDetalj: 'AI-en trenger noe å gå ut fra.' });
+      return;
+    }
+    if (this.state.kForeslaar) return;
+    this.setState({ kForeslaar: true });
+
+    fetch('/api/admin/ai.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'kursbeskrivelse',
+        tittel: tittel,
+        kategori: this.state.kKategori || '',
+        pris: parseInt(String(this.state.kPris || '').replace(/[^\d]/g, ''), 10) || 0,
+        plasser: parseInt(this.state.kPlasser, 10) || 0,
+      }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (ok && d.tekst) {
+          this.setState({
+            kForeslaar: false,
+            kBeskrivelse: d.tekst,
+            kvittering: 'Forslaget står i feltet',
+            kvitteringDetalj: 'Les den gjennom og rett det du vil før du lagrer. Kostet ' + (d.kostnad || 'lite') + '.',
+          });
+          return;
+        }
+        this.setState({
+          kForeslaar: false,
+          kvittering: 'Fikk ikke noe forslag',
+          kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.',
+        });
+      })
+      .catch(() => this.setState({
+        kForeslaar: false,
+        kvittering: 'Fikk ikke noe forslag',
+        kvitteringDetalj: 'Fikk ikke kontakt med serveren.',
+      }));
   }
 
   ventelisteKall(kropp) {
@@ -15098,6 +15228,11 @@ class Component extends DCLogic {
           ny.adminKursRaa = kurs.kurs;
           ny.adminKursListe = kurs.kurs.map(k => this.kursTilRad(k));
         }
+        // Teksten nye kurs fylles ut med. Sto feltet tomt hver gang, ble den
+        // praktiske informasjonen enten skrevet paa nytt eller droppet.
+        if (kurs && typeof kurs.bekreftelseStandard === 'string') {
+          ny.bekreftelseStandard = kurs.bekreftelseStandard;
+        }
         if (Object.keys(ny).length) this.setState(ny);
       })
       .catch(() => {})
@@ -16493,7 +16628,7 @@ class Component extends DCLogic {
           side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
           kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [],
-          kBeskrivelse: '', kBekreftelse: '', kMva: false,
+          kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
           kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -17191,7 +17326,7 @@ class Component extends DCLogic {
           const nyttKurs = {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
             kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
-            kBeskrivelse: '', kBekreftelse: '', kMva: false,
+            kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kGjentak: 'Ingen', kIntervall: '', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
             kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -17259,7 +17394,7 @@ class Component extends DCLogic {
               { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', {
                   kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
                   kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
-                  kBeskrivelse: '', kBekreftelse: '', kMva: false,
+                  kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
                   kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
                   kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -17309,7 +17444,7 @@ class Component extends DCLogic {
             { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
                 kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [],
-                kBeskrivelse: '', kBekreftelse: '', kMva: false,
+                kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
                 kGjentak: 'Ingen', kIntervall: '', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
                 kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -17861,7 +17996,7 @@ class Component extends DCLogic {
         const nyttKurs = {
           kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
           kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [],
-          kBeskrivelse: '', kBekreftelse: '', kMva: false,
+          kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
           kGjentak: 'Ingen', kIntervall: '', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
           kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -19194,12 +19329,31 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kBeskrivelse: '', kBekreftelse: '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kGjentak: 'Ingen', kIntervall: '', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
       kBeskrivelse: this.state.kBeskrivelse ?? '', settKBeskrivelse: (e) => this.setState({ kBeskrivelse: e.target.value }),
       kBekreftelse: this.state.kBekreftelse ?? '', settKBekreftelse: (e) => this.setState({ kBekreftelse: e.target.value }),
+      // Standardteksten. Sto feltet tomt for hvert nytt kurs, ble den
+      // praktiske informasjonen enten skrevet paa nytt eller droppet.
+      kHentStandard: () => this.setState({ kBekreftelse: this.state.bekreftelseStandard || '' }),
+      kLagreStandard: () => {
+        const t = (this.state.kBekreftelse || '').trim();
+        if (!window.confirm(t
+              ? 'Bruke denne teksten som standard for nye kurs?'
+              : 'Tømme standardteksten? Nye kurs starter da med et tomt felt.')) return;
+        this.kursKall({ handling: 'bekreftelseStandard', tekst: t });
+        this.setState({ bekreftelseStandard: t });
+      },
+      // AI-forslag paa beskrivelsen. Forslaget havner i feltet, ikke ute paa
+      // nettsida — teksten baerer verkstedets navn, og da skal et menneske ha
+      // lest den for den staar der.
+      kForeslaaMerke: this.state.kForeslaar ? 'Skriver …' : 'Foreslå tekst',
+      kForeslaaHjelp: this.state.kForeslaar
+        ? 'Henter et forslag. Det tar noen sekunder.'
+        : 'Skrevet ut fra de andre kursbeskrivelsene deres. Les den gjennom før du lagrer.',
+      kForeslaaTekst: () => this.foreslaaKursbeskrivelse(),
       kSms: this.state.kSms !== false,
       toggleKSms: () => this.setState(s => ({ kSms: s.kSms === false })),
       kMva: !!this.state.kMva,

@@ -50,6 +50,11 @@ final class Config
         // fila: en noekkel som skal kunne byttes fra en knapp, kan ikke
         // ligge et sted bare den som har serveren kommer til.
         'kalender_nokkel', 'verksted_adresse',
+        // Standardteksten i kvitteringen etter kjop. Den fylles ut paa nye
+        // kurs, og eieren retter eller sletter den paa det enkelte kurset.
+        // Sto den i koden, matte hele nettsida legges ut paa nytt for aa
+        // endre et komma.
+        'kurs_bekreftelse',
     ];
 
     /** @var array<string,string>|null */

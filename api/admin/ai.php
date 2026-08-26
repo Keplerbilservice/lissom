@@ -8,6 +8,7 @@
  *   POST handling=sosialt      innlegg til en kanal
  *   POST handling=seoside      forslag til en side som mangler
  *   POST handling=assistent    sporsmaal i adminen
+ *   POST handling=kursbeskrivelse  forslag til beskrivelsen paa et kurs
  *   POST handling=autopilot    ukas forslag, samlet
  *   POST handling=godkjenn     ta et utkast i bruk
  *   POST handling=forkast      legg et utkast bort
@@ -329,6 +330,59 @@ switch ($handling) {
             4000
         );
         Svar::ok(['svar' => $r['tekst'], 'kostnad' => Booking::kroner($r['kostnadOre'])]);
+
+    // ── Beskrivelsen til et kurs ────────────────────────────────────────
+    //
+    // Svarer med teksten selv, ikke som utkast: den skal rett inn i feltet i
+    // kursveiviseren, der eieren leser og retter for hun lagrer. Utkastkoen
+    // er for det som gaar ut av seg selv.
+    case 'kursbeskrivelse':
+        $tittel = trim(mb_substr((string) ($kropp['tittel'] ?? ''), 0, 191));
+        if ($tittel === '') {
+            Svar::feil('Skriv navnet på kurset først.');
+        }
+        $kategori = trim(mb_substr((string) ($kropp['kategori'] ?? ''), 0, 64));
+        $pris     = (int) ($kropp['pris'] ?? 0);
+        $plasser  = (int) ($kropp['plasser'] ?? 0);
+
+        // Beskrivelsene som alt staar ute. Uten dem skriver AI-en generisk
+        // keramikkprosa; med dem treffer den maaten verkstedet selv skriver
+        // paa — lengde, tonefall, hva som pleier aa staa til slutt.
+        $forbilder = DB::alle(
+            "SELECT tittel, tema, beskrivelse FROM courses
+              WHERE status = 'publisert' AND beskrivelse IS NOT NULL AND beskrivelse <> ''
+                AND tittel <> :t
+           ORDER BY (tema = :k) DESC, id DESC
+              LIMIT 6",
+            ['t' => $tittel, 'k' => $kategori ?: '']
+        );
+        $fakta = "Slik er kursbeskrivelsene til Lissom skrevet fra før:\n\n";
+        foreach ($forbilder as $f) {
+            $fakta .= '### ' . $f['tittel'] . ($f['tema'] ? ' (' . $f['tema'] . ')' : '') . "\n"
+                    . $f['beskrivelse'] . "\n\n";
+        }
+        if ($forbilder === []) {
+            $fakta .= "(ingen lagt ut ennå — hold deg til fakta om verkstedet over)\n\n";
+        }
+
+        $om = 'Kurset heter «' . $tittel . '».';
+        if ($kategori !== '') { $om .= ' Kategori: ' . $kategori . '.'; }
+        if ($pris > 0)        { $om .= ' Pris: ' . Booking::kroner($pris * 100) . '.'; }
+        if ($plasser > 0)     { $om .= ' Plasser: ' . $plasser . '.'; }
+
+        $r = AI::spor(
+            $rolle(
+                "Skriv beskrivelsen som skal staa paa kurssida. Tre til fem setninger, "
+                . "ett avsnitt, ingen overskrift og ingen punktliste. Fortell hva man gjor, "
+                . "hva som er inkludert, og hvem det passer for. Legg deg tett opp til "
+                . "maaten beskrivelsene under er skrevet paa. Finn aldri paa datoer, "
+                . "klokkeslett eller antall som ikke staar i opplysningene."
+            ) . "\n\n" . $fakta,
+            $om,
+            'kursbeskrivelse',
+            1200
+        );
+        Svar::ok(['tekst' => trim($r['tekst']), 'kostnad' => Booking::kroner($r['kostnadOre'])]);
 
     // ── Autopiloten: ukas forslag ───────────────────────────────────────
     case 'autopilot':

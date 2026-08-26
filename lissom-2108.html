@@ -7880,10 +7880,10 @@ window.__resources = {
         <input value="{{ ssOrd }}" onChange="{{ settSsOrd }}" onKeyDown="{{ ssTast }}" placeholder="Hva leter du etter?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="search" on-click="{{ ssSok }}" hint-size="auto,40px">{{ ssKnapp }}</x-import>
       </div>
-      <!-- Biblioteket er merket paa engelsk, og Shutterstock stotter ikke
-           norsk som soekespraak. «pottery» gir hundrevis av treff der
-           «keramikk» gir null. -->
-      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Engelske søkeord gir flest treff: <em>pottery</em>, <em>ceramics</em>, <em>clay</em>, <em>pottery wheel</em>, <em>ceramic workshop</em>.</p>
+      <!-- Soeket sendes med norsk som spraak, saa «keramikk» virker. Ordene
+           i biblioteket er likevel skrevet paa engelsk, og et engelsk ord
+           treffer derfor bredere enn oversettelsen av det. -->
+      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Søk på norsk eller engelsk. Engelske ord treffer bredest — <em>pottery</em>, <em>ceramics</em>, <em>clay</em>. <button type="button" onClick="{{ ssSjekk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: inherit; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk tilkoblingen</button></p>
       <sc-if value="{{ ssMelding }}" hint-placeholder-val="{{ false }}">
         <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ssMeldingTekst }}</p>
       </sc-if>
@@ -12259,6 +12259,7 @@ class Component extends DCLogic {
       ssTast: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.sokShutterstock(1); } },
       ssKnapp: this.state.ssSoker ? 'Søker …' : 'Søk',
       ssSok: () => this.sokShutterstock(1),
+      ssSjekk: () => this.sjekkShutterstock(),
       ssNeste: () => this.sokShutterstock((this.state.ssSide || 1) + 1),
       ssFlere: !!this.state.ssFlere,
       ssMelding: !!this.state.ssMelding,
@@ -12378,6 +12379,24 @@ class Component extends DCLogic {
         });
       })
       .catch(() => this.setState({ ssSoker: false, ssMelding: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /**
+   * Spor Shutterstock hva noekkelen faktisk har lov til.
+   *
+   * A soke og a laste ned er to ulike rettigheter hos dem, og de svarer
+   * ikke pa samme sted. Uten dette merker du forskjellen forst nar du
+   * trykker pa et bilde og far et avslag som ikke sier hvorfor.
+   */
+  sjekkShutterstock() {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    this.setState({ ssMelding: 'Sjekker …' });
+    fetch('/api/admin/shutterstock.php?test=1', { credentials: 'same-origin' })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => this.setState({
+        ssMelding: (d && (ok ? d.beskjed : d.feil)) || 'Fikk ikke svar fra Shutterstock.',
+      }))
+      .catch(() => this.setState({ ssMelding: 'Fikk ikke kontakt med serveren.' }));
   }
 
   /**

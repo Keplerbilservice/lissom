@@ -72,6 +72,77 @@ $auth = $token !== ''
     ? 'Authorization: Bearer ' . $token
     : 'Authorization: Basic ' . base64_encode($nokkel . ':' . $passord);
 
+// ── Miniatyrene gaar gjennom oss ───────────────────────────────────────────
+//
+// Sikkerhetsregelen i .htaccess sier at bilder bare kan komme fra vaar egen
+// tjener: «img-src 'self' data: blob:». En adresse hos image.shutterstock.com
+// blir dermed stoppet av nettleseren, uten en eneste feilmelding paa sida.
+// Det er derfor soeket ga tjuefire ruter og ingen bilder: rutene var der,
+// bildene ble blokkert.
+//
+// To veier ut. Enten aapne regelen for Shutterstock sine tjenere paa hele
+// nettstedet, eller hente bildet hit og sende det videre. Vi gjoer det siste:
+// regelen for de besoekende staar urort, og det virker uansett hvilken av
+// tjenerne deres adressen peker paa.
+//
+// Adressene signeres foer de forlater oss, og signaturen sjekkes naar de kommer
+// tilbake. Uten det ville dette vaert et hull der hvem som helst med
+// admintilgang kunne faatt tjeneren til aa hente hva som helst fra nettet.
+$signeringsnokkel = hash('sha256', 'miniatyr|' . $token . '|' . $nokkel . '|' . $passord);
+
+/** Adressen slik nettleseren skal se den: vaar egen, og signert. */
+$signer = static function (string $url) use ($signeringsnokkel): string {
+    return 'api/admin/shutterstock.php'
+         . '?mini=' . rtrim(strtr(base64_encode($url), '+/', '-_'), '=')
+         . '&sig=' . hash_hmac('sha256', $url, $signeringsnokkel);
+};
+
+if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('mini') !== '') {
+    $url = (string) base64_decode(strtr(Foresporsel::tekst('mini'), '-_', '+/'), true);
+    if ($url === '' || !hash_equals(
+            hash_hmac('sha256', $url, $signeringsnokkel),
+            Foresporsel::tekst('sig'))) {
+        Svar::feil('Ugyldig bildeadresse.', 403);
+    }
+
+    // Egen henting framfor http_kall(): miniatyradressene deres svarer ofte
+    // med en omdirigering, og http_kall foelger dem ikke. Her trengs ogsaa
+    // innholdstypen, som http_kall ikke gir tilbake.
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS      => 3,
+        CURLOPT_TIMEOUT        => 20,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_HTTPHEADER     => ['User-Agent: Lissom/1.0 (+https://lissom.no)'],
+    ]);
+    $data = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $type = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    curl_close($ch);
+
+    if ($status !== 200 || !is_string($data) || $data === '') {
+        logg('Fikk ikke miniatyren fra Shutterstock', ['status' => $status]);
+        http_response_code(502);
+        exit;
+    }
+    if (!preg_match('~^image/(jpeg|png|webp|gif)~', $type)) {
+        $type = 'image/jpeg';
+    }
+
+    header('Content-Type: ' . $type);
+    header('Content-Length: ' . strlen($data));
+    // Privat: dette er forhaandsvisninger med vannmerke, og de skal ikke
+    // ligge i noen mellomlagring utenfor nettleseren til den innloggede.
+    header('Cache-Control: private, max-age=3600');
+    header('X-Content-Type-Options: nosniff');
+    echo $data;
+    exit;
+}
+
 /**
  * Ett kall mot Shutterstock.
  *
@@ -130,7 +201,53 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('test') === '1') {
     if ($r['status'] !== 200) {
         Svar::feil($feiltekst($r['status'], $r['json']), 400);
     }
-    Svar::ok(['beskjed' => 'Shutterstock svarer. Søket er klart til bruk.']);
+
+    // Søket er én ting, nedlasting en annen — og de svarer ikke på det samme
+    // stedet. At søket virker sier ingenting om at et bilde kan hentes.
+    //
+    // To ting må stemme før nedlasting går: nøkkelen må ha rettigheten
+    // «licenses.create», og kontoen må ha et abonnement som dekker det.
+    // Mangler én av dem, svarer Shutterstock 403 først når du trykker på et
+    // bilde — og feilmeldingen sier ikke hvilken. Derfor spør vi her, mens
+    // det ennå går an å rette det.
+    $konto = $kall('https://api.shutterstock.com/v2/user/access_token');
+    $rettigheter = $konto['status'] === 200 ? (array) ($konto['json']['scopes'] ?? []) : [];
+    $kanLisensiere = in_array('licenses.create', $rettigheter, true);
+
+    $abo = $kall('https://api.shutterstock.com/v2/user/subscriptions');
+    $abonnementer = $abo['status'] === 200 ? (array) ($abo['json']['data'] ?? []) : [];
+
+    $linjer = ['Søket virker.'];
+    if ($konto['status'] !== 200) {
+        $linjer[] = 'Fikk ikke lest hva nøkkelen har lov til '
+                  . '(' . $konto['status'] . '). Bruker du forbrukernøkkel og '
+                  . 'passord framfor et token, er det ventet.';
+    } elseif ($kanLisensiere) {
+        $linjer[] = 'Nøkkelen har rettigheten «licenses.create» — den kan laste ned.';
+    } else {
+        $linjer[] = 'Nøkkelen mangler rettigheten «licenses.create», og da blir '
+                  . 'nedlasting avvist uansett abonnement. Lag tokenet på nytt på '
+                  . 'developers.shutterstock.com og huk av for den rettigheten.';
+    }
+    if ($abo['status'] !== 200) {
+        $linjer[] = 'Fikk ikke lest abonnementet (' . $abo['status'] . ').';
+    } elseif ($abonnementer === []) {
+        $linjer[] = 'Kontoen har ingen abonnement API-et kan se. Da går søk, '
+                  . 'men ikke nedlasting.';
+    } else {
+        $navn = [];
+        foreach ($abonnementer as $a) {
+            $navn[] = (string) ($a['license'] ?? ($a['id'] ?? '?'));
+        }
+        $linjer[] = count($abonnementer) . ' abonnement: ' . implode(', ', $navn) . '.';
+    }
+
+    Svar::ok([
+        'beskjed'        => implode(' ', $linjer),
+        'kanLisensiere'  => $kanLisensiere,
+        'rettigheter'    => $rettigheter,
+        'abonnementer'   => count($abonnementer),
+    ]);
 }
 
 // ── Søk ────────────────────────────────────────────────────────────────────
@@ -141,12 +258,18 @@ if (Foresporsel::metode() === 'GET') {
     }
     $side = max(1, min(20, Foresporsel::heltall('side', 1)));
 
-    $r = $kall(SS_SOK . '?' . http_build_query([
+    // Norsk soekespraak, med en vei tilbake.
+    //
+    // Biblioteket er merket paa engelsk, og «keramikk» gir null treff uten at
+    // vi sier hvilket spraak ordet er paa. Shutterstock oversetter selv naar
+    // «language» er satt — det er det nettsida deres gjor.
+    //
+    // Koden for norsk bokmaal er «nb». Jeg gjettet paa «no» foerst, og da
+    // svarte de «Validation failed» paa hele kallet: soeket sluttet aa virke
+    // fordi jeg proevde aa gjore det bedre. Derfor denne veien tilbake — er
+    // koden ikke god, soeker vi uten, framfor aa gi eieren en feilmelding.
+    $parametre = [
         'query'      => mb_substr($sok, 0, 120),
-        // Ingen «language» her. Jeg satte 'no' for aa faa norske soekeord til
-        // aa treffe, og Shutterstock svarte «Validation failed» — norsk staar
-        // ikke paa lista deres. Biblioteket er merket paa engelsk, og loesninga
-        // er engelske soekeord, ikke en parameter som velter hele kallet.
         'per_page'   => 24,
         'page'       => $side,
         'image_type' => 'photo',
@@ -155,7 +278,17 @@ if (Foresporsel::metode() === 'GET') {
         // «minimal» er standarden, og da foelger ikke «assets» med — altsaa
         // ingen miniatyrer aa vise. «full» gir dem.
         'view'       => 'full',
-    ]));
+    ];
+
+    $r = $kall(SS_SOK . '?' . http_build_query($parametre + ['language' => 'nb']));
+
+    // 400 fra Shutterstock paa et soek er nesten alltid en parameter de ikke
+    // kjenner. Da er det spraakkoden, og da soeker vi uten den.
+    if ($r['status'] === 400) {
+        logg('Shutterstock avviste spraakkoden, soeker uten', ['sok' => $sok]);
+        $r = $kall(SS_SOK . '?' . http_build_query($parametre));
+    }
+
     if ($r['status'] !== 200) {
         Svar::feil($feiltekst($r['status'], $r['json']), 400);
     }
@@ -179,7 +312,7 @@ if (Foresporsel::metode() === 'GET') {
         }
         $treff[] = [
             'id'    => (string) ($bilde['id'] ?? ''),
-            'mini'  => $mini,
+            'mini'  => $signer($mini),
             'tekst' => mb_substr((string) ($bilde['description'] ?? ''), 0, 120),
         ];
     }
@@ -227,8 +360,11 @@ if ($lisens['status'] !== 200 && $lisens['status'] !== 201) {
     logg('Shutterstock avviste lisensieringen', ['status' => $lisens['status'], 'id' => $id]);
     Svar::feil(
         $lisens['status'] === 403 || $lisens['status'] === 402
-            ? 'Abonnementet hos Shutterstock dekker ikke nedlasting gjennom API-et. '
-              . 'Søket virker, men bildet må lastes ned på shutterstock.com og legges inn manuelt.'
+            ? 'Shutterstock avviste nedlastingen. To ting kan mangle, og de er ulike: '
+              . 'nøkkelen må ha rettigheten «licenses.create», og abonnementet må '
+              . 'dekke nedlasting gjennom API-et. Trykk «Sjekk tilkoblingen» — den '
+              . 'sier hvilken av dem det er. Inntil videre kan bildet lastes ned på '
+              . 'shutterstock.com og legges inn med «Last opp eget bilde».'
             : $feiltekst($lisens['status'], $lisens['json']),
         400
     );

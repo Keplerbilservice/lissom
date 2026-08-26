@@ -83,4 +83,5 @@ $nivaer = array_map(static fn($r) => [
     'gjelder' => $r['gjelder'],
 ], DB::alle('SELECT min_antall, prosent, gjelder FROM discount_tiers WHERE aktiv = 1 ORDER BY min_antall'));
 
-Svar::json(['kurs' => $ut, 'rabatter' => $nivaer]);
+// Fokuspunktene: hvilken del av hvert bilde ramma skal sentreres paa.
+Svar::json(['kurs' => $ut, 'rabatter' => $nivaer, 'fokus' => Bilder::fokus()]);

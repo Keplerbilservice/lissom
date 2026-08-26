@@ -124,4 +124,60 @@ final class Bilder
             @unlink($sti);
         }
     }
+
+    // ── Hvilken del av bildet som skal vises ────────────────────────────
+    //
+    // Rammene har faste former — kurskortene 16:10, butikken 1:1 — og et
+    // bilde som ikke har den formen blir beskaaret fra midten. Velger du et
+    // portrett, faar du en hals.
+    //
+    // Fokuspunktet beskjaerer ingenting. Originalen ligger urort, og punktet
+    // sier bare hvor ramma skal sentreres. Da kan valget gjores om igjen.
+
+    /**
+     * Fokuspunktene, som filnavn => «50% 30%».
+     *
+     * @return array<string,string>
+     */
+    public static function fokus(): array
+    {
+        if (!DB::harTabell('bilde_fokus')) {
+            return [];
+        }
+        $ut = [];
+        foreach (DB::alle('SELECT fil, fokus FROM bilde_fokus') as $r) {
+            $ut[(string) $r['fil']] = (string) $r['fokus'];
+        }
+        return $ut;
+    }
+
+    /**
+     * Lagrer et fokuspunkt. «50% 50%» er midten og lagres ikke — da staar
+     * bildet som nettleseren ville vist det uansett, og raden er stoy.
+     */
+    public static function settFokus(string $fil, string $fokus): void
+    {
+        if (!DB::harTabell('bilde_fokus')) {
+            throw new RuntimeException('Fokuspunkt krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        }
+        $fil = mb_substr(trim($fil), 0, 191);
+        if ($fil === '') {
+            throw new RuntimeException('Mangler bildet.');
+        }
+        // To prosenttall, ikke noe annet. Verdien gaar rett inn i en
+        // stilregel, og da skal den ikke kunne inneholde noe vi ikke har
+        // sett paa.
+        if (!preg_match('/^\d{1,3}% \d{1,3}%$/', $fokus)) {
+            throw new RuntimeException('Ugyldig fokuspunkt.');
+        }
+        if ($fokus === '50% 50%') {
+            DB::kjor('DELETE FROM bilde_fokus WHERE fil = :f', ['f' => $fil]);
+            return;
+        }
+        DB::kjor(
+            'INSERT INTO bilde_fokus (fil, fokus) VALUES (:f, :p)
+             ON DUPLICATE KEY UPDATE fokus = VALUES(fokus)',
+            ['f' => $fil, 'p' => $fokus]
+        );
+    }
 }

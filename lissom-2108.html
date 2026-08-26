@@ -493,7 +493,42 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
       }
     }
   };
-  var obs = new MutationObserver(flytt);
+  // Utsnittet paa kortene.
+  //
+  // Kurskortene tegnes av designsystemet, som setter «object-fit: cover»
+  // uten noe sted aa henge et fokuspunkt. Rammen klipper derfor fra midten,
+  // og et staaende bilde ble en hals.
+  //
+  // Her settes bare de bildene verkstedet selv har valgt et utsnitt for.
+  // Har et bilde ikke noe punkt, roeres det ikke — kortene ser ut noeyaktig
+  // som for.
+  var fokusKart = {};
+  window.lissomSettFokus = function (kart) {
+    fokusKart = kart || {};
+    fokus();
+  };
+  var fokus = function () {
+    var navn = Object.keys(fokusKart);
+    if (!navn.length) return;
+    var alle = document.querySelectorAll('img');
+    for (var i = 0; i < alle.length; i++) {
+      var el = alle[i];
+      var src = el.getAttribute('src') || '';
+      if (!src) continue;
+      // «uploads_x-800.jpg» er det samme bildet som «uploads_x.jpg».
+      var grunn = src.split('/').pop().replace(/-(400|800)\.jpg$/, '.jpg');
+      for (var j = 0; j < navn.length; j++) {
+        if (navn[j].split('/').pop() === grunn) {
+          if (el.style.objectPosition !== fokusKart[navn[j]]) {
+            el.style.objectPosition = fokusKart[navn[j]];
+          }
+          break;
+        }
+      }
+    }
+  };
+
+  var obs = new MutationObserver(function () { flytt(); fokus(); });
   var start = function () {
     flytt();
     obs.observe(document.body, { subtree: true, childList: true, attributes: true,
@@ -7757,6 +7792,17 @@ window.__resources = {
         <span style="font-size: var(--text-xs); color: var(--text-muted);">Søker på «{{ mkShutterstockOrd }}». Last ned bildet, og legg det inn over.</span>
       </div>
 
+      <!-- Utsnittet. Vises naar et bilde er valgt: her ser du ramma slik
+           kunden faar den, og trykker der motivet skal ligge. -->
+      <sc-if value="{{ mkHarValgtBilde }}" hint-placeholder-val="{{ true }}">
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Utsnitt</div>
+        <div onClick="{{ mkVelgFokus }}" style="{{ mkFokusStil }}"></div>
+        <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin: var(--space-2) 0 var(--space-6);">
+          <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkFokusTekst }}</span>
+          <button type="button" onClick="{{ mkMidtstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Midtstill</button>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ mkBildeLaster }}" hint-placeholder-val="{{ false }}">
         <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Laster opp …</p>
       </sc-if>
@@ -9549,8 +9595,41 @@ class Component extends DCLogic {
         border: p === gjeldende ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
         background: p === gjeldende ? 'var(--lissom-yellow)' : 'var(--surface-card)',
         transition: 'all .15s ease' },
-      velg: () => this.setState(s => ({ bildeFokus: Object.assign({}, s.bildeFokus, { [nokkel]: p }) })),
+      velg: () => this.settFokus(nokkel, p),
     }));
+  }
+
+  /**
+   * Lagrer hvilken del av bildet ramma skal vise.
+   *
+   * Fokuspunktet laa bare i skjermbildet for: du kunne flytte utsnittet, og
+   * det var tilbake i midten ved neste sidelasting. Naa ligger det i basen,
+   * og nettsida leser det samme punktet.
+   */
+  settFokus(fil, pos) {
+    // Vises med det samme. Serveren er fasit, men et utsnitt som venter paa
+    // et svar for det flytter seg foles i stykker.
+    this.setState(s => {
+      const kart = Object.assign({}, s.bildeFokus, { [fil]: pos });
+      if (window.lissomSettFokus) window.lissomSettFokus(kart);
+      return { bildeFokus: kart };
+    });
+    if (!this.erPublisert()) return;
+    fetch('/api/admin/bilder.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'fokus', fil: fil, fokus: pos }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) {
+          this.setState({ kvittering: 'Utsnittet ble ikke lagret', kvitteringDetalj: (d && d.feil) || '' });
+          return;
+        }
+        if (d.fokus) this.setState({ bildeFokus: d.fokus });
+        this.hentKatalog();
+      })
+      .catch(() => this.setState({ kvittering: 'Utsnittet ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   /**
@@ -11150,7 +11229,12 @@ class Component extends DCLogic {
       .then(r => r.json())
       // Eget statsnavn: «butikkvarer» er ogsaa en renderVals-noekkel, og der
       // ble serversvaret overskrevet i samme rendring som det kom inn.
-      .then(d => { if (d && d.varer) this.setState({ butikkvareListe: d.varer }); })
+      .then(d => {
+        if (!d || !d.varer) return;
+        const ny = { butikkvareListe: d.varer };
+        if (d.fokus) ny.bildeFokus = Object.assign({}, this.state.bildeFokus, d.fokus);
+        this.setState(ny);
+      })
       .catch(() => {});
   }
 
@@ -11972,6 +12056,42 @@ class Component extends DCLogic {
                     '_blank', 'noopener');
       },
       mkShutterstockOrd: (valgt.tittel || '').trim() || 'keramikk verksted',
+      // ── Utsnittet ────────────────────────────────────────────────────
+      //
+      // Rammene har faste former: kurskortene 16:10, butikken 1:1. Et bilde
+      // som ikke har den formen beskjaeres fra midten, og et portrett endte
+      // som en hals. Her ser du ramma slik kunden faar den, og trykker der
+      // motivet skal ligge.
+      //
+      // Ingenting beskjaeres: originalen ligger urort, og punktet sier bare
+      // hvor ramma sentreres. Valget kan gjores om igjen naar som helst.
+      mkHarValgtBilde: !!(valgt.bilde || ''),
+      mkFokusRamme: (v && v.slag === 'vare') ? '1 / 1' : '16 / 10',
+      mkFokusForm: (v && v.slag === 'vare') ? 'Slik står bildet i butikken (1:1)' : 'Slik står bildet på kortet (16:10)',
+      mkFokusStil: {
+        width: '100%', maxWidth: 420, aspectRatio: (v && v.slag === 'vare') ? '1 / 1' : '16 / 10',
+        borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
+        backgroundColor: 'var(--clay-200)',
+        backgroundImage: "url('" + (valgt.bilde || '') + "')",
+        backgroundSize: 'cover',
+        backgroundPosition: this.fokusFor(valgt.bilde || ''),
+        cursor: 'crosshair', position: 'relative',
+      },
+      mkVelgFokus: (e) => {
+        const fil = valgt.bilde || '';
+        if (!fil) return;
+        const r = e.currentTarget.getBoundingClientRect();
+        const x = Math.max(0, Math.min(100, Math.round((e.clientX - r.left) / r.width * 100)));
+        const y = Math.max(0, Math.min(100, Math.round((e.clientY - r.top) / r.height * 100)));
+        this.settFokus(fil, x + '% ' + y + '%');
+      },
+      mkMidtstill: () => { if (valgt.bilde) this.settFokus(valgt.bilde, '50% 50%'); },
+      mkFokusTekst: (() => {
+        const p = this.fokusFor(valgt.bilde || '');
+        return p === '50% 50%'
+          ? 'Trykk i ruta der motivet skal ligge. Nå står den midt i bildet.'
+          : 'Utsnittet står på ' + p + '. Trykk et annet sted for å flytte det.';
+      })(),
       // Filfeltet nullstilles etter valget, ellers gir det samme bildet to
       // ganger paa rad ingen hendelse — nettleseren ser ingen endring.
       mkLastOppBilde: e => {
@@ -12395,7 +12515,13 @@ class Component extends DCLogic {
         if (!d || !d.kurs) return;
         // Rabattnivaaene kommer sammen med kursene. Uten dem regnet siden med
         // sine egne nivaaer, og viste en rabatt serveren ikke ga.
-        this.setState(d.rabatter ? { katalog: d.kurs, rabatter: d.rabatter } : { katalog: d.kurs });
+        const ny = d.rabatter ? { katalog: d.kurs, rabatter: d.rabatter } : { katalog: d.kurs };
+        // Fokuspunktene: hvilken del av hvert bilde ramma skal sentreres paa.
+        if (d.fokus) {
+          ny.bildeFokus = d.fokus;
+          if (window.lissomSettFokus) window.lissomSettFokus(d.fokus);
+        }
+        this.setState(ny);
 
         // Kom noen rett inn paa /kurs/<slug> for katalogen var lastet, staar
         // de paa kurslista og venter. Kortene bygges av katalogen, saa vi
@@ -19612,7 +19738,7 @@ class Component extends DCLogic {
           piTekst: p ? p.detalj : '',
           piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin' : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : 'Sendes på e-post med en gang') : '',
           piBildeCss: p ? "url('" + p.image + "')" : 'none',
-          piFokus: p ? this.fokusFor(p.title) : 'center',
+          piFokus: p ? this.fokusFor(p.image || p.bilde || '') : 'center',
           piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.id ? '#' + p.id : p.title); this.setState({ piProdukt: null }); } },
           piUtsolgt: !!(p && p.utsolgt),
         };
@@ -19760,14 +19886,14 @@ class Component extends DCLogic {
           { title: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
         ]).concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
-          fokus: this.fokusFor(p.title),
+          fokus: this.fokusFor(p.image || p.bilde || ''),
           velgHandling: p.utsolgt ? (() => {}) : (() => this.leggTil(p.id ? '#' + p.id : p.title)),
           visInfo: () => this.setState({ piProdukt: p }),
         }));
         const medlem = this.galleriListe().filter(g => g.status === 'publisert').map(g => ({
           title: g.tittel, detalj: g.tekst, pris: g.pris, image: g.bilde,
           visInfo: () => this.setState({ salgApen: g.id }),
-          imageCss: "url('" + g.bilde + "')", fokus: this.fokusFor(g.id),
+          imageCss: "url('" + g.bilde + "')", fokus: this.fokusFor(g.bilde || ''),
           // Navnet paa den som laget den — det er hele poenget med
           // kolleksjonen. Sto som «Laget av medlem» paa alt.
           badge: g.laget || 'Laget av medlem', kategori: g.kategori, erMedlem: true,
@@ -21837,7 +21963,7 @@ class Component extends DCLogic {
           spTittel: p.tittel, spTekst: p.tekst, spLaget: p.laget, spPris: p.pris,
           spTelefon: p.vipps, spLevering: p.levering,
           spBildeCss: "url('" + p.bilde + "')",
-          spFokus: this.fokusFor(p.id),
+          spFokus: this.fokusFor(p.bilde || ''),
         };
       })(),
       skNavn: this.state.skNavn || '', skTekst: this.state.skTekst || '', skPris: this.state.skPris || '',

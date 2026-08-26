@@ -5,6 +5,7 @@
  *   GET                        alle bilder som finnes aa velge mellom
  *   POST handling=last-opp     ta imot et eget bilde (multipart, felt «bilde»)
  *   POST handling=slett        fjern et opplastet bilde
+ *   POST handling=fokus        hvilken del av bildet ramma skal vise
  *
  * To slags bilder ligger her. De som foelger med nettsida er filer i rota —
  * verkstedsbilder og innkjopte bilder — og de endres bare naar sida legges
@@ -80,7 +81,7 @@ $egne = static function (): array {
 };
 
 if (Foresporsel::metode() === 'GET') {
-    Svar::json(['egne' => $egne(), 'medfolgende' => $medfolgende()]);
+    Svar::json(['egne' => $egne(), 'medfolgende' => $medfolgende(), 'fokus' => Bilder::fokus()]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -123,6 +124,21 @@ switch ($handling) {
         Bilder::slett($navn, 'artikler');
         revider('bilde_slettet', 'bilde', null, ['navn' => $navn]);
         Svar::ok(['beskjed' => 'Bildet er slettet.']);
+
+    // ── Hvilken del av bildet som skal vises ────────────────────────────
+    //
+    // Beskjaerer ingenting: originalen ligger urort, og punktet sier bare
+    // hvor ramma skal sentreres. Da kan valget gjores om igjen naar som helst.
+    case 'fokus':
+        $fil = (string) (Foresporsel::kropp()['fil'] ?? '');
+        $pos = (string) (Foresporsel::kropp()['fokus'] ?? '50% 50%');
+        try {
+            Bilder::settFokus($fil, $pos);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+        revider('bilde_fokus', 'bilde', 0, ['fil' => $fil, 'fokus' => $pos]);
+        Svar::ok(['fokus' => Bilder::fokus(), 'beskjed' => 'Utsnittet er lagret.']);
 
     default:
         Svar::feil('Ukjent handling.');

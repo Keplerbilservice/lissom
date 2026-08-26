@@ -33,4 +33,4 @@ Svar::json(['varer' => array_map(static fn($v) => [
     'prisOre'      => (int) $v['pris_ore'],
     'utsolgt'      => $v['lager'] !== null && (int) $v['lager'] <= 0,
     'kunMedlemmer' => (bool) $v['kun_medlemmer'],
-], $varer)]);
+], $varer), 'fokus' => Bilder::fokus()]);

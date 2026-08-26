@@ -18711,6 +18711,8 @@ class Component extends DCLogic {
         };
 
         const ubetalte = deltakere.filter(x => x.status !== 'Betalt').length;
+        // Kursdatoer som er gjennomfoert og ikke meldt fra om ennaa.
+        const venterMelding = (this.state.ferdigbrentAdmin || []).filter(o => !o.meldt).length;
 
         return {
           ovKort: (() => {
@@ -18784,6 +18786,19 @@ class Component extends DCLogic {
                  'Skriv til deltakerne på en dato, eller til medlemmene.',
                  null, 'Skriv en beskjed',
                  () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' })),
+
+            // Gjennomfoerte kurs hoerer hjemme her, ved siden av beskjedene:
+            // det ER en beskjed som skal ut. Kortet laa nederst i «Krever
+            // handling», bak et hoyt programkort, og maatte letes fram.
+            //
+            // Samme regel som ventelista: staar bare naar noe faktisk venter.
+            // Et kort som hver dag sier «ingen», er ett kort mer aa lese forbi.
+            ...(venterMelding ? [kort('Gjennomførte kurs',
+                 venterMelding === 1
+                   ? 'Ett kurs venter på beskjed om at arbeidene er ferdige.'
+                   : venterMelding + ' kurs venter på beskjed om at arbeidene er ferdige.',
+                 venterMelding, 'Meld dem klare',
+                 rullTil('GJENNOMFØRTE KURS', 'ov-ferdigbrent'))] : []),
             ];
 
             // Paa en telefon ser du tre kort om gangen, ikke ti. Da avgjor
@@ -18792,8 +18807,8 @@ class Component extends DCLogic {
             // gjores i dag foerst, oppslagsverkene etterpaa.
             if ((this.state.vw || 1400) >= 980) return alle;
 
-            const ROR = ['Venteliste', 'Nytt kurs', 'Planlagte kurs', 'Program',
-                         'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
+            const ROR = ['Venteliste', 'Gjennomførte kurs', 'Nytt kurs', 'Planlagte kurs',
+                         'Program', 'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);
               return i === -1 ? ROR.length : i;

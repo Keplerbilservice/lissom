@@ -11391,6 +11391,22 @@ class Component extends DCLogic {
     }
   }
 
+  /**
+   * Aapner «Ny kursdato».
+   *
+   * Sto som en lang setState rett i renderVals. Da den skulle brukes fra
+   * Kurs og medlemskap ogsaa, var valget aa skrive den av eller flytte den
+   * hit. To kopier av det samme skjemaet ville drevet fra hverandre.
+   */
+  apneNyKursdato() {
+    this.setState({
+      ndApen: true, ndVelgerApen: false,
+      ndKurs: this.ndKursnavn()[0] || '',
+      ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8',
+      ndLagtTil: [], ndTop: this.topNaa(60),
+    });
+  }
+
   /** Kursene «Ny kursdato» kan legge datoer paa. */
   ndKursnavn() {
     const fra = this.kursData().map(k => k.navn).filter(Boolean);
@@ -16980,7 +16996,7 @@ class Component extends DCLogic {
       // er sendt til alle medlemmer». Monica saa altsaa sin egen gave paa sin
       // egen Min side, og ingen andre fikk noe.
       gSend: () => this.sendGave(),
-      aNyKursdato: () => this.setState({ ndApen: true, ndVelgerApen: false, ndKurs: this.ndKursnavn()[0] || '', ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8', ndLagtTil: [], ndTop: this.topNaa(60) }),
+      aNyKursdato: () => this.apneNyKursdato(),
       ndTop: this.state.ndTop ?? 80,
       ndVelgerApen: !!this.state.ndVelgerApen,
       ndVelgerToggle: () => this.setState(s => ({ ndVelgerApen: !s.ndVelgerApen })),
@@ -18440,6 +18456,10 @@ class Component extends DCLogic {
             omrUnder: 'Alt verkstedet selger: kursene med datoene sine, og '
               + 'medlemskapene med pris, timer og teksten kunden leser.',
             omrHurtig: [
+              // Samme knapp som paa Oversikt. Aa legge en dato paa et kurs som
+              // finnes er det som gjores oftest her, og det maatte gjores fra
+              // en annen skjerm.
+              { navn: 'Ny kursdato', velg: () => this.apneNyKursdato() },
               { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', nyttKurs) },
               { navn: 'Nytt medlemskap', velg: () => this.gaaAdmin('adminmedlemskap', nyttMedlemskap) },
               { navn: 'Legg til deltaker', velg: () => this.gaaAdmin('adminpameldte', { mpApen: true }) },

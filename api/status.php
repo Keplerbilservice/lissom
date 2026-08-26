@@ -155,6 +155,20 @@ $svar['nokler'] = [
     'vipps_sub_key'       => $fylt('vipps_sub_key'),
     'admin_telefon'       => Config::adminNumre() !== [],
     'sveve_sms'           => $fylt('sveve_bruker'),
+    // AI-en i markedsforingen. Noekkelen kan ligge i to filer, og bare den
+    // ene leses — da er «er den satt» og «hvilken fil» det samme sporsmaalet.
+    'claude_api_key'      => $fylt('claude_api_key'),
+];
+
+// Hvilken secrets-fil som faktisk ble lest, og hvilke som finnes.
+// Legger noen en noekkel i den som ikke er i bruk, skjer det ingenting — og
+// det er umulig aa se uten aa faa det sagt.
+$svar['secrets'] = [
+    'i_bruk'  => defined('SECRETS_FIL') ? SECRETS_FIL : '(ukjent)',
+    'finnes'  => array_values(array_filter([
+        dirname(APP_DIR) . '/../lissom-secrets/secrets.php',
+        APP_DIR . '/secrets.php',
+    ], 'is_file')),
 ];
 
 // --- Filer som ma ligge paa plass -----------------------------------------

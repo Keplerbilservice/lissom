@@ -7880,6 +7880,10 @@ window.__resources = {
         <input value="{{ ssOrd }}" onChange="{{ settSsOrd }}" onKeyDown="{{ ssTast }}" placeholder="Hva leter du etter?" style="flex: 1 1 220px; min-width: 0; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="search" on-click="{{ ssSok }}" hint-size="auto,40px">{{ ssKnapp }}</x-import>
       </div>
+      <!-- Biblioteket er merket paa engelsk, og Shutterstock stotter ikke
+           norsk som soekespraak. «pottery» gir hundrevis av treff der
+           «keramikk» gir null. -->
+      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Engelske søkeord gir flest treff: <em>pottery</em>, <em>ceramics</em>, <em>clay</em>, <em>pottery wheel</em>, <em>ceramic workshop</em>.</p>
       <sc-if value="{{ ssMelding }}" hint-placeholder-val="{{ false }}">
         <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ssMeldingTekst }}</p>
       </sc-if>

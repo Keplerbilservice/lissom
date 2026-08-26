@@ -143,9 +143,10 @@ if (Foresporsel::metode() === 'GET') {
 
     $r = $kall(SS_SOK . '?' . http_build_query([
         'query'      => mb_substr($sok, 0, 120),
-        // Biblioteket er merket paa engelsk. «keramikk» gir null treff uten
-        // dette; med det oversetter Shutterstock soekeordet selv.
-        'language'   => 'no',
+        // Ingen «language» her. Jeg satte 'no' for aa faa norske soekeord til
+        // aa treffe, og Shutterstock svarte «Validation failed» — norsk staar
+        // ikke paa lista deres. Biblioteket er merket paa engelsk, og loesninga
+        // er engelske soekeord, ikke en parameter som velter hele kallet.
         'per_page'   => 24,
         'page'       => $side,
         'image_type' => 'photo',

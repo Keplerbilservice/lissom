@@ -85,10 +85,23 @@ try {
         $kundetoken = trim((string) (DB::verdi(
             "SELECT verdi FROM innstillinger WHERE nokkel = 'shutterstock_kunde_token'"
         ) ?? ''));
+        // Et token som har gaatt ut skal legges bort, ikke brukes. Ellers
+        // ville soeket — som virket fint paa appens egen noekkel foer noen
+        // koblet til — sluttet aa virke den dagen tokenet loep ut, og det
+        // ville sett ut som en helt ny feil.
+        $utloper = trim((string) (DB::verdi(
+            "SELECT verdi FROM innstillinger WHERE nokkel = 'shutterstock_kunde_utloper'"
+        ) ?? ''));
+        if ($kundetoken !== '' && $utloper !== '' && strtotime($utloper . ' UTC') < time()) {
+            logg('Shutterstock-tokenet har gaatt ut, bruker appnoekkelen', ['utloep' => $utloper]);
+            $kundetoken = '';
+            $kundeUtloept = true;
+        }
     }
 } catch (Throwable $e) {
     $kundetoken = '';
 }
+$kundeUtloept = $kundeUtloept ?? false;
 
 /** Hodet som beviser hvem vi er. Kundetokenet foerst, saa appens egen noekkel. */
 $auth = $kundetoken !== ''
@@ -248,7 +261,10 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('test') === '1') {
     } else {
         // Returadressen maa staa registrert paa appen hos Shutterstock foer
         // tilkoblingen gaar gjennom. Den staar her, saa den kan kopieres.
-        $linjer[] = 'Kontoen din er ikke koblet til ennå. Før du trykker «Koble til '
+        $linjer[] = ($kundeUtloept
+                      ? 'Tilkoblingen til kontoen din har gått ut og må gjøres på nytt. '
+                      : 'Kontoen din er ikke koblet til ennå. ')
+                  . 'Før du trykker «Koble til '
                   . 'Shutterstock» må denne adressen stå som returadresse på appen din '
                   . 'hos dem: ' . rtrim((string) Config::hent('nettsted', ''), '/')
                   . '/api/admin/shutterstock-kobling.php';

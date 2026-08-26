@@ -3092,6 +3092,34 @@ window.__resources = {
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ p.apneKursbevis }}" hint-size="auto,36px">Kursbevis</x-import>
                       </sc-if>
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ p.avbestill }}" hint-size="auto,36px">Avbestill</x-import>
+
+                      <!-- Bilder av det du har laget.
+                           Verkstedet staar med tjue ferdigbrente ting og skal
+                           finne ut hvem som har laget hva. Et bilde du tok paa
+                           kurset avgjor det paa et sekund. -->
+                      <sc-if value="{{ p.kanLasteOpp }}" hint-placeholder-val="{{ true }}">
+                        <div style="flex: 1 1 100%; border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Bilder av det du laget</div>
+                          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-start;">
+                            <sc-for list="{{ p.bildene }}" as="b" hint-placeholder-count="2">
+                              <div style="position: relative;">
+                                <button type="button" onClick="{{ b.stor }}" title="Vis i full størrelse" style="{{ b.stil }}"></button>
+                                <sc-if value="{{ b.kanSlette }}" hint-placeholder-val="{{ true }}">
+                                  <button type="button" onClick="{{ b.slett }}" aria-label="Slett bildet" title="Slett bildet" style="{{ b.slettStil }}">×</button>
+                                </sc-if>
+                              </div>
+                            </sc-for>
+                            <!-- «capture» aapner kameraet paa en telefon, og
+                                 filvelgeren paa en maskin. Samme knapp begge
+                                 steder. -->
+                            <label style="{{ p.leggTilStil }}">
+                              <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange="{{ p.lastOpp }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+                              <span style="font-size: var(--text-xs); color: var(--text-muted); text-align: center; padding: 6px;">{{ p.leggTilTekst }}</span>
+                            </label>
+                          </div>
+                          <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ p.bildeHjelp }}</p>
+                        </div>
+                      </sc-if>
                     </div>
                   </sc-for>
                 </div>
@@ -11522,6 +11550,66 @@ class Component extends DCLogic {
     });
   }
 
+  /**
+   * Deltakeren legger inn et bilde av det hen laget.
+   *
+   * Store bilder krympes i nettleseren for de sendes — et bilde rett fra
+   * kameraet er gjerne fem megabyte, og paa mobilnett er forskjellen paa
+   * fire sekunder og et minutt. Serveren tegner det om og skalerer uansett;
+   * dette er bare for aa slippe aa sende mer enn noedvendig.
+   */
+  lastOppMittBilde(bookingId, e) {
+    const fil = e && e.target && e.target.files && e.target.files[0];
+    if (!fil || !bookingId) return;
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    // Feltet skal kunne brukes igjen med samme fil.
+    const felt = e.target;
+
+    this.setState({ bildeLaster: true });
+    this.krympBilde(fil).then(klar => {
+      const skjema = new FormData();
+      skjema.append('handling', 'last-opp');
+      skjema.append('bookingId', String(bookingId));
+      skjema.append('bilde', klar, (fil.name || 'bilde.jpg'));
+      return fetch('/api/mine-bilder.php', { method: 'POST', credentials: 'same-origin', body: skjema })
+        .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })));
+    })
+      .then(({ ok, d }) => {
+        this.setState({ bildeLaster: false });
+        try { felt.value = ''; } catch (x) {}
+        if (!ok) {
+          this.setState({ kvittering: 'Bildet ble ikke lagt inn', kvitteringDetalj: (d && d.feil) || '' });
+          return;
+        }
+        this.setState({ kvittering: d.beskjed || 'Bildet er lagt inn', minePlasser: null });
+        this._plasserHentes = false;
+      })
+      .catch(() => {
+        this.setState({ bildeLaster: false, kvittering: 'Bildet ble ikke lagt inn',
+                        kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /** Ta et eget bilde bort igjen. */
+  slettMittBilde(bildeId) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (!window.confirm('Slette bildet?')) return;
+    fetch('/api/mine-bilder.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'slett', bildeId: bildeId }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? (d.beskjed || 'Bildet er slettet') : ((d && d.feil) || 'Gikk ikke'),
+          minePlasser: ok ? null : this.state.minePlasser,
+        });
+        if (ok) this._plasserHentes = false;
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
   /** Kursene «Ny kursdato» kan legge datoer paa. */
   ndKursnavn() {
     const fra = this.kursData().map(k => k.navn).filter(Boolean);
@@ -12667,7 +12755,13 @@ class Component extends DCLogic {
     const mangler = (k.deltakere || []).filter(x => !x.sendt && !x.hentet);
     if (!mangler.length) return;
     const navn = mangler.map(x => x.navn).join(', ');
-    const tekst = (k.melding && k.melding.tekst) || '';
+    // Malen kommer med {navn}, {kurs} og {dato} staaende. Vist raa ser
+    // bekreftelsen ut som kode, og du vet ikke hva folk faktisk faar. Kurset
+    // og datoen fylles inn; navnet varierer per mottaker og staar som det.
+    const tekst = ((k.melding && k.melding.tekst) || '')
+      .replace(/\{kurs\}/g, k.okt.tittel)
+      .replace(/\{dato\}/g, k.okt.naar)
+      .replace(/\{navn\}/g, 'fornavnet deres');
     if (!window.confirm(
       'Sende beskjed om at keramikken er ferdig?\n\n'
       + 'Kurs: ' + k.okt.tittel + ', ' + k.okt.naar + '\n'
@@ -18231,6 +18325,48 @@ class Component extends DCLogic {
         status: ((this.state.flyttet || {})[p.tittel]) ? 'Flyttet' : p.status,
         harKursbevis: !!p.kursbevis,
         apneKursbevis: () => { if (p.kursbevis) window.open(p.kursbevis, '_blank', 'noopener'); },
+
+        // ── Bilder av det du laget ──────────────────────────────────────
+        //
+        // Bare paa ekte paameldinger. Ventelisterader har ingen booking aa
+        // henge bildet paa, og forhaandsvisningen har ingen server.
+        kanLasteOpp: this.erPublisert() && (p.id || 0) > 0,
+        // «bildene», ikke «bilder». Lista over plasser bygges med
+        // Object.assign(p, …), som endrer selve raden i skjermbildet — skrev
+        // vi tilbake paa «bilder», var raadataene fra serveren borte ved neste
+        // tegning, og da hadde ikke bildene lenger noen id aa slette paa.
+        bildene: (p.bilder || []).map(b => ({
+          stil: {
+            appearance: 'none', cursor: 'pointer', padding: 0,
+            width: 84, height: 84, borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--clay-200)',
+            backgroundImage: "url('" + b.url + "')",
+            backgroundSize: 'cover', backgroundPosition: 'center',
+          },
+          stor: () => window.open(b.url, '_blank', 'noopener'),
+          kanSlette: !!b.kanSlette,
+          slettStil: {
+            position: 'absolute', top: 4, right: 4, width: 24, height: 24,
+            appearance: 'none', cursor: 'pointer', padding: 0, lineHeight: '22px',
+            borderRadius: '50%', border: '2px solid #fff',
+            backgroundColor: 'rgba(46,16,2,.82)', color: '#fff',
+            fontSize: '14px', fontWeight: 700,
+            boxShadow: '0 2px 6px rgba(0,0,0,.35)',
+          },
+          slett: () => this.slettMittBilde(b.id),
+        })),
+        leggTilStil: {
+          position: 'relative', width: 84, height: 84, borderRadius: 'var(--radius-md)',
+          border: '2px dashed var(--border-subtle)', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'transparent',
+        },
+        leggTilTekst: this.state.bildeLaster ? 'Laster …' : '+ Legg til',
+        lastOpp: (e) => this.lastOppMittBilde(p.id, e),
+        bildeHjelp: (p.bilder || []).length
+          ? 'Bildene er bare synlige for deg og verkstedet.'
+          : 'Ta et bilde av det du laget, så finner vi det lettere når det er ferdig brent. Bare du og verkstedet ser bildene.',
         avbestill: this.apne('Avbestille ' + p.tittel + '?', p.naar, [
           { navn: 'Betalt', verdi: p.sum },
           { navn: 'Refusjon', verdi: p.kanAvbestille ? 'Etter vilkårene: full refusjon mer enn 14 dager før, 50 % inntil 7 dager før. Tilbake på Vipps innen 3 virkedager.' : 'Ingenting er belastet' },

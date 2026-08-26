@@ -3887,76 +3887,6 @@ window.__resources = {
     </div>
   </sc-if>
 
-  <sc-if value="{{ erAdminProgram }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Admin – program" style="{{ adminGridStil }}">
-      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
-        <nav style="{{ adminNavStil }}">
-          <sc-for list="{{ adminNavProgram }}" as="a" hint-placeholder-count="11">
-            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
-          </sc-for>
-        </nav>
-      </aside>
-
-      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="margin-bottom: var(--space-8);">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Program</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Hva som skjer i dag, denne uka og denne måneden. Herfra legger du til deltakere på en dato, eller ser hvem som er påmeldt.</p>
-        </div>
-
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px;">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
-            <div style="display: flex; gap: 2px;">
-              <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
-                <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
-              </sc-for>
-            </div>
-          </div>
-          <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
-          </sc-if>
-          <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
-            <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
-              <span style="flex: 1 1 140px; min-width: 0;">
-                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
-                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
-              </span>
-              <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
-                <span style="display: flex; gap: var(--space-3); margin-left: auto;">
-                  <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
-                  <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
-                </span>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
-          </sc-if>
-
-          <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
-               kursene ikke skrives inn to steder. -->
-          <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
-            <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
-            <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
-              <div style="margin-top: var(--space-4);">
-                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
-                <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
-                  <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
-                </div>
-                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
-              </div>
-            </sc-if>
-          </div>
-        </div>
-      </main>
-    </div>
-  </sc-if>
-
   <sc-if value="{{ erAdminVenteliste }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – venteliste" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -5112,12 +5042,67 @@ window.__resources = {
              finne: det du gjorde oftest laa mellom det du gjorde sjelden.
              Kortene er de ni tingene verkstedet faktisk begynner med. Hele
              kortet er klikkbart, og tallet paa det avgjor om du maa dit. -->
+        <!-- Programmet staar foerst og i full bredde. Det er det som
+             faktisk skjer i dag, og det verkstedet aapner sida for aa
+             se. Det laa en kort tid som et kort blant de andre — det
+             var min egen idé, ikke bestilt, og et kort er for lite til
+             et program. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
+            <div style="display: flex; gap: 2px;">
+              <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
+                <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
+          </sc-if>
+          <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
+              <span style="flex: 1 1 140px; min-width: 0;">
+                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
+                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
+              </span>
+              <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
+                <span style="display: flex; gap: var(--space-3); margin-left: auto;">
+                  <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
+                  <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                </span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
+          </sc-if>
+
+          <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
+               kursene ikke skrives inn to steder. -->
+          <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
+            <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
+            <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-4);">
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
+                <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
+                  <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+                </div>
+                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="height: var(--space-10);"></div>
+
         <!-- Kortene kan dras dit du vil ha dem. Rekkefolgen lagres, saa den
              staar til neste gang ogsaa. Selve dragingen ligger i et lite
              skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
              endring, og da maa lyttingen henge paa beholderen og ikke paa
              hvert kort. -->
-        <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; margin-bottom: var(--space-3);">
+        <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
           <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
             <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
@@ -10405,7 +10390,6 @@ class Component extends DCLogic {
       { sti: '/admin/brukere',      side: 'adminbrukere' },
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
-      { sti: '/admin/program',      side: 'adminprogram' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -16021,7 +16005,6 @@ class Component extends DCLogic {
       case 'adminnyreg':         return p('Oversikt');
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
-      case 'adminprogram':       return p('Oversikt');
       case 'adminventeliste':    return p('Oversikt');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
@@ -18378,16 +18361,18 @@ class Component extends DCLogic {
           return { erAdminOmraade: false, omrKort: [], omrHurtig: [] };
         }
 
+        // Litt mindre enn foer. Programmet staar oeverst og tar plassen det
+        // trenger; kortene under er veier videre, ikke innhold i seg selv.
         const kortStil = {
           appearance: 'none', textAlign: 'left', cursor: 'pointer', width: '100%',
           background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
           display: 'flex', flexDirection: 'column', height: '100%',
         };
         // Et tall som krever noe av deg skal se annerledes ut enn et som
         // bare forteller hvor mange det er.
         const tallStil = (verdi, haster) => ({
-          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-2xl)',
+          fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-xl)',
           color: haster && verdi ? 'var(--terracotta-600)' : 'var(--text-heading)',
           whiteSpace: 'nowrap',
         });
@@ -19113,11 +19098,6 @@ class Component extends DCLogic {
                  okter.length, 'Se kursene',
                  () => this.gaaAdmin('admin', { kursFane: 'alle' })),
 
-            kort('Program',
-                 'Hva som skjer i dag, denne uka og denne måneden.',
-                 null, 'Se programmet',
-                 () => this.gaaAdmin('adminprogram', {})),
-
             kort('Ny registrering',
                  'Meld noen på kurs, event, drop-in eller medlemskap.',
                  null, 'Registrer noen',
@@ -19207,7 +19187,7 @@ class Component extends DCLogic {
 
             const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
                          'Gjennomførte kurs', 'Nye påmeldinger', 'Planlagte kurs',
-                         'Program', 'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
+                         'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);
               return i === -1 ? ROR.length : i;
@@ -21339,8 +21319,6 @@ class Component extends DCLogic {
       erAdminNyttig: side === 'adminnyttig',
       erAdminFerdigbrent: side === 'adminferdigbrent',
       adminNavFerdigbrent: this.adminMeny(),
-      erAdminProgram: side === 'adminprogram',
-      adminNavProgram: this.adminMeny(),
       erAdminVenteliste: side === 'adminventeliste',
       adminNavVenteliste: this.adminMeny(),
       erAdminKursholdere: side === 'adminkursholdere',

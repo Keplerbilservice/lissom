@@ -9738,8 +9738,13 @@ class Component extends DCLogic {
     this.setState({ kvRegler: this.kvRegler().map((r, j) => j === i ? Object.assign({}, r, endring) : r), kvHva: null });
   }
 
-  fokusFor(nokkel) {
-    return (this.state.bildeFokus || {})[nokkel] || '50% 50%';
+  // Utsnittet som er valgt for et bilde, eller standarden for ramma.
+  //
+  // Standarden er ikke alltid midten: karusellen paa kurssida har alltid
+  // staatt paa «center 32%», og et bilde ingen har valgt utsnitt for skal
+  // staa noeyaktig som foer. Bare et valgt punkt flytter noe.
+  fokusFor(nokkel, standard) {
+    return (this.state.bildeFokus || {})[nokkel] || standard || '50% 50%';
   }
 
   fokusValg(nokkel) {
@@ -12239,7 +12244,8 @@ class Component extends DCLogic {
     const rute = (b) => ({
       url: b.url,
       stil: { appearance: 'none', cursor: 'pointer', padding: 0, height: 84, borderRadius: 'var(--radius-md)',
-              backgroundImage: "url('" + (b.mini || b.url) + "')", backgroundSize: 'cover', backgroundPosition: 'center',
+              backgroundImage: "url('" + (b.mini || b.url) + "')", backgroundSize: 'cover',
+              backgroundPosition: this.fokusFor(b.url),
               border: ((valgt.bilde || '') === b.url ? '3px solid var(--lissom-brown)' : '1px solid var(--border-subtle)') },
       velg: () => this.settValgtBilde(b.url),
     });
@@ -20148,12 +20154,16 @@ class Component extends DCLogic {
           velg: () => this.apneBildevalg({ slag: 'kurs', rute: i }),
           stil: {
             appearance: 'none', cursor: 'pointer', padding: 0, position: 'relative',
-            aspectRatio: '4 / 3', borderRadius: 12, overflow: 'hidden',
+            // Ramma var 4:3 mens kortet ute er 16:10, og utsnittet sto alltid
+            // i midten uansett hva som var valgt. Forhaandsvisninga viste
+            // derfor et annet bilde enn det kunden faar — og et annet enn
+            // billedvelgeren rett ved siden av.
+            aspectRatio: '16 / 10', borderRadius: 12, overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: valgt ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
             background: valgt ? 'var(--clay-200)' : 'transparent',
             backgroundImage: valgt ? "url('" + valgt + "')" : 'none',
-            backgroundSize: 'cover', backgroundPosition: 'center',
+            backgroundSize: 'cover', backgroundPosition: this.fokusFor(valgt),
           },
         };
       }),
@@ -23602,7 +23612,10 @@ class Component extends DCLogic {
         const idx = Math.floor((this.state.karTikk || 0) / sek) % bilder.length;
         return bilder.map((src, i) => ({
           src,
-          stil: { position: 'absolute', inset: 0, backgroundImage: "url('" + src + "')", backgroundSize: 'cover', backgroundPosition: 'center 32%', opacity: i === idx ? 1 : 0, transition: fade ? 'opacity 0.9s var(--ease-clay)' : 'none' },
+          // «center 32%» staar som foer for alle bilder ingen har valgt
+          // utsnitt for. Har verkstedet valgt et punkt, gjaldt det bare i
+          // admin — kurssida viste sitt eget uansett.
+          stil: { position: 'absolute', inset: 0, backgroundImage: "url('" + src + "')", backgroundSize: 'cover', backgroundPosition: this.fokusFor(src, 'center 32%'), opacity: i === idx ? 1 : 0, transition: fade ? 'opacity 0.9s var(--ease-clay)' : 'none' },
         }));
       })(),
       adminGridStil: (this.state.vw || 1400) < 980

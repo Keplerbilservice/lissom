@@ -3510,6 +3510,114 @@ window.__resources = {
        Laa som et panel nederst paa Oversikt, bak et hoyt programkort. Ett
        trykk her sender e-post til alle som var paa datoen og legger ut en
        linje paa lissom.no/ferdigbrent. -->
+  <sc-if value="{{ erAdminNyePameldinger }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – nye påmeldinger" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavNyePameldinger }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Nye påmeldinger</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">De siste som har meldt seg på. Trykk en rad for å se beløp, status og referanse.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Siste inn</div>
+          <sc-for list="{{ nyePameldinger }}" as="n" hint-placeholder-count="4">
+            <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
+              </div>
+              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminMedlemssoknader }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – medlemskapsforespørsler" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavMedlemssoknader }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Medlemskapsforespørsler</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Søknader om medlemskap som venter på svar.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venter på svar</div>
+          <sc-if value="{{ ingenOvMedlemskap }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen søknader venter.</div>
+          </sc-if>
+          <sc-for list="{{ ovMedlemskap }}" as="n" hint-placeholder-count="2">
+            <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
+              </div>
+              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ erAdminUbesvarte }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – ubesvarte meldinger" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavUbesvarte }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Ubesvarte meldinger</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Henvendelser som ikke er besvart ennå. Trykk en rad for å gå rett til meldingen.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venter på svar</div>
+          <sc-if value="{{ ingenOvUbesvarte }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen ubesvarte forespørsler.</div>
+          </sc-if>
+          <sc-for list="{{ ovUbesvarte }}" as="n" hint-placeholder-count="2">
+            <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
+              </div>
+              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminFerdigbrent }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – gjennomførte kurs" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -4800,59 +4908,17 @@ window.__resources = {
             </button>
           </sc-for>
         </div>
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Krever handling</div>
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Kursene</div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start; margin-bottom: var(--space-5);">
 
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Nye påmeldinger</div>
-            <sc-for list="{{ nyePameldinger }}" as="n" hint-placeholder-count="4">
-              <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
-                </div>
-                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
-              </div>
-            </sc-for>
-          </div>
 
           <!-- Ventelista.
                «Varsle» sier fra at det er ledig, og saa er det foerste mann
                til moella. Ofte vet verkstedet hvem som skal ha plassen — og
                da skal de kunne gi den, ikke sende en beskjed om aa kappes. -->
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Nye medlemskapsforespørsler</div>
-            <sc-if value="{{ ingenOvMedlemskap }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen søknader venter.</div>
-            </sc-if>
-            <sc-for list="{{ ovMedlemskap }}" as="n" hint-placeholder-count="2">
-              <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
-                </div>
-                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
-              </div>
-            </sc-for>
-          </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Ubesvarte meldinger</div>
-            <sc-if value="{{ ingenOvUbesvarte }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen ubesvarte forespørsler.</div>
-            </sc-if>
-            <sc-for list="{{ ovUbesvarte }}" as="n" hint-placeholder-count="2">
-              <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
-                </div>
-                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
-              </div>
-            </sc-for>
-          </div>
 
           <!-- Kursene, sett fra kurset og ikke fra datoen. Programmet over
                sier hva som skjer naar; dette sier hva verkstedet tilbyr, og
@@ -10147,6 +10213,9 @@ class Component extends DCLogic {
       { sti: '/admin/program',      side: 'adminprogram' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
+      { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
+      { sti: '/admin/medlemssoknader',    side: 'adminmedlemssoknader' },
+      { sti: '/admin/ubesvarte',          side: 'adminubesvarte' },
       { sti: '/admin/butikk',       side: 'adminbutikk' },
       { sti: '/admin/okonomi',      side: 'adminokonomi' },
       { sti: '/admin/beskjeder',    side: 'adminbeskjeder' },
@@ -15729,6 +15798,9 @@ class Component extends DCLogic {
       case 'adminprogram':       return p('Oversikt');
       case 'adminventeliste':    return p('Oversikt');
       case 'adminkursholdere':   return p('Oversikt');
+      case 'adminnyepameldinger': return p('Oversikt');
+      case 'adminmedlemssoknader': return p('Oversikt');
+      case 'adminubesvarte':     return p('Oversikt');
       case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
       case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
@@ -18793,6 +18865,13 @@ class Component extends DCLogic {
         const ubetalte = deltakere.filter(x => x.status !== 'Betalt').length;
         // Kursdatoer som er gjennomfoert og ikke meldt fra om ennaa.
         const venterMelding = (this.state.ferdigbrentAdmin || []).filter(o => !o.meldt).length;
+        // Tallene bak de tre nye kortene. Panelene laa paa Oversikt og hadde
+        // ingen vei inn utenom aa staa der; naa har de hver sin skjerm, og da
+        // maa noe peke dit.
+        const nyeste = ((this.state.adminData || {}).nyeste || []).length;
+        const soknader2 = (this.state.adminSoknader || []).length;
+        const ubesvarte = (this.state.adminForesporsler || [])
+          .filter(f => f.status === 'Ubesvart').length;
 
         return {
           ovKort: (() => {
@@ -18879,6 +18958,24 @@ class Component extends DCLogic {
                    : venterMelding + ' kurs venter på beskjed om at arbeidene er ferdige.',
                  venterMelding, 'Meld dem klare',
                  () => this.gaaAdmin('adminferdigbrent', {}))] : []),
+
+            // Samme regel som ventelista: kortet staar naar noe venter.
+            ...(ubesvarte ? [kort('Ubesvarte meldinger',
+                 ubesvarte === 1 ? 'Én henvendelse er ikke besvart.'
+                                 : ubesvarte + ' henvendelser er ikke besvart.',
+                 ubesvarte, 'Svar dem',
+                 () => this.gaaAdmin('adminubesvarte', {}))] : []),
+
+            ...(soknader2 ? [kort('Medlemskapsforespørsler',
+                 soknader2 === 1 ? 'Én søknad venter på svar.'
+                                 : soknader2 + ' søknader venter på svar.',
+                 soknader2, 'Behandle dem',
+                 () => this.gaaAdmin('adminmedlemssoknader', {}))] : []),
+
+            ...(nyeste ? [kort('Nye påmeldinger',
+                 'De siste som har meldt seg på.',
+                 nyeste, 'Se påmeldingene',
+                 () => this.gaaAdmin('adminnyepameldinger', {}))] : []),
             ];
 
             // Paa en telefon ser du tre kort om gangen, ikke ti. Da avgjor
@@ -18887,7 +18984,8 @@ class Component extends DCLogic {
             // gjores i dag foerst, oppslagsverkene etterpaa.
             if ((this.state.vw || 1400) >= 980) return alle;
 
-            const ROR = ['Venteliste', 'Gjennomførte kurs', 'Nytt kurs', 'Planlagte kurs',
+            const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
+                         'Gjennomførte kurs', 'Nye påmeldinger', 'Nytt kurs', 'Planlagte kurs',
                          'Program', 'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);
@@ -21033,6 +21131,12 @@ class Component extends DCLogic {
       adminNavVenteliste: this.adminMeny(),
       erAdminKursholdere: side === 'adminkursholdere',
       adminNavKursholdere: this.adminMeny(),
+      erAdminNyePameldinger: side === 'adminnyepameldinger',
+      adminNavNyePameldinger: this.adminMeny(),
+      erAdminMedlemssoknader: side === 'adminmedlemssoknader',
+      adminNavMedlemssoknader: this.adminMeny(),
+      erAdminUbesvarte: side === 'adminubesvarte',
+      adminNavUbesvarte: this.adminMeny(),
       adminNavNyttig: this.adminMeny(),
       goNyttig: () => { this.setState({ side: 'nyttig', artikkelValgt: null }); window.scrollTo(0, 0); },
       artikkelApen: this.state.artikkelValgt != null,

@@ -3834,6 +3834,14 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- Ferdig glassert.
+       To seksjoner: det som venter paa beskjed, og det som er gjort. Et kurs
+       flyttes over foerst naar alle paa datoen har faatt beskjed — er noen
+       igjen, staar hele kurset i den foerste, med tallene sine.
+
+       Trykk et kurs, og deltakerne kommer fram. Trykk en deltaker, og alt om
+       hen aapner seg i samme panel: bildene, notatet, kontakten og hver
+       eneste utsendelse. -->
   <sc-if value="{{ erAdminFerdigbrent }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – ferdig glassert" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -3849,40 +3857,147 @@ window.__resources = {
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Ferdig glassert</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Kursdatoene som er ferdige. Ett trykk sender e-post til alle som var der, og legger ut en melding på lissom.no/ferdigbrent om at arbeidene kan hentes.</p>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Keramikken som er brent og skal hentes. Trykk et kurs for å se deltakerne, og en deltaker for å se bildene og sende beskjed.</p>
         </div>
 
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 760px;">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venter på beskjed</span>
-            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fbAdminAntall }}</span>
-          </div>
-<sc-if value="{{ ingenGjennomforte }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed om at arbeidene er ferdige.</div>
+        <sc-if value="{{ fbTrengerBase }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body);">Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først, så kommer kursene fram her.</div>
+        </sc-if>
+
+        <!-- ── Kursene ────────────────────────────────────────────────── -->
+        <sc-if value="{{ fbUtenValgtKurs }}" hint-placeholder-val="{{ true }}">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Klar til å sende beskjed</div>
+          <sc-if value="{{ fbIngenVenter }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0 0 var(--space-8); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed nå.</p>
           </sc-if>
-          <sc-for list="{{ fbAdminListe }}" as="o" hint-placeholder-count="3">
-            <!-- Samme form som naboene: navn og en linje til venstre,
-                 status og handling til hoeyre. Foer laa knappen paa en egen
-                 rad under, og kortet ble dobbelt saa hoyt som de andre i
-                 rutenettet. -->
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
-              </div>
-              <sc-if value="{{ o.kanMelde }}" hint-placeholder-val="{{ true }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ o.meld }}" hint-size="auto,34px">Meld klar</x-import>
-              </sc-if>
-              <sc-if value="{{ o.erMeldt }}" hint-placeholder-val="{{ false }}">
-                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
-                  <span style="font-size: var(--text-xs); color: {{ o.merkeFarge }};">{{ o.merke }}</span>
-                  <button type="button" onClick="{{ o.angre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta meldingen ned</button>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-10);">
+            <sc-for list="{{ fbVenter }}" as="k" hint-placeholder-count="3">
+              <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-align: left;">{{ k.tittel }}</span>
+                  <span style="font-size: var(--text-xs); color: {{ k.tallFarge }}; white-space: nowrap; font-weight: 700;">{{ k.tall }}</span>
                 </div>
-              </sc-if>
+                <span style="display: block; margin-top: 4px; font-size: var(--text-xs); color: var(--text-muted); text-align: left;">{{ k.naar }}</span>
+                <span style="display: block; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-align: left;">{{ k.status }}</span>
+                <span style="display: block; margin-top: auto; padding-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-align: left;">{{ k.detalj }}</span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Sendt beskjed</div>
+          <sc-if value="{{ fbIngenFerdige }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs er ferdig meldt ennå.</p>
+          </sc-if>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); align-items: stretch;">
+            <sc-for list="{{ fbFerdige }}" as="k" hint-placeholder-count="2">
+              <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); text-align: left;">{{ k.tittel }}</span>
+                  <span style="font-size: var(--text-xs); color: {{ k.tallFarge }}; white-space: nowrap; font-weight: 700;">{{ k.tall }}</span>
+                </div>
+                <span style="display: block; margin-top: 4px; font-size: var(--text-xs); color: var(--text-muted); text-align: left;">{{ k.naar }}</span>
+                <span style="display: block; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-align: left;">{{ k.status }}</span>
+                <span style="display: block; margin-top: auto; padding-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-align: left;">{{ k.detalj }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- ── Deltakerne paa ett kurs ─────────────────────────────────── -->
+        <sc-if value="{{ fbValgtKurs }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+            <div>
+              <button type="button" onClick="{{ fbTilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">← Alle kurs</button>
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading); margin-top: var(--space-2);">{{ fbKursTittel }}</div>
+              <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ fbKursNaar }} · {{ fbKursTall }}</div>
             </div>
-          </sc-for>
-          <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Meldingen står på lissom.no/ferdigbrent i tre uker og forsvinner av seg selv.</div>
-        </div>
+            <sc-if value="{{ fbKanSendeAlle }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ fbSendAlle }}" hint-size="auto,44px">{{ fbSendAlleTekst }}</x-import>
+            </sc-if>
+          </div>
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <sc-if value="{{ fbIngenDeltakere }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen deltakere på denne datoen.</div>
+            </sc-if>
+            <sc-for list="{{ fbDeltakere }}" as="d" hint-placeholder-count="4">
+              <div style="border-top: 1px solid var(--border-subtle);">
+                <div onClick="{{ d.aapne }}" style="display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); cursor: pointer;">
+                  <sc-if value="{{ d.harBilde }}" hint-placeholder-val="{{ true }}">
+                    <div style="{{ d.miniStil }}"></div>
+                  </sc-if>
+                  <div style="min-width: 0; flex: 1 1 160px;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ d.navn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ d.kontakt }}</div>
+                    <sc-if value="{{ d.harNotat }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: var(--text-xs); color: var(--text-muted); font-style: italic; margin-top: 2px;">{{ d.notatKort }}</div>
+                    </sc-if>
+                  </div>
+                  <div style="text-align: right; white-space: nowrap;">
+                    <div style="font-size: var(--text-xs); font-weight: 700; color: {{ d.toneFarge }};">{{ d.status }}</div>
+                    <sc-if value="{{ d.harSending }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ d.sisteTekst }}</div>
+                    </sc-if>
+                  </div>
+                </div>
+
+                <!-- Alt om deltakeren, i samme panel. Du skal ikke maatte
+                     bytte skjerm for aa se et bilde og sende en beskjed. -->
+                <sc-if value="{{ d.apen }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 0 var(--space-6) var(--space-5); background: var(--clay-50);">
+                    <sc-if value="{{ d.harBilder }}" hint-placeholder-val="{{ true }}">
+                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); padding-top: var(--space-4); margin-bottom: var(--space-2);">Bilder fra {{ d.navn }}</div>
+                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                        <sc-for list="{{ d.bilder }}" as="b" hint-placeholder-count="2">
+                          <button type="button" onClick="{{ b.stor }}" title="Vis i full størrelse" style="{{ b.stil }}"></button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ d.utenBilder }}" hint-placeholder-val="{{ false }}">
+                      <p style="padding-top: var(--space-4); margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen bilder ennå. Deltakeren kan legge inn bilder selv under Min side.</p>
+                    </sc-if>
+
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Internt notat</div>
+                    <textarea value="{{ fbNotat }}" onChange="{{ settFbNotat }}" rows="3" placeholder="Grønn skål med hank, hylle 3 …" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading); resize: vertical;"></textarea>
+                    <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin: var(--space-3) 0 var(--space-5);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ d.lagreNotat }}" hint-size="auto,38px">Lagre notat</x-import>
+                      <span style="font-size: var(--text-xs); color: var(--text-muted);">Vises bare her. Deltakeren ser det aldri.</span>
+                    </div>
+
+                    <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-5);">
+                      <sc-if value="{{ d.kanSende }}" hint-placeholder-val="{{ true }}">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ d.send }}" hint-size="auto,38px">{{ d.sendTekst }}</x-import>
+                      </sc-if>
+                      <sc-if value="{{ d.utenKontakt }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">Verken e-post eller telefon. Må kontaktes på annen måte.</span>
+                      </sc-if>
+                      <button type="button" onClick="{{ d.veksleHentet }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ d.hentetTekst }}</button>
+                    </div>
+
+                    <sc-if value="{{ d.harHistorikk }}" hint-placeholder-val="{{ false }}">
+                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Meldingshistorikk</div>
+                      <sc-for list="{{ d.historikk }}" as="h" hint-placeholder-count="2">
+                        <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                          <div style="display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                            <span style="font-size: var(--text-xs); font-weight: 700; color: {{ h.farge }};">{{ h.status }} · {{ h.kanal }}</span>
+                            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.naar }}</span>
+                          </div>
+                          <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">Til {{ h.mottaker }}</div>
+                          <div style="font-size: var(--text-xs); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ h.tekst }}</div>
+                          <sc-if value="{{ h.harFeil }}" hint-placeholder-val="{{ false }}">
+                            <div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 4px;">{{ h.feil }}</div>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Meldingen står på lissom.no/ferdigbrent i {{ fbUker }} uker og forsvinner av seg selv.</p>
+        </sc-if>
       </main>
     </div>
   </sc-if>
@@ -12460,6 +12575,12 @@ class Component extends DCLogic {
   }
 
   /** Henter gjennomfoerte kursdatoer til kortet paa Oversikt. */
+  /**
+   * Kursdatoene som er ferdige, med tallene per dato.
+   *
+   * Hvem som har faatt beskjed regnes ut av meldingskoen paa serveren — vi
+   * lagrer det ikke her. To sannheter om det samme spriker for eller siden.
+   */
   hentFerdigbrentAdmin() {
     if (!this.erPublisert() || this._fbAdminHentes) return;
     this._fbAdminHentes = true;
@@ -12467,33 +12588,98 @@ class Component extends DCLogic {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         this._fbAdminHentes = false;
-        if (d && d.okter) this.setState({ ferdigbrentAdmin: d.okter });
+        if (!d) return;
+        this.setState({
+          ferdigbrentAdmin: d.okter || [],
+          ferdigbrentUker: d.uker || 3,
+          ferdigbrentKlar: d.klar !== false,
+        });
       })
       .catch(() => { this._fbAdminHentes = false; });
   }
 
-  ferdigbrentKall(kropp) {
+  /** Deltakerne paa én kursdato, med bilder, notat og historikk. */
+  aapneFerdigKurs(oktId) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    if (this._fbKall) return;
-    this._fbKall = true;
-    fetch('/api/admin/ferdigbrent.php', {
+    this.setState({ fbKurs: null, fbApen: 0, fbNotat: '' });
+    fetch('/api/admin/ferdigbrent.php?oktId=' + encodeURIComponent(oktId),
+          { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) { this.setState({ kvittering: 'Fikk ikke åpnet kurset', kvitteringDetalj: (d && d.feil) || '' }); return; }
+        this.setState({ fbKurs: { okt: d.okt, deltakere: d.deltakere || [], melding: d.melding || {} } });
+        window.scrollTo(0, 0);
+      })
+      .catch(() => this.setState({ kvittering: 'Fikk ikke kontakt med serveren' }));
+  }
+
+  /**
+   * Alt som endrer noe paa «Ferdig glassert» gaar samme vei.
+   *
+   * Svaret tar med deltakerlista paa nytt, saa skjermen viser det serveren
+   * faktisk har lagret — ikke det vi gjettet at den ville lagre.
+   */
+  ferdigbrentKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
+    return fetch('/api/admin/ferdigbrent.php', {
       method: 'POST', credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(kropp),
     })
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
       .then(({ ok, d }) => {
-        this._fbKall = false;
-        this.setState({
-          kvittering: ok ? 'Beskjeden er sendt' : 'Gikk ikke',
-          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        this.setState(st => {
+          const neste = { kvittering: ok ? (d.beskjed || 'Gjort') : ((d && d.feil) || 'Gikk ikke') };
+          if (ok && d.deltakere && st.fbKurs) {
+            neste.fbKurs = Object.assign({}, st.fbKurs, { deltakere: d.deltakere });
+          }
+          return neste;
         });
+        // Tallene paa kurskortene og paa Oversikt skal folge med.
         if (ok) { this._fbAdminHentes = false; this.hentFerdigbrentAdmin(); }
+        return ok;
       })
       .catch(() => {
-        this._fbKall = false;
         this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
       });
+  }
+
+  /** Beskjed til én deltaker. */
+  sendFerdigEn(d) {
+    const om = d.sendt
+      ? 'Sende beskjeden til ' + d.navn + ' en gang til?\n\nDen forrige blir staaende i historikken.'
+      : 'Sende beskjed til ' + d.navn + ' om at keramikken er ferdig?';
+    if (!window.confirm(om)) return;
+    this.ferdigbrentKall({ handling: 'meld-en', bookingId: d.id });
+  }
+
+  /**
+   * Beskjed til alle som mangler.
+   *
+   * Bekreftelsen sier hvilket kurs, hvor mange som faar den, og hva som
+   * staar i den. Uten teksten er det en knapp som sender noe du ikke har
+   * lest til folk du ikke har sett.
+   */
+  sendFerdigAlle() {
+    const k = this.state.fbKurs;
+    if (!k) return;
+    const mangler = (k.deltakere || []).filter(x => !x.sendt && !x.hentet);
+    if (!mangler.length) return;
+    const navn = mangler.map(x => x.navn).join(', ');
+    const tekst = (k.melding && k.melding.tekst) || '';
+    if (!window.confirm(
+      'Sende beskjed om at keramikken er ferdig?\n\n'
+      + 'Kurs: ' + k.okt.tittel + ', ' + k.okt.naar + '\n'
+      + 'Mottakere: ' + mangler.length + ' — ' + navn + '\n\n'
+      + 'Meldingen som sendes:\n' + tekst + '\n\n'
+      + 'De som alt har fått beskjed får den ikke på nytt.')) return;
+    this.ferdigbrentKall({ handling: 'meld-alle', oktId: k.okt.oktId });
+  }
+
+  /** Det interne notatet. Vises aldri til deltakeren. */
+  lagreFerdigNotat(d) {
+    this.ferdigbrentKall({ handling: 'notat', bookingId: d.id, notat: this.state.fbNotat ?? '' });
   }
 
   hentFerdigbrent() {
@@ -21390,6 +21576,130 @@ class Component extends DCLogic {
       erAdminNyttig: side === 'adminnyttig',
       erAdminFerdigbrent: side === 'adminferdigbrent',
       adminNavFerdigbrent: this.adminMeny(),
+      // ── Skjermen «Ferdig glassert» ───────────────────────────────────
+      //
+      // To seksjoner: det som venter paa beskjed, og det som er gjort. Et
+      // kurs flyttes over foerst naar alle paa datoen har faatt beskjed.
+      // Trykk et kurs, og deltakerne kommer fram i samme skjerm.
+      ...(() => {
+        const okter = this.state.ferdigbrentAdmin || [];
+        const valgt = this.state.fbKurs || null;        // { okt, deltakere, melding }
+        const kortStil = (ferdig) => ({
+          appearance: 'none', textAlign: 'left', cursor: 'pointer', width: '100%',
+          background: 'var(--surface-card)',
+          border: '1px solid ' + (ferdig ? 'var(--border-subtle)' : 'var(--lissom-brown)'),
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+          display: 'flex', flexDirection: 'column', height: '100%',
+        });
+        const kurskort = (o) => ({
+          tittel: o.tittel,
+          naar: o.naar,
+          // Tallet er det som mangler naar noe mangler, og totalen naar alt
+          // er gjort. Et kort som alltid viser totalen sier ingenting om at
+          // du maa dit.
+          tall: o.ferdig ? String(o.deltakere) : String(o.mangler),
+          tallFarge: o.feilet > 0 ? 'var(--terracotta-600)'
+                   : (o.ferdig ? 'var(--text-heading)' : 'var(--lissom-brown)'),
+          status: o.status,
+          detalj: o.deltakere + (o.deltakere === 1 ? ' deltaker' : ' deltakere')
+                + (o.bilder ? ' · ' + o.bilder + (o.bilder === 1 ? ' bilde' : ' bilder') : '')
+                + (o.feilet ? ' · ' + o.feilet + ' feilet' : ''),
+          stil: kortStil(o.ferdig),
+          velg: () => this.aapneFerdigKurs(o.oktId),
+        });
+
+        const venter = okter.filter(o => !o.ferdig);
+        const ferdige = okter.filter(o => o.ferdig);
+        const d = (valgt && valgt.deltakere) || [];
+        const mangler = d.filter(x => !x.sendt && !x.hentet).length;
+
+        return {
+          fbTrengerBase: this.erPublisert() && this.state.ferdigbrentKlar === false,
+          fbUtenValgtKurs: !valgt,
+          fbValgtKurs: !!valgt,
+          fbIngenVenter: this.erPublisert() && venter.length === 0,
+          fbIngenFerdige: this.erPublisert() && ferdige.length === 0,
+          fbVenter: venter.map(kurskort),
+          fbFerdige: ferdige.map(kurskort),
+          fbUker: (this.state.ferdigbrentUker || 3),
+
+          fbTilbake: () => this.setState({ fbKurs: null, fbApen: 0 }),
+          fbKursTittel: valgt ? valgt.okt.tittel : '',
+          fbKursNaar: valgt ? valgt.okt.naar : '',
+          fbKursTall: valgt
+            ? (mangler === 0
+                ? 'alle ' + d.length + ' har fått beskjed'
+                : mangler + ' av ' + d.length + ' mangler beskjed')
+            : '',
+          fbIngenDeltakere: !!valgt && d.length === 0,
+          fbKanSendeAlle: mangler > 0,
+          fbSendAlleTekst: 'Send beskjed til ' + mangler
+                         + (mangler === 1 ? ' deltaker' : ' deltakere'),
+          fbSendAlle: () => this.sendFerdigAlle(),
+
+          fbNotat: this.state.fbNotat ?? '',
+          settFbNotat: (e) => this.setState({ fbNotat: e.target.value }),
+
+          fbDeltakere: d.map(x => {
+            const apen = this.state.fbApen === x.id;
+            const forste = (x.bilder || [])[0];
+            return {
+              navn: x.navn,
+              kontakt: [x.epost, x.telefon].filter(Boolean).join(' · ') || 'Ingen kontaktinfo',
+              status: x.status,
+              toneFarge: x.tone === 'god' ? 'var(--sage-600, #4C6B4F)'
+                       : (x.tone === 'feil' ? 'var(--terracotta-600)' : 'var(--text-muted)'),
+              harSending: !!x.sisteNaar,
+              sisteTekst: x.sisteNaar ? (x.sisteKanal + ' · ' + x.sisteNaar) : '',
+              harNotat: !!x.notat,
+              notatKort: (x.notat || '').slice(0, 60),
+              harBilde: !!forste,
+              miniStil: {
+                width: 52, height: 52, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--clay-200)',
+                backgroundImage: forste ? "url('" + forste.url + "')" : 'none',
+                backgroundSize: 'cover', backgroundPosition: 'center',
+              },
+              apen: apen,
+              aapne: () => this.setState(st => ({
+                fbApen: st.fbApen === x.id ? 0 : x.id,
+                // Notatfeltet fylles med det som staar lagret naar du aapner.
+                fbNotat: st.fbApen === x.id ? '' : (x.notat || ''),
+              })),
+              harBilder: (x.bilder || []).length > 0,
+              utenBilder: (x.bilder || []).length === 0,
+              bilder: (x.bilder || []).map(b => ({
+                stil: {
+                  appearance: 'none', cursor: 'pointer', padding: 0,
+                  width: 110, height: 110, borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border-subtle)',
+                  backgroundColor: 'var(--clay-200)',
+                  backgroundImage: "url('" + b.url + "')",
+                  backgroundSize: 'cover', backgroundPosition: 'center',
+                },
+                stor: () => window.open(b.url, '_blank', 'noopener'),
+              })),
+              kanSende: !!x.kanSende,
+              utenKontakt: !x.kanSende,
+              sendTekst: x.sendt ? 'Send beskjed på nytt' : 'Send beskjed',
+              send: () => this.sendFerdigEn(x),
+              lagreNotat: () => this.lagreFerdigNotat(x),
+              hentetTekst: x.hentet ? 'Merk som ikke hentet' : 'Merk som hentet',
+              veksleHentet: () => this.ferdigbrentKall({
+                handling: 'hentet', bookingId: x.id, hentet: x.hentet ? 'nei' : 'ja',
+              }),
+              harHistorikk: (x.historikk || []).length > 0,
+              historikk: (x.historikk || []).map(h => ({
+                status: h.status, kanal: h.kanal, naar: h.naar,
+                mottaker: h.mottaker, tekst: h.tekst,
+                harFeil: !!h.feil, feil: h.feil,
+                farge: h.status === 'Sendt' ? 'var(--sage-600, #4C6B4F)'
+                     : (h.status === 'Feilet' ? 'var(--terracotta-600)' : 'var(--text-muted)'),
+              })),
+            };
+          }),
+        };
+      })(),
       erAdminVenteliste: side === 'adminventeliste',
       adminNavVenteliste: this.adminMeny(),
       erAdminKursholdere: side === 'adminkursholdere',
@@ -21704,7 +22014,7 @@ class Component extends DCLogic {
         { h: 'Priser og betaling', p: 'Alle priser vises i norske kroner og er inkl. mva der mva gjelder (kurs og undervisning er mva-fritt). Betaling skjer med Vipps ved bestilling. Medlemskap trekkes månedlig via Vipps Recurring.' },
         { h: 'Angrerett', p: 'Du har 14 dagers angrerett etter angrerettloven på varer kjøpt i nettbutikken. Angreretten gjelder ikke kurs og events med fastsatt dato når du har samtykket til at tjenesten starter — men våre avbestillingsregler under gjelder alltid.' },
         { h: 'Avbestilling av kurs og events', p: 'Full refusjon ved avbestilling mer enn 14 dager før kursstart, 50 % inntil 7 dager før. Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen. Refusjon skjer til Vipps innen 3 virkedager.' },
-        { h: 'Medlemskap', p: 'Medlemskap løper måned til måned og fornyes automatisk. Du kan si opp når som helst — medlemskapet løper da ut inneværende måned. Årsmedlemskap er en årsavtale med binding i 12 måneder. Prøv Lissom stopper av seg selv etter 30 dager. Ubrukte timer overføres ikke. Prøv Lissom kan kun benyttes én gang per person.' },
+        { h: 'Medlemskap', p: 'Medlemskap løper måned til måned og fornyes automatisk med trekk i Vipps. Du kan si opp når som helst, og oppsigelsen koster ingenting. Slik sier du opp: logg inn på Min side på lissom.no, åpne medlemskapskortet og trykk «Si opp». Du kan også stoppe avtalen selv i Vipps-appen under Profil → Avtaler og abonnement, eller sende en e-post til post@lissom.no eller ringe 400 00 000. Oppsigelsen gjelder fra og med neste trekk: du beholder tilgangen ut den perioden du har betalt for, og blir ikke trukket igjen. Du får bekreftelse på e-post, og medlemskapskortet på Min side viser at avtalen er sagt opp. Årsmedlemskap er en årsavtale med binding i 12 måneder; oppsigelsen gjelder da fra bindingstiden er ute. Prøv Lissom stopper av seg selv etter 30 dager og fornyes ikke. Ubrukte timer overføres ikke. Prøv Lissom kan kun benyttes én gang per person.' },
         { h: 'Levering og henting', p: 'Varer hentes i verkstedet på Teie innen to uker, eller sendes med Posten mot frakt. Spesialbestillinger har leveringstid etter avtale.' },
         { h: 'Reklamasjon', p: 'Håndlaget keramikk varierer i farge og form — det er ikke en mangel. Ved skade eller feil, kontakt oss på monica@lissom.no innen rimelig tid, så finner vi en løsning etter forbrukerkjøpsloven.' },
         { h: 'Avlysning fra oss', p: 'Ved for få påmeldte eller sykdom kan vi avlyse kurs. Du får da valget mellom ny dato eller full refusjon.' },
@@ -22681,36 +22991,17 @@ class Component extends DCLogic {
           vlMelding: this.state.vlMelding || '',
           settVlMelding: (e) => this.setState({ vlMelding: e.target.value }),
           ovVentelisteAntall: liste.length === 0 ? '' : liste.length + ' venter',
-          // ── Gjennomfoerte kurs ─────────────────────────────────────────
+          // ── Ferdig glassert ────────────────────────────────────────────
           //
-          // Varselmalen «ferdig_brent» har ligget i basen siden dag én uten
-          // at noe noen gang sendte den. Her er knappen.
+          // Kortet paa Oversikt teller kursdatoer som mangler beskjed.
+          // Selve arbeidet ligger paa /admin/ferdigbrent.
           ...(() => {
-            const okter = (this.state.ferdigbrentAdmin || []).slice(0, 12);
-            const uventet = okter.filter(o => !o.meldt).length;
+            const okter = this.state.ferdigbrentAdmin || [];
+            const venter = okter.filter(o => !o.ferdig).length;
             return {
               fbAdminAntall: okter.length === 0 ? ''
-                : (uventet > 0 ? uventet + ' venter på beskjed' : 'Alle er meldt'),
+                : (venter > 0 ? venter + ' venter på beskjed' : 'Alle er meldt'),
               ingenGjennomforte: this.erPublisert() && okter.length === 0,
-              fbAdminListe: okter.map(o => ({
-                tittel: o.tittel,
-                linje: o.naar + ' · ' + o.deltakere
-                     + (o.deltakere === 1 ? ' deltaker' : ' deltakere'),
-                merke: o.meldt ? 'Meldt ' + o.meldtNaar : 'Ikke meldt',
-                merkeFarge: o.meldt ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)',
-                kanMelde: !o.meldt,
-                erMeldt: !!o.meldt,
-                meld: () => {
-                  if (!window.confirm('Melde at arbeidene fra «' + o.tittel + '», ' + o.naar + ' er ferdige?\n\n'
-                      + 'Alle deltakerne får e-post, og det legges ut en melding på lissom.no/ferdigbrent i tre uker.')) return;
-                  this.ferdigbrentKall({ handling: 'meld', oktId: o.oktId });
-                },
-                angre: () => {
-                  if (!window.confirm('Ta meldingen ned fra nettsiden?\n\n'
-                      + 'E-post som alt er sendt, kan ikke hentes tilbake.')) return;
-                  this.ferdigbrentKall({ handling: 'angre', oktId: o.oktId });
-                },
-              })),
             };
           })(),
           ingenOvVenteliste: this.erPublisert() && liste.length === 0,

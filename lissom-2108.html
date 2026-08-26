@@ -1488,10 +1488,13 @@ window.__resources = {
                   </div>
                 </sc-for>
               </div>
-              <div style="margin-top: var(--space-8); border-left: 3px solid var(--lissom-yellow); padding-left: var(--space-5); max-width: 52ch;">
-                <p style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1.45; color: var(--text-heading); text-wrap: pretty;">{{ bSitat }}</p>
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ bSitatHvem }}</div>
-              </div>
+              <!-- Sitatet vises bare naar verkstedet har lagt inn et ekte. -->
+              <sc-if value="{{ bHarSitat }}" hint-placeholder-val="{{ true }}">
+                <div style="margin-top: var(--space-8); border-left: 3px solid var(--lissom-yellow); padding-left: var(--space-5); max-width: 52ch;">
+                  <p style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1.45; color: var(--text-heading); text-wrap: pretty;">{{ bSitat }}</p>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ bSitatHvem }}</div>
+                </div>
+              </sc-if>
             </div>
 
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
@@ -1756,8 +1759,10 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div style="max-width: 820px; margin: 0 auto; text-align: center;">
           <img src="mark-cup.svg" alt="" aria-hidden="true" style="width: 56px; margin: 0 auto var(--space-6); display: block; opacity: .85;" loading="lazy" decoding="async" width="192" height="112">
-          <blockquote style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 34px); line-height: 1.35; color: var(--text-heading); text-wrap: pretty;">{{ mkSitat }}</blockquote>
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ mkSitatAvsender }}</div>
+          <sc-if value="{{ mkHarSitat }}" hint-placeholder-val="{{ true }}">
+            <blockquote style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 2.2vw, 34px); line-height: 1.35; color: var(--text-heading); text-wrap: pretty;">{{ mkSitat }}</blockquote>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ mkSitatAvsender }}</div>
+          </sc-if>
         </div>
       </section>
 
@@ -8346,9 +8351,12 @@ const SIDEINNHOLD = {
     { navn: 'Slik fungerer timene', type: 'Fire steg', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Slik fungerer timene' },
       { l: 'Overskrift', v: 'Du stempler inn når du kommer' } ] },
+    // Sitatet sto med et navn og en tekst jeg fant paa. Et sitat fra en
+    // kunde som ikke finnes hoerer ikke hjemme paa en nettside. Feltet staar
+    // tomt til verkstedet har et ekte, og blokka vises ikke uten tekst.
     { navn: 'Sitat', type: 'Sitat', synlig: 'Publisert', felter: [
-      { l: 'Sitat', v: '«Jeg kom for å lære å dreie, men det som fikk meg til å bli var menneskene.»', lang: true },
-      { l: 'Avsender', v: 'Anniken · medlem siden 2025' } ] },
+      { l: 'Sitat', v: '', lang: true },
+      { l: 'Avsender', v: '' } ] },
   ],
   // «Ingress» sto to ganger i samme blokk. Skjemaet viste to like felter,
   // og bare det siste hadde noen virkning.
@@ -13340,7 +13348,7 @@ class Component extends DCLogic {
         bilder: (rad.bilder || []).filter(Boolean),
         pris: parseInt(String(rad.pris).replace(/[^\d]/g, ''), 10) || 0,
         kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 8,
-        sms: rad.sms === false ? 'nei' : 'ja',
+        sms: rad.sms === true ? 'ja' : 'nei',
         om: rad.beskrivelse || '',
         bekreftelse: rad.bekreftelse || '',
         status: 'publisert',
@@ -14353,7 +14361,7 @@ class Component extends DCLogic {
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
-      kMva: k.mva === '25 % mva', kSms: k.sms !== false,
+      kMva: k.mva === '25 % mva', kSms: k.sms === true,
       kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0
         ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'),
       kIntervall: k.gjentas, kAntall: '',
@@ -19354,8 +19362,10 @@ class Component extends DCLogic {
         ? 'Henter et forslag. Det tar noen sekunder.'
         : 'Skrevet ut fra de andre kursbeskrivelsene deres. Les den gjennom før du lagrer.',
       kForeslaaTekst: () => this.foreslaaKursbeskrivelse(),
-      kSms: this.state.kSms !== false,
-      toggleKSms: () => this.setState(s => ({ kSms: s.kSms === false })),
+      // SMS er ikke satt opp, og en hake som staar paa for noe som ikke
+      // virker er et lofte til kunden vi ikke holder. Av som standard.
+      kSms: this.state.kSms === true,
+      toggleKSms: () => this.setState(s => ({ kSms: s.kSms !== true })),
       kMva: !!this.state.kMva,
       toggleKMva: () => this.setState(s => ({ kMva: !s.kMva })),
       // Kategorien kunden filtrerer paa ute. Skjules for «Kun medlemmer» og
@@ -19561,7 +19571,7 @@ class Component extends DCLogic {
           pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
           gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
           pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
-          neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '', bekreftelse: this.state.kBekreftelse || '', mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms !== false, datoer, okter,
+          neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '', bekreftelse: this.state.kBekreftelse || '', mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms === true, datoer, okter,
           sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
           gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
           bilder: (this.state.kBilder || []).filter(Boolean),
@@ -21588,6 +21598,7 @@ class Component extends DCLogic {
       mkTimerTittel: this.innh('Medlemskap/3/Overskrift'),
       mkSitat: this.innh('Medlemskap/4/Sitat'),
       mkSitatAvsender: this.innh('Medlemskap/4/Avsender'),
+      mkHarSitat: !!this.innh('Medlemskap/4/Sitat'),
       keKicker: this.innh('Kurs og events/0/Kicker'),
       keIngress: this.innh('Kurs og events/0/Ingress'),
       keDetaljVenstre: this.innh('Kurs og events/0/Detalj venstre'),
@@ -21690,10 +21701,13 @@ class Component extends DCLogic {
         const k = this.state.valgtKurs || {};
         return [(k.date || 'Flere datoer'), (k.duration || ''), (k.level === 'Event' ? 'Ingen erfaring nødvendig' : (k.level || ''))].filter(Boolean).join(' · ');
       })(),
-      bSitat: ((this.state.valgtKurs || {}).level === 'Event')
-        ? '«Vi hadde utdrikningslag her — alle fikk til noe, og latteren satt løst hele kvelden.»'
-        : '«Jeg hadde aldri tatt i leire før, og gikk hjem med to boller jeg faktisk bruker. Rolig tempo og god hjelp hele veien.»',
-      bSitatHvem: ((this.state.valgtKurs || {}).level === 'Event') ? 'Marte · utdrikningslag i mai' : 'Kari · kursdeltaker i juni',
+      // «Kari · kursdeltaker i juni» og «Marte · utdrikningslag i mai» fantes
+      // ikke. Jeg skrev dem inn da sida ble bygget, og de sto som ekte
+      // tilbakemeldinger fra folk som har vaert her. Sitatet vises naa bare
+      // naar verkstedet selv har lagt inn et, under Nettsiden → Innhold.
+      bSitat: this.innh('Kurs/9/Sitat'),
+      bSitatHvem: this.innh('Kurs/9/Avsender'),
+      bHarSitat: !!this.innh('Kurs/9/Sitat'),
       visIntroRad: side === 'kurs' && this.state.kursFilter !== 'Drop-in',
       introBokser: (this.state.kursFilter === 'Events' ? [
         { tittel: 'Passer for', punkter: ['Venninnekvelder og par', 'Utdrikningslag og bursdager', 'Bedrifter og teambuilding'] },

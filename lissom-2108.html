@@ -4232,11 +4232,19 @@ window.__resources = {
                      treffe. De bryter naa i stedet. -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
                   <sc-for list="{{ kBilderuter }}" as="kb" hint-placeholder-count="3">
-                    <button type="button" onClick="{{ kb.velg }}" aria-label="{{ kb.merke }}" style="{{ kb.stil }}">
-                      <sc-if value="{{ kb.tom }}" hint-placeholder-val="{{ true }}">
-                        <span style="font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">{{ kb.merke }}</span>
+                    <!-- Krysset ligger utenfor ruteknappen, ikke inni: en
+                         knapp inni en knapp er ikke gyldig, og da blir det
+                         tilfeldig hva et trykk treffer. -->
+                    <div style="position: relative;">
+                      <button type="button" onClick="{{ kb.velg }}" aria-label="{{ kb.merke }}" style="{{ kb.stil }}">
+                        <sc-if value="{{ kb.tom }}" hint-placeholder-val="{{ true }}">
+                          <span style="font: var(--type-body-sm); color: var(--text-muted); text-align: center; padding: 8px;">{{ kb.merke }}</span>
+                        </sc-if>
+                      </button>
+                      <sc-if value="{{ kb.harBilde }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ kb.fjern }}" aria-label="Ta bildet ut av ruta" title="Ta bildet ut av ruta" style="{{ kb.fjernStil }}">×</button>
                       </sc-if>
-                    </button>
+                    </div>
                   </sc-for>
                 </div>
                 <!-- Alt-teksten redigeres under Nettsiden → SEO, feltet «Alt-tekst
@@ -20218,8 +20226,33 @@ class Component extends DCLogic {
           merke: i === 0 ? 'Hovedbilde' : 'Bilde ' + (i + 1),
           tom: !valgt,
           velg: () => this.apneBildevalg({ slag: 'kurs', rute: i }),
+          // Angrer du paa bildet, skal du bli kvitt det der det staar. Foer
+          // maatte du aapne velgeren, finne fram til «Fjern bildet fra ruta»,
+          // og lukke igjen — tre trykk for aa angre ett.
+          //
+          // Dette tommer bare ruta. Selve fila blir liggende under «Dine
+          // egne» i velgeren, og slettes med krysset der.
+          harBilde: !!valgt,
+          fjern: () => this.setState(st => {
+            const b = (st.kBilder || []).slice();
+            while (b.length < 3) { b.push(''); }
+            b[i] = '';
+            return { kBilder: b, kvittering: 'Bildet er tatt ut av ruta' };
+          }),
+          fjernStil: {
+            position: 'absolute', top: 6, right: 6, width: 28, height: 28,
+            appearance: 'none', cursor: 'pointer', padding: 0, lineHeight: '26px',
+            borderRadius: '50%', border: '2px solid #fff',
+            backgroundColor: 'rgba(46,16,2,.82)', color: '#fff',
+            fontSize: '15px', fontWeight: 700,
+            boxShadow: '0 2px 6px rgba(0,0,0,.35)',
+          },
           stil: {
             appearance: 'none', cursor: 'pointer', padding: 0, position: 'relative',
+            // Ruta ligger naa inni en <div> som holder krysset paa plass, og
+            // da er det ikke lenger ruta selv som er cella i rutenettet. Uten
+            // bredde krympet den til ingenting, og bildet forsvant.
+            width: '100%',
             // Ramma var 4:3 mens kortet ute er 16:10, og utsnittet sto alltid
             // i midten uansett hva som var valgt. Forhaandsvisninga viste
             // derfor et annet bilde enn det kunden faar — og et annet enn

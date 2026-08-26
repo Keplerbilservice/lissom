@@ -4538,38 +4538,6 @@ window.__resources = {
                «Varsle» sier fra at det er ledig, og saa er det foerste mann
                til moella. Ofte vet verkstedet hvem som skal ha plassen — og
                da skal de kunne gi den, ikke sende en beskjed om aa kappes. -->
-          <!-- Gjennomfoerte kurs. Ett trykk sender e-post til deltakerne og
-               legger ut en linje paa lissom.no/ferdigbrent. -->
-          <div id="ov-ferdigbrent" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Gjennomførte kurs</span>
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fbAdminAntall }}</span>
-            </div>
-            <sc-if value="{{ ingenGjennomforte }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed om at arbeidene er ferdige.</div>
-            </sc-if>
-            <sc-for list="{{ fbAdminListe }}" as="o" hint-placeholder-count="3">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-                  <div style="min-width: 0;">
-                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
-                  </div>
-                  <span style="font-size: var(--text-xs); color: {{ o.merkeFarge }}; white-space: nowrap;">{{ o.merke }}</span>
-                </div>
-                <div style="display: flex; gap: var(--space-4); margin-top: var(--space-3); flex-wrap: wrap;">
-                  <sc-if value="{{ o.kanMelde }}" hint-placeholder-val="{{ true }}">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ o.meld }}" hint-size="auto,36px">Meld klar til henting</x-import>
-                  </sc-if>
-                  <sc-if value="{{ o.erMeldt }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ o.angre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta meldingen ned</button>
-                  </sc-if>
-                </div>
-              </div>
-            </sc-for>
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Meldingen står på lissom.no/ferdigbrent i tre uker, og forsvinner av seg selv.</div>
-          </div>
-
           <div id="ov-venteliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
@@ -4667,6 +4635,40 @@ window.__resources = {
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
               </div>
             </sc-for>
+          </div>
+
+          <!-- Gjennomfoerte kurs. Ett trykk sender e-post til deltakerne og
+               legger ut en linje paa lissom.no/ferdigbrent. -->
+          <div id="ov-ferdigbrent" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; scroll-margin-top: 90px;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Gjennomførte kurs</span>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ fbAdminAntall }}</span>
+            </div>
+            <sc-if value="{{ ingenGjennomforte }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed om at arbeidene er ferdige.</div>
+            </sc-if>
+            <sc-for list="{{ fbAdminListe }}" as="o" hint-placeholder-count="3">
+              <!-- Samme form som naboene: navn og en linje til venstre,
+                   status og handling til hoeyre. Foer laa knappen paa en egen
+                   rad under, og kortet ble dobbelt saa hoyt som de andre i
+                   rutenettet. -->
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
+                </div>
+                <sc-if value="{{ o.kanMelde }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ o.meld }}" hint-size="auto,34px">Meld klar</x-import>
+                </sc-if>
+                <sc-if value="{{ o.erMeldt }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
+                    <span style="font-size: var(--text-xs); color: {{ o.merkeFarge }};">{{ o.merke }}</span>
+                    <button type="button" onClick="{{ o.angre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta meldingen ned</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">Meldingen står på lissom.no/ferdigbrent i tre uker og forsvinner av seg selv.</div>
           </div>
 
           <!-- Kursene, sett fra kurset og ikke fra datoen. Programmet over

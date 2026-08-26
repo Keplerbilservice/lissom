@@ -7911,7 +7911,9 @@ window.__resources = {
         <div onClick="{{ mkVelgFokus }}" style="{{ mkFokusStil }}"></div>
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin: var(--space-2) 0 var(--space-6);">
           <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkFokusTekst }}</span>
-          <button type="button" onClick="{{ mkMidtstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Midtstill</button>
+          <sc-if value="{{ mkKanMidtstille }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ mkMidtstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Midtstill</button>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -12305,12 +12307,22 @@ class Component extends DCLogic {
       mkBildeEgne: (liste.egne || []).map(b => Object.assign(rute(b), {
         stil: Object.assign(rute(b).stil, { width: '100%' }),
         slett: () => this.slettBilde(b),
+        // Krysset ligger oppa et bilde, og et bilde kan vaere hva som helst.
+        // Foerste utgave var en liten lys sirkel i lys ramme — den forsvant.
+        // Naa er den moerk med hvitt kryss og en skygge under, saa den staar
+        // fram ogsaa paa et lyst bilde.
+        //
+        // «backgroundColor», ikke «background»: kortformen med en variabel
+        // kan ikke regnes ut av nettleseren og tar med seg resten av
+        // background-verdiene i fallet. Det var den som gjorde bilderutene
+        // sorte.
         slettStil: {
-          position: 'absolute', top: 4, right: 4, width: 24, height: 24,
-          appearance: 'none', cursor: 'pointer', padding: 0, lineHeight: '22px',
-          borderRadius: '50%', border: '1px solid var(--border-subtle)',
-          background: 'var(--surface-card)', color: 'var(--text-heading)',
-          font: 'var(--type-body-sm)', fontWeight: 700,
+          position: 'absolute', top: 6, right: 6, width: 28, height: 28,
+          appearance: 'none', cursor: 'pointer', padding: 0, lineHeight: '26px',
+          borderRadius: '50%', border: '2px solid #fff',
+          backgroundColor: 'rgba(46,16,2,.82)', color: '#fff',
+          fontSize: '15px', fontWeight: 700,
+          boxShadow: '0 2px 6px rgba(0,0,0,.35)',
         },
       })),
       mkHarEgneBilder: (liste.egne || []).length > 0,
@@ -12384,6 +12396,10 @@ class Component extends DCLogic {
         this.settFokus(fil, x + '% ' + y + '%');
       },
       mkMidtstill: () => { if (valgt.bilde) this.settFokus(valgt.bilde, '50% 50%'); },
+      // Knappen sto der ogsaa naar bildet alt sto midt i, og da gjorde et
+      // trykk ingenting. Den saa oedelagt ut mens den gjorde akkurat det den
+      // skulle. Naa staar den bare naar det finnes noe aa stille tilbake.
+      mkKanMidtstille: this.fokusFor(valgt.bilde || '') !== '50% 50%',
       mkFokusTekst: (() => {
         const p = this.fokusFor(valgt.bilde || '');
         return p === '50% 50%'

@@ -229,3 +229,117 @@ ALTER TABLE bookings ADD COLUMN hentet_at DATETIME NULL;
 
 De seksten punktene i bestillingen, ført opp med resultat etter hvert som de
 gjøres. Fylles ut under «Testresultat» nederst i dette dokumentet.
+
+---
+
+## 11. Testresultat
+
+Kjørt 26. august mot testdatabasen, med en kursdato satt opp med fire
+deltakere: én med bilde og notat, én uten e-post og telefon, én som fikk
+utsendelsen til å feile, og én vanlig.
+
+E-posten er sendt av den ekte køjobben (`Utsending::tomKo()`), ikke etterlignet.
+«Feilet» er en ekte feil: fem forsøk mot en avsender som ikke svarte, og
+statusen satt av `merkFeilet()` slik den gjøres i drift.
+
+| # | Test | Resultat | Hvordan |
+|---|---|---|---|
+| 1 | Kurs vises i «Ferdig glassert» | ✅ | To kursdatoer i skjermbildet: «Kurs boller · 1 deltaker» og «Nybegynner dreiekurs · 4 deltakere · 1 bilde» |
+| 2 | Kurset kan åpnes | ✅ | Trykk på kortet åpner deltakerne i samme skjerm, med «← Alle kurs» tilbake |
+| 3 | Alle riktige deltakere vises | ✅ | Alle fire kom fram, både `betalt` og `reservert`, og ingen andre |
+| 4 | Deltakeren kan laste opp bilder fra Min side | ✅ | På telefonstørrelse 390 × 844: 1 → 2 bilder, sletting 2 → 1, feltet bærer `capture="environment"` |
+| 5 | Bildene vises på riktig deltaker i admin | ✅ | Miniatyren på Kari Deltakers rad er hennes egen fil (`api/bilde.php?deltaker=…`), ikke på noen annen rad |
+| 6 | Notat kan legges til og lagres | ✅ | «Grønn skål, hylle 3.» lagret, kom tilbake på raden etter ny henting |
+| 7 | Beskjed til én deltaker | ✅ | «Beskjed lagt i kø til Kari Deltaker.» |
+| 8 | Sendestatus, dato og kanal registreres | ✅ | Raden viser «Sendt beskjed» og «E-post · onsdag 26. august, 20:51» |
+| 9 | Send til alle som ikke har fått | ✅ *etter retting* | Se avsnittet under |
+| 10 | Vellykket utsendelse markeres som sendt | ✅ | To e-poster faktisk levert av køjobben, begge deltakerne står som «Sendt beskjed» |
+| 11 | Feilet utsendelse forblir usendt og viser feil | ✅ | Carl Feilesen: «Utsendelse feilet», med «Leverandøren svarte med feil» på raden |
+| 12 | Kurset flyttes til «Sendt beskjed» først når alle har fått | ✅ | Sto under «Klar til å sende beskjed» med «2 av 4 mangler beskjed», og flyttet seg først da siste deltaker var i havn |
+| 13 | Historikken beholdes | ✅ | Carl har to linjer: «Feilet · E-post 20:51» og «Sendt · E-post 20:52». Ingenting overskrevet |
+| 14 | Tilgangskontrollen | ✅ | Se tabellen under |
+| 15 | Mobil og datamaskin | ✅ | Se tabellen under |
+| 16 | Eksisterende funksjoner virker fortsatt | ✅ | 119 av 119 i `tests/backend.php`. `api/kurs.php`, `api/admin/kurs.php`, `api/admin/oversikt.php`, `api/admin/varsler.php`, `api/mine-plasser.php` og den offentlige `api/ferdigbrent.php` svarer som før |
+
+### Test 9 fant en feil, og den er rettet
+
+Første gjennomkjøring: én deltaker fikk beskjed, og «send til alle» sendte
+den til henne **en gang til**. Køen hadde to like e-poster til samme person.
+
+Grunnen var at «send til alle» hoppet over dem som var *levert*, ikke dem som
+var *sendt herfra*. En beskjed som lå i køen — sendt, men ikke kommet fram
+ennå — så ut som om den ikke fantes.
+
+Rettet i `api/admin/ferdigbrent.php`: deltakeren har nå et felt `venter`, og
+både «send til alle» og skjermbildet regner den som ivaretatt.
+
+Etter rettingen:
+
+```
+Første trykk:  «2 deltakere har fått beskjed. 1 lå alt i kø og fikk den ikke
+                på nytt. Bjorn Utenkontakt står uten e-post og telefon og må
+                kontaktes selv.»
+Andre trykk:   «Alle beskjedene ligger alt i kø. Ingen fikk den to ganger.»
+Køen:           én rad per deltaker. Ingen fikk to.
+```
+
+Samme gjennomkjøring fant en ting til: en beskjed som feilet første gang og
+gikk gjennom andre gang viste fortsatt feilmeldingen fra første forsøk, under
+en linje som sa «Sendt». `feilmelding` blir stående i basen. Den vises nå
+bare på linjer som faktisk står som feilet.
+
+### Test 14 — tilgang
+
+| Hvem | Hva | Svar |
+|---|---|---|
+| Kari | sitt eget bilde | 200 |
+| Ola | Karis bilde | 404 |
+| Uinnlogget | samme bilde | 404 |
+| Admin | samme bilde | 200 |
+| Ola | `mine-bilder.php?bookingId=` Karis | «Fant ikke påmeldingen.» |
+| Ola | slett Karis bilde | «Fant ikke bildet.» |
+| Ola | last opp på Karis påmelding | «Fant ikke påmeldingen.» |
+| Ola | admin-lista over deltakere | «Fant ikke siden.» |
+
+Filnavnet er 32 tegn tilfeldig, men det er ikke det som beskytter bildet:
+`api/bilde.php` slår opp eieren i basen ved hvert eneste oppslag.
+
+`internt_notat` leses ikke av noe endepunkt utenfor `api/admin/`. Sjekket med
+søk over hele `api/`.
+
+### Test 15 — mobil og datamaskin
+
+| | Mobil 390 × 844 | Datamaskin 1400 × 1000 |
+|---|---|---|
+| Kursene vises | ✅ 2 kort | ✅ 2 kort |
+| Kurset åpner deltakerne | ✅ | ✅ |
+| Detaljpanelet åpner | ✅ notat og historikk | ✅ |
+| Vannrett rulling | ✅ ingen | ✅ ingen |
+| Knappehøyde | 34–35 px | 28–29 px |
+| Min side, opplasting | ✅ kamera, opplasting, sletting | — |
+
+Knappene er designsystemets egen `sm`-knapp, samme som resten av admin.
+Admin-menyen ligger som før i en vannrett rad som skyves ut på smal skjerm —
+det er slik den er fra før, og er ikke rørt her.
+
+### Filer som ble endret
+
+| Fil | Hva |
+|---|---|
+| `db/migrations/055_ferdig_glassert.sql` | ny tabell `deltaker_bilder`, kolonnene `internt_notat` og `hentet_at` på `bookings` |
+| `api/admin/ferdigbrent.php` | skrevet om til deltakernivå: liste, historikk, status, bilder, notat, hentet, send til én, send til alle |
+| `api/mine-bilder.php` | ny — deltakerens egen opplasting, visning og sletting |
+| `api/bilde.php` | ny kilde `?deltaker=`, med eierskapssjekk på serveren |
+| `api/mine-plasser.php` | tar med bildene på hver påmelding |
+| `lissom-2108.html` | skjermen «Ferdig glassert» med to seksjoner, kurskort, deltakerrader og detaljpanel — og blokka «Bilder av det du laget» på Min side |
+| `docs/FERDIG-GLASSERT.md` | kartleggingen og dette testresultatet |
+
+Ingen eksisterende funksjon er fjernet. Ingen nye kort, knapper eller
+komponenter er laget der malen alt hadde en.
+
+### Det som ikke kunne testes herfra
+
+- Ekte e-post ut til en ekte mottaker. Utsendelsen er kjørt av den ekte
+  køjobben, men mot en lokal avsender — ikke gjennom SMTP-en på webhotellet.
+- SMS. Det er ikke satt opp noen SMS-leverandør i testmiljøet.
+- Det som ligger på lissom.no. Nettadressen er ikke tilgjengelig herfra.

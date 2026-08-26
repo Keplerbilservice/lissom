@@ -21747,7 +21747,11 @@ class Component extends DCLogic {
         const venter = okter.filter(o => !o.ferdig);
         const ferdige = okter.filter(o => o.ferdig);
         const d = (valgt && valgt.deltakere) || [];
-        const mangler = d.filter(x => !x.sendt && !x.hentet).length;
+        // Den som staar i koen mangler ikke beskjed. Den er sendt herfra, og
+        // koen har den — teller vi hen som manglende, sier «Send beskjed til
+        // 1 deltaker» noe som ikke skjer naar du trykker.
+        const mangler = d.filter(x => !x.sendt && !x.hentet && !x.venter).length;
+        const iKoe = d.filter(x => x.venter && !x.hentet).length;
 
         return {
           fbTrengerBase: this.erPublisert() && this.state.ferdigbrentKlar === false,
@@ -21763,9 +21767,11 @@ class Component extends DCLogic {
           fbKursTittel: valgt ? valgt.okt.tittel : '',
           fbKursNaar: valgt ? valgt.okt.naar : '',
           fbKursTall: valgt
-            ? (mangler === 0
-                ? 'alle ' + d.length + ' har fått beskjed'
-                : mangler + ' av ' + d.length + ' mangler beskjed')
+            ? (mangler > 0
+                ? mangler + ' av ' + d.length + ' mangler beskjed'
+                : (iKoe > 0
+                    ? iKoe + (iKoe === 1 ? ' beskjed står i kø' : ' beskjeder står i kø')
+                    : 'alle ' + d.length + ' har fått beskjed'))
             : '',
           fbIngenDeltakere: !!valgt && d.length === 0,
           fbKanSendeAlle: mangler > 0,

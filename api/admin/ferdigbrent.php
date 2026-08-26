@@ -146,6 +146,9 @@ function deltakerne(int $oktId, bool $medDetaljer): array
             'status'   => $st['status'],
             'tone'     => $st['tone'],
             'sendt'    => $st['status'] === 'Sendt beskjed',
+            // Lagt i koen, ikke sendt enda. Verkstedet har gjort sitt; koen
+            // staar for resten. Da skal ikke «send til alle» sende paa nytt.
+            'venter'   => $st['status'] === 'I kø',
             'kanSende' => ($r['epost'] ?? '') !== '' || ($r['telefon'] ?? '') !== '',
             'hentet'   => ($r['hentet_at'] ?? null) !== null,
             'notat'    => (string) ($r['internt_notat'] ?? ''),
@@ -165,7 +168,10 @@ function deltakerne(int $oktId, bool $medDetaljer): array
                 'tekst'     => (string) $h['tekst'],
                 'status'    => $h['status'] === 'sendt' ? 'Sendt'
                              : ($h['status'] === 'feilet' ? 'Feilet' : 'I kø'),
-                'feil'      => (string) ($h['feilmelding'] ?? ''),
+                // feilmelding staar igjen fra forrige forsoek ogsaa naar
+                // neste gikk gjennom. Da hoerer den ikke hjemme i en linje
+                // som sier «Sendt».
+                'feil'      => $h['status'] === 'feilet' ? (string) ($h['feilmelding'] ?? '') : '',
                 'naar'      => Booking::norskDato((string) ($h['sendt_at'] ?: $h['created_at'])),
             ], $hist);
         }
@@ -233,11 +239,14 @@ if (Foresporsel::metode() === 'GET') {
             continue;
         }
         $sendt = 0;
+        $venter = 0;
         $bilder = 0;
         $feilet = 0;
         foreach ($deltakere as $d) {
             if ($d['sendt'] || $d['hentet']) {
                 $sendt++;
+            } elseif ($d['venter']) {
+                $venter++;
             }
             if ($d['status'] === 'Utsendelse feilet') {
                 $feilet++;
@@ -245,7 +254,11 @@ if (Foresporsel::metode() === 'GET') {
             $bilder += count($d['bilder']);
         }
         $antall = count($deltakere);
-        $mangler = $antall - $sendt;
+        // Den som staar i koen mangler ikke beskjed — den er sendt fra
+        // verkstedet, og koen har den. Ellers ville kurset ligget som
+        // «ingen har faatt beskjed» til koen tomte seg, og et nytt trykk
+        // ville ikke gjort noe.
+        $mangler = $antall - $sendt - $venter;
 
         $ut[] = [
             'oktId'     => (int) $o['id'],
@@ -258,10 +271,15 @@ if (Foresporsel::metode() === 'GET') {
             'feilet'    => $feilet,
             'bilder'    => $bilder,
             // Hele kurset er ferdig først når alle har fått beskjed.
-            'ferdig'    => $mangler === 0,
+            'venter'    => $venter,
+            // Ferdig foerst naar alle faktisk har faatt den — koen teller
+            // ikke her, for den kan enda feile.
+            'ferdig'    => $sendt === $antall,
             'status'    => $mangler === 0
-                             ? 'Alle har fått beskjed'
-                             : ($sendt > 0
+                             ? ($sendt === $antall
+                                 ? 'Alle har fått beskjed'
+                                 : $venter . ' ' . ($venter === 1 ? 'beskjed står' : 'beskjeder står') . ' i kø')
+                             : ($sendt + $venter > 0
                                  ? $mangler . ' av ' . $antall . ' mangler beskjed'
                                  : 'Ingen har fått beskjed'),
             'meldt'     => $o['hentemelding_at'] !== null,
@@ -372,8 +390,16 @@ if ($handling === 'meld-alle') {
 
     $sendt = 0;
     $uten = [];
+    $ikoe = 0;
     foreach (deltakerne($oktId, false) as $d) {
         if ($d['sendt'] || $d['hentet']) {
+            continue;
+        }
+        // Ligger beskjeden alt i koen, er den sendt herfra. Et nytt trykk
+        // skal ikke legge den inn en gang til — da ville deltakeren faatt
+        // to like e-poster fordi noen var utaalmodig.
+        if ($d['venter']) {
+            $ikoe++;
             continue;
         }
         $b = hentDeltaker((int) $d['id']);
@@ -400,8 +426,11 @@ if ($handling === 'meld-alle') {
             ['kurs' => $okt['tittel'], 'sendt' => $sendt]);
 
     $tekst = $sendt === 0
-        ? 'Ingen fikk beskjed.'
+        ? ($ikoe > 0 ? 'Alle beskjedene ligger alt i kø. Ingen fikk den to ganger.' : 'Ingen fikk beskjed.')
         : ($sendt === 1 ? 'Én deltaker har fått beskjed.' : $sendt . ' deltakere har fått beskjed.');
+    if ($sendt > 0 && $ikoe > 0) {
+        $tekst .= ' ' . $ikoe . ' lå alt i kø og fikk den ikke på nytt.';
+    }
     if ($uten !== []) {
         $tekst .= ' ' . implode(', ', $uten) . ' står uten e-post og telefon og må kontaktes selv.';
     }

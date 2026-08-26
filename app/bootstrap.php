@@ -39,11 +39,6 @@ if ($hemmeligheter === '') {
     exit('Serveren er ikke ferdig satt opp.');
 }
 
-// Hvilken av de to filene som ble lest. To steder er ett for mye naar noen
-// legger en noekkel i den som ikke er i bruk og lurer paa hvorfor ingenting
-// skjer — helsesjekken sier hvilken det ble.
-define('SECRETS_FIL', $hemmeligheter);
-
 /** @var array<string,mixed> $LISSOM_SECRETS */
 $LISSOM_SECRETS = require $hemmeligheter;
 

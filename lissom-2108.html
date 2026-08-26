@@ -5042,79 +5042,93 @@ window.__resources = {
              finne: det du gjorde oftest laa mellom det du gjorde sjelden.
              Kortene er de ni tingene verkstedet faktisk begynner med. Hele
              kortet er klikkbart, og tallet paa det avgjor om du maa dit. -->
-        <!-- Programmet staar foerst og i full bredde. Det er det som
-             faktisk skjer i dag, og det verkstedet aapner sida for aa
-             se. Det laa en kort tid som et kort blant de andre — det
-             var min egen idé, ikke bestilt, og et kort er for lite til
-             et program. -->
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
-            <div style="display: flex; gap: 2px;">
-              <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
-                <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
-              </sc-for>
+        <!-- Programmet staar for seg selv i en staaende spalte, og
+             kortene ved siden av. Foer laa det i full bredde over
+             kortene og tok halve skjermen paa noe som er en liste med
+             fire linjer. Paa smal skjerm legger lx-split dem under
+             hverandre av seg selv. -->
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: var(--space-5); align-items: start; margin-bottom: var(--space-10);">
+          <div style="min-width: 0;">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
+              <div style="display: flex; gap: 2px;">
+                <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
+                </sc-for>
+              </div>
             </div>
-          </div>
-          <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
-          </sc-if>
-          <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
-            <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
-              <span style="flex: 1 1 140px; min-width: 0;">
-                <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
-                <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
-              </span>
-              <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
-                <span style="display: flex; gap: var(--space-3); margin-left: auto;">
-                  <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
-                  <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
-                </span>
-              </sc-if>
-            </div>
-          </sc-for>
-          <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
-          </sc-if>
-
-          <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
-               kursene ikke skrives inn to steder. -->
-          <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
-            <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
-            <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
-              <div style="margin-top: var(--space-4);">
-                <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
-                <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
-                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
-                  <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
-                </div>
-                <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+            <!-- Bla i hele maaneder. Staar bare naar «Maaned» er valgt — paa
+                 «I dag» og «Uke» er det ingenting aa bla i. -->
+            <sc-if value="{{ visMaaneder }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <button type="button" onClick="{{ mndForrige }}" aria-label="Forrige måned" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 8px; font-size: var(--text-lg); line-height: 1; color: var(--lissom-brown);">‹</button>
+                <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ mndNavn }}</span>
+                <button type="button" onClick="{{ mndNeste }}" aria-label="Neste måned" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 8px; font-size: var(--text-lg); line-height: 1; color: var(--lissom-brown);">›</button>
               </div>
             </sc-if>
+            <sc-if value="{{ programSenere }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--terracotta-600);">{{ programSenereTekst }}</div>
+            </sc-if>
+            <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
+              <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
+                <span style="flex: 1 1 140px; min-width: 0;">
+                  <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
+                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
+                </span>
+                <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
+                  <span style="display: flex; gap: var(--space-3); margin-left: auto;">
+                    <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
+                    <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                  </span>
+                </sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
+            </sc-if>
+
+            <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
+                 kursene ikke skrives inn to steder. -->
+            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
+              <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
+              <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-4);">
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
+                  <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
+                    <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+                  </div>
+                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          </div>
+          <div style="min-width: 0;">
+          <!-- Kortene kan dras dit du vil ha dem. Rekkefolgen lagres, saa den
+               staar til neste gang ogsaa. Selve dragingen ligger i et lite
+               skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
+               endring, og da maa lyttingen henge paa beholderen og ikke paa
+               hvert kort. -->
+          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
+            <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
+              <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
+                  <span style="{{ k.tallStil }}">{{ k.tall }}</span>
+                </div>
+                <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.hva }}</p>
+                <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ k.knapp }} →</span>
+              </button>
+            </sc-for>
+          </div>
+          <p style="margin: 0 0 var(--space-10); font-size: var(--text-xs); color: var(--text-muted);">{{ ovDraHjelp }}</p>
           </div>
         </div>
-        <div style="height: var(--space-10);"></div>
 
-        <!-- Kortene kan dras dit du vil ha dem. Rekkefolgen lagres, saa den
-             staar til neste gang ogsaa. Selve dragingen ligger i et lite
-             skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
-             endring, og da maa lyttingen henge paa beholderen og ikke paa
-             hvert kort. -->
-        <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
-          <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
-            <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
-              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
-                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
-                <span style="{{ k.tallStil }}">{{ k.tall }}</span>
-              </div>
-              <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.hva }}</p>
-              <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ k.knapp }} →</span>
-            </button>
-          </sc-for>
-        </div>
-        <p style="margin: 0 0 var(--space-10); font-size: var(--text-xs); color: var(--text-muted);">{{ ovDraHjelp }}</p>
         <!-- Her sto seksjonen «Kursene» med en liste over seks kurs.
              Radene gikk til Alle kurs og aapnet kurset der — noeyaktig dit
              kortet «Planlagte kurs» gaar. Skjermen og kortet fantes altsaa
@@ -11508,10 +11522,10 @@ class Component extends DCLogic {
 
     if (!okter.length) {
       if (this.erPublisert()) return [];
-      return v === 'Denne uka' ? [
+      return v === 'Uke' ? [
         { tid: 'Man 24.', hva: 'Drop-in og glasurbrann', detalj: 'Se dagens program' },
         { tid: 'Ons 26.', hva: 'Glasurkveld for medlemmer', detalj: '18:00 – 21:00 · 4 av 10' },
-      ] : v === 'Denne måneden' ? [
+      ] : v === 'Måned' ? [
         { tid: 'Uke 35', hva: '4 kurs og 2 events', detalj: '34 påmeldte · denne uka' },
         { tid: 'Uke 36', hva: 'Salgsuke 2.–8. september', detalj: 'Åpen dag søndag 6. · 11–16' },
       ] : [
@@ -11529,16 +11543,18 @@ class Component extends DCLogic {
     const ukeStart = new Date(dagStart);
     ukeStart.setDate(dagStart.getDate() - ((dagStart.getDay() + 6) % 7));
     const ukeSlutt = new Date(ukeStart); ukeSlutt.setDate(ukeStart.getDate() + 7);
-    const mndSlutt = new Date(naa.getFullYear(), naa.getMonth() + 1, 1);
     const dagSlutt = new Date(dagStart); dagSlutt.setDate(dagStart.getDate() + 1);
-    // «Neste måned» er en egen periode, ikke «alt framover»: den begynner
-    // der «denne måneden» slutter.
-    const nesteSlutt = new Date(naa.getFullYear(), naa.getMonth() + 2, 1);
 
-    const fra = v === 'Neste måned' ? mndSlutt : dagStart;
-    const til = v === 'Denne uka' ? ukeSlutt
-              : v === 'Denne måneden' ? mndSlutt
-              : v === 'Neste måned' ? nesteSlutt
+    // Maaneden du har bladd deg fram til. Null er denne maaneden, ett er
+    // neste, minus én er forrige. Blar du bakover, begynner perioden foerst
+    // i maaneden og ikke i dag — ellers ville august sett tom ut den 26.
+    const skift = this.state.ovMnd || 0;
+    const mndStart = new Date(naa.getFullYear(), naa.getMonth() + skift, 1);
+    const mndSlutt = new Date(naa.getFullYear(), naa.getMonth() + skift + 1, 1);
+
+    const fra = v === 'Måned' ? (skift === 0 ? dagStart : mndStart) : dagStart;
+    const til = v === 'Uke' ? ukeSlutt
+              : v === 'Måned' ? mndSlutt
               : dagSlutt;
     const DAG = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
 
@@ -11553,7 +11569,8 @@ class Component extends DCLogic {
     // Kortet sto tomt paa en dag uten kurs, selv om det var satt opp fire
     // stykker neste uke. «Ingenting i dag» er sant, men ubrukelig — det du
     // vil vite er naar det neste er.
-    const tomtNaa = valgte.length === 0 && medDato.length > 0;
+    const blar = v === 'Måned' && (this.state.ovMnd || 0) !== 0;
+    const tomtNaa = valgte.length === 0 && medDato.length > 0 && !blar;
     if (tomtNaa) {
       valgte = medDato.slice(0, 3);
     }
@@ -20081,9 +20098,14 @@ class Component extends DCLogic {
           },
         };
       })(),
-      ovProgramValg: ['I dag', 'Denne uka', 'Denne måneden', 'Neste måned'].map(n => ({
+      // «Neste måned» var én fast periode. Naa blar du i hele maaneder i
+      // stedet, saa langt fram eller tilbake du vil.
+      ovProgramValg: ['I dag', 'Uke', 'Måned'].map(n => ({
         navn: n,
-        velg: () => this.setState({ ovProgram: n }),
+        // Bytter du fane, begynner maanedsblaingen paa nytt fra denne
+        // maaneden. Ellers ville du kommet tilbake til november uten aa vite
+        // hvorfor.
+        velg: () => this.setState({ ovProgram: n, ovMnd: 0 }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--radius-pill)', border: 'none', background: n === (this.state.ovProgram || 'I dag') ? 'var(--lissom-brown)' : 'transparent', color: n === (this.state.ovProgram || 'I dag') ? 'var(--clay-50)' : 'var(--text-muted)' },
       })),
       // Programmet bygges av oktene serveren sender. Sto foer som tre faste
@@ -20106,14 +20128,33 @@ class Component extends DCLogic {
           window.scrollTo(0, 0);
         },
       })),
+      ...(() => {
+        // Maaneden du staar i, som navn. Regnes ut fra dagens dato og hvor
+        // mange maaneder du har bladd.
+        const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                     'august', 'september', 'oktober', 'november', 'desember'];
+        const skift = this.state.ovMnd || 0;
+        const naa = new Date();
+        const d = new Date(naa.getFullYear(), naa.getMonth() + skift, 1);
+        return {
+          visMaaneder: (this.state.ovProgram || 'I dag') === 'Måned',
+          mndNavn: MND[d.getMonth()] + ' ' + d.getFullYear(),
+          mndForrige: () => this.setState(st => ({ ovMnd: (st.ovMnd || 0) - 1 })),
+          mndNeste: () => this.setState(st => ({ ovMnd: (st.ovMnd || 0) + 1 })),
+        };
+      })(),
       ingenProgram: this.erPublisert() && this.programListe().length === 0,
       ingenProgramTekst: (this.state.ovProgram || 'I dag') === 'I dag'
         ? 'Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.'
-        : (this.state.ovProgram === 'Denne uka'
+        : (this.state.ovProgram === 'Uke'
             ? 'Ingenting satt opp denne uka, og ingenting senere heller.'
-            : this.state.ovProgram === 'Neste måned'
-              ? 'Ingenting satt opp neste måned ennå.'
-              : 'Ingenting satt opp denne måneden, og ingenting senere heller.'),
+            : (() => {
+                const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                             'august', 'september', 'oktober', 'november', 'desember'];
+                const naa = new Date();
+                const d = new Date(naa.getFullYear(), naa.getMonth() + (this.state.ovMnd || 0), 1);
+                return 'Ingenting satt opp i ' + MND[d.getMonth()] + '.';
+              })()),
       // Sier fra naar lista viser noe som ligger utenfor perioden man valgte.
       ...(() => {
         const v = this.state.ovProgram || 'I dag';
@@ -20122,8 +20163,7 @@ class Component extends DCLogic {
         return {
           programSenere: senere,
           programSenereTekst: v === 'I dag' ? 'Ingenting i dag. Det neste som skjer:'
-            : v === 'Denne uka' ? 'Ingenting denne uka. Det neste som skjer:'
-            : v === 'Neste måned' ? 'Ingenting neste måned. Det neste som skjer:'
+            : v === 'Uke' ? 'Ingenting denne uka. Det neste som skjer:'
             : 'Ingenting denne måneden. Det neste som skjer:',
         };
       })(),

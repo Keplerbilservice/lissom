@@ -155,7 +155,21 @@ $svar['nokler'] = [
     'vipps_sub_key'       => $fylt('vipps_sub_key'),
     'admin_telefon'       => Config::adminNumre() !== [],
     'sveve_sms'           => $fylt('sveve_bruker'),
+    // AI-en i markedsforingen. Noekkelen kan ligge i to filer, og bare den
+    // ene leses — da er «er den satt» og «hvilken fil» det samme sporsmaalet.
+    'claude_api_key'      => $fylt('claude_api_key'),
 ];
+
+// Hvilke secrets-filer som finnes. Den overste av dem er den som leses;
+// ligger noekkelen i den andre, skjer det ingenting, og det er umulig aa se
+// uten aa faa det sagt.
+//
+// Staar bare her, ikke i bootstrap.php: den kjorer ved hver eneste
+// foresporsel, og en helsesjekk er ikke verdt aa roere den for.
+$svar['secrets_filer'] = array_values(array_filter([
+    dirname(APP_DIR) . '/../lissom-secrets/secrets.php',
+    APP_DIR . '/secrets.php',
+], 'is_file'));
 
 // --- Filer som ma ligge paa plass -----------------------------------------
 // Deployen har lagt dem ut, men det er verdt aa kunne se det uten aa gjette.

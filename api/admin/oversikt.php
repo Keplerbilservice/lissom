@@ -41,6 +41,37 @@ $kalenderAdresse = static function (bool $lagNy = false): string {
 // hele poenget med aa kunne bytte den.
 if (Foresporsel::metode() === 'POST') {
     Foresporsel::krevSammeOpphav();
+
+    // ── Rekkefolgen paa kortene ────────────────────────────────────────────
+    //
+    // Verkstedet drar kortene dit de vil ha dem, og da skal de ligge der i
+    // morgen ogsaa. Lagres som ei liste med navn: kort som kommer til senere
+    // havner bakerst av seg selv, og kort som forsvinner blir bare staaende
+    // igjen i lista uten aa gjore noe.
+    if (Foresporsel::tekst('handling') === 'kortrekkefolge') {
+        if (!DB::harTabell('innstillinger')) {
+            Svar::feil('Migrasjon 036 er ikke kjørt. Kjør vedlikehold først.');
+        }
+        $raa = Foresporsel::kropp()['rekkefolge'] ?? [];
+        if (!is_array($raa)) {
+            Svar::feil('Mangler rekkefølgen.');
+        }
+        // Navn og ikke noe annet, og ikke flere enn det kan finnes kort.
+        $navn = [];
+        foreach (array_slice($raa, 0, 40) as $n) {
+            if (is_string($n) && trim($n) !== '') {
+                $navn[] = mb_substr(trim($n), 0, 60);
+            }
+        }
+        DB::kjor(
+            'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (?, ?, ?)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi), endret_av = VALUES(endret_av)',
+            ['oversikt_kortrekkefolge', json_encode($navn, JSON_UNESCAPED_UNICODE),
+             (int) (Sesjon::medlem()['id'] ?? 0) ?: null]
+        );
+        Svar::ok(['beskjed' => 'Rekkefølgen er lagret.']);
+    }
+
     if (Foresporsel::tekst('handling') !== 'kalendernokkel') {
         Svar::feil('Ukjent handling.');
     }
@@ -247,6 +278,16 @@ Svar::json([
     ],
     // Adressen telefonen kan abonnere paa. Lages foerste gang den spos etter.
     'kalenderAdresse' => $kalenderAdresse(),
+    // Rekkefolgen verkstedet har dratt kortene i. Tom liste betyr «som den
+    // er bygget» — ingen har flyttet paa noe enda.
+    'kortrekkefolge' => (static function (): array {
+        if (!DB::harTabell('innstillinger')) {
+            return [];
+        }
+        $raa = DB::verdi("SELECT verdi FROM innstillinger WHERE nokkel = 'oversikt_kortrekkefolge'");
+        $liste = is_string($raa) ? json_decode($raa, true) : null;
+        return is_array($liste) ? array_values(array_filter($liste, 'is_string')) : [];
+    })(),
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren
         // kan sortere okten paa dag, uke og maaned uten aa tolke norsk tekst.

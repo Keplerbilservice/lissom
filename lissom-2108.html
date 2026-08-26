@@ -528,6 +528,160 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
     }
   };
 
+  // ── Dra kortene paa admin-forsiden ──────────────────────────────────
+  //
+  // Rekkefolgen var den koden ga dem. Verkstedet bruker ikke kortene like
+  // mye, og det som brukes hver dag skal ligge foerst.
+  //
+  // Pekerhendelser og ikke nettleserens egen draging: den siste virker ikke
+  // paa beroeringsskjerm i det hele tatt, og lar seg ikke proeve ut. Dette
+  // virker med mus, penn og finger, og kan testes.
+  //
+  // Lyttingen henger paa rutenettet og ikke paa hvert kort. dc bygger
+  // kortene paa nytt hver gang noe endrer seg i skjermbildet, og lyttere
+  // satt paa dem ville forsvunnet med dem.
+  var dratt = null;      // kortet som floyttes
+  var dragStart = null;  // der pekeren gikk ned
+  var drar = false;      // har vi passert terskelen?
+
+  var kortAv = function (el) {
+    while (el && el !== document) {
+      if (el.getAttribute && el.getAttribute('data-kort')) return el;
+      el = el.parentNode;
+    }
+    return null;
+  };
+
+  // Hvor kortet havner hvis du slipper naa.
+  //
+  // Foerste utgave flyttet kortet for hver eneste bevegelse. Da endret
+  // rutenettet seg under pekeren, naboene fikk nye plasser, og kortet endte
+  // et helt annet sted enn der du slapp det. Naa flyttes ingenting foer du
+  // slipper — det eneste som skjer underveis er en strek der kortet skal inn.
+  var maal = null;   // kortet vi legger oss ved
+  var maalEtter = false;
+
+  var visStrek = function (el, etter) {
+    if (!el) return;
+    el.style.boxShadow = etter
+      ? 'inset -3px 0 0 0 var(--lissom-brown)'
+      : 'inset 3px 0 0 0 var(--lissom-brown)';
+  };
+  var visketUt = function (r) {
+    var kort = r.querySelectorAll('[data-kort]');
+    for (var i = 0; i < kort.length; i++) kort[i].style.boxShadow = '';
+  };
+
+  var merkMaal = function (r, e) {
+    // Pekeren staar over kortet som dras, saa det maa gjemmes et oyeblikk
+    // for aa se hva som ligger under.
+    var synlig = dratt.style.visibility;
+    dratt.style.visibility = 'hidden';
+    var under = kortAv(document.elementFromPoint(e.clientX, e.clientY));
+    dratt.style.visibility = synlig;
+
+    visketUt(r);
+    if (!under || under === dratt || under.parentNode !== r) {
+      maal = null;
+      return;
+    }
+    var boks = under.getBoundingClientRect();
+    maal = under;
+    maalEtter = (e.clientX - boks.left) > boks.width / 2;
+    visStrek(under, maalEtter);
+  };
+
+  var kobleDraging = function () {
+    var r = document.getElementById('ov-kortrutenett');
+    if (!r) return;
+    // Merket maa ligge paa selve objektet, ikke som et attributt. dc lager
+    // rutenettet paa nytt ved hver tegning og tar attributtene med seg —
+    // lytterne blir ikke med. Et attributt som merke gjorde at vi trodde vi
+    // alt hadde koblet oss paa, mens kortene laa der uten en eneste lytter.
+    if (r.lissomDraKoblet) return;
+    r.lissomDraKoblet = true;
+
+    r.addEventListener('pointerdown', function (e) {
+      // Hoyreklikk og midtklikk skal ikke dra noe.
+      if (e.button !== 0) return;
+      var k = kortAv(e.target);
+      if (!k) return;
+      dratt = k;
+      drar = false;
+      dragStart = { x: e.clientX, y: e.clientY };
+    });
+
+    r.addEventListener('pointermove', function (e) {
+      if (!dratt || !dragStart) return;
+
+      if (!drar) {
+        // Under terskelen er det et trykk, ikke en draging. Uten dette ville
+        // hver liten skjelving paa musa gjort et klikk om til et flytt.
+        var avstand = Math.abs(e.clientX - dragStart.x) + Math.abs(e.clientY - dragStart.y);
+        if (avstand < 8) return;
+        drar = true;
+        dratt.style.opacity = '0.35';
+        dratt.style.transform = 'scale(0.98)';
+        // Paa en telefon ville sida rullet under fingeren ellers.
+        r.style.touchAction = 'none';
+        try { dratt.setPointerCapture(e.pointerId); } catch (x) {}
+      }
+
+      e.preventDefault();
+      merkMaal(r, e);
+    });
+
+    var slipp = function (e) {
+      if (!dratt) return;
+      var floyttet = drar;
+      dratt.style.opacity = '';
+      dratt.style.transform = '';
+      try { dratt.releasePointerCapture(e.pointerId); } catch (x) {}
+      r.style.touchAction = '';
+
+      // Rekkefolgen regnes ut, men ingen noder flyttes.
+      //
+      // Foerste utgave gjorde selve flyttingen i sida med insertBefore. Da
+      // sto vi og dro i noder dc selv eier: den tegner rutenettet paa nytt ut
+      // fra sine egne lister, og etter en manuell flytting stemte ikke de to
+      // overens. Rekkefolgen ble riktig i basen og feil paa skjermen, helt
+      // til sida ble lastet paa nytt.
+      //
+      // Naa sier vi bare hva den nye rekkefolgen er. dc tegner den.
+      var ny = null;
+      if (floyttet && maal && maal !== dratt && maal.parentNode === r) {
+        var navn = [];
+        var kort = r.querySelectorAll('[data-kort]');
+        for (var i = 0; i < kort.length; i++) navn.push(kort[i].getAttribute('data-kort'));
+        var fra = navn.indexOf(dratt.getAttribute('data-kort'));
+        if (fra !== -1) navn.splice(fra, 1);
+        var til = navn.indexOf(maal.getAttribute('data-kort'));
+        if (til !== -1) {
+          navn.splice(maalEtter ? til + 1 : til, 0, dratt.getAttribute('data-kort'));
+          ny = navn;
+        }
+      }
+      visketUt(r);
+      maal = null;
+
+      dratt = null;
+      dragStart = null;
+      drar = false;
+      if (!floyttet) return;
+
+      // Slipper du etter aa ha dratt, skal kortet ikke ogsaa aapne seg.
+      r.addEventListener('click', function stopp(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        r.removeEventListener('click', stopp, true);
+      }, true);
+      if (ny && window.lissomLagreKortrekkefolge) window.lissomLagreKortrekkefolge(ny);
+    };
+
+    r.addEventListener('pointerup', slipp);
+    r.addEventListener('pointercancel', slipp);
+  };
+
   // Innloggingen varer tre timer. Naar den gaar ut, svarer serveren 401 og
   // «Du maa vaere logget inn» — men ingenting i sida hoerte etter. Admin saa
   // innlogget ut, mens hvert eneste trykk stille feilet: billedlista sto paa
@@ -550,9 +704,10 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
     };
   }
 
-  var obs = new MutationObserver(function () { flytt(); fokus(); });
+  var obs = new MutationObserver(function () { flytt(); fokus(); kobleDraging(); });
   var start = function () {
     flytt();
+    kobleDraging();
     obs.observe(document.body, { subtree: true, childList: true, attributes: true,
                                  attributeFilter: ['data-src'] });
   };
@@ -4896,9 +5051,14 @@ window.__resources = {
              finne: det du gjorde oftest laa mellom det du gjorde sjelden.
              Kortene er de ni tingene verkstedet faktisk begynner med. Hele
              kortet er klikkbart, og tallet paa det avgjor om du maa dit. -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; margin-bottom: var(--space-10);">
+        <!-- Kortene kan dras dit du vil ha dem. Rekkefolgen lagres, saa den
+             staar til neste gang ogsaa. Selve dragingen ligger i et lite
+             skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
+             endring, og da maa lyttingen henge paa beholderen og ikke paa
+             hvert kort. -->
+        <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch; margin-bottom: var(--space-3);">
           <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
-            <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
+            <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
                 <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
                 <span style="{{ k.tallStil }}">{{ k.tall }}</span>
@@ -4908,6 +5068,7 @@ window.__resources = {
             </button>
           </sc-for>
         </div>
+        <p style="margin: 0 0 var(--space-10); font-size: var(--text-xs); color: var(--text-muted);">{{ ovDraHjelp }}</p>
         <!-- Her sto seksjonen «Kursene» med en liste over seks kurs.
              Radene gikk til Alle kurs og aapnet kurset der — noeyaktig dit
              kortet «Planlagte kurs» gaar. Skjermen og kortet fantes altsaa
@@ -13269,6 +13430,36 @@ class Component extends DCLogic {
       setTimeout(() => { this._sierUtlogget = false; }, 20000);
     };
     window.addEventListener('lissom:utlogget', this._utlogget);
+
+    // Skriptet som drar kortene ligger utenfor komponenten — det maa vaere
+    // det, siden dc bygger rutenettet paa nytt hele tida. Her er veien
+    // tilbake inn: rekkefolgen legges i skjermbildet med det samme, og
+    // sendes til serveren saa den staar til neste gang ogsaa.
+    window.lissomLagreKortrekkefolge = (navn) => {
+      if (!navn || !navn.length) return;
+      this.setState({ ovRekkefolge: navn, ovRekkefolgeLagret: true });
+      // Kvitteringen staar litt og gaar bort igjen. Blir den staaende, er
+      // hjelpeteksten borte for godt og neste person vet ikke at kortene kan
+      // dras i det hele tatt.
+      clearTimeout(this._ovLagretTid);
+      this._ovLagretTid = setTimeout(() => this.setState({ ovRekkefolgeLagret: false }), 4000);
+      if (!this.erPublisert()) return;
+      fetch('/api/admin/oversikt.php', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handling: 'kortrekkefolge', rekkefolge: navn }),
+      })
+        .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
+        .then(({ ok, d }) => {
+          if (ok) return;
+          this.setState({ ovRekkefolgeLagret: false,
+                          kvittering: 'Rekkefølgen ble ikke lagret',
+                          kvitteringDetalj: (d && d.feil) || '' });
+        })
+        .catch(() => this.setState({ ovRekkefolgeLagret: false,
+                                     kvittering: 'Rekkefølgen ble ikke lagret',
+                                     kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+    };
     this._resize(); // startverdi — ellers vet vi ikke om vi er paa mobil for forste rotasjon
     this._kurvPuls = setInterval(() => {
       const harVarer = Object.keys(this.state.kurv || {}).length > 0;
@@ -13325,6 +13516,7 @@ class Component extends DCLogic {
   }
 
   componentWillUnmount() {
+    if (window.lissomLagreKortrekkefolge) delete window.lissomLagreKortrekkefolge;
     if (this._pop) window.removeEventListener('popstate', this._pop);
     if (this._utlogget) window.removeEventListener('lissom:utlogget', this._utlogget);
     clearInterval(this._utgaveVakt);
@@ -18837,7 +19029,10 @@ class Component extends DCLogic {
           .filter(f => f.status === 'Ubesvart').length;
 
         return {
-          ovKort: (() => {
+          ovDraHjelp: this.state.ovRekkefolgeLagret
+        ? 'Rekkefølgen er lagret.'
+        : 'Dra kortene dit du vil ha dem. Rekkefølgen huskes til neste gang.',
+      ovKort: (() => {
             // Her sto «Nytt kurs», «Medlemskap» og «Priser, tekst og bilder».
             // Fjernet 26. august paa bestilling. Alle tre naas fortsatt fra
             // menyen til venstre: Kurs og medlemskap, og Nettsiden.
@@ -18928,6 +19123,20 @@ class Component extends DCLogic {
                  nyeste, 'Se påmeldingene',
                  () => this.gaaAdmin('adminnyepameldinger', {}))] : []),
             ];
+
+            // Har verkstedet dratt kortene i en egen rekkefolge, er det den
+            // som gjelder. Kort som ikke staar i lista — nye siden sist, eller
+            // noe som bare dukker opp naar det venter — legger seg bakerst i
+            // den rekkefolgen de er bygget.
+            const egen = this.state.ovRekkefolge
+              || ((this.state.adminData || {}).kortrekkefolge || []);
+            if (egen.length) {
+              const nr = (k) => {
+                const i = egen.indexOf(k.navn);
+                return i === -1 ? egen.length + alle.indexOf(k) : i;
+              };
+              return alle.slice().sort((x, y) => nr(x) - nr(y));
+            }
 
             // Paa en telefon ser du tre kort om gangen, ikke ti. Da avgjor
             // rekkefolgen hva som finnes — det som staar nederst blir aldri

@@ -13,14 +13,14 @@
 -- faktisk stilles — er det meldt fra, og skal det fortsatt stå ute?
 
 ALTER TABLE course_sessions
-    ADD COLUMN hentemelding_at DATETIME NULL DEFAULT NULL
+    ADD COLUMN IF NOT EXISTS hentemelding_at DATETIME NULL DEFAULT NULL
         COMMENT 'Når verkstedet meldte at arbeidene er ferdige',
-    ADD COLUMN hentemelding_av INT UNSIGNED NULL DEFAULT NULL
+    ADD COLUMN IF NOT EXISTS hentemelding_av INT UNSIGNED NULL DEFAULT NULL
         COMMENT 'Hvem som trykket';
 
 -- Den offentlige sida leser på denne. Uten indeks må hele tabellen leses
 -- for hvert besøk, og den vokser med hver eneste kursdato.
-CREATE INDEX idx_hentemelding ON course_sessions (hentemelding_at);
+CREATE INDEX IF NOT EXISTS idx_hentemelding ON course_sessions (hentemelding_at);
 
 -- Malen sier «klar til henting» og at vi holder av den i to uker. Bestilt er
 -- tre uker, og da skal teksten si tre.

@@ -53,7 +53,9 @@ ALTER TABLE course_sessions
   ADD COLUMN IF NOT EXISTS serie_id BIGINT UNSIGNED NULL AFTER course_id,
   ADD KEY IF NOT EXISTS idx_okt_serie (serie_id);
 
--- Fremmednoekkelen legges paa for seg. Er den der fra for, feiler dette
--- alene og resten av migrasjonen staar.
+-- Fremmednoekkelen legges paa for seg, og bare om den ikke er der fra for.
+-- Uten «IF NOT EXISTS» stanser en halvkjort migrasjon hele rekka neste gang:
+-- kolonnene er alt lagt til, men fila er ikke skrevet inn i migrations, saa
+-- den kjores om igjen — og faller paa noekkelen som alt finnes.
 ALTER TABLE course_sessions
-  ADD CONSTRAINT fk_okt_serie FOREIGN KEY (serie_id) REFERENCES kurs_serier (id) ON DELETE SET NULL;
+  ADD CONSTRAINT fk_okt_serie FOREIGN KEY IF NOT EXISTS (serie_id) REFERENCES kurs_serier (id) ON DELETE SET NULL;

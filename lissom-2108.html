@@ -477,6 +477,19 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
 // «data-src» til den er ekte, og flyttes hit.
 (function () {
   var flytt = function () {
+    // Rammer som skal vise ferdig HTML framfor en adresse. Brukes til
+    // forhandsvisningen av e-postsignaturen: den er skrevet med sine egne
+    // farger og stoerrelser, og skal ikke arve admin sine — og «sandbox»
+    // uten verdier slaar av alt en signatur ikke har noe med aa gjore.
+    var meddoc = document.querySelectorAll('iframe[data-srcdoc]');
+    for (var j = 0; j < meddoc.length; j++) {
+      var ramme = meddoc[j], html = ramme.getAttribute('data-srcdoc');
+      if (html === null || html.indexOf('{{') !== -1) continue;
+      if (ramme.getAttribute('srcdoc') === html) continue;
+      ramme.setAttribute('sandbox', '');
+      ramme.setAttribute('srcdoc', html);
+    }
+
     var alle = document.querySelectorAll('img[data-src], iframe[data-src]');
     for (var i = 0; i < alle.length; i++) {
       var el = alle[i], v = el.getAttribute('data-src');
@@ -791,7 +804,7 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
     flytt();
     kobleDraging();
     obs.observe(document.body, { subtree: true, childList: true, attributes: true,
-                                 attributeFilter: ['data-src'] });
+                                 attributeFilter: ['data-src', 'data-srcdoc'] });
   };
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', start);
@@ -6044,6 +6057,52 @@ window.__resources = {
               <input type="password" value="{{ vaSvevePassord }}" onChange="{{ settVa.sveve_passord }}" placeholder="{{ vaSvevePassordHint }}" aria-label="Sveve-passord" style="{{ vaFeltStil }}">
               <input value="{{ vaSmsAvsender }}" onChange="{{ settVa.sms_avsender }}" placeholder="Avsendernavn på SMS, f.eks. Lissom" aria-label="SMS-avsender" style="{{ vaFeltStil }}">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Uten dette går påminnelser og «keramikken er ferdig brent» bare på e-post. Kurspåminnelser sendes da som e-post alene.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Signaturen.
+             e-post-signatur.html har ligget ved siden av nettsiden siden i
+             vaar, laget for aa limes inn i e-postprogrammet for haand. Den
+             gjelder meldingene Monica skriver selv. Kvitteringene og
+             paaminnelsene systemet sender hadde ingen signatur i det hele
+             tatt — de gaar som ren tekst. Naa foelger den med, og teksten
+             sendes sammen med HTML-en saa den som leser ren tekst faar de
+             samme opplysningene. -->
+        <div style="margin-top: var(--space-6); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Signatur i e-postene systemet sender</div>
+          <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
+            <sc-if value="{{ vaSignaturMangler }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--text-body);">Migrasjon 062 er ikke kjørt ennå. Kjør oppdateringen fra menyen nederst til venstre, så virker signaturen.</div>
+            </sc-if>
+
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); max-width: 74ch; text-wrap: pretty;">Dette er signaturen som legges nederst i kvitteringer, påminnelser og andre meldinger systemet sender av seg selv. Signaturen du limer inn i e-postprogrammet ditt gjelder meldingene du skriver selv, og røres ikke av dette.</p>
+
+            <div class="lx-split" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start;">
+              <div>
+                <label for="va-signatur" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Signaturen, som HTML</label>
+                <textarea id="va-signatur" rows="12" value="{{ vaSignatur }}" onChange="{{ settVa.epost_signatur }}" placeholder="Lim inn signaturen her" style="{{ vaSignaturFeltStil }}"></textarea>
+                <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Tomt felt betyr ingen signatur. Bilder må ligge på en adresse som er åpen for alle — ellers ser mottakeren et hull.</p>
+              </div>
+              <div>
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Slik blir den</div>
+                <iframe data-srcdoc="{{ vaSignatur }}" title="Forhåndsvisning av signaturen" style="display: block; width: 100%; height: 200px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: #fff;"></iframe>
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin: var(--space-4) 0 6px;">Og slik for den som leser ren tekst</div>
+                <pre style="margin: 0; padding: var(--space-4); background: var(--clay-100); border-radius: var(--radius-md); font: 12px/1.55 ui-monospace, monospace; color: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere;">{{ vaSignaturTekst }}</pre>
+                <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ vaSignaturTekstHjelp }}</p>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: var(--space-2);">Hvilke meldinger den står på</div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4);">
+                <sc-for list="{{ vaGrupper }}" as="g" hint-placeholder-count="4">
+                  <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="{{ g.navn }}" checked="{{ g.paa }}" on-change="{{ g.veksle }}" hint-size="100%,28px"></x-import>
+                    <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ g.hva }}</p>
+                  </div>
+                </sc-for>
+              </div>
             </div>
           </div>
         </div>
@@ -25591,10 +25650,51 @@ class Component extends DCLogic {
           vaSvevePassordHint: satt('sveve_passord') ? 'Lagret — skriv bare hvis det skal byttes' : 'Passordet hos Sveve',
           vaSmsAvsender: verdi('sms_avsender'),
 
+          // ── Signaturen ───────────────────────────────────────────────
+          //
+          // Startverdien er den som alt fantes, hentet fra
+          // e-post-signatur.html av migrasjon 062. Ingen ny signatur der
+          // det finnes en.
+          vaSignatur: verdi('epost_signatur'),
+          vaSignaturMangler: d.signatur_klar === false,
+          vaSignaturFeltStil: 'width: 100%; box-sizing: border-box; padding: 12px 14px;'
+            + ' border: 1px solid var(--border-subtle); border-radius: var(--radius-md);'
+            + ' font: 12px/1.55 ui-monospace, monospace; background: var(--surface-page);'
+            + ' color: var(--text-heading); resize: vertical;',
+          // Regnet av serveren, av den samme koden som sender meldingene.
+          // En etterlikning i nettleseren ville kunne si noe annet enn det
+          // mottakeren faktisk faar.
+          vaSignaturTekst: d.signatur_tekst || '(ingen signatur)',
+          vaSignaturTekstHjelp: (u.epost_signatur !== undefined
+              && u.epost_signatur !== ((o.epost_signatur || {}).verdi || ''))
+            ? 'Dette er den lagrede signaturen. Lagre for å se tekstutgaven av den du skriver nå.'
+            : 'Regnet av serveren, av den samme koden som sender meldingene.',
+          vaGrupper: (d.malgrupper || []).map(g => ({
+            navn: g.navn,
+            // Utkastet gjelder foran det som er lagret, saa bryteren staar
+            // der du satte den til du lagrer.
+            paa: u['epost_signatur_' + g.kode] !== undefined
+              ? u['epost_signatur_' + g.kode] === '1'
+              : !!g.paa,
+            hva: (g.maler || []).length
+              ? (g.maler || []).slice(0, 4).join(' · ')
+                + ((g.maler || []).length > 4 ? ' · +' + ((g.maler || []).length - 4) + ' til' : '')
+              : 'Ingen e-postmaler i denne gruppa ennå.',
+            veksle: () => {
+              const naa = u['epost_signatur_' + g.kode] !== undefined
+                ? u['epost_signatur_' + g.kode] === '1' : !!g.paa;
+              this.setState({
+                varslerUtkast: Object.assign({}, this.state.varslerUtkast || {},
+                  { ['epost_signatur_' + g.kode]: naa ? '0' : '1' }),
+                varslerBeskjed: '',
+              });
+            },
+          })),
+
           settVa: [
             'smtp_vert', 'smtp_port', 'smtp_bruker', 'smtp_passord', 'smtp_sikkerhet',
             'epost_fra', 'epost_fra_navn', 'epost_svar_til',
-            'sveve_bruker', 'sveve_passord', 'sms_avsender',
+            'sveve_bruker', 'sveve_passord', 'sms_avsender', 'epost_signatur',
           ].reduce((m, n) => {
             m[n] = (e) => this.setState({
               varslerUtkast: Object.assign({}, this.state.varslerUtkast || {}, {

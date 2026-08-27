@@ -47,6 +47,20 @@ const FELTER = [
     'smtp_vert', 'smtp_port', 'smtp_bruker', 'smtp_passord', 'smtp_sikkerhet',
     'epost_fra', 'epost_fra_navn', 'epost_svar_til',
     'sms_leverandor', 'sveve_bruker', 'sveve_passord', 'sms_avsender',
+    // Signaturen, og hvilke malgrupper den staar paa. Startverdien kom med
+    // migrasjon 062 og er signaturen fra e-post-signatur.html — den som alt
+    // fantes. Ingen ny signatur der det finnes en.
+    'epost_signatur',
+    'epost_signatur_system', 'epost_signatur_ordre',
+    'epost_signatur_kurs', 'epost_signatur_nyhetsbrev',
+];
+
+/** De fire gruppene en mal kan hoere til, og hva de heter for et menneske. */
+const GRUPPER = [
+    'system'     => 'Systemmeldinger',
+    'ordre'      => 'Ordrebekreftelser',
+    'kurs'       => 'Kursmeldinger',
+    'nyhetsbrev' => 'Nyhetsbrev',
 ];
 
 /** Disse forlater aldri serveren. */
@@ -156,6 +170,27 @@ foreach (FELTER as $f) {
         'hemmelig'  => $hemmelig,
     ];
 }
+
+// Hvilke meldinger hver gruppe omfatter. Uten dette er «Kursmeldinger» et
+// ord: eieren skal se hvilke e-poster hun faktisk skrur signaturen paa.
+$svar['malgrupper'] = [];
+$harGruppe = DB::harKolonne('notification_templates', 'gruppe');
+foreach (GRUPPER as $kode => $navn) {
+    $maler = $harGruppe
+        ? DB::alle("SELECT navn, emne, kanal FROM notification_templates
+                     WHERE gruppe = :g AND kanal <> 'sms' ORDER BY navn", ['g' => $kode])
+        : [];
+    $svar['malgrupper'][] = [
+        'kode'    => $kode,
+        'navn'    => $navn,
+        'paa'     => (string) Config::hent('epost_signatur_' . $kode, '1') === '1',
+        'maler'   => array_map(static fn($m) => (string) ($m['emne'] ?: $m['navn']), $maler),
+    ];
+}
+$svar['signatur_klar'] = $harGruppe;
+// Signaturen skrevet ut i ren tekst, regnet av den samme koden som sender
+// meldingene. Eieren skal se hva den som leser ren tekst faar.
+$svar['signatur_tekst'] = Varsel::signaturSomTekst((string) Config::hent('epost_signatur', ''));
 
 $svar['oppsett'] = $oppsett;
 $svar['kan_lagre'] = DB::harTabell('innstillinger');

@@ -51,4 +51,4 @@ ALTER TABLE bookings
     ADD COLUMN IF NOT EXISTS hentet_at DATETIME NULL
         COMMENT 'Naar keramikken faktisk ble hentet';
 
-CREATE INDEX idx_hentet ON bookings (hentet_at);
+CREATE INDEX IF NOT EXISTS idx_hentet ON bookings (hentet_at);

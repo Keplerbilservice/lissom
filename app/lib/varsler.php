@@ -13,14 +13,15 @@ declare(strict_types=1);
 final class Varsel
 {
     /** Legger en e-post i kø. */
-    public static function epost(string $mottaker, string $emne, string $tekst, ?string $refType = null, ?int $refId = null): int
+    public static function epost(string $mottaker, string $emne, string $tekst, ?string $refType = null, ?int $refId = null, string $gruppe = 'system'): int
     {
         $mottaker = trim($mottaker);
         if (!filter_var($mottaker, FILTER_VALIDATE_EMAIL)) {
             logg('Hoppet over e-post til ugyldig adresse', ['mottaker' => $mottaker]);
             return 0;
         }
-        return self::iKo('epost', $mottaker, $emne, $tekst, null, $refType, $refId);
+        [$tekst, $html] = self::medSignatur($tekst, $gruppe);
+        return self::iKo('epost', $mottaker, $emne, $tekst, null, $refType, $refId, $html);
     }
 
     /** Legger en SMS i kø. Returnerer 0 hvis SMS ikke kan sendes. */
@@ -107,7 +108,9 @@ final class Varsel
     {
         $antall = 0;
         foreach (self::adminEposter() as $adresse) {
-            if (self::epost($adresse, $emne, $tekst, $refType, $refId) > 0) {
+            // «intern» staar ikke i noen gruppe, og faar derfor ingen
+            // signatur. Dette er beskjeder til verkstedet om egen drift.
+            if (self::epost($adresse, $emne, $tekst, $refType, $refId, 'intern') > 0) {
                 $antall++;
             }
         }
@@ -134,11 +137,16 @@ final class Varsel
         $emne = self::flett((string) ($mal['emne'] ?? ''), $felter);
         $tekst = self::flett((string) $mal['tekst'], $felter);
         $kanal = (string) $mal['kanal'];
+        // Hvilken gruppe malen hoerer til avgjor om signaturen skal med.
+        // Kolonna kom med migrasjon 062; er den ikke kjort, staar alt som
+        // «system» — og da oppfoerer det seg som for.
+        $gruppe = (string) ($mal['gruppe'] ?? 'system');
 
         $viaEpost = false;
         if ($kanal === 'epost' || $kanal === 'epost_sms') {
             if (!empty($mottaker['epost'])) {
-                self::iKo('epost', (string) $mottaker['epost'], $emne, $tekst, $malNavn, $refType, $refId);
+                [$epostTekst, $epostHtml] = self::medSignatur($tekst, $gruppe);
+                self::iKo('epost', (string) $mottaker['epost'], $emne, $epostTekst, $malNavn, $refType, $refId, $epostHtml);
                 $viaEpost = true;
             }
         }
@@ -158,14 +166,16 @@ final class Varsel
         // e-post bedre enn ingenting. Kunden skal faa beskjeden, ikke vente
         // paa at oppsettet blir ferdig.
         if (!$viaEpost && !$viaSms && $kanal === 'sms' && !empty($mottaker['epost'])) {
+            [$reserveTekst, $reserveHtml] = self::medSignatur($tekst, $gruppe);
             self::iKo(
                 'epost',
                 (string) $mottaker['epost'],
                 $emne !== '' ? $emne : 'Beskjed fra Lissom Keramikk',
-                $tekst,
+                $reserveTekst,
                 $malNavn,
                 $refType,
-                $refId
+                $refId,
+                $reserveHtml
             );
             $viaEpost = true;
         }
@@ -218,9 +228,10 @@ final class Varsel
         string $tekst,
         ?string $mal = null,
         ?string $refType = null,
-        ?int $refId = null
+        ?int $refId = null,
+        ?string $html = null
     ): int {
-        return DB::settInn('notifications', [
+        $rad = [
             'mal'      => $mal,
             'kanal'    => $kanal,
             'mottaker' => mb_substr($mottaker, 0, 191),
@@ -228,7 +239,104 @@ final class Varsel
             'tekst'    => $tekst,
             'ref_type' => $refType,
             'ref_id'   => $refId,
-        ]);
+        ];
+        // Kolonna kom med migrasjon 062. Er den ikke kjort, skal meldingen
+        // gaa ut som ren tekst — ikke stanse.
+        if ($html !== null && DB::harKolonne('notifications', 'html')) {
+            $rad['html'] = $html;
+        }
+        return DB::settInn('notifications', $rad);
+    }
+
+    // ── Signaturen ────────────────────────────────────────────────────────
+    //
+    // Fire grupper, satt paa malen: system, ordre, kurs og nyhetsbrev. Hver
+    // av dem kan skrus av for seg under Innstillinger -> E-post og varsler.
+    // En gruppe som ikke er en av de fire — «intern», beskjeder til
+    // verkstedet selv — faar aldri signatur.
+    private const GRUPPER = ['system', 'ordre', 'kurs', 'nyhetsbrev'];
+
+    /**
+     * Legger signaturen paa en melding, og lager HTML-utgaven som foelger med.
+     *
+     * E-postene har vaert ren tekst. En HTML-signatur i en ren-tekst-melding
+     * blir en klump med taggkode hos mottakeren, saa naar signaturen er paa,
+     * sendes begge deler: teksten med signaturen skrevet ut i ren tekst, og
+     * HTML-en med signaturen slik den er tegnet. De sier det samme.
+     *
+     * @return array{0: string, 1: ?string} [tekst, html]
+     */
+    private static function medSignatur(string $tekst, string $gruppe): array
+    {
+        if (!in_array($gruppe, self::GRUPPER, true)) {
+            return [$tekst, null];
+        }
+        $signatur = trim((string) Config::hent('epost_signatur', ''));
+        if ($signatur === '') {
+            return [$tekst, null];
+        }
+        if ((string) Config::hent('epost_signatur_' . $gruppe, '1') !== '1') {
+            return [$tekst, null];
+        }
+
+        $ren = self::signaturSomTekst($signatur);
+        return [
+            $ren === '' ? $tekst : $tekst . "\n\n-- \n" . $ren,
+            self::tekstSomHtml($tekst)
+                . '<div style="margin-top:28px;">' . $signatur . '</div>',
+        ];
+    }
+
+    /**
+     * Meldingsteksten som HTML.
+     *
+     * Teksten er skrevet som tekst, av et menneske, i en mal. Den skal vises
+     * som den staar — derfor rommes den inn foerst, saa en < i «kl. 18 < 20»
+     * ikke blir borte, og linjeskiftene beholdes.
+     */
+    private static function tekstSomHtml(string $tekst): string
+    {
+        $trygg = htmlspecialchars($tekst, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return '<div style="font-family:Georgia,\'Times New Roman\',serif;font-size:15px;'
+            . 'line-height:1.6;color:#4D1D12;white-space:pre-wrap;">' . $trygg . '</div>';
+    }
+
+    /**
+     * Signaturen skrevet ut som ren tekst, til tekstdelen av meldingen.
+     *
+     * Den som leser e-post som ren tekst skal faa de samme opplysningene —
+     * navn, telefon, adresse — ikke et hull der signaturen sto.
+     *
+     * Aapen fordi admin viser den samme utregningen: eieren skal se hva den
+     * som leser ren tekst faktisk faar, og det maa vaere det samme svaret
+     * som utsendingen bruker — ikke en etterlikning i nettleseren.
+     */
+    public static function signaturSomTekst(string $html): string
+    {
+        $t = preg_replace('~<(br|/div|/p|/tr|/td|/h[1-6])[^>]*>~i', "\n", $html) ?? $html;
+        $t = html_entity_decode(strip_tags($t), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $t = str_replace("\xC2\xA0", ' ', $t);
+        $linjer = [];
+        foreach (explode("\n", $t) as $l) {
+            $l = trim(preg_replace('/[ \t]+/', ' ', $l) ?? $l);
+            if ($l === '') {
+                continue;
+            }
+            // «·» mellom to lenker staar som egen linje naar taggene tas
+            // bort. Alene betyr den ingenting — den hoerer til linja foer.
+            if (preg_match('/^[·|\-–—]+$/u', $l) === 1) {
+                if ($linjer !== []) {
+                    $linjer[count($linjer) - 1] .= ' · ';
+                }
+                continue;
+            }
+            if ($linjer !== [] && str_ends_with($linjer[count($linjer) - 1], ' · ')) {
+                $linjer[count($linjer) - 1] .= $l;
+                continue;
+            }
+            $linjer[] = $l;
+        }
+        return implode("\n", $linjer);
     }
 }
 
@@ -271,7 +379,14 @@ final class Utsending
                 self::$sisteFeil = '';
                 $ok = $n['kanal'] === 'sms'
                     ? self::sendSms((string) $n['mottaker'], (string) $n['tekst'])
-                    : self::sendEpost((string) $n['mottaker'], (string) ($n['emne'] ?? ''), (string) $n['tekst']);
+                    : self::sendEpost(
+                        (string) $n['mottaker'],
+                        (string) ($n['emne'] ?? ''),
+                        (string) $n['tekst'],
+                        // Kolonna kom med migrasjon 062. Er den ikke der, er
+                        // meldingen ren tekst, som den alltid har vaert.
+                        isset($n['html']) && trim((string) $n['html']) !== '' ? (string) $n['html'] : null
+                    );
 
                 if ($ok) {
                     DB::oppdater('notifications', [
@@ -309,7 +424,7 @@ final class Utsending
         logg_feil('Varsel feilet', new RuntimeException($grunn . ' (varsel ' . $n['id'] . ')'));
     }
 
-    private static function sendEpost(string $til, string $emne, string $tekst): bool
+    private static function sendEpost(string $til, string $emne, string $tekst, ?string $html = null): bool
     {
         $fra     = Config::hent('epost_fra', 'post@lissom.no');
         $fraNavn = Config::hent('epost_fra_navn', 'Lissom Keramikk');
@@ -326,6 +441,28 @@ final class Utsending
 
         $emneKodet = '=?UTF-8?B?' . base64_encode($emne) . '?=';
         $kropp = str_replace("\r\n", "\n", $tekst);
+
+        // To utgaver av samme melding naar det finnes en HTML-utgave.
+        // Mottakeren — eller programmet hens — velger. Den som leser ren
+        // tekst faar teksten, ikke en klump med taggkode.
+        //
+        // Kroppen bygges med rene linjeskift. sendSmtp() gjor dem om til
+        // CRLF for den gaar paa traaden; gjorde vi det her, ville de blitt
+        // gjort om to ganger.
+        if ($html !== null && trim($html) !== '') {
+            $grense = 'lissom-' . bin2hex(random_bytes(12));
+            $headere['Content-Type'] = 'multipart/alternative; boundary="' . $grense . '"';
+            unset($headere['Content-Transfer-Encoding']);
+            $kropp = "--{$grense}\n"
+                . "Content-Type: text/plain; charset=UTF-8\n"
+                . "Content-Transfer-Encoding: 8bit\n\n"
+                . $kropp . "\n\n"
+                . "--{$grense}\n"
+                . "Content-Type: text/html; charset=UTF-8\n"
+                . "Content-Transfer-Encoding: 8bit\n\n"
+                . str_replace("\r\n", "\n", $html) . "\n\n"
+                . "--{$grense}--\n";
+        }
 
         // SMTP naar det er satt opp, ellers serverens egen mail(). SMTP er aa
         // foretrekke: da vet vi om det gikk galt, og hvorfor. mail() svarer

@@ -341,9 +341,32 @@ Alle rader som står som `publisert` i dag blir stående som `publisert`.
 
 ---
 
-## 11. E-postsignatur
+## 11. E-postsignatur — **gjort 27. august**
 
-**Finnes — men ikke i systemet.** `e-post-signatur.html` er en egen side som
+Signaturen ligger nå under Innstillinger → E-post og varsler, med feltet,
+forhåndsvisning av hvordan den blir, og forhåndsvisning av hva den som leser
+ren tekst får. Fire brytere sier hvilke meldinger den står på:
+systemmeldinger, ordrebekreftelser, kursmeldinger, nyhetsbrev. Gruppa står
+på malen (migrasjon 062), ikke i en liste ved siden av, og hvert kort viser
+hvilke e-poster gruppa faktisk omfatter.
+
+Startverdien er signaturen som alt fantes, hentet fra `e-post-signatur.html`.
+Ingen ny signatur der det finnes en. Den sida står som før — den gjelder
+meldingene Monica skriver selv.
+
+Utsendingen sender nå `multipart/alternative` når signaturen er på: tekst til
+den som leser tekst, HTML til den som leser HTML, og de sier det samme.
+Beskjeder til verkstedet selv får aldri kundesignaturen.
+
+**Testet:** en kursmelding lagt i kø og lest ut igjen — tekstdelen har
+signaturen skrevet ut uten taggkode, HTML-delen har både meldingen og
+signaturen. Bryteren av: signaturen borte fra begge. Og hele veien ut: en
+ordrebekreftelse sendt gjennom en SMTP-tjener som skriver ned det den får,
+med to deler, riktig grense og CRLF.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes — men ikke i systemet.** `e-post-signatur.html` er en egen side som
 ligger ved siden av nettsiden. Den viser signaturen ferdig satt opp, med en
 «Kopier signaturen»-knapp og bruksanvisning for webmail og Outlook. Den er
 laget for å limes inn i e-postprogrammet **manuelt**.

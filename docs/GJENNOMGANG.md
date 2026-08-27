@@ -318,9 +318,37 @@ ikke rives ut.
 
 ---
 
-## 10. Publiser-knappen
+## 10. Publiser-knappen — **gjort 27. august**
 
-**Finnes.** `articles.status` er `kladd` eller `publisert`, og
+Fire tilstander (migrasjon 063): kladd, planlagt, publisert, avpublisert.
+Under hver artikkel står det nå hva som gjelder — «Ute siden 27. august ·
+lagt ut av Monica», «Går ut 3. september kl. 09:00», «Tatt ned · lå ute fra
+…». Alt som sto som publisert står som publisert.
+
+«Tatt ned» og «kladd» ser like ut for en besøkende — begge er borte. For
+verkstedet er forskjellen at den ene har ligget ute, og at det kan finnes
+lenker der ute som nå er døde.
+
+**Planlagt** går ut av seg selv. Ikke med en egen cron-jobb: da hadde
+tidspunktet vært avhengig av at det ble lagt inn en linje til i cPanel, og en
+artikkel som skulle ut klokka ni ville blitt liggende til noen husket det.
+Forfalte planlagte flyttes hver gang noen spør etter artikler — av nettsiden
+eller av admin.
+
+**Forhåndsvisning.** `/nyheter/<adresse>` har stått under hver artikkel i
+admin siden kunnskapsbanken kom, men adressen fantes ikke: den som fulgte
+den havnet på «finner ikke siden». Nå åpner den artikkelen — og for den som
+er logget inn som admin også en som ikke ligger ute, med et gult bånd som
+sier at dette er en forhåndsvisning. Ingen andre slipper til.
+
+**Testet:** 18 kontroller gjennom hele veien — kladd usynlig for andre og
+synlig for admin, publisering med tidspunkt og navn, ta ned, et tidspunkt
+som har vært avvist, et planlagt tidspunkt satt og ventet ut til artikkelen
+gikk ut av seg selv. Og ti i nettleseren.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** `articles.status` er `kladd` eller `publisert`, og
 `api/admin/artikler.php` `handling=status` bytter mellom dem. Knappen i
 admin heter «Publiser» eller «Ta ned».
 

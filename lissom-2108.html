@@ -2298,6 +2298,15 @@ window.__resources = {
         <section style="background: var(--surface-card); padding: 0 var(--space-8) var(--section-y);">
           <div style="max-width: 720px; margin: 0 auto;">
             <button type="button" onClick="{{ nyLukk }}" style="appearance: none; background: transparent; border: none; padding: 10px 8px; margin: 0 -8px var(--space-6); cursor: pointer; font: var(--type-body); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til nyheter</button>
+            <!-- Forhaandsvisning. Bare den som er logget inn som admin kan
+                 komme hit, og da skal det vaere umulig aa tro at artikkelen
+                 ligger ute. -->
+            <sc-if value="{{ nyErUtkast }}" hint-placeholder-val="{{ false }}">
+              <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-bottom: var(--space-6);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 2px;">Forhåndsvisning</div>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--brown-500); text-wrap: pretty;">{{ nyUtkastTekst }}</p>
+              </div>
+            </sc-if>
             <sc-if value="{{ nyLestKategori }}" hint-placeholder-val="{{ true }}">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ nyLestKategoriNavn }}</div>
             </sc-if>
@@ -8465,14 +8474,34 @@ window.__resources = {
                     </div>
                     <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ a.tittel }}</div>
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px;">{{ a.adresse }}</div>
+                    <!-- Naar den gikk ut, og hvem som sendte den. Det sto
+                         ingen steder — «ligger denne ute?» maatte
+                         kontrolleres ved aa aapne nettsida. -->
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px;">{{ a.tilstand }}</div>
                   </div>
                 </div>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <button type="button" onClick="{{ a.byttBilde }}" style="appearance: none; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); cursor: pointer; padding: 9px 16px; font: var(--type-body-sm); color: var(--text-heading);">{{ a.bildeKnapp }}</button>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ a.veksle }}" hint-size="auto,40px">{{ a.knapp }}</x-import>
+                  <!-- «Publiser» var det foerste stedet man saa hvordan
+                       artikkelen ble. Naa kan den aapnes for den er ute. -->
+                  <button type="button" onClick="{{ a.seDen }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ a.seTekst }}</button>
+                  <sc-if value="{{ a.kanPlanlegge }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ a.planlegg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ a.planTekst }}</button>
+                  </sc-if>
                   <button type="button" onClick="{{ a.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
                   <button type="button" onClick="{{ a.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                 </div>
+
+                <sc-if value="{{ a.planApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex: 1 1 100%; border-top: 1px solid var(--border-subtle); margin-top: var(--space-2); padding-top: var(--space-4); display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                    <label for="{{ a.planId }}" style="font-size: var(--text-sm); color: var(--text-heading); font-weight: 600;">Går ut</label>
+                    <input id="{{ a.planId }}" type="datetime-local" value="{{ a.planTid }}" onChange="{{ a.settPlanTid }}" style="box-sizing: border-box; padding: 9px 12px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); font: var(--type-body-sm); background: var(--surface-page); color: var(--text-heading);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ a.lagrePlan }}" hint-size="auto,38px">Sett tidspunkt</x-import>
+                    <button type="button" onClick="{{ a.avbrytPlan }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">Norsk tid. Artikkelen går ut av seg selv.</span>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
           </sc-if>
@@ -11147,6 +11176,13 @@ class Component extends DCLogic {
       if (slug) return '/kurs/' + slug;
     }
 
+    // En aapen artikkel har sin egen adresse. Sto den ikke her, ble adressen
+    // skrevet tilbake til /nyheter med det samme artikkelen ble aapnet, og
+    // lenken var ikke til aa dele.
+    if (side === 'nyheter' && this.state.nyLest && this.state.nyLest.slug) {
+      return '/nyheter/' + this.state.nyLest.slug;
+    }
+
     const treff = Component.STIER.find(r => {
       if (r.side !== side) return false;
       if (r.dropin) return this.bookerDropin();
@@ -11188,6 +11224,18 @@ class Component extends DCLogic {
       return { sti, side: 'booking', kursSlug: kursTreff[1] };
     }
 
+    // Hver artikkel sin egen adresse.
+    //
+    // Admin har vist «/nyheter/<adresse>» under hver artikkel siden
+    // kunnskapsbanken kom, men adressen fantes ikke: den som fulgte den havnet
+    // paa «finner ikke sida». Naa aapner den artikkelen, og for den som er
+    // logget inn som admin ogsaa en som ikke er publisert enda — det er
+    // forhaandsvisningen bestillingen ber om.
+    const nyhetTreff = sti.match(/^\/nyheter\/([a-z0-9-]+)$/);
+    if (nyhetTreff) {
+      return { sti, side: 'nyheter', nyhetSlug: nyhetTreff[1] };
+    }
+
     // Ingen treff. For sto skjermen igjen paa forsida, og den som hadde
     // skrevet feil trodde de var framme — og lette etter kurset som ikke var
     // der. Na sier sida fra. Adressen blir staaende som den er, fordi
@@ -11209,6 +11257,12 @@ class Component extends DCLogic {
       // som finnes.
       this._ventendeSlug = rute.kursSlug;
       this.setState({ side: 'kurs', kursFilter: 'Alle' });
+      return;
+    }
+
+    if (rute.nyhetSlug) {
+      this.setState({ side: 'nyheter', nyLest: null });
+      this.hentNyhet(rute.nyhetSlug);
       return;
     }
 
@@ -13407,6 +13461,32 @@ class Component extends DCLogic {
         if (d && d.artikler) this.setState({ nyheter: d.artikler });
       })
       .catch(() => { this._nyheterHentes = false; });
+  }
+
+  /**
+   * Én artikkel, hentet paa adressen sin.
+   *
+   * Lista over publiserte artikler hentes for seg. Den som aapner
+   * /nyheter/<adresse> kan komme rett utenfra, og en artikkel som ikke ligger
+   * ute staar ikke i lista i det hele tatt — den maa spoerres etter.
+   */
+  hentNyhet(slug) {
+    if (!this.erPublisert()) return;
+    fetch('/api/nyheter.php?slug=' + encodeURIComponent(slug), {
+      credentials: 'same-origin', cache: 'no-store',
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (d && d.artikkel) {
+          this.setState({ side: 'nyheter', nyLest: d.artikkel });
+          window.scrollTo(0, 0);
+          return;
+        }
+        // Finnes den ikke, skal det staa at den ikke finnes — ikke en tom
+        // artikkelside som ser ut som noe er i stykker.
+        this.setState({ side: 'ikkefunnet' });
+      })
+      .catch(() => { /* nettet svarte ikke; lista staar */ });
   }
 
   hentMarked() {
@@ -23337,6 +23417,15 @@ class Component extends DCLogic {
           nyLestDato: lest ? (lest.dato || '') : '',
           nyLestKategori: !!(lest && lest.kategori),
           nyLestKategoriNavn: lest ? (lest.kategori || '') : '',
+          // Satt av api/nyheter.php, og bare for en innlogget admin.
+          nyErUtkast: !!(lest && lest.utkast),
+          nyUtkastTekst: lest && lest.utkast
+            ? (lest.utkastStatus === 'planlagt'
+                ? 'Denne artikkelen ligger ikke ute ennå — den er satt opp til å gå ut senere. Slik blir den.'
+                : lest.utkastStatus === 'avpublisert'
+                  ? 'Denne artikkelen er tatt ned fra nettsiden. Slik så den ut.'
+                  : 'Denne artikkelen er en kladd og ligger ikke ute. Slik blir den.')
+            : '',
         };
       })(),
       erIkkeFunnet: side === 'ikkefunnet',
@@ -25404,14 +25493,59 @@ class Component extends DCLogic {
             bildeKnapp: a.bilde ? 'Bytt bilde' : 'Velg bilde',
             byttBilde: () => this.apneBildevalg(a.id),
             adresse: a.slug ? '/nyheter/' + a.slug : 'ingen adresse ennå',
-            merke: a.status === 'publisert' ? 'Ute' : 'Kladd',
+            // Fire tilstander, ikke to (migrasjon 063). «Tatt ned» og
+            // «kladd» ser like ut for en besokende — begge er borte. For
+            // verkstedet er forskjellen at den ene har vaert ute, og at det
+            // kan finnes lenker der ute som naa er dode.
+            merke: a.merke || (a.status === 'publisert' ? 'Ute' : 'Kladd'),
             merkeStil: { font: 'var(--type-label)', fontSize: '10px', letterSpacing: 'var(--tracking-caps)',
                          textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
-                         background: a.status === 'publisert' ? 'var(--sage-100, #E3EDE4)' : 'var(--clay-200)',
-                         color: a.status === 'publisert' ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)' },
+                         background: a.status === 'publisert' ? 'var(--sage-100, #E3EDE4)'
+                                   : a.status === 'planlagt' ? 'var(--lissom-yellow)' : 'var(--clay-200)',
+                         color: a.status === 'publisert' ? 'var(--sage-600, #4C6B4F)'
+                              : a.status === 'planlagt' ? 'var(--lissom-brown)' : 'var(--text-muted)' },
             detalj: (a.kategori || 'uten kategori') + ' · ' + a.ord + ' ord · ' + (a.kilde === 'ai' ? 'skrevet av AI' : 'skrevet av deg'),
+            tilstand: a.status === 'publisert'
+              ? ('Ute' + (a.publisertAt ? ' siden ' + a.publisertAt : '')
+                 + (a.publisertAv ? ' · lagt ut av ' + a.publisertAv : ''))
+              : a.status === 'planlagt'
+                ? ('Går ut ' + (a.planlagtTil || '').replace('T', ' kl. '))
+                : a.status === 'avpublisert'
+                  ? ('Tatt ned' + (a.publisertAt ? ' · lå ute fra ' + a.publisertAt : ''))
+                  : 'Har aldri vært ute.',
             knapp: a.status === 'publisert' ? 'Ta ned' : 'Publiser',
-            veksle: () => this.artikkelKall({ handling: 'status', id: a.id, status: a.status === 'publisert' ? 'kladd' : 'publisert' }),
+            veksle: () => this.artikkelKall({
+              handling: 'status', id: a.id,
+              // Publisert -> tatt ned. Har den aldri vaert ute, er «kladd»
+              // fortsatt riktig — det er ikke noe aa ta ned.
+              status: a.status === 'publisert' ? 'avpublisert' : 'publisert',
+            }),
+            // Forhaandsvisning: adressen artikkelen har eller vil faa. Er
+            // den ikke publisert, slipper bare admin inn — se api/nyheter.php.
+            seTekst: a.status === 'publisert' ? 'Se den' : 'Se hvordan den blir',
+            seDen: () => {
+              if (!a.lenke) { this.setState({ kvittering: 'Artikkelen har ingen adresse ennå. Lagre den først.' }); return; }
+              window.open(a.lenke, '_blank', 'noopener');
+            },
+            kanPlanlegge: a.status !== 'publisert',
+            planTekst: a.status === 'planlagt' ? 'Endre tidspunkt' : 'Planlegg',
+            planApen: this.state.mkPlanFor === a.id,
+            planId: 'mk-plan-' + a.id,
+            planTid: this.state.mkPlanTid !== undefined
+              ? this.state.mkPlanTid
+              : (a.planlagtTil || ''),
+            settPlanTid: e => this.setState({ mkPlanTid: e.target.value }),
+            planlegg: () => this.setState({
+              mkPlanFor: this.state.mkPlanFor === a.id ? 0 : a.id,
+              mkPlanTid: a.planlagtTil || '',
+            }),
+            avbrytPlan: () => this.setState({ mkPlanFor: 0, mkPlanTid: undefined }),
+            lagrePlan: () => {
+              const naar = this.state.mkPlanTid !== undefined ? this.state.mkPlanTid : (a.planlagtTil || '');
+              if (!naar) { this.setState({ kvittering: 'Sett et tidspunkt først' }); return; }
+              this.artikkelKall({ handling: 'status', id: a.id, status: 'planlagt', planlagtTil: naar });
+              this.setState({ mkPlanFor: 0, mkPlanTid: undefined });
+            },
             slett: () => this.artikkelKall({ handling: 'slett', id: a.id }),
             rediger: () => this.setState({
               abId: a.id, abTittel: a.tittel, abKategori: a.kategori || '',

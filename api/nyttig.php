@@ -14,6 +14,9 @@ require __DIR__ . '/_boot.php';
 
 Foresporsel::krevMetode('GET');
 
+// Planlagte artikler som har naadd tidspunktet sitt gaar ut her ogsaa.
+Artikler::publiserForfalte();
+
 // Samme skille som i admin: Nyttig info er verkstedets egne sider.
 // Guidene fra kunnskapsbanken staar under Nyheter.
 $artikler = DB::alle(

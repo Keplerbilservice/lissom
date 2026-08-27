@@ -72,6 +72,26 @@ if (Foresporsel::metode() === 'GET') {
             'passerHvem' => (string) ($k['passer_hvem'] ?? ''),
             'metode'     => (string) ($k['metode'] ?? ''),
             'varighet'   => (string) ($k['varighet'] ?? ''),
+            // Kursnivaa, tekstene og varigheten (migrasjon 072).
+            //
+            // «mal» er den anbefalte teksten for dette kurset. Den lagres
+            // ikke — den staar her saa skjermen kan tilby «Gjenopprett
+            // anbefalt tekst» uten at noe skrives over av seg selv.
+            'nivaaIntern'     => (string) ($k['nivaa_intern'] ?? ''),
+            'nivaaTekst'      => (string) ($k['nivaa_tekst'] ?? ''),
+            'kortBeskrivelse' => (string) ($k['kort_beskrivelse'] ?? ''),
+            'lagerDu'         => (string) ($k['lager_du'] ?? ''),
+            'medHjem'         => (string) ($k['med_hjem'] ?? ''),
+            'ferdigTid'       => (string) ($k['ferdig_tid'] ?? ''),
+            'tillegg'         => (string) ($k['tillegg'] ?? ''),
+            'varighetTekst'   => (string) ($k['varighet_tekst'] ?? ''),
+            'mal'             => Kursmal::forKurs($k),
+            // Varigheten regnet av oektene, slik kunden faktisk ser den.
+            'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [
+                'start'     => (string) $o['start_tid'],
+                'slutt'     => $o['slutt_tid'] ?? null,
+                'samlinger' => 1,
+            ], $okter)),
             'datoer'     => array_map(static fn($o) => [
                 'oktId'     => (int) $o['id'],
                 'naar'      => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
@@ -135,6 +155,20 @@ switch ($handling) {
 
         $data = [
             'tittel'            => $tittel,
+            // De redigerbare tekstene. Tomt felt betyr «bruk den anbefalte
+            // teksten» — den staar da i lesningen, men lagres ikke, saa en
+            // senere endring i malen naar fram til de kursene som ikke er
+            // skrevet om for haand.
+            ...(DB::harKolonne('courses', 'nivaa_tekst') ? [
+                'nivaa_intern'     => mb_substr(Foresporsel::tekst('nivaaIntern'), 0, 32) ?: 'nybegynner',
+                'nivaa_tekst'      => mb_substr(Foresporsel::tekst('nivaaTekst'), 0, 120) ?: null,
+                'kort_beskrivelse' => mb_substr(Foresporsel::tekst('kortBeskrivelse'), 0, 500) ?: null,
+                'lager_du'         => Foresporsel::tekst('lagerDu') ?: null,
+                'med_hjem'         => Foresporsel::tekst('medHjem') ?: null,
+                'ferdig_tid'       => mb_substr(Foresporsel::tekst('ferdigTid'), 0, 160) ?: null,
+                'tillegg'          => Foresporsel::tekst('tillegg') ?: null,
+                'varighet_tekst'   => mb_substr(Foresporsel::tekst('varighetTekst'), 0, 120) ?: null,
+            ] : []),
             'type'              => in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
                                     ? Foresporsel::tekst('type') : 'kurs',
             'tema'              => mb_substr(Foresporsel::tekst('tema'), 0, 64) ?: null,

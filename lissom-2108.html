@@ -11206,7 +11206,20 @@ class Component extends DCLogic {
           temaer: this.undertemaer(k.tittel, k.tema),
           title: k.tittel,
           date: k.datoer.length ? k.datoer[0].dato : 'Etter avtale',
-          duration: k.datoer.length > 1 ? k.datoer.length + ' datoer å velge mellom' : '',
+          // Varigheten, ikke antall datoer. Feltet heter «duration» og sto
+          // med «3 datoer å velge mellom» — hvor mange kvelder man kan velge
+          // mellom er ikke hvor lenge kurset varer. Tallet regnes av start-
+          // og sluttida paa serveren, saa det foelger med naar tidene endres.
+          duration: k.varighetVist || '',
+          // Nivaaet kunden leser. Sto med temaet — «Dreiing», «Workshop» —
+          // under overskriften «Nivaa».
+          nivaaTekst: k.nivaaTekst || '',
+          laererTekst: k.laerer || '',
+          lagerDu: k.lagerDu || '',
+          medHjem: k.medHjem || '',
+          ferdigTid: k.ferdigTid || '',
+          tillegg: k.tillegg || '',
+          kortBeskrivelse: k.kortBeskrivelse || '',
           price: k.prisOre === 0 ? 'Gratis' : k.pris,
           status: k.datoer.length ? this.plasstekst(k.datoer, k.plasser) : 'Ta kontakt for dato',
           kunKontakt: k.datoer.length === 0,
@@ -11344,9 +11357,18 @@ class Component extends DCLogic {
         const d = (datoer[0] || {}).dato || k.date || '';
         return d ? d.charAt(0).toUpperCase() + d.slice(1) : d;
       })(),
-      // Flere datoer enn den som staar? Si det, i stedet for aa la det se ut
-      // som om kurset gaar én gang.
-      duration: datoer.length > 1 ? datoer.length + ' datoer å velge mellom' : k.duration,
+      // Varigheten er hvor lenge kurset varer, regnet av start- og sluttida
+      // paa serveren. Sto med «2 datoer aa velge mellom» — hvor mange
+      // kvelder man kan velge mellom er noe annet, og det staar i
+      // datovelgeren. Endrer verkstedet tidene, foelger tallet med.
+      duration: kat.varighetVist || k.duration,
+      nivaaTekst: kat.nivaaTekst || k.nivaaTekst || '',
+      laererTekst: kat.laerer || k.laererTekst || '',
+      lagerDu: kat.lagerDu || k.lagerDu || '',
+      medHjem: kat.medHjem || k.medHjem || '',
+      ferdigTid: kat.ferdigTid || k.ferdigTid || '',
+      tillegg: kat.tillegg || k.tillegg || '',
+      kortBeskrivelse: kat.kortBeskrivelse || k.kortBeskrivelse || '',
       om: kat.om || k.om,
       // «Alt som er inkludert».
       //
@@ -11609,7 +11631,9 @@ class Component extends DCLogic {
     return Object.assign({}, k, {
       okter: treff,
       date: treff[0].dato || k.date,
-      duration: treff.length > 1 ? treff.length + ' datoer å velge mellom' : '',
+      // Varigheten staar som paa kurset ellers. Antall datoer hoerer til i
+      // datovelgeren, ikke i varigheten.
+      duration: k.duration || '',
       status: this.plasstekst(treff, k.plasser),
       // Kortet lover en dato. Da skal bookingen aapne paa den, ikke paa den
       // foerste i rekka.
@@ -21735,7 +21759,9 @@ class Component extends DCLogic {
            v.id && v.status !== 'Varslet' ? () => this.ventelisteVarsle(v.id) : null),
       })),
       bTittel: (this.state.valgtKurs && this.state.valgtKurs.title) || 'Nybegynner dreiekurs',
-      bNivaa: (this.state.valgtKurs && this.state.valgtKurs.level) || 'Nybegynner',
+      // Sto med temaet — «Dreiing», «Workshop» — som ikke er et nivaa.
+      bNivaa: (this.state.valgtKurs && this.state.valgtKurs.nivaaTekst)
+              || (this.state.valgtKurs && this.state.valgtKurs.level) || '',
       ...(() => {
         const k = this.state.valgtKurs || {};
         const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-';
@@ -21805,8 +21831,12 @@ class Component extends DCLogic {
           .concat(liste(k.metode)).concat(liste(k.varighet));
         return {
           bSeksjoner: [
-            ['Dette lærer du', k.laerer],
+            ['Dette lærer du', k.laererTekst || k.laerer],
+            ['Dette lager du', k.lagerDu],
+            ['Dette får du med hjem', k.medHjem],
+            ['Når er den ferdig', k.ferdigTid],
             ['Praktisk informasjon', k.praktisk],
+            ['Godt å vite', k.tillegg],
             ['Allergener og kommentarer', k.allergener],
           ].filter(([, t]) => String(t || '').trim() !== '')
            .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
@@ -28137,19 +28167,30 @@ class Component extends DCLogic {
         this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
         window.scrollTo(0, 0);
       },
+      // De fire faktaboksene.
+      //
+      // Alle fire sto fast i koden. «Nivaa» viste temaet — «Workshop» — og
+      // «Du laerer» sto med «Sentrere, dreie, trimme» paa alle kurs som ikke
+      // var et event, ogsaa paa dem som ikke bruker dreieskive i det hele
+      // tatt. Naa kommer alle fire fra kurset, med malen for kurstypen som
+      // reserve; malen ligger paa serveren, ikke her.
+      //
+      // En boks uten innhold staar ikke. Fire overskrifter med tre svar ser
+      // ut som om noe er i stykker.
       bFakta: (() => {
         const k = this.state.valgtKurs || {};
-        const erEvent = k.level === 'Event';
+        const kort = t => String(t || '').split(/[.\n]/)[0].trim();
         return [
-          { merke: 'Nivå', verdi: erEvent ? 'Ingen erfaring' : (k.level || 'Nybegynner') },
-          { merke: 'Varighet', verdi: k.duration || '2 økter, 2 dager' },
-          { merke: 'Du lærer', verdi: erEvent ? 'Forme og dekorere' : 'Sentrere, dreie, trimme' },
-          { merke: 'Med hjem', verdi: 'Ferdige, glaserte arbeider' },
-        ];
+          { merke: 'Nivå', verdi: k.nivaaTekst || '' },
+          { merke: 'Varighet', verdi: k.duration || '' },
+          // Boksene er smaa. Hele setningen staar under «Dette lærer du».
+          { merke: 'Du lærer', verdi: kort(k.laererTekst) },
+          { merke: 'Med hjem', verdi: kort(k.lagerDu) },
+        ].filter(f => f.verdi !== '');
       })(),
       bOppsummering: (() => {
         const k = this.state.valgtKurs || {};
-        return [(k.date || 'Flere datoer'), (k.duration || ''), (k.level === 'Event' ? 'Ingen erfaring nødvendig' : (k.level || ''))].filter(Boolean).join(' · ');
+        return [(k.date || 'Flere datoer'), (k.duration || ''), (k.nivaaTekst || '')].filter(Boolean).join(' · ');
       })(),
       // «Kari · kursdeltaker i juni» og «Marte · utdrikningslag i mai» fantes
       // ikke. Jeg skrev dem inn da sida ble bygget, og de sto som ekte

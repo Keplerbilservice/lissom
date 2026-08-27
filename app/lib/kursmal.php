@@ -201,8 +201,13 @@ final class Kursmal
     /**
      * Varigheten paa en oekt, skrevet ut.
      *
-     *   17:00–20:00   «3 timer»
-     *   18:00–20:30   «2 timer og 30 minutter»
+     *   17:00–20:00              «3 timer»
+     *   18:00–20:30              «2 timer og 30 minutter»
+     *   9. sep 15:00 – 10. sep 18:00  «3 timer per gang · 2 ganger»
+     *
+     * Det siste er et kurs over flere dager. Der er «slutt_tid» slutten paa
+     * siste dag, ikke slutten paa en sammenhengende oekt: regnet rett fram
+     * ble det «27 timer», som ingen har vaert paa.
      *
      * Null naar sluttida mangler: da vet vi det ikke, og da skal det ikke
      * staa noe. En gjettet varighet er verre enn ingen.
@@ -217,8 +222,20 @@ final class Kursmal
         if ($a === false || $b === false || $b <= $a) {
             return null;
         }
-        $min = (int) round(($b - $a) / 60);
-        return self::minutterSomTekst($min);
+
+        $dagA = date('Y-m-d', $a);
+        $dagB = date('Y-m-d', $b);
+        if ($dagA === $dagB) {
+            return self::minutterSomTekst((int) round(($b - $a) / 60));
+        }
+
+        // Flere dager: lengden er klokkeslettene, og antallet er dagene.
+        $dager = (int) ((new DateTimeImmutable($dagA))->diff(new DateTimeImmutable($dagB))->days) + 1;
+        $perDag = (int) round((strtotime($dagA . ' ' . date('H:i:s', $b)) - $a) / 60);
+        if ($perDag <= 0) {
+            return null;
+        }
+        return self::minutterSomTekst($perDag) . ' per gang · ' . $dager . ' ganger';
     }
 
     /** Minutter skrevet slik man sier det. */

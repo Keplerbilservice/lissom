@@ -27,9 +27,12 @@ $oppsettFelt  = DB::harKolonne('courses', 'punkter')
 // Kom med migrasjon 044. Uten sjekken faller hele katalogen naar den ikke er
 // kjoert — og det er katalogen kundene ser.
 $bilderFelt   = DB::harKolonne('courses', 'bilder') ? ', bilder' : '';
+// Kursnivaa, tekstene og varigheten. Kom med migrasjon 072.
+$tekstFelt = DB::harKolonne('courses', 'nivaa_tekst')
+    ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -61,6 +64,36 @@ foreach ($kurs as $k) {
         'pris'    => Booking::kroner((int) $k['pris_ore']),
         'prisOre' => (int) $k['pris_ore'],
         'om'      => $k['beskrivelse'],
+        // Nivaaet kunden leser, varigheten regnet av oektene, og tekstene.
+        //
+        // Alt sammen faller tilbake paa malen for kurstypen naar feltet er
+        // tomt — malen ligger i app/lib/kursmal.php, ikke i nettsida. Da kan
+        // teksten endres uten at noen roerer frontend, og et kurs som er
+        // skrevet om for haand beholder sitt eget.
+        ...(static function () use ($k, $okter): array {
+            $mal = Kursmal::forKurs($k);
+            $velg = static fn(string $felt, string $malfelt): string =>
+                trim((string) ($k[$felt] ?? '')) !== ''
+                    ? trim((string) $k[$felt]) : (string) ($mal[$malfelt] ?? '');
+            return [
+                'nivaaTekst'      => $velg('nivaa_tekst', 'nivaaTekst') ?: Kursmal::NIVAA_UTE,
+                'nivaaIntern'     => (string) ($k['nivaa_intern'] ?? ''),
+                'kortBeskrivelse' => $velg('kort_beskrivelse', 'kortBeskrivelse'),
+                'laerer'          => $velg('laerer', 'laerer'),
+                'lagerDu'         => $velg('lager_du', 'lagerDu'),
+                'medHjem'         => $velg('med_hjem', 'medHjem'),
+                'ferdigTid'       => $velg('ferdig_tid', 'ferdigTid'),
+                'tillegg'         => $velg('tillegg', 'tillegg'),
+                // Varigheten er ikke en tekst noen har skrevet: den regnes av
+                // start- og sluttida paa oektene. «varighet_tekst» overstyrer
+                // for de kursene som trenger en annen formulering.
+                'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [
+                    'start'     => (string) $o['start_tid'],
+                    'slutt'     => $o['slutt_tid'] ?? null,
+                    'samlinger' => 1,
+                ], $okter)),
+            ];
+        })(),
         // Antall plasser kurset har. Nettsida skrev det som fast tekst —
         // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
         // sto rett over hverandre og var uenige. Naa kommer begge herfra.
@@ -76,7 +109,11 @@ foreach ($kurs as $k) {
         // feilen som ble rettet i juni.
         'punkter' => Medlemskap::punkter((string) ($k['punkter'] ?? '')),
         // Seksjonene fra kursoppsettet. Tomme felt vises ikke.
-        'laerer'     => (string) ($k['laerer'] ?? ''),
+        //
+        // «laerer» staar ikke her: den settes over, med malen som reserve.
+        // Sto den begge steder, vant den siste — og den var tom. Det er den
+        // samme fella som «bPasserFor» og «refLogoStil» gikk i: to like
+        // navn i det samme objektet er bare én av dem.
         'praktisk'   => (string) ($k['praktisk'] ?? ''),
         'allergener' => (string) ($k['allergener'] ?? ''),
         'passerNivaa'=> (string) ($k['passer_nivaa'] ?? ''),

@@ -3969,7 +3969,7 @@ window.__resources = {
   <sc-if value="{{ erAdminNyttig }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – nyttig info" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4179,7 +4179,7 @@ window.__resources = {
   <sc-if value="{{ erAdminNyePameldinger }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – nye påmeldinger" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyePameldinger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4216,7 +4216,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMedlemssoknader }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – medlemskapsforespørsler" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemssoknader }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4253,7 +4253,7 @@ window.__resources = {
   <sc-if value="{{ erAdminUbesvarte }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – ubesvarte meldinger" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUbesvarte }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4294,7 +4294,7 @@ window.__resources = {
   <sc-if value="{{ erAdminVideokurs }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – videokurs" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVideokurs }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4329,7 +4329,7 @@ window.__resources = {
   <sc-if value="{{ erAdminFerdigbrent }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – ferdig glassert" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerdigbrent }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4494,7 +4494,7 @@ window.__resources = {
   <sc-if value="{{ erAdminVenteliste }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – venteliste" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVenteliste }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4582,7 +4582,7 @@ window.__resources = {
   <sc-if value="{{ erAdminKursholdere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – kursholdere" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursholdere }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4698,7 +4698,7 @@ window.__resources = {
   <sc-if value="{{ erAdminUttak }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – uttak butikk" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4820,7 +4820,7 @@ window.__resources = {
   <sc-if value="{{ erAdminNyreg }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – ny registrering" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -4987,7 +4987,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMedlemskap }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – medlemskap" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5192,7 +5192,7 @@ window.__resources = {
     <div data-screen-label="Admin" style="{{ adminGridStil }}">
 
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5886,7 +5886,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOversikt }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – oversikt" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6263,7 +6263,7 @@ window.__resources = {
   <sc-if value="{{ erAdminKursvelger }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – kursvelgeren" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursvelger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6440,7 +6440,7 @@ window.__resources = {
   <sc-if value="{{ erAdminReferanser }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – referansekunder" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavReferanser }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6547,7 +6547,7 @@ window.__resources = {
   <sc-if value="{{ erAdminVarsler }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – e-post og SMS" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVarsler }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6712,7 +6712,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMobilvis }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – mobilvisning" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6756,7 +6756,7 @@ window.__resources = {
   <sc-if value="{{ erAdminPameldte }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – påmeldte" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6967,7 +6967,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOmraade }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – område" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7025,7 +7025,7 @@ window.__resources = {
   <sc-if value="{{ erAdminKursdeltakere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – kursdeltakere" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7265,7 +7265,7 @@ window.__resources = {
   <sc-if value="{{ erAdminBrukere }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – brukere" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7350,7 +7350,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMedlem }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – medlemmer" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7697,7 +7697,7 @@ window.__resources = {
   <sc-if value="{{ erAdminInnhold }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – innhold" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7847,7 +7847,7 @@ window.__resources = {
   <sc-if value="{{ erAdminDropin }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – drop-in" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavDropin }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8003,7 +8003,7 @@ window.__resources = {
   <sc-if value="{{ erAdminButikk }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – butikk" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8199,7 +8199,7 @@ window.__resources = {
   <sc-if value="{{ erAdminBeskjeder }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – beskjeder" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8363,7 +8363,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOppskrifter }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – oppskrifter" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8499,7 +8499,7 @@ window.__resources = {
   <sc-if value="{{ erAdminOkonomi }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Admin – økonomi" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8837,7 +8837,7 @@ window.__resources = {
   <sc-if value="{{ erAdminMarked }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – markedsføring" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMarked }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9404,7 +9404,7 @@ window.__resources = {
   <sc-if value="{{ erAdminSeo }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – SEO" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -18402,7 +18402,23 @@ class Component extends DCLogic {
     // Innstemplinga er den samme medlemmene bruker — check_ins, med inn- og
     // ut-tid. Ikke et nytt system ved siden av.
     const inne = this.erInne();
+    const siden = (this.state.stempling || {}).siden
+      || ((this.state.apningsdager || {}).apenSiden || '');
     const stempling = [{
+      // Statuslinja over knappen. Uten den staar det bare en knapp, og man
+      // vet ikke hva nettsiden sier akkurat naa.
+      navn: inne
+        ? (siden ? 'Verkstedet er åpent · siden ' + siden : 'Verkstedet er åpent')
+        : 'Verkstedet står som stengt',
+      velg: () => {},
+      stil: {
+        appearance: 'none', border: 'none', background: 'transparent',
+        textAlign: 'left', cursor: 'default', padding: '0 14px 6px',
+        font: 'var(--type-label)', fontSize: 11,
+        letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+        color: inne ? 'var(--sage-500)' : 'var(--clay-400)',
+      },
+    }, {
       navn: inne ? '●  Jeg har gått hjem' : '○  Jeg er her',
       // Samme kall som knappen paa Min side. Kvitteringen sier hva som
       // skjedde, og aapningstida hentes paa nytt: den endrer seg av dette.
@@ -18442,11 +18458,9 @@ class Component extends DCLogic {
         velg: this.go('forside'),
         stil: Object.assign({}, this.adminBunnStil(), { marginTop: 'var(--space-4)', borderTop: '1px solid rgba(244,235,222,.18)', paddingTop: 'var(--space-4)' }),
       },
-      {
-        navn: '⌁  Logg ut',
-        velg: () => this.loggUtNaa(),
-        stil: this.adminBunnStil(),
-      },
+      // «Logg ut» sto her, rett under «Se nettsiden». Den staar naa nederst,
+      // under Test Vipps: det er den man trykker sjeldnest, og den man minst
+      // vil treffe ved et uhell.
       // Vedlikeholdet laa nederst paa Oversikt, under alt annet. Naa staar det
       // her, og gjor jobben med det samme: raden sier hvor mange
       // oppdateringer som venter, og ett trykk kjorer dem.
@@ -18504,6 +18518,11 @@ class Component extends DCLogic {
       {
         navn: this.state.vippsSjekk === 'henter' ? '⚡  Sjekker Vipps …' : '⚡  Test Vipps',
         velg: () => this.testVipps(),
+        stil: this.adminBunnStil(),
+      },
+      {
+        navn: '⌁  Logg ut',
+        velg: () => this.loggUtNaa(),
         stil: this.adminBunnStil(),
       },
     ].flat());
@@ -27590,6 +27609,9 @@ class Component extends DCLogic {
         gk2Betalingslinje: this.innh('Gavekort/2/Betalingslinje'),
       }),
       erKalenderside: side === 'kalender',
+      // Logoen oeverst i sidemenyen i admin. Den sto som et bilde uten
+      // funksjon; i alle andre systemer fører den hjem, og det gjor den her.
+      adminHjem: () => this.gaaAdmin('adminoversikt', {}),
 
       // ── Kursene vaare ───────────────────────────────────────────────────
       //

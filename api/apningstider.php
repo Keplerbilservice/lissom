@@ -44,7 +44,10 @@ $slutt = $idag->modify('+' . DAGER_FRAM . ' days');
 // et tidspunkt. En drop-in ingen har meldt seg paa er en aapen doer og
 // teller med — den er nettopp en aapningstid.
 $okter = DB::alle(
-    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid, c.tittel, c.tema, c.type
+    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid, c.tittel, c.tema, c.type,
+            (SELECT COUNT(*) FROM bookings b
+              WHERE b.course_session_id = cs.id
+                AND b.status IN ('betalt','reservert')) AS pameldte
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.status = 'planlagt'
@@ -58,6 +61,42 @@ $okter = DB::alle(
         'til' => $slutt->setTimezone($utc)->format('Y-m-d H:i:s'),
     ]
 );
+
+// ── Drop-in-oekter som ikke svarer til en aapningstid lenger ───────────────
+//
+// Drop-in-tidene lages av ukereglene den dagen noen trykker «Legg ut tidene»,
+// og blir liggende. Endres reglene etterpaa, ryddes bare de framtidige som
+// ingen har booket — og en oekt lagt inn for haand ryddes aldri.
+//
+// Da sa nettsiden «aapent til 19» av en oekt som ikke sto noe sted: skjermen
+// viste reglene, basen hadde noe annet. Verkstedet lette etter et kurs som
+// ikke fantes.
+//
+// Her gjelder reglene. En drop-in-oekt teller bare med naar den svarer til en
+// aapningstid som staar oppe naa — eller naar noen faktisk har booket den,
+// for da er doeren aapen uansett hva reglene sier.
+$regler = [];
+if (DB::harTabell('dropin_tider')) {
+    foreach (DB::alle('SELECT ukedag, fra, til FROM dropin_tider WHERE aktiv = 1') as $r) {
+        $regler[(int) $r['ukedag'] . ' ' . substr((string) $r['fra'], 0, 5)
+              . '-' . substr((string) $r['til'], 0, 5)] = true;
+    }
+}
+
+$okter = array_values(array_filter($okter, static function (array $o) use ($regler, $oslo, $utc): bool {
+    $erDropin = (string) ($o['type'] ?? '') === 'dropin' || $o['fra_dropin_tid'] !== null;
+    if (!$erDropin || (int) $o['pameldte'] > 0) {
+        return true;
+    }
+    $start = (new DateTimeImmutable((string) $o['start_tid'], $utc))->setTimezone($oslo);
+    $stopp = $o['slutt_tid'] !== null
+        ? (new DateTimeImmutable((string) $o['slutt_tid'], $utc))->setTimezone($oslo)
+        : null;
+    $nokkel = $start->format('N') . ' ' . $start->format('H:i')
+            . '-' . ($stopp !== null ? $stopp->format('H:i') : '');
+
+    return isset($regler[$nokkel]);
+}));
 
 /** @var array<string, array{fra: string, til: string}> */
 $avKurs = [];

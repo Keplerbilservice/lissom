@@ -162,7 +162,20 @@ switch (Foresporsel::tekst('handling')) {
 
         // Hele settet byttes ut i én transaksjon. Halvveis lagring ville gitt
         // aapningstider som ikke stemmer med noe.
-        DB::iTransaksjon(static function () use ($rene): void {
+        //
+        // Oektene som alt ligger ute ryddes med: de er laget av de gamle
+        // reglene, og blir de staaende, sier nettsiden aapningstider som
+        // ikke finnes noe sted. Bare framtidige uten paameldte — en oekt
+        // noen har booket staar, uansett hva reglene sier naa.
+        DB::iTransaksjon(static function () use ($rene, $kurs): void {
+            DB::kjor(
+                "DELETE cs FROM course_sessions cs
+                  WHERE cs.course_id = :c
+                    AND cs.start_tid > UTC_TIMESTAMP()
+                    AND NOT EXISTS (SELECT 1 FROM bookings b
+                                     WHERE b.course_session_id = cs.id)",
+                ['c' => $kurs['id']]
+            );
             DB::kjor('UPDATE dropin_tider SET aktiv = 0');
             foreach ($rene as $t) {
                 DB::kjor(

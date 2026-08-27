@@ -1318,39 +1318,42 @@ window.__resources = {
               <h2 style="margin: 0;">{{ refTittel }}</h2>
             </div>
 
-            <div onMouseEnter="{{ refPause }}" onMouseLeave="{{ refFortsett }}" onTouchStart="{{ refPause }}" style="{{ refKortStil }}">
-              <div style="{{ refBildeStil }}">
-                <div style="{{ refGradientStil }}"></div>
-                <!-- Logoen til kunden, i hjoernet av bildet. Bildet sier hva
-                     som ble laget, logoen hvem det ble laget for. -->
+            <!-- Samme oppsett som events og medlemskap over: bildet til
+                 venstre i full hoyde, teksten til hoyre, prikkene under.
+                 Kortramma som sto her gjorde feltet til noe annet enn resten
+                 av forsiden. -->
+            <div class="lx-split" onMouseEnter="{{ refPause }}" onMouseLeave="{{ refFortsett }}" onTouchStart="{{ refPause }}" style="{{ refSplitStil }}">
+              <img data-src="{{ refBilde }}" alt="{{ refBildeAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" loading="lazy" decoding="async">
+              <div>
+                <!-- Logoen til kunden. Bildet sier hva som ble laget, logoen
+                     hvem det ble laget for. Staar paa hvitt: en logo er som
+                     regel laget for hvit bakgrunn. -->
                 <sc-if value="{{ refHarLogo }}" hint-placeholder-val="{{ false }}">
                   <div style="{{ refLogoStil }}" role="img" aria-label="{{ refLogoAlt }}"></div>
                 </sc-if>
-              </div>
-              <div style="padding: var(--space-8); display: flex; flex-direction: column; justify-content: center; min-width: 0;">
-                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ refNavn }}</div>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ refNavn }}</div>
+                <h2 style="margin: 0 0 var(--space-5);">{{ refOverskrift }}</h2>
                 <sc-if value="{{ refHarSitat }}" hint-placeholder-val="{{ true }}">
-                  <p style="margin: var(--space-4) 0 0; border-left: 3px solid var(--lissom-yellow); padding-left: var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1.45; color: var(--text-heading); text-wrap: pretty;">{{ refSitat }}</p>
+                  <p style="margin: 0 0 var(--space-4); border-left: 3px solid var(--lissom-yellow); padding-left: var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1.45; color: var(--text-heading); text-wrap: pretty;">{{ refSitat }}</p>
                   <sc-if value="{{ refHarSitatAv }}" hint-placeholder-val="{{ false }}">
-                    <div style="margin-top: var(--space-2); padding-left: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ refSitatAv }}</div>
+                    <div style="margin: 0 0 var(--space-4); padding-left: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ refSitatAv }}</div>
                   </sc-if>
                 </sc-if>
                 <sc-if value="{{ refHarTekst }}" hint-placeholder-val="{{ true }}">
-                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-base); line-height: 1.6; color: var(--text-body); max-width: 52ch; text-wrap: pretty;">{{ refTekst }}</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ refTekst }}</p>
                 </sc-if>
                 <sc-if value="{{ refHarLenke }}" hint-placeholder-val="{{ false }}">
-                  <a href="{{ refLenke }}" target="_blank" rel="noopener noreferrer" style="margin-top: var(--space-5); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ refLenkeTekst }}</a>
+                  <a href="{{ refLenke }}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: var(--space-2); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ refLenkeTekst }}</a>
+                </sc-if>
+                <sc-if value="{{ refFlere }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: 10px; margin-top: var(--space-8);">
+                    <sc-for list="{{ refPrikker }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
+                    </sc-for>
+                  </div>
                 </sc-if>
               </div>
             </div>
-
-            <sc-if value="{{ refFlere }}" hint-placeholder-val="{{ true }}">
-              <div style="display: flex; gap: 10px; margin-top: var(--space-6);">
-                <sc-for list="{{ refPrikker }}" as="d" hint-placeholder-count="3">
-                  <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
-                </sc-for>
-              </div>
-            </sc-if>
           </div>
         </section>
       </sc-if>
@@ -6032,6 +6035,10 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Banneret under toppbildet" checked="{{ bryterApentHus }}" on-change="{{ vekslApentHus }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Salgsuke-kampanjen" checked="{{ kampanjePaa }}" on-change="{{ kampanjeVeksl }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Kursvelger-lenken i toppen" checked="{{ bryterKursvelger }}" on-change="{{ vekslKursvelger }}" hint-size="100%,28px"></x-import>
+              <!-- Seksjonen sto paa saa lenge det fantes én kunde som var
+                   slaatt paa. Da matte hver enkelt kunde av for aa faa bort
+                   feltet — og paa igjen etterpaa. Naa er det én bryter. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Referansekunder på forsiden" checked="{{ bryterReferanser }}" on-change="{{ vekslReferanser }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Medlemskolleksjonen i butikken" checked="{{ visMedlemskolleksjon }}" on-change="{{ vekslMedlemskolleksjon }}" hint-size="100%,28px"></x-import>
             </div>
           </div>
@@ -19169,7 +19176,9 @@ class Component extends DCLogic {
         && !this.state.ferdigbrentAdmin) {
       this.hentFerdigbrentAdmin();
     }
-    if (side === 'adminreferanser' && !this.state.refAdmin) {
+    // Kortet paa Oversikt viser hvor mange referanser som staar ute, saa
+    // lista maa hentes der ogsaa — ikke bare paa skjermen som redigerer dem.
+    if ((side === 'adminreferanser' || side === 'adminoversikt') && !this.state.refAdmin) {
       this.hentReferanser();
     }
     // Referansekundene. Bare paa forsida — det er der de staar.
@@ -22104,6 +22113,10 @@ class Component extends DCLogic {
         const soknader2 = (this.state.adminSoknader || []).length;
         const ubesvarte = (this.state.adminForesporsler || [])
           .filter(f => f.status === 'Ubesvart').length;
+        // Referansekundene som faktisk staar ute: baade slaatt paa og med
+        // samtykke. Tallet paa kortet skal si hva som vises, ikke hvor mange
+        // rader som finnes.
+        const refAntall = (this.state.refAdmin || []).filter(r => r.ute).length;
 
         return {
           ovDraHjelp: this.state.ovRekkefolgeLagret
@@ -22160,6 +22173,16 @@ class Component extends DCLogic {
                  'Spørsmålene besøkende får når de ikke vet hvilket kurs som passer, og hva hvert svar peker til.',
                  null, 'Se kursvelgeren',
                  () => this.gaaAdmin('adminkursvelger', {})),
+
+            // Referansekundene laa som en fane under Nettsiden. Det er
+            // arbeid man legger til, retter og tar bort — ikke en tekst paa
+            // en side — og da hoerer det hjemme her, sammen med resten.
+            kort('Referansekunder',
+                 refAntall
+                   ? 'Kundene som står på forsiden, med bildet av det dere laget og logoen deres.'
+                   : 'Legg ut arbeid dere har laget for andre: bildet, logoen og hva det var.',
+                 refAntall || null, refAntall ? 'Se referansene' : 'Legg til den første',
+                 () => this.gaaAdmin('adminreferanser', {})),
 
             // Det interne innholdet hadde ingen vei fra Oversikt — det laa
             // inne under Medlemmer, og maatte letes fram.
@@ -23456,6 +23479,8 @@ class Component extends DCLogic {
         };
       })(),
       bryterKursvelger: this.bryterPaa('kursvelger'),
+      bryterReferanser: this.bryterPaa('referanser'),
+      vekslReferanser: () => this.vekslBryter('referanser', 'Referansekunder på forsiden'),
       bryterMinInternkurs: this.bryterPaa('internkurs'),
       vekslMinInternkurs: () => this.vekslBryter('internkurs', 'Interne kurs og samlinger'),
       bryterMinInternbutikk: this.bryterPaa('internbutikk'),
@@ -29165,7 +29190,9 @@ class Component extends DCLogic {
       // Ingen ny karusell — den som finnes gjor jobben.
       ...(() => {
         const kunder = (this.state.referanser || []).filter(k => k.navn);
-        if (!kunder.length) {
+        // Bryteren i admin gaar foran. Uten den matte hver enkelt kunde slaas
+        // av for aa faa bort hele feltet.
+        if (!kunder.length || !this.bryterPaa('referanser')) {
           return { refVis: false };
         }
         const nr = ((this.state.refNr || 0) % kunder.length + kunder.length) % kunder.length;
@@ -29186,20 +29213,20 @@ class Component extends DCLogic {
           refHarLenke: !!k.lenke,
           refLenkeTekst: 'Se ' + k.navn + ' →',
           // Toningen ligger paa hele kortet, saa bilde og tekst bytter samtidig.
-          refKortStil: this.toneStil('ref', {
-            display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)',
-            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--radius-xl, 22px)', overflow: 'hidden',
-            boxShadow: 'var(--shadow-sm)', minHeight: 320,
+          // Samme rutenett som events og medlemskap over — «lx-split» og
+          // toningen fra toneStil. Kortramma som sto her gjorde feltet til
+          // noe annet enn resten av forsiden.
+          refSplitStil: this.toneStil('ref', {
+            maxWidth: 'var(--width-content)', margin: '0 auto',
+            display: 'grid', gridTemplateColumns: '1fr 1fr',
+            gap: 'var(--space-16)', alignItems: 'center',
           }),
-          refBildeStil: {
-            position: 'relative', minHeight: 320,
-            backgroundColor: 'var(--clay-200)',
-            backgroundImage: k.bilde ? "url('" + k.bilde + "')" : 'none',
-            backgroundSize: 'cover',
-            backgroundPosition: this.fokusFor(k.bilde || ''),
-          },
-          // Logoen til kunden, i hjoernet av bildet.
+          refBilde: k.bilde || '',
+          refBildeAlt: 'Keramikk laget for ' + k.navn,
+          // Overskrifta. Sitatet er det sterkeste naar det finnes; ellers
+          // sier vi hva det er.
+          refOverskrift: k.sitat ? '«' + k.sitat + '»' : 'Laget for ' + k.navn,
+          // Logoen til kunden.
           //
           // Bildet sier hva som ble laget; logoen sier hvem det ble laget
           // for. Uten den staar arbeidet uten avsender, og «Bestilt hos oss»
@@ -29209,21 +29236,18 @@ class Component extends DCLogic {
           // forsvinner mot leirefarge. «contain» beskjaerer den ikke.
           refHarLogo: !!k.logo,
           refLogoStil: {
-            position: 'absolute', left: 'var(--space-5)', bottom: 'var(--space-5)',
-            width: 104, height: 56, borderRadius: 'var(--radius-md)',
-            background: '#fff', boxShadow: '0 2px 10px rgba(46,16,2,.18)',
+            width: 132, height: 60, marginBottom: 'var(--space-4)',
+            borderRadius: 'var(--radius-md)',
+            background: '#fff', border: '1px solid var(--border-subtle)',
             backgroundImage: "url('" + k.logo + "')",
-            backgroundSize: '72% auto',
+            backgroundSize: '76% auto',
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'center',
           },
           refLogoAlt: 'Logoen til ' + k.navn,
-          // En diskret gradient, slik bestillingen ber om — nedre kant toner
-          // ned saa kanten mot kortet ikke blir en hard strek.
-          refGradientStil: {
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(180deg, rgba(45,20,12,0) 55%, rgba(45,20,12,.22) 100%)',
-          },
+          // Gradienten sto over bildet mens det laa inne i en kortramme.
+          // Bildet staar naa fritt, som paa events og medlemskap, og da er
+          // det ingen kant aa tone ned mot.
           refFlere: kunder.length > 1,
           refPrikker: this.tonePrikker('ref', kunder.map(x => x.navn)),
           // Peker musa paa kortet, eller ligger en finger paa det, staar det

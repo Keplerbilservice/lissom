@@ -216,6 +216,15 @@ det er akkurat den feilen som er vanskeligst å lese seg til.
 «Test Vipps» viser hvilken salgsenhet den prøvde, og om betalingen bruker sitt
 eget sett eller deler med innloggingen.
 
+**Webhooken registreres fra samme sted.** Nederst i «Test Vipps» står det om
+Vipps melder fra hit når noen betaler, og en knapp som registrerer den.
+Hemmeligheten Vipps signerer med vises bare den ene gangen webhooken
+opprettes — derfor lagres den av serveren med det samme, i `innstillinger`.
+Den kan ikke hentes fram igjen, bare erstattes av en ny registrering.
+
+Uten webhooken går ingenting tapt: cron spør Vipps hvert femte minutt. Men da
+kan kunden vente like lenge på kvitteringen.
+
 Vipps ba 26. august om å se hvor og hvordan kunden sier opp medlemskapet.
 Det står i salgsvilkårene, begge steder, og er publisert.
 

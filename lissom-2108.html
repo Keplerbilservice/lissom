@@ -9740,6 +9740,25 @@ window.__resources = {
           </div>
         </sc-if>
 
+        <!-- Webhooken.
+             Uten den faar vi betalingene med oss likevel — cron sporr Vipps
+             hvert femte minutt — men da staar kunden og venter paa
+             kvitteringen i opptil fem minutter. Hemmeligheten Vipps signerer
+             med vises bare den ene gangen, saa den lagres med det samme. -->
+        <div style="margin-top: var(--space-6); border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+          <div style="display: flex; gap: var(--space-3); align-items: flex-start; margin-bottom: var(--space-3);">
+            <span style="{{ vwMerkeStil }}">{{ vwMerke }}</span>
+            <div style="min-width: 0;">
+              <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">Beskjed fra Vipps når noen betaler</div>
+              <div style="font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vwTekst }}</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="check" on-click="{{ vwRegistrer }}" hint-size="auto,38px">{{ vwKnapp }}</x-import>
+            <span style="font-size: var(--text-xs); color: var(--text-muted); overflow-wrap: anywhere;">{{ vwAdresse }}</span>
+          </div>
+        </div>
+
         <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="refresh-cw" on-click="{{ vsPaaNytt }}" hint-size="auto,44px">Sjekk på nytt</x-import>
           <button type="button" onClick="{{ vsLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
@@ -18003,6 +18022,51 @@ class Component extends DCLogic {
     ].flat());
   }
 
+  /** Hvilke webhooks som er registrert hos Vipps naa. */
+  hentVippsWebhook() {
+    if (!this.erPublisert() || this._vwHentes) return;
+    this._vwHentes = true;
+    fetch('/api/admin/vipps-webhook.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d) this.setState({ vippsWebhook: d }); })
+      .catch(() => {})
+      .then(() => { this._vwHentes = false; });
+  }
+
+  /**
+   * Registrerer webhooken hos Vipps.
+   *
+   * Hemmeligheten Vipps signerer med vises bare den ene gangen, og lagres av
+   * serveren med det samme. En gammel registrering paa samme adresse ryddes
+   * bort foerst — ellers kommer hver hendelse to ganger.
+   */
+  registrerWebhook() {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Registreringen gjøres fra lissom.no.' });
+      return;
+    }
+    if (this.state.vwJobber) return;
+    this.setState({ vwJobber: true });
+    fetch('/api/admin/vipps-webhook.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'registrer' }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          vwJobber: false,
+          kvittering: ok ? 'Webhooken er registrert' : 'Ble ikke registrert',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        this._vwHentes = false;
+        this.hentVippsWebhook();
+      })
+      .catch(() => this.setState({ vwJobber: false, kvittering: 'Ble ikke registrert',
+                                   kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
   /** Gjor de ekte kallene mot Vipps og viser hva som virker. */
   testVipps() {
     if (!this.erPublisert()) {
@@ -18012,6 +18076,10 @@ class Component extends DCLogic {
     }
     if (this.state.vippsSjekk === 'henter') return;
     this.setState({ vippsSjekk: 'henter' });
+    // Webhooken hoerer med i det samme bildet: den avgjor om kvitteringen
+    // gaar ut med én gang eller etter fem minutter.
+    this._vwHentes = false;
+    this.hentVippsWebhook();
     fetch('/api/vipps-test.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
@@ -24953,6 +25021,38 @@ class Component extends DCLogic {
           })),
           vsHarDetalj: detalj !== '',
           vsDetalj: detalj,
+
+          // ── Webhooken ──────────────────────────────────────────────
+          //
+          // «Registrert» alene er ikke nok: hemmeligheten Vipps signerer med
+          // vises bare den ene gangen den opprettes. Har vi den ikke, blir
+          // hver melding notert og forkastet — og det ser ut som om
+          // webhooken virker.
+          ...(() => {
+            const w = this.state.vippsWebhook || {};
+            const klar = !!w.registrert && !!w.har_hemmelighet;
+            const halvt = !!w.registrert && !w.har_hemmelighet;
+            return {
+              vwMerke: klar ? '✓' : '✕',
+              vwMerkeStil: {
+                flex: '0 0 auto', width: 24, height: 24, borderRadius: '50%',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700,
+                background: klar ? 'var(--sage-100, #E3EDE4)' : 'rgba(196,90,58,.14)',
+                color: klar ? 'var(--sage-600, #4C6B4F)' : 'var(--terracotta-600)',
+              },
+              vwTekst: this.state.vwJobber
+                ? 'Registrerer …'
+                : klar
+                  ? 'Registrert. Kvitteringen går ut i samme øyeblikk kunden har betalt.'
+                  : halvt
+                    ? 'Registrert hos Vipps, men vi mangler hemmeligheten den signerer med — meldingene blir forkastet. Registrer på nytt.'
+                    : 'Ikke registrert. Betalingene fanges opp av cron i stedet, som spør Vipps hvert femte minutt — da kan kunden vente like lenge på kvitteringen.',
+              vwKnapp: klar ? 'Registrer på nytt' : 'Registrer webhooken',
+              vwAdresse: w.adresse || '',
+              vwRegistrer: () => this.registrerWebhook(),
+            };
+          })(),
         };
       })(),
 

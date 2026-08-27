@@ -62,6 +62,15 @@ final class Config
         'epost_signatur',
         'epost_signatur_system', 'epost_signatur_ordre',
         'epost_signatur_kurs', 'epost_signatur_nyhetsbrev',
+        // Hemmeligheten Vipps signerer webhooks med.
+        //
+        // Den vises bare den ene gangen webhooken registreres, og maa lagres
+        // med det samme. Aa kreve at den skrives inn i secrets.php over FTP
+        // betyr i praksis at webhooken aldri blir registrert — og da tar det
+        // opptil fem minutter for en betaling er bekreftet.
+        //
+        // Fila gjelder fortsatt foran: staar den der, er det den som teller.
+        'vipps_webhook_secret',
     ];
 
     /** @var array<string,string>|null */

@@ -538,6 +538,97 @@ final class Vipps
     // -----------------------------------------------------------------------
 
     /** Vår egen ordrereferanse, samme form som i designet: LIS-10482 */
+    // -----------------------------------------------------------------------
+    // Webhooks
+    // -----------------------------------------------------------------------
+
+    /**
+     * Hendelsene vi vil ha beskjed om.
+     *
+     * Navnene her er Vipps sine; det handleren leser er den korte formen
+     * («AUTHORIZED») som kommer i selve meldingen. Vi ber om alle som endrer
+     * en betaling — og «created», som er den eneste maaten aa se at noe ble
+     * paabegynt og aldri fullfort.
+     */
+    public const WEBHOOK_HENDELSER = [
+        'epayments.payment.created.v1',
+        'epayments.payment.authorized.v1',
+        'epayments.payment.captured.v1',
+        'epayments.payment.refunded.v1',
+        'epayments.payment.cancelled.v1',
+        'epayments.payment.aborted.v1',
+        'epayments.payment.expired.v1',
+        'epayments.payment.terminated.v1',
+    ];
+
+    /** Adressen Vipps skal melde fra til. Maa vaere https. */
+    public static function webhookAdresse(): string
+    {
+        return Config::nettsted() . '/api/vipps-webhook.php';
+    }
+
+    /**
+     * Webhookene som er registrert paa salgsenheten for betaling.
+     *
+     * @return list<array{id:string,url:string,events:list<string>}>
+     */
+    public static function webhooks(): array
+    {
+        $svar = http_get_json(Config::vippsBase() . '/webhooks/v1/webhooks', self::headere());
+        if ($svar['status'] !== 200 || !is_array($svar['json'])) {
+            throw new RuntimeException('Vipps svarte ' . $svar['status'] . ' på webhook-lista.');
+        }
+        return array_map(static fn($w): array => [
+            'id'     => (string) ($w['id'] ?? ''),
+            'url'    => (string) ($w['url'] ?? ''),
+            'events' => array_map('strval', (array) ($w['events'] ?? [])),
+        ], (array) ($svar['json']['webhooks'] ?? []));
+    }
+
+    /**
+     * Registrerer webhooken og gir tilbake hemmeligheten Vipps signerer med.
+     *
+     * Hemmeligheten vises bare denne ene gangen — den maa lagres med det
+     * samme, ellers maa webhooken registreres paa nytt.
+     *
+     * @return array{id:string,secret:string}
+     */
+    public static function registrerWebhook(): array
+    {
+        $svar = http_post_json(
+            Config::vippsBase() . '/webhooks/v1/webhooks',
+            ['url' => self::webhookAdresse(), 'events' => self::WEBHOOK_HENDELSER],
+            self::headere()
+        );
+
+        if ($svar['status'] !== 201 || !is_array($svar['json'])) {
+            logg_feil('Kunne ikke registrere webhook: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException('Vipps svarte ' . $svar['status'] . ': '
+                . mb_substr($svar['kropp'], 0, 300));
+        }
+
+        $hemmelighet = (string) ($svar['json']['secret'] ?? '');
+        if ($hemmelighet === '') {
+            throw new RuntimeException('Vipps ga ingen hemmelighet tilbake.');
+        }
+
+        return ['id' => (string) ($svar['json']['id'] ?? ''), 'secret' => $hemmelighet];
+    }
+
+    /** Fjerner en registrert webhook. */
+    public static function slettWebhook(string $id): void
+    {
+        $svar = http_kall(
+            Config::vippsBase() . '/webhooks/v1/webhooks/' . rawurlencode($id),
+            'DELETE',
+            null,
+            self::headere()
+        );
+        if ($svar['status'] !== 204 && $svar['status'] !== 200) {
+            throw new RuntimeException('Vipps svarte ' . $svar['status'] . ' på sletting.');
+        }
+    }
+
     public static function nyReferanse(string $prefiks = 'LIS'): string
     {
         return sprintf('%s-%s-%s', $prefiks, gmdate('ymd'), strtoupper(bin2hex(random_bytes(4))));

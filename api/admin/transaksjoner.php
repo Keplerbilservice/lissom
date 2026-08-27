@@ -49,11 +49,19 @@ if ($til <= $fra) {
     Svar::feil('Til-datoen må være etter fra-datoen.');
 }
 
+// Betalingsmaaten staar paa ordren, ikke paa betalingen: et salg over disk
+// gjores opp med kontant eller Vipps, og verkstedet velger hvilken.
+// Uttrekket skrev «Vipps» paa hver eneste linje — ogsaa paa kontantsalg — og
+// da stemmer ikke bankinnskuddet med bilaget hos regnskapsforeren.
+$harOrdre   = DB::harTabell('orders') && DB::harKolonne('orders', 'betalt_maate');
+$ordreFelt  = $harOrdre ? ', o.betalt_maate, o.ordrenr, o.kunde_navn' : '';
+$ordreJoin  = $harOrdre ? ' LEFT JOIN orders o ON o.payment_id = p.id' : '';
+
 $rader = DB::alle(
     "SELECT p.id, p.created_at, p.vipps_reference, p.vipps_psp_ref, p.formal, p.type,
-            p.status, p.belop_ore, p.refundert_ore, m.navn AS medlemsnavn
+            p.status, p.belop_ore, p.refundert_ore, m.navn AS medlemsnavn" . $ordreFelt . "
        FROM payments p
-       LEFT JOIN members m ON m.id = p.member_id
+       LEFT JOIN members m ON m.id = p.member_id" . $ordreJoin . "
       WHERE p.created_at >= :fra AND p.created_at < :til
       ORDER BY p.created_at, p.id",
     [
@@ -96,6 +104,19 @@ fputcsv($ut, [
     'Status', 'Beløp', 'Refundert', 'Netto', 'Kunde',
 ], ';', '"', '');
 
+// Hva som skal staa i «Betalingsmaate».
+//
+// Staar det en maate paa ordren, er det den som gjelder — den er valgt av
+// den som tok imot pengene. Ellers er det Vipps, som er den eneste veien
+// betalinger kommer inn av seg selv.
+$maateFor = static function (array $r): string {
+    $paaOrdre = trim((string) ($r['betalt_maate'] ?? ''));
+    if ($paaOrdre !== '') {
+        return $paaOrdre;
+    }
+    return $r['type'] === 'recurring_charge' ? 'Vipps månedstrekk' : 'Vipps';
+};
+
 $sumBrutto = 0;
 $sumRefundert = 0;
 
@@ -117,12 +138,14 @@ foreach ($rader as $r) {
         (string) $r['vipps_reference'],
         (string) ($r['vipps_psp_ref'] ?? ''),
         $FORMAL[$r['formal']] ?? (string) $r['formal'],
-        $r['type'] === 'recurring_charge' ? 'Vipps månedstrekk' : 'Vipps',
+        $maateFor($r),
         $STATUS[$r['status']] ?? (string) $r['status'],
         $kr($brutto),
         $refund > 0 ? $kr($refund) : '',
         $kr($brutto - $refund),
-        (string) ($r['medlemsnavn'] ?? ''),
+        // Et salg over disk har ingen medlemskonto. Da staar navnet den som
+        // tok imot pengene skrev inn — ellers sto kolonnen tom.
+        (string) ($r['medlemsnavn'] ?: ($r['kunde_navn'] ?? '')),
     ], ';', '"', '');
 }
 

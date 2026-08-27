@@ -16193,6 +16193,54 @@ class Component extends DCLogic {
       });
   }
 
+  /** Endrer ett felt paa én samling i skjemaet. */
+  endreSamling(i, endring) {
+    this.setState(st => ({
+      oktSamlinger: (st.oktSamlinger || []).map((sa, j) => j === i ? Object.assign({}, sa, endring) : sa),
+      oktInfoBeskjed: '',
+    }));
+  }
+
+  /**
+   * Lagrer pris, tekst og samlinger paa én kursdato.
+   *
+   * Hele samlingslista sendes om gangen. Skjemaet viser alle samtidig, og da
+   * er lista sannheten — ellers matte vi holde styr paa hvilke rader som ble
+   * fjernet i skjemaet, og det er nettopp den bokforingen som gaar galt.
+   */
+  lagreDatoinfo(oktId) {
+    if (!this.erPublisert()) { this.setState({ oktInfoBeskjed: 'Krever den ekte siden' }); return; }
+    if (this._datoinfo) return;
+    this._datoinfo = true;
+    this.setState({ oktInfoBeskjed: 'Lagrer …' });
+
+    fetch('/api/admin/kurs.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'dato',
+        oktId: oktId,
+        pris: (this.state.oktPris ?? '').trim(),
+        info: this.state.oktInfo ?? '',
+        samlinger: (this.state.oktSamlinger || []).filter(sa => sa.dato),
+      }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        this._datoinfo = false;
+        if (!d || !d.ok) {
+          this.setState({ oktInfoBeskjed: (d && d.feil) || 'Gikk ikke' });
+          return;
+        }
+        this.setState({ oktInfoBeskjed: d.beskjed || 'Lagret.' });
+        this._adminHentes = false;
+        this.hentAdmin();
+        this.hentKatalog();
+      })
+      .catch(() => { this._datoinfo = false; this.setState({ oktInfoBeskjed: 'Fikk ikke kontakt med serveren.' }); });
+  }
+
   /**
    * Sletter flere kursdatoer, én etter én.
    *

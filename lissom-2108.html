@@ -952,13 +952,20 @@ window.__resources = {
        ble klemt bort — paa mobil kom man ikke videre fra den sida man sto
        paa. Logoen krymper, statuslinja gaar ut (den er status, ikke
        navigasjon), og menyen faar bredden. */
+    /* Mobilmenyen i admin. Den inline-stilen setter display, saa regelen
+       som skjuler den paa stor skjerm maa veie tyngre. */
+    .lx-admmob { display: none !important; }
     @media (max-width: 979px) {
       /* Uten en bredde her regner nettleseren SVG-en til 300px og
          dytter menyen ut av skjermen. */
       .lx-adminaside img { height: 30px !important; width: auto !important; max-width: 92px; flex: 0 0 auto; }
-      .lx-adminaside > div:last-child { display: none !important; }
-      .lx-adminaside nav { flex: 1 1 auto; min-width: 0; }
-      .lx-adminaside nav button { flex: 0 0 auto; }
+      /* «I verkstedet naa» er status, ikke navigasjon, og tok plassen fra
+         menyen paa en telefon. */
+      .lx-adminaside .lx-admstatus { display: none !important; }
+      /* Den sidelengs menyraden er byttet ut med «hvor du er» + Meny.
+         Se .lx-admmob under. */
+      .lx-adminaside nav { display: none !important; }
+      .lx-admmob { display: flex !important; }
     }
 
     @media (max-width: 760px) {
@@ -4023,6 +4030,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4246,6 +4283,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4283,6 +4350,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4320,6 +4417,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4361,6 +4488,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4396,6 +4553,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4594,6 +4781,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4682,6 +4899,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -4798,7 +5045,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Solgt i dag</div>
           <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ utDagsum }}</div>
         </div>
@@ -4920,7 +5197,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -5087,7 +5394,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -5292,7 +5629,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -5999,7 +6366,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -6374,6 +6771,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -6551,6 +6978,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -6681,6 +7138,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
@@ -6846,6 +7333,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
@@ -6890,7 +7407,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">{{ sidepanelUke }}</div>
           <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ sidepanelPameldte }}</div>
         </div>
@@ -7101,7 +7648,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -7159,7 +7736,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Har vært på kurs</div>
           <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ kdAntall }} personer</div>
         </div>
@@ -7399,6 +8006,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -7484,7 +8121,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -7879,7 +8546,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Sist endret</div>
           <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ innholdSistEndret }}</div>
         </div>
@@ -8029,7 +8726,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">I verkstedet nå</div>
           <div style="display: flex; align-items: center; gap: 8px; color: var(--clay-100); font-size: var(--text-sm);">
             <span style="width: 9px; height: 9px; border-radius: 50%; background: var(--sage-500);"></span>{{ inneTekst }}
@@ -8185,7 +8912,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Ordre til behandling</div>
           <div style="color: var(--clay-100); font-size: var(--text-sm);">2 stk</div>
         </div>
@@ -8381,6 +9138,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
@@ -8587,6 +9374,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
@@ -8723,7 +9540,37 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
-        <div style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
           <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-400); margin-bottom: 6px;">Denne måneden</div>
           <div style="color: var(--clay-100); font-size: var(--text-sm);">{{ okOmsetning }}</div>
         </div>
@@ -9061,6 +9908,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
 
       <main style="padding: var(--space-8); min-width: 0;">
@@ -9713,6 +10590,36 @@ window.__resources = {
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon.
+             Hele menyen laa som én rad man matte dra sidelengs i: ti punkter,
+             tre synlige, og ingenting som sa at det fantes flere — eller at
+             hvert punkt har egne underpunkter. Naa staar det hvor du er, og
+             ett trykk viser hele kartet. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
       <main style="padding: var(--space-8); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
@@ -14609,6 +15516,97 @@ class Component extends DCLogic {
    * Hvem som har faatt beskjed regnes ut av meldingskoen paa serveren — vi
    * lagrer det ikke her. To sannheter om det samme spriker for eller siden.
    */
+  /**
+   * Frys av medlemskap — medlemmets egne soknader.
+   *
+   * Kortet paa Min side leste av this.state.frys, og ingen fylte den.
+   * renderVals() kalte hentFrys() hver gang Min side ble tegnet, og fantes
+   * ikke: hele sida stoppet paa «this.hentFrys is not a function».
+   */
+  hentFrys() {
+    if (!this.erPublisert() || this._frysHentes) return;
+    this._frysHentes = true;
+    fetch('/api/medlem-frys.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._frysHentes = false;
+        // Er funksjonen slaatt av, eller mangler tabellen, svarer serveren
+        // med feil. Kortet skal da bare staa tomt — ikke stoppe sida.
+        this.setState({ frys: (d && d.ok !== false) ? d : { mine: [], gjeldende: null, kanSoke: false } });
+      })
+      .catch(() => {
+        this._frysHentes = false;
+        this.setState({ frys: { mine: [], gjeldende: null, kanSoke: false } });
+      });
+  }
+
+  /** Soek, og angre paa en soeknad som ikke er svart paa. Samme vei begge veier. */
+  frysKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
+    return fetch('/api/medlem-frys.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        if (!ok) { this.setState({ frysBeskjed: d.feil || 'Fikk ikke sendt søknaden.' }); return false; }
+        // Svaret sier bare hva som skjedde. Lista hentes paa nytt, saa
+        // skjermen viser det serveren faktisk har lagret — ikke det vi
+        // gjettet at den ville lagre.
+        this._frysHentes = false;
+        this.setState({
+          frys: null,
+          frysFra: '', frysTil: '', frysGrunn: '',
+          frysBeskjed: d.beskjed || 'Det er gjort.',
+        });
+        return true;
+      })
+      .catch(() => { this.setState({ frysBeskjed: 'Fikk ikke kontakt med serveren.' }); return false; });
+  }
+
+  /** Soknadene om frys, slik verkstedet ser dem under Medlemmer. */
+  hentFrysAdmin() {
+    if (!this.erPublisert() || this._frysAdmHentes) return;
+    this._frysAdmHentes = true;
+    fetch('/api/admin/frys.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._frysAdmHentes = false;
+        this.setState({ frysAdmin: (d && d.soknader) ? d.soknader : [] });
+      })
+      .catch(() => { this._frysAdmHentes = false; this.setState({ frysAdmin: [] }); });
+  }
+
+  /** Godkjenn, avslaa eller avslutt. Lista hentes paa nytt etterpaa. */
+  frysAdminKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
+    return fetch('/api/admin/frys.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        if (!ok) { this.setState({ kvittering: 'Fikk ikke gjort det', kvitteringDetalj: d.feil || '' }); return false; }
+        // Lista hentes paa nytt. Godkjenning endrer ogsaa medlemmets status,
+        // og den staar i medlemslista — den maa hentes den ogsaa.
+        this._frysAdmHentes = false;
+        this.setState({
+          frysAdmin: null,
+          frysAdmSvar: '',
+          kvittering: 'Svaret er sendt til medlemmet',
+          kvitteringDetalj: d.beskjed || '',
+        });
+        fetch('/api/admin/medlemmer.php', { credentials: 'same-origin', cache: 'no-store' })
+          .then(r => (r.ok ? r.json() : null))
+          .then(m => { if (m && m.medlemmer) this.setState({ adminMedlemmer: m.medlemmer }); })
+          .catch(() => {});
+        return true;
+      })
+      .catch(() => { this.setState({ kvittering: 'Fikk ikke kontakt med serveren' }); return false; });
+  }
+
   hentFerdigbrentAdmin() {
     if (!this.erPublisert() || this._fbAdminHentes) return;
     this._fbAdminHentes = true;
@@ -18976,6 +19974,113 @@ class Component extends DCLogic {
           },
         };
       }),
+    };
+  }
+
+  /**
+   * Adminmenyen paa telefon.
+   *
+   * Under 980px laa hele menyen som én rad man matte dra sidelengs i. Ti
+   * punkter, tre synlige om gangen, ingen kant som sa at det fantes flere —
+   * og underpunktene under hvert omraade var ikke synlige i det hele tatt.
+   * Man matte kjenne menyen fra en stor skjerm for aa finne fram paa en
+   * liten.
+   *
+   * Naa staar det hvor du er, og ett trykk viser hele kartet: alle
+   * omraadene, med underpunktene under det man staar i.
+   */
+  adminMobilMeny() {
+    const sted = this.adminSted();
+    const apen = !!this.state.admMobApen;
+    // Velger man noe, er menyen ferdig med jobben sin.
+    const lukkOg = (fn) => () => { this.setState({ admMobApen: false }); fn(); };
+
+    const punktStil = (valgt) => ({
+      appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
+      width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-md)',
+      font: 'var(--type-body-sm)', fontWeight: valgt ? 700 : 600,
+      background: valgt ? 'var(--lissom-yellow)' : 'rgba(244,235,222,.09)',
+      color: valgt ? 'var(--lissom-brown)' : 'var(--clay-100)',
+    });
+    const underStil = (valgt) => ({
+      appearance: 'none', cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap',
+      padding: '8px 13px', borderRadius: 'var(--radius-pill)',
+      font: 'var(--type-body-sm)', fontSize: 13, fontWeight: valgt ? 700 : 500,
+      border: '1px solid rgba(244,235,222,.24)',
+      background: valgt ? 'var(--clay-100)' : 'transparent',
+      color: valgt ? 'var(--lissom-brown)' : 'var(--clay-200)',
+    });
+
+    const punkter = Component.ADMIN_MENY.map(([navn, rute, forvalg]) => {
+      const valgt = navn === sted.meny;
+      // «← Deltakere» og de andre tilbakeradene er veien ut av en fanerekke.
+      // I menyen er de det samme som raden over dem.
+      const faner = (Component.ADMIN_FANER[navn] || [])
+        .filter(([fnavn]) => fnavn.indexOf('\u2190') !== 0);
+      return {
+        navn,
+        velg: lukkOg(() => this.gaaAdmin(rute, forvalg)),
+        knappStil: punktStil(valgt),
+        stil: { display: 'flex', flexDirection: 'column', gap: 6 },
+        // Underpunktene staar bare under det omraadet man er i. Alle ti
+        // brettet ut samtidig er ikke en oversikt, det er en liste paa 40.
+        harUnder: valgt && faner.length > 0,
+        underStil: { display: 'flex', flexWrap: 'wrap', gap: 6, padding: '2px 0 6px 10px' },
+        under: faner.map(([fnavn, frute, fforvalg]) => ({
+          navn: fnavn,
+          velg: lukkOg(() => this.gaaAdmin(frute, fforvalg)),
+          stil: underStil(fnavn === sted.fane),
+        })),
+      };
+    });
+
+    // Radene i menyen som ikke er steder: innstemplinga oeverst, og
+    // vedlikehold, Vipps-testen og utlogginga nederst. De hentes ut av
+    // menyen selv, saa en ny rad der blir med her uten aa maatte legges inn
+    // to steder.
+    const stedsnavn = Component.ADMIN_MENY.map(r => r[0]);
+    const ekstra = this.adminMeny()
+      .filter(r => stedsnavn.indexOf(r.navn) < 0)
+      .map(r => Object.assign({}, r, {
+        stil: Object.assign({}, r.stil, { width: '100%', whiteSpace: 'normal', boxSizing: 'border-box' }),
+        velg: lukkOg(r.velg),
+      }));
+
+    return {
+      admMobNaa: sted.fane ? sted.meny + ' \u00b7 ' + sted.fane : (sted.meny || 'Admin'),
+      admMobApen: apen,
+      admMobUtvidet: apen ? 'true' : 'false',
+      admMobKnappTekst: apen ? 'Lukk' : 'Meny',
+      admMobVeksle: () => this.setState(s => ({ admMobApen: !s.admMobApen })),
+      admMobPunkter: punkter,
+      admMobEkstra: ekstra,
+      admMobLinjeStil: {
+        flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', gap: 'var(--space-4)',
+      },
+      admMobNaaStil: {
+        minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--clay-100)',
+      },
+      admMobKnappStil: {
+        appearance: 'none', cursor: 'pointer', flex: '0 0 auto',
+        padding: '9px 16px', borderRadius: 'var(--radius-pill)',
+        font: 'var(--type-body-sm)', fontWeight: 700, minHeight: 40,
+        border: '1px solid rgba(244,235,222,.32)',
+        background: apen ? 'var(--lissom-yellow)' : 'transparent',
+        color: apen ? 'var(--lissom-brown)' : 'var(--clay-100)',
+      },
+      admMobPanelStil: {
+        width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column',
+        gap: 4, marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
+        borderTop: '1px solid rgba(244,235,222,.18)',
+        maxHeight: '70vh', overflowY: 'auto',
+      },
+      admMobEkstraStil: {
+        display: 'flex', flexDirection: 'column', gap: 2,
+        marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)',
+        borderTop: '1px solid rgba(244,235,222,.18)',
+      },
     };
   }
 
@@ -29966,11 +31071,12 @@ class Component extends DCLogic {
           stil: { position: 'absolute', inset: 0, backgroundImage: "url('" + src + "')", backgroundSize: 'cover', backgroundPosition: this.fokusFor(src, 'center 32%'), opacity: i === idx ? 1 : 0, transition: fade ? 'opacity 0.9s var(--ease-clay)' : 'none' },
         }));
       })(),
+      ...this.adminMobilMeny(),
       adminGridStil: (this.state.vw || 1400) < 980
         ? { display: 'block', minHeight: '100vh', background: 'var(--clay-100)' }
         : { display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh', background: 'var(--clay-100)' },
       adminAsideStil: (this.state.vw || 1400) < 980
-        ? { background: 'var(--lissom-brown)', padding: 'var(--space-4) var(--space-5)', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-5)', position: 'sticky', top: 0, zIndex: 30, overflowX: 'auto', overscrollBehaviorX: 'contain' }
+        ? { background: 'var(--lissom-brown)', padding: 'var(--space-4) var(--space-5)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-4)', position: 'sticky', top: 0, zIndex: 30 }
         : { background: 'var(--lissom-brown)', padding: 'var(--space-8) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
       adminNavStil: (this.state.vw || 1400) < 980
         ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', overscrollBehaviorX: 'contain', flex: 1 }

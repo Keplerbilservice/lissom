@@ -20,11 +20,13 @@ if (!DB::harTabell('referansekunder')) {
     Svar::json(['kunder' => []]);
 }
 
+// Logoen kom med migrasjon 067. Uten den skal sida virke som for.
+$logoFelt = DB::harKolonne('referansekunder', 'logo') ? 'logo,' : '';
 $rader = DB::alle(
-    'SELECT id, navn, bilde, tekst, sitat, sitat_av, lenke
+    "SELECT id, navn, bilde, {$logoFelt} tekst, sitat, sitat_av, lenke
        FROM referansekunder
       WHERE aktiv = 1 AND samtykke = 1
-   ORDER BY sortering, navn'
+   ORDER BY sortering, navn"
 );
 
 Svar::json([
@@ -34,6 +36,8 @@ Svar::json([
         // Filnavnet, slik kursbildene ogsaa oppgis. Nettsida setter det
         // sammen selv, og faar da de mindre utgavene paa kjopet.
         'bilde'   => (string) ($r['bilde'] ?? ''),
+        // Logoen til kunden. Bildet sier hva som ble laget, logoen hvem.
+        'logo'    => (string) ($r['logo'] ?? ''),
         'tekst'   => (string) ($r['tekst'] ?? ''),
         'sitat'   => (string) ($r['sitat'] ?? ''),
         'sitatAv' => (string) ($r['sitat_av'] ?? ''),

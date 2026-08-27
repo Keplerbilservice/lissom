@@ -1321,6 +1321,11 @@ window.__resources = {
             <div onMouseEnter="{{ refPause }}" onMouseLeave="{{ refFortsett }}" onTouchStart="{{ refPause }}" style="{{ refKortStil }}">
               <div style="{{ refBildeStil }}">
                 <div style="{{ refGradientStil }}"></div>
+                <!-- Logoen til kunden, i hjoernet av bildet. Bildet sier hva
+                     som ble laget, logoen hvem det ble laget for. -->
+                <sc-if value="{{ refHarLogo }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ refLogoStil }}" role="img" aria-label="{{ refLogoAlt }}"></div>
+                </sc-if>
               </div>
               <div style="padding: var(--space-8); display: flex; flex-direction: column; justify-content: center; min-width: 0;">
                 <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ refNavn }}</div>
@@ -6488,15 +6493,35 @@ window.__resources = {
                 <input value="{{ refFLenke }}" onChange="{{ settRefLenke }}" placeholder="https://…" style="{{ refFeltStil }}">
                 <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted);">Valgfritt, og bare hvis kunden har sagt ja til at dere lenker til dem.</p>
               </div>
-              <div>
-                <label style="{{ refEtikett }}">Bilde eller logo</label>
-                <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-                  <div style="{{ refFBildeStil }}"></div>
-                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ refVelgBilde }}" hint-size="auto,38px">{{ refBildeKnapp }}</x-import>
-                    <sc-if value="{{ refHarFBilde }}" hint-placeholder-val="{{ false }}">
-                      <button type="button" onClick="{{ refFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
-                    </sc-if>
+              <!-- To bilder, ikke ett.
+                   Bildet sier hva som ble laget — koppene, vintallerkenen.
+                   Logoen sier hvem det ble laget for. Ett felt kunne bare
+                   vise det ene, og da sto arbeidet uten avsender. -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-5);">
+                <div>
+                  <label style="{{ refEtikett }}">Bildet av det dere laget</label>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Koppene, fatet, tallerkenene — det kunden bestilte. Dette er det store bildet på forsiden.</p>
+                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                    <div style="{{ refFBildeStil }}"></div>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ refVelgBilde }}" hint-size="auto,38px">{{ refBildeKnapp }}</x-import>
+                      <sc-if value="{{ refHarFBilde }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ refFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                      </sc-if>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label style="{{ refEtikett }}">Logoen til kunden</label>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Vises i hjørnet av bildet, i hvitt felt. Valgfri — uten logo står navnet i tekst, som før.</p>
+                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                    <div style="{{ refRedLogoStil }}"></div>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ refRedVelgLogo }}" hint-size="auto,38px">{{ refRedLogoKnapp }}</x-import>
+                      <sc-if value="{{ refRedHarLogo }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ refRedFjernLogo }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern logoen</button>
+                      </sc-if>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -14584,6 +14609,7 @@ class Component extends DCLogic {
         sitatAv: r.sitatAv || '',
         lenke: (r.lenke || '').trim(),
         bilde: r.bilde || '',
+        logo: r.logo || '',
         aktiv: r.aktiv ? 'ja' : 'nei',
         samtykke: r.samtykke ? 'ja' : 'nei',
       }),
@@ -14629,6 +14655,10 @@ class Component extends DCLogic {
     // kunde har ingen id aa lagre paa foer den er opprettet.
     if (v.slag === 'referanse') {
       this.endreReferanse({ bilde: url || '' });
+      return;
+    }
+    if (v.slag === 'referanselogo') {
+      this.endreReferanse({ logo: url || '' });
       return;
     }
     // Bildet til et markedsforingsutkast ligger i skjemaet til utkastet er
@@ -14686,6 +14716,9 @@ class Component extends DCLogic {
         ? { tittel: 'biblioteket', bilde: '' }
       : (v && v.slag === 'referanse')
         ? { tittel: (this.state.refRed || {}).navn || 'kunden', bilde: (this.state.refRed || {}).bilde || '' }
+      : (v && v.slag === 'referanselogo')
+        ? { tittel: 'logoen til ' + ((this.state.refRed || {}).navn || 'kunden'),
+            bilde: (this.state.refRed || {}).logo || '' }
         : (v && v.slag === 'artikkelbilde')
           ? { tittel: this.state.abTittel || 'artikkelen',
               bilde: ((this.state.abBilder || [])[v.rute] || {}).fil || '' }
@@ -26277,8 +26310,30 @@ class Component extends DCLogic {
           // Samme billedvelger som kursene bruker.
           refVelgBilde: () => this.apneBildevalg({ slag: 'referanse' }),
           refFjernBilde: () => this.endreReferanse({ bilde: '' }),
+          // Logoen, ved siden av bildet. Samme velger, eget felt.
+          //
+          // «refRed…» og ikke «ref…»: forsida har alt refHarLogo og
+          // refLogoStil, og alle verdiene ligger i det samme flate objektet.
+          // To like navn gir ingen feilmelding — den siste vinner — og
+          // adminruta tegnet forsidas logo i stedet for sin egen.
+          refRedHarLogo: !!(r && r.logo),
+          refRedLogoKnapp: (r && r.logo) ? 'Bytt logo' : 'Velg logo',
+          refRedLogoStil: {
+            width: 96, height: 96, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-subtle)',
+            // Hvit bak: en logo er som regel laget for hvit bakgrunn, og
+            // forsvinner paa leirefarge.
+            backgroundColor: '#fff',
+            backgroundImage: (r && r.logo) ? "url('" + r.logo + "')" : 'none',
+            // Logoen skal ikke beskjaeres. «contain» viser hele merket.
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+          },
+          refRedVelgLogo: () => this.apneBildevalg({ slag: 'referanselogo' }),
+          refRedFjernLogo: () => this.endreReferanse({ logo: '' }),
           refNy: () => this.setState({
-            refRed: { id: 0, navn: '', tekst: '', sitat: '', sitatAv: '', lenke: '', bilde: '', aktiv: false, samtykke: false },
+            refRed: { id: 0, navn: '', tekst: '', sitat: '', sitatAv: '', lenke: '', bilde: '', logo: '', aktiv: false, samtykke: false },
             refBeskjed: '',
           }),
           refAvbryt: () => this.setState({ refRed: null, refBeskjed: '' }),
@@ -29144,6 +29199,25 @@ class Component extends DCLogic {
             backgroundSize: 'cover',
             backgroundPosition: this.fokusFor(k.bilde || ''),
           },
+          // Logoen til kunden, i hjoernet av bildet.
+          //
+          // Bildet sier hva som ble laget; logoen sier hvem det ble laget
+          // for. Uten den staar arbeidet uten avsender, og «Bestilt hos oss»
+          // blir en paastand uten noen bak.
+          //
+          // Hvitt felt bak: en logo er som regel laget for hvit bakgrunn og
+          // forsvinner mot leirefarge. «contain» beskjaerer den ikke.
+          refHarLogo: !!k.logo,
+          refLogoStil: {
+            position: 'absolute', left: 'var(--space-5)', bottom: 'var(--space-5)',
+            width: 104, height: 56, borderRadius: 'var(--radius-md)',
+            background: '#fff', boxShadow: '0 2px 10px rgba(46,16,2,.18)',
+            backgroundImage: "url('" + k.logo + "')",
+            backgroundSize: '72% auto',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+          },
+          refLogoAlt: 'Logoen til ' + k.navn,
           // En diskret gradient, slik bestillingen ber om — nedre kant toner
           // ned saa kanten mot kortet ikke blir en hard strek.
           refGradientStil: {

@@ -118,7 +118,7 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–066 må kjøres
+### 7b. Migrasjon 052–067 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -132,6 +132,9 @@ igjen om en av dem skulle stanse underveis.
 065 gir punktlista og merkene på kurset — «Alt som er inkludert» ut av koden.
 066 gir Kursveilederen: spørsmålene og svarene i basen, og redigering som
 faktisk lagres.
+067 gir logoen på referansekundene, ved siden av bildet av det som ble laget
+— og utvider bildefeltet fra 64 til 255 tegn, så et opplastet bilde ikke blir
+klippet.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler

@@ -30,6 +30,9 @@ function kundene(): array
         'id'        => (int) $r['id'],
         'navn'      => (string) $r['navn'],
         'bilde'     => (string) ($r['bilde'] ?? ''),
+        // Logoen til kunden. Bildet sier hva som ble laget, logoen hvem det
+        // ble laget for. Kom med migrasjon 067.
+        'logo'      => (string) ($r['logo'] ?? ''),
         'tekst'     => (string) ($r['tekst'] ?? ''),
         'sitat'     => (string) ($r['sitat'] ?? ''),
         'sitatAv'   => (string) ($r['sitat_av'] ?? ''),
@@ -78,9 +81,28 @@ if ($handling === 'lagre') {
 
     // Bare naar feltet er med: et skjema som ikke kjenner bildet skal ikke
     // toemme det. basename() klipper bort alt som ligner en sti.
+    //
+    // Velgeren gir enten et filnavn fra repoet eller «api/bilde.php?artikkel=»
+    // for noe eieren har lastet opp selv. Begge skal bestaa: basename() paa
+    // den siste ville klippet bort spoersmaalstegnet og latt bildet peke
+    // ingen steder.
+    $rentBilde = static function ($raa): ?string {
+        $b = trim((string) $raa);
+        if ($b === '') {
+            return null;
+        }
+        if (preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $b)) {
+            return $b;
+        }
+        $fil = basename($b);
+        return $fil !== '' ? mb_substr($fil, 0, 255) : null;
+    };
+
     if (array_key_exists('bilde', Foresporsel::kropp())) {
-        $fil = basename(trim((string) (Foresporsel::kropp()['bilde'] ?? '')));
-        $data['bilde'] = $fil !== '' ? mb_substr($fil, 0, 64) : null;
+        $data['bilde'] = $rentBilde(Foresporsel::kropp()['bilde'] ?? '');
+    }
+    if (array_key_exists('logo', Foresporsel::kropp()) && DB::harKolonne('referansekunder', 'logo')) {
+        $data['logo'] = $rentBilde(Foresporsel::kropp()['logo'] ?? '');
     }
 
     if ($id > 0) {

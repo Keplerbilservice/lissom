@@ -118,7 +118,7 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–067 må kjøres
+### 7b. Migrasjon 052–068 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -135,6 +135,8 @@ faktisk lagres.
 067 gir logoen på referansekundene, ved siden av bildet av det som ble laget
 — og utvider bildefeltet fra 64 til 255 tegn, så et opplastet bilde ikke blir
 klippet.
+068 legger inn Kepler som referansekunde, med bilde og tekst. Logoen står tom
+til den er lastet opp.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler

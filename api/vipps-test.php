@@ -32,11 +32,18 @@ if (!$medNokkel && !(Sesjon::erAdmin() && $fraEgenHand)) {
     Svar::feil('Fant ikke siden.', 404);
 }
 
+// Betalingen kan ha sitt eget sett noekler, paa sin egen salgsenhet.
+// Innlogging og betaling er to produkter hos Vipps, og godkjennes hver for
+// seg — da kommer de ofte med hvert sitt sett.
+$nokler = Vipps::betalingNokler();
+
 $svar = [
-    'miljo'      => Config::miljo(),
-    'vipps_base' => Config::vippsBase(),
-    'msn'        => Config::hent('vipps_msn'),
-    'retur_uri'  => Vipps::returAdresse(),
+    'miljo'         => Config::miljo(),
+    'vipps_base'    => Config::vippsBase(),
+    'msn'           => $nokler['msn'],
+    'msn_innlogging' => (string) Config::hent('vipps_msn', ''),
+    'egne_nokler'   => Vipps::egneBetalingsnokler(),
+    'retur_uri'     => Vipps::returAdresse(),
 ];
 
 // --- Steg 1: adgangstoken -------------------------------------------------
@@ -50,10 +57,10 @@ try {
         Config::vippsBase() . '/accesstoken/get',
         [],
         [
-            'client_id: ' . Config::krev('vipps_client_id'),
-            'client_secret: ' . Config::krev('vipps_client_secret'),
-            'Ocp-Apim-Subscription-Key: ' . Config::krev('vipps_sub_key'),
-            'Merchant-Serial-Number: ' . Config::krev('vipps_msn'),
+            'client_id: ' . $nokler['client_id'],
+            'client_secret: ' . $nokler['client_secret'],
+            'Ocp-Apim-Subscription-Key: ' . $nokler['sub_key'],
+            'Merchant-Serial-Number: ' . $nokler['msn'],
         ]
     );
 } catch (Throwable $e) {
@@ -123,8 +130,8 @@ if ($raa['status'] === 200) {
             ],
             [
                 'Authorization: Bearer ' . Vipps::token(),
-                'Ocp-Apim-Subscription-Key: ' . Config::krev('vipps_sub_key'),
-                'Merchant-Serial-Number: ' . Config::krev('vipps_msn'),
+                'Ocp-Apim-Subscription-Key: ' . $nokler['sub_key'],
+                'Merchant-Serial-Number: ' . $nokler['msn'],
                 'Idempotency-Key: ' . Vipps::uuid(),
                 'Vipps-System-Name: lissom',
                 'Vipps-System-Version: 1.0',
@@ -159,8 +166,8 @@ if ($raa['status'] === 200) {
         Config::vippsBase() . '/recurring/v3/agreements?status=ACTIVE&pageSize=1',
         [
             'Authorization: Bearer ' . Vipps::token(),
-            'Ocp-Apim-Subscription-Key: ' . Config::krev('vipps_sub_key'),
-            'Merchant-Serial-Number: ' . Config::krev('vipps_msn'),
+            'Ocp-Apim-Subscription-Key: ' . $nokler['sub_key'],
+            'Merchant-Serial-Number: ' . $nokler['msn'],
             'Vipps-System-Name: lissom',
             'Vipps-System-Version: 1.0',
         ]
@@ -190,16 +197,23 @@ $svar['kort'] = [
         'ok'   => Config::miljo() === 'produksjon',
         'sier' => Config::miljo() === 'produksjon'
             ? 'Produksjon — ekte betalinger mot ' . Config::vippsBase()
-            : 'Test — ingen ekte penger. Sett miljo til produksjon i secrets.php når dere er klare.',
+            : 'Test — ingen ekte penger. Sett miljø til produksjon i secrets.php når dere er klare.',
     ],
     [
-        'hva'  => 'Nøkler',
+        'hva'  => 'Nøkler for betaling',
         'ok'   => ($svar['token']['ok'] ?? false) === true,
-        'sier' => ($svar['token']['ok'] ?? false)
-            ? 'Vipps godtar nøklene for salgsenhet ' . Config::hent('vipps_msn')
-            : ($nettfeil !== ''
-                ? 'Serveren fikk ikke kontakt med Vipps i det hele tatt: ' . $nettfeil
-                : 'Vipps godtar ikke nøklene.'),
+        // Salgsenheten staar her uansett om det gikk eller ikke. Er det to
+        // sett i bruk, er «hvilket ble proevd» det foerste man vil vite naar
+        // svaret er nei.
+        'sier' => 'Salgsenhet ' . $nokler['msn']
+            . (Vipps::egneBetalingsnokler()
+                ? ' — eget sett for betaling, atskilt fra innloggingen. '
+                : ' — samme sett som innloggingen bruker. ')
+            . (($svar['token']['ok'] ?? false)
+                ? 'Vipps godtar nøklene.'
+                : ($nettfeil !== ''
+                    ? 'Serveren fikk ikke kontakt med Vipps i det hele tatt: ' . $nettfeil
+                    : 'Vipps godtar ikke nøklene.')),
     ],
     [
         'hva'  => 'Betaling for kurs',
@@ -216,6 +230,18 @@ $svar['kort'] = [
             : (string) ($svar['recurring']['tolkning'] ?? 'Virker ikke.'),
     ],
 ];
+// Innlogging med Vipps er et eget produkt, paa sitt eget sett. Den staar
+// nederst fordi den ikke stopper betalingen — men den bor ikke vaere glemt.
+$svar['kort'][] = [
+    'hva'  => 'Innlogging med Vipps',
+    'ok'   => trim((string) Config::hent('vipps_client_id', '')) !== '',
+    'sier' => trim((string) Config::hent('vipps_client_id', '')) !== ''
+        ? (Vipps::egneBetalingsnokler()
+            ? 'Eget sett, salgsenhet ' . (string) Config::hent('vipps_msn', '') . '. Retur går til ' . Vipps::returAdresse()
+            : 'Samme sett som betalingen. Retur går til ' . Vipps::returAdresse())
+        : 'Ingen nøkler satt. Da kan ingen logge inn med Vipps.',
+];
+
 $svar['alt_ok'] = !in_array(false, array_column($svar['kort'], 'ok'), true);
 
 Svar::json($svar);

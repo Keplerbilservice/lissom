@@ -119,10 +119,15 @@ $base = (string) Config::hent('vipps_base', '');
 $erProd = str_contains($base, '//api.vipps.no');
 
 $vippsFelter = [
-    ['navn' => 'Salgsenhet (MSN)', 'verdi' => (string) Config::hent('vipps_msn', '') ?: 'Ikke satt'],
-    ['navn' => 'Client ID',        'verdi' => $maskert((string) Config::hent('vipps_client_id', ''), 4)],
-    ['navn' => 'Client secret',    'verdi' => $maskert((string) Config::hent('vipps_client_secret', ''))],
-    ['navn' => 'Subscription key', 'verdi' => $maskert((string) Config::hent('vipps_sub_key', ''))],
+    // Betalingen kan ha sitt eget sett noekler, paa sin egen salgsenhet.
+    // Sto det bare ett sett her, kunne man tro at betalingen brukte
+    // innloggingens noekler naar den i virkeligheten bruker sine egne.
+    ['navn' => 'Salgsenhet, betaling', 'verdi' => Vipps::betalingNokler()['msn'] ?: 'Ikke satt'],
+    ['navn' => 'Salgsenhet, innlogging', 'verdi' => (string) Config::hent('vipps_msn', '') ?: 'Ikke satt'],
+    ['navn' => 'Egne nøkler til betaling', 'verdi' => Vipps::egneBetalingsnokler() ? 'Ja' : 'Nei — deler med innloggingen'],
+    ['navn' => 'Client ID',        'verdi' => $maskert(Vipps::betalingNokler()['client_id'], 4)],
+    ['navn' => 'Client secret',    'verdi' => $maskert(Vipps::betalingNokler()['client_secret'])],
+    ['navn' => 'Subscription key', 'verdi' => $maskert(Vipps::betalingNokler()['sub_key'])],
     ['navn' => 'Webhook-hemmelighet', 'verdi' => $maskert((string) Config::hent('vipps_webhook_secret', ''))],
     // Returadressen settes ikke i secrets.php — den regnes ut av nettstedets
     // egen adresse. Feltet leste likevel secrets, og sto derfor som «Ikke

@@ -142,10 +142,14 @@ try {
 $svar['vipps'] = [
     'miljo'        => Config::miljo(),
     'api'          => Config::vippsBase(),
-    'salgsenhet'   => (string) Config::hent('vipps_msn', ''),
+    // To salgsenheter kan vaere i bruk: innlogging og betaling godkjennes
+    // hver for seg hos Vipps, og kommer da med hvert sitt sett noekler.
+    'salgsenhet'          => (string) Config::hent('vipps_msn', ''),
+    'salgsenhet_betaling' => Vipps::betalingNokler()['msn'],
+    'egne_betalingsnokler' => Vipps::egneBetalingsnokler(),
     'returadresse' => Vipps::returAdresse(),
-    'merk'         => 'Returadressen må være registrert i Vipps-portalen på salgsenheten over — '
-                    . 'nøyaktig slik den står her, uten skråstrek på slutten.',
+    'merk'         => 'Returadressen må være registrert i Vipps-portalen på salgsenheten for '
+                    . 'innlogging — nøyaktig slik den står her, uten skråstrek på slutten.',
 ];
 
 $svar['nokler'] = [
@@ -153,6 +157,11 @@ $svar['nokler'] = [
     'vipps_client_id'     => $fylt('vipps_client_id'),
     'vipps_client_secret' => $fylt('vipps_client_secret'),
     'vipps_sub_key'       => $fylt('vipps_sub_key'),
+    // Tomme betyr «bruk de fire over», ikke «mangler».
+    'vipps_betaling_msn'           => $fylt('vipps_betaling_msn'),
+    'vipps_betaling_client_id'     => $fylt('vipps_betaling_client_id'),
+    'vipps_betaling_client_secret' => $fylt('vipps_betaling_client_secret'),
+    'vipps_betaling_sub_key'       => $fylt('vipps_betaling_sub_key'),
     'admin_telefon'       => Config::adminNumre() !== [],
     'sveve_sms'           => $fylt('sveve_bruker'),
     // AI-en i markedsforingen. Noekkelen kan ligge i to filer, og bare den

@@ -186,16 +186,35 @@ ekte kallene og svarer i klartekst på fire ting: miljø, nøkler, betaling for
 kurs, trekk for medlemskap. Prøvebetalingen er på 1 øre og avbrytes med det
 samme — ingen penger flyttes.
 
-**Én ting må sjekkes i `app/secrets.php` på serveren:**
+**To ting må settes i `app/secrets.php` på serveren:**
 
 ```php
 'miljo'      => 'produksjon',
 'vipps_base' => 'https://api.vipps.no',
+
+// Betalingen har sitt eget sett nøkler, på sin egen salgsenhet.
+'vipps_betaling_msn'           => '',
+'vipps_betaling_client_id'     => '',
+'vipps_betaling_client_secret' => '',
+'vipps_betaling_sub_key'       => '',
 ```
 
 Står det fortsatt `test` og `apitest.vipps.no`, går ingen ekte betalinger
 gjennom — og nøklene fra Vipps virker uansett bare mot det miljøet de hører
 til. «Test Vipps» sier fra om dette på første linje.
+
+**Innlogging og betaling er to produkter hos Vipps**, og godkjennes hver for
+seg. Da kommer de med hvert sitt sett nøkler, på hver sin salgsenhet. De fire
+`vipps_betaling_*`-feltene er for betalingen; `vipps_msn`, `vipps_client_id`,
+`vipps_client_secret` og `vipps_sub_key` blir stående som innloggingens.
+
+Står `vipps_betaling_*` tomme, brukes innloggingens fire — som før. Det er
+riktig hvis dere bare har fått ett sett. Har dere fått to, må de inn her: et
+token fra én salgsenhet sammen med et MSN fra en annen gir 401 fra Vipps, og
+det er akkurat den feilen som er vanskeligst å lese seg til.
+
+«Test Vipps» viser hvilken salgsenhet den prøvde, og om betalingen bruker sitt
+eget sett eller deler med innloggingen.
 
 Vipps ba 26. august om å se hvor og hvordan kunden sier opp medlemskapet.
 Det står i salgsvilkårene, begge steder, og er publisert.

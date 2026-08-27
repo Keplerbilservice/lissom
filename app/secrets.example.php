@@ -35,10 +35,25 @@ return [
     // Test:       https://apitest.vipps.no
     // Produksjon: https://api.vipps.no
     'vipps_base'          => 'https://apitest.vipps.no',
+    // Innlogging med Vipps (Login / OIDC).
     'vipps_msn'           => '',   // Merchant Serial Number, salgsenheten
     'vipps_client_id'     => '',
     'vipps_client_secret' => '',
     'vipps_sub_key'       => '',   // Ocp-Apim-Subscription-Key (primary)
+
+    // Betaling (ePayment og Recurring).
+    //
+    // Vipps deler ut noekler per salgsenhet og per produkt. Innlogging og
+    // betaling godkjennes hver for seg, og kommer da ofte med hvert sitt
+    // sett — med hvert sitt MSN og hver sin abonnementsnokkel.
+    //
+    // Staar disse tomme, brukes de fire over. Har dere faatt et eget sett til
+    // betaling, hoerer det hjemme her: et token fra én salgsenhet sammen med
+    // et MSN fra en annen gir 401 fra Vipps.
+    'vipps_betaling_msn'           => '',
+    'vipps_betaling_client_id'     => '',
+    'vipps_betaling_client_secret' => '',
+    'vipps_betaling_sub_key'       => '',
 
     // Må stemme nøyaktig med redirect-URI-en i Vipps-portalen.
     'vipps_redirect_uri'  => 'https://test.lissom.no/api/vipps-callback.php',

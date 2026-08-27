@@ -23,8 +23,52 @@ final class Vipps
     // -----------------------------------------------------------------------
 
     /**
+     * Noeklene som gjelder betaling — ePayment og Recurring.
+     *
+     * Vipps deler ut noekler per salgsenhet, og per produkt. Innlogging kan
+     * ligge paa én salgsenhet og betaling paa en annen, med hver sin
+     * abonnementsnokkel og hvert sitt MSN. Det er nettopp det som skjedde her:
+     * betalingen fikk et eget sett da den ble godkjent.
+     *
+     * Er de egne feltene tomme, brukes de samme som til innlogging. Da
+     * oppfoerer alt seg som for, og et oppsett med bare ett sett trenger ikke
+     * roeres.
+     *
+     * @return array{client_id:string,client_secret:string,sub_key:string,msn:string}
+     */
+    public static function betalingNokler(): array
+    {
+        $ett = static function (string $eget, string $felles): string {
+            $v = trim((string) Config::hent($eget, ''));
+            return $v !== '' ? $v : (string) Config::krev($felles);
+        };
+
+        return [
+            'client_id'     => $ett('vipps_betaling_client_id', 'vipps_client_id'),
+            'client_secret' => $ett('vipps_betaling_client_secret', 'vipps_client_secret'),
+            'sub_key'       => $ett('vipps_betaling_sub_key', 'vipps_sub_key'),
+            'msn'           => $ett('vipps_betaling_msn', 'vipps_msn'),
+        ];
+    }
+
+    /** Har betalingen sitt eget sett, eller deler den med innloggingen? */
+    public static function egneBetalingsnokler(): bool
+    {
+        foreach (['vipps_betaling_client_id', 'vipps_betaling_client_secret',
+                  'vipps_betaling_sub_key', 'vipps_betaling_msn'] as $n) {
+            if (trim((string) Config::hent($n, '')) !== '') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Adgangstoken for API-kallene. Vipps sine varer i en time; vi holder på
      * det i minnet gjennom forespørselen og fornyer litt før utløp.
+     *
+     * Dette er tokenet for betaling. Innloggingen har sin egen flyt (OIDC) og
+     * bruker ikke dette.
      */
     public static function token(): string
     {
@@ -32,14 +76,15 @@ final class Vipps
             return self::$token;
         }
 
+        $n = self::betalingNokler();
         $svar = http_post_form(
             Config::vippsBase() . '/accesstoken/get',
             [],
             [
-                'client_id: ' . Config::krev('vipps_client_id'),
-                'client_secret: ' . Config::krev('vipps_client_secret'),
-                'Ocp-Apim-Subscription-Key: ' . Config::krev('vipps_sub_key'),
-                'Merchant-Serial-Number: ' . Config::krev('vipps_msn'),
+                'client_id: ' . $n['client_id'],
+                'client_secret: ' . $n['client_secret'],
+                'Ocp-Apim-Subscription-Key: ' . $n['sub_key'],
+                'Merchant-Serial-Number: ' . $n['msn'],
             ]
         );
 
@@ -61,13 +106,19 @@ final class Vipps
         return $token;
     }
 
-    /** @return list<string> */
-    private static function headere(?string $idempotensNokkel = null): array
+    /**
+     * Hodene ePayment og Recurring skal ha. Alltid betalingsnoeklene — et
+     * token fra én salgsenhet og et MSN fra en annen gir 401.
+     *
+     * @return list<string>
+     */
+    public static function headere(?string $idempotensNokkel = null): array
     {
+        $n = self::betalingNokler();
         $h = [
             'Authorization: Bearer ' . self::token(),
-            'Ocp-Apim-Subscription-Key: ' . Config::krev('vipps_sub_key'),
-            'Merchant-Serial-Number: ' . Config::krev('vipps_msn'),
+            'Ocp-Apim-Subscription-Key: ' . $n['sub_key'],
+            'Merchant-Serial-Number: ' . $n['msn'],
             'Vipps-System-Name: lissom',
             'Vipps-System-Version: 1.0',
         ];

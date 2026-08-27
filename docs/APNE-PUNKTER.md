@@ -118,7 +118,7 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–069 må kjøres
+### 7b. Migrasjon 052–071 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -138,6 +138,8 @@ klippet.
 068 legger inn Kepler som referansekunde, med bilde og tekst. Logoen står tom
 til den er lastet opp.
 069 legger til nettadressen til Kepler.
+070 gir bildetekst og alt-tekst på toppbildet i en artikkel.
+071 gir frys av medlemskap: søknaden, svaret og perioden.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
@@ -301,6 +303,38 @@ Kortet står der nå, og fører til en skjerm som sier hva som mangler.
 - **Datoene til kurset du har åpent.** Datolista under kursskjemaet viste alle
   datoene i basen; nå viser den kurset sine, de neste åtte ukene, med en
   knapp for resten. «Tilbake til kurslista» står øverst i skjemaet.
+- **Referansekundene rullerer sammen med events og medlemskap** på forsiden.
+  De sto i en egen seksjon rett under, med sin egen klokke og sine egne
+  prikker — det samme oppsettet to ganger på rad. Nå er det ett felt. En kunde
+  må ha et bilde for å stå ute; venstre halvdel av feltet *er* bildet, og
+  admin-lista sier «Mangler bilde» framfor «På forsiden».
+- **Bildetekst og alt-tekst på toppbildet i artikler** (migrasjon 070).
+  Bildene inne i teksten hadde det fra før; toppbildet — det flest ser, og det
+  som følger med når noen deler lenken — sto uten. Artikkelen under Nyttig
+  info hadde bildet som en tom `div` med bakgrunnsbilde, altså ingen alt-tekst
+  i det hele tatt. Begge tegnes nå som `figure` med `figcaption`.
+- **Kategoriene som ett trykk** i redigeringen av en artikkel. Feltet var fritt
+  tekstfelt; de seks faste står nå som knapper ved siden av. *Ikke* under
+  Nyttig info: de sidene hentes nettopp på at de ikke har kategori.
+- **Skjemaet under Nyttig info fikk hele bildebiblioteket.** Før var det fem
+  faste fotografier og ingenting annet.
+- **Rettet:** «lagre» på en artikkel skrev alltid bilde-kolonnen, også når
+  ingen hadde sendt et bilde. Å lagre tittelen og teksten slettet dermed
+  bildet. Kolonnen røres nå bare når den står i det som ble sendt.
+- **Deltakerkortet under Ferdig glassert** sto som én lang stripe i full
+  bredde: bildene, notatet, knappene og hele meldingshistorikken under
+  hverandre. Nå to spalter med historikken under, 454 piksler høyt.
+- **«Les mer om våre kurs»** er blitt et gult felt med kicker, overskrift,
+  lengre tekst og tre stikkord — ikke en tynn ramme man ruller forbi. Teksten
+  redigeres under Nettsiden → Innhold som før, og «Foreslå tekst» lar AI-en
+  lese kursene som ligger ute og skrive et forslag rett i feltene. Ingenting
+  lagres før du trykker Lagre.
+- **Frys av medlemskap** (migrasjon 071). Bryteren lovet en funksjon som ikke
+  fantes: medlemmene fikk en knapp som ikke gjorde noe. Nå søker medlemmet om
+  en periode fra Min side, verkstedet svarer under Medlemmer, og medlemskapet
+  settes i pause den dagen frysen begynner og åpner seg igjen av seg selv når
+  den er over. Trekket stopper ikke av seg selv — Vipps kan ikke sette en
+  avtale på pause, bare stoppe den — og det står i klartekst begge steder.
 
 ## Venter på svar fra Lissom
 

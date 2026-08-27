@@ -3279,6 +3279,60 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ aInvitasjon }}" hint-size="auto,36px">{{ gaveKnapp }}</x-import>
             </div>
           </sc-if>
+          <!-- Frys av medlemskap.
+               Sto som en bryter i admin som ga medlemmene en knapp som ikke
+               gjorde noe. Her er soknaden: en periode, en grunn, og et svar
+               fra verkstedet. Kortet staar bare naar verkstedet har slaatt
+               det paa, og bare for den som faktisk er medlem. -->
+          <sc-if value="{{ frysVis }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-5);">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Frys av medlemskap</div>
+                <sc-if value="{{ frysHarMerke }}" hint-placeholder-val="{{ false }}">
+                  <span style="{{ frysMerkeStil }}">{{ frysMerke }}</span>
+                </sc-if>
+              </div>
+
+              <!-- Har medlemmet noe paa gang, staar det her — ikke et skjema
+                   til. To soknader om gangen ville vaert to svar aa vente paa. -->
+              <sc-if value="{{ frysHarNaa }}" hint-placeholder-val="{{ false }}">
+                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ frysPeriode }}</div>
+                <p style="margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ frysNaaTekst }}</p>
+                <sc-if value="{{ frysHarSvar }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: var(--space-3) 0 0; padding: var(--space-3) var(--space-4); background: var(--clay-50); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ frysSvar }}</p>
+                </sc-if>
+                <sc-if value="{{ frysKanTrekke }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-4);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ frysTrekk }}" hint-size="auto,38px">Trekk søknaden</x-import>
+                  </div>
+                </sc-if>
+              </sc-if>
+
+              <sc-if value="{{ frysKanSoke }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ frysHjelp }}</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
+                  <div>
+                    <label for="frys-fra" style="{{ frysEtikett }}">Fra og med</label>
+                    <input id="frys-fra" type="date" value="{{ frysFra }}" onChange="{{ settFrysFra }}" style="{{ frysFeltStil }}">
+                  </div>
+                  <div>
+                    <label for="frys-til" style="{{ frysEtikett }}">Til og med</label>
+                    <input id="frys-til" type="date" value="{{ frysTil }}" onChange="{{ settFrysTil }}" style="{{ frysFeltStil }}">
+                  </div>
+                </div>
+                <label for="frys-grunn" style="{{ frysEtikett }}">Hvorfor — valgfritt</label>
+                <textarea id="frys-grunn" value="{{ frysGrunn }}" onChange="{{ settFrysGrunn }}" rows="2" placeholder="Skal ut å reise, skadet hånda, …" style="{{ frysOmraadeStil }}"></textarea>
+                <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-top: var(--space-4);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ frysSok }}" hint-size="auto,44px">Søk om frys</x-import>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ frysBeskjed }}</span>
+                </div>
+              </sc-if>
+
+              <!-- Det som ikke skjer av seg selv skal staa her, ikke oppdages
+                   naar trekket gaar likevel. -->
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ frysBetaling }}</p>
+            </div>
+          </sc-if>
           <sc-if value="{{ byttAboApen }}" hint-placeholder-val="{{ false }}">
             <div onClick="{{ lukkByttAbo }}" style="position: fixed; inset: 0; z-index: 90; background: rgba(45,20,12,.45); display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
               <div onClick="{{ stoppKlikk }}" style="background: var(--surface-card); border-radius: var(--radius-lg); padding: var(--space-8); width: min(520px, 100%); max-height: 85vh; overflow: auto; box-shadow: 0 24px 64px rgba(45,20,12,.3);">
@@ -6089,18 +6143,12 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Internbutikken" checked="{{ bryterMinInternbutikk }}" on-change="{{ vekslMinInternbutikk }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Selg egne arbeider" checked="{{ bryterMinSalg }}" on-change="{{ vekslMinSalg }}" hint-size="100%,28px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Gaven («Ta med en venn»)" checked="{{ bryterMinGave }}" on-change="{{ vekslMinGave }}" hint-size="100%,28px"></x-import>
-              <!-- «Frys av medlemskap» sto her som en bryter. Slo eieren den
-                   paa, fikk medlemmene en knapp «Sok om frys» paa Min side
-                   som ikke gjorde noe: det finnes ingen soknad, ingen
-                   godkjenning og ingen pause av trekket — hverken i basen
-                   eller i API-et. En bryter som lover en funksjon som ikke
-                   finnes er verre enn ingen bryter. -->
-              <div style="display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--clay-100);">
-                <div style="min-width: 0;">
-                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Frys av medlemskap</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Ikke koblet opp. Trekket kan ikke settes på pause automatisk ennå — gjør det manuelt under Medlemmer så lenge.</div>
-                </div>
-              </div>
+              <!-- «Frys av medlemskap» sto her som en bryter uten kobling:
+                   medlemmene fikk en knapp som ikke gjorde noe. Naa finnes
+                   soknaden, svaret og perioden — se api/medlem-frys.php og
+                   api/admin/frys.php. Soknadene staar under Medlemmer. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Frys av medlemskap" checked="{{ bryterMinFrys }}" on-change="{{ vekslMinFrys }}" hint-size="100%,28px"></x-import>
+              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: calc(var(--space-3) * -1); text-wrap: pretty;">Medlemmene kan søke om å fryse medlemskapet i en periode. Søknadene kommer opp under Medlemmer, og du svarer der. Trekket stopper ikke av seg selv — Vipps kan ikke sette en avtale på pause, bare stoppe den.</div>
             </div>
           </div>
 
@@ -7458,6 +7506,54 @@ window.__resources = {
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Soknader om frys.
+             Staar over lista, og bare naar det finnes noe: en tom ramme hver
+             dag i aaret, for noe som skjer to ganger i halvaaret, er stoy.
+             Bryteren under Nettsiden avgjor om medlemmene kan soke i det
+             hele tatt. -->
+        <sc-if value="{{ frysHarSoknader }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 860px;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Frys av medlemskap</div>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ frysAdmTall }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+              <sc-for list="{{ frysAdmListe }}" as="f" hint-placeholder-count="2">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                    <div style="min-width: 0;">
+                      <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ f.navn }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.linje }}</div>
+                    </div>
+                    <span style="{{ f.merkeStil }}">{{ f.merke }}</span>
+                  </div>
+                  <sc-if value="{{ f.harGrunn }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); color: var(--text-body); font-style: italic; text-wrap: pretty;">{{ f.grunn }}</p>
+                  </sc-if>
+                  <sc-if value="{{ f.harSvar }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ f.svarLinje }}</p>
+                  </sc-if>
+                  <sc-if value="{{ f.venter }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top: var(--space-3);">
+                      <input value="{{ frysAdmSvar }}" onChange="{{ settFrysAdmSvar }}" placeholder="Svar til medlemmet — valgfritt" style="{{ frysAdmFeltStil }}">
+                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ f.godkjenn }}" hint-size="auto,38px">Godkjenn</x-import>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ f.avslag }}" hint-size="auto,38px">Ikke godkjenn</x-import>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ f.loper }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <button type="button" onClick="{{ f.avslutt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avslutt frysen nå</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Godkjenner du, settes medlemmet i pause og åpnes igjen av seg selv når perioden er over. Trekket stopper ikke av seg selv: Vipps kan ikke sette en avtale på pause, bare stoppe den — da må medlemmet godkjenne en ny avtale når det kommer tilbake.</p>
           </div>
         </sc-if>
 
@@ -15423,6 +15519,103 @@ class Component extends DCLogic {
                                    aiInnholdSvar: 'Fikk ikke kontakt med serveren.' }));
   }
 
+  /** Soknadene om frys, slik verkstedet ser dem. */
+  hentFrysAdmin() {
+    if (!this.erPublisert() || this._frysAdmHentes) return;
+    this._frysAdmHentes = true;
+    fetch('/api/admin/frys.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._frysAdmHentes = false;
+        // Er migrasjonen ikke kjort, svarer serveren med feil. Da staar
+        // seksjonen borte — ikke halvt tegnet.
+        this.setState({ frysAdmin: (d && d.soknader) || [] });
+      })
+      .catch(() => { this._frysAdmHentes = false; });
+  }
+
+  /** Godkjenner, avslaar eller avslutter en frys. */
+  frysAdminKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._frysAdmLagrer) return;
+    this._frysAdmLagrer = true;
+    fetch('/api/admin/frys.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._frysAdmLagrer = false;
+        this.setState({
+          kvittering: (ok && d && d.ok) ? 'Lagret' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          frysAdmSvar: '',
+        });
+        this._frysAdmHentes = false;
+        this.hentFrysAdmin();
+        // Statusen paa medlemmet endret seg. Lista maa hentes paa nytt,
+        // ellers staar noen som «aktiv» rett etter at de ble fryst.
+        this._adminHentes = false;
+        this.hentAdmin();
+      })
+      .catch(() => { this._frysAdmLagrer = false;
+                     this.setState({ kvittering: 'Gikk ikke',
+                                     kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }); });
+  }
+
+  /** Mine frys-soknader. Bare paa Min side, og bare naar man er logget inn. */
+  hentFrys() {
+    if (!this.erPublisert() || this._frysHentes) return;
+    this._frysHentes = true;
+    fetch('/api/medlem-frys.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._frysHentes = false;
+        // Er funksjonen slaatt av, eller basen ikke oppdatert, svarer
+        // serveren med feil. Da staar kortet tomt — ikke halvt.
+        this.setState({ frys: d || { av: true } });
+      })
+      .catch(() => { this._frysHentes = false; });
+  }
+
+  /**
+   * Soker om frys, eller trekker soknaden.
+   *
+   * Svaret fra serveren staar i kortet. Gaar det galt, staar grunnen der —
+   * «velg begge datoene», «du har alt en soknad som venter» — og ikke bare
+   * «gikk ikke».
+   */
+  frysKall(kropp) {
+    if (!this.erPublisert()) {
+      this.setState({ frysBeskjed: 'Krever den ekte siden' });
+      return;
+    }
+    if (this._frysLagrer) return;
+    this._frysLagrer = true;
+    this.setState({ frysBeskjed: 'Sender …' });
+
+    fetch('/api/medlem-frys.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._frysLagrer = false;
+        if (!ok || !d || !d.ok) {
+          this.setState({ frysBeskjed: (d && d.feil) || 'Gikk ikke. Prøv igjen.' });
+          return;
+        }
+        this.setState({ frysBeskjed: '', frysFra: '', frysTil: '', frysGrunn: '',
+                        frys: null, kvittering: 'Sendt', kvitteringDetalj: d.beskjed || '' });
+        this._frysHentes = false;
+        this.hentFrys();
+      })
+      .catch(() => { this._frysLagrer = false;
+                     this.setState({ frysBeskjed: 'Fikk ikke kontakt med serveren.' }); });
+  }
+
   aiSporr(sporsmal) {
     if (!sporsmal) { this.setState({ kvittering: 'Skriv spørsmålet først' }); return; }
     if (!this.erPublisert()) {
@@ -19363,6 +19556,16 @@ class Component extends DCLogic {
     if ((side === 'minside' || this.erAdminSkjerm(side)) && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
     }
+    // Soknadene om frys, paa medlemsskjermen i admin.
+    if (side === 'adminmedlem' && !this.state.frysAdmin) {
+      this.hentFrysAdmin();
+    }
+    // Frys-soknadene. Bare naar verkstedet har slaatt funksjonen paa —
+    // ellers er det et kall som aldri fører til noe paa skjermen.
+    if (side === 'minside' && this.state.innlogget && !this.state.frys
+        && this.bryterPaa('medlemfrys')) {
+      this.hentFrys();
+    }
     if (side === 'minside' && this.state.innlogget && !this.state.mineKjop) {
       this.hentMineKjop();
     }
@@ -22591,6 +22794,54 @@ class Component extends DCLogic {
         };
         return {
           miApen: !!this.state.miApen,
+          // ── Soknader om frys ────────────────────────────────────────
+          //
+          // Ligger her fordi det er her verkstedet jobber med medlemmene.
+          // Staar bare naar det finnes en soknad; en tom ramme for noe som
+          // skjer to ganger i halvaaret er stoy.
+          ...(() => {
+            const alle = (this.state.frysAdmin || []).filter(f =>
+              f.venter || f.loper || f.status === 'avslatt');
+            const venter = alle.filter(f => f.venter).length;
+            const svar = () => (this.state.frysAdmSvar || '').trim();
+            return {
+              frysHarSoknader: alle.length > 0,
+              frysAdmTall: venter === 0 ? 'Ingen venter på svar'
+                : (venter === 1 ? '1 venter på svar' : venter + ' venter på svar'),
+              frysAdmSvar: this.state.frysAdmSvar || '',
+              settFrysAdmSvar: e => this.setState({ frysAdmSvar: e.target.value }),
+              frysAdmFeltStil: felt,
+              frysAdmListe: alle.map(f => ({
+                navn: f.navn,
+                linje: f.fra + ' – ' + f.til + ' · ' + f.dager + ' dager · søkt ' + f.sokt
+                       + ' · ' + f.kontakt,
+                merke: f.merke,
+                merkeStil: {
+                  font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+                  textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
+                  whiteSpace: 'nowrap',
+                  background: f.venter ? 'var(--lissom-yellow)'
+                            : (f.loper ? 'var(--sage-100, #E3EDE4)' : 'var(--clay-200)'),
+                  color: f.venter ? 'var(--lissom-brown)'
+                       : (f.loper ? 'var(--sage-600, #4C6B4F)' : 'var(--text-muted)'),
+                },
+                harGrunn: !!f.begrunnelse,
+                grunn: '«' + (f.begrunnelse || '') + '»',
+                harSvar: !!f.svar,
+                svarLinje: 'Svart: ' + (f.svar || '')
+                           + (f.behandletAv ? ' — ' + f.behandletAv : '')
+                           + (f.behandletAt ? ', ' + f.behandletAt : ''),
+                venter: !!f.venter,
+                loper: !!f.loper,
+                godkjenn: () => this.frysAdminKall({ handling: 'godkjenn', id: f.id, svar: svar() }),
+                avslag: () => this.frysAdminKall({ handling: 'avslag', id: f.id, svar: svar() }),
+                avslutt: () => {
+                  if (!window.confirm('Avslutte frysen for ' + f.navn + ' nå?\n\nMedlemskapet blir aktivt igjen med det samme.')) return;
+                  this.frysAdminKall({ handling: 'avslutt', id: f.id, svar: svar() });
+                },
+              })),
+            };
+          })(),
           miApne: () => this.setState({ miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '' }),
           miLukk: () => this.setState({ miApen: false }),
           miFeltStil: felt,
@@ -23699,7 +23950,9 @@ class Component extends DCLogic {
       bryterMinGave: this.bryterPaa('gaven'),
       vekslMinGave: () => this.vekslBryter('gaven', 'Gaven'),
       // Bryteren for frys sto uten kobling — den var tegnet, men verken
-      // «checked» eller «on-change» pekte paa noe. Da gjorde den ingenting.
+      // «checked» eller «on-change» pekte paa noe. Naa gjor den det den sier.
+      bryterMinFrys: this.bryterPaa('medlemfrys'),
+      vekslMinFrys: () => this.vekslBryter('medlemfrys', 'Frys av medlemskap'),
       // Kursene paa forsida. Klikket foerer rett inn i kurset — det er der
       // pris, tekst og datoer endres, og veien dit gikk foer om menyen.
       // ── Kalenderabonnement ───────────────────────────────────────────
@@ -24943,6 +25196,71 @@ class Component extends DCLogic {
           gaveKnapp: (g && g.harSkjema) ? 'Send invitasjon' : 'Løs inn gaven',
         };
       })(),
+      // ── Frys av medlemskap ─────────────────────────────────────────
+      //
+      // Bryteren i admin ga for en knapp som ikke gjorde noe. Her er
+      // soknaden, statusen og svaret. Kortet staar bare naar verkstedet har
+      // slaatt det paa, og bare for den som er medlem — den som ikke er det,
+      // har ingenting aa fryse.
+      ...(() => {
+        const d = this.state.frys || {};
+        const naa = d.gjeldende || null;
+        const felt = {
+          boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          background: 'var(--clay-50)', color: 'var(--text-heading)',
+        };
+        const venter = naa && naa.status === 'sokt';
+        return {
+          frysVis: this.bryterPaa('medlemfrys') && this.medlemsvisning(),
+          frysHarNaa: !!naa,
+          frysKanSoke: !naa,
+          frysHarMerke: !!naa,
+          frysMerke: naa ? naa.merke : '',
+          frysMerkeStil: {
+            font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+            textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
+            background: venter ? 'var(--lissom-yellow)' : 'var(--sage-100, #E3EDE4)',
+            color: venter ? 'var(--lissom-brown)' : 'var(--sage-600, #4C6B4F)',
+          },
+          frysPeriode: naa ? (naa.fra + ' – ' + naa.til) : '',
+          frysNaaTekst: !naa ? ''
+            : (venter
+                ? 'Søknaden er sendt, og verkstedet svarer så snart de rekker det. '
+                  + 'Du er medlem som før til du får svar.'
+                : 'Medlemskapet er fryst i denne perioden. Det åpner seg igjen av seg selv '
+                  + 'når perioden er over — du trenger ikke gjøre noe.'),
+          frysHarSvar: !!(naa && naa.svar),
+          frysSvar: naa ? ('Fra verkstedet: ' + (naa.svar || '')) : '',
+          frysKanTrekke: !!venter,
+          frysTrekk: () => this.frysKall({ handling: 'trekk', id: naa ? naa.id : 0 }),
+          frysHjelp: 'Skal du være borte en periode, kan du søke om å fryse medlemskapet. '
+            + 'Verkstedet svarer, og du ser svaret her. Lengste periode er '
+            + ((d.maksDager || 186) / 31 | 0) + ' måneder.',
+          frysEtikett: { display: 'block', fontSize: 'var(--text-xs)',
+                         color: 'var(--text-muted)', marginBottom: 4 },
+          frysFeltStil: felt,
+          frysOmraadeStil: Object.assign({}, felt, { resize: 'vertical' }),
+          frysFra: this.state.frysFra || '',
+          settFrysFra: e => this.setState({ frysFra: e.target.value }),
+          frysTil: this.state.frysTil || '',
+          settFrysTil: e => this.setState({ frysTil: e.target.value }),
+          frysGrunn: this.state.frysGrunn || '',
+          settFrysGrunn: e => this.setState({ frysGrunn: e.target.value }),
+          frysBeskjed: this.state.frysBeskjed || '',
+          frysSok: () => this.frysKall({
+            handling: 'sok',
+            fra: this.state.frysFra || '',
+            til: this.state.frysTil || '',
+            begrunnelse: (this.state.frysGrunn || '').trim(),
+          }),
+          // Vipps kan ikke sette en avtale paa pause. Det skal staa her, ikke
+          // oppdages naar trekket gaar likevel.
+          frysBetaling: 'Betalingen stopper ikke av seg selv. Har du en Vipps-avtale, '
+            + 'tar verkstedet kontakt om hva som skal gjøres med den.',
+        };
+      })(),
+
       aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || this.aktivPlan().navn)),
       aKjopDropin: () => this.leggTil('Drop-in-time'),
 

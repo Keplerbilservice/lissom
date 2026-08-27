@@ -1682,6 +1682,22 @@ window.__resources = {
       </section>
       </sc-if>
 
+      <!-- Veien til beskrivelsene.
+           Kortene over sier naar og hva det koster. Den som vil vite hva
+           kurset faktisk er, maatte gaa inn i bookingen paa hvert enkelt for
+           aa finne teksten. -->
+      <sc-if value="{{ ikkeDropinVisning }}" hint-placeholder-val="{{ true }}">
+        <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
+          <div style="max-width: var(--width-content); margin: 0 auto; background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
+            <div style="min-width: 0;">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Usikker på hva kursene går ut på?</div>
+              <p style="margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Hvert kurs står beskrevet: hva du gjør, hvor lenge det varer og hva som er inkludert.</p>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ goKursoversikt }}" hint-size="auto,44px">Les mer om våre kurs her</x-import>
+          </div>
+        </section>
+      </sc-if>
+
       <sc-if value="{{ ikkeDropinVisning }}" hint-placeholder-val="{{ true }}">
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
           <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-10);">
@@ -2503,6 +2519,83 @@ window.__resources = {
         </div>
       </section>
 
+    </div>
+  </sc-if>
+
+  <!-- Kursene vaare.
+       Kurslista viser kortene: bilde, dato, pris, ledige plasser. Den sier
+       ikke hva kurset er. Den som lurer paa om plateteknikk er noe for hen,
+       fant ingenting aa lese — beskrivelsen laa i basen og ble vist forst
+       naar man hadde valgt kurs og sto i bookingen.
+
+       Her staar hvert kurs med teksten sin, det som er inkludert, hvem det
+       passer for og hvor lenge det varer. Alt kommer fra kursoppsettet i
+       admin, saa et nytt kurs staar her av seg selv. -->
+  <sc-if value="{{ erKursoversikt }}" hint-placeholder-val="{{ false }}">
+    <div role="main" data-screen-label="Kursene våre">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Kurs" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8) var(--space-10);">
+        <div style="max-width: var(--width-content); margin: 0 auto;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ koKicker }}</div>
+          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">{{ koTittel }}</h1>
+          <p style="margin: 0 0 var(--space-6); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ koIngress }}</p>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ goKurs }}" hint-size="auto,44px">Se datoer og book</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon-after="arrow-right" on-click="{{ goKalender }}" hint-size="auto,44px">Se kalenderen</x-import>
+          </div>
+        </div>
+      </section>
+
+      <sc-if value="{{ koTomt }}" hint-placeholder-val="{{ false }}">
+        <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
+          <div style="max-width: var(--width-content); margin: 0 auto; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+            <p style="margin: 0; font-size: var(--text-base); color: var(--text-body);">Det ligger ingen kurs ute akkurat nå. Ta kontakt, så setter vi opp en dato.</p>
+          </div>
+        </section>
+      </sc-if>
+
+      <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--section-y);">
+        <div style="max-width: var(--width-content); margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-8);">
+          <sc-for list="{{ koKurs }}" as="k" hint-placeholder-count="4">
+            <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--space-10); align-items: start; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <div style="{{ k.bildeStil }}" role="img" aria-label="{{ k.altTekst }}"></div>
+              <div style="min-width: 0;">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ k.merke }}</div>
+                <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-3xl);">{{ k.tittel }}</h2>
+                <p style="margin: 0 0 var(--space-5); color: var(--text-body); line-height: 1.65; text-wrap: pretty;">{{ k.om }}</p>
+
+                <sc-if value="{{ k.harFakta }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); margin-bottom: var(--space-5); padding-bottom: var(--space-5); border-bottom: 1px solid var(--border-subtle);">
+                    <sc-for list="{{ k.fakta }}" as="f" hint-placeholder-count="3">
+                      <div style="min-width: 120px;">
+                        <div style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ f.navn }}</div>
+                        <div style="font-size: var(--text-base); font-weight: 600; color: var(--text-heading);">{{ f.verdi }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ k.harPunkter }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-6);">
+                    <sc-for list="{{ k.punkter }}" as="pt" hint-placeholder-count="3">
+                      <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);">
+                        <span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span>
+                        <span>{{ pt }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ k.book }}" hint-size="auto,44px">{{ k.knapp }}</x-import>
+                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ k.status }}</span>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </section>
     </div>
   </sc-if>
 
@@ -5170,7 +5263,7 @@ window.__resources = {
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">05 · Beskrivelse</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det kunden leser først, under overskriften på kurssiden. To til fire setninger.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det kunden leser først, under overskriften på kurssiden — og hele teksten under «Kursene våre», der alle kursene står beskrevet. To til fire setninger.</p>
                   <textarea id="k-om" value="{{ kBeskrivelse }}" onChange="{{ settKBeskrivelse }}" rows="4" placeholder="Hva slags kveld er dette, og hva sitter man igjen med?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
                   <!-- AI-en leser beskrivelsene som alt staar ute og skriver i
                        samme stil. Forslaget havner i feltet, ikke ute paa
@@ -11712,6 +11805,9 @@ class Component extends DCLogic {
       { sti: '/bedrift',       side: 'bedrift' },
       { sti: '/paint-on-pots', side: 'paintonpots' },
       { sti: '/kalender',      side: 'kalender' },
+      // Samlesida med beskrivelsen av hvert kurs. Kurslista viser kortene
+      // med dato og pris; her staar hva kurset faktisk er.
+      { sti: '/kursene-vare',  side: 'kursoversikt' },
       { sti: '/nyttig-info',   side: 'nyttig' },
       // Klar til henting. Alle skal kunne sjekke selv om tingene deres er
       // ferdige, uten aa logge inn og uten aa ringe.
@@ -12300,6 +12396,21 @@ class Component extends DCLogic {
       ogBeskrivelse: 'Tre timer, dine egne prosjekter, veiledning hele veien. Se ledige datoer og book plass.',
       canonical: 'https://lissom.no/kurs/workshop',
       internlenker: 'Alle kurs, Drop-in, Medlemskap',
+      schema: 'Course',
+      index: 'Index',
+    },
+    kursoversikt: {
+      fokus: 'keramikkurs Tønsberg oversikt',
+      tittel: 'Kursene våre — keramikkurs i Tønsberg | Lissom',
+      meta: 'Les om hvert enkelt keramikkurs hos Lissom i Tønsberg: hva du lærer, hvor lang tid det tar, hva som er inkludert og hvem det passer for.',
+      slug: 'kursene-vare',
+      h1: 'Kursene våre',
+      sekundare: 'dreiekurs, plateteknikk, håndbygging, kurs for nybegynnere, keramikk Vestfold',
+      altTekst: 'Hender som former leire på et keramikkurs i Tønsberg',
+      ogTittel: 'Kursene våre — keramikkurs i Tønsberg',
+      ogBeskrivelse: 'Hva du lærer på hvert kurs, hvor lenge det varer og hva som er inkludert.',
+      canonical: 'https://lissom.no/kursene-vare',
+      internlenker: 'Alle kurs, Kalender, Medlemskap',
       schema: 'Course',
       index: 'Index',
     },
@@ -16617,6 +16728,7 @@ class Component extends DCLogic {
       { id: 'bedrift', navn: 'Bedrift og event', type: 'side', fokus: 'teambuilding keramikk Vestfold' },
       { id: 'dropin', navn: 'Drop-in', type: 'side', fokus: 'drop-in keramikk Tønsberg' },
       { id: 'kalender', navn: 'Kalender', type: 'side', fokus: 'kurskalender keramikk Tønsberg' },
+      { id: 'kursoversikt', navn: 'Kursene våre', type: 'side', fokus: 'keramikkurs Tønsberg oversikt' },
       { id: 'nyttig', navn: 'Nyttig info', type: 'side', fokus: 'brennetabell keramikk' },
       { id: 'nyheter', navn: 'Nyheter', type: 'side', fokus: 'keramikk guider Tønsberg' },
     ];
@@ -16660,6 +16772,7 @@ class Component extends DCLogic {
       // etter, men de manglet oppforing: ingen beskrivelse, ingen canonical,
       // og en generisk fanetittel.
       dropin: 'dropin', kalender: 'kalender', nyttig: 'nyttig', nyheter: 'nyheter',
+      kursoversikt: 'kursoversikt',
     }[side] || null;
   }
 
@@ -27076,6 +27189,70 @@ class Component extends DCLogic {
         gk2Betalingslinje: this.innh('Gavekort/2/Betalingslinje'),
       }),
       erKalenderside: side === 'kalender',
+
+      // ── Kursene vaare ───────────────────────────────────────────────────
+      //
+      // Kurslista viser kortene: bilde, dato, pris, ledige plasser. Den sier
+      // ikke hva kurset er. Beskrivelsen laa i basen og ble vist forst naar
+      // man hadde valgt et kurs og sto i bookingen — den som lurte paa om
+      // plateteknikk var noe for hen, hadde ingenting aa lese.
+      //
+      // Alt her kommer fra kursoppsettet i admin. Et nytt kurs staar paa
+      // sida av seg selv, med den teksten som er skrevet inn.
+      erKursoversikt: side === 'kursoversikt',
+      goKursoversikt: this.go('kursoversikt'),
+      ...(side !== 'kursoversikt' ? {} : (() => {
+        const kort = this.kursKort()
+          // Drop-in er ikke et kurs man leser om og melder seg paa; det er
+          // en aapen doer med sin egen side.
+          .filter(k => (k.tema || k.level) !== 'Drop-in')
+          .filter(k => (k.title || '') !== 'Drop-in i verkstedet');
+
+        return {
+          koKicker: this.innh('Kurs/oversikt/kicker') || 'Kursene våre',
+          koTittel: this.innh('Kurs/oversikt/tittel') || 'Hva du lærer, kurs for kurs',
+          koIngress: this.innh('Kurs/oversikt/ingress')
+            || 'Her står hvert kurs med sin egen beskrivelse: hva du gjør, hvor lenge '
+             + 'det varer, hva som er inkludert og hvem det passer for. Datoene og '
+             + 'prisene finner du under Kurs.',
+          koTomt: kort.length === 0,
+          koKurs: kort.map(k => {
+            const fakta = [
+              k.duration ? { navn: 'Varighet', verdi: k.duration } : null,
+              k.varighet ? { navn: 'Tid', verdi: k.varighet } : null,
+              k.price ? { navn: 'Pris', verdi: k.price } : null,
+              k.passerNivaa ? { navn: 'Nivå', verdi: k.passerNivaa } : null,
+              k.passerHvem ? { navn: 'Passer for', verdi: k.passerHvem } : null,
+              k.metode ? { navn: 'Teknikk', verdi: k.metode } : null,
+            ].filter(Boolean);
+
+            return {
+              tittel: k.title,
+              merke: k.level || k.tema || 'Kurs',
+              // Beskrivelsen fra kursoppsettet. Staar det ingenting der, sier
+              // vi det — framfor et tomt felt som ser ut som en feil.
+              om: k.om || 'Beskrivelsen av dette kurset er ikke skrevet ennå. '
+                        + 'Ta kontakt, så forteller vi gjerne om det.',
+              harFakta: fakta.length > 0,
+              fakta,
+              harPunkter: (k.punkter || []).length > 0,
+              punkter: k.punkter || [],
+              status: k.status || '',
+              knapp: k.cta || 'Book plass',
+              book: k.book,
+              altTekst: k.title + ' hos Lissom i Tønsberg',
+              bildeStil: {
+                width: '100%', aspectRatio: '4 / 3',
+                borderRadius: 'var(--radius-lg)',
+                backgroundColor: 'var(--clay-200)',
+                backgroundImage: k.image ? "url('" + k.image + "')" : 'none',
+                backgroundSize: 'cover',
+                backgroundPosition: this.fokusFor(k.image || ''),
+              },
+            };
+          }),
+        };
+      })()),
       goKalender: this.go('kalender'),
       erKontakt: side === 'kontakt',
       // Tekstene paa kontaktsida, fra innholdsredigeringen. De sto som fast

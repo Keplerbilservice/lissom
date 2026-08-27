@@ -5825,27 +5825,107 @@ window.__resources = {
                   <textarea id="k-laerer" value="{{ kLaerer }}" onChange="{{ settKLaerer }}" rows="3" placeholder="F.eks. Å sentrere leira, åpne den og trekke opp en vegg. Å trimme foten dagen etter." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                 </div>
 
+
+                <!-- Nivaa, varighet og faktaboksen paa kurssiden.
+                     Alt dette sto i koden: «Nybegynner» kom av et felt som
+                     het noe annet, varigheten var skrevet av for haand, og
+                     «Dette lager du» og «Dette faar du med hjem» fantes ikke
+                     som felt i det hele tatt — bare som tekst i malen.
+
+                     Tomt felt betyr den anbefalte teksten. Da folger kurset
+                     malen, og en endring der naar fram hit uten at noen maa
+                     inn og rette. -->
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">08 · Alt som er inkludert</div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">08 · Nivå, varighet og faktaboksen</div>
+                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Faktaboksen øverst på kurssiden, og avsnittene under den. Står feltet tomt, bruker nettsiden den anbefalte teksten for denne kurstypen — den ser du under hvert felt.</p>
+
+                  <div style="display: flex; flex-direction: column; gap: var(--space-5);">
+
+                    <div>
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Nivå — internt</div>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Dette står bare her, for deres egen del. Kunden ser aldri ordet «nybegynner» eller «videregående».</p>
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <sc-for list="{{ kNivaaValg }}" as="n" hint-placeholder-count="2">
+                          <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
+                        </sc-for>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label for="k-nivaatekst" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Nivå — slik det står på kurssiden</label>
+                      <input id="k-nivaatekst" value="{{ kNivaaTekst }}" onChange="{{ settKNivaaTekst }}" placeholder="For alle" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kNivaaMal }}</span>
+                        <button type="button" onClick="{{ kNivaaAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label for="k-varighet" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Varighet</label>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Regnes av start- og sluttida på datoene. Endrer du tidene, følger varigheten med av seg selv. Skriv noe her bare hvis den skal si noe annet.</p>
+                      <input id="k-varighet" value="{{ kVarighetTekst }}" onChange="{{ settKVarighetTekst }}" placeholder="{{ kVarighetRegnet }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kVarighetHjelp }}</span>
+                        <button type="button" onClick="{{ kVarighetAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk tidene på datoene</button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label for="k-kortom" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kort beskrivelse</label>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Én til to setninger. Står på kurskortet i lista og i delinger.</p>
+                      <textarea id="k-kortom" value="{{ kKortBeskrivelse }}" onChange="{{ settKKortBeskrivelse }}" rows="2" placeholder="{{ kKortMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                      <button type="button" onClick="{{ kKortAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                    </div>
+
+                    <div>
+                      <label for="k-lagerdu" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette lager du</label>
+                      <textarea id="k-lagerdu" value="{{ kLagerDu }}" onChange="{{ settKLagerDu }}" rows="3" placeholder="{{ kLagerDuMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                      <button type="button" onClick="{{ kLagerDuAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                    </div>
+
+                    <div>
+                      <label for="k-medhjem" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette får du med hjem</label>
+                      <textarea id="k-medhjem" value="{{ kMedHjem }}" onChange="{{ settKMedHjem }}" rows="3" placeholder="{{ kMedHjemMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                      <button type="button" onClick="{{ kMedHjemAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                    </div>
+
+                    <div>
+                      <label for="k-ferdigtid" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Når er den ferdig</label>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hvor lenge det tar før arbeidene kan hentes. Spørsmålet kommer uansett — står det her, kommer det ikke på telefonen.</p>
+                      <textarea id="k-ferdigtid" value="{{ kFerdigTid }}" onChange="{{ settKFerdigTid }}" rows="2" placeholder="{{ kFerdigTidMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                      <button type="button" onClick="{{ kFerdigTidAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                    </div>
+
+                    <div>
+                      <label for="k-tillegg" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Godt å vite</label>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Alt annet som hører til dette kurset og ikke passer i feltene over. Kan stå tomt.</p>
+                      <textarea id="k-tillegg" value="{{ kTillegg }}" onChange="{{ settKTillegg }}" rows="2" placeholder="F.eks. Ta med forkle om du har. Vi har også ekstra." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                    </div>
+
+                  </div>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">09 · Alt som er inkludert</div>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Ett punkt per linje. Dette sto fast i koden før og kunne ikke endres herfra. Skriver du ingenting, står den samme teksten som i dag. «Maks N deltakere» legges på av seg selv og følger antall plasser.</p>
                   <textarea id="k-punkter" value="{{ kPunkter }}" onChange="{{ settKPunkter }}" rows="4" placeholder="Leire, glasur og brenning er inkludert.&#10;Ingen forkunnskaper nødvendig." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kPunkterHjelp }}</p>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">09 · Praktisk informasjon</div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">10 · Praktisk informasjon</div>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Oppmøte, klær, parkering, hva de skal ta med. Står på kurssiden, før de betaler.</p>
                   <textarea id="k-praktisk" value="{{ kPraktisk }}" onChange="{{ settKPraktisk }}" rows="3" placeholder="F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">10 · Allergener og kommentarer</div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">11 · Allergener og kommentarer</div>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det som gjelder dette kurset — servering, materialer, aldersgrense. Deltakeren blir spurt om sine egne allergier i påmeldingen; dette er det motsatte veien.</p>
                   <textarea id="k-allergener" value="{{ kAllergener }}" onChange="{{ settKAllergener }}" rows="3" placeholder="F.eks. Vi serverer kaffe og kake. Kaka inneholder nøtter og gluten." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">11 · Bekreftelse og påminnelse</div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">12 · Bekreftelse og påminnelse</div>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Teksten de får på skjermen etter kjøp og i e-postkvitteringen.</p>
                   <textarea id="k-bekreftelse" value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
                   <!-- Standardteksten fylles ut paa nye kurs. Her endrer du den
@@ -5865,7 +5945,7 @@ window.__resources = {
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">12 · Forhåndsvisning</div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">13 · Forhåndsvisning</div>
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Slik står kurset på nettsiden med det du har skrevet nå. Ingenting er lagret før du trykker Lagre.</p>
                   <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-6);">
                     <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">{{ fkKategori }}</div>
@@ -6121,7 +6201,7 @@ window.__resources = {
                Her staar uka slik den staar ute paa nettsiden. Forskjellen er
                at denne ogsaa tar med de interne samlingene og datoene som er
                fulle: det er verkstedets egen kalender. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+          <div style="{{ admUkeBoksStil }}">
             <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); flex-wrap: wrap;">
               <div>
                 <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Uke {{ admUkeNr }}</div>
@@ -6662,29 +6742,9 @@ window.__resources = {
           </div>
         </div>
 
-        <div style="background: var(--surface-card); border: 2px solid var(--terracotta-500); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
-          <div style="padding: var(--space-5) var(--space-6); background: var(--terracotta-500); color: var(--clay-50); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke fornyet — minn dem på</span>
-            <span style="font-size: var(--text-xs);">Betaling og fornyelse</span>
-          </div>
-          <sc-for list="{{ oppfolging }}" as="o" hint-placeholder-count="3">
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
-              <div style="min-width: 0;">
-                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.navn }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: var(--space-3);">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ o.tone }}" hint-size="auto,24px">{{ o.status }}</x-import>
-                <sc-if value="{{ o.ikkePurret }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ o.purr }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">{{ o.knapp }}</button>
-                </sc-if>
-                <sc-if value="{{ o.harKontakt }}" hint-placeholder-val="{{ true }}">
-                  <button type="button" onClick="{{ o.kontakt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Kontakt</button>
-                </sc-if>
-              </div>
-            </div>
-          </sc-for>
-        </div>
+        <!-- «Ikke fornyet — minn dem paa» sto her.
+             Flyttet til Medlemmer 27. august paa bestilling: det er arbeid
+             med medlemmene, og hoerer hjemme der de staar. -->
 
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Økonomi</div>
         <div style="max-width: 560px; margin-bottom: var(--space-10);">
@@ -6718,52 +6778,10 @@ window.__resources = {
           </div>
         </div>
 
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Medlemmer</div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-5); align-items: start; margin-bottom: var(--space-10);">
-
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Medlemmer og timer</span>
-              <button type="button" onClick="{{ ovGaMedlem }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Se alle</button>
-            </div>
-            <sc-for list="{{ medlemmer }}" as="m" hint-placeholder-count="5">
-              <div onClick="{{ m.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ m.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.abonnement }} · {{ m.timer }}</div>
-                </div>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
-              </div>
-            </sc-for>
-          </div>
-
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Interne samlinger · kun medlemmer</div>
-            <sc-for list="{{ internkursAdmin }}" as="k" hint-placeholder-count="3">
-              <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.naar }}</div>
-                </div>
-                <div style="display: flex; align-items: center; gap: var(--space-4); white-space: nowrap;">
-                  <span style="font-size: var(--text-sm); color: var(--text-heading);">{{ k.pameldte }}</span>
-                  <!-- Raden foerte til admin og stoppet der. Endre og fjerne
-                       maatte gjores i kurslista, som ingen fant. -->
-                  <button type="button" onClick="{{ k.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
-                  <button type="button" onClick="{{ k.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted);">Slett</button>
-                </div>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ingenInterne }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen interne samlinger er opprettet.</div>
-            </sc-if>
-            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ aNyIntern }}" hint-size="auto,40px">Ny intern samling</x-import>
-            </div>
-          </div>
-
-        </div>
-
+        <!-- Her sto «Medlemmer og timer» og «Interne samlinger».
+             Medlemslista finnes under Medlemmer → Alle medlemmer, og
+             samlingene staar naa samme sted. Fjernet fra Oversikt
+             27. august paa bestilling. -->
       </main>
     </div>
   </sc-if>
@@ -8195,6 +8213,66 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
+
+        <!-- Interne samlinger.
+             Sto paa Oversikt, mellom omsetningen og medlemslista. Det er
+             medlemmenes egne samlinger, og hoerer hjemme her — hos dem. -->
+        <div style="max-width: 860px; margin-bottom: var(--space-8);">
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Interne samlinger · kun medlemmer</div>
+          <sc-for list="{{ internkursAdmin }}" as="k" hint-placeholder-count="3">
+            <div onClick="{{ k.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.naar }}</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-4); white-space: nowrap;">
+                <span style="font-size: var(--text-sm); color: var(--text-heading);">{{ k.pameldte }}</span>
+                <!-- Raden foerte til admin og stoppet der. Endre og fjerne
+                     maatte gjores i kurslista, som ingen fant. -->
+                <button type="button" onClick="{{ k.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-heading); text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                <button type="button" onClick="{{ k.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted);">Slett</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ ingenInterne }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen interne samlinger er opprettet.</div>
+          </sc-if>
+          <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="plus" on-click="{{ aNyIntern }}" hint-size="auto,40px">Ny intern samling</x-import>
+          </div>
+        </div>
+
+        </div>
+
+        <!-- Ikke fornyet.
+             Sto ogsaa paa Oversikt. Det er de samme menneskene som staar i
+             lista under, og da skal purringen staa her. -->
+        <div style="max-width: 860px; margin-bottom: var(--space-8);">
+        <div style="background: var(--surface-card); border: 2px solid var(--terracotta-500); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
+          <div style="padding: var(--space-5) var(--space-6); background: var(--terracotta-500); color: var(--clay-50); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke fornyet — minn dem på</span>
+            <span style="font-size: var(--text-xs);">Betaling og fornyelse</span>
+          </div>
+          <sc-for list="{{ oppfolging }}" as="o" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <div style="min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.linje }}</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ o.tone }}" hint-size="auto,24px">{{ o.status }}</x-import>
+                <sc-if value="{{ o.ikkePurret }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ o.purr }}" style="appearance: none; cursor: pointer; border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">{{ o.knapp }}</button>
+                </sc-if>
+                <sc-if value="{{ o.harKontakt }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ o.kontakt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Kontakt</button>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        </div>
 
         <!-- Soknader om frys.
              Staar over lista, og bare naar det finnes noe: en tom ramme hver
@@ -17960,6 +18038,13 @@ class Component extends DCLogic {
       praktisk: this.state.kPraktisk || '', allergener: this.state.kAllergener || '',
       passerNivaa: this.state.kPasserNivaa || '', passerHvem: this.state.kPasserHvem || '',
       metode: this.state.kMetode || '', varighet: this.state.kVarighet || '',
+      // Nivaa, varighet og faktaboksen (migrasjon 072).
+      nivaaIntern: this.state.kNivaaIntern || 'nybegynner',
+      nivaaTekst: this.state.kNivaaTekst || '',
+      kortBeskrivelse: this.state.kKortBeskrivelse || '',
+      lagerDu: this.state.kLagerDu || '', medHjem: this.state.kMedHjem || '',
+      ferdigTid: this.state.kFerdigTid || '', tillegg: this.state.kTillegg || '',
+      varighetTekst: this.state.kVarighetTekst || '',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva',
       // Uten SMS-leverandoer staar haken av og lar seg ikke sette. Da skal
       // lagring heller ikke skrive den av: valget paa kurset blir staaende
@@ -18026,7 +18111,9 @@ class Component extends DCLogic {
         // som er med i kallet — og hurtigskjemaet paa mobil, som ikke
         // kjenner seksjonene, skal ikke toemme dem paa et kurs som finnes.
         ...['punkter', 'laerer', 'praktisk', 'allergener',
-            'passerNivaa', 'passerHvem', 'metode', 'varighet']
+            'passerNivaa', 'passerHvem', 'metode', 'varighet',
+            'nivaaIntern', 'nivaaTekst', 'kortBeskrivelse', 'lagerDu',
+            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst']
           .reduce((m, n) => {
             if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
             return m;
@@ -19139,6 +19226,14 @@ class Component extends DCLogic {
       kPraktisk: raa.praktisk || '', kAllergener: raa.allergener || '',
       kPasserNivaa: raa.passerNivaa || '', kPasserHvem: raa.passerHvem || '',
       kMetode: raa.metode || '', kVarighet: raa.varighet || '',
+      // Nivaa, varighet og faktaboksen (migrasjon 072). Tomt felt betyr
+      // malen — vi fyller derfor ikke inn den anbefalte teksten her.
+      kNivaaIntern: raa.nivaaIntern || 'nybegynner',
+      kNivaaTekst: raa.nivaaTekst || '',
+      kKortBeskrivelse: raa.kortBeskrivelse || '',
+      kLagerDu: raa.lagerDu || '', kMedHjem: raa.medHjem || '',
+      kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
+      kVarighetTekst: raa.varighetTekst || '',
       // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
       // Ligger det en regel der, er det den som gjelder.
       ...(() => {
@@ -19754,6 +19849,16 @@ class Component extends DCLogic {
         .filter(t => !isNaN(t) && t >= naaTid);
       return tider.length ? Math.min.apply(null, tider) : SIST;
     };
+    // Malfanen er kursene selv, ikke datoene deres: ett kurs per rad,
+    // sortert paa navn, saa lista staar stille og man finner det man skal
+    // rette. Sorteringa paa «naar gaar det neste gang» hoerer til der man
+    // jobber med datoer.
+    if (fane === 'maler') {
+      return this.kursData()
+        .map((k, i) => ({ k, i, n: 0 }))
+        .filter(({ k }) => k.status !== 'avlyst')
+        .sort((a, b) => String(a.k.navn || '').localeCompare(String(b.k.navn || ''), 'nb'));
+    }
     return this.kursData()
       .map((k, i) => ({ k, i, n: nesteGang(k) }))
       .filter(({ k }) => fane === 'alle' || fane === 'planlagte'
@@ -19849,6 +19954,10 @@ class Component extends DCLogic {
       // — de hoerer hjemme hos medlemmene, og bare der.
       'Kurs og medlemskap': [
         ['← Kurs og medlemskap', 'adminomrkurs'],
+        // «Kurs» er malene: ett kurs per rad, uten datoer og kalender.
+        // Skal du rette en pris, en tekst eller et navn, er det her.
+        // «Alle kurs» er det samme med datoene og uka ved siden av.
+        ['Kurs',          'admin',            { kursFane: 'maler' }],
         ['Alle kurs',     'admin',            { kursFane: 'alle' }],
         ['Medlemskap',    'adminmedlemskap'],
         ['Drop-in',       'admindropin'],
@@ -19933,6 +20042,7 @@ class Component extends DCLogic {
       case 'admin':
         if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
+        if (st.kursFane === 'maler')   return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Kurs');
         return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Alle kurs');
       case 'adminbeskjeder':
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
@@ -22227,6 +22337,8 @@ class Component extends DCLogic {
           kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
           kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -23133,6 +23245,8 @@ class Component extends DCLogic {
             kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
             kGjentak: 'Ingen', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -23223,6 +23337,8 @@ class Component extends DCLogic {
                   kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
                   kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                   kGjentak: 'Ingen', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -23281,6 +23397,8 @@ class Component extends DCLogic {
                 kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                 kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -24431,17 +24549,25 @@ class Component extends DCLogic {
       // hele lista, ikke i den man ser paa.
       ...(() => {
         const fane = this.state.kursFane || 'alle';
-        const NAVN = { planlagte: 'Kurs med datoer framover', alle: 'Alle kurs og events', apne: 'Kurs som er åpne for alle', interne: 'Kurs kun for medlemmer' };
+        const NAVN = { planlagte: 'Kurs med datoer framover', alle: 'Alle kurs og events', apne: 'Kurs som er åpne for alle', interne: 'Kurs kun for medlemmer', maler: 'Kursene våre' };
         return {
           kursFane: fane,
           kursFaneInterne: fane === 'interne',
-          kursFaneApen: fane !== 'interne',
+          kursFaneApen: fane !== 'interne' && fane !== 'maler',
           kursListeTittel: NAVN[fane] || NAVN.alle,
           kursSkjermTittel: fane === 'interne' ? 'Kurs for medlemmer'
+            : fane === 'maler' ? 'Kurs'
             : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og medlemskap'),
           kursSkjermEyebrow: fane === 'interne' ? 'Medlemmer'
             : (fane === 'apne' ? 'Kursdeltakere' : 'Administrasjon'),
-          kursFaneValg: [['planlagte', 'Planlagte'], ['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
+          // Malfanen er kursene, ikke datoene. Kalenderen og datolista
+          // hoerer til «Alle kurs» — her er de bare stoy foran det man kom
+          // for aa gjore.
+          admUkeBoksStil: fane === 'maler'
+            ? { display: 'none' }
+            : { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-6)' },
+          kursFaneValg: (fane === 'maler' ? [] : [['planlagte', 'Planlagte'], ['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']]).map(([v, navn]) => ({
             navn,
             velg: () => this.setState({ kursFane: v }),
             stil: {
@@ -24763,7 +24889,7 @@ class Component extends DCLogic {
           // Blokka flyttes oeverst naar den gjelder ett kurs. «order» virker
           // paa flex-barn, og spalten er allerede flex — saa den bytter plass
           // uten at markeringen finnes to steder.
-          datoBlokkStil: {
+          datoBlokkStil: (this.state.kursFane === 'maler') ? { display: 'none' } : {
             background: 'var(--surface-card)',
             border: aapentKurs ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-lg)',
@@ -25491,7 +25617,6 @@ class Component extends DCLogic {
       }),
       ovGaKurs: this.go('admin'),
       ovGaButikk: this.go('adminbutikk'),
-      ovGaMedlem: this.go('adminmedlem'),
       ovGaInnhold: this.go('admininnhold'),
       ovGaNyttig: this.go('adminnyttig'),
       ovGaOkonomi: this.go('adminokonomi'),
@@ -25784,6 +25909,8 @@ class Component extends DCLogic {
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
       nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
+            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       // Hva som skjer naar et kurs som finnes faar nytt navn.
@@ -25821,6 +25948,82 @@ class Component extends DCLogic {
       kPunkter: this.state.kPunkter ?? '', settKPunkter: (e) => this.setState({ kPunkter: e.target.value }),
       kPraktisk: this.state.kPraktisk ?? '', settKPraktisk: (e) => this.setState({ kPraktisk: e.target.value }),
       kAllergener: this.state.kAllergener ?? '', settKAllergener: (e) => this.setState({ kAllergener: e.target.value }),
+      // ── Nivaa, varighet og faktaboksen ───────────────────────────────
+      //
+      // Feltene fantes i basen og paa nettsida, men ikke i skjemaet: teksten
+      // kom fra malen og kunne ikke roeres. Her er de, med den anbefalte
+      // teksten under hvert felt og en vei tilbake til den.
+      //
+      // Tomt felt = malen. Det er derfor «Gjenopprett anbefalt tekst» toemmer
+      // feltet framfor aa lime inn teksten: limte vi den inn, ville kurset
+      // staa laast til den ordlyden for alltid.
+      ...(() => {
+        const st = this.state;
+        const raa = (st.adminKursRaa || []).find(x => x.id === st.kRaaId)
+          || (st.adminKursRaa || []).find(x => x.tittel === st.kNavn) || {};
+        const mal = raa.mal || {};
+        const naa = st.kNivaaIntern || raa.nivaaIntern || 'nybegynner';
+        const staarTomt = (v, fra) => String(v || '').trim() === ''
+          ? ('Står tomt: nettsiden viser «' + String(fra || '').trim() + '»')
+          : 'Egen tekst. Feltet står foran den anbefalte.';
+        const kort = (t, n) => {
+          const s2 = String(t || '').trim();
+          return s2.length > n ? s2.slice(0, n - 1).trim() + '…' : s2;
+        };
+        return {
+          kNivaaValg: [['nybegynner', 'Nybegynner'], ['videregaende', 'Videregående']].map(([v, navn]) => ({
+            navn,
+            velg: () => this.setState({ kNivaaIntern: v }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '9px 16px', borderRadius: 'var(--radius-pill)', minHeight: 40,
+              border: '1px solid ' + (naa === v ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: naa === v ? 'var(--lissom-brown)' : 'var(--clay-50)',
+              color: naa === v ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
+          kNivaaIntern: naa,
+
+          kNivaaTekst: st.kNivaaTekst ?? '',
+          settKNivaaTekst: e => this.setState({ kNivaaTekst: e.target.value }),
+          kNivaaMal: staarTomt(st.kNivaaTekst, mal.nivaaTekst || 'For alle'),
+          kNivaaAnbefalt: () => this.setState({ kNivaaTekst: '' }),
+
+          kVarighetTekst: st.kVarighetTekst ?? '',
+          settKVarighetTekst: e => this.setState({ kVarighetTekst: e.target.value }),
+          kVarighetRegnet: raa.varighetVist || 'Regnes av tidene på datoene',
+          kVarighetHjelp: String(st.kVarighetTekst || '').trim() === ''
+            ? (raa.varighetVist
+                ? 'Regnet av tidene: ' + raa.varighetVist
+                : 'Ingen datoer med klokkeslett ennå.')
+            : 'Egen tekst. Den overstyrer tidene på datoene.',
+          kVarighetAnbefalt: () => this.setState({ kVarighetTekst: '' }),
+
+          kKortBeskrivelse: st.kKortBeskrivelse ?? '',
+          settKKortBeskrivelse: e => this.setState({ kKortBeskrivelse: e.target.value }),
+          kKortMal: kort(mal.kortBeskrivelse, 120),
+          kKortAnbefalt: () => this.setState({ kKortBeskrivelse: '' }),
+
+          kLagerDu: st.kLagerDu ?? '',
+          settKLagerDu: e => this.setState({ kLagerDu: e.target.value }),
+          kLagerDuMal: kort(mal.lagerDu, 160),
+          kLagerDuAnbefalt: () => this.setState({ kLagerDu: '' }),
+
+          kMedHjem: st.kMedHjem ?? '',
+          settKMedHjem: e => this.setState({ kMedHjem: e.target.value }),
+          kMedHjemMal: kort(mal.medHjem, 160),
+          kMedHjemAnbefalt: () => this.setState({ kMedHjem: '' }),
+
+          kFerdigTid: st.kFerdigTid ?? '',
+          settKFerdigTid: e => this.setState({ kFerdigTid: e.target.value }),
+          kFerdigTidMal: kort(mal.ferdigTid || 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.', 160),
+          kFerdigTidAnbefalt: () => this.setState({ kFerdigTid: '' }),
+
+          kTillegg: st.kTillegg ?? '',
+          settKTillegg: e => this.setState({ kTillegg: e.target.value }),
+        };
+      })(),
+
       kPunkterHjelp: (this.state.kPunkter ?? '').trim() === ''
         ? 'Står tomt: nettsiden viser «Leire, verktøy, glasur og brenning er inkludert.» og «Ingen forkunnskaper nødvendig.», som i dag.'
         : (() => {

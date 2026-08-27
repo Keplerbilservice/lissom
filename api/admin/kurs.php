@@ -155,20 +155,6 @@ switch ($handling) {
 
         $data = [
             'tittel'            => $tittel,
-            // De redigerbare tekstene. Tomt felt betyr «bruk den anbefalte
-            // teksten» — den staar da i lesningen, men lagres ikke, saa en
-            // senere endring i malen naar fram til de kursene som ikke er
-            // skrevet om for haand.
-            ...(DB::harKolonne('courses', 'nivaa_tekst') ? [
-                'nivaa_intern'     => mb_substr(Foresporsel::tekst('nivaaIntern'), 0, 32) ?: 'nybegynner',
-                'nivaa_tekst'      => mb_substr(Foresporsel::tekst('nivaaTekst'), 0, 120) ?: null,
-                'kort_beskrivelse' => mb_substr(Foresporsel::tekst('kortBeskrivelse'), 0, 500) ?: null,
-                'lager_du'         => Foresporsel::tekst('lagerDu') ?: null,
-                'med_hjem'         => Foresporsel::tekst('medHjem') ?: null,
-                'ferdig_tid'       => mb_substr(Foresporsel::tekst('ferdigTid'), 0, 160) ?: null,
-                'tillegg'          => Foresporsel::tekst('tillegg') ?: null,
-                'varighet_tekst'   => mb_substr(Foresporsel::tekst('varighetTekst'), 0, 120) ?: null,
-            ] : []),
             'type'              => in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
                                     ? Foresporsel::tekst('type') : 'kurs',
             'tema'              => mb_substr(Foresporsel::tekst('tema'), 0, 64) ?: null,
@@ -199,15 +185,33 @@ switch ($handling) {
         // Hver av dem skrives bare naar feltet faktisk er med i kallet. Et
         // skjema som ikke kjenner dem — kursredigeringen fra en eldre skjerm
         // — skal ikke toemme dem ved neste lagring.
+        //
+        // De redigerbare kurstekstene staar her av samme grunn. De laa foer
+        // rett i $data og ble skrevet ved hver eneste lagring: hurtigskjemaet
+        // paa mobil, som ikke kjenner feltene, sendte dem ikke, og da ble
+        // «Dette lager du», «Dette faar du med hjem» og resten toemt paa et
+        // kurs noen hadde skrevet dem paa.
+        //
+        // Tomt felt betyr «bruk den anbefalte teksten»: kolonnen settes til
+        // NULL, teksten kommer fra malen ved lesning, og en senere endring i
+        // malen naar fram til de kursene som ikke er skrevet om for haand.
         $tekstfelter = [
-            'punkter'      => 'punkter',
-            'laerer'       => 'laerer',
-            'praktisk'     => 'praktisk',
-            'allergener'   => 'allergener',
-            'passerNivaa'  => 'passer_nivaa',
-            'passerHvem'   => 'passer_hvem',
-            'metode'       => 'metode',
-            'varighet'     => 'varighet',
+            'punkter'         => 'punkter',
+            'laerer'          => 'laerer',
+            'praktisk'        => 'praktisk',
+            'allergener'      => 'allergener',
+            'passerNivaa'     => 'passer_nivaa',
+            'passerHvem'      => 'passer_hvem',
+            'metode'          => 'metode',
+            'varighet'        => 'varighet',
+            'nivaaIntern'     => 'nivaa_intern',
+            'nivaaTekst'      => 'nivaa_tekst',
+            'kortBeskrivelse' => 'kort_beskrivelse',
+            'lagerDu'         => 'lager_du',
+            'medHjem'         => 'med_hjem',
+            'ferdigTid'       => 'ferdig_tid',
+            'tillegg'         => 'tillegg',
+            'varighetTekst'   => 'varighet_tekst',
         ];
         foreach ($tekstfelter as $inn => $kolonne) {
             if (!array_key_exists($inn, Foresporsel::kropp()) || !DB::harKolonne('courses', $kolonne)) {
@@ -219,6 +223,13 @@ switch ($handling) {
             // sin egen prikk. Samme regel som paa medlemskapene.
             if ($kolonne === 'punkter') {
                 $verdi = implode("\n", Medlemskap::punkter($verdi));
+            }
+            // Det interne nivaaet er et valg, ikke en fritekst. Tomt betyr
+            // nybegynner — kolonnen skal aldri staa uten verdi.
+            if ($kolonne === 'nivaa_intern') {
+                $data[$kolonne] = in_array($verdi, ['nybegynner', 'videregaende'], true)
+                    ? $verdi : 'nybegynner';
+                continue;
             }
             $data[$kolonne] = $verdi !== '' ? $verdi : null;
         }

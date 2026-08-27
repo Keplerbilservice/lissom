@@ -51,6 +51,13 @@ if (Foresporsel::metode() === 'GET') {
             'status'     => $k['status'],
             'visUtenDato'=> (bool) ($k['vis_uten_dato'] ?? 0),
             'serier'     => Serier::forKurs((int) $k['id']),
+            // Hvor mange datoer som ligger framover. Kursoppsettet sier med
+            // dette hva et nytt navn faktisk gjelder for.
+            'datoerFramover' => (int) DB::verdi(
+                "SELECT COUNT(*) FROM course_sessions
+                  WHERE course_id = :c AND status = 'planlagt' AND start_tid > UTC_TIMESTAMP()",
+                ['c' => (int) $k['id']]
+            ),
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
             'bekreftelse'=> $k['bekreftelse_tekst'],

@@ -1426,9 +1426,11 @@ window.__resources = {
             <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ pHeroOverskrift }}</h1>
             <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ pHeroBrodtekst }}</p>
             <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-muted); max-width: 50ch; text-wrap: pretty;">{{ pHeroUndertekst }}</p>
+            <!-- «Book for gruppe» sto her ved siden av «Se datoer og book».
+                 Tatt bort etter onske fra eieren. Gruppeforesporsler gaar
+                 fortsatt fra Bedrift og event, og fra Kontakt oss. -->
             <div style="display: flex; gap: var(--space-4); flex-wrap: wrap;">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ popTilDatoer }}" hint-size="auto,56px">{{ pHeroKnapp1 }}</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goForesporsel }}" hint-size="auto,56px">{{ pHeroKnapp2 }}</x-import>
             </div>
           </div>
           <img src="uploads_shutterstock_2830576853.jpg" srcset="uploads_shutterstock_2830576853-400.jpg 400w, uploads_shutterstock_2830576853-800.jpg 800w, uploads_shutterstock_2830576853.jpg 1024w" sizes="(max-width: 760px) 100vw, 700px" alt="Paint on Pots hos Lissom" style="width: 100%; height: 460px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" loading="lazy" decoding="async" width="1024" height="1024">
@@ -1659,38 +1661,13 @@ window.__resources = {
       </section>
       </sc-if>
 
-      <!-- Veien til beskrivelsene.
-           Kortene over sier naar og hva det koster. Den som vil vite hva
-           kurset faktisk er, maatte gaa inn i bookingen paa hvert enkelt for
-           aa finne teksten.
+      <!-- «Usikker paa hva kursene gaar ut paa?» sto her: et felt mellom
+           kurskortene og velkomstteksten som sendte leseren videre til
+           «Kursene vaare». Tatt bort etter onske fra eieren.
 
-           Feltet sto som en tynn ramme paa hvit bakgrunn, med to smaa linjer
-           og en knapp helt til hoyre — samme farge og samme vekt som alt
-           annet paa sida, og lett aa rulle forbi. Naa er det gult, med
-           overskrift, tekst, tre stikkord om hva som staar der, og en knapp
-           som ser ut som en knapp.
-
-           Teksten redigeres under Nettsiden → Innhold → Kurs og events →
-           «Les mer-knappen», og kan foreslaas av AI-en derfra. -->
-      <sc-if value="{{ ikkeDropinVisning }}" hint-placeholder-val="{{ true }}">
-        <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
-          <div data-theme="sun" class="lx-band" style="max-width: var(--width-content); margin: 0 auto; background: var(--lissom-yellow); border-radius: var(--radius-xl, 22px); padding: var(--space-9) var(--space-10); display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
-            <div style="min-width: 0; flex: 1 1 380px;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500, var(--lissom-brown)); margin-bottom: var(--space-3);">{{ keLesMerKicker }}</div>
-              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl); color: var(--lissom-brown); text-wrap: balance;">{{ keLesMerTittel }}</h2>
-              <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--brown-500, var(--lissom-brown)); max-width: 56ch; text-wrap: pretty;">{{ keLesMerTekst }}</p>
-              <sc-if value="{{ keLesMerHarPunkter }}" hint-placeholder-val="{{ true }}">
-                <ul style="list-style: none; margin: var(--space-5) 0 0; padding: 0; display: flex; gap: var(--space-3) var(--space-6); flex-wrap: wrap;">
-                  <sc-for list="{{ keLesMerPunkter }}" as="p" hint-placeholder-count="3">
-                    <li style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">{{ p.navn }}</li>
-                  </sc-for>
-                </ul>
-              </sc-if>
-            </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goKursoversikt }}" hint-size="auto,52px">{{ keLesMerKnapp }}</x-import>
-          </div>
-        </section>
-      </sc-if>
+           Sida /kursene-vare staar som for, med beskrivelsen av hvert kurs.
+           Den naas naa fra adressen og fra soek — ingen knapp paa kurssida
+           peker dit lenger. -->
 
       <sc-if value="{{ ikkeDropinVisning }}" hint-placeholder-val="{{ true }}">
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
@@ -4468,7 +4445,13 @@ window.__resources = {
 
         <!-- ── Deltakerne paa ett kurs ─────────────────────────────────── -->
         <sc-if value="{{ fbValgtKurs }}" hint-placeholder-val="{{ false }}">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+          <!-- Bredden staar fast.
+               Lista tok hele skjermen: paa en bred skjerm ble hver deltaker
+               en stripe tvers over, med navnet helt til venstre og statusen
+               helt til hoyre og en halv meter tomt imellom. Resten av admin
+               ligger paa 760–880 piksler; her trengs det litt mer fordi
+               panelet under staar i to spalter. -->
+          <div style="max-width: 980px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <div>
               <button type="button" onClick="{{ fbTilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">← Alle kurs</button>
               <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading); margin-top: var(--space-2);">{{ fbKursTittel }}</div>
@@ -4479,7 +4462,7 @@ window.__resources = {
             </sc-if>
           </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="max-width: 980px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <sc-if value="{{ fbIngenDeltakere }}" hint-placeholder-val="{{ false }}">
               <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingen deltakere på denne datoen.</div>
             </sc-if>
@@ -4586,7 +4569,7 @@ window.__resources = {
             </sc-for>
           </div>
 
-          <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Meldingen står på lissom.no/ferdigbrent i {{ fbUker }} uker og forsvinner av seg selv.</p>
+          <p style="max-width: 980px; margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Meldingen står på lissom.no/ferdigbrent i {{ fbUker }} uker og forsvinner av seg selv.</p>
         </sc-if>
       </main>
     </div>
@@ -5367,6 +5350,19 @@ window.__resources = {
                   <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det kurset heter ute på nettsiden, i kalenderen og på kvitteringen.</p>
                   <label for="k-navn" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn på kurset</label>
                   <input id="k-navn" value="{{ kNavn }}" onChange="{{ settKNavn }}" placeholder="F.eks. Nybegynner dreiekurs" style="width: 100%; box-sizing: border-box; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
+                  <!-- Hva som skjer naar navnet endres.
+                       Datoene har ikke egne navn — de peker paa kurset — saa
+                       et nytt navn gjelder alle, ogsaa de som alt er
+                       planlagt. Det sto ingen steder, og da tor man ikke
+                       roere feltet. -->
+                  <sc-if value="{{ kNavnFinnes }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--clay-50); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                      <p style="margin: 0; font-size: var(--text-xs); color: var(--text-body); text-wrap: pretty;">{{ kNavnFolger }}</p>
+                      <sc-if value="{{ kHarAdresse }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kAdresseTekst }}</p>
+                      </sc-if>
+                    </div>
+                  </sc-if>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -7953,15 +7949,6 @@ window.__resources = {
                 </sc-if>
                 <sc-if value="{{ b.redigerer }}" hint-placeholder-val="{{ false }}">
                   <div style="display: flex; flex-direction: column; gap: var(--space-4);">
-                    <!-- AI-en foreslaar teksten ut fra kursene som ligger
-                         ute. Den skriver i feltene under, den lagrer ikke:
-                         eieren leser, retter og trykker Lagre selv. -->
-                    <sc-if value="{{ b.kanAi }}" hint-placeholder-val="{{ false }}">
-                      <div style="background: var(--clay-50); border: 1px dashed var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-4); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ b.aiForeslaa }}" hint-size="auto,38px">{{ b.aiKnapp }}</x-import>
-                        <span style="font-size: var(--text-xs); color: var(--text-muted); flex: 1 1 240px; text-wrap: pretty;">{{ b.aiHjelp }}</span>
-                      </div>
-                    </sc-if>
                     <sc-for list="{{ b.felter }}" as="f" hint-placeholder-count="3">
                       <div>
                         <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">{{ f.etikett }}</label>
@@ -9087,10 +9074,19 @@ window.__resources = {
                     <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ u.smakebit }}</p>
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 8px;">{{ u.detalj }}</div>
                   </div>
-                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <!-- «Publiser naa» gjor godkjenning og publisering i ett.
+                       For maatte en artikkel godkjennes her, letes opp i
+                       kunnskapsbanken og publiseres derfra: tre klikk og to
+                       skjermer for en tekst man alt hadde lest og sagt ja
+                       til. Knappen staar bare paa det som blir en artikkel;
+                       et nyhetsbrev sendes fra Beskjeder. -->
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="eye" on-click="{{ u.les }}" hint-size="auto,40px">Les hele</x-import>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" icon="check" on-click="{{ u.godkjenn }}" hint-size="auto,40px">Ta i bruk</x-import>
-                    <button type="button" onClick="{{ u.forkast }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Legg bort</button>
+                    <sc-if value="{{ u.kanPublisere }}" hint-placeholder-val="{{ true }}">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ u.publiser }}" hint-size="auto,40px">Publiser nå</x-import>
+                    </sc-if>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ u.godkjenn }}" hint-size="auto,40px">{{ u.godkjennTekst }}</x-import>
+                    <button type="button" onClick="{{ u.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                   </div>
                 </div>
               </div>
@@ -9110,9 +9106,16 @@ window.__resources = {
                     <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ g.tittel }}</div>
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 8px;">{{ g.detalj }}</div>
                   </div>
-                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="eye" on-click="{{ g.les }}" hint-size="auto,40px">Les hele</x-import>
+                    <!-- Ligger den som kladd i kunnskapsbanken, skal den
+                         kunne legges ut herfra. «Se den» tok deg til en
+                         annen skjerm for aa trykke én knapp til. -->
+                    <sc-if value="{{ g.kanPublisere }}" hint-placeholder-val="{{ false }}">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ g.publiser }}" hint-size="auto,40px">Publiser</x-import>
+                    </sc-if>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" on-click="{{ g.bruk }}" hint-size="auto,40px">{{ g.brukKnapp }}</x-import>
+                    <button type="button" onClick="{{ g.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
                   </div>
                 </div>
               </div>
@@ -10553,12 +10556,10 @@ const SIDEINNHOLD = {
     { navn: 'Ordensregler og HMS', type: 'Redigeres under Nyttig info → Plakater', synlig: 'Publisert', felter: [] },
     // Staar sist med vilje: numrene paa seksjonene over er noekler nettsiden
     // slaar opp paa, og en ny seksjon i midten ville flyttet alle sammen.
-    { navn: 'Les mer-knappen', type: 'Fører til «Kursene våre»', synlig: 'Publisert', ai: 'lesmertekst', felter: [
-      { l: 'Kicker', v: 'Før du booker' },
-      { l: 'Overskrift', v: 'Usikker på hva kursene går ut på?' },
-      { l: 'Tekst', v: 'Hvert kurs står beskrevet med sine egne ord: hva du gjør fra du kommer til du går, hvor lang tid det tar, hva som er inkludert og hvem det passer for. Les det gjennom før du velger dato — da vet du hva du sier ja til.', lang: true },
-      { l: 'Stikkord', v: 'Hva du lærer, Hvor lang tid det tar, Hva som er inkludert' },
-      { l: 'Knapp', v: 'Les mer om våre kurs' } ] },
+    // «Les mer-knappen» sto her. Feltet er tatt bort fra kurssida, og
+    // seksjonen med det — et skjema for noe som ikke vises noe sted er verre
+    // enn ingen seksjon. Seksjonen sto sist i lista, saa numrene paa de
+    // andre staar urort.
   ],
   // Blokk 1 og 2 var prislister med medlemskapsnavnene skrevet inn — et
   // annet sted aa endre den samme prisen, ved siden av Kurs og medlemskap →
@@ -10714,8 +10715,7 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Mal din egen keramikk' },
       { l: 'Brødtekst', v: 'Velg et produkt fra vårt Paint on Pots-sortiment. Mal det slik du vil — så glaserer og brenner vi det for deg. Ingen erfaring nødvendig, og alt utstyr er inkludert i prisen.', lang: true },
       { l: 'Undertekst', v: 'Passer for venner, familier med barn, par og små grupper. Ferdig brent keramikk henter du i verkstedet etter ca. to uker.', lang: true },
-      { l: 'Knapp 1', v: 'Se datoer og book' },
-      { l: 'Knapp 2', v: 'Book for gruppe' } ] },
+      { l: 'Knapp 1', v: 'Se datoer og book' } ] },
     { navn: 'Om Paint on Pots', type: 'To avsnitt', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Paint on Pots' },
       { l: 'Overskrift', v: 'Noen ganger trenger man ikke et kurs. Man trenger bare en hyggelig pause.' },
@@ -13147,6 +13147,37 @@ class Component extends DCLogic {
     return !!(k && k.ute && k.bilde);
   }
 
+  /**
+   * Henter bildene i rotasjonen paa forhaand.
+   *
+   * Naar kortet bytter, staar det nye bildet i «src» med det samme — men
+   * nettleseren viser det forrige helt til det nye er lastet ferdig. Paa en
+   * treg linje er det sekunder, og da staar overskriften til ett kort over
+   * bildet til et annet. Det ser ut som feil bilde, og det er nettopp det
+   * det er.
+   *
+   * Feltet hadde to bilder for; naa har det ett per referansekunde i
+   * tillegg, og de hentes foerst naar rotasjonen kommer dit. Her hentes de
+   * i bakgrunnen med det samme, med samme srcset og sizes som ramma bruker,
+   * slik at det er den samme utgaven som havner i mellomlageret.
+   */
+  forhandslastRotasjon() {
+    if (typeof window === 'undefined' || !window.Image) return;
+    const alle = this.rotasjonene();
+    this._forhandslastet = this._forhandslastet || {};
+    alle.forEach(r => {
+      const fil = r && r.bilde;
+      if (!fil || this._forhandslastet[fil]) return;
+      this._forhandslastet[fil] = true;
+      const im = new window.Image();
+      if (window.lissomSrcset) {
+        const ss = window.lissomSrcset(fil);
+        if (ss) { im.sizes = window.LISSOM_SIZES_STOR || '700px'; im.srcset = ss; }
+      }
+      im.src = fil;
+    });
+  }
+
   rotasjonene() {
     const faste = [
       {
@@ -15417,7 +15448,9 @@ class Component extends DCLogic {
     }
     if (this._aiJobber) return;
     this._aiJobber = true;
-    const laget = kropp.handling === 'godkjenn' || kropp.handling === 'forkast';
+    // Handlingene som bare flytter noe som alt er skrevet. De tar et
+    // oyeblikk; de andre ber AI-en skrive, og det tar et halvt minutt.
+    const laget = ['godkjenn', 'forkast', 'publiser', 'slett'].indexOf(kropp.handling) !== -1;
     this.setState({
       kvittering: laget ? 'Et øyeblikk' : 'AI-en skriver',
       kvitteringDetalj: laget ? '' : 'Dette tar gjerne et halvt minutt. Du får beskjed når utkastet er klart.',
@@ -15456,6 +15489,11 @@ class Component extends DCLogic {
                 nbTekst: d.tekst || '',
               });
               window.scrollTo(0, 0);
+            } else if (kropp.publiser) {
+              // Publisert med det samme: da er den ute, og det staar i
+              // kvitteringa. Aa sende eieren til kunnskapsbanken for aa se
+              // paa en artikkel hun nettopp la ut, er et steg til ingen nytte.
+              this.setState({ mkFane: 'tavle' });
             } else {
               this.setState({ mkFane: d && d.artikkelId ? 'bank' : 'tavle' });
             }
@@ -15466,154 +15504,6 @@ class Component extends DCLogic {
         this._aiJobber = false;
         this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
       });
-  }
-
-  /**
-   * Et tekstforslag til en seksjon under Nettsiden → Innhold.
-   *
-   * Skriver i kladden, ikke i basen. Eieren leser forslaget, retter det hun
-   * vil ha annerledes, og trykker Lagre selv — det er hennes tekst, AI-en
-   * bare foreslaar. Trykker hun Avbryt, er ingenting skjedd.
-   */
-  foreslaaInnholdstekst(handling, nokkel) {
-    if (!handling) return;
-    if (!this.erPublisert()) {
-      this.setState({ kvittering: 'Krever den ekte siden',
-                      kvitteringDetalj: 'AI-en svarer først når siden kjører på serveren.' });
-      return;
-    }
-    if (this.state.aiInnholdJobber) return;
-    this.setState({ aiInnholdJobber: nokkel, aiInnholdFor: nokkel,
-                    aiInnholdSvar: 'Leser kursene og skriver …' });
-
-    fetch('/api/admin/ai.php', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ handling }),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => {
-        if (!ok || !d || !d.ok) {
-          this.setState({ aiInnholdJobber: '',
-                          aiInnholdSvar: (d && d.feil) || 'AI-en svarte ikke. Prøv igjen.' });
-          return;
-        }
-        // Feltnavnene her er de samme etikettene som staar i SIDEINNHOLD.
-        // Kommer et felt ikke tilbake, roeres det ikke.
-        const til = { overskrift: 'Overskrift', tekst: 'Tekst', knapp: 'Knapp' };
-        const kladd = {};
-        Object.keys(til).forEach(k => {
-          if (d[k]) { kladd[nokkel + '/' + til[k]] = String(d[k]); }
-        });
-        if (Array.isArray(d.punkter) && d.punkter.length) {
-          kladd[nokkel + '/Stikkord'] = d.punkter.join(', ');
-        }
-        this.setState(st => ({
-          innholdKladd: Object.assign({}, st.innholdKladd, kladd),
-          aiInnholdJobber: '',
-          aiInnholdSvar: 'Forslaget står i feltene under. Rett det du vil ha annerledes, og trykk Lagre.'
-            + (d.kostnad ? ' (' + d.kostnad + ')' : ''),
-        }));
-      })
-      .catch(() => this.setState({ aiInnholdJobber: '',
-                                   aiInnholdSvar: 'Fikk ikke kontakt med serveren.' }));
-  }
-
-  /** Soknadene om frys, slik verkstedet ser dem. */
-  hentFrysAdmin() {
-    if (!this.erPublisert() || this._frysAdmHentes) return;
-    this._frysAdmHentes = true;
-    fetch('/api/admin/frys.php', { credentials: 'same-origin', cache: 'no-store' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => {
-        this._frysAdmHentes = false;
-        // Er migrasjonen ikke kjort, svarer serveren med feil. Da staar
-        // seksjonen borte — ikke halvt tegnet.
-        this.setState({ frysAdmin: (d && d.soknader) || [] });
-      })
-      .catch(() => { this._frysAdmHentes = false; });
-  }
-
-  /** Godkjenner, avslaar eller avslutter en frys. */
-  frysAdminKall(kropp) {
-    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
-    if (this._frysAdmLagrer) return;
-    this._frysAdmLagrer = true;
-    fetch('/api/admin/frys.php', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(kropp),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => {
-        this._frysAdmLagrer = false;
-        this.setState({
-          kvittering: (ok && d && d.ok) ? 'Lagret' : 'Gikk ikke',
-          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
-          frysAdmSvar: '',
-        });
-        this._frysAdmHentes = false;
-        this.hentFrysAdmin();
-        // Statusen paa medlemmet endret seg. Lista maa hentes paa nytt,
-        // ellers staar noen som «aktiv» rett etter at de ble fryst.
-        this._adminHentes = false;
-        this.hentAdmin();
-      })
-      .catch(() => { this._frysAdmLagrer = false;
-                     this.setState({ kvittering: 'Gikk ikke',
-                                     kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }); });
-  }
-
-  /** Mine frys-soknader. Bare paa Min side, og bare naar man er logget inn. */
-  hentFrys() {
-    if (!this.erPublisert() || this._frysHentes) return;
-    this._frysHentes = true;
-    fetch('/api/medlem-frys.php', { credentials: 'same-origin', cache: 'no-store' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => {
-        this._frysHentes = false;
-        // Er funksjonen slaatt av, eller basen ikke oppdatert, svarer
-        // serveren med feil. Da staar kortet tomt — ikke halvt.
-        this.setState({ frys: d || { av: true } });
-      })
-      .catch(() => { this._frysHentes = false; });
-  }
-
-  /**
-   * Soker om frys, eller trekker soknaden.
-   *
-   * Svaret fra serveren staar i kortet. Gaar det galt, staar grunnen der —
-   * «velg begge datoene», «du har alt en soknad som venter» — og ikke bare
-   * «gikk ikke».
-   */
-  frysKall(kropp) {
-    if (!this.erPublisert()) {
-      this.setState({ frysBeskjed: 'Krever den ekte siden' });
-      return;
-    }
-    if (this._frysLagrer) return;
-    this._frysLagrer = true;
-    this.setState({ frysBeskjed: 'Sender …' });
-
-    fetch('/api/medlem-frys.php', {
-      method: 'POST', credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(kropp),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => {
-        this._frysLagrer = false;
-        if (!ok || !d || !d.ok) {
-          this.setState({ frysBeskjed: (d && d.feil) || 'Gikk ikke. Prøv igjen.' });
-          return;
-        }
-        this.setState({ frysBeskjed: '', frysFra: '', frysTil: '', frysGrunn: '',
-                        frys: null, kvittering: 'Sendt', kvitteringDetalj: d.beskjed || '' });
-        this._frysHentes = false;
-        this.hentFrys();
-      })
-      .catch(() => { this._frysLagrer = false;
-                     this.setState({ frysBeskjed: 'Fikk ikke kontakt med serveren.' }); });
   }
 
   aiSporr(sporsmal) {
@@ -15944,6 +15834,9 @@ class Component extends DCLogic {
     // trykket paa en av prikkene, slutter den aa bytte av seg selv — da har
     // de valgt. Ligger musa paa feltet, staar det stille saa lenge.
     const kanBytte = () => this.state.side === 'forside' && !document.hidden && !this.roligBevegelse();
+
+    // De to faste hentes med det samme; kundene naar lista er kommet.
+    this.forhandslastRotasjon();
 
     this._rotasjon = setInterval(() => {
       if (kanBytte() && !this._pauserot && !this._svevrot) this.tonBytt('rot', this.rotasjonene().length);
@@ -17965,6 +17858,9 @@ class Component extends DCLogic {
     this.setState({
       kBilder: (raa.bilder && raa.bilder.length ? raa.bilder : (raa.bilde ? [raa.bilde] : [])).slice(0, 3),
       kRed: true, kSteg: 1, kIndeks: i,
+      // Id-en til den raa raden, saa skjemaet kan si hva det gjor med
+      // adressen og med datoene som alt ligger ute.
+      kRaaId: raa.id || 0,
       kNavn: k.navn, kType: k.type,
       // Kategorien staar paa den raa raden. Uten denne mistet kurset
       // kategorien sin i det du rettet prisen.
@@ -19598,7 +19494,11 @@ class Component extends DCLogic {
       this._referanserHentes = true;
       fetch('/api/referanser.php', { credentials: 'same-origin' })
         .then(r => r.json())
-        .then(d => { if (d && d.kunder) this.setState({ referanser: d.kunder }); })
+        .then(d => {
+          if (d && d.kunder) {
+            this.setState({ referanser: d.kunder }, () => this.forhandslastRotasjon());
+          }
+        })
         .catch(() => {});
     }
     // Aapningstidene i bunnteksten. Hentes én gang, paa de sidene som har
@@ -24410,6 +24310,28 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
+      // Hva som skjer naar et kurs som finnes faar nytt navn.
+      //
+      // Datoene har ikke egne navn — de peker paa kurset — saa ett nytt navn
+      // gjelder alle, ogsaa de som alt ligger ute og de som lages senere.
+      // Adressen foelger ikke med, og det er med vilje: en lenke noen har
+      // delt skal fortsette aa virke.
+      ...(() => {
+        const red = (this.state.kIndeks ?? -1) >= 0;
+        const raa = red
+          ? (this.state.adminKursRaa || []).find(x => x.id === this.state.kRaaId) || {}
+          : {};
+        const antall = red ? (raa.datoerFramover ?? null) : null;
+        return {
+          kNavnFinnes: red,
+          kNavnFolger: 'Endrer du navnet, gjelder det alle datoer på dette kurset — også de '
+            + (antall === null ? 'som allerede er planlagt' : (antall === 1 ? 'ene som er planlagt' : antall + ' som er planlagt'))
+            + ', og alle du lager senere. Det står også på kursbevis som skrives ut etterpå.',
+          kHarAdresse: !!raa.slug,
+          kAdresseTekst: 'Adressen /kurs/' + (raa.slug || '') + ' står som den er, '
+            + 'så lenker som er delt fortsatt virker.',
+        };
+      })(),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
       kBeskrivelse: this.state.kBeskrivelse ?? '', settKBeskrivelse: (e) => this.setState({ kBeskrivelse: e.target.value }),
@@ -25463,7 +25385,6 @@ class Component extends DCLogic {
         pHeroBrodtekst: this.innh('Paint on Pots/0/Brødtekst'),
         pHeroUndertekst: this.innh('Paint on Pots/0/Undertekst'),
         pHeroKnapp1: this.innh('Paint on Pots/0/Knapp 1'),
-        pHeroKnapp2: this.innh('Paint on Pots/0/Knapp 2'),
         // Om Paint on Pots
         pOmKicker: this.innh('Paint on Pots/1/Kicker'),
         pOmOverskrift: this.innh('Paint on Pots/1/Overskrift'),
@@ -27006,15 +26927,6 @@ class Component extends DCLogic {
           synligTone: synlig === 'Publisert' ? 'success' : (synlig === 'Vises ikke nå' ? 'warning' : 'neutral'),
           synligKnapp: synlig === 'Publisert' ? 'Skjul' : 'Vis',
           toggleSynlig: () => this.setState(s => ({ innholdSynlig: Object.assign({}, s.innholdSynlig, { [nokkel]: synlig === 'Publisert' ? 'Skjult' : 'Publisert' }) })),
-          // Seksjoner som kan faa et tekstforslag fra AI-en. «ai» staar paa
-          // seksjonen i SIDEINNHOLD, og er navnet paa handlingen i
-          // api/admin/ai.php.
-          kanAi: !!b.ai,
-          aiKnapp: this.state.aiInnholdJobber === nokkel ? 'Skriver …' : 'Foreslå tekst',
-          aiHjelp: this.state.aiInnholdSvar && this.state.aiInnholdFor === nokkel
-            ? this.state.aiInnholdSvar
-            : 'AI-en leser kursene som ligger ute og skriver et forslag i feltene under. Ingenting lagres før du trykker Lagre.',
-          aiForeslaa: () => this.foreslaaInnholdstekst(b.ai, nokkel),
           startRediger: () => this.setState({ innholdRed: nokkel, innholdKladd: {} }),
           avbryt: () => this.setState({ innholdRed: null, innholdKladd: {} }),
           lagre: () => {
@@ -28290,20 +28202,8 @@ class Component extends DCLogic {
       // sida av seg selv, med den teksten som er skrevet inn.
       erKursoversikt: side === 'kursoversikt',
       goKursoversikt: this.go('kursoversikt'),
-      keLesMerKicker: this.innh('Kurs og events/6/Kicker'),
-      keLesMerTittel: this.innh('Kurs og events/6/Overskrift'),
-      keLesMerTekst: this.innh('Kurs og events/6/Tekst'),
-      keLesMerKnapp: this.innh('Kurs og events/6/Knapp'),
-      // Tre stikkord om hva som staar paa sida det lenkes til, skilt med
-      // komma i feltet. Tomt felt gir ingen liste — da staar feltet som for.
-      ...(() => {
-        const raa = String(this.innh('Kurs og events/6/Stikkord') || '')
-          .split(',').map(x => x.trim()).filter(Boolean).slice(0, 4);
-        return {
-          keLesMerHarPunkter: raa.length > 0,
-          keLesMerPunkter: raa.map(navn => ({ navn: '· ' + navn })),
-        };
-      })(),
+      // «Les mer om vaare kurs»-feltet er tatt bort fra kurssida. Verdiene
+      // det brukte laa her.
       ...(side !== 'kursoversikt' ? {} : (() => {
         const kort = this.kursKort()
           // Drop-in er ikke et kurs man leser om og melder seg paa; det er
@@ -28457,6 +28357,10 @@ class Component extends DCLogic {
 
         const MERKE = { artikkel: 'Artikkel', nyhetsbrev: 'Nyhetsbrev', sosialt: 'Sosiale medier',
                         seo: 'SEO', kursboost: 'Kursboost', medlemsbrev: 'Medlemsbrev' };
+        // Disse to blir til en artikkel naar de godkjennes, og kan derfor
+        // legges ut med det samme. Resten gaar andre veier: et nyhetsbrev
+        // sendes fra Beskjeder, et innlegg limes inn i kanalen selv.
+        const BLIR_ARTIKKEL = ['artikkel', 'seo'];
 
         const bankFilter = this.state.mkBankFilter || 'Alle';
         const bankListe = artikler.filter(a => bankFilter === 'Alle' || (a.kategori || 'Uten kategori') === bankFilter);
@@ -28523,24 +28427,44 @@ class Component extends DCLogic {
           ...(() => {
             const g = d.godkjente || [];
             const TIL_BREV = ['nyhetsbrev', 'medlemsbrev'];
+            // Artiklene i kunnskapsbanken, slik vi kan se om den som ble
+            // laget av utkastet alt ligger ute.
+            const artikler = d.artikler || [];
             return {
               mkHarGodkjente: g.length > 0,
-              mkGodkjente: g.map(u => ({
-                tittel: u.tittel,
-                merke: MERKE[u.type] || u.type,
-                detalj: (u.kontekst ? u.kontekst + ' · ' : '')
-                      + (TIL_BREV.includes(u.type) ? 'sendes fra Beskjeder'
-                         : u.resultat_id ? 'ligger i kunnskapsbanken'
-                         : 'kopieres inn i kanalen selv'),
-                brukKnapp: TIL_BREV.includes(u.type) ? 'Send den'
-                         : u.resultat_id ? 'Se den' : 'Kopier teksten',
-                les: () => this.mkLes(u.id),
-                bruk: () => {
-                  if (TIL_BREV.includes(u.type)) { this.brukUtkastSomBeskjed(u.id); return; }
-                  if (u.resultat_id) { this.setState({ mkFane: 'bank' }); return; }
-                  this.mkLes(u.id);
-                },
-              })),
+              mkGodkjente: g.map(u => {
+                const art = u.resultat_id
+                  ? artikler.find(a => Number(a.id) === Number(u.resultat_id)) : null;
+                const ute = !!art && art.status === 'publisert';
+                return {
+                  tittel: u.tittel,
+                  merke: MERKE[u.type] || u.type,
+                  detalj: (u.kontekst ? u.kontekst + ' · ' : '')
+                        + (TIL_BREV.includes(u.type) ? 'sendes fra Beskjeder'
+                           : art ? (ute ? 'ligger ute på nettsiden' : 'kladd i kunnskapsbanken')
+                           : 'kopieres inn i kanalen selv'),
+                  // Er den laget, men ikke ute, skal den kunne legges ut
+                  // herfra — ikke ved aa bytte skjerm for én knapp til.
+                  kanPublisere: !!art && !ute,
+                  publiser: () => {
+                    if (!window.confirm('Publisere «' + u.tittel + '» på nettsiden nå?')) return;
+                    this.aiKall({ handling: 'publiser', id: u.id });
+                  },
+                  brukKnapp: TIL_BREV.includes(u.type) ? 'Send den'
+                           : art ? 'Se den' : 'Kopier teksten',
+                  les: () => this.mkLes(u.id),
+                  bruk: () => {
+                    if (TIL_BREV.includes(u.type)) { this.brukUtkastSomBeskjed(u.id); return; }
+                    if (art) { this.setState({ mkFane: 'bank' }); return; }
+                    this.mkLes(u.id);
+                  },
+                  slett: () => {
+                    if (!window.confirm('Slette «' + u.tittel + '» fra lista?'
+                        + (art ? '\n\nArtikkelen i kunnskapsbanken blir stående — den slettes der.' : ''))) return;
+                    this.aiKall({ handling: 'slett', id: u.id });
+                  },
+                };
+              }),
             };
           })(),
           mkHarUtkast: utkast.length > 0,
@@ -28563,8 +28487,20 @@ class Component extends DCLogic {
               backgroundPosition: this.fokusFor(u.bilde || ''),
             },
             les: () => this.mkLes(u.id),
+            // Det som blir en artikkel kan gaa rett ut. Et nyhetsbrev og et
+            // innlegg kan ikke publiseres av oss — brevet sendes fra
+            // Beskjeder, innlegget limes inn i kanalen.
+            kanPublisere: BLIR_ARTIKKEL.includes(u.type),
+            publiser: () => {
+              if (!window.confirm('Publisere «' + u.tittel + '» på nettsiden nå?')) return;
+              this.aiKall({ handling: 'godkjenn', id: u.id, publiser: true });
+            },
+            godkjennTekst: BLIR_ARTIKKEL.includes(u.type) ? 'Lagre som kladd' : 'Ta i bruk',
             godkjenn: () => this.aiKall({ handling: 'godkjenn', id: u.id }),
-            forkast: () => this.aiKall({ handling: 'forkast', id: u.id }),
+            slett: () => {
+              if (!window.confirm('Slette utkastet «' + u.tittel + '»?\n\nDet kan ikke hentes tilbake.')) return;
+              this.aiKall({ handling: 'slett', id: u.id });
+            },
           })),
 
           // ── Kursmarkedsforing ──

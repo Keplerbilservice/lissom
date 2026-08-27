@@ -93,6 +93,44 @@ $valgtBilde = static function (array $kropp): ?string {
     return null;
 };
 
+/**
+ * Legger en artikkel ut paa nettsiden.
+ *
+ * Samme regler som «Publiser» under Kunnskapsbank: en artikkel uten tekst
+ * skal ikke ut, og mangler den adresse, faar den en. Reglene staar ett sted
+ * her og ett sted i api/admin/artikler.php fordi de to skjermene ikke deler
+ * kode fra for — men de sier det samme, og prøvene sjekker begge.
+ */
+$publiser = static function (int $artikkelId): void {
+    $a = DB::en('SELECT id, tittel, slug, innhold FROM articles WHERE id = :i', ['i' => $artikkelId]);
+    if ($a === null) {
+        Svar::feil('Fant ikke artikkelen.');
+    }
+    if (trim((string) $a['innhold']) === '') {
+        Svar::feil('Artikkelen har ingen tekst ennå.');
+    }
+    $felter = ['status' => 'publisert'];
+    if (trim((string) $a['slug']) === '') {
+        $slug = mb_strtolower((string) $a['tittel']);
+        $slug = strtr($slug, ['æ' => 'ae', 'ø' => 'o', 'å' => 'a']);
+        $slug = trim(preg_replace('/[^a-z0-9]+/', '-', $slug) ?? '', '-') ?: 'artikkel';
+        $grunn = $slug;
+        $n = 2;
+        while ((int) DB::verdi('SELECT COUNT(*) FROM articles WHERE slug = :s AND id <> :i',
+                               ['s' => $slug, 'i' => $artikkelId]) > 0) {
+            $slug = $grunn . '-' . $n++;
+        }
+        $felter['slug'] = $slug;
+    }
+    if (DB::harKolonne('articles', 'planlagt_til')) {
+        $felter['publisert_at'] = gmdate('Y-m-d H:i:s');
+        $felter['publisert_av'] = (int) (Sesjon::medlem()['id'] ?? 0) ?: null;
+        $felter['planlagt_til'] = null;
+    }
+    DB::oppdater('articles', $felter, ['id' => $artikkelId]);
+    revider('artikkel_status', 'article', $artikkelId, ['status' => 'publisert']);
+};
+
 /** Henter et kurs med datoene sine, til de handlingene som gjelder ett kurs. */
 $kursMedDatoer = static function (int $kursId): array {
     $k = DB::en('SELECT * FROM courses WHERE id = :i', ['i' => $kursId]);
@@ -416,65 +454,6 @@ switch ($handling) {
         );
         Svar::ok(['tekst' => trim($r['tekst']), 'kostnad' => Booking::kroner($r['kostnadOre'])]);
 
-    // ── Teksten paa «Les mer om vaare kurs» ─────────────────────────────
-    //
-    // Svarer med teksten selv, som kursbeskrivelsen over: den skal rett inn i
-    // feltene under Nettsiden → Innhold, der eieren leser, retter og lagrer.
-    // Feltet er hennes — AI-en foreslaar bare.
-    case 'lesmertekst':
-        // Kursene som faktisk ligger ute. Uten dem blir det generisk prosa;
-        // med dem staar det noe som stemmer med det verkstedet tilbyr.
-        $kurs = DB::alle(
-            "SELECT tittel, tema, type, varighet, beskrivelse
-               FROM courses
-              WHERE status = 'publisert'
-           ORDER BY (type = 'kurs') DESC, tittel
-              LIMIT 12"
-        );
-        $fakta = "Kursene Lissom har ute naa:\n\n";
-        foreach ($kurs as $k) {
-            $fakta .= '### ' . $k['tittel']
-                . ($k['tema'] ? ' (' . $k['tema'] . ')' : '')
-                . (trim((string) ($k['varighet'] ?? '')) !== '' ? ' — ' . $k['varighet'] : '')
-                . "\n" . (trim((string) ($k['beskrivelse'] ?? '')) ?: '(ingen beskrivelse lagt inn)') . "\n\n";
-        }
-        if ($kurs === []) {
-            $fakta .= "(ingen kurs ligger ute ennaa — hold deg til fakta om verkstedet over)\n\n";
-        }
-
-        $r = AI::sporJson(
-            $rolle(
-                "Du skriver det korte feltet nederst paa kurssida som sender leseren "
-                . "videre til sida der hvert kurs staar beskrevet. Det staar under "
-                . "kurskortene, og snakker til den som har sett datoene men ikke vet "
-                . "hva kurset gaar ut paa.\n\n"
-                . "Svar med JSON: {\"overskrift\": \"...\", \"tekst\": \"...\", "
-                . "\"knapp\": \"...\", \"punkter\": [\"...\", \"...\", \"...\"]}\n"
-                . "overskrift er én linje, hoyst syv ord, og skal vaere et spoersmaal eller "
-                . "en paastand leseren kjenner seg igjen i.\n"
-                . "tekst er to til fire setninger, ett avsnitt, ingen punktliste.\n"
-                . "knapp er teksten paa knappen, hoyst fem ord, og skal si hvor den fører.\n"
-                . "punkter er noeyaktig tre korte stikkord om hva som staar paa sida "
-                . "det lenkes til — hoyst fire ord hver.\n"
-                . "Finn aldri paa priser, datoer eller kurs som ikke staar under."
-            ) . "\n\n" . $fakta,
-            'Skriv feltet.',
-            'lesmertekst',
-            1600
-        );
-        $punkter = array_values(array_filter(array_map(
-            static fn($x) => mb_substr(trim((string) $x), 0, 40),
-            is_array($r['punkter'] ?? null) ? $r['punkter'] : []
-        )));
-        Svar::ok([
-            'overskrift' => trim((string) ($r['overskrift'] ?? '')),
-            'tekst'      => trim((string) ($r['tekst'] ?? '')),
-            'knapp'      => trim((string) ($r['knapp'] ?? '')),
-            'punkter'    => array_slice($punkter, 0, 3),
-            // sporJson gir bare JSON-en tilbake; kostnaden ligger i loggen.
-            'kostnad'    => Booking::kroner(AI::sisteKostnad()),
-        ]);
-
     // ── Autopiloten: ukas forslag ───────────────────────────────────────
     case 'autopilot':
         $tomme = DB::alle(
@@ -513,6 +492,11 @@ switch ($handling) {
         $lagre('seo', 'Autopilot — ukas forslag', '', $r, 'autopilot', AI::sisteKostnad());
 
     // ── Ta i bruk, eller legg bort ──────────────────────────────────────
+    //
+    // «Publiser naa» og «Ta i bruk» er den samme handlingen, med og uten det
+    // siste steget. For maatte en artikkel godkjennes paa tavla, letes opp i
+    // kunnskapsbanken og publiseres derfra — tre klikk og to skjermer for aa
+    // legge ut en tekst man alt hadde lest og sagt ja til.
     case 'godkjenn':
         $id = (int) ($kropp['id'] ?? 0);
         $u = DB::en('SELECT * FROM ai_utkast WHERE id = :i', ['i' => $id]);
@@ -562,13 +546,21 @@ switch ($handling) {
         DB::oppdater('ai_utkast', ['status' => 'godkjent', 'resultat_id' => $resultat], ['id' => $id]);
         revider('ai_godkjent', 'ai', $id, ['type' => $u['type']]);
 
+        // Bad hun om at den skulle ut med det samme, gaar den ut naa.
+        $utNaa = !empty($kropp['publiser']) && $resultat !== null;
+        if ($utNaa) {
+            $publiser($resultat);
+        }
+
         // «Utkastet er godkjent» og ikke et ord om hvor det ble av. Et
         // nyhetsbrev skal sendes fra Beskjeder, og da maa teksten foelge med
         // dit — ellers maa den skrives opp igjen for haand.
         $erBrev = in_array($u['type'], ['nyhetsbrev', 'medlemsbrev'], true);
         Svar::ok([
             'beskjed' => $resultat !== null
-                ? 'Lagt i kunnskapsbanken som kladd. Publiser den når du er klar.'
+                ? ($utNaa
+                    ? 'Publisert. Artikkelen ligger ute på nettsiden nå.'
+                    : 'Lagt i kunnskapsbanken som kladd. Publiser den når du er klar.')
                 : ($erBrev
                     ? 'Åpnet under Beskjeder, med teksten klar. Velg mottakere og send.'
                     : 'Godkjent. Den ligger under «Godkjent» på tavla til du har brukt den.'),
@@ -579,6 +571,35 @@ switch ($handling) {
             'tekst'      => $resultat === null ? (string) $u['tekst'] : '',
             'tilBeskjed' => $erBrev,
         ]);
+
+    // Publiserer en artikkel som alt er godkjent, uten aa gaa veien om
+    // kunnskapsbanken. Samme steg som «Publiser naa», bare ett kort senere.
+    case 'publiser':
+        $id = (int) ($kropp['id'] ?? 0);
+        $u = DB::en('SELECT id, tittel, type, resultat_id FROM ai_utkast WHERE id = :i', ['i' => $id]);
+        if ($u === null) {
+            Svar::feil('Fant ikke utkastet.');
+        }
+        if ((int) ($u['resultat_id'] ?? 0) === 0) {
+            Svar::feil('Dette utkastet ble ikke til en artikkel. Et nyhetsbrev sendes fra '
+                     . 'Beskjeder, og et innlegg limes inn i kanalen selv.');
+        }
+        $publiser((int) $u['resultat_id']);
+        revider('ai_publisert', 'ai', $id, ['artikkel' => (int) $u['resultat_id']]);
+        Svar::ok(['beskjed' => 'Publisert. Artikkelen ligger ute på nettsiden nå.',
+                  'artikkelId' => (int) $u['resultat_id']]);
+
+    // Sletter utkastet for godt. «Legg bort» skjuler det; dette fjerner
+    // raden. En artikkel som alt er laget av utkastet blir staaende — den er
+    // en egen ting, og slettes under Kunnskapsbank.
+    case 'slett':
+        $id = (int) ($kropp['id'] ?? 0);
+        if (DB::en('SELECT id FROM ai_utkast WHERE id = :i', ['i' => $id]) === null) {
+            Svar::feil('Fant ikke utkastet.');
+        }
+        DB::kjor('DELETE FROM ai_utkast WHERE id = :i', ['i' => $id]);
+        revider('ai_slettet', 'ai', $id, []);
+        Svar::ok(['beskjed' => 'Utkastet er slettet.']);
 
     case 'forkast':
         $id = (int) ($kropp['id'] ?? 0);

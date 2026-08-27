@@ -32,6 +32,9 @@ $tekstFelt = DB::harKolonne('courses', 'nivaa_tekst')
     ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
 // «Gjenstanden betales i verkstedet». Kom med migrasjon 074.
 $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
+// «Datoene lages av aapningstidene» — Paint on Pots og drop-in. Kom med
+// migrasjon 079. Foer laa den inni gjenstand_i_kassa, som gjorde to jobber.
+$apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
 
 // ── Billigste gjenstanden i butikken ────────────────────────────────────
 //
@@ -51,7 +54,7 @@ $gjenstandFra = DB::harKolonne('courses', 'gjenstand_i_kassa')
     : 0;
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -138,6 +141,26 @@ foreach ($kurs as $k) {
                 'prisFra'         => $fra > 0 ? Booking::kroner($fra) : 'Gratis',
             ];
         })(),
+        // Kurs der datoene lages av aapningstidene: Paint on Pots og drop-in.
+        //
+        // Bestillingen viser dager forst og klokkeslett etterpaa, og maa kunne
+        // si hvor lenge man har plassen. Lengden staar ett sted — Apent — og
+        // hentes derfra, saa teksten under knappene ikke kan si noe annet enn
+        // det tidene faktisk er klippet i.
+        ...(static function () use ($k): array {
+            if (!($k['folger_apningstid'] ?? 0)) {
+                return ['folgerApningstid' => false];
+            }
+            $min = Apent::PLASS_MINUTTER;
+            $ord = [30 => 'en halvtime', 45 => 'tre kvarter', 60 => 'én time',
+                    90 => 'halvannen time', 120 => 'to timer', 150 => 'to og en halv time',
+                    180 => 'tre timer', 240 => 'fire timer'];
+            return [
+                'folgerApningstid' => true,
+                'plassMinutter'    => $min,
+                'plassVarighet'    => $ord[$min] ?? ($min . ' minutter'),
+            ];
+        })(),
         // Antall plasser kurset har. Nettsida skrev det som fast tekst —
         // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
         // sto rett over hverandre og var uenige. Naa kommer begge herfra.
@@ -187,7 +210,8 @@ foreach ($kurs as $k) {
             // et vindu, ikke et klokkeslett. «Tirsdag 1. september, 10:00» ser
             // ut som at kurset starter da og at du kommer for sent 10:05.
             // Staar hele spennet, ser man at doeren er aapen hele tida.
-            'dato'     => ((int) ($k['gjenstand_i_kassa'] ?? 0) === 1 && !empty($o['slutt_tid']))
+            'dato'     => ((int) ($k['folger_apningstid'] ?? $k['gjenstand_i_kassa'] ?? 0) === 1
+                            && !empty($o['slutt_tid']))
                 ? Booking::norskSpenn((string) $o['start_tid'], (string) $o['slutt_tid'])
                 : Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
             // Dagen for seg, og klokkeslettet for seg.

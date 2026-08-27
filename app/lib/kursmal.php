@@ -106,9 +106,10 @@ final class Kursmal
             'Paint on pots' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
                 'laererKort'      => 'Maling og dekor',
-                // Ikke et klokkeslett: du sitter saa lenge du vil innenfor
-                // aapningstida. De fleste bruker et par timer.
-                'varighetTekst'   => 'Du bestemmer selv — de fleste bruker et par timer',
+                // Plassen varer halvannen time fra tidspunktet man velger —
+                // se Apent::PLASS_MINUTTER. Lissom endret den fra to timer
+                // 27. august.
+                'varighetTekst'   => 'Halvannen time fra tidspunktet du velger',
                 // «Leire, verktoy, glasur og brenning er inkludert» sto her
                 // som paa alle andre kurs. Paa Paint on Pots faar man ingen
                 // leire — man maler ferdig brent keramikk.
@@ -137,7 +138,7 @@ final class Kursmal
             'Drop-in' => [
                 'nivaaTekst'      => 'Krever kurs hos oss, eller et medlem med deg',
                 'laererKort'      => 'Du jobber selvstendig',
-                'kortBeskrivelse' => 'To timer i verkstedet der du jobber med dine egne prosjekter.',
+                'kortBeskrivelse' => 'Halvannen time i verkstedet der du jobber med dine egne prosjekter.',
                 'laerer'          => 'Du jobber selvstendig. Vi hjelper når du trenger det.',
                 'lagerDu'         => 'Det du selv vil lage.',
                 'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg. '

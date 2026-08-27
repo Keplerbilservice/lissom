@@ -21,8 +21,8 @@
  * teller ikke — den kan ikke si noe om naar det er aapent.
  *
  * Og: en oekt som selv er laget AV en aapningstid teller ikke. Paint on Pots
- * legges ut paa de aapne vinduene; talte de med, ville verkstedet holdt seg
- * aapent av sin egen skygge.
+ * og drop-in legges ut paa de aapne vinduene; talte de med, ville verkstedet
+ * holdt seg aapent av sin egen skygge.
  */
 
 declare(strict_types=1);
@@ -32,18 +32,30 @@ final class Apent
     /** Hvor mange dager fram vi svarer for. */
     public const DAGER_FRAM = 14;
 
-    /** Hvor lenge en Paint on Pots-plass varer. Lissom: «maks 2 timer». */
-    public const PLASS_MINUTTER = 120;
+    /**
+     * Hvor lenge én plass varer.
+     *
+     * Lissom 27. august: «endre drop in og paint on pots fra 2 timer, til
+     * 1,5 timer». Gjelder begge — de deler den samme bestillingen.
+     *
+     * Ikke aa forveksle med drop-in-tidene 10-13 under Kurs og medlemskap →
+     * Drop-in. De sier naar doeren staar aapen, ikke hvor lenge man sitter.
+     */
+    public const PLASS_MINUTTER = 90;
 
     /**
      * Hoyst saa mange plasser per dag.
      *
      * Bookingen viser tre dager, og tidspunktene under den dagen man velger.
-     * Da skal det vaere noe aa velge mellom: et vindu paa ti timer gir fem
-     * tidspunkt à to timer. Kortet paa sida er ett uansett — dagene og
-     * tidene staar inne i bestillingen.
+     * Kortet paa sida er ett uansett — dagene og tidene staar inne i
+     * bestillingen — saa taket er ikke for aa spare plass paa skjermen.
+     *
+     * Aatte plasser à halvannen time er tolv timer. Det er lengre enn en dag
+     * i verkstedet noen gang varer, og da er det aapningstida som setter
+     * grensa, ikke dette tallet. Sto det lavere, ville kvelden falt bort paa
+     * en lang dag.
      */
-    public const PLASSER_PER_DAG = 5;
+    public const PLASSER_PER_DAG = 8;
 
     /**
      * Dagene med aapningstid, og hvilke oekter tallene er regnet av.
@@ -288,15 +300,25 @@ final class Apent
     }
 
     /**
-     * Paint on Pots og lignende, lagt ut paa de aapne tidene.
+     * Paint on Pots, drop-in og lignende, lagt ut paa de aapne tidene.
      *
      * Lissom ba om at Paint on Pots skal kunne bookes naar hun allerede er
      * der: naar det gaar et planlagt kurs, eller naar hun har stemplet inn.
-     * Da settes ikke datoene opp for haand — de folger doeren.
+     * Den 27. august kom drop-in med paa det samme — samme bestilling, med
+     * datoer og tider, og tilgjengeligheten folger kursene og innstemplinga.
      *
-     * Én oekt per aapen dag, med dagens aapningstid. Er verkstedet stemplet
-     * inn paa en dag det ellers ikke skjer noe, settes det opp en oekt fra
-     * naa og tre timer fram — for da staar doeren aapen naa.
+     * Hvilke kurs det gjelder staar i courses.folger_apningstid. Foer sto det
+     * i gjenstand_i_kassa, som gjorde to jobber paa én gang: «gjenstanden
+     * betales i verkstedet» OG «datoene lages av aapningstidene». Drop-in
+     * betales paa nett som for, og trengte bare den andre halvdelen.
+     *
+     * Plassene klippes ut av den aapne tida, halvannen time om gangen —
+     * ogsaa timene mellom to kurs, for da er hun der. Er verkstedet stemplet
+     * inn paa en dag det ellers ikke skjer noe, aapnes det tre timer fram.
+     *
+     * Kursets egne oekter gaar foran: gaar drop-in 10-13 paa tirsdag fra
+     * ukereglene, lages det ingen plass oppi den. Ellers ville den samme
+     * timen ligget to ganger i bestillingen, med hvert sitt plasstall.
      *
      * Ryddingen: en generert oekt som ingen har booket, og som ikke lenger
      * svarer til en aapen dag, tas bort igjen. En oekt lagt inn for haand
@@ -306,14 +328,22 @@ final class Apent
      */
     public static function leggUtPaaApneTider(?DateTimeImmutable $naaInn = null): array
     {
-        if (!DB::harKolonne('course_sessions', 'fra_apningstid')
-            || !DB::harKolonne('courses', 'gjenstand_i_kassa')) {
+        if (!DB::harKolonne('course_sessions', 'fra_apningstid')) {
+            return ['laget' => 0, 'fjernet' => 0];
+        }
+
+        // folger_apningstid kom med migrasjon 079. Er den ikke kjoert, gjelder
+        // det gamle feltet — da staar Paint on Pots ute som for.
+        $felt = DB::harKolonne('courses', 'folger_apningstid')
+            ? 'folger_apningstid'
+            : (DB::harKolonne('courses', 'gjenstand_i_kassa') ? 'gjenstand_i_kassa' : null);
+        if ($felt === null) {
             return ['laget' => 0, 'fjernet' => 0];
         }
 
         $kurs = DB::alle(
             "SELECT id, kapasitet FROM courses
-              WHERE gjenstand_i_kassa = 1 AND status = 'publisert'"
+              WHERE {$felt} = 1 AND status = 'publisert'"
         );
         if ($kurs === []) {
             return ['laget' => 0, 'fjernet' => 0];
@@ -337,37 +367,24 @@ final class Apent
 
         // ── Vinduene doeren staar aapen i ──────────────────────────────────
         //
-        // Ikke hele dagen fra forste til siste oekt: mellom drop-in som
-        // slutter 13 og en samling som begynner 20 staar huset tomt, og da
-        // skal ingen kunne booke seg inn klokka 15. Vi merger oektene som
-        // henger sammen, og faar de periodene doeren faktisk er aapen.
+        // Hele dagen, fra det forste begynner til det siste slutter. Det er
+        // det samme spennet som staar i bunnteksten paa nettsiden.
+        //
+        // Timene mellom to kurs teller med. Lissom 27. august: «husk tiden
+        // som er mellom kurs ogsaa skal vaere tilgjengelig aa booke» — gaar
+        // det et kurs 10-13 og et til 16-19, er hun der hele dagen, og da
+        // skal noen kunne sette seg ned klokka 14.
+        //
+        // Her ble hullet stengt en periode. Det var feil vei: det gjorde en
+        // dag hun uansett er i huset mindre bookbar enn en dag hun kommer
+        // innom en time.
         $alt = self::dager();
         $vinduer = [];
         foreach ($alt['dager'] as $d) {
-            $dato = (string) $d['dato'];
             if ($d['stengt'] || $d['fra'] === null || $d['til'] === null) {
                 continue;
             }
-            $spenn = [];
-            foreach ($alt['kilder'][$dato] ?? [] as $o) {
-                $spenn[] = ['fra' => (string) $o['fra'], 'til' => (string) $o['til']];
-            }
-            // En dag satt for haand har ingen oekter. Da er dagen én periode.
-            if ($spenn === []) {
-                $spenn[] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
-            }
-            usort($spenn, static fn(array $a, array $b): int => strcmp($a['fra'], $b['fra']));
-
-            $slaatt = [];
-            foreach ($spenn as $s2) {
-                $siste = $slaatt === [] ? null : array_key_last($slaatt);
-                if ($siste !== null && $s2['fra'] <= $slaatt[$siste]['til']) {
-                    $slaatt[$siste]['til'] = max($slaatt[$siste]['til'], $s2['til']);
-                    continue;
-                }
-                $slaatt[] = $s2;
-            }
-            $vinduer[$dato] = array_values($slaatt);
+            $vinduer[(string) $d['dato']] = [['fra' => (string) $d['fra'], 'til' => (string) $d['til']]];
         }
 
         // Stemplet inn: doeren staar aapen naa, uansett hva kalenderen sier.
@@ -382,66 +399,108 @@ final class Apent
             }
             if ($til > $fra) {
                 $vinduer[$idag][] = ['fra' => $fra->format('H:i'), 'til' => $til->format('H:i')];
-            }
-        }
 
-        // ── Hva som skal staa ute ──────────────────────────────────────────
-        //
-        // Ett vindu per dag. Har vinduet begynt, men ikke sluttet, staar
-        // doeren fortsatt aapen — da skal plassen begynne naa, ikke i
-        // formiddag. Ellers ville ingen faatt booket i dag etter at dagens
-        // forste kurs hadde begynt.
-        // Paint on Pots varer inntil to timer. Vi klipper hver aapen periode i
-        // to-timers plasser, saa folk har noe aa velge mellom paa en lang dag
-        // — og saa ingen booker et vindu som strekker seg over timer huset
-        // staar tomt.
-        //
-        // Hoyst tre plasser per dag. Fjorten dager à fem plasser blir en vegg
-        // av kort paa sida, og ingen velger mellom sytti ting.
-        $onsket = [];
-        foreach ($vinduer as $dato => $perioder) {
-            $paaDagen = 0;
-            foreach ($perioder as $v) {
-                if ($paaDagen >= self::PLASSER_PER_DAG) {
-                    break;
-                }
-                $start = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
-                $slutt = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
-                // En periode som har begynt staar fortsatt aapen. Da begynner
-                // plassen naa, ikke i formiddag.
-                if ($start <= $naa) {
-                    $start = $nesteKvarter($naa);
-                }
-                while ($start < $slutt && $paaDagen < self::PLASSER_PER_DAG) {
-                    $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
-                    // Hele to timer, eller ingenting.
-                    //
-                    // Her ble resten av vinduet klippet til det som var igjen,
-                    // og en aapen periode 10-13 ga en time 12-13. Kunden velger
-                    // et tidspunkt og har bordet i to timer — da skal det ikke
-                    // ligge en time paa lista som ser ut som de andre.
-                    if ($til > $slutt) {
-                        break;
+                // Henger innstemplinga sammen med dagen fra for, er det én
+                // periode. Er den ikke det — kurs 10-13, stemplet inn 18 —
+                // staar de hver for seg: hun var der om formiddagen og er
+                // der naa, men ikke i mellomtida.
+                usort($vinduer[$idag], static fn(array $a, array $b): int => strcmp($a['fra'], $b['fra']));
+                $slaatt = [];
+                foreach ($vinduer[$idag] as $v2) {
+                    $siste = $slaatt === [] ? null : array_key_last($slaatt);
+                    if ($siste !== null && $v2['fra'] <= $slaatt[$siste]['til']) {
+                        $slaatt[$siste]['til'] = max($slaatt[$siste]['til'], $v2['til']);
+                        continue;
                     }
-                    $onsket[] = [
-                        'dag'   => $dato,
-                        'start' => $start->setTimezone($utc)->format('Y-m-d H:i:s'),
-                        'slutt' => $til->setTimezone($utc)->format('Y-m-d H:i:s'),
-                    ];
-                    $paaDagen++;
-                    $start = $til;
+                    $slaatt[] = $v2;
                 }
+                $vinduer[$idag] = array_values($slaatt);
             }
         }
-        // Nokkel paa starttid: det er den som avgjor om en plass alt staar ute.
-        $onsket = array_column($onsket, null, 'start');
 
         $laget = 0;
         $fjernet = 0;
 
         foreach ($kurs as $k) {
             $kursId = (int) $k['id'];
-            $skalLages = $onsket;
+
+            // Kursets egne oekter, lagt inn for haand eller av ukereglene.
+            // De gaar foran: det lages ingen plass oppi en tid kurset alt
+            // staar med.
+            $egne = [];
+            foreach (DB::alle(
+                'SELECT start_tid, slutt_tid FROM course_sessions
+                  WHERE course_id = :c AND fra_apningstid = 0
+                    AND COALESCE(slutt_tid, start_tid) > UTC_TIMESTAMP()',
+                ['c' => $kursId]
+            ) as $rad) {
+                $s0 = new DateTimeImmutable((string) $rad['start_tid'], $utc);
+                $egne[] = [
+                    'start' => $s0,
+                    'slutt' => $rad['slutt_tid'] !== null
+                        ? new DateTimeImmutable((string) $rad['slutt_tid'], $utc)
+                        : $s0->modify('+' . self::PLASS_MINUTTER . ' minutes'),
+                ];
+            }
+
+            // ── Hva som skal staa ute ──────────────────────────────────────
+            //
+            // Den aapne tida klippes i plasser paa halvannen time, saa folk
+            // har noe aa velge mellom paa en lang dag.
+            //
+            // Hoyst PLASSER_PER_DAG per dag — se konstanten: taket ligger
+            // over den lengste dagen verkstedet har, saa det er aapningstida
+            // som bestemmer, ikke tallet.
+            $skalLages = [];
+            foreach ($vinduer as $dato => $perioder) {
+                $paaDagen = 0;
+                foreach ($perioder as $v) {
+                    if ($paaDagen >= self::PLASSER_PER_DAG) {
+                        break;
+                    }
+                    $start = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
+                    $slutt = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
+                    // En periode som har begynt staar fortsatt aapen. Da
+                    // begynner plassen naa, ikke i formiddag.
+                    if ($start <= $naa) {
+                        $start = $nesteKvarter($naa);
+                    }
+                    while ($start < $slutt && $paaDagen < self::PLASSER_PER_DAG) {
+                        $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+                        // Hele lengden, eller ingenting.
+                        //
+                        // Her ble resten av vinduet klippet til det som var
+                        // igjen, og en aapen periode 10-13 ga en halvtime
+                        // 12:30-13. Kunden velger et tidspunkt og har bordet
+                        // halvannen time — da skal det ikke ligge en halvtime
+                        // paa lista som ser ut som de andre.
+                        if ($til > $slutt) {
+                            break;
+                        }
+                        // Staar kurset alt med en tid som overlapper, er det
+                        // den som gjelder. Ellers laa den samme timen to
+                        // ganger i bestillingen, med hvert sitt plasstall.
+                        $kroken = false;
+                        foreach ($egne as $e) {
+                            if ($start < $e['slutt'] && $e['start'] < $til) {
+                                $kroken = true;
+                                $start = $e['slutt']->setTimezone($oslo);
+                                break;
+                            }
+                        }
+                        if ($kroken) {
+                            continue;
+                        }
+                        $skalLages[$start->setTimezone($utc)->format('Y-m-d H:i:s')] = [
+                            'dag'   => $dato,
+                            'start' => $start->setTimezone($utc)->format('Y-m-d H:i:s'),
+                            'slutt' => $til->setTimezone($utc)->format('Y-m-d H:i:s'),
+                        ];
+                        $paaDagen++;
+                        $start = $til;
+                    }
+                }
+            }
 
             // Det som alt staar ute. Vi ser paa alt som ikke er over: en oekt
             // som gaar naa er like relevant som en i morgen.

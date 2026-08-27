@@ -397,17 +397,20 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
   åpen tid, tas bort igjen — en plass lagt inn for hånd røres aldri), og
   sirkelen (åpningstiden regnes av øktene som står ute, så talte de genererte
   med, ville verkstedet holdt seg åpent av sin egen skygge).
-- **Plassene er to timer**, og de ligger inne i de faktiske øktene — ikke
-  spredt over timene mellom dem. Ingen kan booke klokka 15 når huset er tomt.
-  Inntil fem tidspunkt per dag, så det er noe å velge mellom på en lang dag.
+- **Plassene er halvannen time** (endret fra to 27. august), og de ligger inne
+  i dagens åpningstid — fra det første begynner til det siste slutter. Inntil
+  åtte tidspunkt per dag; taket ligger over den lengste dagen verkstedet har,
+  så det er åpningstiden som bestemmer, ikke tallet.
 - **Ett kort, ikke ett per dato.** Paint on Pots står som ett kort på siden, med
   bildet fra kurslista og «N ledige tider». Datoen velger man inne i
   bestillingen. Fjorten kort med samme bilde og samme tekst, der bare datoen
   skilte dem, var en vegg.
 - **Velg dato, så tidspunkt.** Bestillingen viser **tre dager** om gangen, med
   «Vis N datoer til» under. Trykker du en dag, kommer tidspunktene den dagen —
-  som klokkeslett: 10:00, 16:00, 18:00. Du har plassen i **to timer** fra
-  tidspunktet du velger, og det står under knappene.
+  som klokkeslett: 10:00, 11:30, 13:00. Du har plassen i **halvannen time**
+  fra tidspunktet du velger, og det står under knappene. Lengden står ett sted
+  — `Apent::PLASS_MINUTTER` — og `api/kurs.php` sender den som `plassVarighet`,
+  så teksten under knappene ikke kan si noe annet enn det tidene er klippet i.
 
   Gjelder alle kurs. Har dagen bare ett tidspunkt — som på et vanlig kurs — er
   det valgt med det samme, men det **vises likevel**: trykker man en dag og
@@ -426,15 +429,23 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
   bestilling). Det samme står i «Godt å vite» og «Dette får du med hjem» på
   kurset, og prisen sier allerede «Fra».
 
-- **Hele to timer, eller ingenting.** Er det under to timer igjen av det åpne
-  vinduet, settes det ikke opp et tidspunkt. En åpen periode 10–13 gir ett
-  tidspunkt (10:00), ikke to der det andre bare varer én time.
+- **Hele halvannen time, eller ingenting.** Er det under halvannen time igjen
+  av det åpne vinduet, settes det ikke opp et tidspunkt. En åpen periode 10–13
+  gir to tidspunkt (10:00 og 11:30), ikke tre der det siste bare varer en
+  halvtime.
 
-- **Flere kurs samme dag** blir til perioder, ikke én lang åpning. 3. september
-  i testdataene: Store fat 10–13, drop-in 16–19, Store fat 17–20, Date Night
-  18–21. Det er to perioder — 10–13 og 16–21 — og tidspunktene blir 10:00,
-  16:00 og 18:00. Mellom 13 og 16 står huset tomt, og der settes ingenting opp.
-  (20–21 faller også bort: under to timer.)
+- **Timene mellom to kurs er også bookbare** — bestemt av Lissom 27. august:
+  «husk tiden som er mellom kurs også skal være tilgjengelig å booke». Går det
+  et kurs 10–13 og et til 16–19, er hun der hele dagen, og da skal noen kunne
+  sette seg ned klokka 14. 3. september i testdataene: Store fat 10–13,
+  drop-in 16–19, Store fat 17–20, Date Night 18–21 — dagen er åpen 10–21, og
+  tidspunktene blir 10:00, 11:30, 13:00, 14:30, 16:00, 17:30 og 19:00.
+
+  Hullet var stengt en periode. Det var feil vei: det gjorde en dag hun
+  uansett er i huset mindre bookbar enn en dag hun stikker innom en time.
+  Innstemplingen slås fortsatt sammen med dagen bare når de henger sammen —
+  kurs 10–13 og innstempling 18:00 er to perioder, for i mellomtiden var hun
+  ikke der.
 
 - **Et flerdagerskurs åpner ikke natta.** Økta lagres som én rad fra første dag
   til siste — dreiekurset går 17–20 to kvelder og står som «9. sept 17:00 →
@@ -448,6 +459,30 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
   bookes den kvelden. Se punkt 13.
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
+
+**Drop-in følger det samme — gjort 27. august.** «Samme bestilling med datoer
+og tider, og tilgjengeligheten skal følge kurs og når jeg er innstemplet.»
+
+- Migrasjon 079 gir `courses.folger_apningstid`. Til nå gjorde
+  `gjenstand_i_kassa` to jobber på én gang: «gjenstanden betales i verkstedet»
+  **og** «datoene lages av åpningstidene». Drop-in trengte bare den andre
+  halvdelen — den betales på nett som før — og de to er skilt her.
+- **Drop-in-tidene under Kurs og medlemskap → Drop-in står urørt.** De
+  definerer fortsatt når verkstedet er åpent. Det nye er at drop-in også blir
+  bookbar de dagene et kurs går, eller Lissom er stemplet inn, uten at noen må
+  sette opp en tid.
+- **Ingen dubletter.** Utleggingen hopper over de tidene kurset alt står med
+  (`fra_apningstid = 0`). Går drop-in 10–13 på tirsdag fra ukereglene, lages
+  det ingen plass oppi den — ellers lå den samme timen to ganger i
+  bestillingen, med hvert sitt plasstall. Resten av dagen får plasser som
+  vanlig.
+- **Admin ser forskjell på dem.** På Drop-in-skjermen står de genererte som
+  «Lagt ut av seg selv — kurs eller innstempling», ikke rammet inn i rødt som
+  en tid som «stemmer ikke med åpningstidene over». Sletter man en, sier
+  bekreftelsen at den kommer tilbake så lenge kurset eller innstemplingen står
+  — vil man ha den bort for godt, må dagen stenges under Åpningstider.
+- **Prisen står som før.** Drop-in koster kr. 490,- og betales med Vipps i
+  bestillingen; det er bare Paint on Pots som har gjenstanden i kassa.
   Økta gjenkjennes på sluttiden, så den ikke slettes og lages på nytt hvert
   kvarter mens døren står åpen.
 - **Stemplet inn** åpner tre timer fram, også når kalenderen er tom.

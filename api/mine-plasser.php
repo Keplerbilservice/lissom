@@ -49,7 +49,7 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
     if (!empty($b['bevis_sperret'])) {
         return null;
     }
-    // Drop-in er ikke et kurs — det er to timer i verkstedet med ditt eget
+    // Drop-in er ikke et kurs — det er halvannen time i verkstedet med ditt eget
     // arbeid, og det er ingenting aa bevise. Interne samlinger er kurs, og
     // de gir bevis som alle andre: et medlem som har vaert paa glasurkveld
     // har vaert paa kurs, selv om samlingen ikke sto i den aapne lista.

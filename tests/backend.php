@@ -119,8 +119,9 @@ echo "\n== Aapne plasser (Paint on Pots paa aapningstidene) ==\n";
 // regelen legger ut plassene. Det farlige er sirkelen — en plass laget fordi
 // det var aapent, som deretter gjor at det er aapent — og at en plass noen
 // har booket blir ryddet bort under foettene paa dem.
+$folgerFelt = DB::harKolonne('courses', 'folger_apningstid') ? 'folger_apningstid' : 'gjenstand_i_kassa';
 if (DB::harKolonne('course_sessions', 'fra_apningstid')
-    && DB::en("SELECT id FROM courses WHERE gjenstand_i_kassa = 1 AND status = 'publisert'") !== null) {
+    && DB::en("SELECT id FROM courses WHERE {$folgerFelt} = 1 AND status = 'publisert'") !== null) {
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
 
     $r1 = Apent::leggUtPaaApneTider();
@@ -144,7 +145,7 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         count($genererte) . ' genererte plasser');
 
     // En booket plass staar, ogsaa naar dagen stenges.
-    $popKurs2 = DB::en("SELECT id FROM courses WHERE gjenstand_i_kassa = 1 AND status = 'publisert'");
+    $popKurs2 = DB::en("SELECT id FROM courses WHERE {$folgerFelt} = 1 AND status = 'publisert'");
     $okt2 = DB::en("SELECT id, start_tid FROM course_sessions
                      WHERE fra_apningstid = 1 AND course_id = :c AND start_tid > UTC_TIMESTAMP()
                   ORDER BY start_tid LIMIT 1", ['c' => (int) $popKurs2['id']]);
@@ -165,8 +166,8 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Testplass apen'");
     }
 
-    // Plassene er hoyst to timer, og de ligger inne i en aapen periode —
-    // ikke i timene mellom to oekter, der huset staar tomt.
+    // Plassene er hoyst PLASS_MINUTTER lange, og de ligger inne i dagens
+    // aapningstid — ogsaa i timene mellom to kurs, for da er hun der.
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
     Apent::leggUtPaaApneTider();
     $utc2 = new DateTimeZone('UTC');
@@ -175,7 +176,14 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
     $perDag = [];
     $iHull = 0;
     $kilder2 = Apent::dager()['kilder'];
-    foreach (DB::alle('SELECT start_tid, slutt_tid FROM course_sessions WHERE fra_apningstid = 1') as $r) {
+    $dagerRad = [];
+    foreach (Apent::dager()['dager'] as $d) {
+        if (!$d['stengt'] && $d['fra'] !== null) {
+            $dagerRad[(string) $d['dato']] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
+        }
+    }
+    foreach (DB::alle('SELECT course_id, start_tid, slutt_tid FROM course_sessions
+                        WHERE fra_apningstid = 1') as $r) {
         $a = new DateTimeImmutable((string) $r['start_tid'], $utc2);
         $b2 = new DateTimeImmutable((string) $r['slutt_tid'], $utc2);
         if ($b2->getTimestamp() - $a->getTimestamp() > Apent::PLASS_MINUTTER * 60) {
@@ -183,34 +191,32 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         }
         $lokal = $a->setTimezone($oslo2);
         $dag = $lokal->format('Y-m-d');
-        $perDag[$dag] = ($perDag[$dag] ?? 0) + 1;
+        // Taket gjelder per kurs. Paint on Pots og drop-in staar begge ute
+        // paa den samme dagen, og til sammen er de flere enn taket sier.
+        $nokkel2 = $r['course_id'] . ' ' . $dag;
+        $perDag[$nokkel2] = ($perDag[$nokkel2] ?? 0) + 1;
 
-        $liste = $kilder2[$dag] ?? [];
-        if ($liste === []) {
-            continue;
-        }
-        $inne = false;
-        foreach ($liste as $o) {
-            if ($lokal->format('H:i') >= $o['fra'] && $lokal->format('H:i') < $o['til']) {
-                $inne = true;
-            }
-        }
-        if (!$inne) {
+        // Plassen skal ligge inne i dagens aapningstid — hele den, fra det
+        // forste begynner til det siste slutter.
+        if (!isset($dagerRad[$dag])
+            || $lokal->format('H:i') < $dagerRad[$dag]['fra']
+            || $b2->setTimezone($oslo2)->format('H:i') > $dagerRad[$dag]['til']) {
             $iHull++;
         }
     }
-    sjekk('ingen plass er lengre enn to timer', $forLange === 0, $forLange . ' for lange');
-    sjekk('hoyst ' . Apent::PLASSER_PER_DAG . ' plass(er) per dag',
+    sjekk('ingen plass er lengre enn ' . Apent::PLASS_MINUTTER . ' minutter',
+        $forLange === 0, $forLange . ' for lange');
+    sjekk('hoyst ' . Apent::PLASSER_PER_DAG . ' plass(er) per kurs per dag',
         max($perDag ?: [0]) <= Apent::PLASSER_PER_DAG,
         'flest paa en dag: ' . max($perDag ?: [0]));
-    sjekk('ingen plass ligger i et hull mellom oektene', $iHull === 0, $iHull . ' i hull');
+    sjekk('ingen plass ligger utenfor aapningstida', $iHull === 0, $iHull . ' utenfor');
 
-    // Flere kurs samme dag: de som henger sammen blir én periode, og hullet
-    // mellom dem er stengt.
+    // Flere kurs samme dag: timene mellom dem er ogsaa bookbare.
     //
     // 3. september i testdataene: Store fat 10-13, drop-in 16-19, Store fat
-    // 17-20, Date Night 18-21. Det er to perioder — 10-13 og 16-21 — og
-    // mellom 13 og 16 staar huset tomt. Ingen plass skal ligge der.
+    // 17-20, Date Night 18-21. Dagen er aapen 10-21, og mellom 13 og 16 er
+    // hun der uansett. Lissom 27. august: «husk tiden som er mellom kurs
+    // ogsaa skal vaere tilgjengelig aa booke».
     $medFlere = null;
     foreach (Apent::dager()['kilder'] as $dato => $liste) {
         if (count($liste) < 2) {
@@ -238,10 +244,10 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
                 $iHullet[] = $t->format('H:i');
             }
         }
-        sjekk('flere kurs samme dag: hullet mellom dem er stengt',
-            $iHullet === [],
-            $medFlere['dato'] . ' hull ' . $medFlere['hullFra'] . '-' . $medFlere['hullTil']
-            . ($iHullet ? ' — plasser ' . implode(', ', $iHullet) : ''));
+        sjekk('flere kurs samme dag: timene mellom dem er ogsaa bookbare',
+            $iHullet !== [],
+            $medFlere['dato'] . ' mellom ' . $medFlere['hullFra'] . ' og ' . $medFlere['hullTil']
+            . ($iHullet ? ' — plasser ' . implode(', ', $iHullet) : ' — ingen plasser'));
     }
 
     // Et flerdagerskurs skal ikke gjore natta aapen.
@@ -270,6 +276,47 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         sjekk('dag to av et flerdagerskurs aapner ikke ved midnatt',
             $radTo !== null && $radTo['fra'] !== '00:00',
             $dagTo . ': ' . ($radTo === null ? 'dagen mangler' : $radTo['fra'] . '-' . $radTo['til']));
+    }
+
+    // Drop-in gaar paa det samme (27. august): samme bestilling, med datoer
+    // og tider, og tilgjengeligheten folger kursene og innstemplinga.
+    //
+    // Det som kan gaa galt her er dubletter. Drop-in har egne tider fra
+    // ukereglene — tirsdag 10-13 — og laa de to oppi hverandre, sto den
+    // samme timen to ganger i bestillingen, med hvert sitt plasstall.
+    $dropinKurs = DB::en("SELECT id FROM courses
+                           WHERE type = 'dropin' AND status = 'publisert'"
+                        . (DB::harKolonne('courses', 'folger_apningstid')
+                            ? ' AND folger_apningstid = 1' : ''));
+    if ($dropinKurs !== null) {
+        $dId = (int) $dropinKurs['id'];
+        sjekk('drop-in faar plasser paa de aapne dagene',
+            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions
+                              WHERE course_id = :c AND fra_apningstid = 1', ['c' => $dId]) > 0);
+
+        $egne = DB::alle('SELECT start_tid, slutt_tid FROM course_sessions
+                           WHERE course_id = :c AND fra_apningstid = 0
+                             AND slutt_tid IS NOT NULL
+                             AND COALESCE(slutt_tid, start_tid) > UTC_TIMESTAMP()', ['c' => $dId]);
+        $dubletter = [];
+        foreach (DB::alle('SELECT start_tid, slutt_tid FROM course_sessions
+                            WHERE course_id = :c AND fra_apningstid = 1', ['c' => $dId]) as $g) {
+            foreach ($egne as $e) {
+                if ($g['start_tid'] < $e['slutt_tid'] && $e['start_tid'] < $g['slutt_tid']) {
+                    $dubletter[] = $g['start_tid'];
+                }
+            }
+        }
+        sjekk('ingen plass legges oppi drop-in-tidene som alt staar',
+            $dubletter === [],
+            count($egne) . ' egne tider' . ($dubletter ? ' — dublett ' . $dubletter[0] : ''));
+
+        // Og de egne tidene staar urort. De definerer fortsatt naar det er
+        // aapent, og skal ikke ryddes bort av utleggingen.
+        sjekk('drop-in-tidene fra ukereglene roeres ikke',
+            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions
+                              WHERE course_id = :c AND fra_dropin_tid IS NOT NULL
+                                AND start_tid > UTC_TIMESTAMP()', ['c' => $dId]) > 0);
     }
 
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');

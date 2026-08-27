@@ -1741,7 +1741,7 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Drop-in</div>
               <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-4);">
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--text-heading);">kr. 490,-</span>
-                <span style="font-size: var(--text-sm); color: var(--text-muted);">per økt · 2 timer</span>
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">per økt · 1,5 timer</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-5);">
                 <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);"><span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span><span>Leire, verktøy og glasurer</span></div>
@@ -11728,7 +11728,7 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Hos Lissom handler keramikk om mye mer enn leire' } ] },
     { navn: 'Drop-in', type: 'Bilde og tekst', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Verkstedet, på dine premisser' },
-      { l: 'Ingress', v: 'Book en økt på to timer og jobb med dine egne prosjekter — uten fast program, i verkstedet på Teie.', lang: true } ] },
+      { l: 'Ingress', v: 'Book en økt på halvannen time og jobb med dine egne prosjekter — uten fast program, i verkstedet på Teie.', lang: true } ] },
     { navn: 'Slik fungerer det', type: 'Fire steg', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Slik fungerer det' },
       { l: 'Overskrift', v: 'Fra booking til ferdig brent' },
@@ -11848,7 +11848,7 @@ const SIDEINNHOLD = {
       { l: 'Spørsmål 8', v: 'Kan jeg komme innom uten medlemskap?' },
       { l: 'Svar 8', v: 'Ja — bli med på kurs eller event, eller kom på drop-in når du er godkjent hos oss.', lang: true },
       { l: 'Spørsmål 9', v: 'Hvordan fungerer drop-in?' },
-      { l: 'Svar 9', v: 'To timer i verkstedet der du jobber med det du vil. Timene gjelder for økten og kan ikke overføres eller spares opp. Drop-in krever at du har gått kurs hos oss, eller at du kommer sammen med et aktivt medlem. Book og betal på nettsiden.', lang: true },
+      { l: 'Svar 9', v: 'Halvannen time i verkstedet der du jobber med det du vil. Timene gjelder for økten og kan ikke overføres eller spares opp. Drop-in krever at du har gått kurs hos oss, eller at du kommer sammen med et aktivt medlem. Book og betal på nettsiden.', lang: true },
       { l: 'Spørsmål 10', v: 'Hva er inkludert i drop-in?' },
       { l: 'Svar 10', v: 'Leire, verktøy, materialer og brenning av ett ferdig arbeid opptil 20 × 20 cm.', lang: true },
       { l: 'Spørsmål 11', v: 'Kan jeg spise og drikke av keramikken?' },
@@ -12236,8 +12236,8 @@ class Component extends DCLogic {
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
         { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
-        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
-        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
+        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 1,5 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka halvannen time.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
+        { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '1,5 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'Halvannen time i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
     ]);
     // Rekkefolgen var den de sto i her i fila — designlista forst, saa nye
     // kurs, saa det som bare finnes i basen. Den som kom for aa se hva som
@@ -22078,7 +22078,7 @@ class Component extends DCLogic {
         // den samme rada, og «Vis alle» gjor jobben til begge.
         //
         // «Drop-in» sto her ogsaa, og hoerer ikke hjemme i en kategorirad
-        // over kurs: det er ikke et kurs, men to timer i verkstedet med ditt
+        // over kurs: det er ikke et kurs, men halvannen time i verkstedet med ditt
         // eget arbeid. Det har sitt eget menypunkt.
         //
         // Sidene ligger der de laa, i toppmenyen. Det er bare knappene i
@@ -22385,7 +22385,7 @@ class Component extends DCLogic {
         },
       })),
       paafyll: [
-        { navn: 'Drop-in-time', detalj: 'Én økt på 2 timer', pris: 'kr. 490,-' },
+        { navn: 'Drop-in-time', detalj: 'Én økt på 1,5 timer', pris: 'kr. 490,-' },
         { navn: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter', pris: 'Valgfritt beløp' },
       ].map(v => Object.assign(v, {
         kjop: () => this.leggTil(v.navn),
@@ -23370,19 +23370,24 @@ class Component extends DCLogic {
           // der som en kvittering paa hva man har valgt.
           bHarTider: (dagRad.tider || []).length > 0,
           bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
-          // Gjelder bare der plassen varer i to timer — Paint on Pots og
-          // lignende. Et kurs varer saa lenge kurset varer.
+          // Gjelder der plassen varer en bestemt tid fra tidspunktet man
+          // velger — Paint on Pots og drop-in. Et kurs varer saa lenge kurset
+          // varer, og da staar det ingenting her.
+          //
+          // Lengden kommer fra serveren. Sto «to timer» skrevet her, ville
+          // teksten sagt to mens drop-in-tidene sa tre.
           bTiderHjelp: (() => {
             const k = this.state.valgtKurs || {};
-            const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel));
-            const paa = !!(kat ? kat.gjenstandIKassa : k.gjenstandIKassa);
-            return paa ? 'Du har plassen i to timer fra tidspunktet du velger.' : '';
+            const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel)) || {};
+            const paa = !!(kat.folgerApningstid || k.folgerApningstid);
+            const varer = String(kat.plassVarighet || k.plassVarighet || '');
+            return paa && varer ? 'Du har plassen i ' + varer + ' fra tidspunktet du velger.' : '';
           })(),
           bookingTider: (dagRad.tider || []).map(t => {
             const valgt = this.state.bDato ? t.dato === this.state.bDato : !!t.valgt;
             return {
-              // Naar det begynner. Kunden har plassen i to timer fra da, og
-              // det staar under knappene — ikke i hver eneste knapp.
+              // Naar det begynner. Kunden har plassen en bestemt tid fra da,
+              // og det staar under knappene — ikke i hver eneste knapp.
               klokke: String(t.klokkeStart || t.klokke || t.tid || t.dato || ''),
               stil: Object.assign(knappStil(valgt, t.full), {
                 display: 'inline-flex', justifyContent: 'center',
@@ -28325,7 +28330,7 @@ class Component extends DCLogic {
         { q: 'Hvordan booker jeg tid i verkstedet?', a: 'På Min side velger du dag og tidspunkt, og stempler inn når du kommer. Timen telles fra innstempling.' },
         { q: 'Hvorfor må jeg booke verkstedtid?', a: 'Verkstedet har begrenset med skiver og arbeidsplasser. Booking sikrer at du alltid har plass når du kommer.' },
         { q: 'Kan jeg komme innom uten medlemskap?', a: 'Ja — bli med på kurs eller event, eller kom på drop-in når du er godkjent hos oss.' },
-        { q: 'Hvordan fungerer drop-in?', a: 'To timer i verkstedet der du jobber med det du vil. Timene gjelder for økten og kan ikke overføres eller spares opp. Drop-in krever at du har gått kurs hos oss, eller at du kommer sammen med et aktivt medlem. Book og betal på nettsiden.' },
+        { q: 'Hvordan fungerer drop-in?', a: 'Halvannen time i verkstedet der du jobber med det du vil. Timene gjelder for økten og kan ikke overføres eller spares opp. Drop-in krever at du har gått kurs hos oss, eller at du kommer sammen med et aktivt medlem. Book og betal på nettsiden.' },
         { q: 'Hva er inkludert i drop-in?', a: 'Leire, verktøy, materialer og brenning av ett ferdig arbeid opptil 20 × 20 cm.' },
         { q: 'Kan jeg spise og drikke av keramikken?', a: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.' },
         ].map((s, i) => ({ q: hent('Spørsmål ' + (i + 1), s.q), a: hent('Svar ' + (i + 1), s.a) }));
@@ -29311,7 +29316,8 @@ class Component extends DCLogic {
             naar: o.naar + (o.til ? '–' + o.til : ''),
             under: [
               o.idag ? 'I dag' : '',
-              o.stemmer ? 'Følger åpningstidene' : 'Stemmer ikke med åpningstidene over',
+              o.fraApningstid ? 'Lagt ut av seg selv — kurs eller innstempling'
+                : (o.stemmer ? 'Følger åpningstidene' : 'Stemmer ikke med åpningstidene over'),
               o.utenSlutt ? 'Uten sluttid — teller som tre timer' : '',
               o.pameldte ? (o.pameldte === 1 ? 'Én er påmeldt' : o.pameldte + ' er påmeldt') : '',
             ].filter(Boolean).join(' · '),
@@ -29329,7 +29335,11 @@ class Component extends DCLogic {
                   + (o.pameldte
                       ? 'Noen har meldt seg på. Tiden blir avlyst og tatt av nettsiden i stedet '
                         + 'for slettet — da må du gi beskjed og refundere.'
-                      : 'Tiden forsvinner fra nettsiden og fra åpningstiden i bunnteksten.'))) return;
+                      : o.fraApningstid
+                        ? 'Tiden er lagt ut av seg selv fordi verkstedet er åpent da. Den kommer '
+                          + 'tilbake så lenge kurset eller innstemplingen står. Vil du ha den bort '
+                          + 'for godt, må dagen stenges under Åpningstider.'
+                        : 'Tiden forsvinner fra nettsiden og fra åpningstiden i bunnteksten.'))) return;
               this.dropinKall({ handling: 'slettOkt', oktId: o.oktId });
             },
           })),
@@ -29340,7 +29350,8 @@ class Component extends DCLogic {
                           : uten + ' av dem stemmer ikke med åpningstidene over — de er rammet inn. ')
               + 'Det er disse som kan gi et klokkeslett i bunnteksten du ikke kjenner igjen.'
             : 'Det er disse som styrer åpningstiden på nettsiden — ikke reglene over. '
-              + 'De lages når du trykker «Legg ut tider».',
+              + 'De lages når du trykker «Legg ut tider». I tillegg legges det ut tider av '
+              + 'seg selv de dagene et kurs går, eller du er stemplet inn.',
         };
       })(),
       dropinTider: this.tiderNaa().map(t => ({
@@ -29958,9 +29969,9 @@ class Component extends DCLogic {
           return;
         }
         const k = {
-          level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer',
+          level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '1,5 timer',
           price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in',
-          om: 'To timer i verkstedet med dine egne prosjekter. Leire, verktøy, glasur, brenning og ett ferdig arbeid opptil 20 × 20 cm er inkludert.',
+          om: 'Halvannen time i verkstedet med dine egne prosjekter. Leire, verktøy, glasur, brenning og ett ferdig arbeid opptil 20 × 20 cm er inkludert.',
         };
         this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
         window.scrollTo(0, 0);
@@ -30063,7 +30074,7 @@ class Component extends DCLogic {
         'Nybegynnere — etter et kurs, eller sammen med et medlem',
       ],
       diPraktisk: [
-        { tittel: 'kr. 490,- per økt · 2 timer', tekst: 'Leire, verktøy, glasur, brenning og ett ferdig arbeid er inkludert. Book i kurskalenderen og betal med Vipps. Timene kan ikke overføres eller spares opp.' },
+        { tittel: 'kr. 490,- per økt · 1,5 timer', tekst: 'Leire, verktøy, glasur, brenning og ett ferdig arbeid er inkludert. Book i kurskalenderen og betal med Vipps. Timene kan ikke overføres eller spares opp.' },
         { tittel: 'Hva får jeg?', tekst: 'Tilgang til verkstedet, dreieskiver og håndbyggingsplass, hjelp ved behov — og et sosialt miljø rundt langbordet.' },
         { tittel: 'Praktisk', tekst: 'Brenning følger verkstedets brenningsplan. Glasering gjør du på en ny økt. Én hylleplass til tørking er inkludert.' },
         { tittel: 'Viktig å vite', tekst: 'Drop-in er ikke privatkurs. Ferdige arbeider hentes innen tre uker. Egne regler gjelder for eksterne materialer. Reserver ved fullt.' },

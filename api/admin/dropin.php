@@ -61,8 +61,14 @@ $hentOkter = static function (array $kurs, array $tider): array {
         $regler[$t['ukedag'] . ' ' . $t['fra'] . '-' . $t['til']] = true;
     }
 
+    // Genererte oekter kom med migrasjon 076/079: drop-in blir bookbar de
+    // dagene et kurs gaar, eller Lissom er stemplet inn. De folger ikke
+    // ukereglene under, og skal ikke rammes inn i roedt som om noe var galt.
+    $apenFelt = DB::harKolonne('course_sessions', 'fra_apningstid')
+        ? 'cs.fra_apningstid' : '0 AS fra_apningstid';
+
     $rader = DB::alle(
-        "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid,
+        "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid, {$apenFelt},
                 (SELECT COUNT(*) FROM bookings b
                   WHERE b.course_session_id = cs.id
                     AND b.status IN ('betalt','reservert')) AS pameldte
@@ -87,6 +93,10 @@ $hentOkter = static function (array $kurs, array $tider): array {
         $nokkel = $start->format('N') . ' ' . $start->format('H:i')
                 . '-' . ($stopp !== null ? $stopp->format('H:i') : '');
 
+        // Laget av aapningstidene: den folger kursene og innstemplinga, og er
+        // riktig selv om den ikke staar i ukereglene.
+        $fraApen = (int) ($r['fra_apningstid'] ?? 0) === 1;
+
         return [
             'oktId'    => (int) $r['id'],
             'naar'     => Booking::norskDato((string) $r['start_tid']),
@@ -95,8 +105,11 @@ $hentOkter = static function (array $kurs, array $tider): array {
             'idag'     => $start->format('Y-m-d') === (new DateTimeImmutable('now', $oslo))->format('Y-m-d'),
             'pameldte' => (int) $r['pameldte'],
             'fraRegel' => $r['fra_dropin_tid'] !== null,
-            // Svarer oekta til en av ukereglene som staar oppe naa?
-            'stemmer'  => isset($regler[$nokkel]),
+            'fraApningstid' => $fraApen,
+            // Svarer oekta til en av ukereglene som staar oppe naa? En oekt
+            // laget av aapningstidene svarer ikke til noen ukeregel, og skal
+            // heller ikke gjore det — den er riktig av en annen grunn.
+            'stemmer'  => $fraApen || isset($regler[$nokkel]),
             'utenSlutt' => $stopp === null,
         ];
     }, $rader);

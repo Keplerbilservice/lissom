@@ -53,6 +53,9 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
             (array) ($data['hashtags'] ?? [])
         ))),
         'bildeforslag' => trim((string) ($data['bildeforslag'] ?? '')),
+        // Bildet eieren faktisk valgte, i motsetning til forslaget over, som
+        // er AI-ens beskrivelse i ord av et bilde som ikke finnes.
+        'bilde'        => trim((string) ($data['bilde'] ?? '')) ?: null,
         'ingress'   => trim((string) ($data['ingress'] ?? '')),
     ]]);
 }
@@ -203,24 +206,37 @@ if (Foresporsel::metode() === 'GET') {
           GROUP BY c.id ORDER BY plasser DESC LIMIT 8"
     );
 
+    // Utkastraden slik tavla trenger den: bildet ut av data-feltet, og
+    // data-feltet ut av svaret. Resten av det som ligger der — fokusord,
+    // metabeskrivelse, hashtags — hoerer til inne i utkastet, ikke paa tavla.
+    $medBilde = static function (array $r): array {
+        $d = json_decode((string) ($r['data'] ?? '{}'), true) ?: [];
+        unset($r['data']);
+        $r['bilde'] = trim((string) ($d['bilde'] ?? '')) ?: null;
+        return $r;
+    };
+
     Svar::json([
         'ai'          => AI::status(),
         'kursTomme'   => $tomme,
         'kursFulle'   => $fulle,
         'muligheter'  => $muligheter,
         'sokeord'     => DB::alle('SELECT id, ord, maalside, notat FROM marked_sokeord ORDER BY sortering, ord'),
-        'utkast'      => DB::alle(
-            "SELECT id, type, tittel, kontekst, status, kostnad_ore, created_at
+        // Bildet eieren valgte da utkastet ble laget ligger i data-feltet.
+        // Tavla viser det, saa man ser hva utkastet kommer til aa se ut som
+        // uten aa aapne det.
+        'utkast'      => array_map($medBilde, DB::alle(
+            "SELECT id, type, tittel, kontekst, status, kostnad_ore, created_at, data
                FROM ai_utkast WHERE status = 'utkast' ORDER BY id DESC LIMIT 40"
-        ),
+        )),
         // Godkjente utkast forsvant fra tavla i det de ble godkjent. En
         // artikkel havnet i kunnskapsbanken, men et nyhetsbrev eller et
         // innlegg gikk ingen steder — det sto bare «godkjent», og teksten var
         // borte. Naa blir de staaende, med teksten i behold, til de er brukt.
-        'godkjente'   => DB::alle(
-            "SELECT id, type, tittel, kontekst, status, resultat_id, created_at
+        'godkjente'   => array_map($medBilde, DB::alle(
+            "SELECT id, type, tittel, kontekst, status, resultat_id, created_at, data
                FROM ai_utkast WHERE status = 'godkjent' ORDER BY id DESC LIMIT 20"
-        ),
+        )),
         'artikler'    => DB::alle(
             'SELECT id, tittel, kategori, slug, status, kilde, updated_at FROM articles ORDER BY sortering, id DESC'
         ),

@@ -69,6 +69,30 @@ $lagre = static function (string $type, string $tittel, string $tekst, ?array $d
     ]);
 };
 
+/**
+ * Bildet eieren har valgt i billedvelgeren.
+ *
+ * Velgeren gir enten et filnavn som ligger i repoet — «uploads_noe.jpg» — eller
+ * «api/bilde.php?artikkel=...» for et bilde eieren selv har lastet opp. Begge
+ * er de samme verdiene som staar i articles.bilde og courses.bilde fra for.
+ *
+ * Alt annet forkastes. Feltet kommer fra nettleseren, og det ender i en
+ * src-attributt paa nettsiden.
+ */
+$valgtBilde = static function (array $kropp): ?string {
+    $b = trim((string) ($kropp['bilde'] ?? ''));
+    if ($b === '') {
+        return null;
+    }
+    if (preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $b)) {
+        return $b;
+    }
+    if (preg_match('~^[A-Za-z0-9._-]{1,120}\.(jpg|jpeg|png|webp)$~i', $b)) {
+        return $b;
+    }
+    return null;
+};
+
 /** Henter et kurs med datoene sine, til de handlingene som gjelder ett kurs. */
 $kursMedDatoer = static function (int $kursId): array {
     $k = DB::en('SELECT * FROM courses WHERE id = :i', ['i' => $kursId]);
@@ -130,6 +154,11 @@ switch ($handling) {
             'fokusord'        => $r['fokusord'] ?? '',
             'metabeskrivelse' => $r['metabeskrivelse'] ?? '',
             'kategori'        => $kategori ?: null,
+            // Bildet eieren valgte for utkastet ble laget. AI-en foreslaar
+            // et bilde i ord — «bildeforslag» — men den kan ikke velge et.
+            // Det maatte gjores etterpaa, inne i artikkelen, etter at den
+            // var godkjent.
+            'bilde'           => $valgtBilde($kropp),
         ], $emne, AI::sisteKostnad());
         // (kostnaden logges i AI::spor; utkastet far den fra loggen under)
 
@@ -202,7 +231,8 @@ switch ($handling) {
         );
 
         $lagre('nyhetsbrev', (string) ($r['emne'] ?? $navn),
-            (string) ($r['tekst'] ?? ''), ['slag' => $slag], $navn, AI::sisteKostnad());
+            (string) ($r['tekst'] ?? ''),
+            ['slag' => $slag, 'bilde' => $valgtBilde($kropp)], $navn, AI::sisteKostnad());
 
     // ── Sosiale medier ──────────────────────────────────────────────────
     case 'sosialt':
@@ -247,7 +277,8 @@ switch ($handling) {
 
         $lagre('sosialt', $kanal . ' — ' . $om, (string) ($r['tekst'] ?? ''),
             ['kanal' => $kanal, 'form' => $form, 'hashtags' => $r['hashtags'] ?? [],
-             'bildeforslag' => (string) ($r['bildeforslag'] ?? '')], $om, AI::sisteKostnad());
+             'bildeforslag' => (string) ($r['bildeforslag'] ?? ''),
+             'bilde' => $valgtBilde($kropp)], $om, AI::sisteKostnad());
 
     // ── Side som mangler ────────────────────────────────────────────────
     case 'seoside':
@@ -289,7 +320,8 @@ switch ($handling) {
             4000
         );
         $lagre('medlemsbrev', (string) ($r['emne'] ?? 'Medlemsbrev'),
-            (string) ($r['tekst'] ?? ''), null, $om ?: 'månedlig', AI::sisteKostnad());
+            (string) ($r['tekst'] ?? ''),
+            ['bilde' => $valgtBilde($kropp)], $om ?: 'månedlig', AI::sisteKostnad());
 
     // ── Assistenten ─────────────────────────────────────────────────────
     case 'assistent':
@@ -457,6 +489,10 @@ switch ($handling) {
                 'fokus_ord' => $data['fokusord'] ?? ($data['sokeord'] ?? null),
                 'ingress'   => $data['ingress'] ?? null,
                 'innhold'   => $u['tekst'],
+                // Bildet eieren valgte da utkastet ble laget. Uten dette
+                // maatte det velges paa nytt inne i artikkelen etterpaa —
+                // valget var gjort, og ble borte.
+                'bilde'     => $data['bilde'] ?? null,
                 'kilde'     => 'ai',
                 // Kladd, ikke publisert. Godkjenning betyr «denne vil jeg ha»,
                 // ikke «legg den ut naa» — eieren velger tidspunktet selv.

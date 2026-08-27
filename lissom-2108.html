@@ -8712,6 +8712,9 @@ window.__resources = {
             <sc-for list="{{ mkUtkast }}" as="u" hint-placeholder-count="3">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-4);">
                 <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+                  <sc-if value="{{ u.harBilde }}" hint-placeholder-val="{{ false }}">
+                    <div style="{{ u.bildeStil }}"></div>
+                  </sc-if>
                   <div style="min-width: 240px; flex: 1 1 340px;">
                     <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">{{ u.merke }}</div>
                     <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ u.tittel }}</div>
@@ -8804,6 +8807,23 @@ window.__resources = {
                 <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
               </sc-for>
             </div>
+            <!-- Bildet til artikkelen.
+                 Velges her, i den samme ruta kursene bruker: biblioteket og
+                 Shutterstock-soeket i én. Bildet foelger utkastet. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-5); display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap;">
+              <button type="button" onClick="{{ mkArtBildeVelg }}" aria-label="Velg bilde" style="{{ mkArtBildeStil }}">{{ mkArtBildeTekst }}</button>
+              <div style="flex: 1 1 220px; min-width: 0;">
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Bilde</label>
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Bildet som står øverst i artikkelen, og det som følger med når noen deler den. Du kan bytte det senere.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkArtBildeVelg }}" hint-size="auto,36px">{{ mkArtBildeKnapp }}</x-import>
+                  <sc-if value="{{ mkArtBildeHar }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ mkArtBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+            <div style="height: var(--space-5);"></div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="sparkles" on-click="{{ mkLagArtikkel }}" hint-size="auto,44px">Lag artikkel</x-import>
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Utkastet havner på tavla. Ingenting legges ut før du har lest det.</p>
           </div>
@@ -8977,7 +8997,25 @@ window.__resources = {
 
         <!-- ── Nyhetsbrev ─────────────────────────────────────────────── -->
         <sc-if value="{{ mkErBrev }}" hint-placeholder-val="{{ false }}">
-          <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">AI-en henter kursene som ligger ute de neste åtte ukene, med ekte datoer og ledige plasser, og skriver brevet ut fra det.</p>
+          <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">AI-en henter kursene som ligger ute de neste åtte ukene, med ekte datoer og ledige plasser, og skriver brevet ut fra det.</p>
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+            <!-- Bildet til nyhetsbrevet.
+                 Velges her, i den samme ruta kursene bruker: biblioteket og
+                 Shutterstock-soeket i én. Bildet foelger utkastet. -->
+            <div style="display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap;">
+              <button type="button" onClick="{{ mkBrevBildeVelg }}" aria-label="Velg bilde" style="{{ mkBrevBildeStil }}">{{ mkBrevBildeTekst }}</button>
+              <div style="flex: 1 1 220px; min-width: 0;">
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Bilde</label>
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Bildet som står øverst i brevet. Velg det før du lager brevet, så følger det med utkastet.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkBrevBildeVelg }}" hint-size="auto,36px">{{ mkBrevBildeKnapp }}</x-import>
+                  <sc-if value="{{ mkBrevBildeHar }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ mkBrevBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-4);">
             <sc-for list="{{ mkBrevValg }}" as="b" hint-placeholder-count="4">
               <button type="button" onClick="{{ b.velg }}" style="appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
@@ -9005,6 +9043,23 @@ window.__resources = {
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva handler det om?</label>
             <input value="{{ mkSosOm }}" onChange="{{ mkSettSosOm }}" placeholder="F.eks. Dreiekurs nybegynner, oppstart september" style="{{ mkFeltStil }}">
+            <div style="height: var(--space-5);"></div>
+            <!-- Bildet til innlegget.
+                 Velges her, i den samme ruta kursene bruker: biblioteket og
+                 Shutterstock-soeket i én. Bildet foelger utkastet. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-5); display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap;">
+              <button type="button" onClick="{{ mkSosBildeVelg }}" aria-label="Velg bilde" style="{{ mkSosBildeStil }}">{{ mkSosBildeTekst }}</button>
+              <div style="flex: 1 1 220px; min-width: 0;">
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Bilde</label>
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Bildet du legger ut sammen med teksten. Det følger med utkastet, så det ligger klart når du limer inn i kanalen.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ mkSosBildeVelg }}" hint-size="auto,36px">{{ mkSosBildeKnapp }}</x-import>
+                  <sc-if value="{{ mkSosBildeHar }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ mkSosBildeFjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ta bort bildet</button>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
             <div style="height: var(--space-5);"></div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="sparkles" on-click="{{ mkLagSosialt }}" hint-size="auto,44px">Lag innlegg</x-import>
           </div>
@@ -14354,6 +14409,20 @@ class Component extends DCLogic {
       this.endreReferanse({ bilde: url || '' });
       return;
     }
+    // Bildet til et markedsforingsutkast ligger i skjemaet til utkastet er
+    // laget. Det er ikke lagret noe sted foer da — utkastet finnes ikke.
+    if (v.slag === 'markedbilde') {
+        const felt = { artikkel: 'mkArtBilde', brev: 'mkBrevBilde', sosialt: 'mkSosBilde' }[v.felt];
+        if (felt) this.setState({ [felt]: url || '' });
+        return;
+    }
+    // Billedvelgeren aapnet for seg selv, uten noe aa velge bilde til.
+    // «Finn bilder» gikk foer ut paa shutterstock.com i en ny fane; her er
+    // det soeket og nedlastingen til biblioteket som er poenget, og det som
+    // trykkes lukker bare ruta igjen.
+    if (v.slag === 'bibliotek') {
+        return;
+    }
     // Bildene inne i en artikkel lagres sammen med artikkelen, ikke for seg:
     // rekkefolgen og plasseringene henger sammen, og lista skrives hel.
     if (v.slag === 'artikkelbilde') {
@@ -14388,6 +14457,11 @@ class Component extends DCLogic {
     // kanskje ikke lagret ennaa.
     const valgt = (v && v.slag === 'kurs')
       ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
+      : (v && v.slag === 'markedbilde')
+        ? { tittel: { artikkel: 'artikkelen', brev: 'nyhetsbrevet', sosialt: 'innlegget' }[v.felt] || 'utkastet',
+            bilde: this.state[{ artikkel: 'mkArtBilde', brev: 'mkBrevBilde', sosialt: 'mkSosBilde' }[v.felt]] || '' }
+      : (v && v.slag === 'bibliotek')
+        ? { tittel: 'biblioteket', bilde: '' }
       : (v && v.slag === 'referanse')
         ? { tittel: (this.state.refRed || {}).navn || 'kunden', bilde: (this.state.refRed || {}).bilde || '' }
         : (v && v.slag === 'artikkelbilde')
@@ -27140,7 +27214,12 @@ class Component extends DCLogic {
             : 'Legg nøkkelen inn i secrets.php under dette navnet. Den lages på console.anthropic.com.',
 
           // Bilder: Shutterstock-soket, med det verkstedet driver med som utgangspunkt.
-          mkShutterstock: () => window.open('https://www.shutterstock.com/nb/search/keramikk-verksted', '_blank', 'noopener'),
+          // Aapner billedvelgeren, ikke shutterstock.com i en ny fane.
+          //
+          // Soeket hos Shutterstock ligger inne i velgeren, og bildet du
+          // henter der havner i biblioteket med det samme. Foer maatte du ut
+          // paa nettet, laste ned, komme tilbake og laste opp.
+          mkShutterstock: () => this.apneBildevalg({ slag: 'bibliotek' }),
 
           // ── Tavle ──
           mkKort: [
@@ -27194,6 +27273,18 @@ class Component extends DCLogic {
             merke: MERKE[u.type] || u.type,
             smakebit: '',
             detalj: (u.kontekst ? u.kontekst + ' · ' : '') + 'ca. ' + this.kroner(u.kostnad_ore || 0),
+            // Bildet som ble valgt da utkastet ble laget. Uten det er kortet
+            // bare tekst, og man maa aapne utkastet for aa se hva det blir.
+            harBilde: !!u.bilde,
+            bildeStil: {
+              width: 88, height: 88, flex: '0 0 auto',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-subtle)',
+              backgroundColor: 'var(--clay-200)',
+              backgroundImage: u.bilde ? "url('" + u.bilde + "')" : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: this.fokusFor(u.bilde || ''),
+            },
             les: () => this.mkLes(u.id),
             godkjenn: () => this.aiKall({ handling: 'godkjenn', id: u.id }),
             forkast: () => this.aiKall({ handling: 'forkast', id: u.id }),
@@ -27225,6 +27316,7 @@ class Component extends DCLogic {
             handling: 'artikkel',
             emne: (this.state.mkArtEmne || '').trim(),
             kategori: this.state.mkArtKategori || '',
+            bilde: this.state.mkArtBilde || '',
           }),
           // Forslagene bygger paa kursene som faktisk finnes.
           mkArtForslag: (tomme.slice(0, 3).map(k => k.tittel)
@@ -27446,6 +27538,59 @@ class Component extends DCLogic {
           })(),
 
           // ── Nyhetsbrev ──
+          // ── Bilderuta i de tre skjemaene ──────────────────────────
+          //
+          // «Finn bilder» gikk ut paa shutterstock.com i en ny fane. Du fant
+          // et bilde der, lastet det ned, gikk tilbake, lastet det opp — og
+          // bildet maatte uansett velges paa nytt inne i artikkelen etterpaa.
+          //
+          // Ruta her er den samme velgeren kursene bruker, med biblioteket og
+          // Shutterstock-soeket i seg. Bildet foelger utkastet fra det lages,
+          // og staar i artikkelen naar den tas i bruk.
+          ...(() => {
+            const ruteStil = (url) => ({
+              appearance: 'none', cursor: 'pointer', padding: 0,
+              width: 112, height: 112, flex: '0 0 auto',
+              borderRadius: 'var(--radius-md)',
+              border: url ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
+              backgroundColor: 'var(--clay-200)',
+              backgroundImage: url ? "url('" + url + "')" : 'none',
+              backgroundSize: 'cover',
+              backgroundPosition: this.fokusFor(url || ''),
+              color: 'var(--text-muted)', fontSize: 'var(--text-xs)',
+            });
+            // Navnene staar skrevet ut, ikke satt sammen av biter. Sjekken
+            // som finner knapper uten funksjon leser denne fila som tekst,
+            // og et navn den ikke kan se, kan den ikke godkjenne heller.
+            const felt = (slag, statefelt) => {
+              const url = this.state[statefelt] || '';
+              return {
+                stil: ruteStil(url),
+                tekst: url ? '' : 'Velg bilde',
+                velg: () => this.apneBildevalg({ slag: 'markedbilde', felt: slag }),
+                har: !!url,
+                knapp: url ? 'Bytt bilde' : 'Velg bilde fra biblioteket',
+                fjern: () => this.setState({ [statefelt]: '' }),
+              };
+            };
+            const art  = felt('artikkel', 'mkArtBilde');
+            const brev = felt('brev', 'mkBrevBilde');
+            const sos  = felt('sosialt', 'mkSosBilde');
+            return {
+              mkArtBildeStil: art.stil,   mkArtBildeTekst: art.tekst,
+              mkArtBildeVelg: art.velg,   mkArtBildeHar: art.har,
+              mkArtBildeKnapp: art.knapp, mkArtBildeFjern: art.fjern,
+
+              mkBrevBildeStil: brev.stil,   mkBrevBildeTekst: brev.tekst,
+              mkBrevBildeVelg: brev.velg,   mkBrevBildeHar: brev.har,
+              mkBrevBildeKnapp: brev.knapp, mkBrevBildeFjern: brev.fjern,
+
+              mkSosBildeStil: sos.stil,   mkSosBildeTekst: sos.tekst,
+              mkSosBildeVelg: sos.velg,   mkSosBildeHar: sos.har,
+              mkSosBildeKnapp: sos.knapp, mkSosBildeFjern: sos.fjern,
+            };
+          })(),
+
           mkBrevValg: [
             { slag: 'maned', navn: 'Månedens nyhetsbrev', hva: 'Kursene som ligger ute framover, med ledige plasser.' },
             { slag: 'host', navn: 'Høstnyhetsbrev', hva: 'Høstprogrammet samlet i ett brev.' },
@@ -27453,8 +27598,8 @@ class Component extends DCLogic {
             { slag: 'medlem', navn: 'Medlemsbrev', hva: 'Til dem som allerede er medlemmer.' },
           ].map(b => Object.assign({}, b, {
             velg: () => this.aiKall(b.slag === 'medlem'
-              ? { handling: 'medlemsbrev', om: '' }
-              : { handling: 'nyhetsbrev', slag: b.slag }),
+              ? { handling: 'medlemsbrev', om: '', bilde: this.state.mkBrevBilde || '' }
+              : { handling: 'nyhetsbrev', slag: b.slag, bilde: this.state.mkBrevBilde || '' }),
           })),
 
           // ── Sosiale medier ──
@@ -27473,6 +27618,7 @@ class Component extends DCLogic {
             kanal: this.state.mkKanal || 'Instagram',
             form: this.state.mkForm || 'innlegg',
             om: (this.state.mkSosOm || '').trim(),
+            bilde: this.state.mkSosBilde || '',
           }),
 
           // ── Assistenten ──

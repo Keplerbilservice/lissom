@@ -4588,7 +4588,7 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Ferdig glassert</h1>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Klar til henting</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Keramikken som er brent og skal hentes. Trykk et kurs for å se deltakerne, og en deltaker for å se bildene og sende beskjed.</p>
         </div>
 
@@ -5084,8 +5084,15 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Uttak butikk</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Salg over disk. Går inn i lageret og omsetningen som et vanlig salg.</p>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kasse</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges i verkstedet: varer, kurs, event, drop-in og medlemskap. Kontant eller Vipps, og det følger med i regnskapet.</p>
+        </div>
+
+        <!-- Hva selger du? Én rad, seks ting, og ingen vei innom noe annet. -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="6">
+            <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
+          </sc-for>
         </div>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); gap: var(--space-6); align-items: start;">
@@ -5238,8 +5245,15 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Ny registrering</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Finn personen eller legg inn en ny, og velg hva de skal registreres på.</p>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kasse</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">En plass på kurs, event, drop-in eller et medlemskap, betalt i verkstedet. Finn personen eller legg inn en ny.</p>
+        </div>
+
+        <!-- Hva selger du? Én rad, seks ting, og ingen vei innom noe annet. -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="6">
+            <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
+          </sc-for>
         </div>
 
         <div style="max-width: 780px; display: flex; flex-direction: column; gap: var(--space-6);">
@@ -23644,8 +23658,13 @@ class Component extends DCLogic {
         const kr = (ore) => 'kr. ' + Math.round(ore / 100).toLocaleString('nb-NO')
           .replace(/ /g, ' ') + ',-';
 
-        const synlige = varer.filter(v => !sok
-          || (v.tittel + ' ' + v.kategori).toLowerCase().indexOf(sok) !== -1);
+        // Internvarene — leire, brenning, glasur — er medlemmenes, og laa
+        // blandet inn mellom koppene. To halvdeler av kassa, ikke én liste.
+        const del = st.utDel || 'butikk';
+        const synlige = varer
+          .filter(v => del === 'intern' ? v.kunMedlemmer : !v.kunMedlemmer)
+          .filter(v => !sok
+            || (v.tittel + ' ' + v.kategori).toLowerCase().indexOf(sok) !== -1);
 
         const linjer = Object.keys(kurv).map(id => {
           const v = varer.find(x => String(x.id) === String(id));
@@ -23714,7 +23733,11 @@ class Component extends DCLogic {
           utIngenVarer: synlige.length === 0,
           utIngenVarerTekst: varer.length === 0
             ? 'Henter varene …'
-            : 'Ingen varer passer søket.',
+            : sok
+              ? 'Ingen varer passer søket.'
+              : (del === 'intern'
+                  ? 'Ingen varer i internbutikken ennå. Legg dem inn under Butikk → Internbutikk.'
+                  : 'Ingen varer i butikken ennå.'),
 
           utLinjer: linjer.map(l => ({
             tittel: l.v.tittel,
@@ -23835,6 +23858,29 @@ class Component extends DCLogic {
         // rader som finnes.
         const refAntall = (this.state.refAdmin || []).filter(r => this.staarUte(r)).length;
 
+        // ── Kurs som gaar tomme for datoer ──────────────────────────────
+        //
+        // Kursidene lover tre datoer aa velge mellom. Det loeftet holder bare
+        // saa lenge det ligger tre datoer ute, og datoer tar slutt uten at
+        // noen sier fra: kurset blir staaende med én dato igjen, og
+        // datovelgeren har ingenting aa velge i.
+        //
+        // Interne samlinger er ikke lovet noe — de settes opp naar de settes
+        // opp — og avlyste kurs skal ikke maste.
+        const idag = new Date(new Date().toDateString());
+        const framoverPaa = (k) => (k.okter || []).filter(o => {
+          if (!o.dato) return false;
+          const d = new Date(o.dato + 'T' + (o.til || o.fra || '23:59'));
+          return !isNaN(d) && d >= idag;
+        }).length;
+        const tomme = this.kursData()
+          .filter(k => k.status === 'publisert'
+                    && (k.tema || '') !== 'Kun for medlemmer'
+                    && k.type !== 'Kun medlemmer')
+          .map(k => ({ navn: k.navn, igjen: framoverPaa(k) }))
+          .filter(k => k.igjen < 3)
+          .sort((a, b) => a.igjen - b.igjen);
+
         return {
           ovDraHjelp: this.state.ovRekkefolgeLagret
         ? 'Rekkefølgen er lagret.'
@@ -23859,18 +23905,39 @@ class Component extends DCLogic {
                  okter.length, 'Se kursene',
                  () => this.gaaAdmin('admin', { kursFane: 'alle' })),
 
-            kort('Ny registrering',
-                 'Meld noen på kurs, event, drop-in eller medlemskap.',
+            // Samme regel som ventelista: kortet staar naar noe venter.
+            // Ligger det tre datoer ute paa alt, er det ingenting aa si.
+            ...(tomme.length ? [kort('Kurs går tomme for datoer',
+                 (tomme.length === 1
+                   ? tomme[0].navn + (tomme[0].igjen === 0
+                       ? ' har ingen datoer igjen.'
+                       : tomme[0].igjen === 1
+                         ? ' har én dato igjen.'
+                         : ' har ' + tomme[0].igjen + ' datoer igjen.')
+                   : tomme.slice(0, 3).map(t => t.navn).join(', ')
+                     + (tomme.length > 3 ? ' og ' + (tomme.length - 3) + ' til' : '')
+                     + ' har under tre datoer igjen.')
+                 + ' Kurssidene lover tre å velge mellom.',
+                 tomme.length, 'Sett opp datoer',
+                 () => this.gaaAdmin('admin', { kursFane: 'alle' }),
+                 true)] : []),
+
+            // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
+            // den veien verkstedet er vant til aa gaa naar noen skal meldes
+            // paa — det gaar bare rett inn i kassa naa.
+            kort('Meld noen på',
+                 'Kurs, event, Paint on Pots, drop-in eller medlemskap — betalt i verkstedet.',
                  null, 'Registrer noen',
                  () => this.gaaAdmin('adminnyreg', {
                    nrValgt: null, nrSok: '', nrNavn: '', nrTlf: '', nrEpost: '',
                    nrNotat: '', nrOkt: '', nrAntall: '', nrBelop: '',
                  })),
 
-            kort('Uttak butikk',
-                 'Salg over disk, med kontant eller Vipps.',
-                 null, 'Registrer et salg',
-                 () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '' })),
+            kort('Kasse',
+                 'Alt du selger i verkstedet: varer, internbutikk, kurs, event, '
+                 + 'Paint on Pots, drop-in og medlemskap. Kontant eller Vipps.',
+                 null, 'Åpne kassa',
+                 () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'butikk' })),
 
             kort('Butikk',
                  'Varer, priser, bilder og lager.',
@@ -23928,7 +23995,7 @@ class Component extends DCLogic {
             //
             // Samme regel som ventelista: staar bare naar noe faktisk venter.
             // Et kort som hver dag sier «ingen», er ett kort mer aa lese forbi.
-            ...(venterMelding ? [kort('Ferdig glassert',
+            ...(venterMelding ? [kort('Klar til henting',
                  venterMelding === 1
                    ? 'Ett kurs venter på beskjed om at arbeidene er ferdige.'
                    : venterMelding + ' kurs venter på beskjed om at arbeidene er ferdige.',
@@ -23968,9 +24035,12 @@ class Component extends DCLogic {
             // Rekkefolgen ligger lagret som navn. Doper vi om et kort, staar
             // det gamle navnet igjen i lista, og kortet ville lagt seg bakerst
             // som om det var splitter nytt. «Gjennomfoerte kurs» ble «Ferdig
-            // glassert» 26. august; den som hadde dratt det paa plass skal
-            // finne det der det sto.
-            const DOEPT = { 'Gjennomførte kurs': 'Ferdig glassert' };
+            // glassert» 26. august og «Klar til henting» 27.; den som hadde
+            // dratt det paa plass skal finne det der det sto.
+            const DOEPT = { 'Gjennomførte kurs': 'Klar til henting',
+                            'Ferdig glassert': 'Klar til henting',
+                            'Uttak butikk': 'Kasse',
+                            'Ny registrering': 'Meld noen på' };
             const egen = (this.state.ovRekkefolge
               || ((this.state.adminData || {}).kortrekkefolge || []))
               .map(n => DOEPT[n] || n);
@@ -23989,8 +24059,9 @@ class Component extends DCLogic {
             if ((this.state.vw || 1400) >= 980) return alle;
 
             const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
-                         'Ferdig glassert', 'Nye påmeldinger', 'Planlagte kurs',
-                         'Butikk', 'Uttak butikk', 'Intern side', 'Beskjeder'];
+                         'Klar til henting', 'Kurs går tomme for datoer',
+                         'Nye påmeldinger', 'Planlagte kurs',
+                         'Butikk', 'Kasse', 'Meld noen på', 'Intern side', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);
               return i === -1 ? ROR.length : i;
@@ -31072,6 +31143,49 @@ class Component extends DCLogic {
         }));
       })(),
       ...this.adminMobilMeny(),
+      // ── Kassa ────────────────────────────────────────────────────────
+      //
+      // Alt som selges i verkstedet gikk to veier: varer over disk laa under
+      // «Uttak butikk», og plasser paa kurs, drop-in og medlemskap laa under
+      // «Ny registrering». Det er den samme jobben — noen staar i doera og
+      // skal betale — og da skal det vaere ett sted.
+      //
+      // Raden staar oeverst paa begge skjermene og bytter mellom dem, saa det
+      // leses som én kasse uansett hvilken halvdel man er i.
+      ...(() => {
+        const st = this.state;
+        const del = st.utDel || 'butikk';
+        const hva = st.nrHva || 'Kurs';
+        const paaUttak = side === 'adminuttak';
+        const naa = paaUttak ? del : hva;
+        const chip = (valgt) => ({
+          appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+          font: 'var(--type-body-sm)', fontWeight: valgt ? 700 : 600,
+          padding: '10px 18px', borderRadius: 'var(--radius-pill)', minHeight: 44,
+          border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+          background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)',
+          color: valgt ? 'var(--clay-50)' : 'var(--text-heading)',
+        });
+        // Paint on Pots staar i navnet fordi det er slik det heter i doera.
+        // Det er lagret som event, og havner samme sted.
+        const rader = [
+          ['Varer i butikken', 'butikk', 'adminuttak'],
+          ['Internbutikk',     'intern', 'adminuttak'],
+          ['Kurs',             'Kurs',        'adminnyreg'],
+          ['Event og Paint on Pots', 'Event', 'adminnyreg'],
+          ['Drop-in',          'Drop-in',     'adminnyreg'],
+          ['Medlemskap',       'Medlemskap',  'adminnyreg'],
+        ];
+        return {
+          kasseValg: rader.map(([navn, verdi, rute]) => ({
+            navn,
+            velg: rute === 'adminuttak'
+              ? () => this.gaaAdmin('adminuttak', { utDel: verdi, utSok: '' })
+              : () => this.gaaAdmin('adminnyreg', { nrHva: verdi, nrOkt: '' }),
+            stil: chip((paaUttak ? rute === 'adminuttak' : rute === 'adminnyreg') && naa === verdi),
+          })),
+        };
+      })(),
       adminGridStil: (this.state.vw || 1400) < 980
         ? { display: 'block', minHeight: '100vh', background: 'var(--clay-100)' }
         : { display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh', background: 'var(--clay-100)' },

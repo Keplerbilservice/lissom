@@ -50,11 +50,12 @@ dreiekurs. Ingen av dem kan redigeres noe sted i admin.
 Løsningen er å flytte punktene til databasen med et felt i kursveiviseren,
 ikke å rette de fire linjene i koden. Ellers må Lissom spørre meg neste gang.
 
-### 2. Full redigering av et kurs på ett sted
+### 2. ~~Full redigering av et kurs på ett sted~~ — gjort 27. august
 
-Samme sak som over. Navn, pris, plasser, beskrivelse, bekreftelse, bilder og
-datoer kan redigeres. Punktlista — det kunden leser under «Alt som er
-inkludert» — kan ikke.
+Punktlista ligger nå i seksjon 08 i kursoppsettet, sammen med resten. Alt på
+et kurs redigeres på ett sted: navn, kategori, pris, plasser, beskrivelse,
+hvem det passer for, hva de lærer, hva som er inkludert, praktisk
+informasjon, allergener, bekreftelse — og en forhåndsvisning nederst.
 
 ### 3b. ~~Bildesøk med API~~ — gjort 26. august
 
@@ -64,11 +65,10 @@ Søk og nedlasting virker begge veier. Se «Ferdig» nederst.
 
 Bygget og testet. Se «Ferdig» nederst.
 
-### 3. «Fjern bildet»
+### 3. ~~«Fjern bildet»~~ — gjort
 
-Knappen i billedvelgeren heter «Bruk standardbildet i stedet». Misvisende på
-bilderute 2 og 3, der det ikke finnes noe standardbilde. Skal hete «Fjern
-bildet» der.
+Knappen het «Bruk standardbildet i stedet» og lovet noe den ikke gjør på
+bilderute 2 og 3. Den heter «Fjern bildet fra ruta» — det er alt den gjør.
 
 ### 4. ~~Hva som skal stå i stedet for «10 ledige»~~ — gjort 26. august
 
@@ -82,11 +82,11 @@ være like?
 
 ## Venter på et svar
 
-### 5. Gjentakelse-feltet i steg 2
+### 5. ~~Gjentakelse-feltet i steg 2~~ — gjort 27. august
 
-«Ukentlig / Månedlig / Egendefinert» + «F.eks. 10 ganger» sendes aldri til
-serveren og lagres ingen steder. Feltet gjør ingenting. Skal det kobles opp
-så det lager datoene, eller fjernes?
+Feltet er koblet opp. Ingen, Ukentlig, Annenhver uke og Månedlig, med
+«antall ganger», lagres som en regel på kurset (migrasjon 056) og lager
+datoene. Ukedagen og datoen i måneden leses av datoen du valgte.
 
 ### 6. ~~Datoene fra den første katalogen~~ — avklart 26. august
 
@@ -118,7 +118,20 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–060 må kjøres
+### 7b. Migrasjon 052–066 må kjøres
+
+**Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
+menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
+kontrollert på en tom base — alle 66 går gjennom, og de tåler å bli kjørt om
+igjen om en av dem skulle stanse underveis.
+
+061 gir referansekundene på forsiden.
+062 gir e-postsignaturen i meldingene systemet sender, og malgruppene.
+063 gir artiklene fire tilstander: kladd, planlagt, publisert, avpublisert.
+064 gir flere bilder inne i en artikkel, med bildetekst og alt-tekst.
+065 gir punktlista og merkene på kurset — «Alt som er inkludert» ut av koden.
+066 gir Kursveilederen: spørsmålene og svarene i basen, og redigering som
+faktisk lagres.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler

@@ -12944,6 +12944,15 @@ class Component extends DCLogic {
       gjentas: datoer.length > 1 ? datoer.length + ' datoer' : 'Engangs',
       pameldte: pameldte + ' / ' + kapasitet,
       andel: kapasitet ? Math.round(pameldte / kapasitet * 100) : 0,
+      // Tidspunktet for den samme datoen, i millisekunder.
+      //
+      // Sorteringa i kurslista regnet den ut selv, av datofeltet og
+      // klokkeslettet — og de staar i norsk tid. Sammenlignet mot maskinens
+      // egen klokke ble de to opptil to timer fra hverandre, og et kurs som
+      // nettopp hadde vaert kunne sortere seg foran ett som ikke hadde det.
+      // Naa kommer tallet fra den samme datoen som teksten over.
+      nesteTid: framover ? new Date(String(framover.startUtc).replace(' ', 'T') + 'Z').getTime()
+                         : null,
       // Kolonnen heter «neste» og skal si naar kurset gaar neste gang.
       //
       // Den falt tilbake paa den forste datoen i lista naar det ikke fantes
@@ -17819,15 +17828,23 @@ class Component extends DCLogic {
     // Indeksen folger med paret, saa «Rediger» og «Slett» peker fortsatt paa
     // riktig kurs etter sorteringa.
     const naaTid = Date.now();
+    // Ikke Infinity naar det ikke finnes noen dato: to slike kurs ville gitt
+    // «Infinity - Infinity», som er NaN, og en sortering som svarer NaN
+    // sorterer ingenting. Da sto de siste kursene i den rekkefolgen de
+    // tilfeldigvis kom i.
+    const SIST = 8.64e15;
     const nesteGang = (k) => {
+      // Tallet kommer fra den samme datoen som kolonnen «neste» viser, slik
+      // at rekkefolgen og teksten aldri kan si to forskjellige ting.
+      if (k.nesteTid) return k.nesteTid;
+      // Designlista i denne fila har ingen raa tid — bare dato og klokkeslett
+      // skrevet for haand. Da regner vi som for.
+      if (k.nesteTid === null) return SIST;
       const tider = (k.okter || [])
         .filter(o => o.dato)
         .map(o => new Date(o.dato + 'T' + (o.fra || '00:00')).getTime())
         .filter(t => !isNaN(t) && t >= naaTid);
-      // Ikke Infinity: to kurs uten datoer ville gitt «Infinity - Infinity»,
-      // som er NaN, og en sortering som svarer NaN sorterer ingenting. Da
-      // sto de siste kursene i den rekkefolgen de tilfeldigvis kom i.
-      return tider.length ? Math.min.apply(null, tider) : 8.64e15;
+      return tider.length ? Math.min.apply(null, tider) : SIST;
     };
     return this.kursData()
       .map((k, i) => ({ k, i, n: nesteGang(k) }))
@@ -17932,9 +17949,8 @@ class Component extends DCLogic {
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
         ['Referansekunder', 'adminreferanser'],
-        // Kursvelgeren laa to steder, begge som skjemaer som ikke lagret
-        // noe. Ett sted naa, der resten av nettsideinnholdet ligger.
-        ['Kursvelgeren',  'adminkursvelger'],
+        // Kursvelgeren sto her. Den er et verktoy, ikke en tekst paa en
+        // side, og staar naa som kort paa Oversikt.
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
@@ -17998,7 +18014,7 @@ class Component extends DCLogic {
       case 'adminoppskrifter':   return p('Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
       case 'adminreferanser':    return p('Nettsiden', 'Nettsiden', 'Referansekunder');
-      case 'adminkursvelger':   return p('Nettsiden', 'Nettsiden', 'Kursvelgeren');
+      case 'adminkursvelger':    return p('Oversikt');
       case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':
         return st.seoFra === 'marked'
@@ -21745,6 +21761,15 @@ class Component extends DCLogic {
                  null, 'Se kursholderne',
                  () => this.gaaAdmin('adminkursholdere', {})),
 
+            // Kursvelgeren laa som en fane under Nettsiden, mellom
+            // referansekunder og SEO. Den er et verktoy man gaar inn i og
+            // jobber med — spoersmaalene og svarene — ikke en tekst paa en
+            // side. Flyttet hit 27. august paa bestilling.
+            kort('Kursvelgeren',
+                 'Spørsmålene besøkende får når de ikke vet hvilket kurs som passer, og hva hvert svar peker til.',
+                 null, 'Se kursvelgeren',
+                 () => this.gaaAdmin('adminkursvelger', {})),
+
             // Det interne innholdet hadde ingen vei fra Oversikt — det laa
             // inne under Medlemmer, og maatte letes fram.
             kort('Intern side',
@@ -21968,7 +21993,11 @@ class Component extends DCLogic {
         .concat((this.state.adminPlanerRaa || []).map(pl => pl.navn))
         .concat(this.state.adminPlanerRaa ? [] : ['30 timer', 'Fri tilgang', 'Prøv Lissom'])
         .concat(['Inne nå']).map(n => {
-        const valgt = (this.state.medlemFilter || 'Alle') === n;
+        // «Aktive» er startvisningen, ikke «Alle». Lista aapnet med alle
+        // sammen — sluttede, kursdeltakere og adminbrukere om hverandre —
+        // og det man ser etter naar man trykker Medlemmer, er dem som er
+        // medlem naa. «Alle» staar fortsatt som forste filter.
+        const valgt = (this.state.medlemFilter || 'Aktive') === n;
         return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
       sorterNavn: () => this.setState(s => ({ medlemSort: s.medlemSort === 'navn' ? '' : 'navn' })),
@@ -21998,7 +22027,7 @@ class Component extends DCLogic {
         { navn: 'Ole Aarseth', epost: 'ole@epost.no', initial: 'OA', abonnement: 'Prøv Lissom', timer: '5 / 30', andel: 17, status: 'Utløper 3. sep', tone: 'warning' },
         { navn: 'Mari Lunde', epost: 'mari@epost.no', initial: 'ML', abonnement: '30 timer', timer: '0 / 30', andel: 0, status: 'Betaling feilet', tone: 'danger' },
       ])).filter(m => {
-        const fv = this.state.medlemFilter || 'Alle';
+        const fv = this.state.medlemFilter || 'Aktive';
         if (fv === 'Alle') return true;
         if (fv === 'Inne nå') return !!m.inne;
         if (fv === 'Aktive') return !!m.erMedlem && !m.erAdmin;

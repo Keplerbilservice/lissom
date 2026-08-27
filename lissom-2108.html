@@ -5211,6 +5211,20 @@ window.__resources = {
 
         <sc-if value="{{ kRed }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6);">
+            <!-- Veien tilbake til lista.
+                 Skjemaet er langt, og eneste vei ut sto nederst, etter tolv
+                 seksjoner. Aapnet du et kurs for aa se paa noe, matte du
+                 rulle helt ned for aa komme deg ut igjen — eller ut av hele
+                 skjermen, og da var du ikke lenger i kurslista. -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <button type="button" onClick="{{ kTilbakeListe }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">← Tilbake til kurslista</button>
+              <!-- Datoene til kurset staar lenger nede paa skjermen, i lista
+                   som alt finnes. Sto det ikke noe om det her, var det ikke
+                   til aa vite at de var der. -->
+              <sc-if value="{{ kHarDatoer }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ kSeDatoene }}" style="appearance: none; border: 1px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 7px 14px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading); white-space: nowrap;">{{ kSeDatoeneTekst }}</button>
+              </sc-if>
+            </div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-6);">{{ kTittel }} · Steg {{ kSteg }} av 3</div>
             <div style="display: flex; flex-direction: column; gap: var(--space-8); max-width: 680px;">
               <sc-if value="{{ kSteg1 }}" hint-placeholder-val="{{ true }}">
@@ -5670,10 +5684,13 @@ window.__resources = {
           </div>
 
           <!-- Datoene som ligger ute naa. Kurset er én ting, datoen er den
-               folk melder seg paa — og det er der en deltaker legges til. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+               folk melder seg paa — og det er der en deltaker legges til.
+               Har du et kurs aapent, viser lista datoene til det kurset:
+               ellers staar seksten datoer der, og din er én av dem. -->
+          <div id="admin-datoer" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Datoer som ligger ute · {{ aktiveOkterAntall }}</span>
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ aktiveOkterTittel }} · {{ aktiveOkterAntall }}</span>
+              <button type="button" onClick="{{ oktVinduVeksle }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ oktVinduTekst }}</button>
               <sc-if value="{{ harValgteOkter }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                   <span style="font-size: var(--text-xs); color: var(--text-body);">{{ valgteOkterTekst }}</span>
@@ -5787,7 +5804,7 @@ window.__resources = {
               </div>
             </sc-for>
             <sc-if value="{{ ingenAktiveOkter }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.</div>
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenAktiveOkterTekst }}</div>
             </sc-if>
           </div>
 
@@ -22514,9 +22531,30 @@ class Component extends DCLogic {
         // drop-in og aapne kurs og alt sammen. Naa viser den datoene til de
         // kursene som staar i lista over.
         const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
-        const okter = (this.state.adminOkter || [])
+
+        // Har du et kurs aapent, er det datoene til det kurset du er ute
+        // etter. Foer sto alle seksten der, og din var én av dem.
+        const aapentKurs = this.state.kRed ? (this.state.kNavn || '').trim() : '';
+
+        // Aatte uker fram. Et kurs som gjentar seg lager femti datoer, og de
+        // som ligger langt fram er sjelden dem man skal rette. Knappen viser
+        // resten naar man vil ha dem.
+        const UKER = 8;
+        const alleUker = !!this.state.oktAlleUker;
+        const grense = Date.now() + UKER * 7 * 24 * 3600 * 1000;
+        const innenfor = (o) => {
+          if (alleUker || !o.dato) return true;
+          const t = new Date(o.dato + 'T' + (o.fra || '00:00')).getTime();
+          return isNaN(t) || t <= grense;
+        };
+
+        const raa = (this.state.adminOkter || [])
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1)
+          .filter(o => !aapentKurs || (o.tittel || '') === aapentKurs);
+        const utenfor = raa.length - raa.filter(innenfor).length;
+        const okter = raa
+          .filter(innenfor)
           .map(o => {
           const tatt = (o.betalt || 0) + (o.reservert || 0);
           const kap = o.kapasitet || 0;
@@ -22597,7 +22635,25 @@ class Component extends DCLogic {
         return {
           aktiveOkter: okter,
           aktiveOkterAntall: okter.length,
+          aktiveOkterTittel: aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute',
           ingenAktiveOkter: okter.length === 0,
+          ingenAktiveOkterTekst: aapentKurs
+            ? (utenfor > 0
+                ? 'Ingen datoer for ' + aapentKurs + ' de neste åtte ukene. '
+                  + utenfor + (utenfor === 1 ? ' dato ligger' : ' datoer ligger') + ' lenger fram.'
+                : 'Ingen datoer ligger ute for ' + aapentKurs + '. Legg inn en under steg 2.')
+            : 'Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.',
+          // Knappen som viser resten. Staar det ingenting lenger fram, sier
+          // den det — framfor aa love noe som ikke finnes.
+          oktVinduTekst: alleUker
+            ? 'Vis bare de neste åtte ukene'
+            : (utenfor > 0
+                ? 'Vis ' + utenfor + (utenfor === 1 ? ' dato til' : ' datoer til') + ' lenger fram'
+                : 'Neste åtte uker'),
+          oktVinduVeksle: () => {
+            if (!alleUker && utenfor === 0) return;
+            this.setState({ oktAlleUker: !alleUker });
+          },
           harValgteOkter: valgte.length > 0,
           valgteOkterTekst: valgte.length === 1 ? 'Én dato valgt' : valgte.length + ' datoer valgt',
           nullstillValgteOkter: () => this.setState({ valgteOkter: [] }),
@@ -24002,6 +24058,31 @@ class Component extends DCLogic {
       kNesteSteg: () => this.setState(s => ({ kSteg: Math.min(3, (s.kSteg ?? 1) + 1) })),
       kForrigeSteg: () => this.setState(s => ({ kSteg: Math.max(1, (s.kSteg ?? 1) - 1) })),
       kAvbryt: () => this.setState({ kRed: false }),
+      // Ut av skjemaet og opp til lista igjen. «Avbryt» staar nederst, etter
+      // tolv seksjoner, og gjor det samme — men den som aapnet et kurs for
+      // aa se paa noe skal slippe aa rulle helt ned for aa komme seg ut.
+      kTilbakeListe: () => {
+        this.setState({ kRed: false });
+        const el = document.getElementById('ov-kortrutenett') || document.getElementById('admin-datoer');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return el;
+      },
+      // Ned til datoene for kurset. De staar i lista lenger nede, som naa
+      // viser datoene til kurset du har aapent.
+      kHarDatoer: !!(this.state.adminOkter || [])
+        .filter(o => (o.tittel || '') === (this.state.kNavn || '').trim()).length,
+      kSeDatoeneTekst: (() => {
+        const n = (this.state.adminOkter || [])
+          .filter(o => (o.tittel || '') === (this.state.kNavn || '').trim()).length;
+        return n === 1 ? 'Se datoen ↓' : 'Se de ' + n + ' datoene ↓';
+      })(),
+      kSeDatoene: () => {
+        const el = document.getElementById('admin-datoer');
+        if (el) {
+          const y = el.getBoundingClientRect().top + window.scrollY - 90;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+      },
       // Bare paa et kurs som finnes paa serveren. Et nytt kurs som ikke er
       // lagret enda har ingenting aa slette.
       kKanSlette: !!(this.state.adminKursRaa || []).find(x => x.tittel === (this.state.kNavn || '').trim()),

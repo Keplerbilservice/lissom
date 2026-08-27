@@ -56,6 +56,10 @@ if (Foresporsel::metode() === 'GET') {
                 'oktId'     => (int) $o['id'],
                 'naar'      => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
                 'startUtc'  => $o['start_tid'],
+                // Sluttiden manglet her. Veiviseren viste «--:--» for hver
+                // eneste dato, og lagret du kurset, ble slutt satt lik start
+                // — en okt uten varighet.
+                'sluttUtc'  => $o['slutt_tid'],
                 'status'    => $o['status'],
                 'ledige'    => Booking::ledigePlasser((int) $o['id']),
             ], $okter),
@@ -309,11 +313,62 @@ switch ($handling) {
         if ($serie === null) {
             Svar::feil('Fant ikke gjentakelsen.');
         }
+        // Datoene regelen selv har laget.
+        //
+        // Her sto det bare at de ble staaende, og at de maatte avlyses én og
+        // én. Et kurs som gjentar seg lager mange, og da er det ikke en jobb
+        // noen gjor — lista vokser i stedet. Naa kan de ryddes bort samtidig.
+        //
+        // Bare datoene ingen har meldt seg paa, og bare de som ikke er
+        // passert: en dato med paameldte peker paa bookinger og betalinger,
+        // og en dato som har vaert er historikk.
+        $ryddOgsaa = Foresporsel::tekst('slettDatoer') === 'ja';
+        $slettet = 0;
+        $beholdt = 0;
+        if (DB::harKolonne('course_sessions', 'serie_id')) {
+            $mine = DB::alle(
+                "SELECT cs.id,
+                        (SELECT COUNT(*) FROM bookings b
+                          WHERE b.course_session_id = cs.id
+                            AND b.status IN ('betalt','reservert')) AS pameldte
+                   FROM course_sessions cs
+                  WHERE cs.serie_id = :s AND cs.start_tid > UTC_TIMESTAMP()",
+                ['s' => $serieId]
+            );
+            foreach ($mine as $m) {
+                if ((int) $m['pameldte'] > 0) {
+                    $beholdt++;
+                    continue;
+                }
+                if ($ryddOgsaa) {
+                    DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => (int) $m['id']]);
+                    $slettet++;
+                }
+            }
+        }
+
         DB::kjor('DELETE FROM kurs_serier WHERE id = :i', ['i' => $serieId]);
-        revider('serie_fjernet', 'course', (int) $serie['course_id'], ['serie' => $serieId]);
+        revider('serie_fjernet', 'course', (int) $serie['course_id'],
+                ['serie' => $serieId, 'datoer_slettet' => $slettet]);
+
+        $tekst = 'Gjentakelsen er tatt bort, så det lages ingen nye datoer.';
+        if ($ryddOgsaa) {
+            $tekst .= $slettet > 0
+                ? ' ' . $slettet . ($slettet === 1 ? ' dato' : ' datoer') . ' er ryddet bort.'
+                : ' Det var ingen tomme datoer å rydde bort.';
+            if ($beholdt > 0) {
+                $tekst .= ' ' . $beholdt . ($beholdt === 1 ? ' dato har påmeldte og står igjen.'
+                                                          : ' datoer har påmeldte og står igjen.');
+            }
+        } else {
+            $tekst .= ' Datoene som alt ligger ute blir stående.';
+        }
+
         Svar::ok([
-            'serier'  => Serier::forKurs((int) $serie['course_id']),
-            'beskjed' => 'Datoene som alt ligger ute blir stående. Avlys dem enkeltvis hvis de skal bort.',
+            'serier'   => Serier::forKurs((int) $serie['course_id']),
+            'slettet'  => $slettet,
+            'beholdt'  => $beholdt,
+            'beskjed'  => $tekst,
         ]);
 
     // --------------------------------------------------------------- avlys

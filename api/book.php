@@ -20,6 +20,10 @@ $navn   = mb_substr(Foresporsel::tekst('navn'), 0, 191);
 $epost  = mb_substr(Foresporsel::tekst('epost'), 0, 191);
 $telefon= Foresporsel::tekst('telefon');
 $folge  = mb_substr(Foresporsel::tekst('folgeMedlem'), 0, 191);
+// Det deltakeren selv sier om allergier og annet arrangoren maa vite.
+// Helseopplysninger: lagres paa bookingen, vises bare i admin, og brukes
+// ikke til noe annet.
+$allergier = trim(mb_substr(Foresporsel::tekst('allergier'), 0, 1000));
 
 $medlem = Sesjon::medlem();
 
@@ -41,6 +45,11 @@ if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
 }
 if (normaliser_telefon($telefon) === '') {
     Svar::feil('Vi trenger et mobilnummer.');
+}
+// Krysset av, men ikke skrevet noe: da vet verkstedet at det er noe, uten aa
+// vite hva. Verre enn om boksen sto tom.
+if (Foresporsel::tekst('harAllergier') === 'ja' && $allergier === '') {
+    Svar::feil('Skriv hva vi må vite om — allergier, intoleranser eller annet.');
 }
 
 // Medlemsarrangementer er gratis og bare for medlemmer. Uten denne sjekken
@@ -71,7 +80,8 @@ try {
         $folge !== '' ? $folge : null,
         // Gavekortet fra feltet paa bookingsiden. Det var ikke koblet til
         // noe, saa koden ble skrevet inn og kunden betalte full pris.
-        Foresporsel::tekst('gavekort')
+        Foresporsel::tekst('gavekort'),
+        $allergier !== '' ? $allergier : null
     );
 } catch (RuntimeException $e) {
     // Meldingene herfra er skrevet for aa vises til kunden.

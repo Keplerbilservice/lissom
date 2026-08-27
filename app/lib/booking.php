@@ -127,7 +127,8 @@ final class Booking
         string $telefon,
         ?int $medlemId,
         ?string $folgeMedlem = null,
-        string $gavekortKode = ''
+        string $gavekortKode = '',
+        ?string $allergier = null
     ): array {
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
@@ -186,7 +187,8 @@ final class Booking
         // skal ingen databaselaas staa aapen.
         $reservasjon = DB::iTransaksjon(static function () use (
             $okt, $oktId, $antall, $navn, $epost, $telefon, $medlemId,
-            $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse
+            $folgeMedlem, $gratis, $belop, $aBetale, $gavekortId, $gavekortOre, $rabatt, $referanse,
+            $allergier
         ): array {
             // Plassen sjekkes en gang til inne i transaksjonen. Uten dette kunne
             // to samtidige bookinger begge se den siste plassen som ledig.
@@ -214,7 +216,7 @@ final class Booking
                 $paymentId = DB::settInn('payments', $felt);
             }
 
-            $bookingId = DB::settInn('bookings', [
+            $felter = [
                 'course_id'         => $okt['course_id'],
                 'course_session_id' => $oktId,
                 'member_id'         => $medlemId,
@@ -231,7 +233,16 @@ final class Booking
                 'folge_medlem'      => $folgeMedlem,
                 'reservert_til'     => $gratis ? null
                     : gmdate('Y-m-d H:i:s', time() + self::RESERVASJON_MINUTTER * 60),
-            ]);
+            ];
+
+            // Kolonnen kommer med migrasjon 057. Er den ikke kjort, skal en
+            // booking fortsatt gaa gjennom — vi mister opplysningen, ikke
+            // plassen. Skjemaet sier fra om det samme.
+            if ($allergier !== null && $allergier !== '' && DB::harKolonne('bookings', 'allergier')) {
+                $felter['allergier'] = $allergier;
+            }
+
+            $bookingId = DB::settInn('bookings', $felter);
 
             return ['bookingId' => $bookingId, 'paymentId' => $paymentId];
         });

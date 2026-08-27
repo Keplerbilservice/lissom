@@ -1903,6 +1903,23 @@ window.__resources = {
                     </sc-if>
                   </div>
                 </sc-if>
+                <!-- Allergier og annet vi maa vite.
+                     Staar for vilkaarene, ikke etter: den som er ferdig med
+                     aa krysse av og trykke betal, leser ikke mer. -->
+                <sc-if value="{{ visKontaktfelt }}" hint-placeholder-val="{{ true }}">
+                  <div style="height: var(--space-5);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg har allergier, intoleranser eller annen informasjon arrangøren bør kjenne til." checked="{{ bAllergiKryss }}" on-change="{{ toggleBAllergi }}" hint-size="100%,24px"></x-import>
+                  <sc-if value="{{ bAllergiKryss }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin: var(--space-3) 0 0 32px;">
+                      <textarea value="{{ bAllergier }}" onChange="{{ settBAllergier }}" rows="3" placeholder="Beskriv allergier, intoleranser eller annen viktig informasjon." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading); resize: vertical;"></textarea>
+                      <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Vi bruker dette bare til å gjøre kurset trygt for deg. Ingen andre deltakere ser det.</p>
+                      <sc-if value="{{ bAllergiMangler }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 6px 0 0; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600);">Skriv hva vi må vite om, så vi kan ta hensyn til det.</p>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </sc-if>
+
                 <sc-if value="{{ erBetalt }}" hint-placeholder-val="{{ true }}">
                   <div style="height: var(--space-5);"></div>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg har lest vilkårene" checked="{{ vilkaarOk }}" on-change="{{ toggleVilkaar }}" hint-size="100%,24px"></x-import>
@@ -5178,9 +5195,22 @@ window.__resources = {
           <!-- Datoene som ligger ute naa. Kurset er én ting, datoen er den
                folk melder seg paa — og det er der en deltaker legges til. -->
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Datoer som ligger ute · {{ aktiveOkterAntall }}</div>
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Datoer som ligger ute · {{ aktiveOkterAntall }}</span>
+              <sc-if value="{{ harValgteOkter }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                  <span style="font-size: var(--text-xs); color: var(--text-body);">{{ valgteOkterTekst }}</span>
+                  <button type="button" onClick="{{ slettValgteOkter }}" style="appearance: none; border: 1px solid var(--terracotta-500); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); white-space: nowrap;">Slett de valgte</button>
+                  <button type="button" onClick="{{ nullstillValgteOkter }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern valget</button>
+                </div>
+              </sc-if>
+            </div>
             <sc-for list="{{ aktiveOkter }}" as="o" hint-placeholder-count="5">
               <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                <!-- Kryss av de datoene som skal bort. Et kurs som gjentar
+                     seg lager mange, og aa ta dem én og én er ikke en jobb
+                     noen faktisk gjor. -->
+                <input type="checkbox" checked="{{ o.valgt }}" onChange="{{ o.vekslValgt }}" title="Velg denne datoen" style="width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--lissom-brown); cursor: pointer;">
                 <div style="flex: 1 1 200px; min-width: 0;">
                   <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ o.tittel }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.naar }} · {{ o.ledigTekst }}</div>
@@ -5202,6 +5232,11 @@ window.__resources = {
                   <button type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <button type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
                   <button type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
+                  <!-- Tar bort datoen, ikke kurset. Gjentar kurset seg, blir
+                       det mange datoer, og de kunne bare avlyses — de ble
+                       staaende i lista uansett. Har noen meldt seg paa,
+                       avlyses datoen framfor aa forsvinne. -->
+                  <button type="button" onClick="{{ o.slettDato }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm); white-space: nowrap;">Slett dato</button>
                 </div>
 
                 <!-- Redigering av selve datoen. Kunne ikke gjores for: ble
@@ -5955,7 +5990,16 @@ window.__resources = {
             <div style="border-top: 1px solid var(--border-subtle);">
               <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6);">
                 <div onClick="{{ p.velg }}" style="flex: 1 1 190px; min-width: 0; cursor: pointer;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.navn }}</div>
+                  <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.navn }}</span>
+                    <!-- Merket sier at det ligger noe der, ikke hva. Selve
+                         opplysningen staar under, naar du har aapnet
+                         deltakeren — den skal ikke lyse i en tabell som staar
+                         oppe paa en skjerm i verkstedet. -->
+                    <sc-if value="{{ p.harAllergier }}" hint-placeholder-val="{{ false }}">
+                      <span title="Har oppgitt allergier eller annen viktig informasjon" style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); border: 1px solid var(--terracotta-500); border-radius: var(--radius-pill); padding: 1px 8px; white-space: nowrap;">Allergier</span>
+                    </sc-if>
+                  </div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis;">{{ p.kontakt }}</div>
                 </div>
                 <div onClick="{{ p.velg }}" style="flex: 1 1 170px; min-width: 0; cursor: pointer;">
@@ -11909,15 +11953,23 @@ class Component extends DCLogic {
       sms: k.sms !== false,
       status: k.status,
       okter: datoer.map(d => {
-        const t = String(d.startUtc || '').replace(' ', 'T') + 'Z';
-        const dd = new Date(t);
         const pad = (n) => String(n).padStart(2, '0');
-        const iOslo = new Date(dd.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+        // UTC fra basen → norsk tid, slik feltene skal vise den.
+        const norsk = (utc) => {
+          if (!utc) return null;
+          const dd = new Date(String(utc).replace(' ', 'T') + 'Z');
+          if (isNaN(dd)) return null;
+          return new Date(dd.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+        };
+        const start = norsk(d.startUtc);
+        const slutt = norsk(d.sluttUtc);
         return {
           oktId: d.oktId,
-          dato: iOslo.getFullYear() + '-' + pad(iOslo.getMonth() + 1) + '-' + pad(iOslo.getDate()),
-          fra: pad(iOslo.getHours()) + ':' + pad(iOslo.getMinutes()),
-          til: '',
+          dato: start ? start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate()) : '',
+          fra: start ? pad(start.getHours()) + ':' + pad(start.getMinutes()) : '',
+          // Sto tomt for alle datoer. Feltet viste «--:--», og lagret du
+          // kurset, ble sluttiden satt lik starttiden.
+          til: slutt ? pad(slutt.getHours()) + ':' + pad(slutt.getMinutes()) : '',
         };
       }),
     };
@@ -16029,6 +16081,46 @@ class Component extends DCLogic {
       });
   }
 
+  /**
+   * Sletter flere kursdatoer, én etter én.
+   *
+   * Serielt og ikke alt paa én gang: hver dato kan svare med at den ble
+   * avlyst framfor slettet, og de svarene skal samles til én beskjed. Ti
+   * samtidige kall gir ti kvitteringer som skriver over hverandre.
+   */
+  slettOkter(idListe) {
+    if (this._slettOkter) return;
+    this._slettOkter = true;
+    let slettet = 0;
+    const avlyst = [];
+
+    idListe.reduce((kjede, oktId) => kjede.then(() => fetch('/api/admin/kurs.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'slettdato', oktId: oktId }),
+    }).then(r => r.json()).then(d => {
+      if (!d || !d.ok) return;
+      if (d.slettet) { slettet++; } else if (d.beskjed) { avlyst.push(d.beskjed); }
+    }).catch(() => {})), Promise.resolve())
+      .then(() => {
+        this._slettOkter = false;
+        this.setState({
+          valgteOkter: [],
+          kvittering: slettet === 0 && avlyst.length === 0
+            ? 'Ingen datoer ble tatt bort'
+            : (slettet === 1 ? 'Én dato er tatt bort' : slettet + ' datoer er tatt bort'),
+          kvitteringDetalj: avlyst.length
+            ? avlyst.length + (avlyst.length === 1 ? ' dato hadde påmeldte og ble avlyst i stedet.'
+                                                   : ' datoer hadde påmeldte og ble avlyst i stedet.')
+            : 'Kursene står som før.',
+        });
+        this._adminHentes = false;
+        this.hentAdmin();
+        this.hentKatalog();
+      });
+  }
+
   settPlasser(oktId, kapasitet) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden' });
@@ -16414,13 +16506,24 @@ class Component extends DCLogic {
     const fane = this.state.kursFane || 'alle';
     const intern = k => (k.tema || '') === 'Kun for medlemmer'
       || k.type === 'Kun for medlemmer' || k.type === 'Kun medlemmer';
+    // «Planlagte kurs» skal vise nettopp det: kurs som har en dato som
+    // ligger foran oss. Kortet med det navnet aapnet hele katalogen — femten
+    // kurs, med avlyste og kurs uten datoer imellom — og da er navnet feil.
+    const planlagt = k => (k.status !== 'avlyst')
+      && (k.okter || []).some(o => {
+        if (!o.dato) return false;
+        const d = new Date(o.dato + 'T' + (o.til || o.fra || '23:59'));
+        return !isNaN(d) && d >= new Date(new Date().toDateString());
+      });
     // Nyeste kurs oeverst. Lista kom i den rekkefolgen basen ga den, saa
     // kurset man nettopp laget havnet nederst — under kurs fra i fjor.
     // Indeksen folger med paret, saa «Rediger» og «Slett» peker fortsatt paa
     // riktig kurs etter sorteringa.
     return this.kursData()
       .map((k, i) => ({ k, i }))
-      .filter(({ k }) => fane === 'alle' || (fane === 'interne' ? intern(k) : !intern(k)))
+      .filter(({ k }) => fane === 'alle' || fane === 'planlagte'
+                      || (fane === 'interne' ? intern(k) : !intern(k)))
+      .filter(({ k }) => fane !== 'planlagte' || planlagt(k))
       .sort((a, b) => (b.k.id || 0) - (a.k.id || 0));
   }
 
@@ -16760,6 +16863,18 @@ class Component extends DCLogic {
       window.location.href = '/api/vipps-login.php?retur=' + encodeURIComponent(this.naaSti());
       return;
     }
+    // Krysset av for allergier, men ikke skrevet noe. Da vet verkstedet at
+    // det er noe, uten aa vite hva — verre enn om boksen sto tom. Serveren
+    // sier fra om det samme; dette er bare for aa slippe turen dit.
+    const allergier = (this.state.bAllergier || '').trim();
+    if (this.state.bAllergiKryss && allergier === '') {
+      this.setState({
+        bAllergiVist: true,
+        kvittering: 'Skriv hva vi må vite om',
+        kvitteringDetalj: 'Allergier, intoleranser eller annet vi bør ta hensyn til.',
+      });
+      return;
+    }
     if (this.state.bookJobber) return;
 
     this.setState({ bookJobber: true });
@@ -16774,6 +16889,8 @@ class Component extends DCLogic {
         epost: (this.state.bEpost || '').trim(),
         // Bare naar man har krysset av for aa komme sammen med et medlem.
         folgeMedlem: this.state.dropinGodkjenning === 'medlem' ? (this.state.bFolge || '').trim() : '',
+        harAllergier: this.state.bAllergiKryss ? 'ja' : 'nei',
+        allergier: this.state.bAllergiKryss ? allergier : '',
       }),
     })
       .then(r => r.json())
@@ -19031,6 +19148,15 @@ class Component extends DCLogic {
         if (erKurs) {
           const kurs = kursData.filter(k => !intern(k));
           const okter = this.state.adminOkter || [];
+          // Kurs som har en dato framfor seg. Det er dette «Planlagte kurs»
+          // betyr, og tallet paa kortet skal si det samme som lista viser.
+          const idag = new Date(new Date().toDateString());
+          const planlagteKurs = kursData.filter(k => k.status !== 'avlyst'
+            && (k.okter || []).some(o => {
+              if (!o.dato) return false;
+              const d = new Date(o.dato + 'T' + (o.til || o.fra || '23:59'));
+              return !isNaN(d) && d >= idag;
+            })).length;
           const planer = this.state.adminPlanerRaa
             || (this.erPublisert() ? [] : [{}, {}]);
           const nyttKurs = {
@@ -19065,11 +19191,13 @@ class Component extends DCLogic {
               { navn: 'Legg til deltaker', velg: () => this.gaaAdmin('adminpameldte', { mpApen: true }) },
             ],
             omrKort: [
+              // Teller og aapner det kortet heter: kurs som har en dato
+              // framfor seg. Sto med kurs.length og aapnet hele katalogen.
               kort('Planlagte kurs',
                    okter.length
-                     ? 'Kursene som er lagt ut, med datoene folk faktisk melder seg på — nyeste først.'
-                     : 'Kursene som er lagt ut. Ingen datoer ligger ute ennå.',
-                   kurs.length, 'admin', { kursFane: 'alle' }, 'Se kursene'),
+                     ? 'Kursene som har datoer framover, med datoene folk melder seg på.'
+                     : 'Ingen kurs har datoer framover ennå.',
+                   planlagteKurs, 'admin', { kursFane: 'planlagte' }, 'Se kursene'),
               kort('Opprett kurs',
                    'Navn, pris, plasser og datoer i tre steg. Det ligger ute med det samme.',
                    null, 'admin', nyttKurs, 'Lag et kurs'),
@@ -20144,7 +20272,7 @@ class Component extends DCLogic {
       // hele lista, ikke i den man ser paa.
       ...(() => {
         const fane = this.state.kursFane || 'alle';
-        const NAVN = { alle: 'Alle kurs og events', apne: 'Kurs som er åpne for alle', interne: 'Kurs kun for medlemmer' };
+        const NAVN = { planlagte: 'Kurs med datoer framover', alle: 'Alle kurs og events', apne: 'Kurs som er åpne for alle', interne: 'Kurs kun for medlemmer' };
         return {
           kursFane: fane,
           kursFaneInterne: fane === 'interne',
@@ -20154,7 +20282,7 @@ class Component extends DCLogic {
             : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og medlemskap'),
           kursSkjermEyebrow: fane === 'interne' ? 'Medlemmer'
             : (fane === 'apne' ? 'Kursdeltakere' : 'Administrasjon'),
-          kursFaneValg: [['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
+          kursFaneValg: [['planlagte', 'Planlagte'], ['alle', 'Alle'], ['apne', 'Åpne for alle'], ['interne', 'Kun medlemmer']].map(([v, navn]) => ({
             navn,
             velg: () => this.setState({ kursFane: v }),
             stil: {
@@ -20220,12 +20348,47 @@ class Component extends DCLogic {
             }),
             avbrytRediger: () => this.setState({ oktRediger: null, oktBeskjed: '' }),
             lagreDato: () => this.lagreOktDato(o.oktId),
+            // Sletter datoen. Kurset blir staaende — det er hele poenget:
+            // gjentakelsen lager mange datoer, og de skal kunne ryddes bort
+            // uten at kurset ryker med.
+            slettDato: () => {
+              if (!window.confirm('Slette ' + o.naar + '?\n\n'
+                  + 'Kurset blir stående. Har noen meldt seg på, blir datoen avlyst '
+                  + 'i stedet — da må du gi beskjed og refundere selv.')) return;
+              this.kursKall({ handling: 'slettdato', oktId: o.oktId });
+            },
+            valgt: (this.state.valgteOkter || []).indexOf(o.oktId) !== -1,
+            vekslValgt: () => this.setState(st => {
+              const v = (st.valgteOkter || []).slice();
+              const i = v.indexOf(o.oktId);
+              if (i === -1) v.push(o.oktId); else v.splice(i, 1);
+              return { valgteOkter: v };
+            }),
           };
         });
+        // De avkryssede. Datoer som er borte fra lista skal ikke bli
+        // liggende igjen i valget og bli slettet ved neste trykk.
+        const oktIder = okter.map(x => x.oktId);
+        const valgte = (this.state.valgteOkter || []).filter(id => oktIder.indexOf(id) !== -1);
+
         return {
           aktiveOkter: okter,
           aktiveOkterAntall: okter.length,
           ingenAktiveOkter: okter.length === 0,
+          harValgteOkter: valgte.length > 0,
+          valgteOkterTekst: valgte.length === 1 ? 'Én dato valgt' : valgte.length + ' datoer valgt',
+          nullstillValgteOkter: () => this.setState({ valgteOkter: [] }),
+          slettValgteOkter: () => {
+            if (!valgte.length) return;
+            const navn = okter.filter(x => valgte.indexOf(x.oktId) !== -1)
+                              .map(x => x.tittel + ' · ' + x.naar);
+            if (!window.confirm('Slette ' + (valgte.length === 1 ? 'denne datoen' : 'disse ' + valgte.length + ' datoene') + '?\n\n'
+                + navn.slice(0, 12).join('\n')
+                + (navn.length > 12 ? '\n… og ' + (navn.length - 12) + ' til' : '')
+                + '\n\nKursene blir stående. Datoer noen har meldt seg på blir avlyst '
+                + 'i stedet for slettet — da må du gi beskjed og refundere selv.')) return;
+            this.slettOkter(valgte);
+          },
           oktDato: this.state.oktDato || '',
           oktFra: this.state.oktFra || '',
           oktTil: this.state.oktTil || '',
@@ -21208,7 +21371,17 @@ class Component extends DCLogic {
             ? 'Den ' + dagIMnd + '. finnes ikke i alle måneder. De månedene hoppes over framfor at kurset flyttes til en annen dato.'
             : 'Faller på ulik ukedag fra måned til måned.',
           kSerier: ((kurs || {}).serier || []).map(r => Object.assign({}, r, {
-            fjern: () => this.kursSerieKall({ handling: 'serieAv', serieId: r.id }),
+            // «Fjern» tok bort regelen og lot datoene staa — og et kurs som
+            // gjentar seg har mange. De maatte avlyses én og én, og det ble
+            // aldri gjort: lista vokste i stedet. Naa spor vi.
+            fjern: () => {
+              const ogsaa = window.confirm(
+                'Ta bort «' + r.tekst + '»?\n\n'
+                + 'Det lages ingen nye datoer etter dette.\n\n'
+                + 'OK  = rydd også bort datoene som ligger ute og ingen har meldt seg på\n'
+                + 'Avbryt = behold datoene som ligger ute');
+              this.kursSerieKall({ handling: 'serieAv', serieId: r.id, slettDatoer: ogsaa ? 'ja' : 'nei' });
+            },
           })),
           kHarSerier: (((kurs || {}).serier) || []).length > 0,
           kSerieDager: DAG.map(([nr, kort]) => ({
@@ -22805,7 +22978,11 @@ class Component extends DCLogic {
               { navn: 'Beløp', verdi: p.sum },
               { navn: 'Betalt med', verdi: p.maate },
               { navn: 'Status', verdi: p.status },
-            ].concat(p.notat ? [{ navn: 'Notat', verdi: p.notat }] : []),
+            ]
+              // Det deltakeren selv har oppgitt. Staar oeverst av det som
+              // legges til: det er det man aapner raden for aa lese.
+              .concat(p.allergier ? [{ navn: 'Allergier og viktig informasjon', verdi: p.allergier }] : [])
+              .concat(p.notat ? [{ navn: 'Notat', verdi: p.notat }] : []),
             // Paameldinger lagt inn for haand har ingen Vipps-betaling aa
             // refundere. Der er handlingen enten aa markere den som betalt,
             // eller aa ta deltakeren av lista igjen.
@@ -23674,6 +23851,21 @@ class Component extends DCLogic {
       vilkaarOk: !!this.state.vilkaarOk,
       vilkaarMangler: !this.state.vilkaarOk,
       toggleVilkaar: () => this.setState(s => ({ vilkaarOk: !s.vilkaarOk })),
+      // Allergier og annet arrangoren maa vite. Krysset avgjor om feltet
+      // vises, og feltet maa fylles ut naar krysset staar — ellers vet
+      // verkstedet at det er noe, uten aa vite hva.
+      bAllergiKryss: !!this.state.bAllergiKryss,
+      toggleBAllergi: () => this.setState(s => ({
+        bAllergiKryss: !s.bAllergiKryss,
+        // Fjerner du krysset, skal ikke teksten bli liggende og bli sendt.
+        bAllergier: s.bAllergiKryss ? '' : s.bAllergier,
+        bAllergiVist: false,
+      })),
+      bAllergier: this.state.bAllergier || '',
+      settBAllergier: e => this.setState({ bAllergier: e.target.value, bAllergiVist: false }),
+      bAllergiMangler: !!this.state.bAllergiVist
+                       && !!this.state.bAllergiKryss
+                       && (this.state.bAllergier || '').trim() === '',
       goVilkar: this.go('vilkar'),
       goBedrift: this.go('bedrift'),
       // Seksjonen om drop-in staar paa kurssida naar man har filtrert paa

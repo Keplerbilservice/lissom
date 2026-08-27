@@ -119,10 +119,12 @@ if ($oktId <= 0) {
     // Rettelsene paa kursbeviset kom med migrasjon 045.
     $bevisKol = DB::harKolonne('bookings', 'bevis_navn')
         ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,' : '';
+    // Kolonnen kommer med migrasjon 057.
+    $allergiKol = DB::harKolonne('bookings', 'allergier') ? 'b.allergier,' : '';
 
     $alle = DB::alle(
         "SELECT b.id, b.antall, b.status, b.belop_ore, b.folge_medlem,
-                b.betalt_maate, b.notat, b.lagt_inn_av, {$bevisKol}
+                b.betalt_maate, b.notat, b.lagt_inn_av, {$bevisKol} {$allergiKol}
                 b.member_id, b.course_session_id,
                 COALESCE(m.navn, b.gjest_navn) AS navn,
                 COALESCE(m.epost, b.gjest_epost) AS epost,
@@ -161,6 +163,14 @@ if ($oktId <= 0) {
             'maate'   => $d['vipps_reference'] ? 'Vipps' : ($d['betalt_maate'] ?: '—'),
             'manuell' => $d['lagt_inn_av'] !== null,
             'notat'   => $d['notat'],
+            // Det deltakeren selv har oppgitt om allergier.
+            //
+            // «harAllergier» staar for seg: kurslista skal kunne merke raden
+            // uten aa vise innholdet for noen har aapnet deltakeren. Det er
+            // helseopplysninger, og de skal ikke ligge og lyse i en tabell
+            // som er oppe paa en skjerm i verkstedet.
+            'harAllergier' => trim((string) ($d['allergier'] ?? '')) !== '',
+            'allergier'    => (string) ($d['allergier'] ?? ''),
             'status'  => $d['status'] === 'betalt' ? 'Betalt' : 'Ubetalt',
             'antall'  => (int) $d['antall'],
             'folge'   => $d['folge_medlem'],

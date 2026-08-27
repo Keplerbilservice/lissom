@@ -72,7 +72,16 @@ echo "\n== Katalog ==\n";
 $kurs = DB::alle("SELECT * FROM courses WHERE status='publisert'");
 sjekk('kurs er publisert', count($kurs) >= 9, count($kurs) . ' stk');
 $pop = DB::en("SELECT * FROM courses WHERE slug='paint-on-pots'");
-sjekk('Paint on Pots har ordinaer pris', (int)$pop['pris_ore'] === 69000, $pop['pris_ore'] . ' ore');
+// Paint on Pots kostet 690 — prisen med gjenstanden inkludert. Etter
+// migrasjon 074 og 075 er de to skilt: plassen er gratis, og gjenstanden
+// betales i kassa. Sjekken sier naa at de to henger sammen, ikke at prisen
+// er et bestemt tall: er plassen gratis, MAA gjenstanden betales i
+// verkstedet — ellers er kurset gratis ved et uhell.
+$kassa = DB::harKolonne('courses', 'gjenstand_i_kassa')
+    ? (int) $pop['gjenstand_i_kassa'] : 0;
+sjekk('Paint on Pots: gratis plass henger sammen med betaling i verkstedet',
+    (int) $pop['pris_ore'] > 0 || $kassa === 1,
+    $pop['pris_ore'] . ' ore, gjenstand_i_kassa=' . $kassa);
 $test = DB::en("SELECT status FROM courses WHERE slug='testkurs'");
 sjekk('testkurset er ute av sirkulasjon', $test === null || $test['status'] === 'avlyst', $test['status'] ?? 'slettet');
 $boller = DB::en("SELECT tema FROM courses WHERE slug='kurs-boller'");
@@ -604,7 +613,13 @@ sjekk('uten medlemskap ingen grense', Medlemskap::timerFor(['medlemskap_type' =>
 
 echo "\n== Plassen paa den siste stolen ==\n";
 
-$popKurs = DB::en("SELECT id, pris_ore FROM courses WHERE slug = 'paint-on-pots'");
+// Et kurs med pris. Testen under skal se at en betaling som ikke kommer i
+// gang frigir plassen — og da maa det vaere noe aa betale. Paint on Pots sto
+// her, og er gratis siden migrasjon 075: booking gikk rett gjennom, og
+// halve testen falt bort uten at noen sa fra.
+$popKurs = DB::en("SELECT id, pris_ore FROM courses
+                    WHERE pris_ore > 0 AND status = 'publisert'
+                 ORDER BY id LIMIT 1");
 $enPlass = DB::settInn('course_sessions', [
     'course_id' => $popKurs['id'],
     'start_tid' => gmdate('Y-m-d H:i:s', time() + 86400 * 40),

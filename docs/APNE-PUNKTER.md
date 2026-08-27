@@ -119,7 +119,7 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–074 må kjøres
+### 7b. Migrasjon 052–075 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -147,6 +147,9 @@ til den er lastet opp.
 Keramikk Workshop.
 074 gir «Gjenstanden betales i verkstedet», og slår den på for Paint on
 Pots.
+075 setter plassen på Paint on Pots til 0. Prisen var 690 — prisen *med*
+gjenstanden — og etter 074 ville kunden betalt den summen for plassen og
+gjenstanden i tillegg.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
@@ -302,13 +305,50 @@ Slik er det nå:
 - **Gjenstanden slås inn i kassa** under «Varer i butikken» — da trekkes
   lageret, og salget føres på butikkontoen med mva, som alt annet butikksalg.
 
-**Prisen på plassen er ikke rørt.** Paint on Pots står fortsatt til 690, og det
-er Lissom som eier det tallet. Skjermen sier fra, men endrer ikke noe selv.
+**Plassen er gratis** (migrasjon 075, bestemt av Lissom 27. august). Du booker
+et bord, og betaler bare det du tar med deg hjem. Bookingen tåler det fra før:
+et beløp under Vipps sitt minstebeløp markeres som betalt uten å sende noen til
+Vipps, og kunden får bekreftelse som vanlig.
+
+**Priser står ikke i teksten.** Prislista er tatt bort fra siden, og kortene
+står uten pris. Prisen står i bestillingen, som «Fra kr. N,-» — plassen pluss
+den rimeligste varen som faktisk er publisert og på lager. Er den billigste
+koppen 300, står det 300; settes noe til 290, står det 290.
+
+### Fire feil som lå bak dette
+
+- **«Gratis» og «kun for medlemmer» var det samme** i `app/lib/booking.php`:
+  null kroner betydde medlemsarrangement, punktum. Det holdt så lenge det
+  eneste gratis vi hadde var medlemssamlinger. Paint on Pots med gratis plass
+  svarte «Dette arrangementet er kun for medlemmer» til alle. Nå er kurs der
+  gjenstanden betales i verkstedet unntatt; vanlige gratiskurs krever fortsatt
+  medlemskap, og det er kontrollert.
+- **Booket du fra Paint on Pots-siden, sto dreiekursets beskrivelse der.**
+  Kortene ble bygget for hånd med ti felter, og alt som ikke sto der falt
+  tilbake på designlista. Kortene bygges nå på kurset selv.
+- **Den samme dreiekursteksten var siste utvei for alle kurs uten egen
+  beskrivelse.** Nå kommer den fra kursets mal, og finnes den ikke, står det
+  ingenting.
+- **`api/admin/kurs.php` satte kapasiteten til 8** hver gang noe lagret et kurs
+  uten å sende plasstallet. Paint on Pots gikk fra 12 til 8. Samme gjaldt pris,
+  tema, beskrivelse og SMS-haken. Feltene skrives nå bare når de er med.
+
+Og `Kursmal::forKurs` falt på standardmalen når tema var tomt — Paint on Pots
+sto med tema NULL og fikk «Innføring i plateteknikk og dekor» på et kurs der man
+maler ferdig brent keramikk. Uten tema leses det av navnet nå, og Paint on Pots
+har egne punkter: det er ingen leire i dem.
 
 ### Ikke bygget i denne runden
 
 Stegene («Velg keramikk», «Mal den her», …) og FAQ-en på `/paint-on-pots`
 ligger fortsatt fast i koden og kan ikke redigeres fra admin.
+
+**Bookbar når verkstedet er åpent** — Lissom ba 27. august om at Paint on Pots
+skal kunne bookes når hun allerede er der: når det går et planlagt kurs, eller
+når hun har stemplet inn. Ikke bygget ennå. Åpningstidene finnes som de skal i
+`api/apningstider.php` (planlagte kurs + manuell overstyring + innstempling);
+det som mangler er å gjøre de åpne vinduene til bookbare plasser, og å unngå at
+en slik plass i sin tur teller som åpningstid.
 
 ---
 

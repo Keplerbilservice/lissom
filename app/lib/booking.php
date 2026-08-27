@@ -135,9 +135,15 @@ final class Booking
         // resten av metoden trenger ikke vite at det finnes to.
         $egenPris = DB::harKolonne('course_sessions', 'pris_ore')
             ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
+        // «Gjenstanden betales i verkstedet» (migrasjon 074). Et slikt kurs er
+        // gratis med vilje — plassen koster ingenting, og kunden betaler det
+        // hen maler naar hen staar der.
+        $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa')
+            ? 'c.gjenstand_i_kassa' : '0 AS gjenstand_i_kassa';
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
-                    c.tittel, ' . $egenPris . ' AS pris_ore, c.type, c.tema, c.slug
+                    c.tittel, ' . $egenPris . ' AS pris_ore, c.type, c.tema, c.slug,
+                    ' . $kassaFelt . '
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :id
@@ -157,8 +163,16 @@ final class Booking
         }
 
         // Medlemsarrangementer er gratis, men krever aktivt medlemskap.
+        //
+        // «Gratis» og «kun for medlemmer» var det samme her: null kroner
+        // betydde medlemsarrangement, punktum. Det holdt saa lenge det eneste
+        // gratis vi hadde var medlemssamlinger — men Paint on Pots er gratis
+        // fordi plassen er gratis, og gjenstanden betales i kassa. Da ble
+        // sida staaende med tre datoer og en booking som svarte «kun for
+        // medlemmer» til alle som ikke var det.
         $gratis = (int) $okt['pris_ore'] === 0;
-        if ($gratis && $medlemId === null) {
+        $apentForAlle = (int) ($okt['gjenstand_i_kassa'] ?? 0) === 1;
+        if ($gratis && !$apentForAlle && $medlemId === null) {
             throw new RuntimeException('Dette arrangementet er kun for medlemmer.');
         }
 

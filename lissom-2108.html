@@ -22643,7 +22643,23 @@ class Component extends DCLogic {
             || String(k.laererTekst || k.laerer || '').trim()
             || '';
       })(),
-      erBetalt: (this.state.valgtKurs && this.state.valgtKurs.price) !== 'Gratis',
+      // Er det noe aa betale paa nett?
+      //
+      // Sto som «price !== 'Gratis'» — en sammenligning mot en tekst. Paint
+      // on Pots staar uten pris paa kortet (den staar i bestillingen), og da
+      // ble betalingsvalget staaende paa et kurs det ikke er noe aa betale
+      // for. Tallet fra katalogen avgjor det, ikke teksten.
+      erBetalt: (() => {
+        const k = this.state.valgtKurs || {};
+        const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
+        if (kat && kat.prisOre !== undefined && kat.prisOre !== null) {
+          // Prisen paa den valgte datoen gaar foran kursets, som ellers.
+          const d = (kat.datoer || []).find(x => x.oktId === this.state.bOktId);
+          const ore = (d && d.prisOre !== null && d.prisOre !== undefined) ? d.prisOre : kat.prisOre;
+          return ore > 0;
+        }
+        return k.price !== 'Gratis';
+      })(),
       harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket',
       betalingsvalg: ['Vipps'].map(navn => ({
         navn,

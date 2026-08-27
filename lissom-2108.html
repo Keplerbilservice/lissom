@@ -4233,7 +4233,12 @@ window.__resources = {
           <sc-if value="{{ fbIngenVenter }}" hint-placeholder-val="{{ false }}">
             <p style="margin: 0 0 var(--space-8); font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs venter på beskjed nå.</p>
           </sc-if>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-10);">
+          <!-- auto-fill og et tak paa bredden, ikke auto-fit.
+               Med auto-fit blir tomme spor borte, og staar det bare ett
+               kurs her, strekker det ene kortet seg over hele skjermen —
+               en lang stripe med tre ord i. Naa beholder kortene formen
+               sin og legger seg paa rekke bortover. -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 280px)); justify-content: start; gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-10);">
             <sc-for list="{{ fbVenter }}" as="k" hint-placeholder-count="3">
               <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);">
@@ -4251,7 +4256,7 @@ window.__resources = {
           <sc-if value="{{ fbIngenFerdige }}" hint-placeholder-val="{{ false }}">
             <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen kurs er ferdig meldt ennå.</p>
           </sc-if>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4); align-items: stretch;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 280px)); justify-content: start; gap: var(--space-4); align-items: stretch;">
             <sc-for list="{{ fbFerdige }}" as="k" hint-placeholder-count="2">
               <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);">
@@ -15232,22 +15237,20 @@ class Component extends DCLogic {
       this.setState({ kurvApen: false, ordreApen: false, vippsBetaling: null, kvittering: null });
     };
     document.addEventListener('keydown', this._esc);
-    this._pop = () => {
-      this._fraPop = true;
-      const s = (location.hash || '#forside').slice(1);
-      this.setState({ side: s || 'forside' });
-      window.scrollTo(0, 0);
-    };
-    window.addEventListener('popstate', this._pop);
-    try {
-      const h = (location.hash || '').slice(1);
-      if (h && h !== this.state.side) { this._fraPop = true; this.setState({ side: h }); }
-    } catch (e) {}
+    // Her laa det en ruting til: en egen popstate-lytter som leste skjermen
+    // ut av «#»-delen av adressen, ved siden av den ekte som leser stien.
+    //
+    // De to sto paa hver sin side av samme knapp. Trykte man tilbake, satte
+    // den ekte skjermen fra stien — /admin/kurs — og rett etterpaa satte
+    // denne den om igjen fra hashen. Det er ingen hash i adressen, saa den
+    // falt tilbake paa «forside», og adressen ble skrevet om til «/».
+    //
+    // Derfor havnet man paa forsiden hver eneste gang man trykte tilbake,
+    // uansett hvor man kom fra. Rutingen som leser stien staar igjen alene.
   }
 
   componentWillUnmount() {
     if (window.lissomLagreKortrekkefolge) delete window.lissomLagreKortrekkefolge;
-    if (this._pop) window.removeEventListener('popstate', this._pop);
     if (this._utlogget) window.removeEventListener('lissom:utlogget', this._utlogget);
     clearInterval(this._utgaveVakt);
     if (this._utgaveFokus) document.removeEventListener('visibilitychange', this._utgaveFokus);
@@ -16331,10 +16334,9 @@ class Component extends DCLogic {
 
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState && prevState.side !== this.state.side) {
-      if (this._fraPop) this._fraPop = false;
-      else { try { history.pushState({ side: this.state.side }, '', '#' + this.state.side); } catch (e) {} }
-    }
+    // Skrev «#<skjerm>» i adressen ved hvert skjermbytte — den andre halvdelen
+    // av hash-rutingen som er tatt bort over. Adressen skrives av
+    // synkAdresse(), som setter den ekte stien.
     if (this.state.kvittering && (!prevState || this.state.kvittering !== prevState.kvittering)) {
       const toastTop = this.topNaa(60);
       if (this.state.toastTop !== toastTop) this.setState({ toastTop });

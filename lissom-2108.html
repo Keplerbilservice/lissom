@@ -16021,6 +16021,14 @@ class Component extends DCLogic {
     // De to faste hentes med det samme; kundene naar lista er kommet.
     this.forhandslastRotasjon();
 
+    // Innstemplinga endrer seg av seg selv: det er andre folk som stempler
+    // inn og ut. Skjermen skal vise det som er sant naa, ikke det som var
+    // sant da fanen ble aapnet.
+    this._stempelur = setInterval(() => this.oppfriskStempling(), 45000);
+    // Og med det samme man kommer tilbake til fanen — der er ventetida verst.
+    this._synlig = () => { if (!document.hidden) this.oppfriskStempling(); };
+    document.addEventListener('visibilitychange', this._synlig);
+
     this._rotasjon = setInterval(() => {
       if (kanBytte() && !this._pauserot && !this._svevrot) this.tonBytt('rot', this.rotasjonene().length);
     }, Component.ROT_OPPHOLD);
@@ -16145,6 +16153,8 @@ class Component extends DCLogic {
     clearInterval(this._utgaveVakt);
     if (this._utgaveFokus) document.removeEventListener('visibilitychange', this._utgaveFokus);
     clearInterval(this._karusell);
+    clearInterval(this._stempelur);
+    if (this._synlig) document.removeEventListener('visibilitychange', this._synlig);
     clearInterval(this._rotasjon);
     clearInterval(this._rotasjonBut);
     clearTimeout(this._timerrot);
@@ -17102,6 +17112,38 @@ class Component extends DCLogic {
         if (d && d.timer) this.setState({ stempling: d });
       })
       .catch(() => { this._stemplingHentes = false; });
+  }
+
+  /**
+   * Henter innstemplinga paa nytt, med jamne mellomrom.
+   *
+   * Den ble hentet én gang, naar skjermen ble aapnet. Stemplet noen andre
+   * seg inn — fra telefonen sin, eller fra en annen maskin — sto admin med
+   * det som var sant da hun aapnet fanen, kanskje flere timer for. Verken
+   * statuslinja, knappen eller «hvem er inne naa» fikk vite noe.
+   *
+   * Aapningstidene hentes med det samme, for de endrer seg av det samme:
+   * er verkstedet bemannet, staar det «Aapent naa» ute.
+   */
+  /** Aapningstidene fra serveren. Egen metode, fordi de ogsaa hentes paa nytt. */
+  hentApningstider() {
+    if (this._apningHentes) return;
+    this._apningHentes = true;
+    fetch('/api/apningstider.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { this._apningHentes = false; if (d && d.dager) this.setState({ apningsdager: d }); })
+      .catch(() => { this._apningHentes = false; });
+  }
+
+  oppfriskStempling() {
+    if (!this.erPublisert() || !this.state.innlogget) return;
+    const paaSkjerm = this.state.side === 'minside' || this.erAdminSkjerm(this.state.side);
+    if (!paaSkjerm || document.hidden) return;
+
+    this._stemplingHentes = false;
+    this.hentStempling();
+    this._apningHentes = false;
+    this.hentApningstider();
   }
 
   stemplingKall(kropp, kvittering) {
@@ -19695,11 +19737,7 @@ class Component extends DCLogic {
         && ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'kasse', 'omoss',
             'personvern', 'nyttig', 'bedrift', 'vilkar', 'gavekortside', 'kontakt',
             'ferdigbrent', 'admin'].indexOf(side) !== -1) {
-      this._apningHentes = true;
-      fetch('/api/apningstider.php', { credentials: 'same-origin' })
-        .then(r => r.json())
-        .then(d => { if (d && d.dager) this.setState({ apningsdager: d }); })
-        .catch(() => {});
+      this.hentApningstider();
     }
     if (side === 'nyheter' && !this.state.nyheter) {
       this.hentNyheter();

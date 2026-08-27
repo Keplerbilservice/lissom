@@ -5754,46 +5754,6 @@ window.__resources = {
     </div>
   </sc-if>
 
-  <!-- ── Vedlikehold ──────────────────────────────────────────────────
-       Laa nederst paa Oversikt, under alt annet. Det er ikke noe man gjor
-       ofte, men naar man skal, skal det vaere lett aa finne — og det er ikke
-       nederst paa den travleste skjermen. Staar naa i menyen, under Logg ut.
-
-       Databaseoppdateringene maatte foer kjores ved aa lime en adresse inn i
-       feltet, og den svarte «Fant ikke siden» hvis nettleseren ikke hadde en
-       gyldig admin-okt. Herfra gaar kallet fra sida man alt er innlogget paa. -->
-  <sc-if value="{{ erAdminVedlikehold }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Admin – vedlikehold" style="{{ adminGridStil }}">
-      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
-        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
-        <nav style="{{ adminNavStil }}">
-          <sc-for list="{{ adminNavVedlikehold }}" as="a" hint-placeholder-count="11">
-            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
-          </sc-for>
-        </nav>
-      </aside>
-
-      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
-        <div style="margin-bottom: var(--space-8);">
-          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Vedlikehold</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Oppdateringer av databasen. Kommer det nye felter eller tabeller med en endring på nettsiden, er det her de settes inn.</p>
-        </div>
-
-        <div style="max-width: 560px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Databasen</div>
-          <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vedlikeholdTekst }}</p>
-            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ vedlikeholdKjor }}" hint-size="auto,40px">{{ vedlikeholdKnapp }}</x-import>
-              <button type="button" onClick="{{ vedlikeholdSjekk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sjekk på nytt</button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </sc-if>
-
   <sc-if value="{{ erAdminVarsler }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – e-post og SMS" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -10867,7 +10827,6 @@ class Component extends DCLogic {
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
       { sti: '/admin/videokurs',    side: 'adminvideokurs' },
-      { sti: '/admin/vedlikehold',  side: 'adminvedlikehold' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -16851,7 +16810,6 @@ class Component extends DCLogic {
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
       case 'adminvideokurs':     return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Videokurs');
-      case 'adminvedlikehold':   return p('Vedlikehold');
       case 'adminventeliste':    return p('Oversikt');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
@@ -16959,17 +16917,52 @@ class Component extends DCLogic {
         velg: () => this.loggUtNaa(),
         stil: this.adminBunnStil(),
       },
-      // Vedlikeholdet laa nederst paa Oversikt, under alt annet. Det gjores
-      // sjelden, men naar det skal gjores, skal det vaere lett aa finne.
-      {
-        navn: '⚙  Vedlikehold',
-        velg: () => this.gaaAdmin('adminvedlikehold', {}),
-        stil: Object.assign({}, this.adminBunnStil(), {
-          fontWeight: aktiv === 'Vedlikehold' ? 700 : 500,
-          color: aktiv === 'Vedlikehold' ? 'var(--lissom-yellow)' : 'var(--clay-300)',
-        }),
-      },
-    ]);
+      // Vedlikeholdet laa nederst paa Oversikt, under alt annet. Naa staar det
+      // her, og gjor jobben med det samme: raden sier hvor mange
+      // oppdateringer som venter, og ett trykk kjorer dem.
+      //
+      // Aa maatte inn paa en skjerm for aa trykke paa en knapp til er ett
+      // trykk for mye paa noe som gjores én gang i maaneden og alltid har
+      // samme svar. Er det ingenting aa gjore, sier raden det, og trykket
+      // sjekker paa nytt.
+      ...(() => {
+        const m = this.state.migStatus;
+        const venter = (m && m.mangler) || [];
+        const vet = !!m && !m.feil;
+        const navn = !this.erPublisert() ? '⚙  Vedlikehold'
+          : !vet ? '⚙  Vedlikehold'
+          : venter.length ? '⚙  Kjør ' + venter.length + ' oppdatering' + (venter.length === 1 ? '' : 'er')
+          : '⚙  Alt er oppdatert';
+        return [{
+          navn: navn,
+          velg: () => {
+            // I forhaandsvisningen finnes ingen server aa kjore mot.
+            if (!this.erPublisert()) {
+              this.setState({ kvittering: 'Krever den ekte siden',
+                              kvitteringDetalj: 'Databaseoppdateringer kjøres på lissom.no.' });
+              return;
+            }
+            if (!venter.length) {
+              // Ingenting aa kjore: sjekk paa nytt, og si hva svaret ble.
+              this._migHentes = false;
+              this.setState({ migStatus: null, kvittering: 'Sjekker databasen …', kvitteringDetalj: '' });
+              this.hentMigrasjoner();
+              return;
+            }
+            if (!window.confirm('Kjøre ' + venter.length + ' oppdatering'
+                + (venter.length === 1 ? '' : 'er') + ' av databasen?\n\n'
+                + venter.join('\n')
+                + '\n\nDet tar noen sekunder. Ingenting slettes.')) return;
+            this.kjorMigrasjoner();
+          },
+          stil: Object.assign({}, this.adminBunnStil(), {
+            fontWeight: venter.length ? 700 : 500,
+            // Venter det noe, skal raden se ut som noe som venter.
+            color: venter.length ? 'var(--lissom-yellow)' : 'var(--clay-300)',
+          }),
+        }];
+      })(),
+    ].flat());
   }
 
   adminBunnStil() {
@@ -22522,8 +22515,6 @@ class Component extends DCLogic {
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
       erAdminVideokurs: side === 'adminvideokurs',
-      erAdminVedlikehold: side === 'adminvedlikehold',
-      adminNavVedlikehold: this.adminMeny(),
       adminNavVideokurs: this.adminMeny(),
       vkTilbake: () => this.gaaAdmin('adminomrkurs', {}),
       erAdminFerdigbrent: side === 'adminferdigbrent',
@@ -24029,8 +24020,14 @@ class Component extends DCLogic {
           { navn: 'Referanse', verdi: n.referanse || '' },
         ], n.id ? 'Avbestill påmeldingen' : 'Lukk', null, false,
            n.id ? () => {
+             // Teksten skal si det som gjelder denne paameldingen, ikke begge
+             // deler. «Er det betalt, maa belopet refunderes» over en ubetalt
+             // paamelding leses som at den er betalt.
+             const betalt = (n.status || '') === 'Betalt';
              if (!window.confirm('Avbestille påmeldingen til ' + n.navn + '?\n\n'
-                 + 'Plassen blir ledig igjen. Er det betalt, må beløpet refunderes i Vipps.')) return;
+                 + (betalt
+                     ? 'Plassen blir ledig igjen. Beløpet må refunderes i Vipps.'
+                     : 'Ingenting er betalt, så det er ingenting å refundere. Plassen blir ledig igjen.'))) return;
              this.pameldingKall({ handling: 'fjern', id: n.id });
            } : null]),
       erAdminOkonomi: side === 'adminokonomi',

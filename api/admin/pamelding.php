@@ -36,11 +36,28 @@ $id       = Foresporsel::heltall('id');
 // Raden slettes ikke. En avbestilt booking frigir plassen, men beholder
 // sporet — hvem som var paameldt og naar det ble endret.
 if ($handling === 'fjern') {
-    $b = DB::en('SELECT id, gjest_navn, member_id, payment_id FROM bookings WHERE id = :i', ['i' => $id]);
+    $b = DB::en(
+        'SELECT b.id, b.gjest_navn, b.member_id, b.payment_id, b.status,
+                p.status AS betalingsstatus
+           FROM bookings b
+      LEFT JOIN payments p ON p.id = b.payment_id
+          WHERE b.id = :i',
+        ['i' => $id]
+    );
     if ($b === null) {
         Svar::feil('Fant ikke påmeldingen.');
     }
-    if ($b['payment_id'] !== null) {
+
+    // Her sto det at enhver booking med en betalingsrad var betalt gjennom
+    // Vipps. Det stemmer ikke: raden lages naar betalingen *startes*, og blir
+    // liggende ogsaa naar kunden avbroet eller aldri kom tilbake fra Vipps.
+    // En ubetalt paamelding kunne dermed ikke avbestilles i det hele tatt —
+    // den ble staaende under «Nye paameldinger» for alltid, med beskjed om aa
+    // refundere noe ingen hadde betalt.
+    //
+    // Det som betyr noe er om pengene faktisk er trukket.
+    $BETALT = ['autorisert', 'betalt', 'delvis_refundert'];
+    if ($b['payment_id'] !== null && in_array((string) $b['betalingsstatus'], $BETALT, true)) {
         Svar::feil('Denne er betalt gjennom Vipps. Bruk refusjon, ikke sletting.');
     }
 
@@ -49,7 +66,8 @@ if ($handling === 'fjern') {
         'avbestilt_at' => gmdate('Y-m-d H:i:s'),
     ], ['id' => $id]);
 
-    revider('pamelding_fjernet', 'booking', $id, ['navn' => $b['gjest_navn']]);
+    revider('pamelding_fjernet', 'booking', $id,
+            ['navn' => $b['gjest_navn'], 'betaling' => (string) ($b['betalingsstatus'] ?? 'ingen')]);
     Svar::ok(['beskjed' => 'Plassen er frigitt.']);
 }
 

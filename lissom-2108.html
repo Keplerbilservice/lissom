@@ -2357,7 +2357,12 @@ window.__resources = {
                  Bildene inne i teksten er noe annet: de staar mellom
                  avsnittene, med bildetekst og plassering. -->
             <sc-if value="{{ nyLestHarBilde }}" hint-placeholder-val="{{ false }}">
-              <img data-src="{{ nyLestBilde }}" alt="{{ nyLestBildeAlt }}" style="{{ nyLestBildeStil }}" loading="lazy" decoding="async">
+              <figure style="{{ nyLestFigurStil }}">
+                <img data-src="{{ nyLestBilde }}" alt="{{ nyLestBildeAlt }}" style="{{ nyLestBildeStil }}" loading="lazy" decoding="async">
+                <sc-if value="{{ nyLestHarBildetekst }}" hint-placeholder-val="{{ false }}">
+                  <figcaption style="margin: 10px 0 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-muted); text-wrap: pretty;">{{ nyLestBildetekst }}</figcaption>
+                </sc-if>
+              </figure>
             </sc-if>
             <!-- Teksten og bildene i den, avsnitt for avsnitt.
                  En artikkel hadde ett bilde, og det sto over teksten. Naa
@@ -3792,8 +3797,16 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ artikkel.dato }}</div>
             <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ artikkel.tittel }}</h1>
             <p style="margin: 0 0 var(--space-8); font-size: var(--text-lg); line-height: 1.65; color: var(--text-body); text-wrap: pretty;">{{ artikkel.ingress }}</p>
+            <!-- Bildet var en tom <div> med bakgrunnsbilde: ingen alt-tekst
+                 til den som ikke ser det, og ingen linje under som sier hva
+                 vi ser paa. Naa er det et bilde i en figur, som i et blad. -->
             <sc-if value="{{ artikkel.harBilde }}" hint-placeholder-val="{{ false }}">
-              <div style="border-radius: var(--radius-xl, 22px); overflow: hidden; height: 340px; background-image: {{ artikkel.bildeCss }}; background-size: cover; background-position: center; margin-bottom: var(--space-10);"></div>
+              <figure style="margin: 0 0 var(--space-10);">
+                <img data-src="{{ artikkel.bilde }}" alt="{{ artikkel.bildeAlt }}" style="{{ artikkel.bildeStil }}" loading="lazy" decoding="async">
+                <sc-if value="{{ artikkel.harBildetekst }}" hint-placeholder-val="{{ false }}">
+                  <figcaption style="margin: 10px 0 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-muted); text-wrap: pretty;">{{ artikkel.bildetekst }}</figcaption>
+                </sc-if>
+              </figure>
             </sc-if>
             <sc-for list="{{ artikkelBlokker }}" as="b" hint-placeholder-count="4">
               <div>
@@ -3983,10 +3996,23 @@ window.__resources = {
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Ingress</label>
             <textarea value="{{ artIngress }}" onChange="{{ settArtIngress }}" rows="2" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-4);"></textarea>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bilde</label>
-            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3);">
               <sc-for list="{{ artBildeValg }}" as="v" hint-placeholder-count="7">
                 <button type="button" onClick="{{ v.velg }}" title="{{ v.navn }}" aria-label="{{ v.navn }}" style="{{ v.stil }}"></button>
               </sc-for>
+              <!-- De fem faste var alt som fantes her. Bildene eieren selv
+                   har lastet opp laa i biblioteket og var utilgjengelige. -->
+              <button type="button" onClick="{{ artVelgBilde }}" aria-label="Velg bilde fra biblioteket" title="Velg bilde fra biblioteket" style="{{ artBibliotekStil }}">+</button>
+            </div>
+            <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div style="flex: 1; min-width: 200px;">
+                <label for="art-bildetekst" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Bildetekst — står under bildet</label>
+                <input id="art-bildetekst" value="{{ artBildeTekst }}" onChange="{{ settArtBildeTekst }}" placeholder="Valgfritt" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              </div>
+              <div style="flex: 1; min-width: 200px;">
+                <label for="art-bildealt" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Alt-tekst — hva bildet viser</label>
+                <input id="art-bildealt" value="{{ artBildeAlt }}" onChange="{{ settArtBildeAlt }}" placeholder="For den som ikke ser bildet" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              </div>
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Innhold</label>
             <p style="margin: 0 0 6px; font-size: var(--text-xs, 12px); color: var(--text-muted);"># overskrift · ## mellomtittel · | celle | celle | for tabellrader · - punkt for lister · «Tekst:» blir en etikett</p>
@@ -9049,6 +9075,41 @@ window.__resources = {
                   <div>
                     <label style="{{ abEtikett }}">Kategori</label>
                     <input value="{{ abKategori }}" onChange="{{ settAbKategori }}" placeholder="F.eks. Keramikk" style="{{ abFeltStil }}">
+                    <!-- De faste kategoriene som ett trykk, feltet som fritekst.
+                         Lista var bare et forslag i AI-skjemaet; her sto det et
+                         tomt felt, og en artikkel havnet lett utenfor
+                         kategoriene kundene kan filtrere paa. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                      <sc-for list="{{ abKategoriValg }}" as="k" hint-placeholder-count="6">
+                        <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">{{ k.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+                <!-- Bildet oeverst i artikkelen.
+                     Det ble valgt fra raden i lista, og bildeteksten fantes
+                     ikke: toppbildet sto uten linja under som sier hva vi ser
+                     paa. Bildene inne i teksten hadde den fra for. -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                  <label style="{{ abEtikett }}">Bildet øverst — det som står over teksten og følger med når noen deler lenken</label>
+                  <div style="display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap;">
+                    <button type="button" onClick="{{ abVelgBilde }}" aria-label="{{ abBildeKnapp }}" style="{{ abBildeStil }}"></button>
+                    <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-3);">
+                      <div>
+                        <label for="ab-topp-tekst" style="{{ abLitenEtikett }}">Bildetekst — står under bildet</label>
+                        <input id="ab-topp-tekst" value="{{ abBildeTekst }}" onChange="{{ settAbBildeTekst }}" placeholder="Valgfritt" style="{{ abFeltStil }}">
+                      </div>
+                      <div>
+                        <label for="ab-topp-alt" style="{{ abLitenEtikett }}">Alt-tekst — hva bildet viser, for den som ikke ser det</label>
+                        <input id="ab-topp-alt" value="{{ abBildeAlt }}" onChange="{{ settAbBildeAlt }}" placeholder="La stå tom hvis bildet bare er pynt" style="{{ abFeltStil }}">
+                      </div>
+                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ abVelgBilde }}" hint-size="auto,38px">{{ abBildeKnapp }}</x-import>
+                        <sc-if value="{{ abHarBilde }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ abFjernBilde }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                        </sc-if>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -14479,7 +14540,13 @@ class Component extends DCLogic {
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         this._artiklerHentes = false;
-        if (d && d.artikler) this.setState({ markedArtikler: d.artikler });
+        if (d && d.artikler) {
+          // «forslag» er de faste kategoriene serveren kjenner. De ligger her
+          // slik at skjemaet ikke maa gjenta lista og de to kan gaa fra
+          // hverandre.
+          this.setState({ markedArtikler: d.artikler,
+                          artikkelForslag: (d.forslag && d.forslag.length) ? d.forslag : undefined });
+        }
       })
       .catch(() => { this._artiklerHentes = false; });
   }
@@ -14698,6 +14765,21 @@ class Component extends DCLogic {
     if (v.slag === 'bibliotek') {
         return;
     }
+    // Bildet i skjemaet under Nyttig info. Artikkelen er kanskje ikke
+    // lagret ennaa, saa det ligger i skjemaet til den lagres.
+    if (v.slag === 'nyttigbilde') {
+      this.setState({ artBilde: url || '' });
+      return;
+    }
+    // Toppbildet. Lagres for seg — det er en egen handling paa serveren —
+    // men ruta i skjemaet maa oppdateres her, ellers staar den tom til lista
+    // er hentet paa nytt.
+    if (v.slag === 'artikkelforside') {
+      this.setState({ abBilde: url || '' });
+      if (!url) { this.setState({ abBildeTekst: '', abBildeAlt: '' }); }
+      this.artikkelKall({ handling: 'bilde', id: v.id, bilde: url || '' });
+      return;
+    }
     // Bildene inne i en artikkel lagres sammen med artikkelen, ikke for seg:
     // rekkefolgen og plasseringene henger sammen, og lista skrives hel.
     if (v.slag === 'artikkelbilde') {
@@ -14745,6 +14827,10 @@ class Component extends DCLogic {
         : (v && v.slag === 'artikkelbilde')
           ? { tittel: this.state.abTittel || 'artikkelen',
               bilde: ((this.state.abBilder || [])[v.rute] || {}).fil || '' }
+        : (v && v.slag === 'artikkelforside')
+          ? { tittel: this.state.abTittel || 'artikkelen', bilde: this.state.abBilde || '' }
+        : (v && v.slag === 'nyttigbilde')
+          ? { tittel: this.state.artTittel || 'artikkelen', bilde: this.state.artBilde || '' }
           : ((v && kilde.find(x => x.id === v.id)) || {});
     // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
     // originalene i full stoerrelse — over hundre av dem, hver gang den ble
@@ -16796,6 +16882,7 @@ class Component extends DCLogic {
       return fra.artikler.map(a => ({
         id: a.id, tittel: a.tittel, dato: a.dato || '', ingress: a.ingress || '',
         bilde: a.bilde || FOTO + 'butikken.jpg', innhold: a.innhold || '',
+        bildeTekst: a.bildeTekst || '', bildeAlt: a.bildeAlt || '',
       }));
     }
     return this.state.adminArtikler || [];
@@ -25207,7 +25294,21 @@ class Component extends DCLogic {
       artikkelListeVis: this.state.artikkelValgt == null,
       artikkel: (() => {
         const a = this.artikkelData()[this.state.artikkelValgt] || {};
-        return { tittel: a.tittel || '', dato: a.dato || '', ingress: a.ingress || '', bildeCss: "url('" + (a.bilde || '') + "')", harBilde: !!a.bilde };
+        return {
+          tittel: a.tittel || '', dato: a.dato || '', ingress: a.ingress || '',
+          harBilde: !!a.bilde,
+          bilde: a.bilde || '',
+          // Alt-teksten sier hva bildet viser. Er ingen skrevet, er
+          // bildeteksten det naermeste vi har; til slutt tittelen.
+          bildeAlt: a.bildeAlt || a.bildeTekst || a.tittel || 'Bilde til artikkelen',
+          harBildetekst: !!a.bildeTekst,
+          bildetekst: a.bildeTekst || '',
+          bildeStil: {
+            width: '100%', height: 340, objectFit: 'cover',
+            objectPosition: this.fokusFor(a.bilde || ''),
+            borderRadius: 'var(--radius-xl, 22px)', display: 'block',
+          },
+        };
       })(),
       artikkelBlokker: this.parseInnhold((this.artikkelData()[this.state.artikkelValgt] || {}).innhold),
       lukkArtikkel: () => { this.setState({ artikkelValgt: null }); window.scrollTo(0, 0); },
@@ -25260,7 +25361,7 @@ class Component extends DCLogic {
       })(),
       adminArtRader: this.artikkelData().map((a, i) => ({
         tittel: a.tittel, dato: a.dato, ingress: a.ingress,
-        rediger: () => this.setState({ artRed: true, artIndeks: i, artTittel: a.tittel, artDato: a.dato, artIngress: a.ingress, artBilde: a.bilde, artInnhold: a.innhold }),
+        rediger: () => this.setState({ artRed: true, artIndeks: i, artTittel: a.tittel, artDato: a.dato, artIngress: a.ingress, artBilde: a.bilde, artInnhold: a.innhold, artBildeTekst: a.bildeTekst || '', artBildeAlt: a.bildeAlt || '' }),
         slett: () => {
           if (this.erPublisert() && a.id) {
             if (!window.confirm('Slette «' + a.tittel + '»?')) return;
@@ -25271,13 +25372,27 @@ class Component extends DCLogic {
           this.setState({ adminArtikler: this.artikkelData().filter((_, j) => j !== i), artRed: false });
         },
       })),
-      aNyArtikkel: () => this.setState({ artRed: true, artIndeks: -1, artTittel: '', artDato: 'August 2026', artIngress: '', artBilde: 'assets_photos_dreiing-naerbilde.jpg', artInnhold: '' }),
+      aNyArtikkel: () => this.setState({ artRed: true, artIndeks: -1, artTittel: '', artDato: 'August 2026', artIngress: '', artBilde: 'assets_photos_dreiing-naerbilde.jpg', artInnhold: '', artBildeTekst: '', artBildeAlt: '' }),
       artRed: !!this.state.artRed,
       artTittel: this.state.artTittel || '', settArtTittel: (e) => this.setState({ artTittel: e.target.value }),
       artDato: this.state.artDato || '', settArtDato: (e) => this.setState({ artDato: e.target.value }),
       artIngress: this.state.artIngress || '', settArtIngress: (e) => this.setState({ artIngress: e.target.value }),
       artBilde: this.state.artBilde || '', settArtBilde: (e) => this.setState({ artBilde: e.target.value }),
       artInnhold: this.state.artInnhold || '', settArtInnhold: (e) => this.setState({ artInnhold: e.target.value }),
+      // Bildeteksten og alt-teksten. Ingen kategori her med vilje: Nyttig
+      // info er verkstedets egne sider, og en kategori ville flyttet siden
+      // over til Nyheter. Kategoriene hoerer til kunnskapsbanken.
+      artBildeTekst: this.state.artBildeTekst || '',
+      settArtBildeTekst: e => this.setState({ artBildeTekst: e.target.value }),
+      artBildeAlt: this.state.artBildeAlt || '',
+      settArtBildeAlt: e => this.setState({ artBildeAlt: e.target.value }),
+      artVelgBilde: () => this.apneBildevalg({ slag: 'nyttigbilde' }),
+      artBibliotekStil: {
+        appearance: 'none', cursor: 'pointer', width: 64, height: 48,
+        borderRadius: 'var(--radius-md)', border: '2px dashed var(--border-subtle)',
+        background: 'var(--clay-50)', color: 'var(--text-muted)',
+        font: 'var(--type-body)', lineHeight: 1, padding: 0,
+      },
       artBildeValg: ['dreiing-naerbilde.jpg', 'handbygging.jpg', 'kursrommet.jpg', 'butikken.jpg', 'plateteknikk-fat.jpg'].map(fil => ({
         navn: fil.replace('.jpg', ''),
         velg: () => this.setState({ artBilde: 'assets_photos_' + fil }),
@@ -25285,7 +25400,7 @@ class Component extends DCLogic {
       })),
       artLagre: () => {
         if (!(this.state.artTittel || '').trim()) return;
-        const ny = { tittel: this.state.artTittel.trim(), dato: this.state.artDato || '', ingress: this.state.artIngress || '', bilde: this.state.artBilde || 'assets_photos_butikken.jpg', innhold: this.state.artInnhold || '' };
+        const ny = { tittel: this.state.artTittel.trim(), dato: this.state.artDato || '', ingress: this.state.artIngress || '', bilde: this.state.artBilde || 'assets_photos_butikken.jpg', innhold: this.state.artInnhold || '', bildeTekst: this.state.artBildeTekst || '', bildeAlt: this.state.artBildeAlt || '' };
         if (this.erPublisert()) {
           const fra = this.artikkelData()[this.state.artIndeks ?? -1];
           this.verkstedKall({
@@ -25293,6 +25408,7 @@ class Component extends DCLogic {
             id: fra ? fra.id : 0,
             tittel: ny.tittel, dato: ny.dato, ingress: ny.ingress,
             bilde: ny.bilde, innhold: ny.innhold, status: 'publisert',
+            bildeTekst: ny.bildeTekst, bildeAlt: ny.bildeAlt,
           }).then(ok => { if (ok) { this.setState({ artRed: false }); this._nyttigHentes = false; this.hentNyttig(); } });
           return;
         }
@@ -25432,12 +25548,23 @@ class Component extends DCLogic {
           // raden og ble bare brukt paa kortet i lista.
           nyLestHarBilde: !!(lest && lest.bilde),
           nyLestBilde: (lest && lest.bilde) || '',
-          nyLestBildeAlt: lest ? (lest.tittel || 'Bilde til artikkelen') : '',
+          // Alt-teksten skal si hva bildet viser. Sto tittelen paa
+          // artikkelen der for, og den sier ingenting til den som ikke ser
+          // bildet. Er ingen skrevet, faller vi tilbake paa bildeteksten —
+          // den beskriver i det minste bildet — og til slutt paa tittelen.
+          nyLestBildeAlt: lest ? (lest.bildeAlt || lest.bildeTekst || lest.tittel || 'Bilde til artikkelen') : '',
+          nyLestHarBildetekst: !!(lest && lest.bildeTekst),
+          nyLestBildetekst: (lest && lest.bildeTekst) || '',
+          // Bildet og linja under hoerer sammen — derfor <figure>, og derfor
+          // ligger luften under paa figuren og ikke paa bildet. Med luft paa
+          // bildet la bildeteksten seg et helt avsnitt unna det den
+          // beskriver.
+          nyLestFigurStil: { margin: '0 0 var(--space-8)' },
           nyLestBildeStil: {
             width: '100%', maxHeight: 460, objectFit: 'cover',
             objectPosition: this.fokusFor((lest && lest.bilde) || ''),
             borderRadius: 'var(--radius-lg)',
-            display: 'block', marginBottom: 'var(--space-8)',
+            display: 'block',
           },
           // ── Teksten med bildene i ────────────────────────────────────
           //
@@ -28093,6 +28220,9 @@ class Component extends DCLogic {
               abId: a.id, abTittel: a.tittel, abKategori: a.kategori || '',
               abIngress: a.ingress || '', abInnhold: a.innhold || '',
               abStatus: a.status,
+              // Toppbildet og linja under det.
+              abBilde: a.bilde || '',
+              abBildeTekst: a.bildeTekst || '', abBildeAlt: a.bildeAlt || '',
               // Bildene i teksten redigeres som en liste, og lagres hel
               // sammen med artikkelen.
               abBilder: (a.bilder || []).map(b => ({
@@ -28117,7 +28247,7 @@ class Component extends DCLogic {
             const id = this.state.abId || 0;
             return {
               abApen: id > 0,
-              abLukk: () => this.setState({ abId: 0, abBilder: [] }),
+              abLukk: () => this.setState({ abId: 0, abBilder: [], abBilde: '', abBildeTekst: '', abBildeAlt: '' }),
               abFeltStil: felt,
               abTekstStil: Object.assign({}, felt, { font: '13px/1.6 ui-monospace, monospace' }),
               abEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
@@ -28126,6 +28256,45 @@ class Component extends DCLogic {
               settAbTittel: e => this.setState({ abTittel: e.target.value }),
               abKategori: this.state.abKategori || '',
               settAbKategori: e => this.setState({ abKategori: e.target.value }),
+              // De faste kategoriene. Trykker man en gang til paa den som er
+              // valgt, blir feltet tomt igjen — ellers ville et feiltrykk
+              // maatte rettes ved aa viske ut teksten for haand.
+              abKategoriValg: (this.state.artikkelForslag
+                || ['Kurs', 'Medlemskap', 'Keramikk', 'Arrangement', 'Gavekort', 'Bedrift']).map(navn => {
+                const paa = (this.state.abKategori || '') === navn;
+                return {
+                  navn,
+                  velg: () => this.setState({ abKategori: paa ? '' : navn }),
+                  stil: {
+                    appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                    padding: '5px 12px', font: 'var(--type-body-sm)', fontSize: 'var(--text-xs)',
+                    border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                    background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                    color: paa ? '#fff' : 'var(--text-heading)',
+                  },
+                };
+              }),
+              // Toppbildet, med linja under og alt-teksten. Bildet lagres med
+              // det samme det velges — det er en egen handling paa serveren —
+              // mens tekstene foelger med naar artikkelen lagres.
+              abBilde: this.state.abBilde || '',
+              abHarBilde: !!this.state.abBilde,
+              abBildeKnapp: this.state.abBilde ? 'Bytt bilde' : 'Velg bilde',
+              abBildeStil: {
+                appearance: 'none', cursor: 'pointer', padding: 0, flex: '0 0 auto',
+                width: 128, height: 96, borderRadius: 'var(--radius-md)',
+                border: this.state.abBilde ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
+                backgroundColor: 'var(--clay-100)',
+                backgroundImage: this.state.abBilde ? "url('" + this.state.abBilde + "')" : 'none',
+                backgroundSize: 'cover', backgroundPosition: this.fokusFor(this.state.abBilde || ''),
+              },
+              abVelgBilde: () => this.apneBildevalg({ slag: 'artikkelforside', id: id }),
+              abFjernBilde: () => { this.setState({ abBilde: '', abBildeTekst: '', abBildeAlt: '' });
+                                    this.artikkelKall({ handling: 'bilde', id: id, bilde: '' }); },
+              abBildeTekst: this.state.abBildeTekst || '',
+              settAbBildeTekst: e => this.setState({ abBildeTekst: e.target.value }),
+              abBildeAlt: this.state.abBildeAlt || '',
+              settAbBildeAlt: e => this.setState({ abBildeAlt: e.target.value }),
               abIngress: this.state.abIngress || '',
               settAbIngress: e => this.setState({ abIngress: e.target.value }),
               abInnhold: this.state.abInnhold || '',
@@ -28223,6 +28392,9 @@ class Component extends DCLogic {
                   kategori: (this.state.abKategori || '').trim(),
                   ingress: (this.state.abIngress || '').trim(),
                   innhold: this.state.abInnhold || '',
+                  bilde: this.state.abBilde || '',
+                  bildeTekst: (this.state.abBildeTekst || '').trim(),
+                  bildeAlt: (this.state.abBildeAlt || '').trim(),
                   // Hele lista om gangen. Tomme rader — en som ble lagt til
                   // og angret — faller bort paa serveren.
                   bilder: (this.state.abBilder || []).filter(b => (b.fil || '').trim() !== ''),

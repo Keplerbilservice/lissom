@@ -32,6 +32,10 @@ Svar::json([
         'dato'    => $a['dato'],
         'ingress' => $a['ingress'],
         'bilde'   => $a['bilde'],
+        // Linja under bildet, og det en skjermleser sier hoyt. Kom med
+        // migrasjon 070; uten den staar de tomme, og sida er som for.
+        'bildeTekst' => (string) ($a['bilde_tekst'] ?? ''),
+        'bildeAlt'   => (string) ($a['bilde_alt'] ?? ''),
         'innhold' => $a['innhold'],
     ], $artikler),
     'lenker' => array_map(static fn($l) => [

@@ -54,6 +54,8 @@ if (Foresporsel::metode() === 'GET') {
             'ingress'   => $a['ingress'],
             'innhold'   => $a['innhold'],
             'bilde'     => $a['bilde'],
+            'bildeTekst' => (string) ($a['bilde_tekst'] ?? ''),
+            'bildeAlt'   => (string) ($a['bilde_alt'] ?? ''),
             'status'    => $a['status'],
             'kilde'     => $a['kilde'],
             'dato'      => $a['dato'],
@@ -114,8 +116,29 @@ switch (Foresporsel::tekst('handling')) {
             'fokus_ord' => mb_substr(trim((string) ($kropp['fokusord'] ?? '')), 0, 191) ?: null,
             'ingress'   => trim((string) ($kropp['ingress'] ?? '')) ?: null,
             'innhold'   => $innhold,
-            'bilde'     => mb_substr(trim((string) ($kropp['bilde'] ?? '')), 0, 255) ?: null,
         ];
+
+        // Bildet roeres bare naar det staar i det som ble sendt.
+        //
+        // For sto det alltid i lista, og «bilde» ble skrevet ogsaa naar
+        // ingen hadde sendt et — tomt blir null. Et skjema som lagret
+        // tittelen og teksten slettet derfor bildet paa artikkelen, uten at
+        // noen hadde bedt om det.
+        if (array_key_exists('bilde', $kropp)) {
+            $felter['bilde'] = mb_substr(trim((string) $kropp['bilde']), 0, 255) ?: null;
+        }
+
+        // Bildeteksten og alt-teksten kom med migrasjon 070. Er den ikke
+        // kjort enda, lagres resten som for — heller en artikkel uten
+        // bildetekst enn en lagring som stopper.
+        if (DB::harKolonne('articles', 'bilde_tekst')) {
+            if (array_key_exists('bildeTekst', $kropp)) {
+                $felter['bilde_tekst'] = mb_substr(trim((string) $kropp['bildeTekst']), 0, 255) ?: null;
+            }
+            if (array_key_exists('bildeAlt', $kropp)) {
+                $felter['bilde_alt'] = mb_substr(trim((string) $kropp['bildeAlt']), 0, 255) ?: null;
+            }
+        }
 
         if ($id > 0) {
             if (DB::en('SELECT id FROM articles WHERE id = :i', ['i' => $id]) === null) {
@@ -161,7 +184,14 @@ switch (Foresporsel::tekst('handling')) {
         $bilde = mb_substr(trim((string) ($kropp['bilde'] ?? '')), 0, 255);
         // Tomt betyr «ingen egen» — da faller artikkelen tilbake paa
         // standardbildet, ikke paa en tom ramme.
-        DB::oppdater('articles', ['bilde' => $bilde !== '' ? $bilde : null], ['id' => $id]);
+        $endring = ['bilde' => $bilde !== '' ? $bilde : null];
+        // Fjernes bildet, skal ikke bildeteksten bli staaende og beskrive et
+        // bilde som ikke er der. Byttes det, skrives teksten i skjemaet.
+        if ($bilde === '' && DB::harKolonne('articles', 'bilde_tekst')) {
+            $endring['bilde_tekst'] = null;
+            $endring['bilde_alt']   = null;
+        }
+        DB::oppdater('articles', $endring, ['id' => $id]);
         revider('artikkel_bilde', 'article', $id, ['bilde' => $bilde]);
         Svar::ok(['beskjed' => $bilde !== '' ? 'Bildet er byttet.' : 'Bildet er fjernet.']);
 

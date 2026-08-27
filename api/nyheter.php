@@ -29,6 +29,10 @@ $ut = static fn(array $a): array => [
     'ingress'  => $a['ingress'],
     'innhold'  => $a['innhold'],
     'bilde'    => $a['bilde'],
+    // Linja under toppbildet, og det en skjermleser sier hoyt. Kom med
+    // migrasjon 070; uten den skal sida virke som for.
+    'bildeTekst' => (string) ($a['bilde_tekst'] ?? ''),
+    'bildeAlt'   => (string) ($a['bilde_alt'] ?? ''),
     // Bildene inne i teksten, med bildetekst, alt-tekst, plassering og
     // stoerrelse. Tom liste betyr en artikkel med bare tekst, som for.
     'bilder'   => Artikler::bilder((int) $a['id']),

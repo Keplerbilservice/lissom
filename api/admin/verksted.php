@@ -38,6 +38,8 @@ $hent = static fn(): array => [
         'dato'    => $a['dato'],
         'ingress' => $a['ingress'],
         'bilde'   => $a['bilde'],
+        'bildeTekst' => (string) ($a['bilde_tekst'] ?? ''),
+        'bildeAlt'   => (string) ($a['bilde_alt'] ?? ''),
         'innhold' => $a['innhold'],
         'status'  => $a['status'],
     // Bare verkstedets egne sider.
@@ -146,6 +148,17 @@ switch ($type) {
             'innhold' => Foresporsel::tekst('innhold') ?: null,
             'status'  => Foresporsel::tekst('status') === 'kladd' ? 'kladd' : 'publisert',
         ];
+        // Kategorien settes ikke herfra med vilje. Nyttig info er
+        // verkstedets egne sider, og GET-en over henter nettopp de uten
+        // kategori — en kategori her ville flyttet siden over til Nyheter og
+        // faatt den til aa forsvinne fra skjermen den ble skrevet paa.
+        //
+        // Linja under toppbildet, og det en skjermleser sier hoyt. Kom med
+        // migrasjon 070. Er den ikke kjort, lagres resten som for.
+        if (DB::harKolonne('articles', 'bilde_tekst')) {
+            $data['bilde_tekst'] = mb_substr(Foresporsel::tekst('bildeTekst'), 0, 255) ?: null;
+            $data['bilde_alt']   = mb_substr(Foresporsel::tekst('bildeAlt'), 0, 255) ?: null;
+        }
         $unik = ['felt' => 'tittel', 'verdi' => $tittel];
         break;
 

@@ -8,6 +8,7 @@
  *   POST handling=plasser   endre antall plasser paa én dato
  *   POST handling=endredato endre tidspunktet paa én dato
  *   POST handling=avlys     avlys en dato
+ *   POST handling=slettdato ta bort en dato (avlyses om noen er paameldt)
  *   POST handling=slett     fjern et kurs (avlyses om noen er paameldt)
  *   POST handling=bekreftelseStandard  lagre teksten nye kurs fylles ut med
  *
@@ -262,10 +263,15 @@ switch ($handling) {
                     'k' => Foresporsel::heltall('kapasitet') ?: null,
                     'u' => max(1, min(52, Foresporsel::heltall('ukerFram', 8))),
                     'n' => $antall > 0 ? $antall : null,
-                    // Holdepunktet for «annenhver uke». Settes én gang, ved
-                    // opprettelsen — flyttet det seg, ville annenhver uke
+                    // Naar regelen begynner. Ogsaa holdepunktet for
+                    // «annenhver uke» — flyttet det seg, ville annenhver uke
                     // byttet uke hver gang noen rorte regelen.
-                    'sd' => gmdate('Y-m-d'),
+                    //
+                    // «Ny kursdato» sender datoen du valgte. Da lager regelen
+                    // ingenting for den dagen, og den forste gangen er den du
+                    // faktisk satte opp.
+                    'sd' => preg_match('/^\d{4}-\d{2}-\d{2}$/', Foresporsel::tekst('startDato')) === 1
+                              ? Foresporsel::tekst('startDato') : gmdate('Y-m-d'),
                 ]
             );
         } else {
@@ -430,6 +436,48 @@ switch ($handling) {
                 ? "Datoen er avlyst. {$antall} har betalt og må refunderes manuelt under Økonomi."
                 : 'Datoen er avlyst.',
         ]);
+
+    // ------------------------------------------------- slett én kursdato
+    //
+    // «Fjern» i steg 2 tok datoen ut av skjemaet og ikke noe mer. Lagringen
+    // legger til datoer, men fjernet aldri noen — den som tok bort 6.
+    // september saa den staa paa nettsiden etterpaa, uten et ord om hvorfor.
+    //
+    // Samme regel som for kurs: har noen meldt seg paa, kan raden ikke
+    // forsvinne. Bookingen og betalingen peker paa den, og de er
+    // bokforingspliktige. Da avlyses datoen i stedet, og det staar i svaret.
+    case 'slettdato':
+        $oktId = Foresporsel::heltall('oktId');
+        $okt = DB::en(
+            'SELECT cs.id, cs.start_tid, c.tittel FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id WHERE cs.id = :i',
+            ['i' => $oktId]
+        );
+        if ($okt === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+        $naar = Booking::norskDato((string) $okt['start_tid']);
+
+        $pameldte = (int) DB::verdi(
+            "SELECT COUNT(*) FROM bookings
+              WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+            ['o' => $oktId]
+        );
+
+        if ($pameldte > 0) {
+            DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktId]);
+            revider('dato_avlyst', 'course_session', $oktId, ['pameldte' => $pameldte, 'via' => 'veiviser']);
+            Svar::ok([
+                'slettet' => false,
+                'beskjed' => $pameldte . ($pameldte === 1 ? ' har' : ' har') . ' meldt seg på '
+                           . $naar . ', så datoen er avlyst og tatt av nettsiden i stedet for slettet. '
+                           . 'Husk å gi beskjed og refundere.',
+            ]);
+        }
+
+        DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $oktId]);
+        revider('dato_slettet', 'course_session', $oktId, ['kurs' => $okt['tittel'], 'naar' => $naar]);
+        Svar::ok(['slettet' => true, 'beskjed' => $naar . ' er tatt bort.']);
 
     // ------------------------------------------- standard bekreftelsestekst
     //

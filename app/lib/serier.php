@@ -133,6 +133,19 @@ final class Serier
         $monster = (string) ($r['monster'] ?? 'ukentlig');
         $ut = [];
 
+        // Regelen lager ingenting for den dagen den begynner. Setter du opp
+        // en dato 3. september og ber om ukentlig, skal ikke torsdagen i
+        // denne uka komme med — den er ikke en av de gangene du bestilte.
+        $fra = null;
+        if (($r['start_dato'] ?? null) !== null && (string) $r['start_dato'] !== '') {
+            try {
+                $fra = (new DateTimeImmutable((string) $r['start_dato'], $naa->getTimezone()))->setTime(0, 0);
+            } catch (Throwable) {
+                $fra = null;
+            }
+        }
+        $etter = static fn(DateTimeImmutable $d): bool => $fra === null || $d->setTime(0, 0) >= $fra;
+
         if ($monster === 'manedlig') {
             // Samme dato hver maned. Den 31. finnes ikke i februar — da
             // hopper vi over maneden framfor aa flytte kurset til 1. mars.
@@ -143,7 +156,7 @@ final class Serier
                 $siste = (int) $maaned->format('t');
                 if ($dag <= $siste) {
                     $d = $maaned->setDate((int) $maaned->format('Y'), (int) $maaned->format('n'), $dag);
-                    if ($d <= $slutt) {
+                    if ($d <= $slutt && $etter($d)) {
                         $ut[] = $d;
                     }
                 }
@@ -182,6 +195,9 @@ final class Serier
                 if ($uke % 2 !== 0) {
                     continue;
                 }
+            }
+            if (!$etter($dag)) {
+                continue;
             }
             $ut[] = $dag;
         }

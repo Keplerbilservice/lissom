@@ -550,6 +550,7 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
   var dragStart = null;
   var holdTid = null;
   var drar = false;
+  var flyttet = false;    // har kortet faktisk beveget seg?
   var maal = null;
   var maalEtter = false;
 
@@ -588,6 +589,7 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
 
   var taTak = function (e) {
     drar = true;
+    flyttet = false;
     var boks = dratt.getBoundingClientRect();
     grep = { x: e.clientX - boks.left, y: e.clientY - boks.top };
 
@@ -644,6 +646,7 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
   };
 
   var rydd = function (r) {
+    flyttet = false;
     if (kopi && kopi.parentNode) kopi.parentNode.removeChild(kopi);
     kopi = null;
     if (dratt) dratt.style.opacity = '';
@@ -700,6 +703,7 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
       }
 
       e.preventDefault();
+      flyttet = true;
       flyttKopi(e);
       merkMaal(r, e);
     });
@@ -707,6 +711,17 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
     var slipp = function (e) {
       if (!dratt) return;
       if (!drar) { rydd(r); return; }
+
+      // Holdt du inne uten aa bevege deg, er det et klikk — ikke en draging.
+      // Her sto det ingenting om dette, og hvert trykk som varte lenger enn
+      // 180 ms ble tatt for en draging: kortet aapnet seg ikke, og knappen
+      // virket «noen ganger». Et raskt klikk gikk gjennom, et litt tregere
+      // gjorde det ikke.
+      if (!flyttet) {
+        try { dratt.releasePointerCapture(e.pointerId); } catch (x) {}
+        rydd(r);
+        return;
+      }
 
       // Rekkefolgen regnes ut, men ingen noder flyttes. dc eier rutenettet og
       // tegner det ut fra sine egne lister; flytter vi noder selv, stemmer
@@ -729,11 +744,17 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
       try { dratt.releasePointerCapture(e.pointerId); } catch (x) {}
 
       // Slipper du etter aa ha dratt, skal kortet ikke ogsaa aapne seg.
-      r.addEventListener('click', function stopp(ev) {
+      //
+      // Sperren maa bort igjen uansett om det kommer et klikk eller ikke.
+      // Slapp du pekeren utenfor kortet, kom det aldri noe klikk — og
+      // sperren ble staaende og spiste det neste, paa et helt annet kort.
+      var stopp = function (ev) {
         ev.stopPropagation();
         ev.preventDefault();
         r.removeEventListener('click', stopp, true);
-      }, true);
+      };
+      r.addEventListener('click', stopp, true);
+      setTimeout(function () { r.removeEventListener('click', stopp, true); }, 400);
 
       rydd(r);
       if (ny && window.lissomLagreKortrekkefolge) window.lissomLagreKortrekkefolge(ny);
@@ -1292,9 +1313,25 @@ window.__resources = {
             </div>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ goButikk }}" hint-size="auto,40px">{{ fsButikkKnapp }}</x-import>
           </div>
-          <div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
+          <!-- Samme kort som i butikken.
+               Her sto CourseCard, som er laget for kurs: et liggende bilde
+               med tekst under. Produktbildene er kvadratiske, og et
+               kvadratisk bilde i en liggende ramme blir enten strukket eller
+               beskaaret feil — og utsnittet eieren har valgt for bildet fulgte
+               ikke med, for CourseCard vet ikke om det. -->
+          <div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8); align-items: stretch;">
             <sc-for list="{{ produkter }}" as="p" hint-placeholder-count="4">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ p.title }}" text="{{ p.tekst }}" price="{{ p.pris }}" image="{{ p.image }}" cta-label="{{ p.cta }}" on-book="{{ p.velg }}" hint-size="100%,420px"></x-import>
+              <div class="lx-varekort" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm); transition: box-shadow var(--duration-base) var(--ease-clay), transform var(--duration-base) var(--ease-clay);" style-hover="box-shadow: var(--shadow-md); transform: translateY(-2px);">
+                <div onClick="{{ p.velg }}" role="button" aria-label="Se mer om {{ p.title }}" style="width: 100%; aspect-ratio: 1 / 1; background-color: var(--clay-200); background-image: {{ p.imageCss }}; background-size: cover; background-position: {{ p.fokus }}; cursor: pointer;"></div>
+                <div style="padding: var(--space-5); display: flex; flex-direction: column; flex: 1; gap: 6px;">
+                  <div onClick="{{ p.velg }}" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); cursor: pointer;">{{ p.title }}</div>
+                  <p class="lx-varetekst" style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ p.tekst }}</p>
+                  <div class="lx-varebunn" style="margin-top: auto; padding-top: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ p.pris }}</span>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ p.velg }}" hint-size="auto,36px">{{ p.cta }}</x-import>
+                  </div>
+                </div>
+              </div>
             </sc-for>
           </div>
 
@@ -1302,7 +1339,20 @@ window.__resources = {
                Sidescroll krevde at man visste at det laa mer til hoyre. -->
           <div class="lx-kunmobil">
             <div style="{{ butKortStil }}">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" title="{{ butTittel }}" text="{{ butTekst }}" price="{{ butPris }}" image="{{ butBilde }}" cta-label="{{ butCta }}" on-book="{{ butVelg }}" hint-size="100%,420px"></x-import>
+              <!-- Samme kort som over og som i butikken. Sto som CourseCard,
+                   og et kvadratisk produktbilde i en liggende kursramme blir
+                   feil beskaaret. -->
+              <div class="lx-varekort" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow-sm);">
+                <div onClick="{{ butVelg }}" role="button" aria-label="Se mer om {{ butTittel }}" style="width: 100%; aspect-ratio: 1 / 1; background-color: var(--clay-200); background-image: {{ butBildeCss }}; background-size: cover; background-position: {{ butFokus }}; cursor: pointer;"></div>
+                <div style="padding: var(--space-5); display: flex; flex-direction: column; flex: 1; gap: 6px;">
+                  <div onClick="{{ butVelg }}" style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); cursor: pointer;">{{ butTittel }}</div>
+                  <p class="lx-varetekst" style="margin: 0; font-size: var(--text-sm); line-height: 1.5; color: var(--text-body); text-wrap: pretty;">{{ butTekst }}</p>
+                  <div class="lx-varebunn" style="margin-top: auto; padding-top: var(--space-3); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ butPris }}</span>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ butVelg }}" hint-size="auto,36px">{{ butCta }}</x-import>
+                  </div>
+                </div>
+              </div>
             </div>
             <div style="display: flex; gap: 10px; margin-top: var(--space-5);">
               <sc-for list="{{ butPrikker }}" as="d" hint-placeholder-count="4">
@@ -5072,7 +5122,16 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="check" on-click="{{ kLagreBli }}" hint-size="auto,44px">Lagre endringene</x-import>
                 </sc-if>
               </div>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ kAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+              <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ kAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+                <!-- «Slett kurset» sto bare i kurslista. Den som var inne og
+                     redigerte maatte ut igjen for aa finne den, og prove aa
+                     fjerne datoene i stedet. Har noen meldt seg paa, avlyses
+                     kurset framfor aa forsvinne — det staar i bekreftelsen. -->
+                <sc-if value="{{ kKanSlette }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ kSlett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett kurset</button>
+                </sc-if>
+              </div>
             </div>
           </div>
         </sc-if>
@@ -8815,16 +8874,38 @@ window.__resources = {
             <input type="time" value="{{ ndTil }}" onChange="{{ settNdTil }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           </div>
         </div>
+        <!-- Gjentakelse.
+             Samme valg som i steg 2 av kursveiviseren, og samme regel bak:
+             det legges i kurs_serier, som laa der fra for og fylles paa av
+             seg selv. Ukedagen og datoen i maneden leses av datoen du valgte
+             over — du skal ikke fylle ut det samme to ganger. -->
+        <div>
+          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <sc-for list="{{ ndGjentakValg }}" as="g" hint-placeholder-count="4">
+              <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ ndGjentar }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+              <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Antall ganger</label>
+              <input value="{{ ndAntall }}" onChange="{{ settNdAntall }}" placeholder="F.eks. 10" style="width: 90px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
+            </div>
+            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndGjentakHjelp }}</p>
+          </sc-if>
+        </div>
+
         <sc-if value="{{ ndHarLagtTil }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
             <div style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Lagt ut nå</div>
             <sc-for list="{{ ndLagtTil }}" as="r" hint-placeholder-count="1">
-              <div style="font-size: var(--text-sm); color: var(--text-body); padding: 3px 0;">{{ r.kurs }} · {{ r.dato }} · {{ r.tid }} · {{ r.plasser }} plasser</div>
+              <div style="font-size: var(--text-sm); color: var(--text-body); padding: 3px 0;">{{ r.kurs }} · {{ r.dato }} · {{ r.tid }} · {{ r.plasser }} plasser{{ r.gjentasTekst }}</div>
             </sc-for>
           </div>
         </sc-if>
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-2);">
-          <button type="button" onClick="{{ ndLeggTil }}" style="{{ ndLeggTilStil }}">Legg ut dato</button>
+          <button type="button" onClick="{{ ndLeggTil }}" style="{{ ndLeggTilStil }}">{{ ndLeggTilTekst }}</button>
           <button type="button" onClick="{{ ndLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ferdig</button>
         </div>
       </div>
@@ -9511,9 +9592,28 @@ class Component extends DCLogic {
         { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 2 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka to timer.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
         { level: 'Drop-in', title: 'Drop-in i verkstedet', date: 'Alle åpne dager', duration: '2 timer', price: 'kr. 490,-', status: 'Krever godkjenning av oss', image: 'uploads_shutterstock_2829101699.jpg', tema: 'Drop-in', om: 'To timer i verkstedet der du jobber med det du vil. Du må ha gått kurs hos oss, eller komme sammen med et aktivt medlem.', punkter: ['Leire, materialer og brenning er inkludert.', 'Ett ferdig arbeid opptil 20 × 20 cm.', 'Timene gjelder for økten og kan ikke overføres eller spares opp.', 'Rydd og vask plassen din før du går.'] },
     ]);
+    // Rekkefolgen var den de sto i her i fila — designlista forst, saa nye
+    // kurs, saa det som bare finnes i basen. Den som kom for aa se hva som
+    // skjer naermest, maatte lese hvert kort for aa finne det ut.
+    //
+    // Naa staar de i den rekkefolgen de gaar. Kurs som settes opp naar noen
+    // sporr, og som ikke har datoer liggende ute, staar til slutt — de har
+    // ingen dag aa sorteres paa, og skal ikke ligge foran noe som har det.
+    const naar = (k) => {
+      const o = (k.okter || []).filter(x => x && x.startUtc);
+      if (!o.length) return Infinity;
+      return Math.min.apply(null, o.map(x => {
+        const t = Date.parse(String(x.startUtc).replace(' ', 'T') + 'Z');
+        return isNaN(t) ? Infinity : t;
+      }));
+    };
     this._alleKort = this.medBooking(
       this._kursListe.concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe))
-    );
+    )
+      .map((k, i) => ({ k, i, n: naar(k) }))
+      // Stabil: to kurs paa samme dag beholder rekkefolgen de hadde.
+      .sort((a, b) => (a.n - b.n) || (a.i - b.i))
+      .map(x => x.k);
     return this._alleKort;
   }
 
@@ -9700,7 +9800,12 @@ class Component extends DCLogic {
       // bildet som sto i designfila.
       image: kat.bilde || k.image,
       bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
-      date: (datoer[0] || {}).dato || k.date,
+      // «torsdag 3. september, 17:00» staar alene paa kortet, ikke midt i en
+      // setning. Da skal den begynne med stor bokstav.
+      date: (() => {
+        const d = (datoer[0] || {}).dato || k.date || '';
+        return d ? d.charAt(0).toUpperCase() + d.slice(1) : d;
+      })(),
       // Flere datoer enn den som staar? Si det, i stedet for aa la det se ut
       // som om kurset gaar én gang.
       duration: datoer.length > 1 ? datoer.length + ' datoer å velge mellom' : k.duration,
@@ -11597,6 +11702,7 @@ class Component extends DCLogic {
       ndApen: true, ndVelgerApen: false,
       ndKurs: this.ndKursnavn()[0] || '',
       ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8',
+      ndGjentak: 'Ingen', ndAntall: '',
       ndLagtTil: [], ndTop: this.topNaa(60),
     });
   }
@@ -11700,17 +11806,50 @@ class Component extends DCLogic {
     if (this._nyDato) return;
     this._nyDato = true;
 
+    // Skal datoen gjentas, er det en regel som skal settes opp — ikke én
+    // dato. Regelen ligger i kurs_serier, som fantes fra for og fyller paa
+    // av seg selv. Ukedagen og datoen i maneden leses av datoen du valgte,
+    // saa det samme ikke skal fylles ut to ganger.
+    const MONSTER = { 'Ukentlig': 'ukentlig', 'Annenhver uke': 'annenhver', 'Månedlig': 'manedlig' };
+    const monster = MONSTER[s.ndGjentak || 'Ingen'] || null;
+    const valgtDag = new Date(s.ndDato + 'T12:00');
+    const antall = Math.max(0, Math.min(500, parseInt(s.ndAntall, 10) || 0));
+
+    // Hvor langt fram datoene skal ligge ute. Ber du om ti ganger, maa
+    // vinduet vaere stort nok til at de faktisk faar plass.
+    const ukerPerGang = monster === 'manedlig' ? 4.4 : (monster === 'annenhver' ? 2 : 1);
+    const ukerFram = antall > 0
+      ? Math.max(1, Math.min(52, Math.ceil(antall * ukerPerGang) + 1))
+      : (monster === 'manedlig' ? 26 : 8);
+
+    const kall = monster
+      ? {
+          handling: 'serie',
+          kursId: kurs.id,
+          monster: monster,
+          // getDay() gir 0 for sondag; basen bruker 1–7 med mandag som 1.
+          ukedag: valgtDag.getDay() === 0 ? 7 : valgtDag.getDay(),
+          dagIMaaned: monster === 'manedlig' ? valgtDag.getDate() : 0,
+          fra: fra, til: til,
+          kapasitet: parseInt(s.ndPlasser, 10) || 0,
+          ukerFram: ukerFram,
+          antall: antall,
+          // Regelen begynner paa datoen du valgte, ikke i dag.
+          startDato: s.ndDato,
+        }
+      : {
+          handling: 'nydato',
+          kursId: kurs.id,
+          start: s.ndDato + ' ' + fra,
+          slutt: s.ndDato + ' ' + til,
+          kapasitet: parseInt(s.ndPlasser, 10) || 0,
+        };
+
     fetch('/api/admin/kurs.php', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        handling: 'nydato',
-        kursId: kurs.id,
-        start: s.ndDato + ' ' + fra,
-        slutt: s.ndDato + ' ' + til,
-        kapasitet: parseInt(s.ndPlasser, 10) || 0,
-      }),
+      body: JSON.stringify(kall),
     })
       .then(r => r.json())
       .then(d => {
@@ -11720,12 +11859,18 @@ class Component extends DCLogic {
           return;
         }
         this.setState({
-          ndLagtTil: (this.state.ndLagtTil || []).concat([Object.assign({}, rad, { tid: d.naar || rad.tid })]),
+          ndLagtTil: (this.state.ndLagtTil || []).concat([Object.assign({}, rad, {
+            tid: d.naar || rad.tid,
+            gjentas: monster ? (s.ndGjentak || '') : '',
+          })]),
           ndDato: '',
-          kvittering: 'Datoen er lagt ut på ' + navn,
+          kvittering: monster ? 'Datoene er lagt ut på ' + navn : 'Datoen er lagt ut på ' + navn,
           // Detaljen maa settes eksplisitt. Uten den ble forrige kvitterings
           // detalj staaende — «Du finner det igjen under Min side».
-          kvitteringDetalj: d.naar || (rad.dato + ', ' + rad.tid),
+          // For en regel er det serveren som vet hvor mange den fikk lagt ut.
+          kvitteringDetalj: monster
+            ? (d.beskjed || '') + ((d.serier || []).length ? ' ' + d.serier[d.serier.length - 1].tekst : '')
+            : (d.naar || (rad.dato + ', ' + rad.tid)),
         });
         // Katalogen hentes paa nytt, saa den nye datoen vises overalt.
         this._adminHentes = false;
@@ -14758,10 +14903,35 @@ class Component extends DCLogic {
           this.setState({ kvittering: 'Kurset ble ikke lagret', kvitteringDetalj: (d && d.feil) || 'Prøv igjen om litt.' });
           return;
         }
+        // Datoene som ble tatt bort.
+        //
+        // «Fjern» tok raden ut av skjemaet og ikke noe mer: lagringen la til
+        // datoer, men fjernet aldri noen. Den som tok bort 6. september saa
+        // den staa paa nettsiden etterpaa, uten et ord om hvorfor.
+        //
+        // Vi sammenligner mot fasiten fra da skjemaet ble aapnet, ikke mot
+        // hva serveren har naa — ellers ville en dato noen andre la inn imens
+        // blitt slettet av oss.
+        const foer = this.state.kDatoerFor || [];
+        const staarIgjen = (okter || []).map(o => o.oktId).filter(Boolean);
+        const borte = foer.filter(id => staarIgjen.indexOf(id) === -1);
+        const beskjeder = [];
+
+        const fjern = borte.reduce((kjede, oktId) => kjede.then(() => fetch('/api/admin/kurs.php', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ handling: 'slettdato', oktId: oktId }),
+        }).then(r => r.json()).then(sv => {
+          // Er noen paameldt, avlyses datoen i stedet for aa slettes. Da maa
+          // det staa noe — ellers ser det ut som om den bare forsvant.
+          if (sv && sv.beskjed && sv.slettet === false) { beskjeder.push(sv.beskjed); }
+        }).catch(() => {})), Promise.resolve());
+
         // Datoene legges paa etterpaa, én etter én. nydato er idempotent paa
         // (kurs, starttid), saa et kurs som lagres om igjen faar ikke dubletter.
         const nye = (okter || []).filter(o => o.dato);
-        return nye.reduce((kjede, o) => kjede.then(() => fetch('/api/admin/kurs.php', {
+        return fjern.then(() => nye.reduce((kjede, o) => kjede.then(() => fetch('/api/admin/kurs.php', {
           method: 'POST',
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -14781,14 +14951,19 @@ class Component extends DCLogic {
               // sendt ut av skjemaet.
               kRed: behold ? true : false,
               kvittering: rad.navn + ' er lagret',
-              kvitteringDetalj: nye.length
-                ? nye.length + (nye.length === 1 ? ' dato' : ' datoer') + ' lagt ut.'
-                : 'Legg til datoer for at kurset skal kunne bookes.',
+              // Ble en dato tatt bort, skal det staa. Og ble den avlyst
+              // framfor slettet fordi noen var paameldt, skal grunnen staa.
+              kvitteringDetalj: [
+                nye.length ? nye.length + (nye.length === 1 ? ' dato' : ' datoer') + ' lagt ut.' : '',
+                borte.length ? borte.length + (borte.length === 1 ? ' dato' : ' datoer') + ' tatt bort.' : '',
+                beskjeder.join(' '),
+                (!nye.length && !borte.length) ? 'Legg til datoer for at kurset skal kunne bookes.' : '',
+              ].filter(Boolean).join(' '),
             });
             this._adminHentes = false;
             this.hentAdmin();
             this.hentKatalog();
-          });
+          }));
       })
       .catch(() => {
         this._kursLagres = false;
@@ -15782,9 +15957,15 @@ class Component extends DCLogic {
       })(),
       kSekunder: String(k.sekunder || 5), kFade: k.fade !== false,
       kGradient: k.gradient || 'Ingen', kStyrke: k.styrke ?? 40,
+      // oktId maa foelge med. Uten den vet ikke lagringen hvilken dato som
+      // ble tatt bort — «Fjern» tok raden ut av skjemaet, og datoen ble
+      // staaende paa nettsiden.
       kDatoer: (k.okter && k.okter.length
-        ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til }))
+        ? k.okter.map(o => ({ oktId: o.oktId, dato: o.dato, fra: o.fra, til: o.til }))
         : [{ dato: '', fra: '', til: '' }]),
+      // Datoene slik de sto da skjemaet ble aapnet. Det er fasiten vi
+      // sammenligner mot naar det lagres.
+      kDatoerFor: (k.okter || []).map(o => o.oktId).filter(Boolean),
     });
     this.tilToppen();
   }
@@ -17371,10 +17552,38 @@ class Component extends DCLogic {
       settNdTil: e => this.setState({ ndTil: e.target.value }),
       ndPlasser: this.state.ndPlasser ?? '8',
       settNdPlasser: e => this.setState({ ndPlasser: e.target.value }),
+      ...(() => {
+        const g = this.state.ndGjentak || 'Ingen';
+        const NAVN = ['Ingen', 'Ukentlig', 'Annenhver uke', 'Månedlig'];
+        const dato = this.state.ndDato || '';
+        const d = dato ? new Date(dato + 'T12:00') : null;
+        const UKEDAG = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
+        return {
+          ndGjentakValg: NAVN.map(t => ({
+            navn: t, velg: () => this.setState({ ndGjentak: t }),
+            stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: g === t ? 'var(--lissom-brown)' : 'transparent', color: g === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
+          })),
+          ndGjentar: g !== 'Ingen',
+          ndAntall: this.state.ndAntall ?? '',
+          settNdAntall: e => this.setState({ ndAntall: e.target.value }),
+          // Sier hva som faktisk kommer til aa skje, med datoen som er valgt.
+          ndGjentakHjelp: (() => {
+            if (!d || isNaN(d)) return 'Velg en dato over først — den avgjør hvilken dag det gjentas på.';
+            if (g === 'Månedlig') return 'Gjentas den ' + d.getDate() + '. i hver måned. Måneder uten den datoen hoppes over.';
+            const dag = UKEDAG[d.getDay()];
+            return g === 'Annenhver uke'
+              ? 'Gjentas annenhver ' + dag + ', fra og med denne datoen.'
+              : 'Gjentas hver ' + dag + ', fra og med denne datoen.';
+          })(),
+        };
+      })(),
       ndKanLegge: !!this.state.ndDato,
       ndLeggTilStil: { appearance: 'none', cursor: this.state.ndDato ? 'pointer' : 'not-allowed', opacity: this.state.ndDato ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
       ndLeggTil: () => this.ndLeggTilNaa(),
-      ndLagtTil: this.state.ndLagtTil || [],
+      ndLeggTilTekst: (this.state.ndGjentak || 'Ingen') === 'Ingen' ? 'Legg ut dato' : 'Legg ut datoene',
+      ndLagtTil: (this.state.ndLagtTil || []).map(r => Object.assign({}, r, {
+        gjentasTekst: r.gjentas ? ' · ' + r.gjentas.toLowerCase() : '',
+      })),
       ndHarLagtTil: (this.state.ndLagtTil || []).length > 0,
       aNyDropin: () => this.setState({ dRed: true, dDager: [], dFra: '10:00', dTil: '13:00', dPlasser: '6' }),
       dRed: !!this.state.dRed,
@@ -20949,7 +21158,7 @@ class Component extends DCLogic {
       })(),
       kAntall: this.state.kAntall ?? '', settKAntall: (e) => this.setState({ kAntall: e.target.value }),
       kDatoer: (this.state.kDatoer ?? []).filter(d => d.dato).map((d, i) => ({
-        dato: d.dato, fra: d.fra, til: d.til,
+        oktId: d.oktId, dato: d.dato, fra: d.fra, til: d.til,
         visning: (() => { const dt = new Date(d.dato + 'T12:00'); return isNaN(dt) ? d.dato : dt.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' }); })(),
         settFra: (e) => { const v = e.target.value; this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { fra: v }) : x) })); },
         settTil: (e) => { const v = e.target.value; this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { til: v }) : x) })); },
@@ -21175,6 +21384,19 @@ class Component extends DCLogic {
       kNesteSteg: () => this.setState(s => ({ kSteg: Math.min(3, (s.kSteg ?? 1) + 1) })),
       kForrigeSteg: () => this.setState(s => ({ kSteg: Math.max(1, (s.kSteg ?? 1) - 1) })),
       kAvbryt: () => this.setState({ kRed: false }),
+      // Bare paa et kurs som finnes paa serveren. Et nytt kurs som ikke er
+      // lagret enda har ingenting aa slette.
+      kKanSlette: !!(this.state.adminKursRaa || []).find(x => x.tittel === (this.state.kNavn || '').trim()),
+      kSlett: () => {
+        const navn = (this.state.kNavn || '').trim();
+        const kurs = (this.state.adminKursRaa || []).find(x => x.tittel === navn);
+        if (!kurs) return;
+        if (!window.confirm('Slette «' + navn + '»?\n\n'
+            + 'Datoene forsvinner sammen med kurset. Har noen meldt seg på, '
+            + 'blir kurset avlyst i stedet — da må du gi beskjed og refundere selv.')) return;
+        this.setState({ kRed: false });
+        this.kursKall({ handling: 'slett', id: kurs.id });
+      },
       // «Lagre endringene» staar bare naar kurset alt ligger ute. Et nytt
       // kurs skal gjennom alle tre stegene foer det publiseres.
       kKanLagreHer: (this.state.kIndeks ?? -1) >= 0 && (this.state.kSteg ?? 1) < 3,
@@ -24977,6 +25199,8 @@ class Component extends DCLogic {
           butTekst: v.tekst,
           butPris: v.pris,
           butBilde: v.image,
+          butBildeCss: v.imageCss,
+          butFokus: v.fokus,
           butCta: v.cta,
           butVelg: v.gavekort ? this.go('gavekortside') : this.go('butikk'),
           butKortStil: this.toneStil('but', {}),
@@ -25029,6 +25253,9 @@ class Component extends DCLogic {
       // egen side. «Se mer» passer begge veier og faar plass ved siden av
       // prisen — ogsaa ved «Valgfritt beløp», som er lang.
       cta: 'Se mer',
+      // Utsnittet eieren har valgt for bildet. Fulgte ikke med til forsida,
+      // for kortet der var CourseCard, som ikke vet om det.
+      fokus: this.fokusFor(p.image || ''),
       velg: p.gavekort ? this.go('gavekortside') : this.go('butikk'),
     }));
   }

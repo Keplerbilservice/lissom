@@ -126,7 +126,7 @@ Foresporsel::krevSammeOpphav();
 
 if (Foresporsel::tekst('handling') === 'svar') {
     if (!DB::harTabell('foresporsel_svar')) {
-        Svar::feil('Svar krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        Svar::feil('Svar krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
     }
     $id = Foresporsel::heltall('id');
     $f = DB::en('SELECT id, navn, epost, telefon, melding FROM enquiries WHERE id = :id', ['id' => $id]);

@@ -4030,7 +4030,7 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ fbTrengerBase }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body);">Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først, så kommer kursene fram her.</div>
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body);">Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre, så kommer kursene fram her.</div>
         </sc-if>
 
         <!-- ── Kursene ────────────────────────────────────────────────── -->
@@ -5750,12 +5750,37 @@ window.__resources = {
 
         </div>
 
-        <!-- Databaseoppdateringer.
-             De maatte for kjores ved aa lime en adresse inn i feltet, og den
-             svarte «Fant ikke siden» hvis nettleseren ikke hadde en gyldig
-             admin-okt. Herfra gaar kallet fra sida man alt er innlogget paa. -->
-        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: 0 0 var(--space-4);">Vedlikehold</div>
-        <div style="max-width: 560px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
+      </main>
+    </div>
+  </sc-if>
+
+  <!-- ── Vedlikehold ──────────────────────────────────────────────────
+       Laa nederst paa Oversikt, under alt annet. Det er ikke noe man gjor
+       ofte, men naar man skal, skal det vaere lett aa finne — og det er ikke
+       nederst paa den travleste skjermen. Staar naa i menyen, under Logg ut.
+
+       Databaseoppdateringene maatte foer kjores ved aa lime en adresse inn i
+       feltet, og den svarte «Fant ikke siden» hvis nettleseren ikke hadde en
+       gyldig admin-okt. Herfra gaar kallet fra sida man alt er innlogget paa. -->
+  <sc-if value="{{ erAdminVedlikehold }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – vedlikehold" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavVedlikehold }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Vedlikehold</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Oppdateringer av databasen. Kommer det nye felter eller tabeller med en endring på nettsiden, er det her de settes inn.</p>
+        </div>
+
+        <div style="max-width: 560px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Databasen</div>
           <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
             <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vedlikeholdTekst }}</p>
@@ -5765,7 +5790,6 @@ window.__resources = {
             </div>
           </div>
         </div>
-
       </main>
     </div>
   </sc-if>
@@ -5825,7 +5849,7 @@ window.__resources = {
         <sc-if value="{{ vaMangler }}">
           <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
             <strong style="display: block; margin-bottom: 4px;">Databasen mangler tabellen som lagrer dette</strong>
-            <span style="font-size: var(--text-sm); color: var(--text-body);">Kjør vedlikehold fra Oversikt, så kan oppsettet lagres.</span>
+            <span style="font-size: var(--text-sm); color: var(--text-body);">Kjør vedlikeholdet fra menyen nederst til venstre, så kan oppsettet lagres.</span>
           </div>
         </sc-if>
 
@@ -10843,6 +10867,7 @@ class Component extends DCLogic {
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
       { sti: '/admin/videokurs',    side: 'adminvideokurs' },
+      { sti: '/admin/vedlikehold',  side: 'adminvedlikehold' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -16826,6 +16851,7 @@ class Component extends DCLogic {
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
       case 'adminvideokurs':     return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Videokurs');
+      case 'adminvedlikehold':   return p('Vedlikehold');
       case 'adminventeliste':    return p('Oversikt');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
@@ -16932,6 +16958,16 @@ class Component extends DCLogic {
         navn: '⌁  Logg ut',
         velg: () => this.loggUtNaa(),
         stil: this.adminBunnStil(),
+      },
+      // Vedlikeholdet laa nederst paa Oversikt, under alt annet. Det gjores
+      // sjelden, men naar det skal gjores, skal det vaere lett aa finne.
+      {
+        navn: '⚙  Vedlikehold',
+        velg: () => this.gaaAdmin('adminvedlikehold', {}),
+        stil: Object.assign({}, this.adminBunnStil(), {
+          fontWeight: aktiv === 'Vedlikehold' ? 700 : 500,
+          color: aktiv === 'Vedlikehold' ? 'var(--lissom-yellow)' : 'var(--clay-300)',
+        }),
       },
     ]);
   }
@@ -22486,6 +22522,8 @@ class Component extends DCLogic {
       ].map(p => ({ ...p, velg: () => { this.setState({ side: p.side }); window.scrollTo(0, 0); } })),
       erAdminNyttig: side === 'adminnyttig',
       erAdminVideokurs: side === 'adminvideokurs',
+      erAdminVedlikehold: side === 'adminvedlikehold',
+      adminNavVedlikehold: this.adminMeny(),
       adminNavVideokurs: this.adminMeny(),
       vkTilbake: () => this.gaaAdmin('adminomrkurs', {}),
       erAdminFerdigbrent: side === 'adminferdigbrent',

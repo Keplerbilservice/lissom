@@ -21,7 +21,7 @@ require __DIR__ . '/../_boot.php';
 $admin = krev_admin();
 
 if (!DB::harTabell('medlemsgaver')) {
-    Svar::feil('Gaver krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.', 503);
+    Svar::feil('Gaver krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
 }
 
 $oslo = new DateTimeZone('Europe/Oslo');

@@ -150,7 +150,7 @@ if ($handling === 'status') {
 // beviset ikke trekkes.
 if ($handling === 'bevis') {
     if (!DB::harKolonne('bookings', 'bevis_navn')) {
-        Svar::feil('Retting av kursbevis krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.', 503);
+        Svar::feil('Retting av kursbevis krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
     }
     if (DB::en('SELECT id FROM bookings WHERE id = :i', ['i' => $id]) === null) {
         Svar::feil('Fant ikke påmeldingen.');

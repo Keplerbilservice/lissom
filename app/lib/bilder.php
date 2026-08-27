@@ -192,7 +192,7 @@ final class Bilder
     public static function settFokus(string $fil, string $fokus): void
     {
         if (!DB::harTabell('bilde_fokus')) {
-            throw new RuntimeException('Fokuspunkt krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+            throw new RuntimeException('Fokuspunkt krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
         }
         $fil = mb_substr(trim($fil), 0, 191);
         if ($fil === '') {

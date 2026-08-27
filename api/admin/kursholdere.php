@@ -23,7 +23,7 @@ require __DIR__ . '/../_boot.php';
 $admin = krev_admin();
 
 if (!DB::harTabell('kursholdere')) {
-    Svar::feil('Kursholdere krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.', 503);
+    Svar::feil('Kursholdere krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
 }
 
 $oslo = new DateTimeZone('Europe/Oslo');

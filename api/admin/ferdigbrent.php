@@ -31,7 +31,7 @@ require __DIR__ . '/../_boot.php';
 krev_admin();
 
 if (!DB::harKolonne('course_sessions', 'hentemelding_at')) {
-    Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+    Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
 }
 $harDeltakernivaa = DB::harTabell('deltaker_bilder') && DB::harKolonne('bookings', 'internt_notat');
 
@@ -450,7 +450,7 @@ if ($handling === 'meld-alle') {
 // Bare for verkstedet. Ingen kundevendt endepunkt leser denne kolonnen.
 if ($handling === 'notat') {
     if (!DB::harKolonne('bookings', 'internt_notat')) {
-        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
     }
     $id = Foresporsel::heltall('bookingId');
     $b = DB::en('SELECT id, course_session_id FROM bookings WHERE id = :i', ['i' => $id]);
@@ -469,7 +469,7 @@ if ($handling === 'notat') {
 // ── Hentet ─────────────────────────────────────────────────────────────────
 if ($handling === 'hentet') {
     if (!DB::harKolonne('bookings', 'hentet_at')) {
-        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
     }
     $id = Foresporsel::heltall('bookingId');
     $b = DB::en('SELECT id, course_session_id FROM bookings WHERE id = :i', ['i' => $id]);

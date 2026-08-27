@@ -213,7 +213,7 @@ switch ($handling) {
         // Tabellen kommer med migrasjon 029. Uten den er det bedre aa si hva
         // som mangler enn aa la kallet doe paa en manglende tabell.
         if (!DB::harTabell('kurs_serier')) {
-            Svar::feil('Faste ukedager krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+            Svar::feil('Faste ukedager krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
         }
         $kursId = Foresporsel::heltall('kursId');
         if ($kursId <= 0 || DB::en('SELECT id FROM courses WHERE id = :i', ['i' => $kursId]) === null) {
@@ -228,7 +228,7 @@ switch ($handling) {
             $monster = 'ukentlig';
         }
         if (!$utvidet && $monster !== 'ukentlig') {
-            Svar::feil('Annenhver uke og månedlig krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+            Svar::feil('Annenhver uke og månedlig krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
         }
 
         $ukedag = Foresporsel::heltall('ukedag');
@@ -316,7 +316,7 @@ switch ($handling) {
     // kan ha booket dem, og de skal avlyses én og én med «avlys».
     case 'serieAv':
         if (!DB::harTabell('kurs_serier')) {
-            Svar::feil('Faste ukedager krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+            Svar::feil('Faste ukedager krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
         }
         $serieId = Foresporsel::heltall('serieId');
         $serie = DB::en('SELECT course_id FROM kurs_serier WHERE id = :i', ['i' => $serieId]);
@@ -514,7 +514,7 @@ switch ($handling) {
             Svar::feil('Fant ikke datoen.', 404);
         }
         if (!DB::harKolonne('course_sessions', 'pris_ore')) {
-            Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+            Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
         }
 
         $kropp = Foresporsel::kropp();
@@ -536,7 +536,7 @@ switch ($handling) {
         $antall = null;
         if (array_key_exists('samlinger', $kropp)) {
             if (!DB::harTabell('okt_samlinger')) {
-                Svar::feil('Flerdagerskurs krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+                Svar::feil('Flerdagerskurs krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.');
             }
             $antall = Samlinger::lagre($oktId, (array) $kropp['samlinger']);
         }

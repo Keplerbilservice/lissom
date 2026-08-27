@@ -175,13 +175,30 @@ Ligger igjen i databasen fra den forrige nettsiden. Kan fjernes i cPanel.
 
 ## Stopper på noe utenfor
 
-### 11. Vipps
+### 11. Vipps — **godkjent 27. august**
 
-ePayment svarer 403 på salgsenhet 1142801. Recurring er ikke godkjent.
-Betaling virker ikke før Vipps åpner. Ingenting å gjøre i koden.
+Lissom melder at betalingsløsningen er godkjent. Det som sto igjen — ePayment
+403 på salgsenhet 1142801, og Recurring som ikke var godkjent — skal dermed
+være ute av veien.
+
+**Kontrolleres med «Test Vipps»** nederst i sidemenyen i admin. Den gjør de
+ekte kallene og svarer i klartekst på fire ting: miljø, nøkler, betaling for
+kurs, trekk for medlemskap. Prøvebetalingen er på 1 øre og avbrytes med det
+samme — ingen penger flyttes.
+
+**Én ting må sjekkes i `app/secrets.php` på serveren:**
+
+```php
+'miljo'      => 'produksjon',
+'vipps_base' => 'https://api.vipps.no',
+```
+
+Står det fortsatt `test` og `apitest.vipps.no`, går ingen ekte betalinger
+gjennom — og nøklene fra Vipps virker uansett bare mot det miljøet de hører
+til. «Test Vipps» sier fra om dette på første linje.
 
 Vipps ba 26. august om å se hvor og hvordan kunden sier opp medlemskapet.
-Det står nå i salgsvilkårene, begge steder, og er publisert. Venter på svar.
+Det står i salgsvilkårene, begge steder, og er publisert.
 
 ### 12. Video på kurs
 

@@ -5711,7 +5711,12 @@ window.__resources = {
               </div>
             </sc-for>
             <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenProgramTekst }}</div>
+              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">
+                {{ ingenProgramTekst }}
+                <sc-if value="{{ visProgramNeste }}" hint-placeholder-val="{{ true }}">
+                  <span style="color: var(--text-body);"> {{ programNesteTekst }}</span>
+                </sc-if>
+              </div>
             </sc-if>
 
             <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
@@ -9697,6 +9702,47 @@ window.__resources = {
         <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-2);">
           <button type="button" onClick="{{ ndLeggTil }}" style="{{ ndLeggTilStil }}">{{ ndLeggTilTekst }}</button>
           <button type="button" onClick="{{ ndLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ferdig</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- Svaret fra Vipps-sjekken.
+     «Virker betalingen?» maatte foer besvares ved aa aapne en adresse med en
+     noekkel i, og lese HTTP-koder. Her staar de fire tingene som maa vaere paa
+     plass, med hva Vipps faktisk svarte. -->
+<sc-if value="{{ vsApen }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ vsLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+    <div onClick="{{ stoppKlikk }}" style="width: min(620px, 100%);">
+      <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-xl, 22px); padding: var(--space-8); position: relative; max-height: 82vh; overflow-y: auto;">
+        <button type="button" onClick="{{ vsLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 24px; line-height: 1;">×</button>
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Vipps</div>
+        <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ vsTittel }}</h3>
+        <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vsUnder }}</p>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+          <sc-for list="{{ vsLinjer }}" as="l" hint-placeholder-count="4">
+            <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
+              <span style="{{ l.merkeStil }}">{{ l.merke }}</span>
+              <div style="min-width: 0;">
+                <div style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading);">{{ l.hva }}</div>
+                <div style="font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ l.sier }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ vsHarDetalj }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top: var(--space-6); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+            <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 6px;">Det Vipps svarte, ord for ord:</div>
+            <pre style="margin: 0; padding: var(--space-4); background: var(--clay-100); border-radius: var(--radius-md); font: 12px/1.5 ui-monospace, monospace; color: var(--text-body); white-space: pre-wrap; overflow-wrap: anywhere;">{{ vsDetalj }}</pre>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="refresh-cw" on-click="{{ vsPaaNytt }}" hint-size="auto,44px">Sjekk på nytt</x-import>
+          <button type="button" onClick="{{ vsLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
         </div>
       </div>
     </div>
@@ -17941,7 +17987,47 @@ class Component extends DCLogic {
           }),
         }];
       })(),
+      // Vipps.
+      //
+      // «Virker betalingen?» har vaert et sporsmaal som maatte besvares ved
+      // aa aapne en adresse med en noekkel i. Naa er det en rad: den gjor de
+      // samme kallene mot Vipps og sier hva som virker, i klartekst.
+      //
+      // Den oppretter en betaling paa 1 ore og avbryter den med det samme.
+      // Ingen penger flyttes.
+      {
+        navn: this.state.vippsSjekk === 'henter' ? '⚡  Sjekker Vipps …' : '⚡  Test Vipps',
+        velg: () => this.testVipps(),
+        stil: this.adminBunnStil(),
+      },
     ].flat());
+  }
+
+  /** Gjor de ekte kallene mot Vipps og viser hva som virker. */
+  testVipps() {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Kallene mot Vipps gjøres fra lissom.no.' });
+      return;
+    }
+    if (this.state.vippsSjekk === 'henter') return;
+    this.setState({ vippsSjekk: 'henter' });
+    fetch('/api/vipps-test.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        // Kommer det ikke en fasit, er svaret selv feilen — vis den.
+        if (!d || !d.kort) {
+          this.setState({ vippsSjekk: { kort: [{
+            hva: 'Sjekken', ok: false,
+            sier: (d && (d.feil || d.beskjed)) || 'Serveren svarte ikke som ventet.',
+          }], alt_ok: false } });
+          return;
+        }
+        this.setState({ vippsSjekk: d });
+      })
+      .catch(() => this.setState({ vippsSjekk: { kort: [{
+        hva: 'Sjekken', ok: false, sier: 'Fikk ikke kontakt med serveren.',
+      }], alt_ok: false } }));
   }
 
   adminBunnStil() {
@@ -22528,6 +22614,37 @@ class Component extends DCLogic {
         };
       })(),
       ingenProgram: this.erPublisert() && this.programListe().length === 0,
+      // Er perioden tom, er det to helt ulike ting det kan bety: ingenting i
+      // dag, eller ingenting i det hele tatt. Uten dette maatte man aapne
+      // kurslista for aa vite hvilken av dem det var.
+      //
+      // Dette er ikke lista som ble fjernet 26. august. Den satte september
+      // under «I dag»; dette er én setning som sier naar det neste er.
+      ...(() => {
+        const kommende = ((this.state.adminData || {}).kommende || [])
+          .filter(o => o.startTid)
+          .filter(o => o.type !== 'dropin' || (o.pameldte || 0) > 0);
+        if (!kommende.length) {
+          return { visProgramNeste: true, programNesteTekst: 'Ingen datoer ligger ute framover. Legg ut en dato under Kurs og medlemskap.' };
+        }
+        const naa = new Date();
+        const neste = kommende
+          .map(o => ({ o, d: new Date(o.startTid) }))
+          .filter(x => !isNaN(x.d) && x.d >= naa)
+          .sort((a, b) => a.d - b.d)[0];
+        if (!neste) {
+          return { visProgramNeste: true, programNesteTekst: 'Ingen datoer ligger ute framover. Legg ut en dato under Kurs og medlemskap.' };
+        }
+        const DAG = ['søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag'];
+        const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                     'august', 'september', 'oktober', 'november', 'desember'];
+        return {
+          visProgramNeste: true,
+          programNesteTekst: 'Det neste er ' + neste.o.tittel + ' ' + DAG[neste.d.getDay()] + ' '
+            + neste.d.getDate() + '. ' + MND[neste.d.getMonth()]
+            + (neste.o.klokke ? ', ' + neste.o.klokke : '') + '.',
+        };
+      })(),
       // Sier hva som ikke er der, for den perioden du staar i. «Ingen datoer
       // ligger ute» sto ogsaa naar det laa tjue datoer ute, bare ingen i dag.
       ingenProgramTekst: (this.state.ovProgram || 'I dag') === 'I dag'
@@ -24802,6 +24919,43 @@ class Component extends DCLogic {
       // Redigeringen laa to steder i malen med samme innhold, og ingen av
       // dem lagret noe: alt sto i nettleserens minne og var borte ved neste
       // oppfriskning. Naa ett sted, mot api/admin/veileder.php.
+      // ── Svaret fra Vipps-sjekken ──────────────────────────────────────
+      ...(() => {
+        const v = this.state.vippsSjekk;
+        const har = !!v && v !== 'henter';
+        const kort = har ? (v.kort || []) : [];
+        // Det raa svaret fra Vipps, naar noe ikke gikk. Ingen noekler ligger i
+        // det — det er avslaget, ikke det vi sendte.
+        const detalj = har ? [
+          (v.token || {}).svar || '',
+          (v.betaling || {}).svar || '',
+          (v.recurring || {}).svar || '',
+        ].filter(Boolean).join('\n\n') : '';
+        return {
+          vsApen: har,
+          vsLukk: () => this.setState({ vippsSjekk: null }),
+          vsPaaNytt: () => { this.setState({ vippsSjekk: null }); this.testVipps(); },
+          vsTittel: har && v.alt_ok ? 'Alt virker' : 'Noe mangler ennå',
+          vsUnder: har && v.alt_ok
+            ? 'Kurs kan betales og medlemskap kan trekkes. Prøvebetalingen på 1 øre ble avbrutt med det samme — ingen penger er flyttet.'
+            : 'Linjene under sier hva som er på plass og hva som ikke er det.',
+          vsLinjer: kort.map(l => ({
+            hva: l.hva,
+            sier: l.sier,
+            merke: l.ok ? '✓' : '✕',
+            merkeStil: {
+              flex: '0 0 auto', width: 24, height: 24, borderRadius: '50%',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, fontWeight: 700,
+              background: l.ok ? 'var(--sage-100, #E3EDE4)' : 'rgba(196,90,58,.14)',
+              color: l.ok ? 'var(--sage-600, #4C6B4F)' : 'var(--terracotta-600)',
+            },
+          })),
+          vsHarDetalj: detalj !== '',
+          vsDetalj: detalj,
+        };
+      })(),
+
       // Lenka fra de to stedene redigeringen sto for.
       tilKursvelger: () => this.gaaAdmin('adminkursvelger', {}),
       erAdminKursvelger: side === 'adminkursvelger',

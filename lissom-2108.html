@@ -2564,7 +2564,9 @@ window.__resources = {
             </div>
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2);">
               <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">Usikker på hvilket kurs som passer?</div>
-              <div style="font-size: var(--text-sm); color: var(--text-body);">Svar på tre korte spørsmål, så foreslår vi kurset for deg.</div>
+              <!-- Antallet folger spoersmalene. «Tre korte spoersmal» sto
+                   fast, og ville loyet i det noen la til eller tok bort ett. -->
+              <div style="font-size: var(--text-sm); color: var(--text-body);">{{ kvLokketekst }}</div>
               <div style="margin-top: auto; padding-top: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ kvApne }}" hint-size="auto,40px">Finn kurset mitt</x-import>
               </div>
@@ -5793,25 +5795,14 @@ window.__resources = {
             </div>
           </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kursvelgeren — svar og anbefalinger</div>
-            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Svarene under «Hva vil du helst?» og hva hvert svar anbefaler. Antall personer og «kjæreste eller date» håndteres automatisk.</p>
-              <sc-for list="{{ kvAdminRegler }}" as="r" hint-placeholder-count="3">
-                <div class="lx-svarrad" style="display: grid; grid-template-columns: 1.2fr 1fr 28px; gap: var(--space-3); align-items: center;">
-                  <input value="{{ r.navn }}" onChange="{{ r.settNavn }}" style="{{ skFeltStil }}">
-                  <select value="{{ r.mal }}" onChange="{{ r.settMal }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
-                    <sc-for list="{{ kvAdminMaal }}" as="m" hint-placeholder-count="5">
-                      <option value="{{ m.verdi }}">{{ m.navn }}</option>
-                    </sc-for>
-                  </select>
-                  <button type="button" onClick="{{ r.slett }}" aria-label="Slett svar" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
-                </div>
-              </sc-for>
-              <div>
-                <button type="button" onClick="{{ kvLeggTilRegel }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til svar</button>
-              </div>
-            </div>
+          <!-- Kursvelgeren sto her, og et helt likt skjema sto under
+               Butikk. To steder som kunne si hver sitt, og ingen av dem
+               lagret noe: alt laa i nettleserens minne. Redigeringen ligger
+               naa ett sted, under Nettsiden -> Kursvelgeren, og lagres. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Kursvelgeren</div>
+            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Spørsmålene, svarene og hva de anbefaler ligger under Nettsiden.</p>
+            <button type="button" onClick="{{ tilKursvelger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Åpne Kursvelgeren →</button>
           </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
@@ -6017,6 +6008,183 @@ window.__resources = {
        verkstedet som maa ha lov til aa vise navn, logo, bilde og sitat —
        koden kan ikke avgjore det, men den kan la vaere aa publisere for noen
        har sagt at lov finnes. -->
+  <sc-if value="{{ erAdminKursvelger }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – kursvelgeren" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavKursvelger }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Nettsiden</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kursvelgeren</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 66ch; text-wrap: pretty;">Spørsmålene besøkende får når de trykker «Finn kurset mitt», og hva svarene betyr. Anbefalingen regnes mot merkene på kursene — de du setter i seksjon 06 i kursoppsettet.</p>
+        </div>
+
+        <sc-if value="{{ kvaMangler }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+            <strong style="display: block; margin-bottom: 4px;">Migrasjon 066 er ikke kjørt</strong>
+            <span style="font-size: var(--text-sm); color: var(--text-body);">Kjør oppdateringen fra menyen nederst til venstre. Kursvelgeren virker som før i mellomtiden, med de tre spørsmålene som ligger i koden.</span>
+          </div>
+        </sc-if>
+
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--space-8); align-items: start;">
+          <div style="display: flex; flex-direction: column; gap: var(--space-5); min-width: 0;">
+            <sc-for list="{{ kvaSporsmal }}" as="q" hint-placeholder-count="3">
+              <div style="{{ q.kortStil }}">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                  <div style="min-width: 0; flex: 1 1 240px;">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">{{ q.merke }}</div>
+                    <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ q.tekst }}</div>
+                  </div>
+                  <div style="display: flex; gap: 6px; align-items: center;">
+                    <button type="button" onClick="{{ q.opp }}" aria-label="Flytt opp" style="{{ q.pilStil }}">↑</button>
+                    <button type="button" onClick="{{ q.ned }}" aria-label="Flytt ned" style="{{ q.pilStil }}">↓</button>
+                    <button type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ q.redigerTekst }}</button>
+                    <button type="button" onClick="{{ q.slett }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+                  </div>
+                </div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3); text-wrap: pretty;">{{ q.detalj }}</div>
+
+                <sc-if value="{{ q.apen }}" hint-placeholder-val="{{ false }}">
+                  <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
+                    <div>
+                      <label for="{{ q.tekstId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Spørsmålet</label>
+                      <input id="{{ q.tekstId }}" value="{{ q.rTekst }}" onChange="{{ q.settTekst }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    </div>
+                    <div>
+                      <label for="{{ q.hjelpId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Forklaring under spørsmålet (valgfritt)</label>
+                      <input id="{{ q.hjelpId }}" value="{{ q.rHjelp }}" onChange="{{ q.settHjelp }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
+                      <div>
+                        <label for="{{ q.typeId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Svartype</label>
+                        <select id="{{ q.typeId }}" value="{{ q.rType }}" onChange="{{ q.settType }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                          <sc-for list="{{ kvaTyper }}" as="t" hint-placeholder-count="6">
+                            <option value="{{ t.verdi }}">{{ t.navn }}</option>
+                          </sc-for>
+                        </select>
+                      </div>
+                      <div>
+                        <label for="{{ q.narId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Vis bare når</label>
+                        <select id="{{ q.narId }}" value="{{ q.rNarId }}" onChange="{{ q.settNarId }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                          <sc-for list="{{ q.narValg }}" as="n" hint-placeholder-count="3">
+                            <option value="{{ n.verdi }}">{{ n.navn }}</option>
+                          </sc-for>
+                        </select>
+                      </div>
+                      <sc-if value="{{ q.harNar }}" hint-placeholder-val="{{ false }}">
+                        <div>
+                          <label for="{{ q.narVerdiId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">… svaret er</label>
+                          <input id="{{ q.narVerdiId }}" value="{{ q.rNarVerdi }}" onChange="{{ q.settNarVerdi }}" placeholder="F.eks. 2" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        </div>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ q.erTall }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3);">
+                        <div>
+                          <label for="{{ q.minId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Fra</label>
+                          <input id="{{ q.minId }}" value="{{ q.rMin }}" onChange="{{ q.settMin }}" inputmode="numeric" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        </div>
+                        <div>
+                          <label for="{{ q.maksId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Til</label>
+                          <input id="{{ q.maksId }}" value="{{ q.rMaks }}" onChange="{{ q.settMaks }}" inputmode="numeric" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        </div>
+                        <div>
+                          <label for="{{ q.maksTId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Siste steg heter</label>
+                          <input id="{{ q.maksTId }}" value="{{ q.rMaksTekst }}" onChange="{{ q.settMaksTekst }}" placeholder="Flere enn 12" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        </div>
+                      </div>
+                    </sc-if>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Spørsmålet er i bruk" checked="{{ q.rAktiv }}" on-change="{{ q.vekslAktiv }}" hint-size="100%,28px"></x-import>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ q.lagre }}" hint-size="auto,38px">Lagre spørsmålet</x-import>
+                      <button type="button" onClick="{{ q.rediger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ q.harSvar }}" hint-placeholder-val="{{ true }}">
+                  <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
+                    <sc-for list="{{ q.svar }}" as="sv" hint-placeholder-count="3">
+                      <div style="{{ sv.radStil }}">
+                        <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                          <input value="{{ sv.tekst }}" onChange="{{ sv.settTekst }}" style="flex: 1 1 180px; min-width: 0; FELT">
+                          <button type="button" onClick="{{ sv.opp }}" aria-label="Flytt opp" style="{{ sv.pilStil }}">↑</button>
+                          <button type="button" onClick="{{ sv.ned }}" aria-label="Flytt ned" style="{{ sv.pilStil }}">↓</button>
+                          <button type="button" onClick="{{ sv.lagre }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 6px 8px; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Lagre</button>
+                          <button type="button" onClick="{{ sv.slett }}" aria-label="Slett svaret" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
+                          <div>
+                            <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Anbefaler</label>
+                            <select value="{{ sv.mal }}" onChange="{{ sv.settMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                              <sc-for list="{{ kvaMaal }}" as="m" hint-placeholder-count="6">
+                                <option value="{{ m.verdi }}">{{ m.navn }}</option>
+                              </sc-for>
+                            </select>
+                          </div>
+                          <div>
+                            <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Begrunnelse (valgfritt)</label>
+                            <input value="{{ sv.begrunnelse }}" onChange="{{ sv.settBegrunnelse }}" placeholder="Hvorfor passer dette?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                          </div>
+                        </div>
+                        <div style="margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2);">
+                          <sc-for list="{{ sv.merkegrupper }}" as="g" hint-placeholder-count="4">
+                            <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;">
+                              <span style="font-size: var(--text-xs); color: var(--text-muted); min-width: 64px;">{{ g.navn }}</span>
+                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <sc-for list="{{ g.valg }}" as="v" hint-placeholder-count="3">
+                                  <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                                </sc-for>
+                              </div>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ q.kanHaSvar }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top: var(--space-4);">
+                    <button type="button" onClick="{{ q.nyttSvar }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til svar</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ kvaNyttSporsmal }}" hint-size="auto,44px">Nytt spørsmål</x-import>
+            </div>
+          </div>
+
+          <!-- Forhaandsvisning: det ekte vinduet, ikke en tegning av det.
+               Knappen aapner det samme som besokende ser. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); position: sticky; top: var(--space-6);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Slik ser den ut</div>
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kvaOppsummering }}</p>
+            <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-5);">
+              <sc-for list="{{ kvaFlyt }}" as="f" hint-placeholder-count="3">
+                <div style="display: flex; gap: 10px; align-items: baseline; font-size: var(--text-sm); color: var(--text-body);">
+                  <span style="font-weight: 700; color: var(--text-heading); min-width: 18px;">{{ f.nr }}</span>
+                  <span>{{ f.tekst }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="eye" on-click="{{ kvaApneVindu }}" hint-size="auto,42px">Prøv kursvelgeren</x-import>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Vinduet er det samme besøkende ser. Endringene gjelder med det samme du lagrer.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminReferanser }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – referansekunder" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -7622,25 +7790,14 @@ window.__resources = {
             </div>
           </div>
 
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kursvelgeren — svar og anbefalinger</div>
-            <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Svarene under «Hva vil du helst?» og hva hvert svar anbefaler. Antall personer og «kjæreste eller date» håndteres automatisk.</p>
-              <sc-for list="{{ kvAdminRegler }}" as="r" hint-placeholder-count="3">
-                <div class="lx-svarrad" style="display: grid; grid-template-columns: 1.2fr 1fr 28px; gap: var(--space-3); align-items: center;">
-                  <input value="{{ r.navn }}" onChange="{{ r.settNavn }}" style="{{ skFeltStil }}">
-                  <select value="{{ r.mal }}" onChange="{{ r.settMal }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
-                    <sc-for list="{{ kvAdminMaal }}" as="m" hint-placeholder-count="5">
-                      <option value="{{ m.verdi }}">{{ m.navn }}</option>
-                    </sc-for>
-                  </select>
-                  <button type="button" onClick="{{ r.slett }}" aria-label="Slett svar" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
-                </div>
-              </sc-for>
-              <div>
-                <button type="button" onClick="{{ kvLeggTilRegel }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px dashed var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">+ Legg til svar</button>
-              </div>
-            </div>
+          <!-- Kursvelgeren sto her, og et helt likt skjema sto under
+               Butikk. To steder som kunne si hver sitt, og ingen av dem
+               lagret noe: alt laa i nettleserens minne. Redigeringen ligger
+               naa ett sted, under Nettsiden -> Kursvelgeren, og lagres. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Kursvelgeren</div>
+            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Spørsmålene, svarene og hva de anbefaler ligger under Nettsiden.</p>
+            <button type="button" onClick="{{ tilKursvelger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Åpne Kursvelgeren →</button>
           </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
@@ -9561,7 +9718,14 @@ window.__resources = {
               </sc-for>
             </div>
           </div>
-          <h3 style="margin: 0 0 var(--space-5); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ kvTittel }}</h3>
+          <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ kvTittel }}</h3>
+          <sc-if value="{{ kvHarHjelp }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ kvHjelp }}</p>
+          </sc-if>
+          <div style="height: var(--space-3);"></div>
+          <sc-if value="{{ kvErFritekst }}" hint-placeholder-val="{{ false }}">
+            <textarea value="{{ kvFritekst }}" onChange="{{ settKvFritekst }}" rows="3" placeholder="Skriv her" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-6);"></textarea>
+          </sc-if>
           <sc-if value="{{ kvErAntall }}" hint-placeholder-val="{{ false }}">
             <div style="display: flex; margin-bottom: var(--space-6);">
               <div style="display: inline-flex; align-items: center; gap: var(--space-2); border: 2px solid var(--lissom-brown); border-radius: var(--radius-pill); padding: 5px;">
@@ -9594,6 +9758,18 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ kvGaTil }}" hint-size="auto,44px">Les mer</x-import>
             <button type="button" onClick="{{ kvNullstill }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Start på nytt</button>
           </div>
+          <!-- Naermeste alternativer. Sto det bare ett forslag, hadde den som
+               ikke kjente seg igjen ingen vei videre enn aa begynne paa nytt. -->
+          <sc-if value="{{ kvHarFlere }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: var(--space-6); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+              <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-2);">Passer også:</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ kvFlere }}" as="f" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ f.velg }}" style="appearance: none; cursor: pointer; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-pill); padding: 7px 14px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">{{ f.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
         </sc-if>
       </div>
     </div>
@@ -11055,18 +11231,6 @@ class Component extends DCLogic {
     return liste.map(p => Object.assign({}, p, { imageCss: "url('" + p.image + "')" }));
   }
 
-  kvRegler() {
-    return this.state.kvRegler || [
-      { navn: 'Lære å dreie', mal: 'Nybegynner dreiekurs', tekst: 'To økter over to dager der du lærer å sentrere, dreie og trimme.' },
-      { navn: 'Lage boller og fat', mal: 'Store fat kurs', tekst: 'Formiddagskurs i plateteknikk der du bygger store fat over form.' },
-      { navn: 'Male ferdig keramikk', mal: 'SIDE:paintonpots', tekst: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.' },
-    ];
-  }
-
-  kvOppdaterRegel(i, endring) {
-    this.setState({ kvRegler: this.kvRegler().map((r, j) => j === i ? Object.assign({}, r, endring) : r), kvHva: null });
-  }
-
   // Utsnittet som er valgt for et bilde, eller standarden for ramma.
   //
   // Standarden er ikke alltid midten: karusellen paa kurssida har alltid
@@ -11372,6 +11536,7 @@ class Component extends DCLogic {
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
       { sti: '/admin/videokurs',    side: 'adminvideokurs' },
       { sti: '/admin/referanser',   side: 'adminreferanser' },
+      { sti: '/admin/kursvelger',   side: 'adminkursvelger' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -13732,6 +13897,62 @@ class Component extends DCLogic {
         this.setState({ side: 'ikkefunnet' });
       })
       .catch(() => { /* nettet svarte ikke; lista staar */ });
+  }
+
+  /**
+   * Spoersmalene i Kursveilederen.
+   *
+   * Aapent endepunkt — dette er teksten paa nettsida. Kommer det ingenting,
+   * bruker vinduet de tre spoersmalene som ligger i koden, som for.
+   */
+  hentVeileder() {
+    if (!this.erPublisert() || this._veilederHentes) return;
+    this._veilederHentes = true;
+    fetch('/api/veileder.php', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (d && d.sporsmal) this.setState({ veileder: d }); })
+      .catch(() => {})
+      .then(() => { this._veilederHentes = false; });
+  }
+
+  /** Alt, ogsaa det som er slaatt av. Bare admin. */
+  hentVeilederAdmin() {
+    if (!this.erPublisert() || this._vaHentes) return;
+    this._vaHentes = true;
+    fetch('/api/admin/veileder.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.sporsmal) { this.setState({ veilederAdmin: d, veilederMangler: false }); return; }
+        // Serveren sier fra naar migrasjonen ikke er kjort. Skjermen skal si
+        // det samme, framfor aa staa tom uten forklaring.
+        this.setState({ veilederMangler: !!(d && d.feil) });
+      })
+      .catch(() => {})
+      .then(() => { this._vaHentes = false; });
+  }
+
+  /** Alt som endrer noe i veilederen. Henter paa nytt etterpaa. */
+  veilederKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/veileder.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) {
+          this._vaHentes = false; this.hentVeilederAdmin();
+          // Nettsida leser den samme lista. Uten dette ville vinduet vist
+          // det gamle til neste gang noen lastet sida.
+          this._veilederHentes = false; this.hentVeileder();
+        }
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
   }
 
   hentMarked() {
@@ -17512,6 +17733,9 @@ class Component extends DCLogic {
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
         ['Referansekunder', 'adminreferanser'],
+        // Kursvelgeren laa to steder, begge som skjemaer som ikke lagret
+        // noe. Ett sted naa, der resten av nettsideinnholdet ligger.
+        ['Kursvelgeren',  'adminkursvelger'],
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
@@ -17575,6 +17799,7 @@ class Component extends DCLogic {
       case 'adminoppskrifter':   return p('Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
       case 'adminreferanser':    return p('Nettsiden', 'Nettsiden', 'Referansekunder');
+      case 'adminkursvelger':   return p('Nettsiden', 'Nettsiden', 'Kursvelgeren');
       case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':
         return st.seoFra === 'marked'
@@ -18278,6 +18503,16 @@ class Component extends DCLogic {
     if (side === 'nyheter' && !this.state.nyheter) {
       this.hentNyheter();
     }
+    // Kursveilederen aapnes fra forsiden og fra kurslista. Spoersmalene
+    // hentes naar en av de sidene vises, saa vinduet staar ferdig naar noen
+    // trykker — ikke tomt i et halvt sekund.
+    if (!this.state.veileder && ['forside', 'kurs', 'kalender'].indexOf(side) !== -1) {
+      this.hentVeileder();
+    }
+    if (side === 'adminkursvelger' && !this.state.veilederAdmin) {
+      this.hentVeilederAdmin();
+      if (!this.state.veileder) this.hentVeileder();
+    }
     // Klar til henting hentes hver gang sida aapnes. Den som staar i doera og
     // lurer paa om koppen er ferdig, skal ikke se svaret fra i gaar.
     if (side === 'ferdigbrent') {
@@ -18876,70 +19111,284 @@ class Component extends DCLogic {
         { tittel: 'Verkstedets regler', tekst: 'Egne materialer og glasurer må godkjennes, og HMS- og ordensreglene gjelder alle medlemmer.' },
       ],
       erEventsFilter: this.state.kursFilter === 'Events',
+      // ── Kursveilederen ────────────────────────────────────────────────
+      //
+      // Spoersmalene sto i koden og svarene i nettleserens minne. Redigeringen
+      // i admin saa ut til aa virke, men ingenting overlevde en oppfriskning
+      // av sida. Naa kommer de fra api/veileder.php (migrasjon 066), og
+      // anbefalingen regnes mot merkene paa kursene (migrasjon 065).
+      //
+      // Kommer det ikke noe fra serveren — migrasjonen er ikke kjort, eller
+      // vi staar i designverktoyet — brukes de tre spoersmalene som fantes
+      // fra for. Veilederen skal aapne seg uansett.
       ...(() => {
-        const REKKE = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'Flere enn 12'];
-        const antall = this.state.kvAntall || '1';
-        const n = antall === 'Flere enn 12' ? 99 : parseInt(antall, 10);
-        const hvem = this.state.kvHvem || null;
-        const hva = this.state.kvHva || null;
-        const flertall = n > 1;
+        const RESERVE = [
+          { id: -1, nokkel: 'antall', tekst: 'Hvor mange er dere?', type: 'tall',
+            minVerdi: 1, maksVerdi: 12, maksTekst: 'Flere enn 12', visNarId: 0, visNarVerdi: '', svar: [] },
+          { id: -2, nokkel: 'hvem', tekst: 'Hvem er dere to?', type: 'envalg',
+            visNarId: -1, visNarVerdi: '2', svar: [
+              { id: -21, tekst: 'Venner', passerHvem: 'venner', mal: '', begrunnelse: '' },
+              { id: -22, tekst: 'Kjæreste eller date', passerHvem: 'par', mal: '', begrunnelse: '' },
+              { id: -23, tekst: 'Familie', passerHvem: 'familie', mal: '', begrunnelse: '' },
+            ] },
+          { id: -3, nokkel: 'hva', tekst: 'Hva vil du helst?', type: 'envalg',
+            visNarId: 0, visNarVerdi: '', svar: [
+              { id: -31, tekst: 'Lære å dreie', metode: 'dreiing', mal: 'Nybegynner dreiekurs',
+                begrunnelse: 'To økter over to dager der du lærer å sentrere, dreie og trimme.' },
+              { id: -32, tekst: 'Lage boller og fat', metode: 'handbygging', mal: 'Store fat kurs',
+                begrunnelse: 'Formiddagskurs i plateteknikk der du bygger store fat over form.' },
+              { id: -33, tekst: 'Male ferdig keramikk', metode: 'maling', mal: 'SIDE:paintonpots',
+                begrunnelse: 'Mal ferdig keramikk — vi glaserer og brenner. Passer også for barn.' },
+            ] },
+        ];
+        const fraServer = ((this.state.veileder || {}).sporsmal || []);
+        const alle = fraServer.length ? fraServer : RESERVE;
+        const svarene = this.state.kvSvar || {};
+
+        // Betingede spoersmal. «Hvem er dere to?» spor ikke alle — det vises
+        // bare naar antallet er noeyaktig 2.
+        const synlige = alle.filter(q => {
+          if (!q.visNarId) return true;
+          const gitt = svarene[q.visNarId];
+          if (gitt === undefined || gitt === null || gitt === '') return false;
+          return String(gitt) === String(q.visNarVerdi);
+        });
+
         const chipStil = valgt => ({ appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '8px 16px', borderRadius: 'var(--radius-pill)',
           border: valgt ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
           background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)',
           color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' });
-        const chip = (navn, key, val) => ({ navn, stil: chipStil(val === navn), velg: () => this.setState({ [key]: val === navn ? null : navn }) });
-        const sporsmal = [{ tittel: flertall ? 'Hvor mange er dere?' : 'Hvor mange er dere?', valgt: antall, erAntall: true }];
-        if (n === 2) sporsmal.push({ tittel: 'Hvem er dere to?', valgt: hvem, valg: ['Venner', 'Kjæreste eller date', 'Familie'].map(x => chip(x, 'kvHvem', hvem)) });
-        const regler = this.kvRegler();
-        sporsmal.push({ tittel: flertall ? 'Hva vil dere helst?' : 'Hva vil du helst?', valgt: hva, valg: regler.map(r => chip(r.navn, 'kvHva', hva)) });
-        const steg = Math.min(this.state.kvSteg || 0, sporsmal.length);
-        const ferdig = steg >= sporsmal.length;
+        const settSvar = (qid, verdi) => this.setState(st => ({
+          kvSvar: Object.assign({}, st.kvSvar || {}, { [qid]: verdi }),
+        }));
+
+        const steg = Math.min(this.state.kvSteg || 0, synlige.length);
+        const ferdig = steg >= synlige.length;
+        const gjeldende = synlige[Math.min(steg, Math.max(0, synlige.length - 1))] || null;
+
+        // Telleren. Verdien lagres som tekst, slik den vises: «5», eller
+        // maksteksten naar man har trykket seg forbi det hoyeste tallet.
+        const tellerRekke = (q) => {
+          const min = q.minVerdi === null || q.minVerdi === undefined ? 1 : q.minVerdi;
+          const maks = q.maksVerdi === null || q.maksVerdi === undefined ? 12 : q.maksVerdi;
+          const r = [];
+          for (let i = min; i <= maks; i++) r.push(String(i));
+          if (q.maksTekst) r.push(q.maksTekst);
+          return r;
+        };
+
+        // Antallet, for reglene som trenger et tall. Maksteksten betyr
+        // «flere enn det hoyeste», ikke et tall vi kan regne med.
+        const antallQ = alle.find(q => q.nokkel === 'antall');
+        const antallSvar = antallQ ? svarene[antallQ.id] : undefined;
+        const nPersoner = (() => {
+          if (!antallQ || antallSvar === undefined) return 1;
+          if (antallQ.maksTekst && antallSvar === antallQ.maksTekst) return 999;
+          const t = parseInt(antallSvar, 10);
+          return isNaN(t) ? 1 : t;
+        })();
+
+        // Merkene svarene peker paa, samlet — i den rekkefolgen spoersmalene
+        // stilles. Rekkefolgen betyr noe: peker to svar paa hvert sitt kurs,
+        // vinner det som ble svart foerst. «Hvem er dere to?» kommer for
+        // «Hva vil du helst?», og et par som vil dreie skal faa Date Night,
+        // ikke nybegynnerkurset. Slik virket det for ogsaa — den gang som en
+        // saerregel i koden.
+        const valgteSvar = [];
+        synlige.forEach((q, iq) => {
+          const gitt = svarene[q.id];
+          if (gitt === undefined || gitt === null || gitt === '') return;
+          (q.svar || []).forEach(sv => {
+            if (sv.tekst === gitt) valgteSvar.push(Object.assign({}, sv, { plass: iq }));
+          });
+        });
+        const onsket = { nivaa: [], hvem: [], metode: [], varighet: [] };
+        valgteSvar.forEach(sv => {
+          const legg = (felt, raa) => String(raa || '').split(',').map(x => x.trim())
+            .filter(Boolean).forEach(x => { if (onsket[felt].indexOf(x) === -1) onsket[felt].push(x); });
+          legg('nivaa', sv.passerNivaa); legg('hvem', sv.passerHvem);
+          legg('metode', sv.metode); legg('varighet', sv.varighet);
+        });
+
         // Plassene paa dreiekursene, slik de faktisk staar i basen.
         const dreiePlasser = (() => {
           const d = (this.state.katalog || []).filter(k => (k.tema || '') === 'Dreiing' && k.plasser > 0);
-          return d.length ? Math.max(...d.map(k => k.plasser)) : 8;
+          return d.length ? Math.max.apply(null, d.map(k => k.plasser)) : 8;
         })();
+
+        // Poengene. Et svar som peker rett paa ett kurs veier tyngst — det er
+        // et valg noen har tatt. Merkene under er det som gjor at et kurs
+        // ingen har pekt paa likevel kan vinne.
+        const kort = this._alleKort || [];
+        const iLista = (raa, onske) => String(raa || '').split(',').map(x => x.trim())
+          .filter(x => x && onske.indexOf(x) !== -1);
+        const scoret = kort.map(k => {
+          const traff = [];
+          let poeng = 0;
+          valgteSvar.forEach(sv => {
+            if (sv.mal && sv.mal.indexOf('SIDE:') !== 0 && sv.mal === k.title) {
+              // Et svar som peker rett paa ett kurs er et valg noen har tatt,
+              // og veier tyngre enn merkene. Jo tidligere spoersmalet kommer,
+              // jo tyngre — se kommentaren over valgteSvar.
+              poeng += 20 - sv.plass;
+              traff.push('valgt');
+            }
+          });
+          const h = iLista(k.passerHvem, onsket.hvem);
+          const m = iLista(k.metode, onsket.metode);
+          const nv = iLista(k.passerNivaa, onsket.nivaa);
+          const va = iLista(k.varighet, onsket.varighet);
+          poeng += h.length * 2 + m.length * 2 + nv.length + va.length;
+          // «Dreiing og haandbygging» dekker begge metodene.
+          if (String(k.metode || '') === 'begge' && onsket.metode.length) { poeng += 2; m.push('begge'); }
+          return { kort: k, poeng, h, m, nv, va };
+        }).filter(x => x.poeng > 0).sort((a, b) => b.poeng - a.poeng);
+
+        const MERKER = {
+          nybegynner: 'nybegynnere', litt: 'deg med litt erfaring', erfaren: 'erfarne',
+          alene: 'deg alene', par: 'to sammen', venner: 'venner', familie: 'familie',
+          firma: 'bedrifter', barn: 'barn med voksen',
+          dreiing: 'dreiing', handbygging: 'håndbygging', maling: 'maling', begge: 'både dreiing og håndbygging',
+          kort: 'en kort økt', medium: 'to til fire timer', lang: 'en lang dag',
+        };
+        const begrunn = (t) => {
+          const deler = [];
+          if (t.h.length) deler.push('passer for ' + t.h.map(x => MERKER[x] || x).join(' og '));
+          if (t.m.length) deler.push('handler om ' + t.m.map(x => MERKER[x] || x).join(' og '));
+          if (t.nv.length) deler.push('er lagt opp for ' + t.nv.map(x => MERKER[x] || x).join(' og '));
+          if (!deler.length) return '';
+          const s = deler.join(', ');
+          return 'Det ' + s.charAt(0).toLowerCase() + s.slice(1) + '.';
+        };
+
         const rec = (() => {
           if (!ferdig) return null;
-          if (n > 12) return { navn: 'Privat event', tekst: 'For grupper over 12 skreddersyr vi kvelden — utdrikningslag, bursdag eller teambuilding.', gaTil: 'bedrift' };
-          if (n === 2 && hvem === 'Kjæreste eller date') return { navn: 'Date Night', tekst: 'En kveld ved dreieskiva for to, med noe godt i glasset.', kurs: 'Date Night' };
-          const regel = regler.find(r => r.navn === hva);
-          const fallTekst = 'Basert på svarene deres er dette det beste valget.';
-          if (regel && regel.mal.indexOf('SIDE:') === 0) return { navn: ({ 'SIDE:paintonpots': 'Paint on Pots', 'SIDE:bedrift': 'Privat event' })[regel.mal] || regel.navn, tekst: regel.tekst || fallTekst, gaTil: regel.mal.slice(5) };
-          // Tallet leses av kursene, ikke skrevet inn her. Endrer verkstedet
-          // plassene paa dreiekursene, folger denne setningen med.
-          if (n > dreiePlasser) return { navn: 'Privat event', tekst: 'Dreiekursene tar maks ' + dreiePlasser + ' personer — for dere passer et privat event best.', gaTil: 'bedrift' };
-          if (regel) return { navn: regel.mal, tekst: regel.tekst || fallTekst, kurs: regel.mal };
-          return { navn: 'Nybegynner dreiekurs', tekst: 'To økter over to dager der du lærer å sentrere, dreie og trimme.', kurs: 'Nybegynner dreiekurs' };
+          // Saerreglene, som for. De staar over poengene fordi de handler om
+          // noe poengene ikke kan vite: at gruppa er for stor for rommet.
+          if (antallQ && nPersoner > (antallQ.maksVerdi || 12)) {
+            return { navn: 'Privat event', tekst: 'For grupper over ' + (antallQ.maksVerdi || 12)
+              + ' skreddersyr vi kvelden — utdrikningslag, bursdag eller teambuilding.', gaTil: 'bedrift' };
+          }
+          // Et svar som peker paa en side gaar rett dit.
+          const side = valgteSvar.find(sv => (sv.mal || '').indexOf('SIDE:') === 0);
+          if (side) {
+            const navn = { 'SIDE:paintonpots': 'Paint on Pots', 'SIDE:bedrift': 'Privat event' }[side.mal] || side.tekst;
+            return { navn, tekst: side.begrunnelse || 'Basert på svarene dine er dette det beste valget.', gaTil: side.mal.slice(5) };
+          }
+          if (nPersoner > dreiePlasser && onsket.metode.indexOf('dreiing') !== -1) {
+            return { navn: 'Privat event', tekst: 'Dreiekursene tar maks ' + dreiePlasser
+              + ' personer — for dere passer et privat event best.', gaTil: 'bedrift' };
+          }
+          const beste = scoret[0];
+          if (beste) {
+            const eget = valgteSvar.find(sv => sv.mal === beste.kort.title && sv.begrunnelse);
+            return {
+              navn: beste.kort.title,
+              tekst: (eget && eget.begrunnelse) || begrunn(beste) || beste.kort.om
+                     || 'Basert på svarene dine er dette det beste valget.',
+              kurs: beste.kort.title,
+              // De nest beste. Sto det bare ett forslag, hadde den som ikke
+              // kjente seg igjen ingen vei videre enn aa begynne paa nytt.
+              flere: scoret.slice(1, 3).map(x => x.kort.title),
+            };
+          }
+          // Ingenting traff. Da er det ærligere aa si det enn aa peke paa et
+          // tilfeldig kurs — og lista over kurs er like ved.
+          return {
+            navn: 'Vi fant ikke ett kurs som skiller seg ut',
+            tekst: 'Svarene dine passer flere av kursene. Se hele oversikten, så hjelper vi gjerne til på telefon eller e-post.',
+            gaTil: 'kurs',
+          };
         })();
-        const gjeldende = sporsmal[Math.min(steg, sporsmal.length - 1)];
-        const kanNeste = !!gjeldende.valgt;
+
+        // Telleren staar alltid paa et tall — det laveste til noen trykker.
+        // Krevde vi et trykk foerst, ville «Neste» sett doed ut for den som
+        // er alene, og det er det vanligste svaret.
+        const kanNeste = !!gjeldende && (() => {
+          const gitt = svarene[gjeldende.id];
+          if (gjeldende.type === 'tall') return true;
+          if (gjeldende.type === 'fritekst') return String(gitt || '').trim() !== '';
+          return gitt !== undefined && gitt !== null && gitt !== '';
+        })();
+
+        const teller = gjeldende && gjeldende.type === 'tall' ? tellerRekke(gjeldende) : [];
+        const naaTeller = gjeldende && gjeldende.type === 'tall'
+          ? (svarene[gjeldende.id] !== undefined ? svarene[gjeldende.id] : teller[0]) : '';
+
+        const nullstill = { kvSteg: 0, kvSvar: {} };
         return {
+          // Antallet paa kortet som aapner veilederen. Sto som «tre korte
+          // spoersmal» og ville loyet i det noen la til eller tok bort ett.
+          kvLokketekst: (() => {
+            const n = alle.filter(q => !q.visNarId).length;
+            const ord = { 1: 'ett', 2: 'to', 3: 'tre', 4: 'fire', 5: 'fem', 6: 'seks' }[n] || String(n);
+            return 'Svar på ' + ord + (n === 1 ? ' kort spørsmål' : ' korte spørsmål') + ', så foreslår vi kurset for deg.';
+          })(),
           kvVisSporsmal: !ferdig,
           kvVisSvar: ferdig && !!rec,
-          kvStegTekst: 'Spørsmål ' + (steg + 1) + ' av ' + sporsmal.length,
-          kvTittel: gjeldende.tittel,
-          kvValg: gjeldende.valg || [],
-          kvErAntall: !!gjeldende.erAntall,
-          kvErChips: !gjeldende.erAntall,
-          kvAntallTekst: antall === '1' ? '1 person' : antall === 'Flere enn 12' ? 'Flere enn 12' : antall + ' personer',
-          kvMinus: () => { const i = REKKE.indexOf(antall); if (i > 0) this.setState({ kvAntall: REKKE[i - 1] }); },
-          kvPlus: () => { const i = REKKE.indexOf(antall); if (i < REKKE.length - 1) this.setState({ kvAntall: REKKE[i + 1] }); },
-          kvPrikker: sporsmal.map((q, i) => ({ stil: { width: 8, height: 8, borderRadius: '50%', background: i <= steg ? 'var(--lissom-brown)' : 'var(--clay-200)' } })),
-          kvNesteLabel: steg === sporsmal.length - 1 ? 'Se anbefaling' : 'Neste',
+          kvStegTekst: 'Spørsmål ' + Math.min(steg + 1, synlige.length) + ' av ' + synlige.length,
+          kvTittel: gjeldende ? gjeldende.tekst : '',
+          kvHarHjelp: !!(gjeldende && gjeldende.hjelpetekst),
+          kvHjelp: gjeldende ? (gjeldende.hjelpetekst || '') : '',
+          kvValg: gjeldende && gjeldende.type !== 'tall' && gjeldende.type !== 'fritekst'
+            ? (gjeldende.type === 'janei'
+                ? ['Ja', 'Nei'].map(t => ({ navn: t, stil: chipStil(svarene[gjeldende.id] === t),
+                    velg: () => settSvar(gjeldende.id, svarene[gjeldende.id] === t ? '' : t) }))
+                : (gjeldende.svar || []).map(sv => ({
+                    navn: sv.tekst, stil: chipStil(svarene[gjeldende.id] === sv.tekst),
+                    velg: () => settSvar(gjeldende.id, svarene[gjeldende.id] === sv.tekst ? '' : sv.tekst),
+                  })))
+            : [],
+          kvErAntall: !!(gjeldende && gjeldende.type === 'tall'),
+          kvErChips: !!(gjeldende && gjeldende.type !== 'tall' && gjeldende.type !== 'fritekst'),
+          kvErFritekst: !!(gjeldende && gjeldende.type === 'fritekst'),
+          kvFritekst: gjeldende ? String(svarene[gjeldende.id] || '') : '',
+          settKvFritekst: e => { if (gjeldende) settSvar(gjeldende.id, e.target.value); },
+          kvAntallTekst: naaTeller === '1' ? '1 person'
+            : (gjeldende && gjeldende.maksTekst && naaTeller === gjeldende.maksTekst)
+              ? gjeldende.maksTekst : naaTeller + ' personer',
+          kvMinus: () => { const i = teller.indexOf(String(naaTeller)); if (i > 0) settSvar(gjeldende.id, teller[i - 1]); },
+          kvPlus: () => {
+            const i = teller.indexOf(String(naaTeller));
+            if (i === -1) { settSvar(gjeldende.id, teller[0]); return; }
+            if (i < teller.length - 1) settSvar(gjeldende.id, teller[i + 1]);
+          },
+          kvPrikker: synlige.map((q, i) => ({ stil: { width: 8, height: 8, borderRadius: '50%', background: i <= steg ? 'var(--lissom-brown)' : 'var(--clay-200)' } })),
+          kvNesteLabel: steg === synlige.length - 1 ? 'Se anbefaling' : 'Neste',
           kvNesteStil: { appearance: 'none', cursor: kanNeste ? 'pointer' : 'not-allowed', opacity: kanNeste ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
-          kvNeste: () => { if (kanNeste) this.setState({ kvSteg: steg + 1 }); },
+          kvNeste: () => {
+            if (!kanNeste) return;
+            // Har man ikke roert telleren, er det tallet som staar der som
+            // gjelder. Uten dette ville svaret blitt staaende tomt, og
+            // sporsmalet som henger paa det aldri vist seg.
+            if (gjeldende && gjeldende.type === 'tall' && svarene[gjeldende.id] === undefined) {
+              settSvar(gjeldende.id, String(naaTeller));
+              this.setState({ kvSteg: steg + 1 });
+              return;
+            }
+            this.setState({ kvSteg: steg + 1 });
+          },
           kvHarTilbake: steg > 0,
           kvTilbake: () => this.setState({ kvSteg: Math.max(0, steg - 1) }),
-          kvNullstill: () => this.setState({ kvSteg: 0, kvHvem: null, kvHva: null, kvAntall: null }),
+          kvNullstill: () => this.setState(nullstill),
           kvApen: !!this.state.kvApen,
-          kvApne: () => this.setState({ kvApen: true, kvSteg: 0, kvHvem: null, kvHva: null, kvAntall: null }),
+          kvApne: () => this.setState(Object.assign({ kvApen: true }, nullstill)),
           kvLukk: () => this.setState({ kvApen: false }),
           kvNavn: rec ? rec.navn : '',
           kvTekst: rec ? rec.tekst : '',
+          // Naermeste alternativer. Bestillingen ber om dem, og de er det
+          // eneste som gjor et forslag til et valg framfor en beskjed.
+          kvHarFlere: !!(rec && (rec.flere || []).length),
+          kvFlere: (rec && rec.flere ? rec.flere : []).map(navn => ({
+            navn,
+            velg: () => {
+              const k = (this._alleKort || []).find(x => x.title === navn);
+              if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
+            },
+          })),
           kvMeta: (() => {
             if (!rec) return '';
-            const k = (this._kursListe || []).find(x => x.title === (rec.kurs || rec.navn));
+            const k = (this._alleKort || []).find(x => x.title === (rec.kurs || rec.navn));
             if (k) return k.price + ' · Neste: ' + k.date + ' · ' + k.status;
             if (rec.gaTil === 'bedrift') return 'Pris på forespørsel · dere velger kvelden';
             if (rec.gaTil === 'paintonpots') return 'Fra kr. 690 · flere datoer hver måned';
@@ -18948,8 +19397,8 @@ class Component extends DCLogic {
           kvGaTil: () => {
             if (!rec) return;
             if (rec.gaTil) { this.setState({ side: rec.gaTil, kvApen: false }); window.scrollTo(0, 0); return; }
-            const k = (this._kursListe || []).find(x => x.title === rec.kurs);
-            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
+            const k = (this._alleKort || []).find(x => x.title === rec.kurs);
+            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null, kvApen: false }); window.scrollTo(0, 0); }
           },
         };
       })(),
@@ -19093,7 +19542,7 @@ class Component extends DCLogic {
         tomTekst: 'Ingen kurs i dag',
         velgDag: (d.poster || []).length
           ? this.go('booking')
-          : () => this.setState({ kvApen: true, kvSteg: 0, kvHvem: null, kvHva: null, kvAntall: null }),
+          : () => this.setState({ kvApen: true, kvSteg: 0, kvSvar: {} }),
         poster: d.poster.map(p => Object.assign(p, {
           velg: () => {
             const navn = (p.tekst || '').split(' · ')[0];
@@ -22855,21 +23304,6 @@ class Component extends DCLogic {
       butikkVelgMedlem: () => this.setState({ butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }),
       visKursvelger: this.bryterPaa('kursvelger') && this.mobilVis('kursvelger'),
       vekslKursvelger: () => this.vekslBryter('kursvelger', 'Kursvelger-lenken'),
-      kvAdminMaal: [
-        { verdi: 'Nybegynner dreiekurs', navn: 'Nybegynner dreiekurs' },
-        { verdi: 'Kurs boller', navn: 'Kurs boller' },
-        { verdi: 'Store fat kurs', navn: 'Store fat kurs' },
-        { verdi: 'Date Night', navn: 'Date Night' },
-        { verdi: 'SIDE:paintonpots', navn: 'Paint on Pots-siden' },
-        { verdi: 'SIDE:bedrift', navn: 'Privat event / bedrift' },
-      ],
-      kvAdminRegler: this.kvRegler().map((r, i) => ({
-        navn: r.navn, mal: r.mal,
-        settNavn: e => this.kvOppdaterRegel(i, { navn: e.target.value }),
-        settMal: e => this.kvOppdaterRegel(i, { mal: e.target.value, tekst: '' }),
-        slett: () => this.setState({ kvRegler: this.kvRegler().filter((x, j) => j !== i), kvHva: null }),
-      })),
-      kvLeggTilRegel: () => this.setState({ kvRegler: this.kvRegler().concat([{ navn: 'Nytt svar', mal: 'Nybegynner dreiekurs', tekst: '' }]) }),
       grGjelderValg: (this.state.rabattMaal || [
         { verdi: 'alle', navn: 'Alle kurs og workshops' },
         { verdi: 'dreiing', navn: 'Alle dreiekurs' },
@@ -24363,6 +24797,231 @@ class Component extends DCLogic {
           },
         }),
       })),
+      // ── Kursvelgeren i admin ──────────────────────────────────────────
+      //
+      // Redigeringen laa to steder i malen med samme innhold, og ingen av
+      // dem lagret noe: alt sto i nettleserens minne og var borte ved neste
+      // oppfriskning. Naa ett sted, mot api/admin/veileder.php.
+      // Lenka fra de to stedene redigeringen sto for.
+      tilKursvelger: () => this.gaaAdmin('adminkursvelger', {}),
+      erAdminKursvelger: side === 'adminkursvelger',
+      adminNavKursvelger: this.adminMeny(),
+      ...(side !== 'adminkursvelger' ? {} : (() => {
+        const d = this.state.veilederAdmin || {};
+        const liste = d.sporsmal || [];
+        const utkast = this.state.kvaUtkast || {};
+        const apen = this.state.kvaApen || 0;
+        const svarUtkast = this.state.kvaSvarUtkast || {};
+
+        const pilStil = {
+          appearance: 'none', cursor: 'pointer', width: 30, height: 30,
+          borderRadius: '50%', border: '1px solid var(--border-subtle)',
+          background: 'var(--surface-card)', color: 'var(--text-heading)',
+          fontSize: 15, lineHeight: 1,
+        };
+        const merkeStil = (paa) => ({
+          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+          padding: '4px 11px', font: 'var(--type-body-sm)', fontSize: 12,
+          fontWeight: paa ? 700 : 500,
+          border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+          background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+          color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+        });
+
+        // Utkastet gjelder foran det som er lagret, saa feltet staar der du
+        // satte det til du trykker Lagre.
+        const uq = (q, felt, standard) => {
+          const u = utkast[q.id] || {};
+          return u[felt] !== undefined ? u[felt] : standard;
+        };
+        const settQ = (id, felt) => this.setState(st => ({
+          kvaUtkast: Object.assign({}, st.kvaUtkast || {}, {
+            [id]: Object.assign({}, (st.kvaUtkast || {})[id] || {}, felt),
+          }),
+        }));
+        const us = (sv, felt, standard) => {
+          const u = svarUtkast[sv.id] || {};
+          return u[felt] !== undefined ? u[felt] : standard;
+        };
+        const settS = (id, felt) => this.setState(st => ({
+          kvaSvarUtkast: Object.assign({}, st.kvaSvarUtkast || {}, {
+            [id]: Object.assign({}, (st.kvaSvarUtkast || {})[id] || {}, felt),
+          }),
+        }));
+
+        const MERKER = d.merker || {};
+        const merkegrupper = (sv) => [
+          ['Nivå', 'passerNivaa', MERKER.nivaa || []],
+          ['Hvem', 'passerHvem', MERKER.hvem || []],
+          ['Metode', 'metode', MERKER.metode || []],
+          ['Varighet', 'varighet', MERKER.varighet || []],
+        ].map(([navn, felt, valg]) => {
+          const naa = String(us(sv, felt, sv[felt] || '')).split(',').map(x => x.trim()).filter(Boolean);
+          return {
+            navn,
+            valg: valg.map(([kode, tekst]) => ({
+              navn: tekst,
+              stil: merkeStil(naa.indexOf(kode) !== -1),
+              velg: () => settS(sv.id, {
+                [felt]: (naa.indexOf(kode) !== -1 ? naa.filter(x => x !== kode) : naa.concat([kode])).join(','),
+              }),
+            })),
+          };
+        });
+
+        const TYPENAVN = {};
+        (d.typer || []).forEach(t => { TYPENAVN[t.verdi] = t.navn; });
+
+        return {
+          kvaMangler: !!this.state.veilederMangler,
+          kvaTyper: d.typer || [],
+          // Kursene og sidene et svar kan peke paa. Tomt betyr «la poengene
+          // avgjore» — det er ikke det samme som «ingenting skjer».
+          kvaMaal: [{ verdi: '', navn: 'La merkene avgjøre' }]
+            .concat((d.sider || []).map(x => ({ verdi: x.verdi, navn: x.navn })))
+            .concat((d.kurs || []).map(k => ({ verdi: k, navn: k }))),
+
+          kvaSporsmal: liste.map((q, i) => ({
+            merke: 'Spørsmål ' + (i + 1) + (q.aktiv ? '' : ' · slått av'),
+            tekst: q.tekst,
+            kortStil: {
+              background: 'var(--surface-card)',
+              border: '1px solid ' + (q.aktiv ? 'var(--border-subtle)' : 'var(--clay-200)'),
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+              opacity: q.aktiv ? 1 : 0.72,
+            },
+            detalj: [
+              TYPENAVN[q.type] || q.type,
+              (q.svar || []).length ? (q.svar || []).length + ' svar' : 'ingen svar',
+              q.visNarId ? 'vises bare når «' + ((liste.find(x => x.id === q.visNarId) || {}).tekst || 'et annet spørsmål')
+                           + '» er ' + q.visNarVerdi : 'vises alltid',
+            ].join(' · '),
+            pilStil,
+            opp: () => this.veilederKall({ handling: 'flytt', hva: 'sporsmal', id: q.id, retning: -1 }),
+            ned: () => this.veilederKall({ handling: 'flytt', hva: 'sporsmal', id: q.id, retning: 1 }),
+            rediger: () => this.setState({ kvaApen: apen === q.id ? 0 : q.id }),
+            redigerTekst: apen === q.id ? 'Lukk' : 'Rediger',
+            apen: apen === q.id,
+            slett: () => {
+              if (!window.confirm('Slette «' + q.tekst + '» og svarene under?')) return;
+              this.veilederKall({ handling: 'slett', hva: 'sporsmal', id: q.id });
+            },
+
+            tekstId: 'kva-t-' + q.id, hjelpId: 'kva-h-' + q.id, typeId: 'kva-y-' + q.id,
+            narId: 'kva-n-' + q.id, narVerdiId: 'kva-nv-' + q.id,
+            minId: 'kva-min-' + q.id, maksId: 'kva-maks-' + q.id, maksTId: 'kva-mt-' + q.id,
+            rTekst: uq(q, 'tekst', q.tekst),
+            settTekst: e => settQ(q.id, { tekst: e.target.value }),
+            rHjelp: uq(q, 'hjelpetekst', q.hjelpetekst || ''),
+            settHjelp: e => settQ(q.id, { hjelpetekst: e.target.value }),
+            rType: uq(q, 'type', q.type),
+            settType: e => settQ(q.id, { type: e.target.value }),
+            erTall: uq(q, 'type', q.type) === 'tall',
+            // Et spoersmaal kan ikke henge paa seg selv, og ikke paa et som
+            // kommer etter — da ville svaret ikke finnes ennaa.
+            narValg: [{ verdi: '0', navn: 'Alle får dette spørsmålet' }].concat(
+              liste.filter((x, j) => j < i).map(x => ({ verdi: String(x.id), navn: 'Svaret på «' + x.tekst + '»' }))),
+            rNarId: String(uq(q, 'visNarId', q.visNarId || 0)),
+            settNarId: e => settQ(q.id, { visNarId: parseInt(e.target.value, 10) || 0 }),
+            harNar: (parseInt(uq(q, 'visNarId', q.visNarId || 0), 10) || 0) > 0,
+            rNarVerdi: uq(q, 'visNarVerdi', q.visNarVerdi || ''),
+            settNarVerdi: e => settQ(q.id, { visNarVerdi: e.target.value }),
+            rMin: String(uq(q, 'minVerdi', q.minVerdi === null || q.minVerdi === undefined ? 1 : q.minVerdi)),
+            settMin: e => settQ(q.id, { minVerdi: e.target.value }),
+            rMaks: String(uq(q, 'maksVerdi', q.maksVerdi === null || q.maksVerdi === undefined ? 12 : q.maksVerdi)),
+            settMaks: e => settQ(q.id, { maksVerdi: e.target.value }),
+            rMaksTekst: uq(q, 'maksTekst', q.maksTekst || ''),
+            settMaksTekst: e => settQ(q.id, { maksTekst: e.target.value }),
+            rAktiv: !!uq(q, 'aktiv', q.aktiv),
+            vekslAktiv: () => settQ(q.id, { aktiv: !uq(q, 'aktiv', q.aktiv) }),
+            lagre: () => {
+              const t = String(uq(q, 'tekst', q.tekst)).trim();
+              if (!t) { this.setState({ kvittering: 'Spørsmålet må ha en tekst' }); return; }
+              this.veilederKall({
+                handling: 'sporsmal', id: q.id, tekst: t,
+                hjelpetekst: uq(q, 'hjelpetekst', q.hjelpetekst || ''),
+                type: uq(q, 'type', q.type),
+                aktiv: uq(q, 'aktiv', q.aktiv) ? 1 : 0,
+                visNarId: parseInt(uq(q, 'visNarId', q.visNarId || 0), 10) || 0,
+                visNarVerdi: uq(q, 'visNarVerdi', q.visNarVerdi || ''),
+                minVerdi: parseInt(uq(q, 'minVerdi', q.minVerdi === null ? 1 : q.minVerdi), 10) || 0,
+                maksVerdi: parseInt(uq(q, 'maksVerdi', q.maksVerdi === null ? 12 : q.maksVerdi), 10) || 0,
+                maksTekst: uq(q, 'maksTekst', q.maksTekst || ''),
+              });
+              this.setState(st => {
+                const u = Object.assign({}, st.kvaUtkast || {});
+                delete u[q.id];
+                return { kvaUtkast: u, kvaApen: 0 };
+              });
+            },
+
+            // Et tallfelt eller en fritekst har ingen svar aa velge mellom.
+            kanHaSvar: ['envalg', 'flervalg'].indexOf(uq(q, 'type', q.type)) !== -1,
+            harSvar: (q.svar || []).length > 0,
+            svar: (q.svar || []).map(sv => ({
+              radStil: {
+                border: '1px solid ' + (sv.aktiv ? 'var(--border-subtle)' : 'var(--clay-200)'),
+                borderRadius: 'var(--radius-md)', padding: 'var(--space-4)',
+                opacity: sv.aktiv ? 1 : 0.7,
+              },
+              pilStil,
+              tekst: us(sv, 'tekst', sv.tekst),
+              settTekst: e => settS(sv.id, { tekst: e.target.value }),
+              mal: us(sv, 'mal', sv.mal || ''),
+              settMal: e => settS(sv.id, { mal: e.target.value }),
+              begrunnelse: us(sv, 'begrunnelse', sv.begrunnelse || ''),
+              settBegrunnelse: e => settS(sv.id, { begrunnelse: e.target.value }),
+              merkegrupper: merkegrupper(sv),
+              opp: () => this.veilederKall({ handling: 'flytt', hva: 'svar', id: sv.id, sporsmalId: q.id, retning: -1 }),
+              ned: () => this.veilederKall({ handling: 'flytt', hva: 'svar', id: sv.id, sporsmalId: q.id, retning: 1 }),
+              lagre: () => {
+                const t = String(us(sv, 'tekst', sv.tekst)).trim();
+                if (!t) { this.setState({ kvittering: 'Svaret må ha en tekst' }); return; }
+                this.veilederKall({
+                  handling: 'svar', id: sv.id, sporsmalId: q.id, tekst: t, aktiv: 1,
+                  mal: us(sv, 'mal', sv.mal || ''),
+                  begrunnelse: us(sv, 'begrunnelse', sv.begrunnelse || ''),
+                  passerNivaa: us(sv, 'passerNivaa', sv.passerNivaa || ''),
+                  passerHvem: us(sv, 'passerHvem', sv.passerHvem || ''),
+                  metode: us(sv, 'metode', sv.metode || ''),
+                  varighet: us(sv, 'varighet', sv.varighet || ''),
+                });
+                this.setState(st => {
+                  const u = Object.assign({}, st.kvaSvarUtkast || {});
+                  delete u[sv.id];
+                  return { kvaSvarUtkast: u };
+                });
+              },
+              slett: () => {
+                if (!window.confirm('Slette svaret «' + sv.tekst + '»?')) return;
+                this.veilederKall({ handling: 'slett', hva: 'svar', id: sv.id });
+              },
+            })),
+            nyttSvar: () => this.veilederKall({
+              handling: 'svar', sporsmalId: q.id, tekst: 'Nytt svar', aktiv: 1,
+            }),
+          })),
+
+          kvaNyttSporsmal: () => this.veilederKall({
+            handling: 'sporsmal', tekst: 'Nytt spørsmål', type: 'envalg', aktiv: 1,
+          }),
+
+          // Oppsummeringen: hva den besokende faktisk blir spurt om.
+          kvaOppsummering: (() => {
+            const aktive = liste.filter(q => q.aktiv);
+            const alltid = aktive.filter(q => !q.visNarId).length;
+            const noen = aktive.length - alltid;
+            if (!aktive.length) return 'Ingen spørsmål er slått på. Kursvelgeren viser ingenting.';
+            return alltid + (alltid === 1 ? ' spørsmål' : ' spørsmål') + ' til alle'
+              + (noen ? ', og ' + noen + ' som bare stilles noen' : '') + '.';
+          })(),
+          kvaFlyt: liste.filter(q => q.aktiv).map((q, i) => ({
+            nr: String(i + 1) + '.',
+            tekst: q.tekst + (q.visNarId ? ' (bare noen)' : ''),
+          })),
+          kvaApneVindu: () => this.setState({ kvApen: true, kvSteg: 0, kvSvar: {} }),
+        };
+      })()),
       erAdminReferanser: side === 'adminreferanser',
       adminNavReferanser: this.adminMeny(),
       // ── Referansekundene i admin ─────────────────────────────────────

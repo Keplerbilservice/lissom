@@ -1,10 +1,52 @@
-# Kursveilederen — kartlegging før den bygges om
+# Kursveilederen — bygget om 27. august
 
 Bestilt 26. august: gjennomgå og videreutvikle Kursveilederen, og gjør
 spørsmål, svar og logikk redigerbare fra admin uten kodeendringer.
 
-Bestillingen ber om at dagens løsning kartlegges først. Dette er den
-kartleggingen. **Ingenting er bygget om ennå.**
+**Bygget.** Alle sju stegene i planen nederst er gjennomført.
+
+| Steg | Hva | Status |
+|---|---|---|
+| 1 | Migrasjon 066: `veileder_sporsmal` og `veileder_svar`, fylt med dagens tre spørsmål | ✅ |
+| 2 | `api/veileder.php` — spørsmålene ut, åpent | ✅ |
+| 3 | Vinduet leser fra API-et, med dagens tre som reserve | ✅ |
+| 4 | `api/admin/veileder.php` — opprett, endre, flytt, deaktiver, slett | ✅ |
+| 5 | Admin-skjerm under Nettsiden, med forhåndsvisning. Dubletten fjernet | ✅ |
+| 6 | Merkefeltene på kurset | ✅ (kom med punkt 4, migrasjon 065) |
+| 7 | Anbefalingen regner poeng mot merkingen, med begrunnelse og alternativer | ✅ |
+
+**Det som er annerledes enn i dag, og hvorfor:**
+
+- **Særreglene er blitt data.** «Kjæreste eller date gir Date Night» sto som
+  en `if` i koden. Nå står den på svaret, som en anbefaling, og kan endres
+  uten meg. Regelen om grupper over det høyeste tallet står igjen i koden:
+  den handler om at rommet er for lite, ikke om hva noen ønsker seg.
+- **Rekkefølgen avgjør ved likt.** Peker to svar på hvert sitt kurs, vinner
+  det som ble svart først. «Hvem er dere to?» kommer før «Hva vil du helst?»,
+  så et par som vil dreie får Date Night — slik det virket før også.
+- **«Svar på tre korte spørsmål»** står ikke lenger fast. Teksten teller
+  spørsmålene som stilles alle, og sier «to» så lenge det tredje bare
+  gjelder par.
+- **Nærmeste alternativer** står under anbefalingen. Sto det bare ett
+  forslag, hadde den som ikke kjente seg igjen ingen vei videre enn å
+  begynne på nytt.
+- **Ingen kurs er merket ennå.** Merkefeltene i kursoppsettet står tomme til
+  verkstedet fyller dem ut. Til da oppfører anbefalingen seg som i dag: den
+  følger pekeren på svaret. Poengene begynner å virke i det første kurs får
+  merker.
+
+**Testet:** 23 kontroller i nettleseren på selve vinduet — spørsmålene fra
+basen, det betingede spørsmålet som bare stilles når man er to, telleren,
+anbefalingen for én person, for et par, og for en gruppe over tolv. Og 20 på
+admin-skjermen — redigere, legge til, flytte, slette, både spørsmål og svar,
+og forhåndsvisningen som åpner det ekte vinduet.
+
+**Ikke verifisert:** den levende nettsiden. Utgående trafikk til `lissom.no`
+er sperret fra dette miljøet.
+
+---
+
+Nedenfor står kartleggingen som lå til grunn.
 
 ---
 

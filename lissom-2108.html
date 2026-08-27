@@ -26415,6 +26415,14 @@ class Component extends DCLogic {
       footerOm: [
         { navn: 'Om oss', velg: this.go('omoss') },
         { navn: 'Nyheter', velg: this.go('nyheter') },
+        // Klar til henting sto bare i e-posten som ble sendt ut. Den som
+        // slettet den, eller ikke fikk den, hadde ingen vei til sida — og
+        // den er nettopp til for at man skal kunne sjekke selv.
+        //
+        // Sida gir ut kurset, datoen og fristen. Ingen navn og ingen antall:
+        // se api/ferdigbrent.php, som velger de tre feltene og ikke roerer
+        // paameldingene.
+        { navn: 'Klar til henting', velg: this.go('ferdigbrent') },
         { navn: 'Spørsmål og svar', velg: this.go('omoss') },
         { navn: 'Bedrift og event', velg: this.go('bedrift') },
         { navn: 'Personvern', velg: this.go('personvern') },

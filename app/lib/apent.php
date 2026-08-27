@@ -38,12 +38,12 @@ final class Apent
     /**
      * Hoyst saa mange plasser per dag.
      *
-     * Sto paa tre, og ga tre kort paa samme dag — 10-12, 12-13 og en om
-     * kvelden. Lissom ba 27. august om ett kort per ledige dag: lista blir
-     * lesbar, og dagen er uansett den man velger. Plassen legges paa den
-     * forste aapne perioden, eller fra naa hvis den alt har begynt.
+     * Bookingen viser tre dager, og tidspunktene under den dagen man velger.
+     * Da skal det vaere noe aa velge mellom: et vindu paa ti timer gir fem
+     * tidspunkt à to timer. Kortet paa sida er ett uansett — dagene og
+     * tidene staar inne i bestillingen.
      */
-    public const PLASSER_PER_DAG = 1;
+    public const PLASSER_PER_DAG = 5;
 
     /**
      * Dagene med aapningstid, og hvilke oekter tallene er regnet av.
@@ -398,11 +398,13 @@ final class Apent
                 }
                 while ($start < $slutt && $paaDagen < self::PLASSER_PER_DAG) {
                     $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+                    // Hele to timer, eller ingenting.
+                    //
+                    // Her ble resten av vinduet klippet til det som var igjen,
+                    // og en aapen periode 10-13 ga en time 12-13. Kunden velger
+                    // et tidspunkt og har bordet i to timer — da skal det ikke
+                    // ligge en time paa lista som ser ut som de andre.
                     if ($til > $slutt) {
-                        $til = $slutt;
-                    }
-                    // Under en time er ikke en Paint on Pots-time.
-                    if ($til->getTimestamp() - $start->getTimestamp() < 3600) {
                         break;
                     }
                     $onsket[] = [

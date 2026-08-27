@@ -1995,25 +1995,36 @@ window.__resources = {
               </sc-if>
               <div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">{{ bOppsummering }}</div>
               <sc-if value="{{ harPlasser }}" hint-placeholder-val="{{ true }}">
+              <!-- Dagen forst, klokkeslettet etterpaa.
+                   Paint on Pots ligger ute paa hver aapen dag, med flere tider
+                   per dag. Alt i én liste ble tjue like rader. Naa velger man
+                   dagen — tre om gangen, resten bak en knapp — og tidene den
+                   dagen staar under. Har dagen bare én tid, er den valgt med
+                   det samme, og trinn to staar ikke i veien. -->
               <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">Velg dato</div>
                 <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-6);">
-                  <sc-for list="{{ bookingDatoer }}" as="d" hint-placeholder-count="3">
+                  <sc-for list="{{ bookingDager }}" as="d" hint-placeholder-count="3">
                     <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">
                       <span style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
-                        <span style="font-weight: 700; font-size: var(--text-base);">{{ d.dato }}</span>
-                        <span style="font-size: var(--text-xs); opacity: .75;">{{ d.tid }}</span>
+                        <span style="font-weight: 700; font-size: var(--text-base);">{{ d.dag }}</span>
+                        <span style="font-size: var(--text-xs); opacity: .75;">{{ d.under }}</span>
                       </span>
                       <span style="font-size: var(--text-xs); font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{ d.prikk }}; flex: 0 0 auto;"></span>{{ d.plasserTekst }}</span>
                     </button>
                   </sc-for>
-                <!-- Tre datoer, og en knapp til resten.
-                     Paint on Pots ligger ute paa hver aapen dag, og lista ble
-                     fjorten like rader. Tre er nok til aa velge i; trenger man
-                     en annen dag, er den ett trykk unna. -->
                 <sc-if value="{{ bHarFlereDatoer }}" hint-placeholder-val="{{ false }}">
                   <button type="button" onClick="{{ bVisFlereDatoer }}" style="{{ bFlereDatoerStil }}">{{ bFlereDatoerTekst }}</button>
                 </sc-if>
                 </div>
+                <sc-if value="{{ bHarTider }}" hint-placeholder-val="{{ false }}">
+                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-4);">{{ bTiderTittel }}</div>
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-6);">
+                    <sc-for list="{{ bookingTider }}" as="t" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.klokke }}</button>
+                    </sc-for>
+                  </div>
+                  <p style="margin: calc(var(--space-6) * -1 + 4px) 0 var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">{{ bTiderHjelp }}</p>
+                </sc-if>
                 <sc-if value="{{ visKontaktfelt }}" hint-placeholder-val="{{ true }}">
                   <sc-if value="{{ visAntallPlasser }}" hint-placeholder-val="{{ true }}">
                   <div>
@@ -17147,6 +17158,12 @@ class Component extends DCLogic {
     return kat.datoer.map((d, i) => ({
       dato: d.dato,
       oktId: d.oktId,
+      // Dagen og klokkeslettet hver for seg. Bookingen viser dagene forst og
+      // tidene under den man velger, og da kan de to ikke ligge i den samme
+      // strengen. Serveren regner dem ut — se api/kurs.php.
+      dag: d.dag || '',
+      klokke: d.klokke || '',
+      klokkeStart: d.klokkeStart || '',
       // Gaar kurset over flere dager, skal det staa paa datoen du velger —
       // ikke oppdages etter at du har betalt.
       tid: (d.samlinger || []).length > 1 ? (d.samlinger.length + ' samlinger') : '',
@@ -23277,18 +23294,93 @@ class Component extends DCLogic {
       // Ingen datoer fra serveren betyr ingen datoer. Fallet tilbake paa
       // designlista viste «Onsdag 19. august · 3 av 8 plasser» — en dato som
       // var passert, med plasser som ikke fantes, og en knapp som booket dem.
-      // Tre datoer, og en knapp til resten.
+      // ── Velg dato, saa klokkeslett ──────────────────────────────────
       //
-      // Paint on Pots ligger ute paa hver aapen dag; lista ble fjorten
-      // like rader der bare datoen skilte dem. Tre er nok til aa velge i.
-      // Er en dato valgt lenger ned — man kom fra kalenderen — folger den
-      // med opp, slik at valget er synlig.
+      // Alle tidene sto i én liste. Paint on Pots ligger ute paa hver aapen
+      // dag med flere tider per dag, og da ble det tjue rader der bare
+      // klokkeslettet skilte dem.
+      //
+      // Naa: dagene forst — tre om gangen, resten bak en knapp — og tidene
+      // den dagen under. Har dagen bare én tid, velges den med det samme, og
+      // trinn to staar ikke i veien for de kursene som gaar én gang om dagen.
       ...(() => {
-        const alle = this.ekteDatoer() || (this.state.valgtKurs || {}).datoer || [];
+        const rene = this.ekteDatoer()
+          || (this.erPublisert() ? [] : null)
+          || (this.state.valgtKurs && this.state.valgtKurs.datoer)
+          || (this.state.valgtKurs && this.state.valgtKurs.price === 'Gratis'
+            ? [{ dato: this.state.valgtKurs.date, tid: this.state.valgtKurs.duration, plasser: this.state.valgtKurs.status, valgt: true }]
+            : this.state.valgtKurs && this.state.valgtKurs.tema === 'Drop-in'
+              ? [
+                  { dato: 'Tirsdag 25. august', tid: '10:00 – 13:00', plasser: '4 plasser', valgt: true },
+                  { dato: 'Onsdag 26. august', tid: '10:00 – 13:00', plasser: '6 plasser' },
+                  { dato: 'Torsdag 27. august', tid: '16:00 – 19:00', plasser: '5 plasser' },
+                ]
+              : [
+                  { dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true },
+                  { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' },
+                ].concat((this.state.ndLagtTil || []).filter(r => r.kurs === ((this.state.valgtKurs || {}).title || '')).map(r => ({ dato: r.dato, tid: r.tid, plasser: r.plasser + ' av ' + r.plasser + ' plasser' }))));
+
+        // Dagen kommer fra serveren som eget felt. Designlista har den ikke,
+        // og da er hele datoteksten dagen — der er det uansett én per dag.
+        const dagenTil = (d) => String(d.dag || d.dato || '');
+        const dager = [];
+        rene.forEach(d => {
+          const navn = dagenTil(d);
+          let rad = dager.find(x => x.dag === navn);
+          if (!rad) { rad = { dag: navn, tider: [] }; dager.push(rad); }
+          rad.tider.push(d);
+        });
+
+        // Hvilken dag staar aapen? Den man har trykket paa, ellers den som er
+        // valgt fra for, ellers den forste.
+        const valgtTid = rene.find(d => (this.state.bDato ? d.dato === this.state.bDato : !!d.valgt));
+        const valgtDag = this.state.bDag
+          || (valgtTid ? dagenTil(valgtTid) : (dager[0] ? dager[0].dag : ''));
+        const dagRad = dager.find(x => x.dag === valgtDag) || dager[0] || { tider: [] };
+
         const VIS = 3;
         const apen = !!this.state.bAlleDatoer;
-        const skjult = Math.max(0, alle.length - VIS);
+        const synlige = apen ? dager : dager.filter((x, i) => i < VIS || x.dag === valgtDag);
+        const skjult = dager.length - synlige.length;
+
+        const knappStil = (valgt, full) => ({
+          appearance: 'none', cursor: full ? 'not-allowed' : 'pointer', textAlign: 'left',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          padding: '14px 16px', borderRadius: 'var(--radius-md)',
+          border: valgt ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+          background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)',
+          color: valgt ? 'var(--clay-50)' : 'var(--text-heading)',
+          opacity: full ? 0.45 : 1,
+          fontFamily: 'inherit',
+        });
+
+        // Plasstallet paa dagen: det som er ledig paa den beste tida.
+        const ledigstPaa = (rad) => rad.tider.find(t => !t.full) || rad.tider[0] || {};
+
         return {
+          bookingDager: synlige.map(rad => {
+            const full = rad.tider.every(t => t.full);
+            const best = ledigstPaa(rad);
+            return {
+              dag: rad.dag,
+              // Under dagen: klokkeslettet naar det bare er ett, ellers hvor
+              // mange tider man kan velge mellom.
+              under: rad.tider.length === 1
+                ? String(rad.tider[0].klokke || rad.tider[0].tid || '')
+                : rad.tider.length + ' tider å velge mellom',
+              plasserTekst: full ? 'Fullbooket' : (best.plasser || 'Ledig'),
+              prikk: full ? 'var(--clay-400)'
+                : (/^Få plasser/.test(best.plasser || '') ? 'var(--terracotta-500)' : 'var(--sage-500)'),
+              stil: knappStil(rad.dag === valgtDag, full),
+              velg: () => {
+                if (full) return;
+                // Én tid den dagen: da er valget tatt med det samme.
+                const en = rad.tider.length === 1 ? rad.tider[0] : null;
+                this.setState(Object.assign({ bDag: rad.dag },
+                  en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
+              },
+            };
+          }),
           bHarFlereDatoer: !apen && skjult > 0,
           bFlereDatoerTekst: skjult === 1 ? 'Vis én dato til' : 'Vis ' + skjult + ' datoer til',
           bVisFlereDatoer: () => this.setState({ bAlleDatoer: true }),
@@ -23298,47 +23390,29 @@ class Component extends DCLogic {
             border: '1px dashed var(--border-subtle)', background: 'transparent',
             font: 'var(--type-body-sm)', fontWeight: 600, color: 'var(--lissom-brown)',
           },
+
+          // Trinn to staar bare naar det er noe aa velge mellom.
+          bHarTider: (dagRad.tider || []).length > 1,
+          bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
+          bTiderHjelp: (dagRad.tider || []).length > 1
+            ? 'Du har plassen i to timer fra tidspunktet du velger.' : '',
+          bookingTider: (dagRad.tider || []).map(t => {
+            const valgt = this.state.bDato ? t.dato === this.state.bDato : !!t.valgt;
+            return {
+              // Naar det begynner. Kunden har plassen i to timer fra da, og
+              // det staar under knappene — ikke i hver eneste knapp.
+              klokke: String(t.klokkeStart || t.klokke || t.tid || t.dato || ''),
+              stil: Object.assign(knappStil(valgt, t.full), {
+                display: 'inline-flex', justifyContent: 'center',
+                padding: '11px 18px', minHeight: 44, fontWeight: 700,
+                borderRadius: 'var(--radius-pill)',
+              }),
+              velg: () => { if (!t.full) this.setState({ bDato: t.dato, bOktId: t.oktId || null }); },
+            };
+          }),
         };
       })(),
-      bookingDatoer: (
-        this.ekteDatoer()
-        || (this.erPublisert() ? [] : null)
-        || (this.state.valgtKurs && this.state.valgtKurs.datoer)
-        || (this.state.valgtKurs && this.state.valgtKurs.price === 'Gratis'
-          ? [{ dato: this.state.valgtKurs.date, tid: this.state.valgtKurs.duration, plasser: this.state.valgtKurs.status, valgt: true }]
-          : this.state.valgtKurs && this.state.valgtKurs.tema === 'Drop-in'
-            ? [
-                { dato: 'Tirsdag 25. august', tid: '10:00 – 13:00', plasser: '4 plasser', valgt: true },
-                { dato: 'Onsdag 26. august', tid: '10:00 – 13:00', plasser: '6 plasser' },
-                { dato: 'Torsdag 27. august', tid: '16:00 – 19:00', plasser: '5 plasser' },
-              ]
-            : [
-                { dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true },
-                { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' },
-              ].concat((this.state.ndLagtTil || []).filter(r => r.kurs === ((this.state.valgtKurs || {}).title || '')).map(r => ({ dato: r.dato, tid: r.tid, plasser: r.plasser + ' av ' + r.plasser + ' plasser' }))))
-            ).map(d => { const valgtNaa = this.state.bDato ? d.dato === this.state.bDato : !!d.valgt; return Object.assign({}, d, {
-        valgt: valgtNaa,
-        velg: () => { if (!d.full) this.setState({ bDato: d.dato, bOktId: d.oktId || null }); },
-        // Teksten er alt regnet ut av ledigTekst() — «Faa plasser», tallet,
-        // eller «Ledige plasser». Her sto en egen utregning som klipte tall
-        // ut av strengen og la paa « ledige», og som dermed sa noe annet enn
-        // kortet gjorde for det samme kurset.
-        plasserTekst: d.full ? 'Fullbooket' : (d.plasser || 'Ledig'),
-        prikk: d.full ? 'var(--clay-400)' : (/^Få plasser/.test(d.plasser || '') ? 'var(--terracotta-500)' : 'var(--sage-500)'),
-        stil: {
-          appearance: 'none', cursor: d.full ? 'not-allowed' : 'pointer', textAlign: 'left',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-          padding: '14px 16px', borderRadius: 'var(--radius-md)',
-          border: valgtNaa ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
-          background: valgtNaa ? 'var(--lissom-brown)' : 'var(--surface-card)',
-          color: valgtNaa ? 'var(--clay-50)' : 'var(--text-heading)',
-          opacity: d.full ? 0.45 : 1,
-          fontFamily: 'inherit',
-        },
-      }); })
-        // Tre om gangen. Den valgte folger alltid med, ogsaa naar den ligger
-        // lenger ned enn de tre forste.
-        .filter((d, i) => this.state.bAlleDatoer || i < 3 || d.valgt),
+
       bookingAntall: ['1 plass', '2 plasser', '3 plasser'],
       mFane: this.state.mFane || 'medlem',
       mErKurs: (this.state.mFane || 'medlem') === 'kurs',

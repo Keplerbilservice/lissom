@@ -190,6 +190,37 @@ foreach ($kurs as $k) {
             'dato'     => ((int) ($k['gjenstand_i_kassa'] ?? 0) === 1 && !empty($o['slutt_tid']))
                 ? Booking::norskSpenn((string) $o['start_tid'], (string) $o['slutt_tid'])
                 : Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
+            // Dagen for seg, og klokkeslettet for seg.
+            //
+            // Bookingen viser tre dager, og klokkeslettene under den dagen man
+            // velger. Da maa de to vaere hver sin verdi — aa klippe dem ut av
+            // «tirsdag 1. september, 10:00–12:00» med et komma er en gjetning
+            // som ryker paa det forste flerdagerskurset.
+            'dag'      => (static function (string $utc): string {
+                $d = (new DateTimeImmutable($utc, new DateTimeZone('UTC')))
+                    ->setTimezone(new DateTimeZone('Europe/Oslo'));
+                $dager = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'];
+                $mnd = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
+                        'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+                return $dager[(int) $d->format('N') - 1] . ' ' . (int) $d->format('j')
+                     . '. ' . $mnd[(int) $d->format('n') - 1];
+            })((string) $o['start_tid']),
+            // Bare naar det begynner. Kunden velger et tidspunkt, og har
+            // plassen i to timer fra da — da er sluttiden ikke et valg.
+            'klokkeStart' => (new DateTimeImmutable((string) $o['start_tid'], new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i'),
+            'klokke'   => (static function (string $start, ?string $slutt): string {
+                $sone = new DateTimeZone('Europe/Oslo');
+                $a = (new DateTimeImmutable($start, new DateTimeZone('UTC')))->setTimezone($sone);
+                if ($slutt === null || $slutt === '') {
+                    return $a->format('H:i');
+                }
+                $b = (new DateTimeImmutable($slutt, new DateTimeZone('UTC')))->setTimezone($sone);
+                // Gaar den over midnatt, sier vi bare naar den begynner.
+                return $a->format('Y-m-d') === $b->format('Y-m-d')
+                    ? $a->format('H:i') . '–' . $b->format('H:i')
+                    : $a->format('H:i');
+            })((string) $o['start_tid'], $o['slutt_tid'] ?? null),
             // Raa starttid slik den staar i basen. Kalenderen trenger den for
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],

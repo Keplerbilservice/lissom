@@ -2521,8 +2521,10 @@ window.__resources = {
           <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-8);">
             <div>
               <h2 style="margin: 0;">Uke {{ ukeNr }}</h2>
-              <!-- Uketallet alene sier ingenting om naar det er. -->
-              <div style="font-size: var(--text-base); color: var(--text-muted); margin-top: 2px;">{{ ukeMaaned }}</div>
+              <!-- Uketallet alene sier ingenting om naar det er. Maaneden sto
+                   med samme storrelse som smaateksten ellers og forsvant
+                   under overskrifta; den er satt opp ett hakk. -->
+              <div style="font-size: var(--text-lg); color: var(--text-muted); margin-top: 2px;">{{ ukeMaaned }}</div>
             </div>
             <div style="display: flex; gap: var(--space-2);">
               <button type="button" onClick="{{ ukeForrige }}" aria-label="Forrige uke" style="{{ ukePilStilV }}">‹</button>
@@ -5489,6 +5491,47 @@ window.__resources = {
         </sc-if>
 
         <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <!-- Kalenderen.
+               Kurslista under er en liste over kurstyper, sortert etter naar
+               det neste gaar. Den sier likevel ikke naar noe skjer den uka du
+               staar i, og datolista er lang. Skal du melde noen paa, maa du
+               vite hvilken dato — og den maatte du lete deg fram til.
+
+               Her staar uka slik den staar ute paa nettsiden. Forskjellen er
+               at denne ogsaa tar med de interne samlingene og datoene som er
+               fulle: det er verkstedets egen kalender. -->
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+            <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: var(--space-5); flex-wrap: wrap;">
+              <div>
+                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Uke {{ admUkeNr }}</div>
+                <div style="font-size: var(--text-lg); color: var(--text-muted); margin-top: 2px;">{{ admUkeMaaned }}</div>
+              </div>
+              <div style="display: flex; gap: var(--space-2);">
+                <button type="button" onClick="{{ admUkeForrige }}" aria-label="Forrige uke" style="{{ admUkePilStil }}">‹</button>
+                <button type="button" onClick="{{ admUkeNeste }}" aria-label="Neste uke" style="{{ admUkePilStil }}">›</button>
+                <button type="button" onClick="{{ admUkeNaa }}" style="{{ admUkeNaaStil }}">I dag</button>
+              </div>
+              <span style="font-size: var(--text-sm); color: var(--text-muted); margin-left: auto;">{{ admUkeAntall }}</span>
+            </div>
+            <div class="lx-week" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-3);">
+              <sc-for list="{{ admUke }}" as="d" hint-placeholder-count="7">
+                <div style="{{ d.stil }}">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ d.dag }}</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin: 2px 0 var(--space-3);">{{ d.dato }}</div>
+                  <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <sc-for list="{{ d.poster }}" as="p" hint-placeholder-count="1">
+                      <button type="button" onClick="{{ p.velg }}" title="{{ p.tittel }}" style="{{ p.stil }}">{{ p.tekst }}</button>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ d.erTom }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: auto 0 0; font-size: 12px; color: var(--text-muted); font-style: italic;">Ingenting</p>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ admUkeHjelp }}</p>
+          </div>
+
           <!-- Kurslista.
                Sto som et rutenett med «min-width: 700px» inne i en boks som
                sjelden er saa bred. Da havnet «Rediger» og «Slett» utenfor
@@ -5497,12 +5540,18 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ kursListeTittel }} · {{ adminKursAntall }}</span>
-              <div style="display: flex; gap: 2px;">
-                <sc-for list="{{ kursFaneValg }}" as="f" hint-placeholder-count="3">
-                  <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
-                </sc-for>
+              <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                <input value="{{ kursSok }}" onChange="{{ settKursSok }}" placeholder="Søk etter kurs" style="{{ kursSokStil }}">
+                <div style="display: flex; gap: 2px;">
+                  <sc-for list="{{ kursFaneValg }}" as="f" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+                  </sc-for>
+                </div>
               </div>
             </div>
+            <sc-if value="{{ ingenKursTreff }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ ingenKursTreffTekst }}</div>
+            </sc-if>
             <sc-for list="{{ adminKurs }}" as="k" hint-placeholder-count="5">
               <div onClick="{{ k.velg }}" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="flex: 1 1 200px; min-width: 0;">
@@ -10828,6 +10877,16 @@ class Component extends DCLogic {
           tekst: k.tittel + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes()),
           full: o.ledige <= 0,
           rolig: k.type === 'dropin',
+          // Hvilket kurs og hvilken dato oppforingen gjelder.
+          //
+          // Uten disse matte trykket finne kurset ved aa lese tittelen ut av
+          // etiketten igjen — «Kurs boller · 17:00» delt paa « · » — og slaa
+          // den opp mot navnene i lista. Stemte den ikke paa bokstaven, endte
+          // man paa den felles kurssida i stedet for kurset man trykte paa.
+          katId: k.id,
+          kursTittel: k.tittel,
+          oktId: o.oktId || null,
+          dato: o.dato || null,
         });
       });
     });
@@ -12871,7 +12930,8 @@ class Component extends DCLogic {
     // er lagret som «event», men det er ikke det den er i admin-lista.
     const FRA_TEMA = { 'Kun for medlemmer': 'Kun medlemmer', 'Sip & Clay': 'Sip & Clay', 'Workshop': 'Workshop', 'Drop-in': 'Drop-in' };
     const datoer = (k.datoer || []).filter(d => d.status !== 'avlyst');
-    const neste = datoer.find(d => new Date(d.startUtc.replace(' ', 'T') + 'Z') > new Date()) || datoer[0];
+    const framover = datoer.find(d => new Date(d.startUtc.replace(' ', 'T') + 'Z') > new Date());
+    const neste = framover || datoer[0];
     const kapasitet = k.kapasitet || 8;
     const pameldte = neste ? Math.max(0, kapasitet - (neste.ledige ?? kapasitet)) : 0;
 
@@ -12884,7 +12944,14 @@ class Component extends DCLogic {
       gjentas: datoer.length > 1 ? datoer.length + ' datoer' : 'Engangs',
       pameldte: pameldte + ' / ' + kapasitet,
       andel: kapasitet ? Math.round(pameldte / kapasitet * 100) : 0,
-      neste: neste ? neste.naar : 'Ingen dato satt',
+      // Kolonnen heter «neste» og skal si naar kurset gaar neste gang.
+      //
+      // Den falt tilbake paa den forste datoen i lista naar det ikke fantes
+      // noen framover — altsaa en dato som har vaert. Lista sa da at Paint on
+      // Pots gikk 23. april, og det stemte ikke: den datoen var over. Naa
+      // staar det hva som er sant.
+      neste: framover ? framover.naar
+        : (datoer.length ? 'Ingen dato framover' : 'Ingen dato satt'),
       beskrivelse: k.om || '',
       bekreftelse: k.bekreftelse || '',
       instruktor: k.instruktor || '',
@@ -17715,6 +17782,18 @@ class Component extends DCLogic {
                       || k.type === 'Kun medlemmer');
   }
 
+  // Kurslista slik den staar paa skjermen: fanen, og saa soeket.
+  //
+  // Skilt fra kursSynlige() med vilje. Den brukes ogsaa av kalenderen og
+  // datolista, og de skal ikke tomme seg naar man skriver et navn i soket.
+  kursSokte() {
+    const sok = (this.state.kursSok || '').trim().toLowerCase();
+    const liste = this.kursSynlige();
+    if (!sok) return liste;
+    return liste.filter(({ k }) => ((k.navn || '') + ' ' + (k.type || '') + ' ' + (k.tema || ''))
+      .toLowerCase().indexOf(sok) !== -1);
+  }
+
   kursSynlige() {
     const fane = this.state.kursFane || 'alle';
     const intern = k => (k.tema || '') === 'Kun for medlemmer'
@@ -17728,16 +17807,35 @@ class Component extends DCLogic {
         const d = new Date(o.dato + 'T' + (o.til || o.fra || '23:59'));
         return !isNaN(d) && d >= new Date(new Date().toDateString());
       });
-    // Nyeste kurs oeverst. Lista kom i den rekkefolgen basen ga den, saa
-    // kurset man nettopp laget havnet nederst — under kurs fra i fjor.
+    // Etter naar kurset gaar neste gang, ikke etter naar det ble laget.
+    //
+    // Lista sto sortert paa id, altsaa i den rekkefolgen kursene var
+    // opprettet. Da laa de hulter til bulter i forhold til dato: kurset som
+    // gaar paa torsdag kunne staa under ett som gaar i november, og et kurs
+    // langt fram i tid var ikke til aa finne uten aa lese hele lista.
+    //
+    // Kurs uten datoer framover staar sist — de kan ikke bookes uansett — og
+    // innbyrdes etter navn, saa lista staar stille mellom to tegninger.
     // Indeksen folger med paret, saa «Rediger» og «Slett» peker fortsatt paa
     // riktig kurs etter sorteringa.
+    const naaTid = Date.now();
+    const nesteGang = (k) => {
+      const tider = (k.okter || [])
+        .filter(o => o.dato)
+        .map(o => new Date(o.dato + 'T' + (o.fra || '00:00')).getTime())
+        .filter(t => !isNaN(t) && t >= naaTid);
+      // Ikke Infinity: to kurs uten datoer ville gitt «Infinity - Infinity»,
+      // som er NaN, og en sortering som svarer NaN sorterer ingenting. Da
+      // sto de siste kursene i den rekkefolgen de tilfeldigvis kom i.
+      return tider.length ? Math.min.apply(null, tider) : 8.64e15;
+    };
     return this.kursData()
-      .map((k, i) => ({ k, i }))
+      .map((k, i) => ({ k, i, n: nesteGang(k) }))
       .filter(({ k }) => fane === 'alle' || fane === 'planlagte'
                       || (fane === 'interne' ? intern(k) : !intern(k)))
       .filter(({ k }) => fane !== 'planlagte' || planlagt(k))
-      .sort((a, b) => (b.k.id || 0) - (a.k.id || 0));
+      .sort((a, b) => (a.n - b.n)
+        || String(a.k.navn || '').localeCompare(String(b.k.navn || ''), 'nb'));
   }
 
   /**
@@ -19735,13 +19833,30 @@ class Component extends DCLogic {
           ? this.go('booking')
           : () => this.setState({ kvApen: true, kvSteg: 0, kvSvar: {} }),
         poster: d.poster.map(p => Object.assign(p, {
+          // Trykker du en dato i kalenderen, skal du inn paa akkurat det
+          // kurset — og paa akkurat den datoen. Foer ble kurset gjettet ut
+          // av etiketten, og traff den ikke, havnet du paa den felles
+          // kurssida med alt sammen.
+          //
+          // Oppforingen baerer nummeret paa kurset og paa datoen. Tittelen
+          // brukes bare naar det ikke finnes noe nummer — det er tilfellet i
+          // designverktoyet, der uka er tegnet for haand.
           velg: () => {
-            const navn = (p.tekst || '').split(' · ')[0];
-            const alias = { 'Dreiekurs': 'Nybegynner dreiekurs', 'Drop-in': 'Drop-in i verkstedet' };
-            const tittel = alias[navn] || navn;
-            const k = (this._kursListe || []).find(x => x.title === tittel);
-            if (k) { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); }
-            else { this.setState({ side: 'kurs', kursFilter: 'Alle' }); window.scrollTo(0, 0); }
+            const kort = this.kursKort();
+            let k = p.katId ? kort.find(x => x.katId === p.katId) : null;
+            if (!k && p.kursTittel) k = kort.find(x => (x.title || x.tittel) === p.kursTittel);
+            if (!k) {
+              const navn = (p.tekst || '').split(' · ')[0];
+              const alias = { 'Dreiekurs': 'Nybegynner dreiekurs', 'Drop-in': 'Drop-in i verkstedet' };
+              const tittel = alias[navn] || navn;
+              k = kort.find(x => (x.title || x.tittel) === tittel);
+            }
+            if (k) {
+              this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false,
+                              bookKvittert: false, bDato: p.dato || null, bOktId: p.oktId || null,
+                              ventelisteBekreftet: null });
+              window.scrollTo(0, 0);
+            } else { this.setState({ side: 'kurs', kursFilter: 'Alle' }); window.scrollTo(0, 0); }
           },
           stil: {
             appearance: 'none', border: 'none', width: '100%', textAlign: 'left',
@@ -22047,6 +22162,131 @@ class Component extends DCLogic {
           })),
         };
       })(),
+      // ── Kalenderen i admin ─────────────────────────────────────────────
+      //
+      // Kurslista er en liste over kurstyper. Den sier ikke naar noe skjer,
+      // og datolista under er lang: skal du melde noen paa et kurs i
+      // oktober, maa du foerst finne ut hvilken dato det er.
+      //
+      // Her staar uka slik den staar ute paa nettsiden. Forskjellen er at
+      // denne ogsaa tar med de interne samlingene og datoene som er fulle —
+      // det er verkstedets egen kalender, ikke den kundene ser.
+      //
+      // Trykk en dato, og du er inne paa den, med deltakerne og «Legg til
+      // deltaker». Uka folger fanen du staar i, som datolista gjor.
+      ...(() => {
+        const DAG = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
+        const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni',
+                     'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+        const iOslo = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+        const iDag = iOslo(new Date()); iDag.setHours(0, 0, 0, 0);
+
+        // Uker regnes som forskyvning fra denne uka, ikke som uketall.
+        // Uketall maa hoppe over aarsskiftet, og det er en feilkilde uten
+        // grunn naar alt vi trenger er «sju dager fram».
+        const skift = this.state.admUkeSkift || 0;
+        const mandag = new Date(iDag);
+        mandag.setDate(mandag.getDate() - ((mandag.getDay() + 6) % 7) + skift * 7);
+
+        // Uketallet etter ISO, som er det norske: uke 1 er den med forste
+        // torsdag i januar.
+        const isoUke = (d) => {
+          const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+          t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+          const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+          return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
+        };
+        const nokkel = (d) => d.getFullYear() + '-'
+          + String(d.getMonth() + 1).padStart(2, '0') + '-'
+          + String(d.getDate()).padStart(2, '0');
+
+        // Samme utvalg som datolista under: staar du under Medlemmer → Kurs,
+        // skal kalenderen vise samlingene deres, ikke alt.
+        const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
+        const alle = (this.state.adminOkter || [])
+          .filter(o => (this.state.kursFane || 'alle') === 'alle'
+                    || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1);
+
+        let antall = 0;
+        const dager = DAG.map((navn, i) => {
+          const d = new Date(mandag);
+          d.setDate(mandag.getDate() + i);
+          const erIDag = nokkel(d) === nokkel(iDag);
+          const paaDagen = alle.filter(o => o.dato === nokkel(d))
+                              .sort((a, b) => String(a.fra || '').localeCompare(String(b.fra || '')));
+          antall += paaDagen.length;
+
+          return {
+            dag: navn,
+            dato: String(d.getDate()),
+            erTom: paaDagen.length === 0,
+            stil: {
+              background: 'var(--surface-card)',
+              border: erIDag ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+              minHeight: 150, display: 'flex', flexDirection: 'column',
+            },
+            poster: paaDagen.map(o => {
+              const full = (o.ledige || 0) <= 0;
+              const intern = (o.tema || '') === 'Kun for medlemmer';
+              return {
+                tekst: o.tittel + ' · ' + (o.fra || ''),
+                // Hele opplysningen naar musa staar over. I en rute paa
+                // 130 piksler blir «Nybegynner dreiekurs» klippet.
+                tittel: o.tittel + ' · ' + o.naar + ' · '
+                  + (full ? 'Fullbooket' : o.ledige + ' ledige'),
+                velg: () => {
+                  this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
+                  window.scrollTo(0, 0);
+                },
+                stil: {
+                  appearance: 'none', border: 'none', width: '100%', textAlign: 'left',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  fontSize: 12, lineHeight: 1.35, padding: '7px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: full ? 'var(--lissom-brown)' : intern ? 'var(--clay-200)' : 'var(--lissom-yellow)',
+                  color: full ? 'var(--clay-50)' : 'var(--lissom-brown)',
+                  fontWeight: 600,
+                },
+              };
+            }),
+          };
+        });
+
+        const sisteDag = new Date(mandag); sisteDag.setDate(mandag.getDate() + 6);
+        const maaned = mandag.getMonth() === sisteDag.getMonth()
+          ? MND[mandag.getMonth()] + ' ' + mandag.getFullYear()
+          : MND[mandag.getMonth()] + '–' + MND[sisteDag.getMonth()] + ' ' + sisteDag.getFullYear();
+
+        const pil = {
+          appearance: 'none', cursor: 'pointer', width: 36, height: 36,
+          borderRadius: '50%', border: '1px solid var(--border-subtle)',
+          background: 'var(--surface-card)', color: 'var(--text-heading)',
+          fontSize: 18, lineHeight: '34px', padding: 0,
+        };
+
+        return {
+          admUke: dager,
+          admUkeNr: isoUke(mandag),
+          admUkeMaaned: maaned.charAt(0).toUpperCase() + maaned.slice(1),
+          admUkeAntall: antall === 0 ? 'Ingen datoer denne uka'
+                      : antall === 1 ? '1 dato denne uka' : antall + ' datoer denne uka',
+          admUkeForrige: () => this.setState({ admUkeSkift: skift - 1 }),
+          admUkeNeste: () => this.setState({ admUkeSkift: skift + 1 }),
+          admUkeNaa: () => this.setState({ admUkeSkift: 0 }),
+          admUkePilStil: pil,
+          admUkeNaaStil: {
+            appearance: 'none', cursor: 'pointer', height: 36, padding: '0 14px',
+            borderRadius: 999, border: '1px solid var(--border-subtle)',
+            background: skift === 0 ? 'var(--lissom-brown)' : 'var(--surface-card)',
+            color: skift === 0 ? 'var(--clay-50)' : 'var(--text-heading)',
+            font: 'var(--type-body-sm)', fontWeight: 600,
+          },
+          admUkeHjelp: 'Gule datoer har ledige plasser, brune er fullbooket, '
+            + 'grå er interne samlinger. Trykk en dato for å se de påmeldte '
+            + 'og legge til en deltaker.',
+        };
+      })(),
       // Datoene som faktisk ligger ute.
       //
       // Kurslista viser kurset; det er datoen folk melder seg paa. Skulle du
@@ -22397,8 +22637,27 @@ class Component extends DCLogic {
           },
         };
       })(),
-      adminKursAntall: this.kursSynlige().length,
-      adminKurs: this.kursSynlige().map(({ k, i }) => Object.assign({}, k, {
+      // Soek i kurslista.
+      //
+      // Et kurs uten datoer framover staar nederst — det er riktig, men det
+      // gjor at et kurs man skal rette prisen paa kan ligge langt nede i en
+      // liste paa seksten. Da leter man.
+      //
+      // Soeket gjelder bare denne lista. Kalenderen og datolista under staar
+      // som de staar: de viser naar noe skjer, og det skal ikke endre seg av
+      // at man leter etter et navn.
+      kursSok: this.state.kursSok || '',
+      settKursSok: e => this.setState({ kursSok: e.target.value }),
+      kursSokStil: {
+        boxSizing: 'border-box', width: 'min(240px, 100%)',
+        border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-pill)',
+        padding: '7px 14px', font: 'var(--type-body-sm)',
+        background: 'var(--surface-card)', color: 'var(--text-heading)',
+      },
+      ingenKursTreff: this.kursSokte().length === 0 && (this.state.kursSok || '').trim() !== '',
+      ingenKursTreffTekst: 'Ingen kurs heter noe med «' + (this.state.kursSok || '').trim() + '».',
+      adminKursAntall: this.kursSokte().length,
+      adminKurs: this.kursSokte().map(({ k, i }) => Object.assign({}, k, {
         velg: () => this.apneKursRed(k, i),
         rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apneKursRed(k, i); },
         // Kurslista hadde Rediger og Slett, men ingen vei til aa melde noen

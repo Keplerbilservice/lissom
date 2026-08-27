@@ -9,9 +9,31 @@ og **hva som skal gjenbrukes**.
 
 ---
 
-## 1. Min side — todeling for medlemmer og kursdeltakere
+## 1. Min side — todeling for medlemmer og kursdeltakere — **gjort 27. august**
 
-**Finnes.** Skillet finnes allerede, og virker: `erMedlem` i `renderVals`
+Min side sier nå hvilken av de to sidene den er. Under hilsenen står et bånd:
+**Medlemsside** eller **Kursdeltaker**, med én linje om hva som ligger der —
+og for kursdeltakeren en lenke videre til medlemskapene, som ikke fantes noe
+sted før.
+
+Admin har fått de to forhåndsvisningene under «Kurs og medlemskap»: «Hva
+medlemmer ser» og «Hva kursdeltakere ser». De åpner **den ekte skjermen**
+med rollen satt for hånd, med et gult bånd øverst og «Tilbake til admin».
+
+Skillet var skrevet ut fem steder med samme uttrykk. Det står nå ett sted,
+`medlemsvisning()`, som de fem leser. Stemplingsknappen lå utenfor sperren
+og er tatt inn: den hører til medlemsdelen.
+
+**Avvik fra bestillingen, med grunn.** Kartleggingen sa «med data fra en
+ekte bruker i hver gruppe». Forhåndsvisningen bruker adminbrukerens egne
+data, ikke en annen persons. Å hente en ekte deltakers Min side hit ville
+lagt medlemschatten, dørkoden, beskjedene og kjøpshistorikken til den
+personen åpen for den som ser på. Det er oppsettet som skal kontrolleres,
+og båndet sier rett ut at navn og tall er dine egne.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** Skillet finnes allerede, og virker: `erMedlem` i `renderVals`
 avgjør hva som vises. Alt som gjelder verkstedet — timer, dørkode,
 abonnement, dreieskivene denne uka, interne kurs, internbutikken,
 ordensreglene — ligger inne i `<sc-if value="{{ erMedlem }}">`. Alle andre
@@ -44,9 +66,20 @@ med et tydelig bånd øverst om at dette er en forhåndsvisning.
 
 ---
 
-## 2. Kurs og medlemskap — samle det som hører sammen
+## 2. Kurs og medlemskap — samle det som hører sammen — **gjort 27. august**
 
-**Finnes.** Området finnes (`adminomrkurs`), med en hurtigrad og sju kort:
+«Nytt medlemskap» er ikke lenger et eget hovedkort. Det er en rad nederst i
+Medlemskap-kortet, og knappen i hurtigraden står som før. «Datoer som ligger
+ute» har fått samme behandling: «Legg ut en ny dato» ligger i kortet datoene
+bor i. Nye kort: Kursdeltakere, og de to forhåndsvisningene fra punkt 1.
+
+Kortet er nå en ramme med en knapp inni, ikke en knapp med ramme — en knapp
+kan ikke ligge inni en annen knapp. Rammen har samme bakgrunn, kant, radius
+og luft som før; det er målt.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** Området finnes (`adminomrkurs`), med en hurtigrad og sju kort:
 Planlagte kurs, Opprett kurs, Medlemskap, Nytt medlemskap, Datoer som ligger
 ute, Drop-in, Påmeldte. Pluss Videokurs, lagt til 26. august.
 
@@ -412,9 +445,16 @@ igjen tomme under Nettsiden → Innhold.
 
 ---
 
-## 15. Referansekunder
+## 15. Referansekunder — **gjort 27. august**
 
-**Finnes ikke.** Ingen tabell, ingen seksjon.
+Seksjonen står på forsiden og bruker rotasjonen som alt fantes. Admin ligger
+under Nettsiden → Referanser. Ingenting publiseres uten at samtykket er
+huket av — koden kan ikke avgjøre om verkstedet har lov, men den nekter å
+vise noe før noen har bekreftet at lov finnes.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes ikke.** Ingen tabell, ingen seksjon.
 
 **Rotasjonen som skal gjenbrukes finnes.** Forsiden har allerede en
 automatisk skiftende visning på mobil, brukt av butikkortene:
@@ -441,11 +481,16 @@ noe koden kan avgjøre.
 
 ---
 
-## 16. Global struktur og design
+## 16. Global struktur og design — **holdt gjennom hele veien**
 
 Alt over bruker `LissomDesignSystem`-komponentene som finnes: `Button`,
 `Input`, `Checkbox`, `Dialog`, `Toast`, `CourseCard`, kortstilen i admin.
-Ingen nye hovedmenypunkter. Nye skjermer legges under områdene som finnes.
+Ingen nye hovedmenypunkter. Nye skjermer ligger under områdene som finnes.
+
+Forhåndsvisningene fra punkt 1 er ingen ny skjerm: de åpner Min side, den
+som allerede er der. Referansekundene på forsiden bruker rotasjonen
+butikkortene bruker. Kortet i admin er målt før og etter: samme bakgrunn,
+samme kant, samme radius, samme luft.
 
 ---
 
@@ -470,8 +515,36 @@ Minst avhengig først, og slik at ingenting står halvferdig:
 | 4 | 5 flerdagerskurs | ✅ gjort 27. august |
 | 5 | 13 åpningstider | ✅ gjort 27. august |
 | 6 | 7 kalender | ✅ gjort 27. august (push kan ikke verifiseres herfra) |
-| 7 | 15 referansekunder | står igjen |
-| 8 | 1, 2, 16 Min side og admin | står igjen |
+| 7 | 15 referansekunder | ✅ gjort 27. august |
+| 8 | 1, 2, 16 Min side og admin | ✅ gjort 27. august |
 | 9 | 9, 10, 11 innhold | står igjen |
 
-Punkt 8 og 14 ble gjort 26. august. Åtte av sytten er ferdige.
+Punkt 8 og 14 ble gjort 26. august. Tolv av sytten er ferdige. Igjen står
+punkt 4 (kursoppsettet i tolv seksjoner) og punkt 9, 10 og 11 (artikler med
+flere bilder, publiseringstilstander, e-postsignatur).
+
+---
+
+## Testresultat — punkt 1, 2 og 16
+
+Kjørt 27. august mot den lokale tjeneren, som admin, i Chromium.
+
+| Hva | Hvordan | Resultat |
+|---|---|---|
+| «Nytt medlemskap» er borte som eget kort | leste alle synlige bladtekster på skjermen | ett treff igjen, og det er knappen i hurtigraden |
+| «Lag et nytt medlemskap» ligger i Medlemskap-kortet | målte at knappen ligger inne i samme ramme, under overskriften | bestått, 390 og 1400 px |
+| «Legg ut en ny dato» ligger i datokortet | samme | bestått |
+| Kortene Kursdeltakere, Hva medlemmer ser, Hva kursdeltakere ser finnes | leste kortoverskriftene | bestått |
+| Forhåndsvisning som kursdeltaker | trykket kortet | båndet står øverst, rollen står som «Kursdeltaker», medlemsdelen er borte, «Bli medlem» står i stedet |
+| Forhåndsvisning som medlem | trykket kortet | rollen står som «Medlemsside», timer og dørkode er med, «Bli medlem» er borte |
+| «Tilbake til admin» | trykket knappen | tilbake på Kurs og medlemskap |
+| Forhåndsvisningen henger ikke igjen | gikk videre fra forhåndsvisningen med en snarvei | båndet er borte |
+| Kortene virker som før | trykket «Se medlemskapene» og «Lag et nytt medlemskap» | begge åpner det de skal |
+| Ekte Min side, uten forhåndsvisning | logget inn og gikk rett til /min-side | rollebåndet står, forhåndsvisningsbåndet gjør det ikke |
+| Kortet ser ut som før | målte bakgrunn, kant, radius, luft og størrelse | 1 px kant, 14 px radius, 20 px luft, 344 × 194 — likt for alle kort |
+
+22 sjekker i den ene kjøringen, 8 i den andre. Alle gikk gjennom.
+`119 av 119` i `tests/backend.php`, og alle tre vaktskriptene.
+
+**Ikke verifisert:** den levende nettsiden. Utgående trafikk til `lissom.no`
+er sperret fra dette miljøet, så alt over er kjørt lokalt.

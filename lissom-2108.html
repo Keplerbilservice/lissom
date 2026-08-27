@@ -2891,6 +2891,19 @@ window.__resources = {
             </div>
           </sc-if>
 
+          <!-- Forhandsvisning fra admin. Baandet maa staa foerst og vaere
+               umulig aa ta feil av: dette er Min side slik en av de to
+               gruppene ser den, ikke en egen adminskjerm. -->
+          <sc-if value="{{ fhBand }}" hint-placeholder-val="{{ false }}">
+            <div data-theme="sun" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+              <div style="min-width: 240px;">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 2px;">Forhåndsvisning</div>
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--brown-500); max-width: 68ch; text-wrap: pretty;">{{ fhBandTekst }}</p>
+              </div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ fhTilbake }}" hint-size="auto,38px">Tilbake til admin</x-import>
+            </div>
+          </sc-if>
+
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-4);">
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
             <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
@@ -2910,6 +2923,20 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
               </sc-if>
             </div>
+          </div>
+
+          <!-- Hvilken av de to sidene dette er.
+               Skillet mellom medlem og kursdeltaker har alltid avgjort hva
+               som tegnes, men det sto ingen steder hva man saa paa: en
+               kursdeltaker fikk en side med hull der medlemsdelen ville
+               vaert, uten at det fantes noe som sa at det finnes en
+               medlemsside i det hele tatt. -->
+          <div style="display: flex; align-items: baseline; gap: var(--space-2) var(--space-4); flex-wrap: wrap; border-left: 3px solid var(--terracotta-500); padding-left: var(--space-4); margin-bottom: var(--space-6); max-width: 74ch;">
+            <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ rolleMerke }}</span>
+            <span style="font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ rolleTekst }}</span>
+            <sc-if value="{{ rolleHarLenke }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ rolleVelg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ rolleLenkeTekst }}</button>
+            </sc-if>
           </div>
 
           <div style="display: flex; gap: var(--space-2) var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
@@ -6333,15 +6360,25 @@ window.__resources = {
         </div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--space-5); align-items: stretch;">
+          <!-- Kortet er en ramme med en knapp i, ikke en knapp med ramme.
+               «Nytt medlemskap» sto som eget hovedkort ved siden av
+               «Medlemskap» — to kort for det samme. Naa er den andre
+               handlingen en rad nederst i kortet den hoerer til, og en
+               knapp kan ikke ligge inni en annen knapp. -->
           <sc-for list="{{ omrKort }}" as="k" hint-placeholder-count="6">
-            <button type="button" onClick="{{ k.velg }}" style="{{ k.stil }}">
-              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
-                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ k.navn }}</span>
-                <span style="{{ k.tallStil }}">{{ k.tall }}</span>
-              </div>
-              <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ k.hva }}</p>
-              <span style="display: block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);">{{ k.knapp }} →</span>
-            </button>
+            <div style="{{ k.stil }}">
+              <button type="button" onClick="{{ k.velg }}" style="{{ k.innerStil }}">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ k.navn }}</span>
+                  <span style="{{ k.tallStil }}">{{ k.tall }}</span>
+                </div>
+                <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ k.hva }}</p>
+                <span style="display: block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);">{{ k.knapp }} →</span>
+              </button>
+              <sc-if value="{{ k.harMer }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ k.merVelg }}" style="{{ k.merStil }}">{{ k.merNavn }} →</button>
+              </sc-if>
+            </div>
           </sc-for>
         </div>
       </main>
@@ -9870,7 +9907,9 @@ const TALLDETALJER = {
 class Component extends DCLogic {
   state = { side: 'forside', innstemplet: true, synlig: true, kursFilter: 'Alle', detalj: null };
 
-  go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s }); window.scrollTo(0, 0); }; }
+  // fhRolle nullstilles: en forhandsvisning skal ikke folge med videre til
+  // neste skjerm. Den settes bare av de to kortene i admin.
+  go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s, fhRolle: '' }); window.scrollTo(0, 0); }; }
 
   /**
    * Alle kurskort, ufiltrert.
@@ -11268,6 +11307,23 @@ class Component extends DCLogic {
   erPublisert() {
     const h = window.location.hostname;
     return h.endsWith('lissom.no') || h.endsWith('github.io');
+  }
+
+  /**
+   * Om Min side skal vises som medlemsside eller som deltakerside.
+   *
+   * Skillet fantes fra for, men det var skrevet ut fem steder med samme
+   * uttrykk. Naa staar det ett sted, saa de fem alltid sier det samme.
+   *
+   * Serveren avgjor: api/meg.php setter erMedlemBruker av members.status.
+   * Under en forhandsvisning fra admin er det admin som velger hvilken av
+   * de to sidene som tegnes — samme skjerm og samme data, bare rollen er
+   * satt for hand. I designverktoyet finnes ingen server, og da vises alt.
+   */
+  medlemsvisning() {
+    const fh = this.state.fhRolle || '';
+    if (fh) return fh === 'medlem';
+    return !this.erPublisert() || !!this.state.erMedlemBruker;
   }
 
   /**
@@ -17130,7 +17186,7 @@ class Component extends DCLogic {
 
   /** Aapner et punkt: skjerm pluss det som avgjor hvem det gjelder. */
   gaaAdmin(rute, forvalg) {
-    this.setState(Object.assign({ side: rute }, forvalg || {}));
+    this.setState(Object.assign({ side: rute, fhRolle: '' }, forvalg || {}));
     window.scrollTo(0, 0);
   }
 
@@ -18805,14 +18861,14 @@ class Component extends DCLogic {
       })),
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
-      harMedlemskurs: (!this.erPublisert() || !!this.state.erMedlemBruker)
+      harMedlemskurs: this.medlemsvisning()
         && this.bryterPaa('internkurs')
         && (!this.erPublisert() || (this.state.katalog || []).some(k => (k.tema || '') === 'Kun for medlemmer')),
       visMinInternbutikk: this.bryterPaa('internbutikk'),
       // Bryteren maa vaere paa, og det maa finnes noe aa selge.
       // Leire og brenning kjopes av medlemmer. Bryteren styrer om den
       // vises i det hele tatt; medlemskapet om du er blant dem den gjelder.
-      visInternbutikk: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.bryterPaa('internbutikk')
+      visInternbutikk: this.medlemsvisning() && this.bryterPaa('internbutikk')
         && (!this.erPublisert() || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer)),
       visMinSalg: this.bryterPaa('medlemssalg'),
       // Interne samlinger finnes ikke i basen ennaa. Paa den ekte siden viser
@@ -19629,13 +19685,31 @@ class Component extends DCLogic {
           color: haster && verdi ? 'var(--terracotta-600)' : 'var(--text-heading)',
           whiteSpace: 'nowrap',
         });
+        // Rammen er kortet; knappen inni er hele flata man trykker paa.
+        const innerStil = {
+          appearance: 'none', border: 'none', background: 'transparent', padding: 0,
+          textAlign: 'left', cursor: 'pointer', width: '100%', font: 'inherit',
+          display: 'flex', flexDirection: 'column', flex: '1 1 auto',
+        };
         const kort = (navn, hva, verdi, rute, forvalg, knapp, haster) => ({
           navn, hva,
           tall: (verdi === null || verdi === undefined) ? '' : String(verdi),
           tallStil: tallStil(verdi, haster),
           knapp: knapp || 'Åpne',
           stil: kortStil,
+          innerStil,
+          harMer: false, merNavn: '', merVelg: () => {}, merStil: {},
           velg: () => this.gaaAdmin(rute, forvalg),
+        });
+        // En handling til, i kortet den hoerer til framfor som eget kort.
+        const medMer = (k, merNavn, merVelg) => Object.assign(k, {
+          harMer: true, merNavn, merVelg,
+          merStil: {
+            appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+            textAlign: 'left', width: '100%', padding: 'var(--space-3) 0 0',
+            marginTop: 'var(--space-4)', borderTop: '1px solid var(--border-subtle)',
+            font: 'var(--type-body-sm)', fontWeight: 600, color: 'var(--lissom-brown)',
+          },
         });
 
         const intern = k => (k.tema || '') === 'Kun for medlemmer'
@@ -19704,15 +19778,22 @@ class Component extends DCLogic {
               kort('Opprett kurs',
                    'Navn, pris, plasser og datoer i tre steg. Det ligger ute med det samme.',
                    null, 'admin', nyttKurs, 'Lag et kurs'),
-              kort('Medlemskap',
+              // «Nytt medlemskap» sto som eget hovedkort her. Det er samme
+              // sted som «Medlemskap» forer til, og det er der det hoerer
+              // hjemme — nederst i kortet, ikke ved siden av det.
+              medMer(kort('Medlemskap',
                    'Pris, timer og teksten som står på kortet ute på nettsiden.',
                    planer.length, 'adminmedlemskap', {}, 'Se medlemskapene'),
-              kort('Nytt medlemskap',
-                   'Lag et nytt medlemskap — hva det koster, og hva de får for det.',
-                   null, 'adminmedlemskap', nyttMedlemskap, 'Lag et medlemskap'),
-              kort('Datoer som ligger ute',
+                   'Lag et nytt medlemskap',
+                   () => this.gaaAdmin('adminmedlemskap', nyttMedlemskap)),
+              medMer(kort('Datoer som ligger ute',
                    'Hver dato med plassene sine. Herfra legger du til, flytter og avbestiller deltakere.',
                    okter.length, 'admin', { kursFane: 'alle' }, 'Se datoene'),
+                   'Legg ut en ny dato',
+                   () => this.apneNyKursdato()),
+              kort('Kursdeltakere',
+                   'De som går på kurs: hvem de er, hva de har meldt seg på, og hva de har betalt.',
+                   (this.state.adminDeltakere || []).length, 'adminomrdeltakere', {}, 'Se deltakerne'),
               kort('Drop-in',
                    'Åpningstidene for drop-in: legg ut en ny tid, endre den eller ta den bort.',
                    null, 'admindropin', {}, 'Se tidene'),
@@ -19726,6 +19807,17 @@ class Component extends DCLogic {
               kort('Videokurs',
                    'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.',
                    null, 'adminvideokurs', {}, 'Se hva som mangler'),
+              // Min side er todelt, og har vaert det lenge: medlemmer ser
+              // timer, dorkode og det interne, kursdeltakere ser kursene
+              // sine. Den eneste maaten aa se hva de to faktisk faar, var
+              // aa logge inn som en av dem. Disse to aapner den ekte
+              // skjermen med rollen satt.
+              kort('Hva medlemmer ser',
+                   'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
+                   null, 'minside', { fhRolle: 'medlem' }, 'Se siden'),
+              kort('Hva kursdeltakere ser',
+                   'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
+                   null, 'minside', { fhRolle: 'deltaker' }, 'Se siden'),
             ],
           };
         }
@@ -22376,7 +22468,7 @@ class Component extends DCLogic {
       //
       // En kursdeltaker har to ting her: paameldingene sine og beskjedene.
       minsideSnarveier: (
-        (!this.erPublisert() || !!this.state.erMedlemBruker)
+        this.medlemsvisning()
           ? [
             { navn: 'Internbutikk — leire og brenning', id: 'minside-internbutikk' },
             { navn: 'Interne kurs og samlinger', id: 'minside-internkurs' },
@@ -22430,9 +22522,13 @@ class Component extends DCLogic {
         const st = this.state.stempling;
         // Uten svar fra serveren viser vi ingen timer paa den ekte siden —
         // et tall vi ikke har dekning for er verre enn ingen tall.
+        // Stemplingsknappen hoerer til medlemsdelen. Den sto utenfor
+        // sperren, saa en kursdeltaker med timer i basen fikk tilbud om aa
+        // stemple inn i et verksted hen ikke har nokkel til.
+        const somMedlem = this.medlemsvisning();
         if (!st) return {
-          harTimer: !this.erPublisert() && (t.igjen === '∞' || t.igjen > 0),
-          erTom: !this.erPublisert() && t.igjen === 0,
+          harTimer: somMedlem && !this.erPublisert() && (t.igjen === '∞' || t.igjen > 0),
+          erTom: somMedlem && !this.erPublisert() && t.igjen === 0,
           timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
           timerVarsel: t.varsel,
           timerVarselStil: t.varselStil,
@@ -22447,8 +22543,8 @@ class Component extends DCLogic {
         });
 
         return {
-          harTimer: igjen > 0,
-          erTom: igjen === 0,
+          harTimer: somMedlem && igjen > 0,
+          erTom: somMedlem && igjen === 0,
           timerBarStil: { width: st.timer.andel + '%', height: '100%', background: igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
           timerVarsel: igjen === 0 ? 'Du har brukt opp timene dine denne måneden.'
             : (igjen <= 4 ? 'Du har ' + String(igjen).replace('.', ',') + ' timer igjen denne måneden.' : ''),
@@ -22461,6 +22557,7 @@ class Component extends DCLogic {
       // Innstempling, fra basen. Klokkeslettet «13:42 · 1 t 20 min» sto som
       // fast verdi og ble vist til alle, uansett naar de var der.
       stemplingTekst: (() => {
+        if (!this.medlemsvisning()) return '';
         const st = this.state.stempling;
         if (st) return st.innstemplet ? 'Innstemplet ' + st.siden + ' · ' + st.saaLenge : 'Du er ikke innstemplet';
         return this.erPublisert() ? 'Henter …' : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet');
@@ -24833,7 +24930,7 @@ class Component extends DCLogic {
       kampanjeTilButikk: () => { this.setState({ side: 'butikk', butikkKolleksjon: 'Medlem', butikkFilter: 'Alt' }); window.scrollTo(0, 0); },
       salgSkjemaEtikett: this.bryterPaa('salgsskjema') ? 'Synlig' : 'Skjult',
       salgSkjemaVeksl: () => this.vekslBryter('salgsskjema', 'Skjemaet for å legge ut arbeider'),
-      visSalgSkjema: (!this.erPublisert() || !!this.state.erMedlemBruker) && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
+      visSalgSkjema: this.medlemsvisning() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
       lukkSalg: () => this.setState({ salgApen: null }),
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);
@@ -25867,8 +25964,40 @@ class Component extends DCLogic {
       visAdminKreverPassord: this.erPublisert() && !!this.state.adminKreverPassord,
       visAdminUtenPassord: this.erPublisert() && !!this.state.adminUtenPassord,
       tilPassordinnlogging: () => { this.setState({ side: 'adminlogin', liFeil: null }); window.scrollTo(0, 0); },
-      erMedlem: !this.erPublisert() || !!this.state.erMedlemBruker,
-      visBliMedlem: this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker,
+      erMedlem: this.medlemsvisning(),
+      visBliMedlem: this.state.fhRolle
+        ? this.state.fhRolle === 'deltaker'
+        : (this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker),
+
+      // ── Hvilken av de to sidene Min side er ───────────────────────────
+      //
+      // Baandet under hilsenen. Det tegner ingenting nytt — det sier hva
+      // sida som allerede staar der, er.
+      ...(() => {
+        const medlem = this.medlemsvisning();
+        return {
+          rolleMerke: medlem ? 'Medlemsside' : 'Kursdeltaker',
+          rolleTekst: medlem
+            ? 'Timene dine, dørkoden, abonnementet og det interne ligger her — sammen med kursene du er påmeldt.'
+            : 'Kursene du er påmeldt, bildene fra dem og beskjedene fra verkstedet. Medlemssiden er en annen: den gir dørkode, verkstedtid og egen hylle.',
+          rolleHarLenke: !medlem,
+          rolleLenkeTekst: 'Se medlemskapene',
+          rolleVelg: () => { this.setState({ side: 'medlemskap', fhRolle: '' }); window.scrollTo(0, 0); },
+        };
+      })(),
+
+      // Forhandsvisningen fra admin.
+      //
+      // Den viser den ekte skjermen med rollen satt for hand. Tallene og
+      // navnene er adminbrukerens egne — det er oppsettet som skal
+      // kontrolleres, ikke en annen persons opplysninger. Aa hente en ekte
+      // deltakers Min side hit ville lagt medlemschat, dorkode og
+      // kjopshistorikk aapen for den som ser paa.
+      fhBand: !!this.state.fhRolle,
+      fhBandTekst: this.state.fhRolle === 'medlem'
+        ? 'Slik ser Min side ut for et medlem. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.'
+        : 'Slik ser Min side ut for en kursdeltaker uten medlemskap. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.',
+      fhTilbake: () => this.gaaAdmin('adminomrkurs', {}),
       bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',
       bmTittel: this.state.soknadStatus === 'venter'
         ? 'Søknaden din er til behandling'
@@ -25908,7 +26037,7 @@ class Component extends DCLogic {
       goMedlemskap: this.go('medlemskap'),
       goButikk: this.go('butikk'),
       goMinside: () => {
-        this.setState({ side: this.state.innlogget ? 'minside' : 'login' });
+        this.setState({ side: this.state.innlogget ? 'minside' : 'login', fhRolle: '' });
         window.scrollTo(0, 0);
       },
       liBruker: this.state.liBruker || '',

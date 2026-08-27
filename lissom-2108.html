@@ -1871,6 +1871,23 @@ window.__resources = {
     <div role="main" data-screen-label="Booking">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Kurs" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
 
+      <!-- Doera staar aapen naa.
+           Staar noen fra verkstedet innstemplet, er det aapent — ogsaa naar
+           det ikke ligger en drop-in-tid ute. Da er drop-in nettopp en aapen
+           doer: man kommer innom, og gjor opp paa stedet. Banneret staar bare
+           paa drop-in, ikke paa et kurs man maa melde seg paa. -->
+      <sc-if value="{{ dropinApenNa }}" hint-placeholder-val="{{ false }}">
+        <section style="background: var(--clay-50); padding: var(--space-8) var(--space-8) 0;">
+          <div data-theme="sun" style="max-width: var(--width-content); margin: 0 auto; background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap;">
+            <span class="lx-puls" style="width: 12px; height: 12px; border-radius: 50%; background: var(--lissom-brown); flex: 0 0 auto;"></span>
+            <div style="min-width: 0;">
+              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--lissom-brown);">Det er åpent akkurat nå</div>
+              <p style="margin: 2px 0 0; font-size: var(--text-sm); color: var(--brown-500); text-wrap: pretty;">{{ dropinApenTekst }}</p>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
       <section style="background: var(--clay-50); padding: var(--space-10) var(--space-8) var(--section-y);">
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <button type="button" onClick="{{ goTilbake }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 10px 8px; margin: -10px -8px; font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-6);">← {{ tilbakeTekst }}</button>
@@ -18350,6 +18367,35 @@ class Component extends DCLogic {
   adminMeny() {
     const aktiv = this.adminSted().meny;
 
+    // ── Er du her? ────────────────────────────────────────────────────────
+    //
+    // Aapningstida paa nettsiden ble regnet av kalenderen alene: en paastand
+    // om framtiden, som blir staaende som sannhet ogsaa naar den er feil.
+    // Verkstedet er aapent naar noen er der, og det er det denne sier.
+    //
+    // Innstemplinga er den samme medlemmene bruker — check_ins, med inn- og
+    // ut-tid. Ikke et nytt system ved siden av.
+    const inne = this.erInne();
+    const stempling = [{
+      navn: inne ? '●  Jeg har gått hjem' : '○  Jeg er her',
+      // Samme kall som knappen paa Min side. Kvitteringen sier hva som
+      // skjedde, og aapningstida hentes paa nytt: den endrer seg av dette.
+      velg: () => {
+        this.stemplingKall({ handling: inne ? 'ut' : 'inn' }, true);
+        this._apningHentes = false;
+        this.setState({ apningsdager: null });
+      },
+      stil: {
+        appearance: 'none', cursor: 'pointer', textAlign: 'left',
+        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+        font: 'var(--type-body-sm)', fontWeight: 700,
+        marginBottom: 'var(--space-3)',
+        border: inne ? 'none' : '1px solid rgba(244,235,222,.28)',
+        background: inne ? 'var(--sage-500)' : 'transparent',
+        color: inne ? '#fff' : 'var(--clay-200)',
+      },
+    }];
+
     const rader = Component.ADMIN_MENY.map(([navn, rute, forvalg]) => ({
       navn,
       velg: () => this.gaaAdmin(rute, forvalg),
@@ -18362,7 +18408,7 @@ class Component extends DCLogic {
       },
     }));
 
-    return rader.concat([
+    return stempling.concat(rader).concat([
       // Ut av admin. To ting man vil ha for haanden hele tida, og som ikke
       // fantes: veien tilbake til nettsiden, og veien ut.
       {
@@ -25468,8 +25514,20 @@ class Component extends DCLogic {
           apningstider: linjer,
           // Sier hva tidene gjelder. Uten den staar det «10–19», og noen
           // kommer for aa handle midt i et kurs.
-          apningsforklaring: (this.state.apningsdager || {}).forklaring
-            || 'Verkstedet er åpent når det går kurs. Butikken og drop-in har egne tider.',
+          // Staar verkstedet bemannet, er doeren aapen — og da er drop-in en
+          // aapen doer: man kan komme innom uten aa booke.
+          apningsforklaring: (this.state.apningsdager || {}).apenNa
+            ? 'Noen er i verkstedet nå, så døra er åpen. Drop-in går som en åpen dør — '
+              + 'bare kom innom, så finner vi en plass til deg.'
+            : ((this.state.apningsdager || {}).forklaring
+              || 'Verkstedet er åpent når det går kurs. Butikken og drop-in har egne tider.'),
+          apenNa: !!(this.state.apningsdager || {}).apenNa,
+          // Banneret paa drop-in-sida. Staar bare naar noen faktisk er der.
+          dropinApenNa: !!(this.state.apningsdager || {}).apenNa && this.bookerDropin(),
+          dropinApenTekst: 'Noen er i verkstedet siden '
+            + ((this.state.apningsdager || {}).apenSiden || 'i dag')
+            + '. Du trenger ikke booke — bare kom innom, så finner vi plass til deg. '
+            + 'Du gjør opp på stedet.',
         };
       })(),
       // «Utforsk» er tatt bort fra bunnteksten — de seks lenkene staar alt i
@@ -27080,7 +27138,12 @@ class Component extends DCLogic {
 
         return {
           ftApning1: regnet || egen1,
-          ftApning2: egen2,
+          // Staar noen fra verkstedet innstemplet, er doeren aapen — og da er
+          // drop-in nettopp en aapen doer. «Medlemmer: doegnaapent» staar
+          // fortsatt under; dette er linja for alle andre.
+          ftApning2: ((this.state.apningsdager || {}).apenNa)
+            ? 'Åpen dør for drop-in nå — bare kom innom'
+            : egen2,
           // Det neste som skjer, saa linja over ikke bare er et nei.
           ftApningNeste: (() => {
             if (!dager) return '';

@@ -176,6 +176,37 @@ final class Stempling
         return ['synlige' => $synlige, 'skjulte' => $skjulte, 'antall' => count($rader)];
     }
 
+    /**
+     * Staar noen fra verkstedet innstemplet naa?
+     *
+     * Aapningstida paa nettsiden ble regnet av kalenderen alene — en paastand
+     * om framtiden, som blir staaende som sannhet ogsaa naar den er feil.
+     * Er verkstedet bemannet, er doeren aapen, og det er det som gjelder.
+     *
+     * Bare admin teller. Et medlem som staar og dreier alene, gjor ikke
+     * verkstedet aapent for folk som kommer forbi.
+     *
+     * @return array{apen: bool, siden: string|null}
+     */
+    public static function verkstedetBemannet(): array
+    {
+        $rad = DB::en(
+            "SELECT c.inn_tid
+               FROM check_ins c
+               JOIN members m ON m.id = c.member_id
+              WHERE c.ut_tid IS NULL AND m.rolle = 'admin'
+           ORDER BY c.inn_tid
+              LIMIT 1"
+        );
+        if ($rad === null) {
+            return ['apen' => false, 'siden' => null];
+        }
+        $inn = (new DateTimeImmutable((string) $rad['inn_tid'], new DateTimeZone('UTC')))
+            ->setTimezone(self::oslo());
+
+        return ['apen' => true, 'siden' => $inn->format('H:i')];
+    }
+
     /** «1 t 20 min», «45 min», «—». */
     public static function varighet(int $minutter): string
     {

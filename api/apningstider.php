@@ -204,6 +204,54 @@ for ($i = 0; $i < DAGER_FRAM; $i++) {
     ];
 }
 
+// ── Er verkstedet bemannet naa? ────────────────────────────────────────────
+//
+// Kalenderen sier hva som er avtalt. Innstemplinga sier hva som er sant.
+// Staar verkstedet bemannet, er doeren aapen — ogsaa naar det ikke staar noe
+// i kalenderen, og ogsaa etter at dagens kurs er ferdig.
+$bemannet = Stempling::verkstedetBemannet();
+
+if ($bemannet['apen']) {
+    $idagNokkel = $idag->format('Y-m-d');
+    $funnet = false;
+    foreach ($ut as &$rad) {
+        if ($rad['dato'] !== $idagNokkel) {
+            continue;
+        }
+        $funnet = true;
+        // «Aapent naa» gaar foran klokkeslettene: de sier naar det er satt
+        // opp noe, ikke at doeren staar aapen.
+        $rad['apenNa']   = true;
+        $rad['apenSiden'] = $bemannet['siden'];
+        $rad['planlagt'] = $rad['tid'];
+        $rad['tid']      = 'Åpent nå';
+        $rad['stengt']   = false;
+    }
+    unset($rad);
+
+    // Ingen kurs i dag, men noen er der. Da staar dagen ikke i lista i det
+    // hele tatt — og det er nettopp den dagen det er verdt aa si fra.
+    if (!$funnet) {
+        array_unshift($ut, [
+            'dato'      => $idagNokkel,
+            'dag'       => $DAG[(int) $idag->format('N')],
+            'naar'      => (int) $idag->format('j') . '. ' . $MND[(int) $idag->format('n')],
+            'idag'      => true,
+            'stengt'    => false,
+            'fra'       => $bemannet['siden'],
+            'til'       => null,
+            'tid'       => 'Åpent nå',
+            'merknad'   => '',
+            'hva'       => 'Åpen dør',
+            'overstyrt' => false,
+            'okter'     => [],
+            'apenNa'    => true,
+            'apenSiden' => $bemannet['siden'],
+            'planlagt'  => 'Ingenting satt opp',
+        ]);
+    }
+}
+
 // Hvem som faar se hva tallene er regnet av.
 //
 // Lista rommer titlene paa de interne samlingene — «Glasurkveld for
@@ -231,6 +279,10 @@ if (Foresporsel::tekst('visning') === 'tekst') {
         exit;
     }
     $linjer = ['Åpningstidene på lissom.no, og hva de er regnet av.', ''];
+    $linjer[] = $bemannet['apen']
+        ? 'Verkstedet står innstemplet siden ' . $bemannet['siden'] . ' — nettsiden sier «Åpent nå».'
+        : 'Ingen fra verkstedet er innstemplet nå.';
+    $linjer[] = '';
     if ($ut === []) {
         $linjer[] = 'Ingen dager har åpningstid de neste ' . DAGER_FRAM . ' dagene.';
         $linjer[] = 'Det står ingen kursdatoer, drop-in-tider eller samlinger ute.';
@@ -264,6 +316,10 @@ if (Foresporsel::tekst('visning') === 'tekst') {
 Svar::json([
     'dager'    => $ut,
     'dagerFram' => DAGER_FRAM,
+    // Staar verkstedet bemannet akkurat naa? Da er doeren aapen, og drop-in
+    // er en aapen doer — man kan komme innom uten aa booke.
+    'apenNa'    => $bemannet['apen'],
+    'apenSiden' => $bemannet['siden'],
     // Én setning som forklarer hva lista er. Uten den staar det «10–19» og
     // noen kommer for aa handle midt i et kurs.
     'forklaring' => 'Verkstedet er åpent når det går kurs. Butikken og drop-in '

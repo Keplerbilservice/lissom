@@ -992,6 +992,10 @@ window.__resources = {
       .lx-artfigur { float: none !important; width: 100% !important; max-width: 100% !important;
                      margin-left: 0 !important; margin-right: 0 !important; }
       .lx-cols4 { grid-template-columns: 1fr 1fr !important; }
+      /* Deltakerpanelet under Ferdig glassert staar i to spalter paa skjerm.
+         Paa en telefon er 300 piksler til bildene og resten til notatet
+         ikke to spalter — det er to smale striper. */
+      .lx-fbpanel { grid-template-columns: 1fr !important; }
       .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
       html, body { overflow-x: clip; max-width: 100%; overscroll-behavior-x: none; }
       .lx-wrapm { white-space: normal !important; }
@@ -4432,51 +4436,78 @@ window.__resources = {
                 <!-- Alt om deltakeren, i samme panel. Du skal ikke maatte
                      bytte skjerm for aa se et bilde og sende en beskjed. -->
                 <sc-if value="{{ d.apen }}" hint-placeholder-val="{{ false }}">
-                  <div style="padding: 0 var(--space-6) var(--space-5); background: var(--clay-50);">
-                    <sc-if value="{{ d.harBilder }}" hint-placeholder-val="{{ true }}">
-                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); padding-top: var(--space-4); margin-bottom: var(--space-2);">Bilder fra {{ d.navn }}</div>
-                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
-                        <sc-for list="{{ d.bilder }}" as="b" hint-placeholder-count="2">
-                          <button type="button" onClick="{{ b.stor }}" title="Vis i full størrelse" style="{{ b.stil }}"></button>
-                        </sc-for>
-                      </div>
-                    </sc-if>
-                    <sc-if value="{{ d.utenBilder }}" hint-placeholder-val="{{ false }}">
-                      <p style="padding-top: var(--space-4); margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">Ingen bilder ennå. Deltakeren kan legge inn bilder selv under Min side.</p>
-                    </sc-if>
+                  <!-- Alt om deltakeren laa under hverandre i full bredde:
+                       bildene, notatet, knappene og hele meldingshistorikken
+                       paa rad nedover. Kortet ble like langt som skjermen og
+                       like bredt som vinduet, med en linje tekst i hver
+                       rad — mest luft, og mye rulling for aa se om beskjeden
+                       gikk ut.
 
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Internt notat</div>
-                    <textarea value="{{ fbNotat }}" onChange="{{ settFbNotat }}" rows="3" placeholder="Grønn skål med hank, hylle 3 …" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading); resize: vertical;"></textarea>
-                    <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin: var(--space-3) 0 var(--space-5);">
-                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ d.lagreNotat }}" hint-size="auto,38px">Lagre notat</x-import>
-                      <span style="font-size: var(--text-xs); color: var(--text-muted);">Vises bare her. Deltakeren ser det aldri.</span>
-                    </div>
+                       Naa staar det i to spalter: bildene til venstre,
+                       notatet og knappene til hoyre, og historikken under
+                       begge. Paa en smal skjerm faller de tilbake til én. -->
+                  <div class="lx-fbpanel" style="display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: var(--space-4); align-items: start; padding: var(--space-4) var(--space-6) var(--space-5); background: var(--clay-50);">
 
-                    <div style="display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap; margin-bottom: var(--space-5);">
-                      <sc-if value="{{ d.kanSende }}" hint-placeholder-val="{{ true }}">
-                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ d.send }}" hint-size="auto,38px">{{ d.sendTekst }}</x-import>
-                      </sc-if>
-                      <sc-if value="{{ d.utenKontakt }}" hint-placeholder-val="{{ false }}">
-                        <span style="font-size: var(--text-xs); color: var(--text-muted);">Verken e-post eller telefon. Må kontaktes på annen måte.</span>
-                      </sc-if>
-                      <button type="button" onClick="{{ d.veksleHentet }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ d.hentetTekst }}</button>
-                    </div>
-
-                    <sc-if value="{{ d.harHistorikk }}" hint-placeholder-val="{{ false }}">
-                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Meldingshistorikk</div>
-                      <sc-for list="{{ d.historikk }}" as="h" hint-placeholder-count="2">
-                        <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
-                          <div style="display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-                            <span style="font-size: var(--text-xs); font-weight: 700; color: {{ h.farge }};">{{ h.status }} · {{ h.kanal }}</span>
-                            <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.naar }}</span>
-                          </div>
-                          <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">Til {{ h.mottaker }}</div>
-                          <div style="font-size: var(--text-xs); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ h.tekst }}</div>
-                          <sc-if value="{{ h.harFeil }}" hint-placeholder-val="{{ false }}">
-                            <div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 4px;">{{ h.feil }}</div>
-                          </sc-if>
+                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Bilder fra {{ d.fornavn }}</div>
+                      <sc-if value="{{ d.harBilder }}" hint-placeholder-val="{{ true }}">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-2);">
+                          <sc-for list="{{ d.bilder }}" as="b" hint-placeholder-count="2">
+                            <button type="button" onClick="{{ b.stor }}" title="Vis i full størrelse" style="{{ b.stil }}"></button>
+                          </sc-for>
                         </div>
-                      </sc-for>
+                      </sc-if>
+                      <sc-if value="{{ d.utenBilder }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Ingen bilder ennå. Deltakeren kan legge inn bilder selv under Min side.</p>
+                      </sc-if>
+                    </div>
+
+                    <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
+                      <div>
+                        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Internt notat</div>
+                        <textarea value="{{ fbNotat }}" onChange="{{ settFbNotat }}" rows="3" placeholder="Grønn skål med hank, hylle 3 …" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                        <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; margin-top: var(--space-3);">
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ d.lagreNotat }}" hint-size="auto,38px">Lagre notat</x-import>
+                          <span style="font-size: var(--text-xs); color: var(--text-muted);">Vises bare her. Deltakeren ser det aldri.</span>
+                        </div>
+                      </div>
+                      <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
+                        <sc-if value="{{ d.kanSende }}" hint-placeholder-val="{{ true }}">
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ d.send }}" hint-size="auto,38px">{{ d.sendTekst }}</x-import>
+                        </sc-if>
+                        <sc-if value="{{ d.utenKontakt }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size: var(--text-xs); color: var(--text-muted);">Verken e-post eller telefon. Må kontaktes på annen måte.</span>
+                        </sc-if>
+                        <button type="button" onClick="{{ d.veksleHentet }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ d.hentetTekst }}</button>
+                      </div>
+                    </div>
+
+                    <!-- Historikken er den eneste delen som kan bli lang.
+                         Den staar under begge spaltene og ruller for seg,
+                         slik at femten utsendelser ikke skyver resten av
+                         lista ut av skjermen. -->
+                    <sc-if value="{{ d.harHistorikk }}" hint-placeholder-val="{{ false }}">
+                      <div style="grid-column: 1 / -1; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Meldingshistorikk</div>
+                          <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ d.historikkTall }}</span>
+                        </div>
+                        <div style="max-height: 260px; overflow-y: auto;">
+                          <sc-for list="{{ d.historikk }}" as="h" hint-placeholder-count="2">
+                            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-3) 0;">
+                              <div style="display: flex; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                                <span style="font-size: var(--text-xs); font-weight: 700; color: {{ h.farge }};">{{ h.status }} · {{ h.kanal }}</span>
+                                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ h.naar }}</span>
+                              </div>
+                              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">Til {{ h.mottaker }}</div>
+                              <div style="font-size: var(--text-xs); color: var(--text-body); margin-top: 4px; text-wrap: pretty;">{{ h.tekst }}</div>
+                              <sc-if value="{{ h.harFeil }}" hint-placeholder-val="{{ false }}">
+                                <div style="font-size: var(--text-xs); color: var(--terracotta-600); margin-top: 4px;">{{ h.feil }}</div>
+                              </sc-if>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
                     </sc-if>
                   </div>
                 </sc-if>
@@ -25231,6 +25262,11 @@ class Component extends DCLogic {
               sisteTekst: x.sisteNaar ? (x.sisteKanal + ' · ' + x.sisteNaar) : '',
               harNotat: !!x.notat,
               notatKort: (x.notat || '').slice(0, 60),
+              // Bare fornavnet over bildene: «Bilder fra Kari Nordmann
+              // Hansen» brakk overskriften i to i den smale spalten.
+              fornavn: String(x.navn || '').trim().split(/\s+/)[0] || x.navn || '',
+              historikkTall: (x.historikk || []).length === 1
+                ? '1 utsendelse' : (x.historikk || []).length + ' utsendelser',
               harBilde: !!forste,
               miniStil: {
                 width: 52, height: 52, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
@@ -25249,7 +25285,9 @@ class Component extends DCLogic {
               bilder: (x.bilder || []).map(b => ({
                 stil: {
                   appearance: 'none', cursor: 'pointer', padding: 0,
-                  width: 110, height: 110, borderRadius: 'var(--radius-md)',
+                  // Fyller ruta si i rutenettet. Var 110 fast, og la seg paa
+                  // rad med hull etter seg naar spalten ble smalere.
+                  width: '100%', height: 110, borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border-subtle)',
                   backgroundColor: 'var(--clay-200)',
                   backgroundImage: "url('" + b.url + "')",

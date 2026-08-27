@@ -160,7 +160,10 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
 
 // Dekker gavekortet hele kjopet, er det ingenting aa betale. Aa sende noen
 // til Vipps for null kroner ville vaert en omvei til en feilmelding.
-if ($aBetale <= 0) {
+// Ingenting igjen aa betale — eller mindre enn Vipps godtar. Under én krone
+// finnes det ingen vei gjennom Vipps, og aa runde opp ville vaert aa kreve
+// mer enn kunden skylder. Da er resten dekket.
+if ($aBetale < Vipps::MINSTE_BELOP_ORE) {
     Booking::markerBetalt($referanse);
     revider('ordre_opprettet', 'order', $opprettet['ordreId'], ['sum_ore' => $sum, 'gavekort_ore' => $gavekortOre]);
     Svar::ok([

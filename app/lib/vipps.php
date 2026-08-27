@@ -288,6 +288,15 @@ final class Vipps
     // -----------------------------------------------------------------------
 
     /**
+     * Minste beloep Vipps godtar: 100 oere, altsaa én krone.
+     *
+     * Under det svarer Vipps 400 med «Invalid amount» og en tekst om at
+     * beloep maa vaere heltall i oere — som er riktig, men ikke det som er
+     * galt. Da leter man etter desimaler som ikke finnes.
+     */
+    public const MINSTE_BELOP_ORE = 100;
+
+    /**
      * Oppretter en betaling og returnerer adressen brukeren skal sendes til.
      *
      * Beløpet kommer ALLTID fra databasen, aldri fra nettleseren.
@@ -301,6 +310,16 @@ final class Vipps
         string $returUrl,
         ?string $telefon = null
     ): array {
+        // Fanges her framfor aa la Vipps svare med noe som peker feil vei.
+        // Er beloepet null, skal det ikke innom Vipps i det hele tatt — det
+        // er gratis, og da hoerer det hjemme i en bekreftelse, ikke i en kasse.
+        if ($belopOre < self::MINSTE_BELOP_ORE) {
+            logg_feil('Betaling under Vipps sitt minstebeløp: ' . $belopOre . ' øre (' . $referanse . ')');
+            throw new RuntimeException($belopOre <= 0
+                ? 'Beløpet er null. Da skal det ikke betales med Vipps.'
+                : 'Vipps godtar ikke beløp under én krone.');
+        }
+
         $idempotens = self::uuid();
 
         $kropp = [

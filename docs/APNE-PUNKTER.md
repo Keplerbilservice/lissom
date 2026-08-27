@@ -175,15 +175,33 @@ Ligger igjen i databasen fra den forrige nettsiden. Kan fjernes i cPanel.
 
 ## Stopper på noe utenfor
 
-### 11. Vipps — **godkjent 27. august**
+### 11. Vipps — **i drift 27. august**
 
-Lissom melder at betalingsløsningen er godkjent. Det som sto igjen — ePayment
-403 på salgsenhet 1142801, og Recurring som ikke var godkjent — skal dermed
-være ute av veien.
+Godkjent, nøklene lagt inn, og kontrollert med «Test Vipps» mot produksjon:
+
+| | |
+|---|---|
+| Miljø | Produksjon, mot api.vipps.no |
+| Nøkler for betaling | Godtatt. Salgsenhet **1143163**, eget sett |
+| Trekk for medlemskap | Virker — Recurring er åpen |
+| Innlogging med Vipps | Eget sett, salgsenhet **1142801** |
+
+To salgsenheter, som antatt: betaling og innlogging hver for seg.
+
+**Prøvebetalingen feilet på første forsøk**, og det var min feil, ikke
+oppsettets. Den sto på 1 øre. Vipps godtar ikke beløp under 100 øre og svarer
+400 «Invalid amount» med en tekst om at beløp må være heltall uten desimaler
+— som er sant, men ikke det som er galt. Prøvebeløpet er nå én krone, og
+`Vipps::MINSTE_BELOP_ORE` stanser for små beløp før de sendes, med en
+melding som sier hva som faktisk er galt.
+
+Samme grense gjelder en ekte handel: dekker et gavekort alt bortsett fra
+under én krone, regnes resten som dekket. Vipps kan ikke ta beløpet, og å
+runde opp ville vært å kreve mer enn kunden skylder.
 
 **Kontrolleres med «Test Vipps»** nederst i sidemenyen i admin. Den gjør de
 ekte kallene og svarer i klartekst på fire ting: miljø, nøkler, betaling for
-kurs, trekk for medlemskap. Prøvebetalingen er på 1 øre og avbrytes med det
+kurs, trekk for medlemskap. Prøvebetalingen er på én krone og avbrytes med det
 samme — ingen penger flyttes.
 
 **To ting må settes i `app/secrets.php` på serveren:**

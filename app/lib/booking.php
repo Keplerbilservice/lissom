@@ -259,7 +259,11 @@ final class Booking
 
         // Dekker gavekortet hele prisen, er det ingenting aa betale. Aa sende
         // noen til Vipps for null kroner er en omvei til en feilmelding.
-        if ($aBetale <= 0) {
+        //
+        // Under én krone gjelder det samme: Vipps godtar ikke beloepet, og
+        // det finnes ingen vei videre. Da er resten dekket. Aa runde opp
+        // ville vaert aa kreve mer enn kunden skylder.
+        if ($aBetale < Vipps::MINSTE_BELOP_ORE) {
             self::markerBetalt($referanse);
             return ['redirectUrl' => '', 'referanse' => $referanse, 'bookingId' => $reservasjon['bookingId']];
         }

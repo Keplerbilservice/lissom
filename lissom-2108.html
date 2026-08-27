@@ -18012,7 +18012,8 @@ class Component extends DCLogic {
       // aa aapne en adresse med en noekkel i. Naa er det en rad: den gjor de
       // samme kallene mot Vipps og sier hva som virker, i klartekst.
       //
-      // Den oppretter en betaling paa 1 ore og avbryter den med det samme.
+      // Den oppretter en betaling paa én krone og avbryter den med det
+      // samme. Vipps godtar ikke mindre enn hundre ore.
       // Ingen penger flyttes.
       {
         navn: this.state.vippsSjekk === 'henter' ? '⚡  Sjekker Vipps …' : '⚡  Test Vipps',
@@ -25005,7 +25006,7 @@ class Component extends DCLogic {
           vsPaaNytt: () => { this.setState({ vippsSjekk: null }); this.testVipps(); },
           vsTittel: har && v.alt_ok ? 'Alt virker' : 'Noe mangler ennå',
           vsUnder: har && v.alt_ok
-            ? 'Kurs kan betales og medlemskap kan trekkes. Prøvebetalingen på 1 øre ble avbrutt med det samme — ingen penger er flyttet.'
+            ? 'Kurs kan betales og medlemskap kan trekkes. Prøvebetalingen på én krone ble avbrutt med det samme — ingen penger er flyttet.'
             : 'Linjene under sier hva som er på plass og hva som ikke er det.',
           vsLinjer: kort.map(l => ({
             hva: l.hva,

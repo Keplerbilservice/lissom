@@ -9,8 +9,12 @@
  *
  *   https://ny.lissom.no/api/vipps-test.php?nokkel=...
  *
- * Krever samme nokkel som helsesjekken. Oppretter en betaling paa 1 ore for aa
- * se om det gaar, og avbryter den umiddelbart — ingen penger flyttes.
+ * Krever samme nokkel som helsesjekken. Oppretter en betaling paa én krone for
+ * aa se om det gaar, og avbryter den umiddelbart — ingen penger flyttes.
+ *
+ * Én krone, ikke ett ore: Vipps godtar ikke beloep under 100 ore, og svarer
+ * da 400 med «Invalid amount» og en tekst om desimaler. Den teksten peker
+ * feil vei, og det kostet en runde aa finne ut av.
  */
 
 declare(strict_types=1);
@@ -20,7 +24,7 @@ require __DIR__ . '/_boot.php';
 Foresporsel::krevMetode('GET');
 
 // Noekkelen eller en innlogget admin — samme ordning som helsesjekken.
-// Denne oppretter en betaling paa 1 ore mot ekte Vipps, saa den skal ikke
+// Denne oppretter en betaling paa én krone mot ekte Vipps, saa den skal ikke
 // kunne utloses av en lenke noen andre lager: kallet maa komme fra en adresse
 // du selv har aapnet.
 $nokkel = (string) Config::hent('cron_nokkel', '');
@@ -92,7 +96,7 @@ if ($raa['status'] !== 200) {
                           'tolkning' => 'Ikke prøvd — nøklene ble avvist først.'];
 }
 
-// --- Steg 2: opprett en betaling paa 1 øre --------------------------------
+// --- Steg 2: opprett en betaling paa én krone -----------------------------
 //
 // Bare naar tokenet gikk gjennom. Uten et token sier de neste kallene
 // ingenting nytt — de ville feilet av samme grunn.
@@ -102,7 +106,7 @@ if ($raa['status'] === 200) {
     try {
         $betaling = Vipps::opprettBetaling(
             $referanse,
-            1,
+            Vipps::MINSTE_BELOP_ORE,
             'Teknisk test',
             Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse)
         );
@@ -121,7 +125,7 @@ if ($raa['status'] === 200) {
         $direkte = http_post_json(
             Config::vippsBase() . '/epayment/v1/payments',
             [
-                'amount'             => ['currency' => 'NOK', 'value' => 1],
+                'amount'             => ['currency' => 'NOK', 'value' => Vipps::MINSTE_BELOP_ORE],
                 'paymentMethod'      => ['type' => 'WALLET'],
                 'reference'          => Vipps::nyReferanse('TEST'),
                 'userFlow'           => 'WEB_REDIRECT',
@@ -151,7 +155,7 @@ if ($raa['status'] === 200) {
             $svar['tolkning'] = 'Tokenet godtas ikke for ePayment. Sjekk at '
                 . 'Ocp-Apim-Subscription-Key hører til samme salgsenhet som MSN.';
         } elseif ($direkte['status'] === 400) {
-            $svar['tolkning'] = 'Vipps avviste innholdet i forespoerselen. '
+            $svar['tolkning'] = 'Vipps avviste innholdet i forespørselen. '
                 . 'Feltet som klages på står i svaret over.';
         }
     }
@@ -219,7 +223,7 @@ $svar['kort'] = [
         'hva'  => 'Betaling for kurs',
         'ok'   => ($svar['betaling']['ok'] ?? false) === true,
         'sier' => ($svar['betaling']['ok'] ?? false)
-            ? 'Virker. En prøvebetaling på 1 øre ble opprettet og avbrutt igjen.'
+            ? 'Virker. En prøvebetaling på én krone ble opprettet og avbrutt igjen.'
             : 'Virker ikke. ' . (string) ($svar['tolkning'] ?? 'Se svaret fra Vipps under.'),
     ],
     [

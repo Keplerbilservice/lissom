@@ -61,9 +61,16 @@ et eget kort. Ingen funksjon fjernes.
 
 ---
 
-## 3. Ny kursdato
+## 3. Ny kursdato — **gjort 27. august**
 
-**Finnes.** `apneNyKursdato()` og `case 'nydato'` i `api/admin/kurs.php`.
+Kortet har nå sluttdato (et dreiekurs går over to dager), gjentakelse
+— Ingen, Ukentlig, Annenhver uke, Månedlig, med «antall ganger» — og pris og
+informasjon som gjelder bare den ene datoen. Ukedagen og datoen i måneden
+leses av datoen du valgte, så det samme ikke fylles ut to ganger.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** `apneNyKursdato()` og `case 'nydato'` i `api/admin/kurs.php`.
 Den tar kurs, start og slutt — og ikke noe mer.
 
 **Mangler.** Plasser på datoen kan settes etterpå (`case 'plasser'`), men
@@ -100,9 +107,16 @@ Ingen kurstekst endres automatisk.
 
 ---
 
-## 5. Flerdagerskurs
+## 5. Flerdagerskurs — **gjort 27. august**
 
-**Finnes, delvis.** En kursdato kan i dag spenne over flere dager:
+`okt_samlinger` er bygget slik den er beskrevet under. Hver samling har
+dato, klokkeslett, overskrift og tekst, og redigeres der datoen bor — under
+«Datoer som ligger ute». Deltakeren ser alle samlingene før hen betaler, og
+datovelgeren sier «2 samlinger» på den datoen.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes, delvis.** En kursdato kan i dag spenne over flere dager:
 `course_sessions.start_tid` onsdag og `slutt_tid` torsdag gir «onsdag 9. –
 torsdag 10. september». Det er **én sammenhengende blokk**, ikke tre
 samlinger.
@@ -131,9 +145,17 @@ plasstellingen ville talt samme person tre ganger.
 
 ---
 
-## 6. Allergener ved påmelding
+## 6. Allergener ved påmelding — **gjort 27. august**
 
-**Finnes.** Ingenting. `bookings` har `notat` (VARCHAR 255, brukes av
+Avhukingsboks og et felt som må fylles ut når den står. Egen kolonne
+`bookings.allergier` (migrasjon 057), merke på raden i admin, teksten først
+når deltakeren åpnes, og med på deltakerlista som tas med inn i verkstedet.
+Testet: ingen andre deltakere ser den, og ingen kundevendt endepunkt leser
+kolonnen.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** Ingenting. `bookings` har `notat` (VARCHAR 255, brukes av
 systemet selv til «Fra ventelista») og `internt_notat` (TEXT, skrevet av
 verkstedet, aldri synlig for deltakeren).
 
@@ -310,7 +332,13 @@ er en endring i `Varsel::sendEpost()`.
 
 ---
 
-## 12. Bilder i «Laget her på verkstedet»
+## 12. Bilder i «Laget her på verkstedet» — **gjort 27. august**
+
+Forsiden bruker nå samme kort som butikken, både i rutenettet og i
+mobilvisningen. Målt på 390, 820 og 1400 piksler: `cover`, kvadratiske
+ruter, lik korthøyde. Butikksiden er urørt.
+
+Nedenfor står kartleggingen som lå til grunn.
 
 **Funnet.** De to stedene bruker to helt ulike kort:
 
@@ -331,9 +359,17 @@ komponent — det er den som allerede virker.
 
 ---
 
-## 13. Åpningstider i footeren
+## 13. Åpningstider i footeren — **gjort 27. august**
 
-**Finnes.** Tre faste linjer, skrevet inn i koden:
+Regnes nå av kursene: går det kurs i dag, står tidsrommet fra det første
+begynner til det siste slutter, og under står det neste. Er det ingenting i
+dag, står det at verkstedet er åpent etter avtale. Overstyring per dato
+ligger i `apningstider` (migrasjon 060) og går foran alt som regnes ut.
+Avlyste datoer og kladder teller ikke. Og det står hva tidene gjelder.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** Tre faste linjer, skrevet inn i koden:
 
 ```
 Verkstedet      Etter avtale
@@ -428,12 +464,14 @@ Minst avhengig først, og slik at ingenting står halvferdig:
 
 | # | Punkt | Hvorfor her |
 |---|---|---|
-| 1 | 12 bildeskalering | Selvstendig, og synlig for alle som er innom forsiden |
-| 2 | 6 allergener | Selvstendig, og det som har størst konsekvens om det mangler |
-| 3 | 3 ny kursdato | Trenger to kolonner, ingen andre punkter |
-| 4 | 5 flerdagerskurs | Bygger på 3 |
-| 5 | 13 åpningstider | Leser kursdatoene fra 3 og 5 |
-| 6 | 7 kalender | Leser de samme datoene |
-| 7 | 15 referansekunder | Selvstendig, gjenbruker rotasjonen |
-| 8 | 1, 2, 16 Min side og admin | Flytting og forhåndsvisning, best når resten står |
-| 9 | 9, 10, 11 innhold | Størst, og henger sammen |
+| 1 | 12 bildeskalering | ✅ gjort 27. august |
+| 2 | 6 allergener | ✅ gjort 27. august |
+| 3 | 3 ny kursdato | ✅ gjort 27. august |
+| 4 | 5 flerdagerskurs | ✅ gjort 27. august |
+| 5 | 13 åpningstider | ✅ gjort 27. august |
+| 6 | 7 kalender | ✅ gjort 27. august (push kan ikke verifiseres herfra) |
+| 7 | 15 referansekunder | står igjen |
+| 8 | 1, 2, 16 Min side og admin | står igjen |
+| 9 | 9, 10, 11 innhold | står igjen |
+
+Punkt 8 og 14 ble gjort 26. august. Åtte av sytten er ferdige.

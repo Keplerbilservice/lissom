@@ -429,6 +429,20 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Hele to timer, eller ingenting.** Er det under to timer igjen av det åpne
   vinduet, settes det ikke opp et tidspunkt. En åpen periode 10–13 gir ett
   tidspunkt (10:00), ikke to der det andre bare varer én time.
+
+- **Flere kurs samme dag** blir til perioder, ikke én lang åpning. 3. september
+  i testdataene: Store fat 10–13, drop-in 16–19, Store fat 17–20, Date Night
+  18–21. Det er to perioder — 10–13 og 16–21 — og tidspunktene blir 10:00,
+  16:00 og 18:00. Mellom 13 og 16 står huset tomt, og der settes ingenting opp.
+  (20–21 faller også bort: under to timer.)
+
+- **Et flerdagerskurs åpner ikke natta.** Økta lagres som én rad fra første dag
+  til siste — dreiekurset går 17–20 to kvelder og står som «9. sept 17:00 →
+  10. sept 20:00». Hver dag ble klippet mot døgnet, så dag to sto som åpen fra
+  **00:00**: bunnteksten sa «00:00–20:00», og etter at Paint on Pots begynte å
+  følge åpningstidene ble natta bookbar. Nå går et flerdagerskurs de samme
+  klokkeslettene hver dag, som varigheten alt regnes («3 timer per gang ·
+  2 ganger»). En ekte nattevakt — 22:00 til 02:00 — klippes mot døgnet som før.
 - **Interne samlinger teller med** — bestemt av Lissom 27. august. En
   medlemskveld gjør både at bunnteksten sier åpent, og at Paint on Pots kan
   bookes den kvelden. Se punkt 13.

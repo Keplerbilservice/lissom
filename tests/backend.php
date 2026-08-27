@@ -205,6 +205,73 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         'flest paa en dag: ' . max($perDag ?: [0]));
     sjekk('ingen plass ligger i et hull mellom oektene', $iHull === 0, $iHull . ' i hull');
 
+    // Flere kurs samme dag: de som henger sammen blir én periode, og hullet
+    // mellom dem er stengt.
+    //
+    // 3. september i testdataene: Store fat 10-13, drop-in 16-19, Store fat
+    // 17-20, Date Night 18-21. Det er to perioder — 10-13 og 16-21 — og
+    // mellom 13 og 16 staar huset tomt. Ingen plass skal ligge der.
+    $medFlere = null;
+    foreach (Apent::dager()['kilder'] as $dato => $liste) {
+        if (count($liste) < 2) {
+            continue;
+        }
+        // Finn en dag der oektene IKKE henger sammen hele veien.
+        $sortert = $liste;
+        usort($sortert, static fn($a, $b) => strcmp($a['fra'], $b['fra']));
+        $slutt = $sortert[0]['til'];
+        foreach ($sortert as $o) {
+            if ($o['fra'] > $slutt) {
+                $medFlere = ['dato' => $dato, 'hullFra' => $slutt, 'hullTil' => $o['fra']];
+                break 2;
+            }
+            $slutt = max($slutt, $o['til']);
+        }
+    }
+    if ($medFlere !== null) {
+        $iHullet = [];
+        foreach (DB::alle('SELECT start_tid FROM course_sessions WHERE fra_apningstid = 1') as $r) {
+            $t = (new DateTimeImmutable((string) $r['start_tid'], $utc2))->setTimezone($oslo2);
+            if ($t->format('Y-m-d') === $medFlere['dato']
+                && $t->format('H:i') >= $medFlere['hullFra']
+                && $t->format('H:i') < $medFlere['hullTil']) {
+                $iHullet[] = $t->format('H:i');
+            }
+        }
+        sjekk('flere kurs samme dag: hullet mellom dem er stengt',
+            $iHullet === [],
+            $medFlere['dato'] . ' hull ' . $medFlere['hullFra'] . '-' . $medFlere['hullTil']
+            . ($iHullet ? ' — plasser ' . implode(', ', $iHullet) : ''));
+    }
+
+    // Et flerdagerskurs skal ikke gjore natta aapen.
+    //
+    // Oekta lagres som én rad fra forste dag til siste — dreiekurset gaar
+    // 17-20 to kvelder og staar som «9. sept 17:00 → 10. sept 20:00». Ble hver
+    // dag klippet mot dognet, sto dag to som aapen fra 00:00, og Paint on Pots
+    // ble bookbart klokka to om natta.
+    $flere = DB::en("SELECT cs.start_tid, cs.slutt_tid FROM course_sessions cs
+                       JOIN courses c ON c.id = cs.course_id
+                      WHERE cs.slutt_tid IS NOT NULL
+                        AND DATE(cs.start_tid) <> DATE(cs.slutt_tid)
+                        AND cs.fra_apningstid = 0
+                        AND cs.start_tid > UTC_TIMESTAMP()
+                        AND TIME(cs.slutt_tid) > TIME(cs.start_tid)
+                   ORDER BY cs.start_tid LIMIT 1");
+    if ($flere !== null) {
+        $dagTo = (new DateTimeImmutable((string) $flere['slutt_tid'], $utc2))
+            ->setTimezone($oslo2)->format('Y-m-d');
+        $radTo = null;
+        foreach (Apent::dager()['dager'] as $d) {
+            if ($d['dato'] === $dagTo) {
+                $radTo = $d;
+            }
+        }
+        sjekk('dag to av et flerdagerskurs aapner ikke ved midnatt',
+            $radTo !== null && $radTo['fra'] !== '00:00',
+            $dagTo . ': ' . ($radTo === null ? 'dagen mangler' : $radTo['fra'] . '-' . $radTo['til']));
+    }
+
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
     Apent::leggUtPaaApneTider();
 }

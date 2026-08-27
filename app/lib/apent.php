@@ -151,14 +151,30 @@ final class Apent
                 $antattSlutt = true;
             }
 
-            // Et kurs som gaar over to dager gjor begge dagene aapne. Vi gaar dag for
-            // dag fra start til slutt, og klipper mot dognet.
+            // Et kurs som gaar over flere dager gjor alle dagene aapne.
+            //
+            // Her ble hver dag klippet mot dognet: dag to sto som aapen fra
+            // 00:00. Et dreiekurs 17-20 over to dager gjorde dermed natta til
+            // dag to «aapen», og bunnteksten sa 00:00-20:00. Da Paint on Pots
+            // ble lagt ut paa aapningstidene, ble natta bookbar ogsaa.
+            //
+            // Et flerdagerskurs gaar de samme klokkeslettene hver dag — det er
+            // det samme kurset to kvelder, ikke ett som varer i 27 timer.
+            // Varigheten regnes alt slik («3 timer per gang · 2 ganger»).
+            //
+            // Slutter oekta FOER den begynte paa dogneet, er den ekte nattevakt
+            // — 22:00 til 02:00 — og da klipper vi mot dognet som for.
+            $overNatta = $stopp->format('H:i') <= $start->format('H:i');
             $dag = $start->setTime(0, 0);
             $sisteDag = $stopp->setTime(0, 0);
             while ($dag <= $sisteDag) {
                 $nokkel = $dag->format('Y-m-d');
-                $fra = $dag->format('Y-m-d') === $start->format('Y-m-d') ? $start->format('H:i') : '00:00';
-                $til = $dag->format('Y-m-d') === $stopp->format('Y-m-d') ? $stopp->format('H:i') : '23:59';
+                $fra = $overNatta
+                    ? ($dag->format('Y-m-d') === $start->format('Y-m-d') ? $start->format('H:i') : '00:00')
+                    : $start->format('H:i');
+                $til = $overNatta
+                    ? ($dag->format('Y-m-d') === $stopp->format('Y-m-d') ? $stopp->format('H:i') : '23:59')
+                    : $stopp->format('H:i');
                 if (!isset($avKurs[$nokkel])) {
                     $avKurs[$nokkel] = ['fra' => $fra, 'til' => $til];
                 } else {

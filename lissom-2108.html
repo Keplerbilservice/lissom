@@ -3393,6 +3393,40 @@ window.__resources = {
                 <p style="margin: var(--space-5) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Avbestiller du innen fristen får du hele beløpet tilbake på Vipps innen tre virkedager. Etter fristen kan du flytte plassen én gang, eller gi den videre.</p>
               </div>
               </sc-if>
+
+              <!-- Kursbevisene, samlet paa ett kort.
+                   Beviset laa bare som en liten knapp paa raden til
+                   paameldingen. Var kurset et halvt aar siden, matte man lete
+                   nedover i lista for aa finne det igjen. Her staar de
+                   samlet, nyeste forst, med den samme lenken. Knappen paa
+                   raden staar der fortsatt — den som nettopp har vaert paa
+                   kurset finner beviset der hen ser paa kurset sitt. -->
+              <div id="minside-kursbevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursbevis</div>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mineBevisAntall }}</span>
+                </div>
+                <h3 style="margin: 6px 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Mine kursbevis</h3>
+
+                <sc-if value="{{ ingenMineBevis }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Du har ingen kursbevis ennå. Beviset kommer av seg selv når kurset er holdt og betalt, og blir stående her.</p>
+                </sc-if>
+
+                <sc-if value="{{ harMineBevis }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                  <sc-for list="{{ mineBevis }}" as="kb" hint-placeholder-count="2">
+                    <div style="display: flex; align-items: center; gap: var(--space-5); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-5); flex-wrap: wrap;">
+                      <div style="flex: 1; min-width: 200px;">
+                        <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ kb.tittel }}</div>
+                        <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ kb.naar }}</div>
+                      </div>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ kb.apne }}" hint-size="auto,36px">Åpne beviset</x-import>
+                    </div>
+                  </sc-for>
+                </div>
+                <p style="margin: var(--space-5) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Beviset åpnes som et ark du kan skrive ut eller lagre. Står det feil navn eller feil kurs på det, si fra til verkstedet, så rettes det.</p>
+                </sc-if>
+              </div>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
@@ -20346,6 +20380,39 @@ class Component extends DCLogic {
           { navn: 'Etter fristen', verdi: 'Du kan gi plassen videre til noen andre, eller flytte til en senere dato én gang.' },
         ], p.kanAvbestille ? 'Avbestill og få pengene tilbake' : 'Meld meg av ventelisten', null, false, () => this.avbestillEkte(p)),
       })),
+      // ── Kursbevisene mine ──────────────────────────────────────────────
+      //
+      // Beviset laa bare som en knapp paa raden til paameldingen, og radene
+      // staar i datorekkefolge. Var kurset et halvt aar siden, matte man
+      // lete nedover i lista for aa finne det igjen. Kortet samler dem,
+      // nyeste forst, og aapner den samme lenken.
+      //
+      // Hvilke paameldinger som har bevis, avgjor serveren: kurset maa vaere
+      // holdt og betalt, drop-in gir ikke bevis, og et bevis verkstedet har
+      // trukket kommer ikke med. Her leses bare det som allerede staar i
+      // svaret, saa reglene staar ett sted.
+      ...(() => {
+        const ekte = (this.state.minePlasser || []).filter(p => p.kursbevis);
+        // Nyeste forst. Serveren sorterer stigende paa dato, saa det er
+        // enden av lista som er det siste kurset man var paa.
+        const rader = ekte.slice().reverse();
+        // Uten server finnes ingen paameldinger. Designverktoyet skal likevel
+        // vise hvordan kortet ser ut naar det er noe i det.
+        const vis = (rader.length || this.erPublisert()) ? rader : [
+          { tittel: 'Nybegynner dreiekurs', naar: 'Onsdag 19. august, 18:00' },
+          { tittel: 'Paint on Pots', naar: 'Søndag 23. august, 12:00' },
+        ];
+        return {
+          mineBevis: vis.map(p => ({
+            tittel: p.tittel,
+            naar: p.naar,
+            apne: () => { if (p.kursbevis) window.open(p.kursbevis, '_blank', 'noopener'); },
+          })),
+          harMineBevis: vis.length > 0,
+          ingenMineBevis: vis.length === 0,
+          mineBevisAntall: vis.length === 1 ? '1 bevis' : vis.length + ' bevis',
+        };
+      })(),
       foresporselTyper: ['Privat gruppe eller bedrift', 'Utdrikningslag', 'Barnebursdag', 'Kurs på et annet tidspunkt', 'Noe annet'],
       fsTypeValg: ['Privat gruppe eller bedrift', 'Utdrikningslag', 'Barnebursdag', 'Annet tidspunkt', 'Noe annet'].map(navn => ({
         navn, valgt: (this.state.fsType || 'Privat gruppe eller bedrift') === navn, velg: () => this.setState({ fsType: navn }),
@@ -23667,6 +23734,7 @@ class Component extends DCLogic {
           ]
           : [
             { navn: 'Kursene mine', id: 'minside-pameldinger' },
+            { navn: 'Kursbevisene mine', id: 'minside-kursbevis' },
             { navn: 'Beskjeder', id: 'minside-beskjeder' },
           ]
       ).map(s => ({ navn: s.navn, velg: s.ekstern || (() => {

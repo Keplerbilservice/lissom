@@ -16,9 +16,13 @@ Min side sier nå hvilken av de to sidene den er. Under hilsenen står et bånd:
 og for kursdeltakeren en lenke videre til medlemskapene, som ikke fantes noe
 sted før.
 
-Admin har fått de to forhåndsvisningene under «Kurs og medlemskap»: «Hva
-medlemmer ser» og «Hva kursdeltakere ser». De åpner **den ekte skjermen**
-med rollen satt for hånd, med et gult bånd øverst og «Tilbake til admin».
+Admin har fått de to forhåndsvisningene. De åpner **den ekte skjermen** med
+rollen satt for hånd, med et gult bånd øverst og «Tilbake til admin», som går
+tilbake dit du kom fra.
+
+Hvert kort står der gruppen hører hjemme: «Hva medlemmer ser» under Kurs og
+medlemskap, «Hva kursdeltakere ser» under Deltakere. Begge sto først under
+Kurs og medlemskap; det siste ble flyttet 27. august på bestilling.
 
 Skillet var skrevet ut fem steder med samme uttrykk. Det står nå ett sted,
 `medlemsvisning()`, som de fem leser. Stemplingsknappen lå utenfor sperren

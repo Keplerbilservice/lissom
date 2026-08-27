@@ -10450,7 +10450,7 @@ class Component extends DCLogic {
 
   // fhRolle nullstilles: en forhandsvisning skal ikke folge med videre til
   // neste skjerm. Den settes bare av de to kortene i admin.
-  go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s, fhRolle: '' }); window.scrollTo(0, 0); }; }
+  go(s) { return () => { clearTimeout(this._ventelisteTimer); this.setState({ side: s, fhRolle: '', fhFra: '' }); window.scrollTo(0, 0); }; }
 
   /**
    * Alle kurskort, ufiltrert.
@@ -17900,7 +17900,7 @@ class Component extends DCLogic {
 
   /** Aapner et punkt: skjerm pluss det som avgjor hvem det gjelder. */
   gaaAdmin(rute, forvalg) {
-    this.setState(Object.assign({ side: rute, fhRolle: '' }, forvalg || {}));
+    this.setState(Object.assign({ side: rute, fhRolle: '', fhFra: '' }, forvalg || {}));
     window.scrollTo(0, 0);
   }
 
@@ -20872,15 +20872,15 @@ class Component extends DCLogic {
                    null, 'adminvideokurs', {}, 'Se hva som mangler'),
               // Min side er todelt, og har vaert det lenge: medlemmer ser
               // timer, dorkode og det interne, kursdeltakere ser kursene
-              // sine. Den eneste maaten aa se hva de to faktisk faar, var
-              // aa logge inn som en av dem. Disse to aapner den ekte
-              // skjermen med rollen satt.
+              // sine. Den eneste maaten aa se hva de faktisk faar, var aa
+              // logge inn som en av dem. Kortet aapner den ekte skjermen
+              // med rollen satt.
+              //
+              // «Hva kursdeltakere ser» sto her ogsaa. Det hoerer til hos
+              // dem det gjelder, og staar naa under Deltakere.
               kort('Hva medlemmer ser',
                    'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
-                   null, 'minside', { fhRolle: 'medlem' }, 'Se siden'),
-              kort('Hva kursdeltakere ser',
-                   'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
-                   null, 'minside', { fhRolle: 'deltaker' }, 'Se siden'),
+                   null, 'minside', { fhRolle: 'medlem', fhFra: 'adminomrkurs' }, 'Se siden'),
             ],
           };
         }
@@ -20927,6 +20927,12 @@ class Component extends DCLogic {
                    'Det som er betalt for kurs og drop-in.',
                    ubetalte || null, 'adminokonomi', { okonomiFor: 'deltakere' },
                    ubetalte ? 'Se de ubetalte' : 'Se betalingene', true),
+              // Min side slik en kursdeltaker ser den. Kortet sto under Kurs
+              // og medlemskap; det hoerer til her, hos dem det gjelder.
+              // Aapner den ekte skjermen med rollen satt.
+              kort('Hva kursdeltakere ser',
+                   'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
+                   null, 'minside', { fhRolle: 'deltaker', fhFra: 'adminomrdeltakere' }, 'Se siden'),
               // «Nyttig info» sto her ogsaa. Det er medlemsstoff — dorkode,
               // ordensregler og verkstedinfo — og hoerer til Medlemmer.
               // Fjernet 24. august paa bestilling.
@@ -27696,7 +27702,7 @@ class Component extends DCLogic {
             : 'Kursene du er påmeldt, bildene fra dem og beskjedene fra verkstedet. Medlemssiden er en annen: den gir dørkode, verkstedtid og egen hylle.',
           rolleHarLenke: !medlem,
           rolleLenkeTekst: 'Se medlemskapene',
-          rolleVelg: () => { this.setState({ side: 'medlemskap', fhRolle: '' }); window.scrollTo(0, 0); },
+          rolleVelg: () => { this.setState({ side: 'medlemskap', fhRolle: '', fhFra: '' }); window.scrollTo(0, 0); },
         };
       })(),
 
@@ -27711,7 +27717,10 @@ class Component extends DCLogic {
       fhBandTekst: this.state.fhRolle === 'medlem'
         ? 'Slik ser Min side ut for et medlem. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.'
         : 'Slik ser Min side ut for en kursdeltaker uten medlemskap. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.',
-      fhTilbake: () => this.gaaAdmin('adminomrkurs', {}),
+      // Tilbake dit du kom fra. Kortene staar to steder — «Hva medlemmer ser»
+      // under Kurs og medlemskap, «Hva kursdeltakere ser» under Deltakere —
+      // og en fast vei tilbake ville sendt den ene feil.
+      fhTilbake: () => this.gaaAdmin(this.state.fhFra || 'adminomrkurs', {}),
       bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',
       bmTittel: this.state.soknadStatus === 'venter'
         ? 'Søknaden din er til behandling'
@@ -27751,7 +27760,7 @@ class Component extends DCLogic {
       goMedlemskap: this.go('medlemskap'),
       goButikk: this.go('butikk'),
       goMinside: () => {
-        this.setState({ side: this.state.innlogget ? 'minside' : 'login', fhRolle: '' });
+        this.setState({ side: this.state.innlogget ? 'minside' : 'login', fhRolle: '', fhFra: '' });
         window.scrollTo(0, 0);
       },
       liBruker: this.state.liBruker || '',

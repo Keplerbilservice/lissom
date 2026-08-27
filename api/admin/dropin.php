@@ -36,10 +36,77 @@ $hentTider = static fn(): array => array_map(static fn($t) => [
     'kapasitet' => $t['kapasitet'] === null ? null : (int) $t['kapasitet'],
 ], DB::alle('SELECT * FROM dropin_tider WHERE aktiv = 1 ORDER BY ukedag, fra'));
 
+/**
+ * Tidene som faktisk ligger ute, ikke reglene.
+ *
+ * Skjermen viste ukereglene — «torsdag 10–13» — og et tall paa hvor mange
+ * oekter som laa ute. Selve oektene var ikke til aa se noe sted, og de er
+ * det som gjelder: de lages av reglene den dagen du trykker «Legg ut
+ * tidene», og blir liggende. Endrer du regelen senere, ryddes bare de
+ * framtidige som ingen har booket — og oekter som er laget for haand ryddes
+ * aldri.
+ *
+ * Resultatet var at aapningstida paa nettsiden kunne si «til 19» av en oekt
+ * ingen kunne finne: skjermen sa noe annet enn basen.
+ */
+$hentOkter = static function (array $kurs, array $tider): array {
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $utc  = new DateTimeZone('UTC');
+    $idag = (new DateTimeImmutable('now', $oslo))->setTime(0, 0);
+
+    // Hvilke ukedag-og-klokkeslett som staar som regel naa. En oekt som ikke
+    // svarer til noen av dem, stemmer ikke med det skjermen viser.
+    $regler = [];
+    foreach ($tider as $t) {
+        $regler[$t['ukedag'] . ' ' . $t['fra'] . '-' . $t['til']] = true;
+    }
+
+    $rader = DB::alle(
+        "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid,
+                (SELECT COUNT(*) FROM bookings b
+                  WHERE b.course_session_id = cs.id
+                    AND b.status IN ('betalt','reservert')) AS pameldte
+           FROM course_sessions cs
+          WHERE cs.course_id = :c
+            AND cs.status = 'planlagt'
+            AND cs.start_tid >= :fra
+            AND cs.start_tid < :til
+       ORDER BY cs.start_tid",
+        [
+            'c'   => $kurs['id'],
+            'fra' => $idag->setTimezone($utc)->format('Y-m-d H:i:s'),
+            'til' => $idag->modify('+8 weeks')->setTimezone($utc)->format('Y-m-d H:i:s'),
+        ]
+    );
+
+    return array_map(static function (array $r) use ($oslo, $utc, $regler): array {
+        $start = (new DateTimeImmutable((string) $r['start_tid'], $utc))->setTimezone($oslo);
+        $stopp = $r['slutt_tid'] !== null
+            ? (new DateTimeImmutable((string) $r['slutt_tid'], $utc))->setTimezone($oslo)
+            : null;
+        $nokkel = $start->format('N') . ' ' . $start->format('H:i')
+                . '-' . ($stopp !== null ? $stopp->format('H:i') : '');
+
+        return [
+            'oktId'    => (int) $r['id'],
+            'naar'     => Booking::norskDato((string) $r['start_tid']),
+            'fra'      => $start->format('H:i'),
+            'til'      => $stopp !== null ? $stopp->format('H:i') : '',
+            'idag'     => $start->format('Y-m-d') === (new DateTimeImmutable('now', $oslo))->format('Y-m-d'),
+            'pameldte' => (int) $r['pameldte'],
+            'fraRegel' => $r['fra_dropin_tid'] !== null,
+            // Svarer oekta til en av ukereglene som staar oppe naa?
+            'stemmer'  => isset($regler[$nokkel]),
+            'utenSlutt' => $stopp === null,
+        ];
+    }, $rader);
+};
+
 // ---------------------------------------------------------------- lesing
 if (Foresporsel::metode() === 'GET') {
+    $tider = $hentTider();
     Svar::json([
-        'tider' => $hentTider(),
+        'tider' => $tider,
         'regel' => (string) (DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => DROPIN_REGEL]) ?? ''),
         'pris'      => (int) $kurs['pris_ore'] / 100,
         'kapasitet' => (int) $kurs['kapasitet'],
@@ -48,6 +115,9 @@ if (Foresporsel::metode() === 'GET') {
               WHERE course_id = :c AND status = 'planlagt' AND start_tid > UTC_TIMESTAMP()",
             ['c' => $kurs['id']]
         ),
+        // Selve tidene som ligger ute. Det er disse som styrer aapningstida
+        // paa nettsiden — ikke reglene over.
+        'okterListe' => $hentOkter($kurs, $tider),
     ]);
 }
 
@@ -191,6 +261,51 @@ switch (Foresporsel::tekst('handling')) {
         Svar::ok([
             'beskjed' => $laget . ' drop-in-tider er lagt ut for de neste ' . $uker . ' ukene.'
                 . ($fjernet > 0 ? ' ' . $fjernet . ' gamle uten påmeldte ble ryddet bort.' : ''),
+        ]);
+
+    // ------------------------------------------------------- slett én okt
+    //
+    // Tidene som ligger ute er det som gjelder. Stemmer én av dem ikke med
+    // reglene lenger — den ble laget for haand, eller reglene er endret
+    // etterpaa — maa den kunne tas bort her, der man ser den.
+    case 'slettOkt':
+        $oktId = Foresporsel::heltall('oktId');
+        $okt = DB::en(
+            'SELECT id, start_tid FROM course_sessions WHERE id = :i AND course_id = :c',
+            ['i' => $oktId, 'c' => $kurs['id']]
+        );
+        if ($okt === null) {
+            Svar::feil('Fant ikke tiden.', 404);
+        }
+        $pameldte = (int) DB::verdi(
+            "SELECT COUNT(*) FROM bookings
+              WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+            ['o' => $oktId]
+        );
+        $naar = Booking::norskDato((string) $okt['start_tid']);
+
+        if ($pameldte > 0) {
+            DB::oppdater('course_sessions', ['status' => 'avlyst'], ['id' => $oktId]);
+            revider('dropin_okt_avlyst', 'course_session', $oktId, ['pameldte' => $pameldte]);
+            Svar::ok([
+                'beskjed' => $pameldte . ($pameldte === 1 ? ' har' : ' har') . ' meldt seg paa '
+                    . $naar . ', saa tiden er avlyst og tatt av nettsiden i stedet for slettet. '
+                    . 'Husk aa gi beskjed og refundere.',
+                'okterListe' => $hentOkter($kurs, $hentTider()),
+            ]);
+        }
+
+        // Avbestilte bookinger peker fortsatt hit, uten fremmednokkel som
+        // sier fra. Vi loesner dem foerst, saa bilaget beholder kurset sitt.
+        DB::kjor(
+            'UPDATE bookings SET course_session_id = NULL WHERE course_session_id = :o',
+            ['o' => $oktId]
+        );
+        DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $oktId]);
+        revider('dropin_okt_slettet', 'course_session', $oktId, ['naar' => $naar]);
+        Svar::ok([
+            'beskjed' => $naar . ' er tatt bort.',
+            'okterListe' => $hentOkter($kurs, $hentTider()),
         ]);
 
     default:

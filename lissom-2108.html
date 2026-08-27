@@ -7917,6 +7917,40 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" full-width="{{ sant }}" on-click="{{ lagUtDropin }}" hint-size="100%,40px">Legg ut tider for de neste 8 ukene</x-import>
               <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ dropinOkterTekst }}</p>
             </div>
+
+            <!-- Tidene som faktisk ligger ute.
+                 Skjermen over viser ukereglene. Oektene lages av dem den
+                 dagen du trykker «Legg ut tidene», og blir liggende: endrer
+                 du regelen etterpaa, ryddes bare de framtidige som ingen har
+                 booket, og en oekt lagt inn for haand ryddes aldri.
+
+                 Da kunne aapningstida paa nettsiden si «til 19» av en oekt
+                 som ikke sto noe sted — skjermen sa én ting, basen en annen.
+                 Her staar oektene, og de som ikke svarer til reglene over er
+                 merket. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Tider som ligger ute</div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ dOkterAntall }}</span>
+              </div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ dOkterHjelp }}</p>
+
+              <sc-if value="{{ dOkterTomt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted);">Ingen drop-in-tider ligger ute de neste åtte ukene.</p>
+              </sc-if>
+
+              <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <sc-for list="{{ dOkter }}" as="o" hint-placeholder-count="4">
+                  <div style="{{ o.radStil }}">
+                    <div style="min-width: 0; flex: 1 1 auto;">
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ o.naar }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ o.under }}</div>
+                    </div>
+                    <button type="button" onClick="{{ o.slett }}" title="Ta bort denne tiden" style="appearance: none; border: 1px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 12px; font: var(--type-body-sm); color: var(--terracotta-600); white-space: nowrap;">Ta bort</button>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Regler</div>
               <textarea rows="6" value="{{ regelTekst }}" onChange="{{ settRegelTekst }}" style="{{ regelFeltStil }}"></textarea>
@@ -16133,7 +16167,11 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._dropinLagrer = false;
         this.setState({
-          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          // «Lagret» stemmer for tidene og reglene, ikke for en tid som tas
+          // bort. Kvitteringen skal si hva som faktisk skjedde.
+          kvittering: ok
+            ? (kropp.handling === 'slettOkt' ? 'Tatt bort' : 'Lagret')
+            : (kropp.handling === 'slettOkt' ? 'Gikk ikke' : 'Ble ikke lagret'),
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
         });
         if (ok) {
@@ -26464,6 +26502,51 @@ class Component extends DCLogic {
             ? this.state.dropinOppsett.okter + ' drop-in-tider ligger ute framover.'
             : 'Ingen drop-in-tider ligger ute. Legg dem ut for at folk skal kunne booke.')
         : 'Dager uten tider er stengt for drop-in.',
+      // ── Tidene som faktisk ligger ute ─────────────────────────────────
+      //
+      // Reglene over sier hva som skal gjelde. Oektene er hva som gjelder.
+      // De to kan sprike, og gjorde det: en oekt fra en tidligere runde ble
+      // liggende, og aapningstida paa nettsiden ble regnet av den.
+      ...(() => {
+        const liste = ((this.state.dropinOppsett || {}).okterListe) || [];
+        const uten = liste.filter(o => !o.stemmer).length;
+        return {
+          dOkter: liste.map(o => ({
+            naar: o.naar + (o.til ? '–' + o.til : ''),
+            under: [
+              o.idag ? 'I dag' : '',
+              o.stemmer ? 'Følger åpningstidene' : 'Stemmer ikke med åpningstidene over',
+              o.utenSlutt ? 'Uten sluttid — teller som tre timer' : '',
+              o.pameldte ? (o.pameldte === 1 ? 'Én er påmeldt' : o.pameldte + ' er påmeldt') : '',
+            ].filter(Boolean).join(' · '),
+            radStil: {
+              display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+              flexWrap: 'wrap',
+              padding: 'var(--space-3) var(--space-4)',
+              borderRadius: 'var(--radius-md)',
+              // De som ikke stemmer er nettopp dem man leter etter.
+              border: o.stemmer ? '1px solid var(--border-subtle)' : '2px solid var(--terracotta-500)',
+              background: o.idag ? 'var(--clay-100)' : 'transparent',
+            },
+            slett: () => {
+              if (!window.confirm('Ta bort ' + o.naar + '?\n\n'
+                  + (o.pameldte
+                      ? 'Noen har meldt seg på. Tiden blir avlyst og tatt av nettsiden i stedet '
+                        + 'for slettet — da må du gi beskjed og refundere.'
+                      : 'Tiden forsvinner fra nettsiden og fra åpningstiden i bunnteksten.'))) return;
+              this.dropinKall({ handling: 'slettOkt', oktId: o.oktId });
+            },
+          })),
+          dOkterTomt: liste.length === 0,
+          dOkterAntall: liste.length === 1 ? '1 tid' : liste.length + ' tider',
+          dOkterHjelp: uten > 0
+            ? (uten === 1 ? 'Én av dem stemmer ikke med åpningstidene over — den er rammet inn. '
+                          : uten + ' av dem stemmer ikke med åpningstidene over — de er rammet inn. ')
+              + 'Det er disse som kan gi et klokkeslett i bunnteksten du ikke kjenner igjen.'
+            : 'Det er disse som styrer åpningstiden på nettsiden — ikke reglene over. '
+              + 'De lages når du trykker «Legg ut tider».',
+        };
+      })(),
       dropinTider: this.tiderNaa().map(t => ({
         id: t.id,
         dag: t.dag,

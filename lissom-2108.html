@@ -1273,90 +1273,55 @@ window.__resources = {
         </div>
       </section>
 
-      <!-- Events og medlemskap deler denne plassen og bytter paa. Hoyden er
-           laast paa bildet, saa siden under ikke hopper naar teksten skifter
-           lengde. -->
+      <!-- Events, medlemskap og kundene vi har laget for deler denne plassen
+           og bytter paa. Hoyden er laast paa bildet, saa siden under ikke
+           hopper naar teksten skifter lengde.
+
+           Referansene sto i en egen seksjon rett under, med sin egen
+           rotasjon og sine egne prikker — det samme oppsettet to ganger paa
+           rad. Naa er det ett felt.
+
+           De to faste har knapper; kundene har en logo og en lenke til seg
+           selv. Feltet tegner det som finnes. -->
       <section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div class="lx-split" style="{{ rotSplitStil }}">
+        <div class="lx-split" onMouseEnter="{{ rotPause }}" onMouseLeave="{{ rotFortsett }}" onTouchStart="{{ rotPause }}" style="{{ rotSplitStil }}">
           <img data-src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">
           <div>
+            <sc-if value="{{ rotHarLogo }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ rotLogoStil }}" role="img" aria-label="{{ rotLogoAlt }}"></div>
+            </sc-if>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ rotStikktittel }}</div>
             <h2 style="margin: 0 0 var(--space-5);">{{ rotTittel }}</h2>
-            <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ rotTekst }}</p>
-            <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" icon-after="arrow-right" on-click="{{ rotKnappA }}" hint-size="auto,48px">{{ rotKnappANavn }}</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ rotKnappB }}" hint-size="auto,48px">{{ rotKnappBNavn }}</x-import>
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: var(--space-8);">
-              <sc-for list="{{ rotPrikker }}" as="d" hint-placeholder-count="2">
-                <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
-              </sc-for>
-            </div>
+            <sc-if value="{{ rotHarUndertekst }}" hint-placeholder-val="{{ false }}">
+              <div style="margin: calc(var(--space-5) * -1) 0 var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ rotUndertekst }}</div>
+            </sc-if>
+            <sc-if value="{{ rotHarTekst }}" hint-placeholder-val="{{ true }}">
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ rotTekst }}</p>
+            </sc-if>
+            <sc-if value="{{ rotHarKnapper }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-6);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" icon-after="arrow-right" on-click="{{ rotKnappA }}" hint-size="auto,48px">{{ rotKnappANavn }}</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ rotKnappB }}" hint-size="auto,48px">{{ rotKnappBNavn }}</x-import>
+              </div>
+            </sc-if>
+            <sc-if value="{{ rotHarLenke }}" hint-placeholder-val="{{ false }}">
+              <a href="{{ rotLenke }}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ rotLenkeTekst }}</a>
+            </sc-if>
+            <sc-if value="{{ rotFlere }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 10px; margin-top: var(--space-8);">
+                <sc-for list="{{ rotPrikker }}" as="d" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
+                </sc-for>
+              </div>
+            </sc-if>
           </div>
         </div>
       </section>
 
-      <!-- ── Referansekunder ──────────────────────────────────────────
-           Kundene som har bestilt keramikk av oss, ett kort om gangen.
-
-           Samme rotasjon som events og medlemskap over: toneStil og
-           tonePrikker, med samme toning og samme prikker. Ingen ny
-           karusellkomponent — den som finnes gjor jobben.
-
-           Staar bare naar det faktisk finnes noen som er slaatt paa og har
-           sagt ja. En tom seksjon med en overskrift er verre enn ingen
-           seksjon.
-
-           Musepekeren over kortet, eller en finger paa det, stopper
-           skiftet — og har noen slaatt av bevegelse i systeminnstillingene,
-           tones det ikke i det hele tatt. Det siste ligger i tonBytt(). -->
-      <sc-if value="{{ refVis }}" hint-placeholder-val="{{ false }}">
-        <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-          <div style="max-width: var(--width-content); margin: 0 auto;">
-            <div style="margin-bottom: var(--space-8);">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ refKicker }}</div>
-              <h2 style="margin: 0;">{{ refTittel }}</h2>
-            </div>
-
-            <!-- Samme oppsett som events og medlemskap over: bildet til
-                 venstre i full hoyde, teksten til hoyre, prikkene under.
-                 Kortramma som sto her gjorde feltet til noe annet enn resten
-                 av forsiden. -->
-            <div class="lx-split" onMouseEnter="{{ refPause }}" onMouseLeave="{{ refFortsett }}" onTouchStart="{{ refPause }}" style="{{ refSplitStil }}">
-              <img data-src="{{ refBilde }}" alt="{{ refBildeAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" loading="lazy" decoding="async">
-              <div>
-                <!-- Logoen til kunden. Bildet sier hva som ble laget, logoen
-                     hvem det ble laget for. Staar paa hvitt: en logo er som
-                     regel laget for hvit bakgrunn. -->
-                <sc-if value="{{ refHarLogo }}" hint-placeholder-val="{{ false }}">
-                  <div style="{{ refLogoStil }}" role="img" aria-label="{{ refLogoAlt }}"></div>
-                </sc-if>
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ refNavn }}</div>
-                <h2 style="margin: 0 0 var(--space-5);">{{ refOverskrift }}</h2>
-                <sc-if value="{{ refHarSitat }}" hint-placeholder-val="{{ true }}">
-                  <p style="margin: 0 0 var(--space-4); border-left: 3px solid var(--lissom-yellow); padding-left: var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1.45; color: var(--text-heading); text-wrap: pretty;">{{ refSitat }}</p>
-                  <sc-if value="{{ refHarSitatAv }}" hint-placeholder-val="{{ false }}">
-                    <div style="margin: 0 0 var(--space-4); padding-left: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ refSitatAv }}</div>
-                  </sc-if>
-                </sc-if>
-                <sc-if value="{{ refHarTekst }}" hint-placeholder-val="{{ true }}">
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-lg); line-height: 1.55; color: var(--text-body); max-width: 50ch; text-wrap: pretty;">{{ refTekst }}</p>
-                </sc-if>
-                <sc-if value="{{ refHarLenke }}" hint-placeholder-val="{{ false }}">
-                  <a href="{{ refLenke }}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: var(--space-2); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ refLenkeTekst }}</a>
-                </sc-if>
-                <sc-if value="{{ refFlere }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; gap: 10px; margin-top: var(--space-8);">
-                    <sc-for list="{{ refPrikker }}" as="d" hint-placeholder-count="3">
-                      <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
-                    </sc-for>
-                  </div>
-                </sc-if>
-              </div>
-            </div>
-          </div>
-        </section>
-      </sc-if>
+      <!-- Referansekundene sto her, i en egen seksjon med sin egen
+           rotasjon og sine egne prikker — det samme oppsettet to ganger paa
+           rad. De rullerer naa sammen med events og medlemskap i feltet
+           over, slik bestillingen ber om. -->
 
       <!-- Paint on Pots-seksjonen «Mal din egen keramikk» er tatt bort fra
            forsiden etter onske fra eieren. Siden /paint-on-pots og lenken fra
@@ -6507,7 +6472,7 @@ window.__resources = {
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-5);">
                 <div>
                   <label style="{{ refEtikett }}">Bildet av det dere laget</label>
-                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Koppene, fatet, tallerkenene — det kunden bestilte. Dette er det store bildet på forsiden.</p>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Koppene, fatet, tallerkenene — det kunden bestilte. Dette er det store bildet på forsiden, og kunden står ikke ute før du har valgt ett.</p>
                   <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                     <div style="{{ refFBildeStil }}"></div>
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
@@ -6520,7 +6485,7 @@ window.__resources = {
                 </div>
                 <div>
                   <label style="{{ refEtikett }}">Logoen til kunden</label>
-                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Vises i hjørnet av bildet, i hvitt felt. Valgfri — uten logo står navnet i tekst, som før.</p>
+                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Står øverst i kortet, over navnet, på hvitt felt. Valgfri — uten logo står navnet i tekst, som før.</p>
                   <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                     <div style="{{ refRedLogoStil }}"></div>
                     <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
@@ -6538,6 +6503,9 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Vis dette kortet på forsiden" checked="{{ refFAktiv }}" on-change="{{ toggleRefAktiv }}" hint-size="100%,24px"></x-import>
                 <sc-if value="{{ refManglerSamtykke }}" hint-placeholder-val="{{ false }}">
                   <p style="margin: 0; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600);">Kortet vises ikke ute før kunden har sagt ja.</p>
+                </sc-if>
+                <sc-if value="{{ refManglerBilde }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 0; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600);">Kortet vises ikke ute før du har valgt et bilde.</p>
                 </sc-if>
               </div>
 
@@ -12937,8 +12905,34 @@ class Component extends DCLogic {
   // Teksten om medlemskap er den samme som staar paa medlemskapssiden — ett
   // sted aa endre, og ingen fare for at forsiden lover noe annet enn siden
   // den lenker til.
+  /**
+   * Feltet paa forsiden som bytter paa: events, medlemskap og kundene vi har
+   * laget for.
+   *
+   * Referansene sto i en egen seksjon under, med sin egen rotasjon og sine
+   * egne prikker — to felter som gjorde det samme rett under hverandre.
+   * Naa er det ett felt og én rekke prikker: forsiden er kortere, og den som
+   * ruller nedover moter ikke det samme oppsettet to ganger.
+   *
+   * Referansene kommer fra basen og staar bare naar bryteren er paa. Er det
+   * ingen, staar events og medlemskap alene, som for.
+   */
+  /**
+   * Staar kunden ute paa forsiden?
+   *
+   * «ute» fra serveren sier at hun har slaatt den paa og at kunden har sagt
+   * ja. Bildet er det tredje kravet: kortet deler plass med events og
+   * medlemskap, og der er venstre halvdel et bilde. Uten et bilde blir det
+   * en tom rute ved siden av teksten, saa kunden staar over til hun har
+   * valgt ett. Admin-lista sier «Mangler bilde», slik at det ikke blir en
+   * gaate hvorfor kunden ikke dukker opp.
+   */
+  staarUte(k) {
+    return !!(k && k.ute && k.bilde);
+  }
+
   rotasjonene() {
-    return [
+    const faste = [
       {
         merke: 'Events',
         stikktittel: 'Events',
@@ -12960,6 +12954,28 @@ class Component extends DCLogic {
         knappB: 'Book drop-in',
       },
     ];
+
+    if (!this.bryterPaa('referanser')) {
+      return faste;
+    }
+
+    // Kundene har ingen to knapper — de har en lenke til seg selv, og en
+    // logo. Feltet under tegner det som finnes og hopper over resten.
+    const kunder = (this.state.referanser || []).filter(k => k.navn && k.bilde).map(k => ({
+      merke: k.navn,
+      stikktittel: k.navn,
+      // Sitatet er det sterkeste naar det finnes. Ellers sier vi hva det er.
+      tittel: k.sitat ? '«' + k.sitat + '»' : 'Laget for ' + k.navn,
+      tekst: k.tekst || '',
+      bilde: k.bilde,
+      alt: 'Keramikk laget for ' + k.navn,
+      logo: k.logo || '',
+      lenke: k.lenke || '',
+      lenkeTekst: 'Se ' + k.navn + ' →',
+      undertekst: k.sitatAv || '',
+    }));
+
+    return faste.concat(kunder);
   }
 
   // Bytter til neste, eller til en bestemt. Teksten tones ut for den byttes,
@@ -15535,23 +15551,20 @@ class Component extends DCLogic {
     this._karusell = setInterval(() => {
       if (this.state.side === 'booking') this.setState(s => ({ karTikk: (s.karTikk || 0) + 1 }));
     }, 1000);
-    // Events og medlemskap bytter paa forsiden. Har noen trykket paa en av
-    // prikkene, slutter den aa bytte av seg selv — da har de valgt.
+    // Events, medlemskap og referansekundene bytter paa forsiden. Har noen
+    // trykket paa en av prikkene, slutter den aa bytte av seg selv — da har
+    // de valgt. Ligger musa paa feltet, staar det stille saa lenge.
     const kanBytte = () => this.state.side === 'forside' && !document.hidden && !this.roligBevegelse();
 
     this._rotasjon = setInterval(() => {
-      if (kanBytte() && !this._pauserot) this.tonBytt('rot', this.rotasjonene().length);
+      if (kanBytte() && !this._pauserot && !this._svevrot) this.tonBytt('rot', this.rotasjonene().length);
     }, Component.ROT_OPPHOLD);
+
+    // Referansekundene hadde sin egen klokke her. De ligger naa i den samme
+    // rotasjonen som events og medlemskap, og teller med i lengden over.
 
     // Produktene i butikkfeltet bytter bare paa mobil, og raskere — paa
     // desktop staar alle fire ved siden av hverandre.
-    // Referansekundene bytter i samme takt som events og medlemskap.
-    this._rotasjonRef = setInterval(() => {
-      if (kanBytte() && !this._pauseref) {
-        this.tonBytt('ref', (this.state.referanser || []).length);
-      }
-    }, Component.ROT_OPPHOLD);
-
     this._rotasjonBut = setInterval(() => {
       if (kanBytte() && !this._pausebut && this.erSmal()) {
         this.tonBytt('but', this.forsideProdukter().length);
@@ -15669,7 +15682,6 @@ class Component extends DCLogic {
     clearInterval(this._karusell);
     clearInterval(this._rotasjon);
     clearInterval(this._rotasjonBut);
-    clearInterval(this._rotasjonRef);
     clearTimeout(this._timerrot);
     clearTimeout(this._timerbut);
     clearInterval(this._kurvPuls);
@@ -22116,7 +22128,7 @@ class Component extends DCLogic {
         // Referansekundene som faktisk staar ute: baade slaatt paa og med
         // samtykke. Tallet paa kortet skal si hva som vises, ikke hvor mange
         // rader som finnes.
-        const refAntall = (this.state.refAdmin || []).filter(r => r.ute).length;
+        const refAntall = (this.state.refAdmin || []).filter(r => this.staarUte(r)).length;
 
         return {
           ovDraHjelp: this.state.ovRekkefolgeLagret
@@ -26276,16 +26288,17 @@ class Component extends DCLogic {
 
         return {
           refAdminTall: liste.length === 0 ? ''
-            : liste.filter(k => k.ute).length + ' av ' + liste.length + ' står på forsiden',
+            : liste.filter(k => this.staarUte(k)).length + ' av ' + liste.length + ' står på forsiden',
           refIngen: this.erPublisert() && liste.length === 0,
           refAdminListe: liste.map(k => ({
             navn: k.navn,
             under: [k.sitat ? '«' + k.sitat.slice(0, 40) + (k.sitat.length > 40 ? '…' : '') + '»' : '',
                     k.tekst ? k.tekst.slice(0, 50) + (k.tekst.length > 50 ? '…' : '') : '']
                    .filter(Boolean).join(' · ') || 'Ingen tekst',
-            merke: k.ute ? 'På forsiden' : (!k.samtykke ? 'Mangler samtykke' : 'Skjult'),
-            merkeFarge: k.ute ? 'var(--sage-600, #4C6B4F)'
-                      : (!k.samtykke ? 'var(--terracotta-600)' : 'var(--text-muted)'),
+            merke: this.staarUte(k) ? 'På forsiden'
+                 : (!k.samtykke ? 'Mangler samtykke' : (k.ute ? 'Mangler bilde' : 'Skjult')),
+            merkeFarge: this.staarUte(k) ? 'var(--sage-600, #4C6B4F)'
+                      : (!k.samtykke || k.ute ? 'var(--terracotta-600)' : 'var(--text-muted)'),
             miniStil: {
               width: 46, height: 46, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
               backgroundColor: 'var(--clay-200)',
@@ -26323,6 +26336,8 @@ class Component extends DCLogic {
           refFAktiv: !!(r && r.aktiv),
           toggleRefAktiv: () => this.endreReferanse({ aktiv: !(r && r.aktiv) }),
           refManglerSamtykke: !!(r && r.aktiv && !r.samtykke),
+          // Bildet er det tredje kravet — se staarUte().
+          refManglerBilde: !!(r && r.aktiv && r.samtykke && !r.bilde),
           refHarFBilde: !!(r && r.bilde),
           refBildeKnapp: (r && r.bilde) ? 'Bytt bilde' : 'Velg bilde',
           refFBildeStil: {
@@ -29159,21 +29174,43 @@ class Component extends DCLogic {
         const alle = this.rotasjonene();
         const nr = ((this.state.rotNr || 0) % alle.length + alle.length) % alle.length;
         const r = alle[nr];
+        // Knappene hoerer til de to faste. En referansekunde har ingen —
+        // den har en lenke til seg selv.
         const handling = [
           [() => this.goNaa('kurs', 'Events'), () => this.apneForesporsel()],
           [() => this.goNaa('medlemskap'), () => this.goDropinNaa()],
-        ][nr];
+        ][nr] || [() => {}, () => {}];
 
         return {
           rotStikktittel: r.stikktittel,
           rotTittel: r.tittel,
           rotTekst: r.tekst,
+          rotHarTekst: !!r.tekst,
           rotBilde: r.bilde,
           rotAlt: r.alt,
-          rotKnappANavn: r.knappA,
-          rotKnappBNavn: r.knappB,
+          rotKnappANavn: r.knappA || '',
+          rotKnappBNavn: r.knappB || '',
           rotKnappA: handling[0],
           rotKnappB: handling[1],
+          rotHarKnapper: !!r.knappA,
+          // Kundene: logoen over navnet, lenken under teksten, og hvem
+          // sitatet er fra naar det staar et.
+          rotHarLogo: !!r.logo,
+          rotLogoStil: {
+            width: 132, height: 60, marginBottom: 'var(--space-4)',
+            borderRadius: 'var(--radius-md)',
+            background: '#fff', border: '1px solid var(--border-subtle)',
+            backgroundImage: "url('" + (r.logo || '') + "')",
+            backgroundSize: '76% auto',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+          },
+          rotLogoAlt: 'Logoen til ' + r.merke,
+          rotHarUndertekst: !!r.undertekst,
+          rotUndertekst: r.undertekst || '',
+          rotHarLenke: !!r.lenke,
+          rotLenke: r.lenke || '',
+          rotLenkeTekst: r.lenkeTekst || '',
           // Rutenettet ligger her, ikke i malen, fordi opasiteten maa vaere
           // en del av samme style-verdi.
           rotSplitStil: this.toneStil('rot', {
@@ -29181,81 +29218,22 @@ class Component extends DCLogic {
             gridTemplateColumns: '0.75fr 1.25fr', gap: 'var(--space-16)', alignItems: 'center',
           }),
           rotPrikker: this.tonePrikker('rot', alle.map(x => x.merke)),
-        };
-      })(),
-
-      // ── Referansekunder ──────────────────────────────────────────────
-      //
-      // Samme rotasjon som over: toneStil og tonePrikker, med samme toning.
-      // Ingen ny karusell — den som finnes gjor jobben.
-      ...(() => {
-        const kunder = (this.state.referanser || []).filter(k => k.navn);
-        // Bryteren i admin gaar foran. Uten den matte hver enkelt kunde slaas
-        // av for aa faa bort hele feltet.
-        if (!kunder.length || !this.bryterPaa('referanser')) {
-          return { refVis: false };
-        }
-        const nr = ((this.state.refNr || 0) % kunder.length + kunder.length) % kunder.length;
-        const k = kunder[nr];
-
-        return {
-          refVis: true,
-          refKicker: this.innh('Forside/4/Kicker') || 'Bestilt hos oss',
-          refTittel: this.innh('Forside/4/Overskrift') || 'Noen av dem vi har laget for',
-          refNavn: k.navn,
-          refTekst: k.tekst,
-          refHarTekst: !!k.tekst,
-          refSitat: k.sitat ? '«' + k.sitat + '»' : '',
-          refHarSitat: !!k.sitat,
-          refSitatAv: k.sitatAv,
-          refHarSitatAv: !!k.sitatAv,
-          refLenke: k.lenke,
-          refHarLenke: !!k.lenke,
-          refLenkeTekst: 'Se ' + k.navn + ' →',
-          // Toningen ligger paa hele kortet, saa bilde og tekst bytter samtidig.
-          // Samme rutenett som events og medlemskap over — «lx-split» og
-          // toningen fra toneStil. Kortramma som sto her gjorde feltet til
-          // noe annet enn resten av forsiden.
-          refSplitStil: this.toneStil('ref', {
-            maxWidth: 'var(--width-content)', margin: '0 auto',
-            display: 'grid', gridTemplateColumns: '1fr 1fr',
-            gap: 'var(--space-16)', alignItems: 'center',
-          }),
-          refBilde: k.bilde || '',
-          refBildeAlt: 'Keramikk laget for ' + k.navn,
-          // Overskrifta. Sitatet er det sterkeste naar det finnes; ellers
-          // sier vi hva det er.
-          refOverskrift: k.sitat ? '«' + k.sitat + '»' : 'Laget for ' + k.navn,
-          // Logoen til kunden.
-          //
-          // Bildet sier hva som ble laget; logoen sier hvem det ble laget
-          // for. Uten den staar arbeidet uten avsender, og «Bestilt hos oss»
-          // blir en paastand uten noen bak.
-          //
-          // Hvitt felt bak: en logo er som regel laget for hvit bakgrunn og
-          // forsvinner mot leirefarge. «contain» beskjaerer den ikke.
-          refHarLogo: !!k.logo,
-          refLogoStil: {
-            width: 132, height: 60, marginBottom: 'var(--space-4)',
-            borderRadius: 'var(--radius-md)',
-            background: '#fff', border: '1px solid var(--border-subtle)',
-            backgroundImage: "url('" + k.logo + "')",
-            backgroundSize: '76% auto',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
-          },
-          refLogoAlt: 'Logoen til ' + k.navn,
-          // Gradienten sto over bildet mens det laa inne i en kortramme.
-          // Bildet staar naa fritt, som paa events og medlemskap, og da er
-          // det ingen kant aa tone ned mot.
-          refFlere: kunder.length > 1,
-          refPrikker: this.tonePrikker('ref', kunder.map(x => x.navn)),
-          // Peker musa paa kortet, eller ligger en finger paa det, staar det
+          rotFlere: alle.length > 1,
+          // Peker musa paa feltet, eller ligger en finger paa det, staar det
           // stille. Ingen skal miste teksten midt i en setning.
-          refPause: () => { this._pauseref = true; },
-          refFortsett: () => { this._pauseref = false; },
+          // Egen bryter for musepekeren. Prikkene setter «_pauserot» og
+          // stopper rotasjonen for godt — da har man valgt. Musa skal bare
+          // holde igjen mens den ligger der, og ikke starte den igjen for
+          // noen som har valgt.
+          rotPause: () => { this._svevrot = true; },
+          rotFortsett: () => { this._svevrot = false; },
         };
       })(),
+
+      // Referansekundene hadde sitt eget felt her, med egen rotasjon og
+      // egne prikker. De rullerer naa sammen med events og medlemskap —
+      // verdiene ligger i rotasjonene() og feltet over.
+
       ...(() => {
         const il = this.state.innholdLagret || {};
         // Leter etter noekkelen som slutter paa «/Instagram» eller

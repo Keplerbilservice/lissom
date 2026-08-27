@@ -573,10 +573,30 @@ igjen tomme under Nettsiden → Innhold.
 
 ## 15. Referansekunder — **gjort 27. august**
 
-Seksjonen står på forsiden og bruker rotasjonen som alt fantes. Admin ligger
-under Nettsiden → Referanser. Ingenting publiseres uten at samtykket er
+Kundene rullerer på forsiden i det samme feltet som events og medlemskap.
+Admin ligger under Nettsiden → Referanser, med eget kort på Oversikt og egen
+bryter under «Vis på nettsiden». Ingenting publiseres uten at samtykket er
 huket av — koden kan ikke avgjøre om verkstedet har lov, men den nekter å
 vise noe før noen har bekreftet at lov finnes.
+
+**Ett felt, ikke to (27. august).** Kundene sto først i en egen seksjon rett
+under events og medlemskap, med sin egen klokke og sine egne prikker — det
+samme oppsettet to ganger på rad. De ligger nå i den samme rotasjonen:
+`rotasjonene()` legger kundene bak de to faste, og feltet tegner det hver
+enkelt har. De faste har to knapper; en kunde har logoen sin øverst, navnet
+som stikktittel, sitatet som overskrift (ellers «Laget for …»), hvem sitatet
+er fra under, og en lenke til kundens egen side.
+
+Tre ting styrer om en kunde står ute: bryteren, samtykket og et bilde.
+Bildet er nytt som krav — venstre halvdel av feltet *er* bildet, og uten ett
+ville kunden fått en tom rute ved siden av teksten. Regelen ligger i
+`staarUte()`, og admin-lista sier «Mangler bilde» i stedet for «På forsiden»
+slik at det ikke blir en gåte hvorfor kunden ikke dukker opp.
+
+Musepekeren over feltet holder det stille (`_svevrot`); trykker man på en
+prikk, blir det stående for godt (`_pauserot`). To flagg, ikke ett — ellers
+startet rotasjonen igjen så snart musa forlot feltet, også for den som
+nettopp hadde valgt et kort.
 
 Nedenfor står kartleggingen som lå til grunn.
 

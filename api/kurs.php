@@ -80,6 +80,9 @@ foreach ($kurs as $k) {
                 'nivaaIntern'     => (string) ($k['nivaa_intern'] ?? ''),
                 'kortBeskrivelse' => $velg('kort_beskrivelse', 'kortBeskrivelse'),
                 'laerer'          => $velg('laerer', 'laerer'),
+                // De faa ordene som staar i faktaboksen. Hele setningen
+                // staar under «Dette laerer du»; boksen er smal.
+                'laererKort'      => (string) ($mal['laererKort'] ?? ''),
                 'lagerDu'         => $velg('lager_du', 'lagerDu'),
                 'medHjem'         => $velg('med_hjem', 'medHjem'),
                 'ferdigTid'       => $velg('ferdig_tid', 'ferdigTid'),

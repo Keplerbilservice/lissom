@@ -42,6 +42,10 @@ final class Kursmal
     /**
      * Malene, slaatt opp paa kursets tema.
      *
+     * «laerer» er hele setningen — den staar under «Dette laerer du».
+     * «laererKort» er de tre-fire ordene som faar plass i faktaboksen paa
+     * kurssida. Boksen er smal, og hele setningen brakk den i fem linjer.
+     *
      * «*» er reserven: den brukes for et kurs vi ikke har en egen mal til,
      * slik at et nytt kurs ogsaa faar et utgangspunkt.
      *
@@ -52,6 +56,7 @@ final class Kursmal
         return [
             'Dreiing' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
+                'laererKort'      => 'Innføring i dreiing og dekor',
                 'kortBeskrivelse' => 'Prøv den gode følelsen av å forme leire på dreieskiven. '
                     . 'Du lærer det grunnleggende og får hjelp hele veien, helt uten krav om erfaring.',
                 'beskrivelse'     => "Har du lyst til å prøve å dreie? På dette kurset blir du kjent med "
@@ -70,6 +75,7 @@ final class Kursmal
 
             'Plateteknikk' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
+                'laererKort'      => 'Innføring i plateteknikk og dekor',
                 'kortBeskrivelse' => 'Lag noe fint og personlig i keramikk. Et hyggelig kurs for deg '
                     . 'som vil prøve plateteknikk og skape noe du faktisk kan bruke hjemme.',
                 'beskrivelse'     => "Bli med på en rolig og kreativ stund med leire mellom hendene. "
@@ -84,6 +90,7 @@ final class Kursmal
 
             'Events' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
+                'laererKort'      => 'Innføring i forming og dekor',
                 'kortBeskrivelse' => 'En hyggelig kveld med leire — for venner, par, kolleger '
                     . 'eller familien. Ingen trenger erfaring.',
                 'beskrivelse'     => "En kveld der dere lager noe sammen. Vi viser dere alt underveis, "
@@ -98,6 +105,7 @@ final class Kursmal
 
             'Paint on pots' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
+                'laererKort'      => 'Maling og dekor',
                 'kortBeskrivelse' => 'Bestill en hyggelig stund med keramikkmaling hos oss. Velg blant '
                     . 'et stort utvalg kopper, skåler, fat og figurer når du kommer, og skap noe helt unikt.',
                 'beskrivelse'     => "Paint on Pots passer for både barn og voksne, enten du kommer alene, "
@@ -118,6 +126,7 @@ final class Kursmal
 
             'Drop-in' => [
                 'nivaaTekst'      => 'Krever kurs hos oss, eller et medlem med deg',
+                'laererKort'      => 'Du jobber selvstendig',
                 'kortBeskrivelse' => 'To timer i verkstedet der du jobber med dine egne prosjekter.',
                 'laerer'          => 'Du jobber selvstendig. Vi hjelper når du trenger det.',
                 'lagerDu'         => 'Det du selv vil lage.',
@@ -127,6 +136,7 @@ final class Kursmal
 
             '*' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
+                'laererKort'      => 'Innføring i plateteknikk og dekor',
                 'kortBeskrivelse' => 'Et hyggelig kurs med leire mellom hendene. Ingen erfaring nødvendig.',
                 'laerer'          => self::PLATE . 'det du lager.',
                 'lagerDu'         => 'Ditt eget arbeid i keramikk.',

@@ -1278,6 +1278,60 @@ window.__resources = {
         </div>
       </section>
 
+      <!-- ── Referansekunder ──────────────────────────────────────────
+           Kundene som har bestilt keramikk av oss, ett kort om gangen.
+
+           Samme rotasjon som events og medlemskap over: toneStil og
+           tonePrikker, med samme toning og samme prikker. Ingen ny
+           karusellkomponent — den som finnes gjor jobben.
+
+           Staar bare naar det faktisk finnes noen som er slaatt paa og har
+           sagt ja. En tom seksjon med en overskrift er verre enn ingen
+           seksjon.
+
+           Musepekeren over kortet, eller en finger paa det, stopper
+           skiftet — og har noen slaatt av bevegelse i systeminnstillingene,
+           tones det ikke i det hele tatt. Det siste ligger i tonBytt(). -->
+      <sc-if value="{{ refVis }}" hint-placeholder-val="{{ false }}">
+        <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+          <div style="max-width: var(--width-content); margin: 0 auto;">
+            <div style="margin-bottom: var(--space-8);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ refKicker }}</div>
+              <h2 style="margin: 0;">{{ refTittel }}</h2>
+            </div>
+
+            <div onMouseEnter="{{ refPause }}" onMouseLeave="{{ refFortsett }}" onTouchStart="{{ refPause }}" style="{{ refKortStil }}">
+              <div style="{{ refBildeStil }}">
+                <div style="{{ refGradientStil }}"></div>
+              </div>
+              <div style="padding: var(--space-8); display: flex; flex-direction: column; justify-content: center; min-width: 0;">
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ refNavn }}</div>
+                <sc-if value="{{ refHarSitat }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: var(--space-4) 0 0; border-left: 3px solid var(--lissom-yellow); padding-left: var(--space-5); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); line-height: 1.45; color: var(--text-heading); text-wrap: pretty;">{{ refSitat }}</p>
+                  <sc-if value="{{ refHarSitatAv }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-2); padding-left: var(--space-5); font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ refSitatAv }}</div>
+                  </sc-if>
+                </sc-if>
+                <sc-if value="{{ refHarTekst }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-base); line-height: 1.6; color: var(--text-body); max-width: 52ch; text-wrap: pretty;">{{ refTekst }}</p>
+                </sc-if>
+                <sc-if value="{{ refHarLenke }}" hint-placeholder-val="{{ false }}">
+                  <a href="{{ refLenke }}" target="_blank" rel="noopener noreferrer" style="margin-top: var(--space-5); font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ refLenkeTekst }}</a>
+                </sc-if>
+              </div>
+            </div>
+
+            <sc-if value="{{ refFlere }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: 10px; margin-top: var(--space-6);">
+                <sc-for list="{{ refPrikker }}" as="d" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ d.velg }}" aria-label="{{ d.merke }}" style="{{ d.stil }}"></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </section>
+      </sc-if>
+
       <!-- Paint on Pots-seksjonen «Mal din egen keramikk» er tatt bort fra
            forsiden etter onske fra eieren. Siden /paint-on-pots og lenken fra
            Events staar som for, og popSteg brukes fortsatt der. -->
@@ -5753,6 +5807,121 @@ window.__resources = {
 
         </div>
 
+      </main>
+    </div>
+  </sc-if>
+
+  <!-- ── Referansekunder ──────────────────────────────────────────────
+       Kundene som staar paa forsida. Ett kort om gangen der ute; her staar
+       de i en liste med rekkefolge, av og paa.
+
+       Samtykket er et eget kryss, og kortet kan ikke staa ute uten. Det er
+       verkstedet som maa ha lov til aa vise navn, logo, bilde og sitat —
+       koden kan ikke avgjore det, men den kan la vaere aa publisere for noen
+       har sagt at lov finnes. -->
+  <sc-if value="{{ erAdminReferanser }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – referansekunder" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <img src="logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;" loading="lazy" decoding="async" width="425" height="232">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavReferanser }}" as="a" hint-placeholder-count="11">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Nettsiden</div>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Referansekunder</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Kundene som har bestilt keramikk av dere. De vises ett om gangen på forsiden, og bytter av seg selv. Et kort står ute bare når det både er slått på og kunden har sagt ja.</p>
+        </div>
+
+        <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ refNy }}" hint-size="auto,44px">Ny referansekunde</x-import>
+          <span style="align-self: center; font-size: var(--text-sm); color: var(--text-muted);">{{ refAdminTall }}</span>
+        </div>
+
+        <!-- Skjemaet. Aapent naar du lager en ny eller redigerer en. -->
+        <sc-if value="{{ refSkjemaApent }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 720px;">
+            <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: var(--space-5);">{{ refSkjemaTittel }}</div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <div>
+                <label style="{{ refEtikett }}">Navn på kunden eller bedriften</label>
+                <input value="{{ refFNavn }}" onChange="{{ settRefNavn }}" placeholder="F.eks. Kafé Løkka" style="{{ refFeltStil }}">
+              </div>
+              <div>
+                <label style="{{ refEtikett }}">Kort tekst</label>
+                <textarea value="{{ refFTekst }}" onChange="{{ settRefTekst }}" rows="3" placeholder="Hva laget dere for dem?" style="{{ refOmraadeStil }}"></textarea>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                <div>
+                  <label style="{{ refEtikett }}">Sitat</label>
+                  <input value="{{ refFSitat }}" onChange="{{ settRefSitat }}" placeholder="Valgfritt" style="{{ refFeltStil }}">
+                </div>
+                <div>
+                  <label style="{{ refEtikett }}">Sitatet er fra</label>
+                  <input value="{{ refFSitatAv }}" onChange="{{ settRefSitatAv }}" placeholder="F.eks. Kari, daglig leder" style="{{ refFeltStil }}">
+                </div>
+              </div>
+              <div>
+                <label style="{{ refEtikett }}">Lenke</label>
+                <input value="{{ refFLenke }}" onChange="{{ settRefLenke }}" placeholder="https://…" style="{{ refFeltStil }}">
+                <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted);">Valgfritt, og bare hvis kunden har sagt ja til at dere lenker til dem.</p>
+              </div>
+              <div>
+                <label style="{{ refEtikett }}">Bilde eller logo</label>
+                <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                  <div style="{{ refFBildeStil }}"></div>
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ refVelgBilde }}" hint-size="auto,38px">{{ refBildeKnapp }}</x-import>
+                    <sc-if value="{{ refHarFBilde }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ refFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Kunden har sagt ja til at vi viser navn, bilde og sitat" checked="{{ refFSamtykke }}" on-change="{{ toggleRefSamtykke }}" hint-size="100%,24px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Vis dette kortet på forsiden" checked="{{ refFAktiv }}" on-change="{{ toggleRefAktiv }}" hint-size="100%,24px"></x-import>
+                <sc-if value="{{ refManglerSamtykke }}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 0; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600);">Kortet vises ikke ute før kunden har sagt ja.</p>
+                </sc-if>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ refLagre }}" hint-size="auto,44px">Lagre</x-import>
+                <button type="button" onClick="{{ refAvbryt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ refBeskjed }}</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Rekkefølgen på forsiden</div>
+          <sc-if value="{{ refIngen }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen referansekunder ennå. Seksjonen står ikke på forsiden før det er lagt inn minst én som er slått på.</div>
+          </sc-if>
+          <sc-for list="{{ refAdminListe }}" as="r" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <div style="{{ r.miniStil }}"></div>
+              <div style="flex: 1 1 200px; min-width: 0;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ r.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.under }}</div>
+              </div>
+              <span style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: {{ r.merkeFarge }}; white-space: nowrap;">{{ r.merke }}</span>
+              <div style="display: flex; gap: var(--space-3); margin-left: auto; flex-wrap: wrap;">
+                <button type="button" onClick="{{ r.opp }}" title="Flytt opp" style="{{ r.pilStil }}">↑</button>
+                <button type="button" onClick="{{ r.ned }}" title="Flytt ned" style="{{ r.pilStil }}">↓</button>
+                <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Slett</button>
+              </div>
+            </div>
+          </sc-for>
+        </div>
       </main>
     </div>
   </sc-if>
@@ -10830,6 +10999,7 @@ class Component extends DCLogic {
       { sti: '/admin/drop-in',      side: 'admindropin' },
       { sti: '/admin/ferdigbrent',  side: 'adminferdigbrent' },
       { sti: '/admin/videokurs',    side: 'adminvideokurs' },
+      { sti: '/admin/referanser',   side: 'adminreferanser' },
       { sti: '/admin/venteliste',   side: 'adminventeliste' },
       { sti: '/admin/kursholdere',  side: 'adminkursholdere' },
       { sti: '/admin/nye-pameldinger',    side: 'adminnyepameldinger' },
@@ -13233,6 +13403,89 @@ class Component extends DCLogic {
     if (!this.state.bildeliste) this.hentBilder();
   }
 
+  /** Endrer ett felt i referansekunde-skjemaet. */
+  endreReferanse(endring) {
+    this.setState(st => ({
+      refRed: Object.assign({}, st.refRed || {}, endring),
+      refBeskjed: '',
+    }));
+  }
+
+  /** Henter referansekundene til admin. */
+  hentReferanser() {
+    if (!this.erPublisert() || this._refHentes) return;
+    this._refHentes = true;
+    fetch('/api/admin/referanser.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d && d.kunder) this.setState({ refAdmin: d.kunder }); })
+      .catch(() => {})
+      .then(() => { this._refHentes = false; });
+  }
+
+  /** Flytt, slett — alt som ikke er selve skjemaet. */
+  referanseKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/referanser.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.kunder) this.setState({ refAdmin: d.kunder });
+        this.setState({ kvittering: (d && d.ok) ? 'Lagret' : 'Ble ikke lagret',
+                        kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' });
+        // Forsida leser den samme lista.
+        this.setState({ referanser: null });
+        this._referanserHentes = false;
+      })
+      .catch(() => this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Lagrer skjemaet — ny eller endret kunde. */
+  lagreReferanse() {
+    const r = this.state.refRed;
+    if (!r) return;
+    if (!(r.navn || '').trim()) { this.setState({ refBeskjed: 'Kunden må ha et navn.' }); return; }
+    if (!this.erPublisert()) { this.setState({ refBeskjed: 'Krever den ekte siden' }); return; }
+    if (this._refLagrer) return;
+    this._refLagrer = true;
+    this.setState({ refBeskjed: 'Lagrer …' });
+
+    fetch('/api/admin/referanser.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        handling: 'lagre',
+        id: r.id || 0,
+        navn: (r.navn || '').trim(),
+        tekst: r.tekst || '',
+        sitat: r.sitat || '',
+        sitatAv: r.sitatAv || '',
+        lenke: (r.lenke || '').trim(),
+        bilde: r.bilde || '',
+        aktiv: r.aktiv ? 'ja' : 'nei',
+        samtykke: r.samtykke ? 'ja' : 'nei',
+      }),
+    })
+      .then(res => res.json())
+      .then(d => {
+        this._refLagrer = false;
+        if (!d || !d.ok) { this.setState({ refBeskjed: (d && d.feil) || 'Gikk ikke' }); return; }
+        this.setState({
+          refAdmin: d.kunder || this.state.refAdmin,
+          refRed: null, refBeskjed: '',
+          kvittering: 'Lagret', kvitteringDetalj: d.beskjed || '',
+          // Forsida leser den samme lista.
+          referanser: null,
+        });
+        this._referanserHentes = false;
+      })
+      .catch(() => { this._refLagrer = false; this.setState({ refBeskjed: 'Fikk ikke kontakt med serveren.' }); });
+  }
+
   /** Setter — eller fjerner, med tom streng — bildet. */
   settValgtBilde(url) {
     const v = this.state.bildeFor;
@@ -13254,6 +13507,12 @@ class Component extends DCLogic {
       });
       return;
     }
+    // Referansekunden lagres naar skjemaet lagres, ikke med det samme: en ny
+    // kunde har ingen id aa lagre paa foer den er opprettet.
+    if (v.slag === 'referanse') {
+      this.endreReferanse({ bilde: url || '' });
+      return;
+    }
     this.artikkelKall({ handling: 'bilde', id: v.id, bilde: url || '' });
   }
 
@@ -13273,7 +13532,9 @@ class Component extends DCLogic {
     // kanskje ikke lagret ennaa.
     const valgt = (v && v.slag === 'kurs')
       ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
-      : ((v && kilde.find(x => x.id === v.id)) || {});
+      : (v && v.slag === 'referanse')
+        ? { tittel: (this.state.refRed || {}).navn || 'kunden', bilde: (this.state.refRed || {}).bilde || '' }
+        : ((v && kilde.find(x => x.id === v.id)) || {});
     // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
     // originalene i full stoerrelse — over hundre av dem, hver gang den ble
     // aapnet — og paa mobil var det en telefon full av bilder ingen skulle se.
@@ -14089,6 +14350,13 @@ class Component extends DCLogic {
 
     // Produktene i butikkfeltet bytter bare paa mobil, og raskere — paa
     // desktop staar alle fire ved siden av hverandre.
+    // Referansekundene bytter i samme takt som events og medlemskap.
+    this._rotasjonRef = setInterval(() => {
+      if (kanBytte() && !this._pauseref) {
+        this.tonBytt('ref', (this.state.referanser || []).length);
+      }
+    }, Component.ROT_OPPHOLD);
+
     this._rotasjonBut = setInterval(() => {
       if (kanBytte() && !this._pausebut && this.erSmal()) {
         this.tonBytt('but', this.forsideProdukter().length);
@@ -14208,6 +14476,7 @@ class Component extends DCLogic {
     clearInterval(this._karusell);
     clearInterval(this._rotasjon);
     clearInterval(this._rotasjonBut);
+    clearInterval(this._rotasjonRef);
     clearTimeout(this._timerrot);
     clearTimeout(this._timerbut);
     clearInterval(this._kurvPuls);
@@ -16762,6 +17031,7 @@ class Component extends DCLogic {
       ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
+        ['Referansekunder', 'adminreferanser'],
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
@@ -16824,6 +17094,7 @@ class Component extends DCLogic {
       case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Alle medlemmer');
       case 'adminoppskrifter':   return p('Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
+      case 'adminreferanser':    return p('Nettsiden', 'Nettsiden', 'Referansekunder');
       case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':
         return st.seoFra === 'marked'
@@ -17499,6 +17770,17 @@ class Component extends DCLogic {
     if ((side === 'adminoversikt' || side === 'adminferdigbrent')
         && !this.state.ferdigbrentAdmin) {
       this.hentFerdigbrentAdmin();
+    }
+    if (side === 'adminreferanser' && !this.state.refAdmin) {
+      this.hentReferanser();
+    }
+    // Referansekundene. Bare paa forsida — det er der de staar.
+    if (side === 'forside' && !this._referanserHentes && !this.state.referanser) {
+      this._referanserHentes = true;
+      fetch('/api/referanser.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => { if (d && d.kunder) this.setState({ referanser: d.kunder }); })
+        .catch(() => {});
     }
     // Aapningstidene i bunnteksten. Hentes én gang, paa de sidene som har
     // bunntekst — det er ett lite oppslag, og uten det staar det «etter
@@ -23359,6 +23641,94 @@ class Component extends DCLogic {
           },
         }),
       })),
+      erAdminReferanser: side === 'adminreferanser',
+      adminNavReferanser: this.adminMeny(),
+      // ── Referansekundene i admin ─────────────────────────────────────
+      ...(() => {
+        if (side !== 'adminreferanser') return {};
+        const liste = this.state.refAdmin || [];
+        const r = this.state.refRed || null;   // raden som redigeres, eller null
+        const felt = {
+          boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '9px 12px',
+          font: 'var(--type-body-sm)', color: 'var(--text-heading)', background: 'var(--surface-card)',
+        };
+        const pil = {
+          appearance: 'none', cursor: 'pointer', width: 30, height: 30, borderRadius: '50%',
+          border: '1px solid var(--border-subtle)', background: 'transparent',
+          color: 'var(--text-heading)', fontSize: 15, lineHeight: 1,
+        };
+
+        return {
+          refAdminTall: liste.length === 0 ? ''
+            : liste.filter(k => k.ute).length + ' av ' + liste.length + ' står på forsiden',
+          refIngen: this.erPublisert() && liste.length === 0,
+          refAdminListe: liste.map(k => ({
+            navn: k.navn,
+            under: [k.sitat ? '«' + k.sitat.slice(0, 40) + (k.sitat.length > 40 ? '…' : '') + '»' : '',
+                    k.tekst ? k.tekst.slice(0, 50) + (k.tekst.length > 50 ? '…' : '') : '']
+                   .filter(Boolean).join(' · ') || 'Ingen tekst',
+            merke: k.ute ? 'På forsiden' : (!k.samtykke ? 'Mangler samtykke' : 'Skjult'),
+            merkeFarge: k.ute ? 'var(--sage-600, #4C6B4F)'
+                      : (!k.samtykke ? 'var(--terracotta-600)' : 'var(--text-muted)'),
+            miniStil: {
+              width: 46, height: 46, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--clay-200)',
+              backgroundImage: k.bilde ? "url('" + k.bilde + "')" : 'none',
+              backgroundSize: 'cover', backgroundPosition: this.fokusFor(k.bilde || ''),
+            },
+            pilStil: pil,
+            opp: () => this.referanseKall({ handling: 'flytt', id: k.id, retning: 'opp' }),
+            ned: () => this.referanseKall({ handling: 'flytt', id: k.id, retning: 'ned' }),
+            rediger: () => this.setState({ refRed: Object.assign({}, k), refBeskjed: '' }),
+            slett: () => {
+              if (!window.confirm('Slette «' + k.navn + '»?\n\nKortet forsvinner fra forsiden.')) return;
+              this.referanseKall({ handling: 'slett', id: k.id });
+            },
+          })),
+
+          refSkjemaApent: !!r,
+          refSkjemaTittel: r && r.id ? 'Rediger ' + (r.navn || 'kunden') : 'Ny referansekunde',
+          refEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
+                        color: 'var(--text-heading)', marginBottom: '6px' },
+          refFeltStil: felt,
+          refOmraadeStil: Object.assign({}, felt, { resize: 'vertical' }),
+          refFNavn: (r && r.navn) || '',
+          settRefNavn: e => this.endreReferanse({ navn: e.target.value }),
+          refFTekst: (r && r.tekst) || '',
+          settRefTekst: e => this.endreReferanse({ tekst: e.target.value }),
+          refFSitat: (r && r.sitat) || '',
+          settRefSitat: e => this.endreReferanse({ sitat: e.target.value }),
+          refFSitatAv: (r && r.sitatAv) || '',
+          settRefSitatAv: e => this.endreReferanse({ sitatAv: e.target.value }),
+          refFLenke: (r && r.lenke) || '',
+          settRefLenke: e => this.endreReferanse({ lenke: e.target.value }),
+          refFSamtykke: !!(r && r.samtykke),
+          toggleRefSamtykke: () => this.endreReferanse({ samtykke: !(r && r.samtykke) }),
+          refFAktiv: !!(r && r.aktiv),
+          toggleRefAktiv: () => this.endreReferanse({ aktiv: !(r && r.aktiv) }),
+          refManglerSamtykke: !!(r && r.aktiv && !r.samtykke),
+          refHarFBilde: !!(r && r.bilde),
+          refBildeKnapp: (r && r.bilde) ? 'Bytt bilde' : 'Velg bilde',
+          refFBildeStil: {
+            width: 96, height: 96, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--clay-200)',
+            backgroundImage: (r && r.bilde) ? "url('" + r.bilde + "')" : 'none',
+            backgroundSize: 'cover', backgroundPosition: this.fokusFor((r && r.bilde) || ''),
+          },
+          // Samme billedvelger som kursene bruker.
+          refVelgBilde: () => this.apneBildevalg({ slag: 'referanse' }),
+          refFjernBilde: () => this.endreReferanse({ bilde: '' }),
+          refNy: () => this.setState({
+            refRed: { id: 0, navn: '', tekst: '', sitat: '', sitatAv: '', lenke: '', bilde: '', aktiv: false, samtykke: false },
+            refBeskjed: '',
+          }),
+          refAvbryt: () => this.setState({ refRed: null, refBeskjed: '' }),
+          refLagre: () => this.lagreReferanse(),
+          refBeskjed: this.state.refBeskjed || '',
+        };
+      })(),
       erAdminInnhold: side === 'admininnhold',
       innholdSideNavn: this.state.innholdSide || 'Forside',
       innholdSider: Object.keys(SIDEINNHOLD).map(navn => {
@@ -25775,6 +26145,61 @@ class Component extends DCLogic {
             gridTemplateColumns: '0.75fr 1.25fr', gap: 'var(--space-16)', alignItems: 'center',
           }),
           rotPrikker: this.tonePrikker('rot', alle.map(x => x.merke)),
+        };
+      })(),
+
+      // ── Referansekunder ──────────────────────────────────────────────
+      //
+      // Samme rotasjon som over: toneStil og tonePrikker, med samme toning.
+      // Ingen ny karusell — den som finnes gjor jobben.
+      ...(() => {
+        const kunder = (this.state.referanser || []).filter(k => k.navn);
+        if (!kunder.length) {
+          return { refVis: false };
+        }
+        const nr = ((this.state.refNr || 0) % kunder.length + kunder.length) % kunder.length;
+        const k = kunder[nr];
+
+        return {
+          refVis: true,
+          refKicker: this.innh('Forside/4/Kicker') || 'Bestilt hos oss',
+          refTittel: this.innh('Forside/4/Overskrift') || 'Noen av dem vi har laget for',
+          refNavn: k.navn,
+          refTekst: k.tekst,
+          refHarTekst: !!k.tekst,
+          refSitat: k.sitat ? '«' + k.sitat + '»' : '',
+          refHarSitat: !!k.sitat,
+          refSitatAv: k.sitatAv,
+          refHarSitatAv: !!k.sitatAv,
+          refLenke: k.lenke,
+          refHarLenke: !!k.lenke,
+          refLenkeTekst: 'Se ' + k.navn + ' →',
+          // Toningen ligger paa hele kortet, saa bilde og tekst bytter samtidig.
+          refKortStil: this.toneStil('ref', {
+            display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)',
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-xl, 22px)', overflow: 'hidden',
+            boxShadow: 'var(--shadow-sm)', minHeight: 320,
+          }),
+          refBildeStil: {
+            position: 'relative', minHeight: 320,
+            backgroundColor: 'var(--clay-200)',
+            backgroundImage: k.bilde ? "url('" + k.bilde + "')" : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: this.fokusFor(k.bilde || ''),
+          },
+          // En diskret gradient, slik bestillingen ber om — nedre kant toner
+          // ned saa kanten mot kortet ikke blir en hard strek.
+          refGradientStil: {
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg, rgba(45,20,12,0) 55%, rgba(45,20,12,.22) 100%)',
+          },
+          refFlere: kunder.length > 1,
+          refPrikker: this.tonePrikker('ref', kunder.map(x => x.navn)),
+          // Peker musa paa kortet, eller ligger en finger paa det, staar det
+          // stille. Ingen skal miste teksten midt i en setning.
+          refPause: () => { this._pauseref = true; },
+          refFortsett: () => { this._pauseref = false; },
         };
       })(),
       ...(() => {

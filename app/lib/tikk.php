@@ -53,6 +53,19 @@ final class Tikk
         }
 
         self::sjekkHengendeBetalinger();
+
+        // Paint on Pots og lignende folger aapningstidene. Kalenderen endrer
+        // seg — et kurs settes opp, et avlyses, en feriedag legges inn — og
+        // da skal de aapne plassene folge etter uten at noen maa trykke paa
+        // noe. Feil her skal aldri velte en forespoersel.
+        try {
+            $r = Apent::leggUtPaaApneTider();
+            if ($r['laget'] > 0 || $r['fjernet'] > 0) {
+                logg('Aapne plasser oppdatert', $r);
+            }
+        } catch (Throwable $e) {
+            logg_feil('Kunne ikke legge ut aapne plasser', $e);
+        }
     }
 
     /**

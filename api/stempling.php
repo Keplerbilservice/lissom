@@ -44,6 +44,19 @@ if (Foresporsel::metode() === 'POST') {
     } elseif ($visMeg === '') {
         Svar::feil('Ukjent handling.');
     }
+
+    // Doeren aapnet eller lukket seg. Paint on Pots folger doeren, saa de
+    // aapne plassene skal folge med med det samme — ikke ved neste tikk et
+    // minutt senere, mens noen staar og ser paa sida.
+    //
+    // Feil her skal ikke gjore at innstemplinga mislykkes. Den er gjort.
+    if ($handling === 'inn' || $handling === 'ut') {
+        try {
+            Apent::leggUtPaaApneTider();
+        } catch (Throwable $e) {
+            logg_feil('Kunne ikke oppdatere aapne plasser etter stempling', $e);
+        }
+    }
 }
 
 // -------------------------------------------------------------------- lesing

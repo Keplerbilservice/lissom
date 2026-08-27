@@ -106,6 +106,9 @@ final class Kursmal
             'Paint on pots' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
                 'laererKort'      => 'Maling og dekor',
+                // Ikke et klokkeslett: du sitter saa lenge du vil innenfor
+                // aapningstida. De fleste bruker et par timer.
+                'varighetTekst'   => 'Du bestemmer selv — de fleste bruker et par timer',
                 // «Leire, verktoy, glasur og brenning er inkludert» sto her
                 // som paa alle andre kurs. Paa Paint on Pots faar man ingen
                 // leire — man maler ferdig brent keramikk.
@@ -303,6 +306,16 @@ final class Kursmal
         $egen = trim((string) ($kurs['varighet_tekst'] ?? ''));
         if ($egen !== '') {
             return $egen;
+        }
+        // Kurs der gjenstanden betales i verkstedet er lagt ut paa
+        // aapningstidene: oekta er hele det aapne vinduet, ofte ti–tolv
+        // timer. Det er naar doeren staar aapen, ikke hvor lenge man sitter
+        // der. Malen sier hva som gjelder i stedet.
+        if ((int) ($kurs['gjenstand_i_kassa'] ?? 0) === 1) {
+            $mal = trim((string) (self::forKurs($kurs)['varighetTekst'] ?? ''));
+            if ($mal !== '') {
+                return $mal;
+            }
         }
         foreach ($okter as $o) {
             $v = self::varighetAv($o['start'] ?? null, $o['slutt'] ?? null);

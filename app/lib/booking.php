@@ -659,6 +659,27 @@ final class Booking
      * Dreiekurset gaar to kvelder og er én paamelding. Sto bare startdagen,
      * kunne man tro man booket en enkeltkveld.
      */
+    /**
+     * «Tirsdag 1. september, 10:00–20:00».
+     *
+     * Til aapne vinduer: Paint on Pots er lagt ut paa aapningstidene, og da
+     * er det ikke et klokkeslett man moeter opp til, men en tid doeren staar
+     * aapen. Sto bare starten, saa det ut som at man kom for sent 10:05.
+     *
+     * Gaar vinduet over midnatt, faller vi tilbake paa norskPeriode() — den
+     * kan si «tirsdag 1. – onsdag 2.» slik den alltid har gjort.
+     */
+    public static function norskSpenn(string $start, string $slutt): string
+    {
+        $sone = new DateTimeZone('Europe/Oslo');
+        $s = (new DateTimeImmutable($start, new DateTimeZone('UTC')))->setTimezone($sone);
+        $t = (new DateTimeImmutable($slutt, new DateTimeZone('UTC')))->setTimezone($sone);
+        if ($s->format('Y-m-d') !== $t->format('Y-m-d')) {
+            return self::norskPeriode($start, $slutt);
+        }
+        return self::norskDato($start) . '–' . $t->format('H:i');
+    }
+
     public static function norskPeriode(string $start, ?string $slutt): string
     {
         $fra = self::norskDato($start);

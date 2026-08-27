@@ -183,7 +183,13 @@ foreach ($kurs as $k) {
         })($k['bilder'] ?? null),
         'datoer'  => array_map(static fn($o) => [
             'oktId'  => (int) $o['id'],
-            'dato'     => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
+            // Paint on Pots og lignende er lagt ut paa aapningstidene: det er
+            // et vindu, ikke et klokkeslett. «Tirsdag 1. september, 10:00» ser
+            // ut som at kurset starter da og at du kommer for sent 10:05.
+            // Staar hele spennet, ser man at doeren er aapen hele tida.
+            'dato'     => ((int) ($k['gjenstand_i_kassa'] ?? 0) === 1 && !empty($o['slutt_tid']))
+                ? Booking::norskSpenn((string) $o['start_tid'], (string) $o['slutt_tid'])
+                : Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
             // Raa starttid slik den staar i basen. Kalenderen trenger den for
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],

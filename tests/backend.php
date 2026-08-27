@@ -113,6 +113,62 @@ sjekk('sesjonen varer ~3 timer', (int)$utl >= 178 && (int)$utl <= 181, $utl . ' 
 sjekk('medlemmet gjenkjennes', (Sesjon::medlem()['id'] ?? 0) == $medlemId);
 sjekk('nummeret gir admin (nodluke)', Sesjon::erAdmin());
 
+echo "\n== Aapne plasser (Paint on Pots paa aapningstidene) ==\n";
+//
+// Regelen for naar det er aapent staar ett sted: app/lib/apent.php. Den samme
+// regelen legger ut plassene. Det farlige er sirkelen — en plass laget fordi
+// det var aapent, som deretter gjor at det er aapent — og at en plass noen
+// har booket blir ryddet bort under foettene paa dem.
+if (DB::harKolonne('course_sessions', 'fra_apningstid')
+    && DB::en("SELECT id FROM courses WHERE gjenstand_i_kassa = 1 AND status = 'publisert'") !== null) {
+    DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
+
+    $r1 = Apent::leggUtPaaApneTider();
+    sjekk('plasser legges ut paa de aapne dagene', $r1['laget'] > 0, $r1['laget'] . ' laget');
+
+    $r2 = Apent::leggUtPaaApneTider();
+    sjekk('en ny kjoring lager ingenting nytt',
+        $r2['laget'] === 0 && $r2['fjernet'] === 0, json_encode($r2));
+
+    // Sirkelen: aapningstida skal ikke telle plassene den selv laget.
+    $genererte = array_map('intval', array_column(
+        DB::alle('SELECT id FROM course_sessions WHERE fra_apningstid = 1'), 'id'));
+    $kildeIder = [];
+    foreach (Apent::dager()['kilder'] as $liste) {
+        foreach ($liste as $o) {
+            $kildeIder[] = (int) $o['oktId'];
+        }
+    }
+    sjekk('aapningstida teller ikke plassene den selv laget',
+        array_intersect($genererte, $kildeIder) === [],
+        count($genererte) . ' genererte plasser');
+
+    // En booket plass staar, ogsaa naar dagen stenges.
+    $popKurs2 = DB::en("SELECT id FROM courses WHERE gjenstand_i_kassa = 1 AND status = 'publisert'");
+    $okt2 = DB::en("SELECT id, start_tid FROM course_sessions
+                     WHERE fra_apningstid = 1 AND course_id = :c AND start_tid > UTC_TIMESTAMP()
+                  ORDER BY start_tid LIMIT 1", ['c' => (int) $popKurs2['id']]);
+    if ($okt2 !== null) {
+        $dagen = (new DateTimeImmutable((string) $okt2['start_tid'], new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d');
+        DB::settInn('bookings', [
+            'course_id' => (int) $popKurs2['id'], 'course_session_id' => (int) $okt2['id'],
+            'gjest_navn' => 'Testplass apen', 'antall' => 1, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+        DB::kjor("INSERT INTO apningstider (dato, stengt, merknad) VALUES (:d, 1, 'Test')
+                  ON DUPLICATE KEY UPDATE stengt = 1, merknad = 'Test'", ['d' => $dagen]);
+        Apent::leggUtPaaApneTider();
+        sjekk('en booket plass ryddes ikke bort naar dagen stenges',
+            DB::en('SELECT id FROM course_sessions WHERE id = :i', ['i' => (int) $okt2['id']]) !== null,
+            'okt ' . $okt2['id'] . ' paa ' . $dagen);
+        DB::kjor('DELETE FROM apningstider WHERE dato = :d', ['d' => $dagen]);
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Testplass apen'");
+    }
+
+    DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
+    Apent::leggUtPaaApneTider();
+}
+
 echo "\n== Booking uten Vipps (gratis medlemsarrangement) ==\n";
 // Sto paa medlemsfrokosten. Den ble avlyst etter beskjed fra verkstedet
 // (migrasjon 037), og testen stoppet paa «Denne datoen kan ikke bookes».

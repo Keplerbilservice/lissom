@@ -416,6 +416,65 @@ switch ($handling) {
         );
         Svar::ok(['tekst' => trim($r['tekst']), 'kostnad' => Booking::kroner($r['kostnadOre'])]);
 
+    // ── Teksten paa «Les mer om vaare kurs» ─────────────────────────────
+    //
+    // Svarer med teksten selv, som kursbeskrivelsen over: den skal rett inn i
+    // feltene under Nettsiden → Innhold, der eieren leser, retter og lagrer.
+    // Feltet er hennes — AI-en foreslaar bare.
+    case 'lesmertekst':
+        // Kursene som faktisk ligger ute. Uten dem blir det generisk prosa;
+        // med dem staar det noe som stemmer med det verkstedet tilbyr.
+        $kurs = DB::alle(
+            "SELECT tittel, tema, type, varighet, beskrivelse
+               FROM courses
+              WHERE status = 'publisert'
+           ORDER BY (type = 'kurs') DESC, tittel
+              LIMIT 12"
+        );
+        $fakta = "Kursene Lissom har ute naa:\n\n";
+        foreach ($kurs as $k) {
+            $fakta .= '### ' . $k['tittel']
+                . ($k['tema'] ? ' (' . $k['tema'] . ')' : '')
+                . (trim((string) ($k['varighet'] ?? '')) !== '' ? ' — ' . $k['varighet'] : '')
+                . "\n" . (trim((string) ($k['beskrivelse'] ?? '')) ?: '(ingen beskrivelse lagt inn)') . "\n\n";
+        }
+        if ($kurs === []) {
+            $fakta .= "(ingen kurs ligger ute ennaa — hold deg til fakta om verkstedet over)\n\n";
+        }
+
+        $r = AI::sporJson(
+            $rolle(
+                "Du skriver det korte feltet nederst paa kurssida som sender leseren "
+                . "videre til sida der hvert kurs staar beskrevet. Det staar under "
+                . "kurskortene, og snakker til den som har sett datoene men ikke vet "
+                . "hva kurset gaar ut paa.\n\n"
+                . "Svar med JSON: {\"overskrift\": \"...\", \"tekst\": \"...\", "
+                . "\"knapp\": \"...\", \"punkter\": [\"...\", \"...\", \"...\"]}\n"
+                . "overskrift er én linje, hoyst syv ord, og skal vaere et spoersmaal eller "
+                . "en paastand leseren kjenner seg igjen i.\n"
+                . "tekst er to til fire setninger, ett avsnitt, ingen punktliste.\n"
+                . "knapp er teksten paa knappen, hoyst fem ord, og skal si hvor den fører.\n"
+                . "punkter er noeyaktig tre korte stikkord om hva som staar paa sida "
+                . "det lenkes til — hoyst fire ord hver.\n"
+                . "Finn aldri paa priser, datoer eller kurs som ikke staar under."
+            ) . "\n\n" . $fakta,
+            'Skriv feltet.',
+            'lesmertekst',
+            1600
+        );
+        $punkter = array_values(array_filter(array_map(
+            static fn($x) => mb_substr(trim((string) $x), 0, 40),
+            is_array($r['punkter'] ?? null) ? $r['punkter'] : []
+        )));
+        Svar::ok([
+            'overskrift' => trim((string) ($r['overskrift'] ?? '')),
+            'tekst'      => trim((string) ($r['tekst'] ?? '')),
+            'knapp'      => trim((string) ($r['knapp'] ?? '')),
+            'punkter'    => array_slice($punkter, 0, 3),
+            // sporJson gir bare JSON-en tilbake; kostnaden ligger i loggen.
+            'kostnad'    => Booking::kroner(AI::sisteKostnad()),
+        ]);
+
     // ── Autopiloten: ukas forslag ───────────────────────────────────────
     case 'autopilot':
         $tomme = DB::alle(

@@ -1662,15 +1662,32 @@ window.__resources = {
       <!-- Veien til beskrivelsene.
            Kortene over sier naar og hva det koster. Den som vil vite hva
            kurset faktisk er, maatte gaa inn i bookingen paa hvert enkelt for
-           aa finne teksten. -->
+           aa finne teksten.
+
+           Feltet sto som en tynn ramme paa hvit bakgrunn, med to smaa linjer
+           og en knapp helt til hoyre — samme farge og samme vekt som alt
+           annet paa sida, og lett aa rulle forbi. Naa er det gult, med
+           overskrift, tekst, tre stikkord om hva som staar der, og en knapp
+           som ser ut som en knapp.
+
+           Teksten redigeres under Nettsiden → Innhold → Kurs og events →
+           «Les mer-knappen», og kan foreslaas av AI-en derfra. -->
       <sc-if value="{{ ikkeDropinVisning }}" hint-placeholder-val="{{ true }}">
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
-          <div style="max-width: var(--width-content); margin: 0 auto; background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
-            <div style="min-width: 0;">
-              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ keLesMerTittel }}</div>
-              <p style="margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ keLesMerTekst }}</p>
+          <div data-theme="sun" class="lx-band" style="max-width: var(--width-content); margin: 0 auto; background: var(--lissom-yellow); border-radius: var(--radius-xl, 22px); padding: var(--space-9) var(--space-10); display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
+            <div style="min-width: 0; flex: 1 1 380px;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--brown-500, var(--lissom-brown)); margin-bottom: var(--space-3);">{{ keLesMerKicker }}</div>
+              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-3xl); color: var(--lissom-brown); text-wrap: balance;">{{ keLesMerTittel }}</h2>
+              <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--brown-500, var(--lissom-brown)); max-width: 56ch; text-wrap: pretty;">{{ keLesMerTekst }}</p>
+              <sc-if value="{{ keLesMerHarPunkter }}" hint-placeholder-val="{{ true }}">
+                <ul style="list-style: none; margin: var(--space-5) 0 0; padding: 0; display: flex; gap: var(--space-3) var(--space-6); flex-wrap: wrap;">
+                  <sc-for list="{{ keLesMerPunkter }}" as="p" hint-placeholder-count="3">
+                    <li style="font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">{{ p.navn }}</li>
+                  </sc-for>
+                </ul>
+              </sc-if>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ goKursoversikt }}" hint-size="auto,44px">{{ keLesMerKnapp }}</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goKursoversikt }}" hint-size="auto,52px">{{ keLesMerKnapp }}</x-import>
           </div>
         </section>
       </sc-if>
@@ -7840,6 +7857,15 @@ window.__resources = {
                 </sc-if>
                 <sc-if value="{{ b.redigerer }}" hint-placeholder-val="{{ false }}">
                   <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <!-- AI-en foreslaar teksten ut fra kursene som ligger
+                         ute. Den skriver i feltene under, den lagrer ikke:
+                         eieren leser, retter og trykker Lagre selv. -->
+                    <sc-if value="{{ b.kanAi }}" hint-placeholder-val="{{ false }}">
+                      <div style="background: var(--clay-50); border: 1px dashed var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-4); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ b.aiForeslaa }}" hint-size="auto,38px">{{ b.aiKnapp }}</x-import>
+                        <span style="font-size: var(--text-xs); color: var(--text-muted); flex: 1 1 240px; text-wrap: pretty;">{{ b.aiHjelp }}</span>
+                      </div>
+                    </sc-if>
                     <sc-for list="{{ b.felter }}" as="f" hint-placeholder-count="3">
                       <div>
                         <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">{{ f.etikett }}</label>
@@ -10431,10 +10457,12 @@ const SIDEINNHOLD = {
     { navn: 'Ordensregler og HMS', type: 'Redigeres under Nyttig info → Plakater', synlig: 'Publisert', felter: [] },
     // Staar sist med vilje: numrene paa seksjonene over er noekler nettsiden
     // slaar opp paa, og en ny seksjon i midten ville flyttet alle sammen.
-    { navn: 'Les mer-knappen', type: 'Fører til «Kursene våre»', synlig: 'Publisert', felter: [
+    { navn: 'Les mer-knappen', type: 'Fører til «Kursene våre»', synlig: 'Publisert', ai: 'lesmertekst', felter: [
+      { l: 'Kicker', v: 'Før du booker' },
       { l: 'Overskrift', v: 'Usikker på hva kursene går ut på?' },
-      { l: 'Tekst', v: 'Hvert kurs står beskrevet: hva du gjør, hvor lenge det varer og hva som er inkludert.', lang: true },
-      { l: 'Knapp', v: 'Les mer om våre kurs her' } ] },
+      { l: 'Tekst', v: 'Hvert kurs står beskrevet med sine egne ord: hva du gjør fra du kommer til du går, hvor lang tid det tar, hva som er inkludert og hvem det passer for. Les det gjennom før du velger dato — da vet du hva du sier ja til.', lang: true },
+      { l: 'Stikkord', v: 'Hva du lærer, Hvor lang tid det tar, Hva som er inkludert' },
+      { l: 'Knapp', v: 'Les mer om våre kurs' } ] },
   ],
   // Blokk 1 og 2 var prislister med medlemskapsnavnene skrevet inn — et
   // annet sted aa endre den samme prisen, ved siden av Kurs og medlemskap →
@@ -15342,6 +15370,57 @@ class Component extends DCLogic {
         this._aiJobber = false;
         this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
       });
+  }
+
+  /**
+   * Et tekstforslag til en seksjon under Nettsiden → Innhold.
+   *
+   * Skriver i kladden, ikke i basen. Eieren leser forslaget, retter det hun
+   * vil ha annerledes, og trykker Lagre selv — det er hennes tekst, AI-en
+   * bare foreslaar. Trykker hun Avbryt, er ingenting skjedd.
+   */
+  foreslaaInnholdstekst(handling, nokkel) {
+    if (!handling) return;
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'AI-en svarer først når siden kjører på serveren.' });
+      return;
+    }
+    if (this.state.aiInnholdJobber) return;
+    this.setState({ aiInnholdJobber: nokkel, aiInnholdFor: nokkel,
+                    aiInnholdSvar: 'Leser kursene og skriver …' });
+
+    fetch('/api/admin/ai.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok || !d || !d.ok) {
+          this.setState({ aiInnholdJobber: '',
+                          aiInnholdSvar: (d && d.feil) || 'AI-en svarte ikke. Prøv igjen.' });
+          return;
+        }
+        // Feltnavnene her er de samme etikettene som staar i SIDEINNHOLD.
+        // Kommer et felt ikke tilbake, roeres det ikke.
+        const til = { overskrift: 'Overskrift', tekst: 'Tekst', knapp: 'Knapp' };
+        const kladd = {};
+        Object.keys(til).forEach(k => {
+          if (d[k]) { kladd[nokkel + '/' + til[k]] = String(d[k]); }
+        });
+        if (Array.isArray(d.punkter) && d.punkter.length) {
+          kladd[nokkel + '/Stikkord'] = d.punkter.join(', ');
+        }
+        this.setState(st => ({
+          innholdKladd: Object.assign({}, st.innholdKladd, kladd),
+          aiInnholdJobber: '',
+          aiInnholdSvar: 'Forslaget står i feltene under. Rett det du vil ha annerledes, og trykk Lagre.'
+            + (d.kostnad ? ' (' + d.kostnad + ')' : ''),
+        }));
+      })
+      .catch(() => this.setState({ aiInnholdJobber: '',
+                                   aiInnholdSvar: 'Fikk ikke kontakt med serveren.' }));
   }
 
   aiSporr(sporsmal) {
@@ -26609,6 +26688,15 @@ class Component extends DCLogic {
           synligTone: synlig === 'Publisert' ? 'success' : (synlig === 'Vises ikke nå' ? 'warning' : 'neutral'),
           synligKnapp: synlig === 'Publisert' ? 'Skjul' : 'Vis',
           toggleSynlig: () => this.setState(s => ({ innholdSynlig: Object.assign({}, s.innholdSynlig, { [nokkel]: synlig === 'Publisert' ? 'Skjult' : 'Publisert' }) })),
+          // Seksjoner som kan faa et tekstforslag fra AI-en. «ai» staar paa
+          // seksjonen i SIDEINNHOLD, og er navnet paa handlingen i
+          // api/admin/ai.php.
+          kanAi: !!b.ai,
+          aiKnapp: this.state.aiInnholdJobber === nokkel ? 'Skriver …' : 'Foreslå tekst',
+          aiHjelp: this.state.aiInnholdSvar && this.state.aiInnholdFor === nokkel
+            ? this.state.aiInnholdSvar
+            : 'AI-en leser kursene som ligger ute og skriver et forslag i feltene under. Ingenting lagres før du trykker Lagre.',
+          aiForeslaa: () => this.foreslaaInnholdstekst(b.ai, nokkel),
           startRediger: () => this.setState({ innholdRed: nokkel, innholdKladd: {} }),
           avbryt: () => this.setState({ innholdRed: null, innholdKladd: {} }),
           lagre: () => {
@@ -27884,9 +27972,20 @@ class Component extends DCLogic {
       // sida av seg selv, med den teksten som er skrevet inn.
       erKursoversikt: side === 'kursoversikt',
       goKursoversikt: this.go('kursoversikt'),
+      keLesMerKicker: this.innh('Kurs og events/6/Kicker'),
       keLesMerTittel: this.innh('Kurs og events/6/Overskrift'),
       keLesMerTekst: this.innh('Kurs og events/6/Tekst'),
       keLesMerKnapp: this.innh('Kurs og events/6/Knapp'),
+      // Tre stikkord om hva som staar paa sida det lenkes til, skilt med
+      // komma i feltet. Tomt felt gir ingen liste — da staar feltet som for.
+      ...(() => {
+        const raa = String(this.innh('Kurs og events/6/Stikkord') || '')
+          .split(',').map(x => x.trim()).filter(Boolean).slice(0, 4);
+        return {
+          keLesMerHarPunkter: raa.length > 0,
+          keLesMerPunkter: raa.map(navn => ({ navn: '· ' + navn })),
+        };
+      })(),
       ...(side !== 'kursoversikt' ? {} : (() => {
         const kort = this.kursKort()
           // Drop-in er ikke et kurs man leser om og melder seg paa; det er

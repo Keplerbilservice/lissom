@@ -7,7 +7,8 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 27. august 2026, etter dagens runde med bestillinger.
+Sist gjennomgått: 27. august 2026, kveld — etter runden med kassa,
+mobilmenyen og kursfeltene.
 
 ---
 
@@ -118,7 +119,7 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–071 må kjøres
+### 7b. Migrasjon 052–073 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -140,6 +141,10 @@ til den er lastet opp.
 069 legger til nettadressen til Kepler.
 070 gir bildetekst og alt-tekst på toppbildet i en artikkel.
 071 gir frys av medlemskap: søknaden, svaret og perioden.
+072 gir nivå, varighet og de redigerbare kurstekstene: «Dette lager du»,
+«Dette får du med hjem», «Når er den ferdig» og «Godt å vite».
+073 retter «faar» til «får» og «verktoy» til «verktøy» i kursteksten på
+Keramikk Workshop.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
@@ -265,6 +270,47 @@ kort under kurs og medlemskap som heter videokurs, og la det være tomt.»
 Kortet står der nå, og fører til en skjerm som sier hva som mangler.
 
 ---
+
+## Bestilt 27. august, kveld — gjort samme kveld
+
+- **Min side var nede.** `renderVals()` kalte `this.hentFrys()` på Min side og
+  `this.hentFrysAdmin()` under Medlemmer, og ingen av dem fantes: frys av
+  medlemskap var bygget ferdig i skjermen og i API-et, men de fire metodene
+  som henter og sender lå aldri i fila. Hele nettsiden stoppet med
+  «this.hentFrys is not a function» — for alle. Metodene er skrevet, og
+  `bin/metodesjekk.mjs` er ny: den finner alt som kalles med `this.<navn>()`
+  og sier fra om noe av det ikke er definert. Den fanger dette neste gang.
+- **Adminmenyen på telefon.** Hele menyen lå som én rad man måtte dra
+  sidelengs i: ti punkter, tre synlige om gangen, og underpunktene under hvert
+  område var ikke synlige i det hele tatt. Nå står det hvor du er, og ett
+  trykk viser hele kartet — to spalter, alt på skjermen, med underpunktene til
+  området du står i under det.
+- **«Uttak butikk» heter Kasse**, og er ett sted for alt som selges i
+  verkstedet. Salg over disk lå ett sted og påmelding på kurs, event, drop-in
+  og medlemskap et annet. Begge skjermene har den samme raden øverst: Varer i
+  butikken, Internbutikk, Kurs, Event og Paint on Pots, Drop-in, Medlemskap.
+  Varelista er delt i butikk og internbutikk — internvarene lå blandet inn
+  mellom koppene.
+- **«Ferdig glassert» heter «Klar til henting»**, som ute på nettsiden. Den
+  lagrede rekkefølgen på kortene følger med.
+- **Nytt kort på Oversikt: kurs som går tomme for datoer.** Kurssidene lover
+  tre datoer å velge mellom, og datoer tar slutt uten at noen sier fra. Kortet
+  sier hvilke kurs det gjelder og går rett til kurslista.
+- **Kursfeltene lar seg redigere.** Ny seksjon 08 i kursoppsettet: nivå
+  (internt Nybegynner/Videregående, og den offentlige nivåteksten), varighet,
+  kort beskrivelse, «Dette lager du», «Dette får du med hjem», «Når er den
+  ferdig» og «Godt å vite». Tomt felt betyr den anbefalte teksten — den står
+  under feltet, og «Gjenopprett anbefalt tekst» tømmer feltet framfor å lime
+  inn ordlyden, så en senere endring i malen når fram til kurset.
+- **`api/admin/kurs.php` tømte de nye kurstekstene.** De ble skrevet ved hver
+  lagring, også når kallet ikke hadde dem med — hurtigskjemaet på mobil ville
+  dermed slettet «Dette lager du» og resten på et kurs de var skrevet på. Nå
+  er de i samme vakt som de øvrige tekstfeltene.
+- **Ny fane «Kurs» under Kurs og medlemskap:** bare kursene, ett per rad,
+  sortert på navn, uten kalender og datoliste. Det er her man retter noe.
+- **Oversikt er ryddet.** «Medlemmer og timer» er tatt bort — lista står under
+  Medlemmer → Alle medlemmer. «Interne samlinger» og «Ikke fornyet — minn dem
+  på» er flyttet til Medlemmer, hos menneskene de gjelder.
 
 ## Bestilt 27. august — gjort samme dag
 

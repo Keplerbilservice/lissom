@@ -20870,17 +20870,6 @@ class Component extends DCLogic {
               kort('Videokurs',
                    'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.',
                    null, 'adminvideokurs', {}, 'Se hva som mangler'),
-              // Min side er todelt, og har vaert det lenge: medlemmer ser
-              // timer, dorkode og det interne, kursdeltakere ser kursene
-              // sine. Den eneste maaten aa se hva de faktisk faar, var aa
-              // logge inn som en av dem. Kortet aapner den ekte skjermen
-              // med rollen satt.
-              //
-              // «Hva kursdeltakere ser» sto her ogsaa. Det hoerer til hos
-              // dem det gjelder, og staar naa under Deltakere.
-              kort('Hva medlemmer ser',
-                   'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
-                   null, 'minside', { fhRolle: 'medlem', fhFra: 'adminomrkurs' }, 'Se siden'),
             ],
           };
         }
@@ -20990,6 +20979,17 @@ class Component extends DCLogic {
             kort('Nyttig info',
                  'Det medlemmene får lese: dørkode, ordensregler og verkstedinfo.',
                  null, 'adminnyttig', { nyttigFor: 'medlemmer' }, 'Rediger info'),
+            // Min side er todelt, og har vaert det lenge: medlemmer ser
+            // timer, dorkode og det interne, kursdeltakere ser kursene sine.
+            // Den eneste maaten aa se hva de faktisk faar, var aa logge inn
+            // som en av dem. Kortet aapner den ekte skjermen med rollen satt.
+            //
+            // Begge kortene sto foerst under Kurs og medlemskap. De hoerer
+            // til hos dem de gjelder: dette her, deltakerkortet under
+            // Deltakere.
+            kort('Hva medlemmer ser',
+                 'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
+                 null, 'minside', { fhRolle: 'medlem', fhFra: 'adminomrmedlemmer' }, 'Se siden'),
           ],
         };
       })(),
@@ -27718,8 +27718,8 @@ class Component extends DCLogic {
         ? 'Slik ser Min side ut for et medlem. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.'
         : 'Slik ser Min side ut for en kursdeltaker uten medlemskap. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.',
       // Tilbake dit du kom fra. Kortene staar to steder — «Hva medlemmer ser»
-      // under Kurs og medlemskap, «Hva kursdeltakere ser» under Deltakere —
-      // og en fast vei tilbake ville sendt den ene feil.
+      // under Medlemmer, «Hva kursdeltakere ser» under Deltakere — og en
+      // fast vei tilbake ville sendt den ene feil.
       fhTilbake: () => this.gaaAdmin(this.state.fhFra || 'adminomrkurs', {}),
       bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',
       bmTittel: this.state.soknadStatus === 'venter'

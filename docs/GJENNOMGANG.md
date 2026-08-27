@@ -20,9 +20,9 @@ Admin har fått de to forhåndsvisningene. De åpner **den ekte skjermen** med
 rollen satt for hånd, med et gult bånd øverst og «Tilbake til admin», som går
 tilbake dit du kom fra.
 
-Hvert kort står der gruppen hører hjemme: «Hva medlemmer ser» under Kurs og
-medlemskap, «Hva kursdeltakere ser» under Deltakere. Begge sto først under
-Kurs og medlemskap; det siste ble flyttet 27. august på bestilling.
+Hvert kort står der gruppen hører hjemme: «Hva medlemmer ser» under
+Medlemmer, «Hva kursdeltakere ser» under Deltakere. Begge sto først under
+Kurs og medlemskap, og ble flyttet 27. august på bestilling.
 
 Skillet var skrevet ut fem steder med samme uttrykk. Det står nå ett sted,
 `medlemsvisning()`, som de fem leser. Stemplingsknappen lå utenfor sperren
@@ -63,9 +63,10 @@ står noe om at det finnes en medlemsside i det hele tatt. Og admin har ingen
 måte å se hva de to gruppene faktisk ser, annet enn å logge inn som en av
 dem.
 
-**Skal bygges.** To kort under «Kurs og medlemskap» — «Hva medlemmer ser» og
-«Hva kursdeltakere ser» — som viser Min side slik den er, med data fra en
-ekte bruker i hver gruppe. Ikke en tegning: samme skjerm, samme komponenter,
+**Skal bygges.** To kort — «Hva medlemmer ser» og «Hva kursdeltakere ser» —
+som viser Min side slik den er, med data fra en ekte bruker i hver gruppe.
+Kortene sto først under «Kurs og medlemskap»; de står nå under henholdsvis
+Medlemmer og Deltakere. Ikke en tegning: samme skjerm, samme komponenter,
 med et tydelig bånd øverst om at dette er en forhåndsvisning.
 
 ---
@@ -661,10 +662,14 @@ Kjørt 27. august mot den lokale tjeneren, som admin, i Chromium.
 | «Nytt medlemskap» er borte som eget kort | leste alle synlige bladtekster på skjermen | ett treff igjen, og det er knappen i hurtigraden |
 | «Lag et nytt medlemskap» ligger i Medlemskap-kortet | målte at knappen ligger inne i samme ramme, under overskriften | bestått, 390 og 1400 px |
 | «Legg ut en ny dato» ligger i datokortet | samme | bestått |
-| Kortene Kursdeltakere, Hva medlemmer ser, Hva kursdeltakere ser finnes | leste kortoverskriftene | bestått |
+| Kortet Kursdeltakere finnes under Kurs og medlemskap | leste kortoverskriftene | bestått |
+| Forhåndsvisningskortene er borte fra Kurs og medlemskap | samme | bestått, begge flyttet |
+| «Hva kursdeltakere ser» står under Deltakere | leste kortoverskriftene der | bestått |
+| «Hva medlemmer ser» står under Medlemmer, sist i rekka | samme, og målte rekkefølgen mot «Nyttig info» | bestått |
 | Forhåndsvisning som kursdeltaker | trykket kortet | båndet står øverst, rollen står som «Kursdeltaker», medlemsdelen er borte, «Bli medlem» står i stedet |
 | Forhåndsvisning som medlem | trykket kortet | rollen står som «Medlemsside», timer og dørkode er med, «Bli medlem» er borte |
-| «Tilbake til admin» | trykket knappen | tilbake på Kurs og medlemskap |
+| «Tilbake til admin» | trykket knappen i begge forhåndsvisningene | tilbake til Deltakere fra deltakerkortet, til Medlemmer fra medlemskortet |
+| Områdene er ellers urørt | leste kortoverskriftene i alle tre områdene | bestått |
 | Forhåndsvisningen henger ikke igjen | gikk videre fra forhåndsvisningen med en snarvei | båndet er borte |
 | Kortene virker som før | trykket «Se medlemskapene» og «Lag et nytt medlemskap» | begge åpner det de skal |
 | Ekte Min side, uten forhåndsvisning | logget inn og gikk rett til /min-side | rollebåndet står, forhåndsvisningsbåndet gjør det ikke |

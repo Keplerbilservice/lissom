@@ -114,12 +114,14 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–056 må kjøres
+### 7b. Migrasjon 052–057 må kjøres
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
 dem framfor å virke. 056 gir gjentakelsen i steg 2 «annenhver uke» og
 «månedlig» — uten den virker bare det ukentlige, og skjermen sier fra.
+057 gir feltet for allergier ved påmelding. Uten den går påmeldingen
+gjennom som før, men opplysningen blir ikke lagret.
 
 ### 8. ~~Nøklene byttes~~ — gjort 26. august
 

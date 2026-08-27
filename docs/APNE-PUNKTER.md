@@ -107,19 +107,31 @@ booket?
 Kursene selv ble laget samme sted. «Glasurkveld for medlemmer» kostet
 verkstedet 10 000 kroner i innleid kursholder før den ble slettet.
 
-### 7. Manuelle betalinger uten betalingsmåte
+### 7. ~~Manuelle betalinger uten betalingsmåte~~ — avklart 27. august
 
-Bokføres mot Vipps (1510) i dagsoppgjøret. Skal den heller kreve at
-betalingsmåte er satt?
+Lissom oppga kontoene: **Vipps 1510, Kontant 1900, Faktura 1920**, og
+**gavekort 2905** som gjeld. Migrasjon 078 setter dem — men bare der feltet
+står tomt, så noe som alt er skrevet inn under Økonomi → Regnskap blir stående.
 
-Lissom 26. august: «denne må jeg komme tilbake til senere.» Ligger til hen
-har bestemt seg.
+Gavekortregelen hun beskrev er den koden alt følger: salget føres som gjeld på
+2905, og når kortet løses inn blir beløpet inntekt på kontoen for det det
+faktisk ble brukt til — kurs, drop-in eller butikk — mens 2905 skrives ned
+tilsvarende.
+
+**Fortsatt ikke oppgitt:** kontoene for kurs, medlemskap, butikk og drop-in, og
+alle mva-kodene. De står tomme med vilje; et kontonummer jeg finner på er verre
+enn et tomt felt, for det tomme feltet sier fra i dagsoppgjøret.
+
+**Drop-in er ikke undervisning.** Slik den står i basen: «To timer i verkstedet.
+Krever at du har gått kurs hos oss, eller kommer sammen med et aktivt medlem.»
+Det er tilgang til verkstedet på egen hånd, ikke et kurs med lærer — så etter
+Lissoms egen regel er det en tjeneste med 25 %.
 
 ---
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–075 må kjøres
+### 7b. Migrasjon 052–078 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -150,6 +162,12 @@ Pots.
 075 setter plassen på Paint on Pots til 0. Prisen var 690 — prisen *med*
 gjenstanden — og etter 074 ville kunden betalt den summen for plassen og
 gjenstanden i tillegg.
+076 gir `course_sessions.fra_apningstid`: Paint on Pots legges ut på de åpne
+tidene, og markeringen holder dem utenfor åpningstidsregnestykket.
+077 fjerner «Glasurkveld for medlemmer», som ikke finnes. Avlyser i stedet for
+å slette hvis noen har meldt seg på.
+078 setter motkontoene — Vipps 1510, Kontant 1900, Faktura 1920 — og
+gavekortkontoen 2905. Bare der feltet står tomt.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
@@ -180,6 +198,16 @@ Ble limt inn i en chat 26. august og var kompromittert:
 
 Framgangsmåte: bytt ett sted, oppdater `~/lissom-secrets/secrets.php`, test.
 Én om gangen.
+
+### 8b. «Glasurkveld for medlemmer» finnes ikke — fjernet 27. august
+
+Kurset ble lagt inn av migrasjon 003, den gangen katalogen var gjettet framfor
+hentet. Lissom har ingen glasurkveld. Migrasjon 077 sletter det — men bare hvis
+ingen har meldt seg på; er det påmeldte, avlyses det i stedet, så påmeldingen
+står igjen.
+
+De to andre interne samlingene fra samme seed står fortsatt: **«Store former,
+viderekomne»** og **«Medlemsfrokost»**. De er ikke spurt om, og ikke rørt.
 
 ### 9. Dublettene i medlemslista
 
@@ -505,6 +533,20 @@ kvelden. Regelen står som den er.
 Verdt å vite hva det betyr: går det en glasurkveld for medlemmer 20–22, kan en
 kunde utenfra booke en Paint on Pots-plass 20–22 samme kveld. Det var et
 bevisst valg — verkstedet er bemannet, og døren er åpen.
+
+### 14. ~~Skal innstempling fra et vanlig medlem åpne verkstedet?~~ — avklart 27. august
+
+**Nei.** Lissom: «innstempling er kun når admin logger inne.» Det er slik det
+virker i dag — `Stempling::verkstedetBemannet()` teller bare `rolle = 'admin'`.
+Ingen endring; punktet lukkes.
+
+Det betyr også at et medlem alene i verkstedet ikke gjør Paint on Pots
+bookbart. Bare når Lissom selv er stemplet inn.
+
+### 15. ~~Date Night-seksjonen på Paint on Pots~~ — avklart 27. august
+
+Lissom: «la den bli.» Teksten står, og kan redigeres under Nettsiden → Innhold
+→ Paint on Pots → Date Night.
 
 ## Ferdig, men verdt å vite
 

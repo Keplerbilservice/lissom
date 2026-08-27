@@ -23,6 +23,29 @@ $til   = Foresporsel::tekst('til', 'okt');
 $tekst = trim(Foresporsel::tekst('tekst'));
 $sms   = Foresporsel::tekst('ogsaaSms') === 'ja';
 $emne  = mb_substr(Foresporsel::tekst('emne', 'Beskjed fra Lissom'), 0, 191);
+// Bildet og bildeteksten til et nyhetsbrev. En vanlig beskjed sender ingen
+// bilde; da staar feltene tomme og brevet er ren tekst som for.
+$bilde      = mb_substr(Foresporsel::tekst('bilde'), 0, 255);
+$bildetekst = mb_substr(Foresporsel::tekst('bildetekst'), 0, 255);
+$knappTekst = mb_substr(Foresporsel::tekst('knappTekst'), 0, 60);
+$knappUrl   = mb_substr(Foresporsel::tekst('knappUrl'), 0, 500);
+// Adressen skal peke ut paa nettet, ikke kjore noe i e-postleseren.
+if ($knappUrl !== '' && !preg_match('~^https?://~i', $knappUrl)) {
+    $knappUrl = '';
+}
+
+// Forhaandsvisning: den samme HTML-en, uten aa sende noe.
+//
+// Skjermen kunne tegnet sin egen etterlikning, men da ville de to sagt noe
+// forskjellig etter hvert. Dette er noeyaktig det som gaar ut.
+if (Foresporsel::tekst('handling') === 'forhandsvis') {
+    Svar::ok(['html' => Oppsett::epost(
+        $emne ?: 'Overskriften kommer her',
+        $tekst !== '' ? $tekst : 'Teksten kommer her.',
+        $bilde, $bildetekst,
+        ['tekst' => $knappTekst, 'url' => $knappUrl]
+    )]);
+}
 
 if (mb_strlen($tekst) < 3) {
     Svar::feil('Skriv en melding først.');
@@ -132,7 +155,13 @@ foreach ($mottakere as $m) {
     $personlig = str_replace('{navn}', (string) $m['navn'], $tekst);
 
     if (!empty($m['epost'])) {
-        Varsel::epost((string) $m['epost'], $emne, $personlig . "\n\nHilsen Lissom Keramikk", $refType, $refId);
+        // Oppsettet: bildet oeverst, overskriften, avsnittene og en
+        // eventuell knapp. Uten bilde og knapp blir det den samme teksten
+        // som for, bare i en ramme som taaler aa bli aapnet i Outlook.
+        $html = Oppsett::epost($emne, $personlig, $bilde, $bildetekst,
+            ['tekst' => $knappTekst, 'url' => $knappUrl]);
+        Varsel::epost((string) $m['epost'], $emne,
+            $personlig . "\n\nHilsen Lissom Keramikk", $refType, $refId, 'system', $html);
         $epost++;
     }
     if ($sms && !empty($m['telefon'])) {

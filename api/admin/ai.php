@@ -567,6 +567,10 @@ switch ($handling) {
             'artikkelId' => $resultat,
             'type'       => $u['type'],
             'tittel'     => (string) $u['tittel'],
+            // Bildet eieren valgte da utkastet ble laget. Uten dette fulgte
+            // det ikke med til Beskjeder, og nyhetsbrevet gikk ut uten det
+            // bildet hun hadde valgt til det.
+            'bilde'      => (string) ($data['bilde'] ?? ''),
             // Bare tekst som skal videre et sted. En artikkel er alt lagret.
             'tekst'      => $resultat === null ? (string) $u['tekst'] : '',
             'tilBeskjed' => $erBrev,

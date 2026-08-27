@@ -8511,6 +8511,48 @@ window.__resources = {
               </sc-if>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ nbEmne }}" on-change="{{ settNbEmne }}" placeholder="Kort og tydelig" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Tekst" rows="5" value="{{ nbTekst }}" on-change="{{ settNbTekst }}" placeholder="Skriv beskjeden her" hint-size="100%,140px"></x-import>
+
+              <!-- Oppsettet paa e-posten.
+                   Beskjeden gikk ut som ren tekst. Et nyhetsbrev med bilde
+                   ble sendt uten bildet — det laa paa utkastet og fulgte
+                   aldri med hit. Her velges bildet, bildeteksten og en
+                   knapp, og forhaandsvisningen under er den samme HTML-en
+                   som faktisk sendes. -->
+              <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Oppsett</div>
+                  <button type="button" onClick="{{ nbVisOppsett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ nbOppsettKnapp }}</button>
+                </div>
+                <div style="display: flex; gap: var(--space-4); align-items: flex-start; flex-wrap: wrap;">
+                  <button type="button" onClick="{{ nbVelgBilde }}" aria-label="{{ nbBildeKnapp }}" style="{{ nbBildeStil }}"></button>
+                  <div style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-3);">
+                    <div>
+                      <label for="nb-bildetekst" style="{{ nbLitenEtikett }}">Bildetekst — står under bildet</label>
+                      <input id="nb-bildetekst" value="{{ nbBildetekst }}" onChange="{{ settNbBildetekst }}" placeholder="Valgfritt" style="{{ nbFeltStil }}">
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
+                      <div>
+                        <label for="nb-knapp" style="{{ nbLitenEtikett }}">Knapp</label>
+                        <input id="nb-knapp" value="{{ nbKnappTekst }}" onChange="{{ settNbKnappTekst }}" placeholder="F.eks. Se kursene" style="{{ nbFeltStil }}">
+                      </div>
+                      <div>
+                        <label for="nb-knapplenke" style="{{ nbLitenEtikett }}">Knappen fører til</label>
+                        <input id="nb-knapplenke" value="{{ nbKnappUrl }}" onChange="{{ settNbKnappUrl }}" placeholder="https://lissom.no/kurs" style="{{ nbFeltStil }}">
+                      </div>
+                    </div>
+                    <sc-if value="{{ nbHarBilde }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ nbFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                    </sc-if>
+                  </div>
+                </div>
+                <sc-if value="{{ nbOppsettApent }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-2);">Slik ser den ut i innboksen:</div>
+                    <iframe data-srcdoc="{{ nbForhandsvisning }}" title="Forhåndsvisning av e-posten" style="width: 100%; height: 460px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: #fff;"></iframe>
+                  </div>
+                </sc-if>
+              </div>
+
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="{{ nbSmsEtikett }}" checked="{{ nbSms }}" on-change="{{ vekslNbSms }}" hint-size="100%,24px"></x-import>
               <sc-if value="{{ smsAv }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: -6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ smsForklaring }}</p>
@@ -9604,6 +9646,40 @@ window.__resources = {
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Emneknagger</div>
                   <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); word-break: break-word;">{{ mkLesTagger }}</p>
                   <button type="button" onClick="{{ mkLesKopierTagger }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); color: var(--text-heading);">Kopier emneknaggene</button>
+                </div>
+              </sc-if>
+
+              <!-- Innlegget slik det blir.
+                   Teksten sto her alene, og bildet eieren hadde valgt laa i
+                   basen og gikk ingen steder. Her staar de sammen, i det
+                   formatet kanalen faktisk bruker — og bildet kan lastes ned
+                   ferdig beskaaret, saa det ikke maa klippes for haand
+                   etterpaa. -->
+              <sc-if value="{{ mkLesHarOppsett }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-bottom: var(--space-5);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Slik blir innlegget</div>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkLesFormat }}</span>
+                  </div>
+                  <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; align-items: flex-start;">
+                    <div style="flex: 0 0 auto;">
+                      <div style="{{ mkLesRammeStil }}">
+                        <sc-if value="{{ mkLesHarBilde }}" hint-placeholder-val="{{ true }}">
+                          <img data-src="{{ mkLesBilde }}" alt="" style="{{ mkLesBildeStil }}" loading="lazy" decoding="async">
+                        </sc-if>
+                        <sc-if value="{{ mkLesUtenBilde }}" hint-placeholder-val="{{ false }}">
+                          <div style="{{ mkLesTomStil }}">Ingen bilde valgt</div>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ mkLesHarBilde }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ mkLesLastNed }}" style="appearance: none; cursor: pointer; margin-top: var(--space-3); width: 100%; border: 1px solid var(--lissom-brown); background: var(--lissom-brown); color: var(--clay-50); border-radius: var(--radius-pill); padding: 9px 14px; font: var(--type-body-sm); font-weight: 700;">{{ mkLesLastNedTekst }}</button>
+                      </sc-if>
+                    </div>
+                    <div style="flex: 1 1 260px; min-width: 0;">
+                      <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); line-height: 1.6; color: var(--text-body); white-space: pre-wrap;">{{ mkLesLimtekst }}</p>
+                      <button type="button" onClick="{{ mkLesKopierAlt }}" style="appearance: none; cursor: pointer; background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); color: var(--text-heading);">Kopier teksten med emneknagger</button>
+                    </div>
+                  </div>
                 </div>
               </sc-if>
 
@@ -14964,6 +15040,11 @@ class Component extends DCLogic {
     if (v.slag === 'bibliotek') {
         return;
     }
+    // Bildet i nyhetsbrevet. Ligger i skjemaet til beskjeden sendes.
+    if (v.slag === 'beskjedbilde') {
+      this.setState({ nbBilde: url || '' }, () => this.hentForhandsvisning());
+      return;
+    }
     // Bildet i skjemaet under Nyttig info. Artikkelen er kanskje ikke
     // lagret ennaa, saa det ligger i skjemaet til den lagres.
     if (v.slag === 'nyttigbilde') {
@@ -15030,6 +15111,8 @@ class Component extends DCLogic {
           ? { tittel: this.state.abTittel || 'artikkelen', bilde: this.state.abBilde || '' }
         : (v && v.slag === 'nyttigbilde')
           ? { tittel: this.state.artTittel || 'artikkelen', bilde: this.state.artBilde || '' }
+        : (v && v.slag === 'beskjedbilde')
+          ? { tittel: this.state.nbEmne || 'beskjeden', bilde: this.state.nbBilde || '' }
           : ((v && kilde.find(x => x.id === v.id)) || {});
     // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
     // originalene i full stoerrelse — over hundre av dem, hver gang den ble
@@ -15500,6 +15583,7 @@ class Component extends DCLogic {
                 motValg: 'Alle aktive medlemmer',
                 nbEmne: d.tittel || '',
                 nbTekst: d.tekst || '',
+                nbBilde: d.bilde || '',
               });
               window.scrollTo(0, 0);
             } else if (kropp.publiser) {
@@ -15616,6 +15700,87 @@ class Component extends DCLogic {
    * «Godkjenn» sa bare «utkastet er godkjent», og teksten var borte — brevet
    * skulle sendes fra Beskjeder, men ingenting fulgte med dit.
    */
+  /**
+   * Forhaandsvisningen av e-posten, bygget av serveren.
+   *
+   * Serveren bruker den samme koden som sender — Oppsett::epost. Tegnet
+   * skjermen sin egen etterlikning, ville de to sagt noe forskjellig etter
+   * hvert, og da er forhaandsvisningen verdiloes.
+   */
+  hentForhandsvisning() {
+    if (!this.erPublisert() || !this.state.nbOppsett) return;
+    if (this._fvTimer) clearTimeout(this._fvTimer);
+    // Vent litt: eieren skriver, og et kall per tastetrykk er unodig.
+    this._fvTimer = setTimeout(() => {
+      fetch('/api/admin/beskjed.php', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          handling: 'forhandsvis',
+          emne: (this.state.nbEmne || '').trim(),
+          tekst: (this.state.nbTekst || '').trim(),
+          bilde: this.state.nbBilde || '',
+          bildetekst: (this.state.nbBildetekst || '').trim(),
+          knappTekst: (this.state.nbKnappTekst || '').trim(),
+          knappUrl: (this.state.nbKnappUrl || '').trim(),
+        }),
+      })
+        .then(r => r.json())
+        .then(d => { if (d && d.html) this.setState({ nbForhandsvisning: d.html }); })
+        .catch(() => {});
+    }, 400);
+  }
+
+  /**
+   * Laster ned bildet beskaaret til formatet kanalen bruker.
+   *
+   * Instagram vil ha 4:5, en story 9:16. Lastet man ned originalen, maatte
+   * den klippes for haand etterpaa — og da havner motivet sjelden der det
+   * skal. Her klippes det midt i, med det utsnittet verkstedet selv har
+   * valgt paa bildet, og filen kommer ut i noeyaktig de pikslene kanalen
+   * ber om.
+   */
+  lastNedBeskaaret(url, format, navn) {
+    if (!url || !format) return;
+    const im = new window.Image();
+    im.crossOrigin = 'anonymous';
+    im.onload = () => {
+      const lerret = document.createElement('canvas');
+      lerret.width = format.bredde;
+      lerret.height = format.hoyde;
+      const t = lerret.getContext('2d');
+
+      // «cover»: fyll ramma, klipp det som blir til overs.
+      const skala = Math.max(format.bredde / im.width, format.hoyde / im.height);
+      const b = im.width * skala;
+      const h = im.height * skala;
+      // Utsnittet verkstedet har valgt, som prosent. Uten et valgt punkt
+      // klippes det fra midten.
+      const punkt = String(this.fokusFor(url) || '50% 50%').split(/\s+/);
+      const px = (parseFloat(punkt[0]) || 50) / 100;
+      const py = (parseFloat(punkt[1]) || 50) / 100;
+      t.drawImage(im, (format.bredde - b) * px, (format.hoyde - h) * py, b, h);
+
+      lerret.toBlob((blob) => {
+        if (!blob) { this.setState({ kvittering: 'Fikk ikke laget bildet' }); return; }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = String(navn).toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)
+          + '-' + format.bredde + 'x' + format.hoyde + '.jpg';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        this.setState({ kvittering: 'Bildet er lastet ned',
+                        kvitteringDetalj: format.bredde + ' × ' + format.hoyde + ' piksler, klart til å legges ut.' });
+      }, 'image/jpeg', 0.92);
+    };
+    im.onerror = () => this.setState({ kvittering: 'Fikk ikke hentet bildet',
+                                       kvitteringDetalj: 'Prøv å velge bildet på nytt.' });
+    im.src = url;
+  }
+
   brukUtkastSomBeskjed(id) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     this.setState({ kvittering: 'Henter teksten …' });
@@ -15628,6 +15793,11 @@ class Component extends DCLogic {
           motValg: 'Alle aktive medlemmer',
           nbEmne: d.utkast.tittel || '',
           nbTekst: d.utkast.tekst || '',
+          // Bildet fulgte ikke med. Utkastet hadde ett — eieren valgte det
+          // da brevet ble laget — men Beskjeder fikk bare tittel og tekst,
+          // og brevet gikk ut uten.
+          nbBilde: d.utkast.bilde || '',
+          nbBildetekst: '',
           kvittering: 'Teksten er klar',
           kvitteringDetalj: 'Velg mottakere og trykk Send.',
         });
@@ -21331,8 +21501,43 @@ class Component extends DCLogic {
           nbNavn: this.state.nbNavn || '', settNbNavn: e => this.setState({ nbNavn: e.target.value }),
           nbEpost: this.state.nbEpost || '', settNbEpost: e => this.setState({ nbEpost: e.target.value }),
           nbTlf: this.state.nbTlf || '', settNbTlf: e => this.setState({ nbTlf: e.target.value }),
-          nbEmne: this.state.nbEmne || '', settNbEmne: e => this.setState({ nbEmne: e.target.value }),
-          nbTekst: this.state.nbTekst || '', settNbTekst: e => this.setState({ nbTekst: e.target.value }),
+          nbEmne: this.state.nbEmne || '', settNbEmne: e => this.setState({ nbEmne: e.target.value }, () => this.hentForhandsvisning()),
+          // ── Oppsettet paa e-posten ──────────────────────────────────
+          //
+          // Bildet, bildeteksten og knappen. Forhaandsvisningen hentes fra
+          // serveren, som bygger den med den samme koden som sender —
+          // ellers ville de to sagt noe forskjellig etter hvert.
+          nbBilde: this.state.nbBilde || '',
+          nbHarBilde: !!this.state.nbBilde,
+          nbBildeKnapp: this.state.nbBilde ? 'Bytt bilde' : 'Velg bilde',
+          nbBildeStil: {
+            appearance: 'none', cursor: 'pointer', padding: 0, flex: '0 0 auto',
+            width: 112, height: 84, borderRadius: 'var(--radius-md)',
+            border: this.state.nbBilde ? '1px solid var(--border-subtle)' : '2px dashed var(--border-subtle)',
+            backgroundColor: 'var(--clay-100)',
+            backgroundImage: this.state.nbBilde ? "url('" + this.state.nbBilde + "')" : 'none',
+            backgroundSize: 'cover', backgroundPosition: this.fokusFor(this.state.nbBilde || ''),
+          },
+          nbVelgBilde: () => this.apneBildevalg({ slag: 'beskjedbilde' }),
+          nbFjernBilde: () => this.setState({ nbBilde: '', nbBildetekst: '' }, () => this.hentForhandsvisning()),
+          nbLitenEtikett: { display: 'block', fontSize: 'var(--text-xs)',
+                            color: 'var(--text-muted)', marginBottom: 4 },
+          nbFeltStil: { boxSizing: 'border-box', width: '100%',
+                        border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)',
+                        padding: '9px 12px', font: 'var(--type-body-sm)',
+                        background: 'var(--clay-50)', color: 'var(--text-heading)' },
+          nbBildetekst: this.state.nbBildetekst || '',
+          settNbBildetekst: e => this.setState({ nbBildetekst: e.target.value }, () => this.hentForhandsvisning()),
+          nbKnappTekst: this.state.nbKnappTekst || '',
+          settNbKnappTekst: e => this.setState({ nbKnappTekst: e.target.value }, () => this.hentForhandsvisning()),
+          nbKnappUrl: this.state.nbKnappUrl || '',
+          settNbKnappUrl: e => this.setState({ nbKnappUrl: e.target.value }, () => this.hentForhandsvisning()),
+          nbOppsettApent: !!this.state.nbOppsett,
+          nbOppsettKnapp: this.state.nbOppsett ? 'Skjul forhåndsvisningen' : 'Se hvordan den blir',
+          nbVisOppsett: () => this.setState(st => ({ nbOppsett: !st.nbOppsett }),
+                                            () => { if (this.state.nbOppsett) this.hentForhandsvisning(); }),
+          nbForhandsvisning: this.state.nbForhandsvisning || '',
+          nbTekst: this.state.nbTekst || '', settNbTekst: e => this.setState({ nbTekst: e.target.value }, () => this.hentForhandsvisning()),
           nbSms: !!this.state.nbSms && this.smsAktivert(),
           nbSmsEtikett: 'Send også som SMS — ' + (this.smsAktivert() ? 'aktivert' : 'ikke aktivert'),
           vekslNbSms: () => this.setState(s2 => ({ nbSms: !s2.nbSms })),
@@ -21354,6 +21559,12 @@ class Component extends DCLogic {
               tekst: tekst,
               emne: (this.state.nbEmne || '').trim() || 'Beskjed fra Lissom',
               ogsaaSms: (this.state.nbSms && this.smsAktivert()) ? 'ja' : 'nei',
+              // Oppsettet: bildet oeverst, overskriften, avsnittene og en
+              // knapp. Tomme felt gir den samme rene teksten som for.
+              bilde: this.state.nbBilde || '',
+              bildetekst: (this.state.nbBildetekst || '').trim(),
+              knappTekst: (this.state.nbKnappTekst || '').trim(),
+              knappUrl: (this.state.nbKnappUrl || '').trim(),
             }, g);
             if (g.til === 'okt') kropp.oktId = Number(oktValgt);
             if (g.til === 'en') {
@@ -21379,7 +21590,8 @@ class Component extends DCLogic {
                 this.setState(Object.assign(
                   { nbSender: false, kvittering: ok ? 'Beskjeden er sendt' : 'Beskjeden ble ikke sendt',
                     kvitteringDetalj: (d && (d.beskjed || d.feil)) || '' },
-                  ok ? { nbTekst: '', nbEmne: '', nbNavn: '', nbEpost: '', nbTlf: '' } : {}
+                  ok ? { nbTekst: '', nbEmne: '', nbNavn: '', nbEpost: '', nbTlf: '',
+                         nbBilde: '', nbBildetekst: '', nbKnappTekst: '', nbKnappUrl: '' } : {}
                 ));
               })
               .catch(() => this.setState({
@@ -28981,6 +29193,50 @@ class Component extends DCLogic {
             (((this.state.mkLes || {}).hashtags) || []).map(h => '#' + h).join(' '),
             'Emneknaggene ligger på utklippstavla.'
           ),
+
+          // ── Innlegget slik det blir ─────────────────────────────────
+          //
+          // Ramma har formatet kanalen bruker: Instagram 4:5, story 9:16,
+          // LinkedIn liggende. Bildet legges inn med «cover», som i kanalen,
+          // saa det som staar i ramma her er det som blir synlig der.
+          ...(() => {
+            const u = this.state.mkLes || {};
+            const f = u.format || null;
+            if (!f) {
+              return { mkLesHarOppsett: false, mkLesFormat: '', mkLesRammeStil: {},
+                       mkLesBildeStil: {}, mkLesTomStil: {}, mkLesBilde: '',
+                       mkLesHarBilde: false, mkLesUtenBilde: false, mkLesLimtekst: '',
+                       mkLesLastNedTekst: '', mkLesLastNed: () => {},
+                       mkLesKopierAlt: () => {} };
+            }
+            // Ramma tegnes 220 piksler bred, med hoyden i samme forhold.
+            const bredde = 220;
+            const hoyde = Math.round(bredde * f.hoyde / f.bredde);
+            return {
+              mkLesHarOppsett: true,
+              mkLesFormat: f.navn + ' · ' + f.bredde + ' × ' + f.hoyde + ' px',
+              mkLesRammeStil: {
+                width: bredde, height: hoyde, borderRadius: 'var(--radius-md)',
+                overflow: 'hidden', background: 'var(--clay-100)',
+                border: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              },
+              mkLesBilde: u.bilde || '',
+              mkLesHarBilde: !!u.bilde,
+              mkLesUtenBilde: !u.bilde,
+              mkLesBildeStil: {
+                width: '100%', height: '100%', objectFit: 'cover',
+                objectPosition: this.fokusFor(u.bilde || ''), display: 'block',
+              },
+              mkLesTomStil: { font: 'var(--type-body-sm)', fontSize: 'var(--text-xs)',
+                              color: 'var(--text-muted)', textAlign: 'center', padding: 12 },
+              mkLesLimtekst: u.limtekst || u.tekst || '',
+              mkLesKopierAlt: () => this.kopier(u.limtekst || u.tekst || '',
+                'Teksten og emneknaggene ligger på utklippstavla.'),
+              mkLesLastNedTekst: 'Last ned bildet i ' + f.bredde + ' × ' + f.hoyde,
+              mkLesLastNed: () => this.lastNedBeskaaret(u.bilde, f, u.tittel || 'innlegg'),
+            };
+          })(),
         };
       })(),
       adminNavSeo: this.adminMeny(),

@@ -12,15 +12,22 @@ declare(strict_types=1);
 
 final class Varsel
 {
-    /** Legger en e-post i kø. */
-    public static function epost(string $mottaker, string $emne, string $tekst, ?string $refType = null, ?int $refId = null, string $gruppe = 'system'): int
+    /**
+     * Legger en e-post i kø.
+     *
+     * «$egenHtml» er ferdig oppsett fra Oppsett::epost — et nyhetsbrev med
+     * bilde, overskrift og knapp. Uten det bygges HTML-en av teksten som
+     * for. Signaturen legges paa i begge tilfeller, ett sted, saa den ikke
+     * mangler i det ene og staar i det andre.
+     */
+    public static function epost(string $mottaker, string $emne, string $tekst, ?string $refType = null, ?int $refId = null, string $gruppe = 'system', ?string $egenHtml = null): int
     {
         $mottaker = trim($mottaker);
         if (!filter_var($mottaker, FILTER_VALIDATE_EMAIL)) {
             logg('Hoppet over e-post til ugyldig adresse', ['mottaker' => $mottaker]);
             return 0;
         }
-        [$tekst, $html] = self::medSignatur($tekst, $gruppe);
+        [$tekst, $html] = self::medSignatur($tekst, $gruppe, $egenHtml);
         return self::iKo('epost', $mottaker, $emne, $tekst, null, $refType, $refId, $html);
     }
 
@@ -266,24 +273,29 @@ final class Varsel
      *
      * @return array{0: string, 1: ?string} [tekst, html]
      */
-    private static function medSignatur(string $tekst, string $gruppe): array
+    private static function medSignatur(string $tekst, string $gruppe, ?string $egenHtml = null): array
     {
+        // Et ferdig oppsett skal ut selv om signaturen er slaatt av for
+        // gruppa — ellers ville et nyhetsbrev med bilde blitt sendt som ren
+        // tekst, og bildet forsvunnet.
+        $kropp = $egenHtml !== null && trim($egenHtml) !== ''
+            ? $egenHtml : self::tekstSomHtml($tekst);
+
         if (!in_array($gruppe, self::GRUPPER, true)) {
-            return [$tekst, null];
+            return [$tekst, $egenHtml];
         }
         $signatur = trim((string) Config::hent('epost_signatur', ''));
         if ($signatur === '') {
-            return [$tekst, null];
+            return [$tekst, $egenHtml];
         }
         if ((string) Config::hent('epost_signatur_' . $gruppe, '1') !== '1') {
-            return [$tekst, null];
+            return [$tekst, $egenHtml];
         }
 
         $ren = self::signaturSomTekst($signatur);
         return [
             $ren === '' ? $tekst : $tekst . "\n\n-- \n" . $ren,
-            self::tekstSomHtml($tekst)
-                . '<div style="margin-top:28px;">' . $signatur . '</div>',
+            $kropp . '<div style="margin-top:28px;">' . $signatur . '</div>',
         ];
     }
 

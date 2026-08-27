@@ -57,7 +57,23 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
         // er AI-ens beskrivelse i ord av et bilde som ikke finnes.
         'bilde'        => trim((string) ($data['bilde'] ?? '')) ?: null,
         'ingress'   => trim((string) ($data['ingress'] ?? '')),
-    ]]);
+        // Kanalen og formen innlegget ble skrevet for. Uten dem vet ikke
+        // skjermen hvilket format bildet skal ha — Instagram vil ha 4:5,
+        // en story 9:16, LinkedIn liggende.
+        'kanal'     => trim((string) ($data['kanal'] ?? '')),
+        'form'      => trim((string) ($data['form'] ?? '')),
+        // Teksten satt sammen slik den limes inn: brodteksten, blank linje,
+        // og emneknaggene til slutt. Bygget av serveren, saa den som
+        // kopierer faar noeyaktig det som staar i forhaandsvisningen.
+        'limtekst'  => Oppsett::sosialTekst((string) $u['tekst'], (array) ($data['hashtags'] ?? [])),
+    ] + (static function () use ($data): array {
+        $kanal = trim((string) ($data['kanal'] ?? ''));
+        if ($kanal === '') {
+            return [];
+        }
+        [$b, $h, $navn] = Oppsett::format($kanal, trim((string) ($data['form'] ?? '')));
+        return ['format' => ['bredde' => $b, 'hoyde' => $h, 'navn' => $navn]];
+    })()]);
 }
 
 if (Foresporsel::metode() === 'GET') {

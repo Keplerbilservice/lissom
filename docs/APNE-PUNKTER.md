@@ -7,7 +7,7 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 26. august 2026, etter at «Ferdig glassert» ble bygd ferdig.
+Sist gjennomgått: 27. august 2026, etter dagens runde med bestillinger.
 
 ---
 
@@ -257,6 +257,57 @@ kort under kurs og medlemskap som heter videokurs, og la det være tomt.»
 Kortet står der nå, og fører til en skjerm som sier hva som mangler.
 
 ---
+
+## Bestilt 27. august — gjort samme dag
+
+- **«Hva medlemmer ser» og «Hva kursdeltakere ser»** flyttet fra Kurs og
+  medlemskap til henholdsvis Medlemmer og Deltakere.
+- **«Mine kursbevis» som eget kort på Min side.** Beviset lå bare som en knapp
+  på raden til påmeldingen; var kurset et halvt år siden, måtte man lete
+  nedover i lista. Kortet samler dem, nyeste først, med den samme lenken.
+- **Tilbakeknappen tok deg alltid til forsiden.** Det lå to rutinger ved siden
+  av hverandre: den ekte leser stien i adressen, den andre leste «#»-delen —
+  og det står ingen hash der, så den falt tilbake på «forside» og skrev
+  adressen om til «/». Hash-rutingen er fjernet.
+- **«Ferdig glassert» strakk kortene** over hele bredden når det bare var ett
+  kurs. Faste kort på 280 piksler nå.
+- **Kalenderen ute førte til fellessida.** Trykket gjettet kurset ved å lese
+  tittelen ut av etiketten; bommet den, havnet du på kurslista. Oppføringen
+  bærer nå nummeret på kurset og på datoen, og åpner akkurat den.
+- **Kurslista i admin sto sortert på når kursene ble opprettet.** Nå etter når
+  de går neste gang; kurs uten datoer framover står sist. Kolonnen «neste»
+  viste den *første* datoen når det ikke fantes noen framover — altså en som
+  hadde vært. Nå står det «Ingen dato framover».
+- **Kalender i Kurs og medlemskap**, som ute på nettsiden, men med interne
+  samlinger og fulle datoer i tillegg. Trykk en dato for å se de påmeldte.
+- **Søkefelt i kurslista.** Kalenderen og datolista står urørt av det.
+- **Kursvelgeren** flyttet fra fanerekka under Nettsiden til et kort på
+  Oversikt.
+- **Medlemslista åpner på «Aktive»**, ikke «Alle».
+- **Bildesøk rett i markedsføringen.** «Finn bilder» åpnet shutterstock.com i
+  en ny fane. Artikler, nyhetsbrev og sosiale medier har nå en bilderute i
+  skjemaet — den samme velgeren kursene bruker — og bildet følger utkastet
+  helt inn i artikkelen. Video er ikke med: det krever eget abonnement og
+  egen API-tilgang hos Shutterstock.
+- **«Kursene våre»** på `/kursene-vare`: hvert kurs med beskrivelsen fra
+  kursoppsettet, varighet, pris, nivå og hva som er inkludert. Knappen «Les
+  mer om våre kurs her» står under Kurs.
+- **Datoene til kurset du har åpent.** Datolista under kursskjemaet viste alle
+  datoene i basen; nå viser den kurset sine, de neste åtte ukene, med en
+  knapp for resten. «Tilbake til kurslista» står øverst i skjemaet.
+
+## Venter på svar fra Lissom
+
+### 13. Teller interne samlinger med i åpningstiden?
+
+Åpningstiden i bunnteksten regnes av alle publiserte kursdatoer den dagen,
+fra det første starter til det siste slutter. Den skiller ikke på hva slags
+kurs det er: en intern samling for medlemmer teller med, selv om den ikke
+vises i kurskalenderen ute. Lissom spurte 27. august hvilket kurs som lå til
+19:00 og fant det ikke — det er sannsynligvis dette.
+
+Regelen står som den er til Lissom sier noe annet. Skal interne samlinger
+ikke telle med, er det én linje i `api/apningstider.php`.
 
 ## Ferdig, men verdt å vite
 

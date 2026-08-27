@@ -953,8 +953,10 @@ window.__resources = {
        paa. Logoen krymper, statuslinja gaar ut (den er status, ikke
        navigasjon), og menyen faar bredden. */
     /* Mobilmenyen i admin. Den inline-stilen setter display, saa regelen
-       som skjuler den paa stor skjerm maa veie tyngre. */
-    .lx-admmob { display: none !important; }
+       som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
+       si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
+       spalter, saa hele menyen faar plass uten aa rulle. */
+    .lx-admmob, .lx-admmobpanel { display: none !important; }
     @media (max-width: 979px) {
       /* Uten en bredde her regner nettleseren SVG-en til 300px og
          dytter menyen ut av skjermen. */
@@ -966,6 +968,7 @@ window.__resources = {
          Se .lx-admmob under. */
       .lx-adminaside nav { display: none !important; }
       .lx-admmob { display: flex !important; }
+      .lx-admmobpanel { display: grid !important; }
     }
 
     @media (max-width: 760px) {
@@ -4040,7 +4043,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4293,7 +4296,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4360,7 +4363,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4427,7 +4430,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4498,7 +4501,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4563,7 +4566,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4791,7 +4794,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -4909,7 +4912,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -5055,7 +5058,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -5214,7 +5217,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -5418,7 +5421,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -5653,7 +5656,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -6470,7 +6473,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -6813,7 +6816,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -7020,7 +7023,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -7180,7 +7183,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -7375,7 +7378,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -7449,7 +7452,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -7690,7 +7693,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -7778,7 +7781,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -8048,7 +8051,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -8163,7 +8166,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -8648,7 +8651,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -8828,7 +8831,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -9014,7 +9017,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -9240,7 +9243,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -9476,7 +9479,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -9642,7 +9645,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -10010,7 +10013,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -10692,7 +10695,7 @@ window.__resources = {
           <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
         </div>
         <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
-          <div class="lx-admmob" style="{{ admMobPanelStil }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
             <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
               <div style="{{ m.stil }}">
                 <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
@@ -20145,7 +20148,13 @@ class Component extends DCLogic {
         navn,
         velg: lukkOg(() => this.gaaAdmin(rute, forvalg)),
         knappStil: punktStil(valgt),
-        stil: { display: 'flex', flexDirection: 'column', gap: 6 },
+        // To spalter, saa hele menyen faar plass paa en telefonskjerm uten
+        // aa rulle. Stedet du staar i tar begge spaltene — det er der
+        // underpunktene henger.
+        stil: {
+          display: 'flex', flexDirection: 'column', gap: 6,
+          gridColumn: (valgt && faner.length) ? '1 / -1' : 'auto',
+        },
         // Underpunktene staar bare under det omraadet man er i. Alle ti
         // brettet ut samtidig er ikke en oversikt, det er en liste paa 40.
         harUnder: valgt && faner.length > 0,
@@ -20195,14 +20204,17 @@ class Component extends DCLogic {
         color: apen ? 'var(--lissom-brown)' : 'var(--clay-100)',
       },
       admMobPanelStil: {
-        width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column',
-        gap: 4, marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
+        width: '100%', boxSizing: 'border-box',
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+        alignItems: 'start', gap: 6,
+        marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(244,235,222,.18)',
-        maxHeight: '70vh', overflowY: 'auto',
+        maxHeight: '72vh', overflowY: 'auto',
       },
       admMobEkstraStil: {
+        gridColumn: '1 / -1',
         display: 'flex', flexDirection: 'column', gap: 2,
-        marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)',
+        marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)',
         borderTop: '1px solid rgba(244,235,222,.18)',
       },
     };

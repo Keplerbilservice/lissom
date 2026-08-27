@@ -204,6 +204,63 @@ for ($i = 0; $i < DAGER_FRAM; $i++) {
     ];
 }
 
+// Hvem som faar se hva tallene er regnet av.
+//
+// Lista rommer titlene paa de interne samlingene — «Glasurkveld for
+// medlemmer» — og de staar ikke ute paa nettsiden. Selve klokkeslettene er
+// offentlige som for; kildene bak dem er ikke.
+$erAdmin = Sesjon::erAdmin();
+if (!$erAdmin) {
+    foreach ($ut as &$rad) {
+        unset($rad['okter'], $rad['overstyrt']);
+    }
+    unset($rad);
+}
+
+// ── Lesbar utgave ──────────────────────────────────────────────────────────
+//
+// «Hvilket kurs gaar til 19 i dag?» er et sporsmaal som skal kunne besvares
+// uten aa lete seg fram i admin. Med ?visning=tekst svarer denne adressen med
+// hele regnestykket i klartekst: hva som staar ute, og hvilke oekter tallene
+// kommer av — én linje per oekt, med hva slags oppforing det er og hvor den
+// settes.
+if (Foresporsel::tekst('visning') === 'tekst') {
+    if (!$erAdmin) {
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "Denne oversikten er for verkstedet. Logg inn som admin først.\n";
+        exit;
+    }
+    $linjer = ['Åpningstidene på lissom.no, og hva de er regnet av.', ''];
+    if ($ut === []) {
+        $linjer[] = 'Ingen dager har åpningstid de neste ' . DAGER_FRAM . ' dagene.';
+        $linjer[] = 'Det står ingen kursdatoer, drop-in-tider eller samlinger ute.';
+    }
+    foreach ($ut as $d) {
+        $linjer[] = ($d['idag'] ? 'I DAG  ' : '       ')
+            . $d['dag'] . ' ' . $d['naar'] . ':  ' . $d['tid']
+            . ($d['overstyrt'] ? '   (satt for hånd)' : '');
+        if ($d['okter'] === []) {
+            $linjer[] = '           ingen økter — tiden er satt for hånd';
+        }
+        foreach ($d['okter'] as $o) {
+            $bredde = static fn(string $t, int $n): string
+                => $t . str_repeat(' ', max(1, $n - mb_strlen($t)));
+            $linjer[] = '           ' . $bredde($o['naar'], 14) . $bredde($o['slag'], 17)
+                . $o['tittel']
+                . ($o['antattSlutt'] ? '   [sluttid mangler — regnet som tre timer]' : '')
+                . '   → ' . $o['satt'];
+        }
+        $linjer[] = '';
+    }
+    $linjer[] = 'Regelen: verkstedet er åpent fra den første økta begynner til den';
+    $linjer[] = 'siste slutter. Drop-in-tider teller med — det er en åpen dør.';
+    $linjer[] = 'Avlyste datoer og upubliserte kurs teller ikke.';
+
+    header('Content-Type: text/plain; charset=utf-8');
+    echo implode("\n", $linjer) . "\n";
+    exit;
+}
+
 Svar::json([
     'dager'    => $ut,
     'dagerFram' => DAGER_FRAM,

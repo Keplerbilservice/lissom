@@ -1985,14 +1985,10 @@ window.__resources = {
               <sc-if value="{{ bRabattTeaser }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600; margin: -8px 0 var(--space-5);">{{ bRabattTeaser }}</div>
               </sc-if>
-              <!-- Paint on Pots: prisen over er plassen, ikke gjenstanden.
-                   Sto det ikke her, oppdaget kunden det foerst i doera. -->
-              <sc-if value="{{ bGjenstandIKassa }}" hint-placeholder-val="{{ false }}">
-                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--clay-50); padding: var(--space-4); margin: -4px 0 var(--space-5);">
-                  <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 4px;">{{ bGjenstandTittel }}</div>
-                  <p style="margin: 0; font-size: var(--text-sm); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ bGjenstandTekst }}</p>
-                </div>
-              </sc-if>
+              <!-- Her sto ramma «Gjenstanden kommer i tillegg». Fjernet
+                   27. august paa bestilling. Det samme staar i «Godt aa vite»
+                   og «Dette faar du med hjem» paa kurset, og prisen sier
+                   allerede «Fra». -->
               <div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">{{ bOppsummering }}</div>
               <sc-if value="{{ harPlasser }}" hint-placeholder-val="{{ true }}">
               <!-- Dagen forst, klokkeslettet etterpaa.
@@ -22508,30 +22504,6 @@ class Component extends DCLogic {
       erFullbooket: (this.state.valgtKurs && this.state.valgtKurs.status) === 'Fullbooket',
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis',
       bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ('totalt for ' + this.state.bAntallN + ' personer') : 'per person',
-      // Paint on Pots og andre der gjenstanden velges i verkstedet.
-      //
-      // Prisen i boksen er plassen. Gjenstanden er en butikkvare, valgt naar
-      // du staar der, og slaas inn i kassa. Uten denne linja ser det ut som
-      // om det du betaler paa nett er alt.
-      ...(() => {
-        const k = this.state.valgtKurs || {};
-        const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel));
-        const paa = !!(kat ? kat.gjenstandIKassa : k.gjenstandIKassa);
-        // Billigste gjenstanden i butikken, saa tallet ikke er skrevet inn.
-        const varer = (this.state.butikkvareListe || [])
-          .filter(v => !v.kunMedlemmer && !v.utsolgt && v.prisOre > 0);
-        const fra = varer.length
-          ? ('fra kr. ' + Math.round(Math.min.apply(null, varer.map(v => v.prisOre)) / 100)
-             .toLocaleString('nb-NO') + ',-') : '';
-        return {
-          bGjenstandIKassa: paa,
-          bGjenstandTittel: 'Gjenstanden kommer i tillegg',
-          bGjenstandTekst: 'Prisen over er plassen. Gjenstanden velger du når du kommer'
-            + (fra ? ' — ' + fra : '')
-            + ', og betaler den i verkstedet. Farger, pensler, hjelp, glasering og '
-            + 'brenning er inkludert.',
-        };
-      })(),
       erIntern: (this.state.valgtKurs && this.state.valgtKurs.level) === 'Kun for medlemmer',
       vlNavn: this.state.vlNavn || '',
       settVlNavn: e => this.setState({ vlNavn: e.target.value, vlFeil: null }),
@@ -23391,11 +23363,21 @@ class Component extends DCLogic {
             font: 'var(--type-body-sm)', fontWeight: 600, color: 'var(--lissom-brown)',
           },
 
-          // Trinn to staar bare naar det er noe aa velge mellom.
-          bHarTider: (dagRad.tider || []).length > 1,
+          // Trinn to staar saa lenge dagen har en tid i det hele tatt — ogsaa
+          // naar den bare har én. Sto det bare naar det var flere, saa det ut
+          // som ingenting skjedde av aa trykke paa dagen: man ventet et valg
+          // og fikk et tomrom. Med én tid er den valgt paa forhaand, og staar
+          // der som en kvittering paa hva man har valgt.
+          bHarTider: (dagRad.tider || []).length > 0,
           bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
-          bTiderHjelp: (dagRad.tider || []).length > 1
-            ? 'Du har plassen i to timer fra tidspunktet du velger.' : '',
+          // Gjelder bare der plassen varer i to timer — Paint on Pots og
+          // lignende. Et kurs varer saa lenge kurset varer.
+          bTiderHjelp: (() => {
+            const k = this.state.valgtKurs || {};
+            const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel));
+            const paa = !!(kat ? kat.gjenstandIKassa : k.gjenstandIKassa);
+            return paa ? 'Du har plassen i to timer fra tidspunktet du velger.' : '';
+          })(),
           bookingTider: (dagRad.tider || []).map(t => {
             const valgt = this.state.bDato ? t.dato === this.state.bDato : !!t.valgt;
             return {
@@ -27501,7 +27483,28 @@ class Component extends DCLogic {
         navn: t.navn,
         velg: () => { this.setState(t.filter ? { side: t.side, kursFilter: t.filter } : { side: t.side }); window.scrollTo(0, 0); },
       })),
+      // «Se datoer og book» gaar rett i bestillingen.
+      //
+      // Den rullet ned til datolista, der man matte trykke «Book plass» én
+      // gang til. Naa som Paint on Pots staar som ett kort, og dagen og
+      // tidspunktet uansett velges inne i bestillingen, var mellomsteget bare
+      // et trykk uten innhold.
+      //
+      // Finnes det ingen datoer, ruller den ned som for — da staar det hva man
+      // gjor i stedet der nede.
       popTilDatoer: () => {
+        const kat = (this.state.katalog || []).find(k => k.tittel === 'Paint on Pots');
+        const base = (this._kursListe || []).find(x => x.title === 'Paint on Pots');
+        if (kat && (kat.datoer || []).length && base) {
+          this.setState({
+            side: 'booking', fra: 'paintonpots', valgtKurs: this.medServerdata(base),
+            bookOrdre: false, bookKvittert: false,
+            bDato: null, bOktId: null, bDag: '', bAlleDatoer: false,
+            ventelisteBekreftet: null,
+          });
+          window.scrollTo(0, 0);
+          return;
+        }
         if (this.state.side !== 'paintonpots') { this.setState({ side: 'paintonpots' }); }
         setTimeout(() => { const el = document.getElementById('pop-datoer'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); } }, 60);
       },

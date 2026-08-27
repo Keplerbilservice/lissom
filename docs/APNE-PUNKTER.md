@@ -410,10 +410,21 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
   tidspunktet du velger, og det står under knappene.
 
   Gjelder alle kurs. Har dagen bare ett tidspunkt — som på et vanlig kurs — er
-  det valgt med det samme, og trinn to står ikke i veien. `api/kurs.php` sender
+  det valgt med det samme, men det **vises likevel**: trykker man en dag og
+  ingenting skjer, ser det ut som knappen er i stykker. `api/kurs.php` sender
   `dag`, `klokke` og `klokkeStart` som egne felter; å klippe dem ut av
   «tirsdag 1. september, 10:00–12:00» med et komma ryker på første
   flerdagerskurs.
+
+- **«Se datoer og book» går rett i bestillingen.** Den rullet ned til
+  datolista, der man måtte trykke «Book plass» én gang til. Nå som Paint on
+  Pots står som ett kort, og dag og tidspunkt uansett velges inne i
+  bestillingen, var mellomsteget et trykk uten innhold. Finnes det ingen
+  datoer, ruller den ned som før — der står det hva man gjør i stedet.
+
+- **Ramma «Gjenstanden kommer i tillegg» er fjernet** (27. august, på
+  bestilling). Det samme står i «Godt å vite» og «Dette får du med hjem» på
+  kurset, og prisen sier allerede «Fra».
 
 - **Hele to timer, eller ingenting.** Er det under to timer igjen av det åpne
   vinduet, settes det ikke opp et tidspunkt. En åpen periode 10–13 gir ett

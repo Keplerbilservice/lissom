@@ -20,12 +20,16 @@ $hvor = $erMedlem ? '1' : "COALESCE(tema, '') <> 'Kun for medlemmer'";
 // Kolonna kommer med migrasjon 029. Er den ikke kjort, skal kurslista vises
 // som for framfor aa gi en tom side.
 $utenDatoFelt = DB::harKolonne('courses', 'vis_uten_dato') ? ', vis_uten_dato' : '';
+// Kom med migrasjon 065. Uten sjekken faller katalogen naar den ikke er
+// kjoert.
+$oppsettFelt  = DB::harKolonne('courses', 'punkter')
+    ? ', punkter, laerer, praktisk, allergener, passer_nivaa, passer_hvem, metode, varighet' : '';
 // Kom med migrasjon 044. Uten sjekken faller hele katalogen naar den ikke er
 // kjoert — og det er katalogen kundene ser.
 $bilderFelt   = DB::harKolonne('courses', 'bilder') ? ', bilder' : '';
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -61,6 +65,24 @@ foreach ($kurs as $k) {
         // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
         // sto rett over hverandre og var uenige. Naa kommer begge herfra.
         'plasser' => (int) $k['kapasitet'],
+        // «Alt som er inkludert».
+        //
+        // Lista sto fast i koden, og kunne ikke endres noe sted. Verkstedet
+        // ba i juni om aa ta «verktoy» ut av ett kurs; det maatte gjores av
+        // meg. Naa staar den paa kurset, og tom kolonne betyr «som for».
+        //
+        // «Maks N deltakere» staar ikke i lista. Den regnes av kapasiteten
+        // rett under, saa de to ikke kan bli uenige — det var nettopp den
+        // feilen som ble rettet i juni.
+        'punkter' => Medlemskap::punkter((string) ($k['punkter'] ?? '')),
+        // Seksjonene fra kursoppsettet. Tomme felt vises ikke.
+        'laerer'     => (string) ($k['laerer'] ?? ''),
+        'praktisk'   => (string) ($k['praktisk'] ?? ''),
+        'allergener' => (string) ($k['allergener'] ?? ''),
+        'passerNivaa'=> (string) ($k['passer_nivaa'] ?? ''),
+        'passerHvem' => (string) ($k['passer_hvem'] ?? ''),
+        'metode'     => (string) ($k['metode'] ?? ''),
+        'varighet'   => (string) ($k['varighet'] ?? ''),
         // Bildene verkstedet har valgt i admin. Foerste er hovedbildet;
         // resten er karusellen paa kurssida. Er lista tom, faller nettsida
         // tilbake paa bildet som hoerer til kurstypen.

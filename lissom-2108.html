@@ -1887,6 +1887,33 @@ window.__resources = {
                   </div>
                 </sc-for>
               </div>
+
+              <!-- Seksjonene fra kursoppsettet (migrasjon 065).
+                   Hver av dem staar bare naar verkstedet har skrevet noe.
+                   Et kurs uten dem ser ut noeyaktig som for. -->
+              <sc-for list="{{ bSeksjoner }}" as="sk" hint-placeholder-count="2">
+                <div style="margin-top: var(--space-8); max-width: 60ch;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ sk.tittel }}</div>
+                  <p style="margin: 0; font-size: var(--text-base); line-height: 1.7; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ sk.tekst }}</p>
+                </div>
+              </sc-for>
+
+              <!-- Hvem kurset passer for. Merkene er korte og staar paa rad;
+                   en setning ville sagt det samme paa fire linjer.
+                   «bMerker», ikke «bPasserFor» — det navnet er tatt av
+                   setningen lenger opp paa samme side, og to verdier med
+                   samme navn kan bare vaere én av dem. -->
+              <sc-if value="{{ bHarMerker }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top: var(--space-8); max-width: 60ch;">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Passer for</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ bMerker }}" as="m" hint-placeholder-count="3">
+                      <span style="display: inline-flex; align-items: center; padding: 5px 12px; border-radius: var(--radius-pill); background: var(--clay-100); border: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-heading);">{{ m }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
               <!-- Samlingene, naar kurset gaar over flere dager.
                    Det skal staa klart at paameldingen gjelder alle sammen —
                    ikke bare den forste. -->
@@ -5051,64 +5078,161 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-6);">{{ kTittel }} · Steg {{ kSteg }} av 3</div>
             <div style="display: flex; flex-direction: column; gap: var(--space-8); max-width: 680px;">
               <sc-if value="{{ kSteg1 }}" hint-placeholder-val="{{ true }}">
-              <div>
-                <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
-                  <span style="width: 28px; height: 28px; border-radius: 50%; background: var(--lissom-brown); color: var(--clay-50); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: var(--text-sm); flex-shrink: 0;">1</span>
-                  <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Navn og informasjon</span>
+              <!-- Kursoppsettet i tolv seksjoner.
+                   Sto som ett langt skjema uten inndeling: navn, kategori,
+                   pris, plasser, beskrivelse og bekreftelse rett under
+                   hverandre, uten et ord om hva feltene gjor eller hvor
+                   teksten havner. Hver seksjon har naa en overskrift og en
+                   linje som sier hva den er til. -->
+              <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+                <div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">01 · Navn</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det kurset heter ute på nettsiden, i kalenderen og på kvitteringen.</p>
+                  <label for="k-navn" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn på kurset</label>
+                  <input id="k-navn" value="{{ kNavn }}" onChange="{{ settKNavn }}" placeholder="F.eks. Nybegynner dreiekurs" style="width: 100%; box-sizing: border-box; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading);">
                 </div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn på kurset</label>
-                <input value="{{ kNavn }}" onChange="{{ settKNavn }}" placeholder="F.eks. Nybegynner dreiekurs" style="width: 100%; box-sizing: border-box; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-4);">
-                <!-- Kategorien kunden filtrerer paa ute paa «Vaare kurs», og
-                     samtidig hva slags kurs det er. Her sto det to rader:
-                     én med Kurs, Event, Kun medlemmer og Drop-in, og én med
-                     kategoriene. To valg for det samme, der bare det ene kom
-                     fram ute. -->
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kategori</label>
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-2);">
-                  <sc-for list="{{ kKategorier }}" as="t" hint-placeholder-count="8">
-                    <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
-                  </sc-for>
-                </div>
-                <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted);">{{ kKategoriTekst }}</p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
-                  <div>
-                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Pris (kr, tomt = gratis)</label>
-                    <input value="{{ kPris }}" onChange="{{ settKPris }}" placeholder="F.eks. 1 490" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-3);">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-                      <input type="checkbox" checked="{{ kMva }}" onChange="{{ toggleKMva }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                      Med 25 % mva
-                    </label>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">02 · Kategori</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Kategorien kunden filtrerer på ute under «Våre kurs», og samtidig hva slags kurs det er.</p>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-2);">
+                    <sc-for list="{{ kKategorier }}" as="t" hint-placeholder-count="8">
+                      <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                    </sc-for>
                   </div>
-                  <div>
-                    <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Antall plasser</label>
-                    <input value="{{ kPlasser }}" onChange="{{ settKPlasser }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kKategoriTekst }}</p>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">03 · Pris</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Tomt felt betyr gratis. Mva legges på i kassa, ikke i tallet du skriver her.</p>
+                  <div style="max-width: 260px;">
+                    <label for="k-pris" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Pris i kroner</label>
+                    <input id="k-pris" value="{{ kPris }}" onChange="{{ settKPris }}" placeholder="F.eks. 1 490" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-3);">
+                  </div>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                    <input type="checkbox" checked="{{ kMva }}" onChange="{{ toggleKMva }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Med 25 % mva
+                  </label>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">04 · Plasser</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hvor mange som får være med. Tallet står ute på kurset, og en enkelt dato kan settes lavere for seg.</p>
+                  <div style="max-width: 200px;">
+                    <label for="k-plasser" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Antall plasser</label>
+                    <input id="k-plasser" value="{{ kPlasser }}" onChange="{{ settKPlasser }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   </div>
                 </div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
-                <textarea value="{{ kBeskrivelse }}" onChange="{{ settKBeskrivelse }}" rows="4" placeholder="Hva lærer man, hva er inkludert, hvem passer det for?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
-                <!-- AI-en leser beskrivelsene som alt staar ute og skriver i
-                     samme stil. Forslaget havner i feltet, ikke ute paa
-                     nettsida: du leser og retter for du lagrer. -->
-                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ kForeslaaTekst }}" hint-size="auto,40px">{{ kForeslaaMerke }}</x-import>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kForeslaaHjelp }}</span>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">05 · Beskrivelse</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det kunden leser først, under overskriften på kurssiden. To til fire setninger.</p>
+                  <textarea id="k-om" value="{{ kBeskrivelse }}" onChange="{{ settKBeskrivelse }}" rows="4" placeholder="Hva slags kveld er dette, og hva sitter man igjen med?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
+                  <!-- AI-en leser beskrivelsene som alt staar ute og skriver i
+                       samme stil. Forslaget havner i feltet, ikke ute paa
+                       nettsida: du leser og retter for du lagrer. -->
+                  <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ kForeslaaTekst }}" hint-size="auto,40px">{{ kForeslaaMerke }}</x-import>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kForeslaaHjelp }}</span>
+                  </div>
                 </div>
-                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Bekreftelsestekst — vises på skjermen etter kjøp og i e-postkvitteringen</label>
-                <textarea value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
-                <!-- Standardteksten fylles ut paa nye kurs. Her endrer du den
-                     for alle nye, eller henter den tilbake om du har slettet
-                     for mye paa dette kurset. -->
-                <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
-                  <button type="button" onClick="{{ kHentStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
-                  <button type="button" onClick="{{ kLagreStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk denne som standard</button>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">06 · Hvem kurset passer for</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Merkene står på kurssiden, og de er det Kursveilederen leser når den skal foreslå noe. Velg det som stemmer — ingenting er påkrevd.</p>
+                  <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <sc-for list="{{ kMerkegrupper }}" as="g" hint-placeholder-count="4">
+                      <div>
+                        <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ g.navn }}</div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                          <sc-for list="{{ g.valg }}" as="v" hint-placeholder-count="3">
+                            <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
                 </div>
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-                  <input type="checkbox" checked="{{ kSms }}" onChange="{{ toggleKSms }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-                  Send SMS-påminnelse til deltakerne 24 timer før — {{ smsMerke }}
-                </label>
-                <sc-if value="{{ smsAv }}" hint-placeholder-val="{{ true }}">
-                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ smsForklaring }}</p>
-                </sc-if>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">07 · Dette lærer deltakerne</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hva de kan når de går hjem. Står som eget avsnitt på kurssiden. Kan stå tomt.</p>
+                  <textarea id="k-laerer" value="{{ kLaerer }}" onChange="{{ settKLaerer }}" rows="3" placeholder="F.eks. Å sentrere leira, åpne den og trekke opp en vegg. Å trimme foten dagen etter." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">08 · Alt som er inkludert</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Ett punkt per linje. Dette sto fast i koden før og kunne ikke endres herfra. Skriver du ingenting, står den samme teksten som i dag. «Maks N deltakere» legges på av seg selv og følger antall plasser.</p>
+                  <textarea id="k-punkter" value="{{ kPunkter }}" onChange="{{ settKPunkter }}" rows="4" placeholder="Leire, glasur og brenning er inkludert.&#10;Ingen forkunnskaper nødvendig." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kPunkterHjelp }}</p>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">09 · Praktisk informasjon</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Oppmøte, klær, parkering, hva de skal ta med. Står på kurssiden, før de betaler.</p>
+                  <textarea id="k-praktisk" value="{{ kPraktisk }}" onChange="{{ settKPraktisk }}" rows="3" placeholder="F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">10 · Allergener og kommentarer</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det som gjelder dette kurset — servering, materialer, aldersgrense. Deltakeren blir spurt om sine egne allergier i påmeldingen; dette er det motsatte veien.</p>
+                  <textarea id="k-allergener" value="{{ kAllergener }}" onChange="{{ settKAllergener }}" rows="3" placeholder="F.eks. Vi serverer kaffe og kake. Kaka inneholder nøtter og gluten." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">11 · Bekreftelse og påminnelse</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Teksten de får på skjermen etter kjøp og i e-postkvitteringen.</p>
+                  <textarea id="k-bekreftelse" value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
+                  <!-- Standardteksten fylles ut paa nye kurs. Her endrer du den
+                       for alle nye, eller henter den tilbake om du har slettet
+                       for mye paa dette kurset. -->
+                  <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                    <button type="button" onClick="{{ kHentStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                    <button type="button" onClick="{{ kLagreStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk denne som standard</button>
+                  </div>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
+                    <input type="checkbox" checked="{{ kSms }}" onChange="{{ toggleKSms }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Send SMS-påminnelse til deltakerne 24 timer før — {{ smsMerke }}
+                  </label>
+                  <sc-if value="{{ smsAv }}" hint-placeholder-val="{{ true }}">
+                    <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ smsForklaring }}</p>
+                  </sc-if>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">12 · Forhåndsvisning</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Slik står kurset på nettsiden med det du har skrevet nå. Ingenting er lagret før du trykker Lagre.</p>
+                  <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-6);">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">{{ fkKategori }}</div>
+                    <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-2xl); color: var(--text-heading);">{{ fkNavn }}</h3>
+                    <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ fkMeta }}</div>
+                    <sc-if value="{{ fkHarOm }}" hint-placeholder-val="{{ true }}">
+                      <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); line-height: 1.7; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ fkOm }}</p>
+                    </sc-if>
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: var(--space-4);">
+                      <sc-for list="{{ fkPunkter }}" as="p" hint-placeholder-count="3">
+                        <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);">
+                          <span style="color: var(--sage-600); font-weight: 700; flex: 0 0 auto;">✓</span>
+                          <span>{{ p }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <sc-for list="{{ fkSeksjoner }}" as="sk" hint-placeholder-count="2">
+                      <div style="margin-bottom: var(--space-4);">
+                        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">{{ sk.tittel }}</div>
+                        <p style="margin: 0; font-size: var(--text-sm); line-height: 1.65; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ sk.tekst }}</p>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ fkHarMerker }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <sc-for list="{{ fkMerker }}" as="m" hint-placeholder-count="3">
+                          <span style="display: inline-flex; align-items: center; padding: 4px 11px; border-radius: var(--radius-pill); background: var(--surface-card); border: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-heading);">{{ m }}</span>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
               </div>
               </sc-if>
               <sc-if value="{{ kSteg2 }}" hint-placeholder-val="{{ false }}">
@@ -10288,6 +10412,19 @@ class Component extends DCLogic {
         image: kat.bilde || k.image,
         bilder: (kat.bilder && kat.bilder.length) ? kat.bilder : (k.bilder || []),
         okter: [],
+        // Seksjonene og punktlista gjelder ogsaa et kurs som settes opp naar
+        // noen sporr. Sto de bare i grenen under, sto Date Night med den
+        // gamle faste teksten mens alle andre kurs hadde sin egen.
+        punkter: (kat.punkter && kat.punkter.length)
+          ? kat.punkter.slice()
+          : ['Leire, verktøy, glasur og brenning er inkludert.', 'Ingen forkunnskaper nødvendig.'],
+        laerer: kat.laerer || '',
+        praktisk: kat.praktisk || '',
+        allergener: kat.allergener || '',
+        passerNivaa: kat.passerNivaa || '',
+        passerHvem: kat.passerHvem || '',
+        metode: kat.metode || '',
+        varighet: kat.varighet || '',
         utenDato: false,
         kunKontakt: true,
       });
@@ -10321,6 +10458,26 @@ class Component extends DCLogic {
       // som om kurset gaar én gang.
       duration: datoer.length > 1 ? datoer.length + ' datoer å velge mellom' : k.duration,
       om: kat.om || k.om,
+      // «Alt som er inkludert».
+      //
+      // Sto fast i koden — fire linjer som bare kunne endres av meg. Naa
+      // staar den paa kurset. Har verkstedet ikke skrevet noe, staar den
+      // samme linja som foer, saa ingenting endrer seg av seg selv.
+      //
+      // «Maks N deltakere» staar ikke her. Den legges paa av bookingPunkter
+      // og regnes av kapasiteten, saa den ikke kan bli uenig med tallet som
+      // staar rett under den — det var nettopp den feilen som ble rettet i
+      // juni.
+      punkter: (kat.punkter && kat.punkter.length)
+        ? kat.punkter.slice()
+        : ['Leire, verktøy, glasur og brenning er inkludert.', 'Ingen forkunnskaper nødvendig.'],
+      laerer: kat.laerer || '',
+      praktisk: kat.praktisk || '',
+      allergener: kat.allergener || '',
+      passerNivaa: kat.passerNivaa || '',
+      passerHvem: kat.passerHvem || '',
+      metode: kat.metode || '',
+      varighet: kat.varighet || '',
       utenDato: datoer.length === 0,
     });
   }
@@ -15534,6 +15691,11 @@ class Component extends DCLogic {
       pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
       neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '',
       bekreftelse: this.state.kBekreftelse || '',
+      // Seksjonene fra kursoppsettet (migrasjon 065).
+      punkter: this.state.kPunkter || '', laerer: this.state.kLaerer || '',
+      praktisk: this.state.kPraktisk || '', allergener: this.state.kAllergener || '',
+      passerNivaa: this.state.kPasserNivaa || '', passerHvem: this.state.kPasserHvem || '',
+      metode: this.state.kMetode || '', varighet: this.state.kVarighet || '',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms === true, datoer, okter,
       sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
       gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
@@ -15589,6 +15751,17 @@ class Component extends DCLogic {
         sms: rad.sms === true ? 'ja' : 'nei',
         om: rad.beskrivelse || '',
         bekreftelse: rad.bekreftelse || '',
+        // Seksjonene fra kursoppsettet.
+        //
+        // Bare de feltene raden faktisk har med. Serveren skriver bare det
+        // som er med i kallet — og hurtigskjemaet paa mobil, som ikke
+        // kjenner seksjonene, skal ikke toemme dem paa et kurs som finnes.
+        ...['punkter', 'laerer', 'praktisk', 'allergener',
+            'passerNivaa', 'passerHvem', 'metode', 'varighet']
+          .reduce((m, n) => {
+            if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
+            return m;
+          }, {}),
         status: 'publisert',
         // «Vis kurset uten datoer, med Kontakt oss». Haken lagret bare rett
         // til serveren, og et kurs som ikke er opprettet ennaa har ingen id
@@ -16654,6 +16827,12 @@ class Component extends DCLogic {
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
       kMva: k.mva === '25 % mva', kSms: k.sms === true,
+      // Seksjonene fra kursoppsettet. Staar de tomt, skriver nettsida det
+      // samme som for.
+      kPunkter: raa.punkter || '', kLaerer: raa.laerer || '',
+      kPraktisk: raa.praktisk || '', kAllergener: raa.allergener || '',
+      kPasserNivaa: raa.passerNivaa || '', kPasserHvem: raa.passerHvem || '',
+      kMetode: raa.metode || '', kVarighet: raa.varighet || '',
       // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
       // Ligger det en regel der, er det den som gjelder.
       ...(() => {
@@ -19197,6 +19376,8 @@ class Component extends DCLogic {
           kRed: true, kSteg: 1, kIndeks: -1,
           kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
           kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
           kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -19820,6 +20001,36 @@ class Component extends DCLogic {
         const p = parseInt(k.plasser, 10) || 0;
         return p > 0 ? ['Maks ' + p + ' deltakere.'].concat(fast) : fast;
       })(),
+      // Seksjonene fra kursoppsettet, i den rekkefolgen de leses.
+      //
+      // Tomme felt gir ingen overskrift. En overskrift over ingenting ser ut
+      // som om noe er i stykker — det var nettopp derfor «Interne kurs og
+      // samlinger» ble skjult naar den var tom.
+      ...(() => {
+        const k = this.state.valgtKurs || {};
+        const merker = {
+          nybegynner: 'Nybegynnere', litt: 'Litt erfaring', erfaren: 'Erfarne',
+          alene: 'Deg alene', par: 'To sammen', venner: 'Venner',
+          familie: 'Familie', firma: 'Bedrift', barn: 'Barn med voksen',
+          dreiing: 'Dreiing', handbygging: 'Håndbygging', maling: 'Maling', begge: 'Dreiing og håndbygging',
+          kort: 'Under to timer', medium: 'To til fire timer', lang: 'Over fire timer',
+        };
+        const liste = (raa) => String(raa || '').split(',')
+          .map(x => x.trim()).filter(Boolean).map(x => merker[x] || x);
+        const passer = liste(k.passerNivaa).concat(liste(k.passerHvem))
+          .concat(liste(k.metode)).concat(liste(k.varighet));
+        return {
+          bSeksjoner: [
+            ['Dette lærer du', k.laerer],
+            ['Praktisk informasjon', k.praktisk],
+            ['Allergener og kommentarer', k.allergener],
+          ].filter(([, t]) => String(t || '').trim() !== '')
+           .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
+          bHarMerker: passer.length > 0,
+          bMerker: passer,
+        };
+      })(),
+
       // Ingen datoer fra serveren betyr ingen datoer. Fallet tilbake paa
       // designlista viste «Onsdag 19. august · 3 av 8 plasser» — en dato som
       // var passert, med plasser som ikke fantes, og en knapp som booket dem.
@@ -19986,6 +20197,8 @@ class Component extends DCLogic {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
             kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
             kGjentak: 'Ingen', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
             kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -20085,6 +20298,8 @@ class Component extends DCLogic {
                   kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
                   kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
                   kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                   kGjentak: 'Ingen', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
                   kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -20135,6 +20350,8 @@ class Component extends DCLogic {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
                 kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                 kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
                 kDatoer: [{ dato: '', fra: '', til: '' }],
@@ -22172,12 +22389,113 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
       kBeskrivelse: this.state.kBeskrivelse ?? '', settKBeskrivelse: (e) => this.setState({ kBeskrivelse: e.target.value }),
       kBekreftelse: this.state.kBekreftelse ?? '', settKBekreftelse: (e) => this.setState({ kBekreftelse: e.target.value }),
+
+      // ── Seksjonene fra kursoppsettet (migrasjon 065) ──────────────────
+      //
+      // Punktlista sto fast i koden og kunne ikke endres noe sted. Verkstedet
+      // ba i juni om aa ta «verktoy» ut av ett kurs; det maatte gjores av meg.
+      kLaerer: this.state.kLaerer ?? '', settKLaerer: (e) => this.setState({ kLaerer: e.target.value }),
+      kPunkter: this.state.kPunkter ?? '', settKPunkter: (e) => this.setState({ kPunkter: e.target.value }),
+      kPraktisk: this.state.kPraktisk ?? '', settKPraktisk: (e) => this.setState({ kPraktisk: e.target.value }),
+      kAllergener: this.state.kAllergener ?? '', settKAllergener: (e) => this.setState({ kAllergener: e.target.value }),
+      kPunkterHjelp: (this.state.kPunkter ?? '').trim() === ''
+        ? 'Står tomt: nettsiden viser «Leire, verktøy, glasur og brenning er inkludert.» og «Ingen forkunnskaper nødvendig.», som i dag.'
+        : (() => {
+            const n = (this.state.kPunkter || '').split('\n').map(x => x.trim()).filter(Boolean).length;
+            return n + (n === 1 ? ' punkt' : ' punkter') + ', pluss «Maks '
+              + (parseInt(this.state.kPlasser, 10) || 0) + ' deltakere.» som legges på av seg selv.';
+          })(),
+
+      // Merkene. Fire grupper, korte og faste lister. De staar paa kurssida,
+      // og de er det Kursveilederen skal lese naar den foreslaar noe.
+      ...(() => {
+        const grupper = [
+          ['Nivå', 'kPasserNivaa', [['nybegynner', 'Nybegynnere'], ['litt', 'Litt erfaring'], ['erfaren', 'Erfarne']]],
+          ['Hvem', 'kPasserHvem', [['alene', 'Deg alene'], ['par', 'To sammen'], ['venner', 'Venner'],
+                                   ['familie', 'Familie'], ['firma', 'Bedrift'], ['barn', 'Barn med voksen']]],
+          ['Metode', 'kMetode', [['dreiing', 'Dreiing'], ['handbygging', 'Håndbygging'],
+                                 ['maling', 'Maling'], ['begge', 'Dreiing og håndbygging']]],
+          ['Varighet', 'kVarighet', [['kort', 'Under to timer'], ['medium', 'To til fire timer'], ['lang', 'Over fire timer']]],
+        ];
+        const valgte = (felt) => String(this.state[felt] || '').split(',').map(x => x.trim()).filter(Boolean);
+        return {
+          kMerkegrupper: grupper.map(([navn, felt, valg]) => ({
+            navn,
+            valg: valg.map(([kode, tekst]) => {
+              const paa = valgte(felt).indexOf(kode) !== -1;
+              return {
+                navn: tekst,
+                // Flere valg per gruppe: et kurs kan passe baade for venner
+                // og for familie. Trykk igjen for aa ta det bort.
+                velg: () => {
+                  const naa = valgte(felt);
+                  const ny = paa ? naa.filter(x => x !== kode) : naa.concat([kode]);
+                  this.setState({ [felt]: ny.join(',') });
+                },
+                stil: {
+                  appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                  padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+                  border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                  background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                  color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+                },
+              };
+            }),
+          })),
+        };
+      })(),
+
+      // ── Forhaandsvisning ──────────────────────────────────────────────
+      //
+      // Slik kurset staar ute med det som er skrevet naa. Den leser skjemaet,
+      // ikke basen — poenget er aa se det for man lagrer.
+      ...(() => {
+        const merker = {
+          nybegynner: 'Nybegynnere', litt: 'Litt erfaring', erfaren: 'Erfarne',
+          alene: 'Deg alene', par: 'To sammen', venner: 'Venner',
+          familie: 'Familie', firma: 'Bedrift', barn: 'Barn med voksen',
+          dreiing: 'Dreiing', handbygging: 'Håndbygging', maling: 'Maling', begge: 'Dreiing og håndbygging',
+          kort: 'Under to timer', medium: 'To til fire timer', lang: 'Over fire timer',
+        };
+        const liste = (raa) => String(raa || '').split(',').map(x => x.trim())
+          .filter(Boolean).map(x => merker[x] || x);
+        const plasser = parseInt(this.state.kPlasser, 10) || 0;
+        const egne = (this.state.kPunkter || '').split('\n')
+          .map(x => x.replace(/^[\s\-\*\u2022\u00b7]+/, '').trim()).filter(Boolean);
+        const punkter = (egne.length ? egne
+          : ['Leire, verktøy, glasur og brenning er inkludert.', 'Ingen forkunnskaper nødvendig.']).slice();
+        if (plasser > 0) punkter.unshift('Maks ' + plasser + ' deltakere.');
+        const pris = String(this.state.kPris || '').trim();
+        return {
+          fkNavn: (this.state.kNavn || '').trim() || 'Uten navn ennå',
+          fkKategori: (this.state.kKategori || 'Kurs'),
+          fkMeta: [
+            pris ? 'Fra kr. ' + pris + ',-' : 'Gratis',
+            plasser > 0 ? plasser + ' plasser' : '',
+          ].filter(Boolean).join(' · '),
+          fkHarOm: (this.state.kBeskrivelse || '').trim() !== '',
+          fkOm: (this.state.kBeskrivelse || '').trim(),
+          fkPunkter: punkter,
+          fkSeksjoner: [
+            ['Dette lærer du', this.state.kLaerer],
+            ['Praktisk informasjon', this.state.kPraktisk],
+            ['Allergener og kommentarer', this.state.kAllergener],
+          ].filter(([, t]) => String(t || '').trim() !== '')
+           .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
+          fkMerker: liste(this.state.kPasserNivaa).concat(liste(this.state.kPasserHvem))
+            .concat(liste(this.state.kMetode)).concat(liste(this.state.kVarighet)),
+          fkHarMerker: liste(this.state.kPasserNivaa).concat(liste(this.state.kPasserHvem))
+            .concat(liste(this.state.kMetode)).concat(liste(this.state.kVarighet)).length > 0,
+        };
+      })(),
       // Standardteksten. Sto feltet tomt for hvert nytt kurs, ble den
       // praktiske informasjonen enten skrevet paa nytt eller droppet.
       kHentStandard: () => this.setState({ kBekreftelse: this.state.bekreftelseStandard || '' }),

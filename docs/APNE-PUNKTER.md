@@ -25,8 +25,12 @@ brenning er inkludert», «Du tar med deg to til tre boller hjem» — ligger
 fortsatt fast i koden. Lissom ba også om å fjerne «verktøy» fra hva som er
 inkludert på Kurs boller. Det står igjen.
 
-Løsningen er den samme: flytte punktene til databasen med et felt i
-kursveiviseren.
+**Gjort 27. august.** Punktlista ligger nå på kurset (migrasjon 065) og
+redigeres i seksjon 08 i kursoppsettet, ett punkt per linje. Tomt felt betyr
+«som før», så ingen kurs endret seg av at migrasjonen ble kjørt. «Verktøy» er
+tatt ut av Kurs boller — det gjør migrasjonen selv. «Maks N deltakere» står
+ikke i feltet: den regnes fortsatt av kapasiteten, så tallet ikke kan bli
+uenig med det som står rett under.
 
 ### 1c. Gammelt punkt (beholdt for historikken)
 

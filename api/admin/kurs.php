@@ -54,6 +54,17 @@ if (Foresporsel::metode() === 'GET') {
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
             'bekreftelse'=> $k['bekreftelse_tekst'],
+            // Seksjonene fra kursoppsettet (migrasjon 065). Tomme naar
+            // migrasjonen ikke er kjort — da staar feltene tomme i skjemaet
+            // og nettsida viser det samme som for.
+            'punkter'    => (string) ($k['punkter'] ?? ''),
+            'laerer'     => (string) ($k['laerer'] ?? ''),
+            'praktisk'   => (string) ($k['praktisk'] ?? ''),
+            'allergener' => (string) ($k['allergener'] ?? ''),
+            'passerNivaa'=> (string) ($k['passer_nivaa'] ?? ''),
+            'passerHvem' => (string) ($k['passer_hvem'] ?? ''),
+            'metode'     => (string) ($k['metode'] ?? ''),
+            'varighet'   => (string) ($k['varighet'] ?? ''),
             'datoer'     => array_map(static fn($o) => [
                 'oktId'     => (int) $o['id'],
                 'naar'      => Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid'] ?? null),
@@ -140,6 +151,35 @@ switch ($handling) {
         if (array_key_exists('visUtenDato', Foresporsel::kropp())
             && DB::harKolonne('courses', 'vis_uten_dato')) {
             $data['vis_uten_dato'] = Foresporsel::tekst('visUtenDato') === 'ja' ? 1 : 0;
+        }
+
+        // Seksjonene fra kursoppsettet (migrasjon 065).
+        //
+        // Hver av dem skrives bare naar feltet faktisk er med i kallet. Et
+        // skjema som ikke kjenner dem — kursredigeringen fra en eldre skjerm
+        // — skal ikke toemme dem ved neste lagring.
+        $tekstfelter = [
+            'punkter'      => 'punkter',
+            'laerer'       => 'laerer',
+            'praktisk'     => 'praktisk',
+            'allergener'   => 'allergener',
+            'passerNivaa'  => 'passer_nivaa',
+            'passerHvem'   => 'passer_hvem',
+            'metode'       => 'metode',
+            'varighet'     => 'varighet',
+        ];
+        foreach ($tekstfelter as $inn => $kolonne) {
+            if (!array_key_exists($inn, Foresporsel::kropp()) || !DB::harKolonne('courses', $kolonne)) {
+                continue;
+            }
+            $verdi = trim(Foresporsel::tekst($inn));
+            // Punktlista lagres slik verkstedet skrev den, men uten tomme
+            // linjer og uten kulepunkter de har satt selv — nettsida setter
+            // sin egen prikk. Samme regel som paa medlemskapene.
+            if ($kolonne === 'punkter') {
+                $verdi = implode("\n", Medlemskap::punkter($verdi));
+            }
+            $data[$kolonne] = $verdi !== '' ? $verdi : null;
         }
 
         // Bildene fra steg 3. Foerste er hovedbildet; hele lista er karusellen

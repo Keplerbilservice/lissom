@@ -124,9 +124,55 @@ datoer som ligger der i dag oppfører seg nøyaktig som før.
 
 ---
 
-## 4. Flyt i kursoppsettet
+## 4. Flyt i kursoppsettet — **gjort 27. august**
 
-**Finnes.** Tre steg: 1 Grunninfo, 2 Dager og gjentakelse, 3 Bilder.
+Steg 1 er delt i tolv seksjoner, hver med en overskrift og en linje som sier
+hva den er til:
+
+| # | Seksjon |
+|---|---|
+| 01 | Navn |
+| 02 | Kategori |
+| 03 | Pris |
+| 04 | Plasser |
+| 05 | Beskrivelse |
+| 06 | Hvem kurset passer for |
+| 07 | Dette lærer deltakerne |
+| 08 | Alt som er inkludert |
+| 09 | Praktisk informasjon |
+| 10 | Allergener og kommentarer |
+| 11 | Bekreftelse og påminnelse |
+| 12 | Forhåndsvisning |
+
+Seksjon 06 til 10 er nye felter (migrasjon 065). Seksjon 12 viser kurset slik
+det blir ute, regnet av det som står i skjemaet akkurat nå — ikke av basen,
+for poenget er å se det før man lagrer.
+
+**Punktlista er ute av koden.** «Alt som er inkludert» sto som fire faste
+linjer og kunne ikke endres noe sted. Verkstedet ba i juni om å ta «verktøy»
+ut av Kurs boller; det måtte gjøres av meg. Nå står den på kurset, ett punkt
+per linje. Skriver du ingenting, står den samme teksten som i dag — ingen
+kurs endrer seg av at migrasjonen kjøres. Det ene som ble bestilt endret,
+«verktøy» ut av Kurs boller, gjør migrasjonen selv.
+
+«Maks N deltakere» står ikke i det redigerbare feltet. Den regnes fortsatt av
+kapasiteten, så tallet ikke kan bli uenig med det som står rett under —
+det var nettopp den feilen som ble rettet i juni.
+
+**Merkingen** — nivå, hvem, metode, varighet — er fire grupper med korte,
+faste lister. Flere valg per gruppe: et kurs kan passe både for venner og for
+familie. De står på kurssiden, og de er det Kursveilederen skal lese når den
+skal foreslå noe (punkt 7b i `docs/KURSVEILEDER.md`).
+
+**Testet:** 15 kontroller gjennom hele veien — lagring, opprydding av
+punktlista, at en lagring uten seksjonene ikke rører dem, katalogen, og at
+alt står riktig på kurssiden med «Maks N deltakere» nøyaktig én gang. Og 15 i
+admin — tolv seksjoner, alle feltene, merkene som kan trykkes,
+forhåndsvisningen som følger med, lagring og gjenåpning.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes.** Tre steg: 1 Grunninfo, 2 Dager og gjentakelse, 3 Bilder.
 
 **Mangler.** Bestillingen ber om tolv seksjoner. De fleste av dem finnes ikke
 som felter i det hele tatt: «Hvem kurset passer for», «Dette lærer
@@ -594,9 +640,11 @@ Minst avhengig først, og slik at ingenting står halvferdig:
 | 8 | 1, 2, 16 Min side og admin | ✅ gjort 27. august |
 | 9 | 9, 10, 11 innhold | ✅ gjort 27. august |
 
-Punkt 8 og 14 ble gjort 26. august. Seksten av sytten er ferdige. Igjen står
-punkt 4 — kursoppsettet i tolv seksjoner, med punktlista flyttet fra koden
-til basen.
+Punkt 8 og 14 ble gjort 26. august. **Alle sytten punktene er ferdige.**
+
+Det som står igjen er ikke fra denne bestillingen, men fra den andre:
+Kursveilederen, kartlagt i `docs/KURSVEILEDER.md`. Merkefeltene den trenger
+— steg 6 i den planen — kom med punkt 4 her.
 
 ---
 

@@ -44,7 +44,7 @@ $slutt = $idag->modify('+' . DAGER_FRAM . ' days');
 // et tidspunkt. En drop-in ingen har meldt seg paa er en aapen doer og
 // teller med — den er nettopp en aapningstid.
 $okter = DB::alle(
-    "SELECT cs.start_tid, cs.slutt_tid
+    "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.tema
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.status = 'planlagt'
@@ -61,13 +61,29 @@ $okter = DB::alle(
 
 /** @var array<string, array{fra: string, til: string}> */
 $avKurs = [];
+/**
+ * Hvilke oekter hver dag er regnet av.
+ *
+ * Uten dette staar det «10–19» i bunnteksten og ingen kan se hvor tallene
+ * kommer fra. Verkstedet spurte 27. august hvilket kurs som gikk til 19:00
+ * og fant det ikke — svaret laa bare i denne utregningen.
+ *
+ * @var array<string, array<int, array<string, mixed>>>
+ */
+$kilder = [];
+
 foreach ($okter as $o) {
     $start = (new DateTimeImmutable((string) $o['start_tid'], $utc))->setTimezone($oslo);
+    // Mangler sluttiden, regner vi tre timer. Da er det verdt aa si fra: en
+    // oekt som begynner 16:00 uten sluttid gjor dagen aapen til 19:00, og
+    // det er et tall ingen har skrevet inn.
+    $antattSlutt = $o['slutt_tid'] === null;
     $stopp = $o['slutt_tid'] !== null
         ? (new DateTimeImmutable((string) $o['slutt_tid'], $utc))->setTimezone($oslo)
         : $start->modify('+3 hours');
     if ($stopp <= $start) {
         $stopp = $start->modify('+3 hours');
+        $antattSlutt = true;
     }
 
     // Et kurs som gaar over to dager gjor begge dagene aapne. Vi gaar dag for
@@ -84,6 +100,14 @@ foreach ($okter as $o) {
             $avKurs[$nokkel]['fra'] = min($avKurs[$nokkel]['fra'], $fra);
             $avKurs[$nokkel]['til'] = max($avKurs[$nokkel]['til'], $til);
         }
+        $kilder[$nokkel][] = [
+            'oktId'       => (int) $o['id'],
+            'tittel'      => (string) $o['tittel'],
+            'tema'        => (string) ($o['tema'] ?? ''),
+            'fra'         => $fra,
+            'til'         => $til,
+            'antattSlutt' => $antattSlutt,
+        ];
         $dag = $dag->modify('+1 day');
     }
 }
@@ -145,6 +169,19 @@ for ($i = 0; $i < DAGER_FRAM; $i++) {
         // gaar paa kurset — det er ikke det samme som at butikken staar aapen
         // for alle som gaar forbi.
         'hva'     => $m !== null && $m['merknad'] ? (string) $m['merknad'] : 'Kurs og events',
+        // Om dagen er satt for hand framfor regnet av kursene.
+        'overstyrt' => $m !== null,
+        // Oektene tallene kommer av, i den rekkefolgen de gaar. Tomt naar
+        // dagen er satt for hand uten at det gaar noe.
+        'okter'   => array_values(array_map(
+            static fn(array $kilde) => [
+                'tittel'      => $kilde['tittel'],
+                'tema'        => $kilde['tema'],
+                'naar'        => $kilde['fra'] . '–' . $kilde['til'],
+                'antattSlutt' => $kilde['antattSlutt'],
+            ],
+            $kilder[$nokkel] ?? []
+        )),
     ];
 }
 

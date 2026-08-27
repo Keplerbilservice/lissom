@@ -5341,8 +5341,8 @@ window.__resources = {
                     <button type="button" onClick="{{ kHentStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
                     <button type="button" onClick="{{ kLagreStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk denne som standard</button>
                   </div>
-                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-                    <input type="checkbox" checked="{{ kSms }}" onChange="{{ toggleKSms }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  <label style="{{ kSmsEtikettStil }}">
+                    <input type="checkbox" checked="{{ kSms }}" disabled="{{ kSmsLaast }}" onChange="{{ toggleKSms }}" style="{{ kSmsBoksStil }}">
                     Send SMS-påminnelse til deltakerne 24 timer før — {{ smsMerke }}
                   </label>
                   <sc-if value="{{ smsAv }}" hint-placeholder-val="{{ true }}">
@@ -5637,6 +5637,24 @@ window.__resources = {
               </sc-for>
             </div>
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ admUkeHjelp }}</p>
+
+            <!-- Aapningstida i bunnteksten paa nettsiden, og hva den er
+                 regnet av. Sto det et klokkeslett man ikke kjente igjen,
+                 fantes det ingen maate aa finne ut hvor det kom fra. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
+              <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Åpningstid i dag på nettsiden</span>
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ apnTid }}</span>
+              </div>
+              <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ apnLinje }}</p>
+              <sc-if value="{{ apnHarKilder }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: 4px; margin-top: var(--space-3);">
+                  <sc-for list="{{ apnKilder }}" as="a" hint-placeholder-count="2">
+                    <div style="font-size: var(--text-sm); color: var(--text-body);">{{ a.tekst }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
           </div>
 
           <!-- Kurslista.
@@ -5687,10 +5705,17 @@ window.__resources = {
                folk melder seg paa — og det er der en deltaker legges til.
                Har du et kurs aapent, viser lista datoene til det kurset:
                ellers staar seksten datoer der, og din er én av dem. -->
-          <div id="admin-datoer" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <div id="admin-datoer" style="{{ datoBlokkStil }}">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ aktiveOkterTittel }} · {{ aktiveOkterAntall }}</span>
-              <button type="button" onClick="{{ oktVinduVeksle }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ oktVinduTekst }}</button>
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ oktVinduVeksle }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading); white-space: nowrap;">{{ oktVinduTekst }}</button>
+                <!-- Veien tilbake til alle datoene. Uten den staar man igjen
+                     med ett kurs og ingen maate aa se resten paa. -->
+                <sc-if value="{{ datoerForEttKurs }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ lukkDatoerFor }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 5px 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Vis alle datoer</button>
+                </sc-if>
+              </div>
               <sc-if value="{{ harValgteOkter }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
                   <span style="font-size: var(--text-xs); color: var(--text-body);">{{ valgteOkterTekst }}</span>
@@ -5998,15 +6023,9 @@ window.__resources = {
             </div>
           </div>
 
-          <!-- Kursvelgeren sto her, og et helt likt skjema sto under
-               Butikk. To steder som kunne si hver sitt, og ingen av dem
-               lagret noe: alt laa i nettleserens minne. Redigeringen ligger
-               naa ett sted, under Nettsiden -> Kursvelgeren, og lagres. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
-            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Kursvelgeren</div>
-            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Spørsmålene, svarene og hva de anbefaler ligger under Nettsiden.</p>
-            <button type="button" onClick="{{ tilKursvelger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Åpne Kursvelgeren →</button>
-          </div>
+          <!-- Kursvelgeren sto her, som en boks med en lenke videre. Den
+               staar naa som kort oeverst paa Oversikt, sammen med de andre
+               verktoyene. To veier inn til det samme er én for mye. -->
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
@@ -7993,15 +8012,9 @@ window.__resources = {
             </div>
           </div>
 
-          <!-- Kursvelgeren sto her, og et helt likt skjema sto under
-               Butikk. To steder som kunne si hver sitt, og ingen av dem
-               lagret noe: alt laa i nettleserens minne. Redigeringen ligger
-               naa ett sted, under Nettsiden -> Kursvelgeren, og lagres. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6);">
-            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Kursvelgeren</div>
-            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Spørsmålene, svarene og hva de anbefaler ligger under Nettsiden.</p>
-            <button type="button" onClick="{{ tilKursvelger }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Åpne Kursvelgeren →</button>
-          </div>
+          <!-- Kursvelgeren sto her, som en boks med en lenke videre. Den
+               staar naa som kort oeverst paa Oversikt, sammen med de andre
+               verktoyene. To veier inn til det samme er én for mye. -->
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Uttak i internbutikken</div>
@@ -16297,7 +16310,12 @@ class Component extends DCLogic {
       praktisk: this.state.kPraktisk || '', allergener: this.state.kAllergener || '',
       passerNivaa: this.state.kPasserNivaa || '', passerHvem: this.state.kPasserHvem || '',
       metode: this.state.kMetode || '', varighet: this.state.kVarighet || '',
-      mva: this.state.kMva ? '25 % mva' : 'Uten mva', sms: this.state.kSms === true, datoer, okter,
+      mva: this.state.kMva ? '25 % mva' : 'Uten mva',
+      // Uten SMS-leverandoer staar haken av og lar seg ikke sette. Da skal
+      // lagring heller ikke skrive den av: valget paa kurset blir staaende
+      // til noen faktisk tar det.
+      sms: this.smsAktivert() ? (this.state.kSms === true) : (this.state.kSms !== false),
+      datoer, okter,
       sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
       gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
       bilder: (this.state.kBilder || []).filter(Boolean),
@@ -18999,10 +19017,13 @@ class Component extends DCLogic {
     // Aapningstidene i bunnteksten. Hentes én gang, paa de sidene som har
     // bunntekst — det er ett lite oppslag, og uten det staar det «etter
     // avtale» ogsaa naar det gaar kurs i dag.
+    // «admin» er kursskjermen. Der staar aapningstida med kildene sine, saa
+    // eieren kan se hvilke datoer tallene i bunnteksten kommer av — det
+    // spoersmaalet kom 27. august, og svaret laa bare inne i utregningen.
     if (!this._apningHentes && !this.state.apningsdager
         && ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'kasse', 'omoss',
             'personvern', 'nyttig', 'bedrift', 'vilkar', 'gavekortside', 'kontakt',
-            'ferdigbrent'].indexOf(side) !== -1) {
+            'ferdigbrent', 'admin'].indexOf(side) !== -1) {
       this._apningHentes = true;
       fetch('/api/apningstider.php', { credentials: 'same-origin' })
         .then(r => r.json())
@@ -22361,6 +22382,18 @@ class Component extends DCLogic {
       smsPaa: this.smsAktivert(),
       smsAv: !this.smsAktivert(),
       smsMerke: this.smsAktivert() ? 'Aktivert' : 'Ikke aktivert',
+      // Haken staar graa naar den ikke lar seg sette. En hake som ser ut som
+      // et valg, men ikke er det, er verre enn ingen hake.
+      kSmsEtikettStil: {
+        display: 'flex', alignItems: 'center', gap: 8,
+        cursor: this.smsAktivert() ? 'pointer' : 'default',
+        fontSize: 'var(--text-sm)',
+        color: this.smsAktivert() ? 'var(--text-heading)' : 'var(--text-muted)',
+      },
+      kSmsBoksStil: {
+        width: 18, height: 18, accentColor: 'var(--lissom-brown)',
+        cursor: this.smsAktivert() ? 'pointer' : 'default',
+      },
       smsForklaring: this.smsAktivert()
         ? 'SMS sendes fra Lissom.'
         : 'SMS er ikke aktivert. Meldingene går på e-post og Min side. Skal SMS også gå ut, må vi koble på en SMS-leverandør først.',
@@ -22518,6 +22551,53 @@ class Component extends DCLogic {
           admUkeHjelp: 'Gule datoer har ledige plasser, brune er fullbooket, '
             + 'grå er interne samlinger. Trykk en dato for å se de påmeldte '
             + 'og legge til en deltaker.',
+
+          // ── Aapningstida i dag, og hva den er regnet av ────────────────
+          //
+          // Bunnteksten paa nettsiden sier «I dag 10–19». Tallene regnes av
+          // kursdatoene som ligger ute den dagen, fra det forste begynner
+          // til det siste slutter. Sto det et klokkeslett man ikke kjente
+          // igjen, fantes det ingen maate aa finne ut hvor det kom fra.
+          //
+          // Her staar det samme svaret som bunnteksten viser, med datoene
+          // det er regnet av. Serveren regner; dette leser bare svaret, saa
+          // de to ikke kan bli uenige.
+          ...(() => {
+            const d = (this.state.apningsdager || {}).dager;
+            if (!d) {
+              return {
+                apnHar: false, apnTid: '', apnLinje: 'Henter åpningstiden …',
+                apnKilder: [], apnHarKilder: false,
+              };
+            }
+            const idag = d.find(x => x.idag);
+            if (!idag) {
+              return {
+                apnHar: true, apnTid: 'Etter avtale',
+                apnLinje: 'Det ligger ingen kursdatoer ute i dag, så bunnteksten '
+                  + 'på nettsiden sier «Etter avtale».',
+                apnKilder: [], apnHarKilder: false,
+              };
+            }
+            const kilder = idag.okter || [];
+            return {
+              apnHar: true,
+              apnTid: idag.stengt ? 'Stengt' : idag.tid,
+              apnLinje: idag.overstyrt
+                ? 'Satt for hånd for i dag. Den går foran kursdatoene.'
+                : (kilder.length
+                    ? 'Regnet av datoene under — fra den første begynner til den siste slutter.'
+                    : 'Ingen kursdatoer i dag.'),
+              apnHarKilder: kilder.length > 0,
+              apnKilder: kilder.map(o => ({
+                tekst: o.tittel + ' · ' + o.naar
+                  + (o.tema === 'Kun for medlemmer' ? ' · intern samling' : '')
+                  // Uten sluttid regner serveren tre timer. Da er sluttiden
+                  // et tall ingen har skrevet inn, og det skal staa.
+                  + (o.antattSlutt ? ' · sluttid mangler, regnet som tre timer' : ''),
+              })),
+            };
+          })(),
         };
       })(),
       // Datoene som faktisk ligger ute.
@@ -22532,9 +22612,14 @@ class Component extends DCLogic {
         // kursene som staar i lista over.
         const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
 
-        // Har du et kurs aapent, er det datoene til det kurset du er ute
-        // etter. Foer sto alle seksten der, og din var én av dem.
-        const aapentKurs = this.state.kRed ? (this.state.kNavn || '').trim() : '';
+        // Hvilket kurs datolista gjelder.
+        //
+        // Trykker du en rad i kurslista, er det datoene til det kurset du er
+        // ute etter — ikke skjemaet med tolv seksjoner, og ikke alle seksten
+        // datoene i basen. Lista legger seg da oeverst paa skjermen, foran
+        // kalenderen og kurslista, saa den er det forste du ser.
+        const aapentKurs = (this.state.datoerFor || '').trim()
+          || (this.state.kRed ? (this.state.kNavn || '').trim() : '');
 
         // Aatte uker fram. Et kurs som gjentar seg lager femti datoer, og de
         // som ligger langt fram er sjelden dem man skal rette. Knappen viser
@@ -22636,6 +22721,17 @@ class Component extends DCLogic {
           aktiveOkter: okter,
           aktiveOkterAntall: okter.length,
           aktiveOkterTittel: aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute',
+          // Blokka flyttes oeverst naar den gjelder ett kurs. «order» virker
+          // paa flex-barn, og spalten er allerede flex — saa den bytter plass
+          // uten at markeringen finnes to steder.
+          datoBlokkStil: {
+            background: 'var(--surface-card)',
+            border: aapentKurs ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)',
+            order: aapentKurs ? -1 : 0,
+          },
+          datoerForEttKurs: !!aapentKurs,
+          lukkDatoerFor: () => this.setState({ datoerFor: '', oktRediger: null }),
           ingenAktiveOkter: okter.length === 0,
           ingenAktiveOkterTekst: aapentKurs
             ? (utenfor > 0
@@ -22930,8 +23026,21 @@ class Component extends DCLogic {
       ingenKursTreffTekst: 'Ingen kurs heter noe med «' + (this.state.kursSok || '').trim() + '».',
       adminKursAntall: this.kursSokte().length,
       adminKurs: this.kursSokte().map(({ k, i }) => Object.assign({}, k, {
-        velg: () => this.apneKursRed(k, i),
-        rediger: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apneKursRed(k, i); },
+        // Ett trykk paa raden viser datoene til kurset, oeverst paa skjermen.
+        //
+        // Foer aapnet raden skjemaet med tolv seksjoner. Skulle du bare
+        // slette en dato, matte du gjennom hele oppsettet foerst, og datoene
+        // sto i en liste med alle datoene i basen lenger nede. «Rediger»
+        // aapner fortsatt skjemaet — det er to forskjellige aerend.
+        velg: () => {
+          this.setState({ datoerFor: k.navn, kRed: false, oktRediger: null });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        rediger: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          this.setState({ datoerFor: '' });
+          this.apneKursRed(k, i);
+        },
         // Kurslista hadde Rediger og Slett, men ingen vei til aa melde noen
         // paa. Du maatte scrolle forbi hele lista til «Datoer som ligger ute»
         // og finne riktig dato der. Naa aapner knappen paameldingen med
@@ -23758,8 +23867,19 @@ class Component extends DCLogic {
       kForeslaaTekst: () => this.foreslaaKursbeskrivelse(),
       // SMS er ikke satt opp, og en hake som staar paa for noe som ikke
       // virker er et lofte til kunden vi ikke holder. Av som standard.
-      kSms: this.state.kSms === true,
-      toggleKSms: () => this.setState(s => ({ kSms: s.kSms !== true })),
+      // Haken sto paa for alle kurs, ogsaa naar SMS ikke er aktivert i det
+      // hele tatt. Da lovet skjermen en paaminnelse som ikke kan sendes —
+      // rett ved siden av teksten «Ikke aktivert».
+      //
+      // Uten leverandoer staar haken av, og den lar seg ikke sette. Verdien
+      // som ligger paa kurset roeres ikke: blir SMS koblet paa senere, staar
+      // valget der det sto.
+      kSms: this.state.kSms === true && this.smsAktivert(),
+      kSmsLaast: !this.smsAktivert(),
+      toggleKSms: () => {
+        if (!this.smsAktivert()) return;
+        this.setState(s => ({ kSms: s.kSms !== true }));
+      },
       kMva: !!this.state.kMva,
       toggleKMva: () => this.setState(s => ({ kMva: !s.kMva })),
       // Kategorien kunden filtrerer paa ute. Skjules for «Kun medlemmer» og
@@ -24062,7 +24182,7 @@ class Component extends DCLogic {
       // tolv seksjoner, og gjor det samme — men den som aapnet et kurs for
       // aa se paa noe skal slippe aa rulle helt ned for aa komme seg ut.
       kTilbakeListe: () => {
-        this.setState({ kRed: false });
+        this.setState({ kRed: false, datoerFor: '' });
         const el = document.getElementById('ov-kortrutenett') || document.getElementById('admin-datoer');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return el;
@@ -25690,7 +25810,6 @@ class Component extends DCLogic {
       })(),
 
       // Lenka fra de to stedene redigeringen sto for.
-      tilKursvelger: () => this.gaaAdmin('adminkursvelger', {}),
       erAdminKursvelger: side === 'adminkursvelger',
       adminNavKursvelger: this.adminMeny(),
       ...(side !== 'adminkursvelger' ? {} : (() => {

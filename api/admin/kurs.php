@@ -631,6 +631,14 @@ switch ($handling) {
             ]);
         }
 
+        // Avbestilte paameldinger peker fortsatt paa datoen. Det staar ingen
+        // fremmednokkel paa den kolonnen, saa basen sier ikke fra — raden ble
+        // bare staaende og pekte paa noe som ikke fantes. Vi loesner den med
+        // vilje, saa bilaget beholder kurset og beloepet sitt.
+        DB::kjor(
+            'UPDATE bookings SET course_session_id = NULL WHERE course_session_id = :o',
+            ['o' => $oktId]
+        );
         DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $oktId]);
         revider('dato_slettet', 'course_session', $oktId, ['kurs' => $okt['tittel'], 'naar' => $naar]);
         Svar::ok(['slettet' => true, 'beskjed' => $naar . ' er tatt bort.']);
@@ -675,6 +683,38 @@ switch ($handling) {
             ['c' => $kursId]
         );
 
+        // Og de som har vaert: avbestilte, refunderte, og de som ikke motte.
+        //
+        // Her laa feilen. Telleren over saa bare etter paameldinger som lever
+        // naa, saa et kurs der alle hadde avbestilt gikk videre til DELETE —
+        // og der staar en fremmednokkel fra bookings med RESTRICT. Basen
+        // nektet, kallet endte i en femhundre, og skjermen sa «Gikk ikke»
+        // uten et ord om hvorfor.
+        //
+        // En avbestilt paamelding er fortsatt et bilag. Raden skal ikke
+        // forsvinne, og da kan kurset heller ikke det.
+        $historikk = (int) DB::verdi(
+            'SELECT COUNT(*) FROM bookings WHERE course_id = :c',
+            ['c' => $kursId]
+        );
+
+        if ($pameldte === 0 && $historikk > 0) {
+            DB::oppdater('courses', ['status' => 'avlyst'], ['id' => $kursId]);
+            DB::kjor(
+                "UPDATE course_sessions SET status = 'avlyst'
+                  WHERE course_id = :c AND status = 'planlagt'",
+                ['c' => $kursId]
+            );
+            revider('kurs_avlyst', 'course', $kursId, ['historikk' => $historikk]);
+            Svar::ok([
+                'slettet' => false,
+                'beskjed' => 'Kurset er avlyst og tatt av nettsiden. Det kan ikke slettes helt: '
+                    . $historikk . ($historikk === 1 ? ' tidligere påmelding peker' : ' tidligere påmeldinger peker')
+                    . ' på det, og de er bilag. Ingen som kommer er berørt — '
+                    . 'de påmeldingene er avbestilt fra før.',
+            ]);
+        }
+
         if ($pameldte > 0) {
             DB::oppdater('courses', ['status' => 'avlyst'], ['id' => $kursId]);
             DB::kjor(
@@ -691,7 +731,8 @@ switch ($handling) {
             ]);
         }
 
-        // Ingen paameldte: datoene og eventuelle faste ukedager foelger med.
+        // Ingen paameldinger i det hele tatt: datoene og eventuelle faste
+        // ukedager foelger med.
         if (DB::harTabell('kurs_serier')) {
             DB::kjor('DELETE FROM kurs_serier WHERE course_id = :c', ['c' => $kursId]);
         }

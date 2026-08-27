@@ -285,12 +285,18 @@ Kortet står der nå, og fører til en skjerm som sier hva som mangler.
   område var ikke synlige i det hele tatt. Nå står det hvor du er, og ett
   trykk viser hele kartet — to spalter, alt på skjermen, med underpunktene til
   området du står i under det.
-- **«Uttak butikk» heter Kasse**, og er ett sted for alt som selges i
-  verkstedet. Salg over disk lå ett sted og påmelding på kurs, event, drop-in
-  og medlemskap et annet. Begge skjermene har den samme raden øverst: Varer i
-  butikken, Internbutikk, Kurs, Event og Paint on Pots, Drop-in, Medlemskap.
-  Varelista er delt i butikk og internbutikk — internvarene lå blandet inn
-  mellom koppene.
+- **«Uttak butikk» heter Kasse.** Den åpner på **Salg**: ett beløp, kontant
+  eller Vipps, og om det var kurs, medlemskap eller produkt. Raden øverst har
+  tre valg — Salg, Varer i butikken, Internbutikk. Varelista er delt i butikk
+  og internbutikk; internvarene lå blandet inn mellom koppene.
+
+  «Hva var det» setter `payments.formal`, som er det dagsoppgjøret og
+  transaksjonsuttrekket grupperer på — kontoen og mva-koden hentes derfra, fra
+  oppsettet under Økonomi → Regnskap. Et kassesalg havner dermed på samme
+  konto som det samme salget gjort på nett, uten et eget regelverk ved siden
+  av. Kurs, event, drop-in og medlemskap sto først som egne valg i raden; de
+  er tatt ut igjen samme kveld på bestilling — påmeldinger legges inn for hånd
+  fra «Meld noen på» på Oversikt.
 - **«Ferdig glassert» heter «Klar til henting»**, som ute på nettsiden. Den
   lagrede rekkefølgen på kortene følger med.
 - **Nytt kort på Oversikt: kurs som går tomme for datoer.** Kurssidene lover

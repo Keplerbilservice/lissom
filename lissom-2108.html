@@ -5088,20 +5088,77 @@ window.__resources = {
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kasse</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges i verkstedet: varer, kurs, event, drop-in og medlemskap. Kontant eller Vipps, og det følger med i regnskapet.</p>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges over disk. Skriv beløpet, velg kontant eller Vipps, og hva det var — så er det med i regnskapet.</p>
         </div>
 
-        <!-- Hva selger du? Én rad, seks ting, og ingen vei innom noe annet. -->
+        <!-- Hva selger du? Tre ting, og ingen vei innom noe annet. -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
-          <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="6">
+          <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
         </div>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); gap: var(--space-6); align-items: start;">
 
+          <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
+
+          <!-- Salget.
+               Det aller meste som selges over disk er ett belop: et kurs noen
+               betaler for i doera, et medlemskap, eller en ting fra hylla.
+               Foer maatte det gaa om en varelinje som ikke fantes, eller om
+               paameldingsskjemaet. Her er det tre trykk og en sum.
+
+               «Hva var det» avgjor kontoen og mva-koden i regnskapet — de
+               staar under OEkonomi, og er de samme som for det samme salget
+               gjort paa nett. -->
+          <sc-if value="{{ utSalgVis }}" hint-placeholder-val="{{ true }}">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Registrer et salg</div>
+
+              <div style="display: flex; flex-direction: column; gap: var(--space-6); max-width: 520px;">
+
+                <div>
+                  <label for="ut-belop" style="{{ utEtikett }}">Beløp</label>
+                  <input id="ut-belop" inputmode="decimal" value="{{ utBelop }}" onChange="{{ settUtBelop }}" placeholder="F.eks. 690" style="{{ utBelopStil }}">
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ utBelopHjelp }}</p>
+                </div>
+
+                <div>
+                  <div style="{{ utEtikett }}">Betalt med</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+
+                <div>
+                  <div style="{{ utEtikett }}">Hva var det?</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ utSlagValg }}" as="sl" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ sl.velg }}" style="{{ sl.stil }}">{{ sl.navn }}</button>
+                    </sc-for>
+                  </div>
+                  <p style="margin: 8px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utSlagHjelp }}</p>
+                </div>
+
+                <div>
+                  <label for="ut-salgkunde" style="{{ utEtikett }}">Kunde</label>
+                  <input id="ut-salgkunde" value="{{ utKunde }}" onChange="{{ settUtKunde }}" placeholder="Valgfritt — navn på kvitteringen" style="{{ utFeltStil }}">
+                </div>
+
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utRegistrerSalg }}" hint-size="auto,52px">Registrer salget</x-import>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utSalgBeskjed }}</span>
+                </div>
+
+              </div>
+            </div>
+          </sc-if>
+
           <!-- Varene. Soekefeltet er der fordi 21 varer er for mange aa lete
                gjennom med oynene mens noen staar og venter. -->
+          <sc-if value="{{ utVarerVis }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
               <label style="{{ utEtikett }}">Søk etter vare</label>
@@ -5121,9 +5178,14 @@ window.__resources = {
               <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ utIngenVarerTekst }}</div>
             </sc-if>
           </div>
+          </sc-if>
 
-          <!-- Salget som bygges opp. -->
+          </div>
+
+          <!-- Salget som bygges opp. Staar bare naar man handler i varelista
+               — et hurtigsalg har ingen kurv. -->
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+            <sc-if value="{{ utVarerVis }}" hint-placeholder-val="{{ false }}">
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg);">
               <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">Dette salget</div>
 
@@ -5171,6 +5233,7 @@ window.__resources = {
                 </div>
               </div>
             </div>
+            </sc-if>
 
             <!-- Dagens salg, med mulighet til aa annullere en feiltasting.
                  Ordren slettes ikke — den blir staaende som annullert. -->
@@ -5248,15 +5311,8 @@ window.__resources = {
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kasse</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">En plass på kurs, event, drop-in eller et medlemskap, betalt i verkstedet. Finn personen eller legg inn en ny.</p>
-        </div>
-
-        <!-- Hva selger du? Én rad, seks ting, og ingen vei innom noe annet. -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
-          <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="6">
-            <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
-          </sc-for>
+          <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Meld noen på</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">En plass på kurs, event, drop-in eller et medlemskap, lagt inn for hånd. Finn personen eller legg inn en ny.</p>
         </div>
 
         <div style="max-width: 780px; display: flex; flex-direction: column; gap: var(--space-6);">
@@ -23790,7 +23846,7 @@ class Component extends DCLogic {
 
         // Internvarene — leire, brenning, glasur — er medlemmenes, og laa
         // blandet inn mellom koppene. To halvdeler av kassa, ikke én liste.
-        const del = st.utDel || 'butikk';
+        const del = st.utDel || 'salg';
         const synlige = varer
           .filter(v => del === 'intern' ? v.kunMedlemmer : !v.kunMedlemmer)
           .filter(v => !sok
@@ -23836,9 +23892,81 @@ class Component extends DCLogic {
           .filter(s => s.status !== 'kansellert')
           .reduce((n, s) => n + (parseInt(String(s.sum).replace(/[^\d]/g, ''), 10) || 0), 0);
 
+        // ── Hurtigsalget ──────────────────────────────────────────────
+        //
+        // Ett belop, kontant eller Vipps, og hva det var. «Hva var det»
+        // avgjor kontoen og mva-koden i dagsoppgjoret: kurs foerer paa samme
+        // konto som et kurs solgt paa nett, medlemskap paa medlemskap, og en
+        // ting fra hylla paa butikk. Kontoene og kodene staar under OEkonomi
+        // — de skrives ikke ned her.
+        const slag = st.utSlag || 'kurs';
+        const SLAGTEKST = {
+          kurs: 'Kurs føres som kurs og events i regnskapet — samme konto og mva-kode som '
+              + 'et kurs betalt på nett. Kurs er unntatt mva.',
+          medlemskap: 'Medlemskap føres på medlemskapskontoen, med den mva-koden som står '
+              + 'under Økonomi → Regnskap.',
+          produkt: 'En ting fra hylla føres som butikksalg, med mva — 25 % med mindre '
+              + 'noe annet står under Økonomi → Regnskap. Lageret røres ikke: skal en '
+              + 'bestemt vare trekkes fra lageret, bruk «Varer i butikken».',
+        };
+
         return {
           erAdminUttak: true,
           adminNavUttak: this.adminMeny(),
+
+          utSalgVis: del === 'salg',
+          utVarerVis: del !== 'salg',
+
+          utBelop: st.utBelop || '',
+          settUtBelop: e => this.setState({ utBelop: e.target.value, utSalgBeskjed: '' }),
+          utBelopStil: Object.assign({}, felt, {
+            font: 'var(--type-body)', fontWeight: 700, fontSize: 'var(--text-2xl)',
+            padding: '14px 16px', background: 'var(--clay-50)',
+            border: '2px solid var(--lissom-brown)',
+          }),
+          utBelopHjelp: (() => {
+            const n = parseFloat(String(st.utBelop || '').replace(/\s/g, '').replace(',', '.'));
+            if (!isFinite(n) || n <= 0) return 'Beløpet kunden betaler, i kroner.';
+            const ore = Math.round(n * 100);
+            // kr() runder til hele kroner. Har noen tastet oerer, skal de
+            // staa — ellers sier kvitteringen noe annet enn kunden betalte.
+            const tekst = ore % 100 === 0 ? kr(ore)
+              : 'kr. ' + (ore / 100).toLocaleString('nb-NO', { minimumFractionDigits: 2 });
+            return 'Kunden betaler ' + tekst + ' med ' + maate.toLowerCase() + '.';
+          })(),
+
+          utSlagValg: [['kurs', 'Kurs'], ['medlemskap', 'Medlemskap'], ['produkt', 'Produkt']]
+            .map(([v, navn]) => ({
+              navn,
+              velg: () => this.setState({ utSlag: v, utSalgBeskjed: '' }),
+              stil: {
+                appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)',
+                fontWeight: 600, padding: '11px 20px', minHeight: 44,
+                borderRadius: 'var(--radius-pill)',
+                border: '1px solid ' + (slag === v ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                background: slag === v ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                color: slag === v ? 'var(--clay-50)' : 'var(--text-heading)',
+              },
+            })),
+          utSlagHjelp: SLAGTEKST[slag] || '',
+          utSalgBeskjed: st.utSalgBeskjed || '',
+          utRegistrerSalg: () => {
+            const raa = String(st.utBelop || '').trim();
+            if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
+              this.setState({ utSalgBeskjed: 'Skriv inn et beløp først.' });
+              return;
+            }
+            this.uttakKall({
+              handling: 'salg',
+              belop: raa,
+              maate,
+              slag,
+              kunde: (st.utKunde || '').trim(),
+            }).then(ok => {
+              if (ok) this.setState({ utBelop: '', utKunde: '', utSalgBeskjed: '' });
+            });
+          },
+
           utEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
                        color: 'var(--text-heading)', marginBottom: 6 },
           utFeltStil: felt,
@@ -24064,10 +24192,13 @@ class Component extends DCLogic {
                  })),
 
             kort('Kasse',
-                 'Alt du selger i verkstedet: varer, internbutikk, kurs, event, '
-                 + 'Paint on Pots, drop-in og medlemskap. Kontant eller Vipps.',
+                 'Salg over disk: beløp, kontant eller Vipps, og om det var kurs, '
+                 + 'medlemskap eller en ting fra hylla. Går rett i regnskapet.',
                  null, 'Åpne kassa',
-                 () => this.gaaAdmin('adminuttak', { utKurv: {}, utKunde: '', utSok: '', utDel: 'butikk' })),
+                 () => this.gaaAdmin('adminuttak', {
+                   utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
+                   utBelop: '', utSalgBeskjed: '',
+                 })),
 
             kort('Butikk',
                  'Varer, priser, bilder og lager.',
@@ -31369,7 +31500,7 @@ class Component extends DCLogic {
       // leses som én kasse uansett hvilken halvdel man er i.
       ...(() => {
         const st = this.state;
-        const del = st.utDel || 'butikk';
+        const del = st.utDel || 'salg';
         const hva = st.nrHva || 'Kurs';
         const paaUttak = side === 'adminuttak';
         const naa = paaUttak ? del : hva;
@@ -31383,21 +31514,21 @@ class Component extends DCLogic {
         });
         // Paint on Pots staar i navnet fordi det er slik det heter i doera.
         // Det er lagret som event, og havner samme sted.
+        // «Salg» er det kassa gjor mesteparten av tida: ett belop, kontant
+        // eller Vipps, og hva det var. Kurs, event, drop-in og medlemskap
+        // sto her ogsaa, som hver sin vei inn i paameldingsskjemaet. De er
+        // tatt ut 27. august paa bestilling — paameldingene legges inn for
+        // haand naar det passer, fra kortet «Meld noen paa» paa Oversikt.
         const rader = [
+          ['Salg',             'salg',   'adminuttak'],
           ['Varer i butikken', 'butikk', 'adminuttak'],
           ['Internbutikk',     'intern', 'adminuttak'],
-          ['Kurs',             'Kurs',        'adminnyreg'],
-          ['Event og Paint on Pots', 'Event', 'adminnyreg'],
-          ['Drop-in',          'Drop-in',     'adminnyreg'],
-          ['Medlemskap',       'Medlemskap',  'adminnyreg'],
         ];
         return {
-          kasseValg: rader.map(([navn, verdi, rute]) => ({
+          kasseValg: rader.map(([navn, verdi]) => ({
             navn,
-            velg: rute === 'adminuttak'
-              ? () => this.gaaAdmin('adminuttak', { utDel: verdi, utSok: '' })
-              : () => this.gaaAdmin('adminnyreg', { nrHva: verdi, nrOkt: '' }),
-            stil: chip((paaUttak ? rute === 'adminuttak' : rute === 'adminnyreg') && naa === verdi),
+            velg: () => this.gaaAdmin('adminuttak', { utDel: verdi, utSok: '' }),
+            stil: chip(paaUttak && naa === verdi),
           })),
         };
       })(),

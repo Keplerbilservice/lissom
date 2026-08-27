@@ -3,6 +3,7 @@
  * Salg over disk.
  *
  *   GET                      varene som kan selges, og dagens salg
+ *   POST handling=salg       { belop, maate, slag, kunde }   ett belop, ett trykk
  *   POST handling=selg       { linjer: [{id, antall}], maate, kunde }
  *   POST handling=annuller   { ordreId }
  *
@@ -27,6 +28,21 @@ krev_admin();
 
 /** Maatene et salg kan gjores opp paa. Samme liste som paameldingene bruker. */
 const MAATER = ['Kontant', 'Vipps'];
+
+/**
+ * Hva et salg over disk er, regnskapsmessig.
+ *
+ * Nokkelen er det som staar paa skjermen. Verdien er `payments.formal`, som
+ * er den dagsoppgjoret og transaksjonsuttrekket grupperer paa — og det er
+ * derfra kontoen og mva-koden hentes, fra oppsettet under OEkonomi. Et
+ * kassesalg blir dermed liggende paa samme konto som det samme salget gjort
+ * paa nett, uten et eget regelverk ved siden av.
+ */
+const SLAG = [
+    'kurs'       => ['formal' => 'booking',    'tittel' => 'Kurs — solgt i verkstedet'],
+    'medlemskap' => ['formal' => 'medlemskap', 'tittel' => 'Medlemskap — solgt i verkstedet'],
+    'produkt'    => ['formal' => 'ordre',      'tittel' => 'Produkt — solgt i verkstedet'],
+];
 
 if (Foresporsel::metode() === 'GET') {
     $varer = DB::alle(
@@ -53,6 +69,10 @@ if (Foresporsel::metode() === 'GET') {
 
     Svar::json([
         'maater' => MAATER,
+        'slag'   => array_map(
+            static fn(string $n): array => ['verdi' => $n, 'navn' => ucfirst($n)],
+            array_keys(SLAG)
+        ),
         'varer'  => array_map(static fn($v) => [
             'id'        => (int) $v['id'],
             'tittel'    => (string) $v['tittel'],
@@ -123,6 +143,92 @@ if ($handling === 'annuller') {
 
     revider('uttak_annullert', 'ordre', (int) $ordre['id'], ['ordrenr' => $ordre['ordrenr']]);
     Svar::ok(['beskjed' => 'Salget er annullert, og varene er lagt tilbake på lager.']);
+}
+
+// ────────────────────────────────────────────────────────────── salg
+//
+// Ett belop, én betalingsmaate, og hva det var. Ingen varelinjer aa lete
+// fram: det aller meste som selges over disk er et kurs noen betaler for i
+// doera, et medlemskap, eller en ting fra hylla.
+if ($handling === 'salg') {
+    $slag = (string) ($kropp['slag'] ?? 'produkt');
+    if (!isset(SLAG[$slag])) {
+        Svar::feil('Velg om det er kurs, medlemskap eller produkt.');
+    }
+
+    $maate = (string) ($kropp['maate'] ?? MAATER[0]);
+    if (!in_array($maate, MAATER, true)) {
+        Svar::feil('Velg kontant eller Vipps.');
+    }
+
+    // Belopet kommer i kroner, med komma eller punktum. Vi regner i oere, og
+    // gjor det her — ikke i nettleseren, der det kan endres paa veien.
+    $raa = str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($kropp['belop'] ?? ''));
+    $raa = str_replace(',', '.', trim($raa));
+    if ($raa === '' || !is_numeric($raa)) {
+        Svar::feil('Skriv inn et beløp.');
+    }
+    $sum = (int) round((float) $raa * 100);
+    if ($sum <= 0) {
+        Svar::feil('Beløpet må være over null.');
+    }
+    if ($sum > 10000000) {
+        Svar::feil('Beløpet må være under 100 000 kroner.');
+    }
+
+    $kunde   = mb_substr(trim((string) ($kropp['kunde'] ?? '')), 0, 191);
+    $ordrenr = 'D-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+    $formal  = SLAG[$slag]['formal'];
+    $tittel  = SLAG[$slag]['tittel'];
+
+    $ordreId = DB::iTransaksjon(static function () use ($sum, $maate, $kunde, $ordrenr, $formal, $tittel): int {
+        $betalingId = DB::settInn('payments', [
+            'vipps_reference' => 'KASSE-' . $ordrenr,
+            'type'            => 'manuell',
+            // Denne avgjor kontoen og mva-koden i dagsoppgjoret.
+            'formal'          => $formal,
+            'belop_ore'       => $sum,
+            'status'          => 'betalt',
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+
+        $id = DB::settInn('orders', [
+            'ordrenr'      => $ordrenr,
+            'kunde_navn'   => $kunde !== '' ? $kunde : 'Salg over disk',
+            'sum_ore'      => $sum,
+            'status'       => 'hentet',
+            'betalt_maate' => $maate,
+            'payment_id'   => $betalingId,
+        ]);
+
+        // Én linje, saa salget staar med et navn i «Solgt i dag» og paa
+        // kvitteringen. Ingen product_id: dette er ikke en vare fra hylla,
+        // og lageret skal ikke roeres.
+        DB::settInn('order_lines', [
+            'order_id'   => $id,
+            'product_id' => null,
+            'tittel'     => $tittel,
+            'antall'     => 1,
+            'pris_ore'   => $sum,
+        ]);
+
+        return $id;
+    });
+
+    revider('kassesalg_registrert', 'ordre', $ordreId,
+            ['ordrenr' => $ordrenr, 'sum' => $sum, 'maate' => $maate, 'slag' => $slag]);
+
+    // Belopet skrives ut slik det ble tastet. Booking::kroner() runder til
+    // hele kroner, og «199,50» ville da kvittert med «kr. 200,-».
+    $belopTekst = $sum % 100 === 0
+        ? Booking::kroner($sum)
+        : 'kr. ' . number_format($sum / 100, 2, ',', "\u{a0}");
+
+    Svar::ok([
+        'ordrenr' => $ordrenr,
+        'beskjed' => $tittel . ' · ' . $belopTekst . ' · ' . $maate
+                   . '. Det er med i regnskapet.',
+    ]);
 }
 
 // ────────────────────────────────────────────────────────────────── selg

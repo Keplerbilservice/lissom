@@ -200,7 +200,8 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         }
     }
     sjekk('ingen plass er lengre enn to timer', $forLange === 0, $forLange . ' for lange');
-    sjekk('hoyst tre plasser per dag', max($perDag ?: [0]) <= Apent::PLASSER_PER_DAG,
+    sjekk('hoyst ' . Apent::PLASSER_PER_DAG . ' plass(er) per dag',
+        max($perDag ?: [0]) <= Apent::PLASSER_PER_DAG,
         'flest paa en dag: ' . max($perDag ?: [0]));
     sjekk('ingen plass ligger i et hull mellom oektene', $iHull === 0, $iHull . ' i hull');
 

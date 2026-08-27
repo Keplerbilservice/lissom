@@ -35,8 +35,15 @@ final class Apent
     /** Hvor lenge en Paint on Pots-plass varer. Lissom: «maks 2 timer». */
     public const PLASS_MINUTTER = 120;
 
-    /** Hoyst saa mange plasser per dag. Ellers blir sida en vegg av kort. */
-    public const PLASSER_PER_DAG = 3;
+    /**
+     * Hoyst saa mange plasser per dag.
+     *
+     * Sto paa tre, og ga tre kort paa samme dag — 10-12, 12-13 og en om
+     * kvelden. Lissom ba 27. august om ett kort per ledige dag: lista blir
+     * lesbar, og dagen er uansett den man velger. Plassen legges paa den
+     * forste aapne perioden, eller fra naa hvis den alt har begynt.
+     */
+    public const PLASSER_PER_DAG = 1;
 
     /**
      * Dagene med aapningstid, og hvilke oekter tallene er regnet av.

@@ -398,9 +398,15 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
   sirkelen (åpningstiden regnes av øktene som står ute, så talte de genererte
   med, ville verkstedet holdt seg åpent av sin egen skygge).
 - **Plassene er to timer**, og de ligger inne i de faktiske øktene — ikke
-  spredt over timene mellom dem. Går det drop-in 10–13 og en samling 20–22, blir
-  det plasser 10–12, 12–13 og 20–22, og ingenting klokka 15 når huset er tomt.
-  Høyst tre per dag; siden viser de åtte første og sier hvor mange flere.
+  spredt over timene mellom dem. Ingen kan booke klokka 15 når huset er tomt.
+  **Én plass per åpen dag** (Lissom 27. august).
+- **Ett kort, ikke ett per dato.** Paint on Pots står som ett kort på siden, med
+  bildet fra kurslista og «N ledige tider». Datoen velger man inne i
+  bestillingen. Fjorten kort med samme bilde og samme tekst, der bare datoen
+  skilte dem, var en vegg.
+- **Tre datoer om gangen i bestillingen**, med «Vis N datoer til» under. Gjelder
+  alle kurs; de med tre eller færre datoer får ingen knapp. Er en dato valgt
+  lenger ned — man kom fra kalenderen — følger den med opp.
 - **Interne samlinger teller med** — bestemt av Lissom 27. august. En
   medlemskveld gjør både at bunnteksten sier åpent, og at Paint on Pots kan
   bookes den kvelden. Se punkt 13.

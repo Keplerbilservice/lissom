@@ -2006,6 +2006,13 @@ window.__resources = {
                       <span style="font-size: var(--text-xs); font-weight: 700; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{ d.prikk }}; flex: 0 0 auto;"></span>{{ d.plasserTekst }}</span>
                     </button>
                   </sc-for>
+                <!-- Tre datoer, og en knapp til resten.
+                     Paint on Pots ligger ute paa hver aapen dag, og lista ble
+                     fjorten like rader. Tre er nok til aa velge i; trenger man
+                     en annen dag, er den ett trykk unna. -->
+                <sc-if value="{{ bHarFlereDatoer }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ bVisFlereDatoer }}" style="{{ bFlereDatoerStil }}">{{ bFlereDatoerTekst }}</button>
+                </sc-if>
                 </div>
                 <sc-if value="{{ visKontaktfelt }}" hint-placeholder-val="{{ true }}">
                   <sc-if value="{{ visAntallPlasser }}" hint-placeholder-val="{{ true }}">
@@ -23270,6 +23277,29 @@ class Component extends DCLogic {
       // Ingen datoer fra serveren betyr ingen datoer. Fallet tilbake paa
       // designlista viste «Onsdag 19. august · 3 av 8 plasser» — en dato som
       // var passert, med plasser som ikke fantes, og en knapp som booket dem.
+      // Tre datoer, og en knapp til resten.
+      //
+      // Paint on Pots ligger ute paa hver aapen dag; lista ble fjorten
+      // like rader der bare datoen skilte dem. Tre er nok til aa velge i.
+      // Er en dato valgt lenger ned — man kom fra kalenderen — folger den
+      // med opp, slik at valget er synlig.
+      ...(() => {
+        const alle = this.ekteDatoer() || (this.state.valgtKurs || {}).datoer || [];
+        const VIS = 3;
+        const apen = !!this.state.bAlleDatoer;
+        const skjult = Math.max(0, alle.length - VIS);
+        return {
+          bHarFlereDatoer: !apen && skjult > 0,
+          bFlereDatoerTekst: skjult === 1 ? 'Vis én dato til' : 'Vis ' + skjult + ' datoer til',
+          bVisFlereDatoer: () => this.setState({ bAlleDatoer: true }),
+          bFlereDatoerStil: {
+            appearance: 'none', cursor: 'pointer', width: '100%',
+            padding: '12px 16px', borderRadius: 'var(--radius-md)', minHeight: 44,
+            border: '1px dashed var(--border-subtle)', background: 'transparent',
+            font: 'var(--type-body-sm)', fontWeight: 600, color: 'var(--lissom-brown)',
+          },
+        };
+      })(),
       bookingDatoer: (
         this.ekteDatoer()
         || (this.erPublisert() ? [] : null)
@@ -23305,7 +23335,10 @@ class Component extends DCLogic {
           opacity: d.full ? 0.45 : 1,
           fontFamily: 'inherit',
         },
-      }); }),
+      }); })
+        // Tre om gangen. Den valgte folger alltid med, ogsaa naar den ligger
+        // lenger ned enn de tre forste.
+        .filter((d, i) => this.state.bAlleDatoer || i < 3 || d.valgt),
       bookingAntall: ['1 plass', '2 plasser', '3 plasser'],
       mFane: this.state.mFane || 'medlem',
       mErKurs: (this.state.mFane || 'medlem') === 'kurs',
@@ -31937,7 +31970,15 @@ class Component extends DCLogic {
         // dreiekursets beskrivelse og punktliste paa Paint on Pots, fordi
         // bookingskjermen falt tilbake paa designlista for feltene som ikke
         // fulgte med.
-        const grunnlag = this.medServerdata({ title: 'Paint on Pots' });
+        // Grunnlaget er kursets egen oppforing, ikke bare navnet. Sto det
+        // «{ title: 'Paint on Pots' }» her, fulgte ingen bilde med — og
+        // kortene sto med en tom foto-rute. Verkstedet har ikke lastet opp et
+        // eget bilde paa kurset, saa det er bildet fra kurslista som gjelder,
+        // det samme som staar paa kortet under «Vaare kurs». Legger de inn et
+        // eget bilde i admin, gaar det foran.
+        const base = (this._kursListe || []).find(x => x.title === 'Paint on Pots')
+          || { title: 'Paint on Pots' };
+        const grunnlag = this.medServerdata(base);
         const fra = this.erPublisert()
           ? okter.map(o => Object.assign({}, grunnlag, {
               level: 'Event',
@@ -31952,22 +31993,34 @@ class Component extends DCLogic {
               { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
             ];
 
-        // Paint on Pots ligger ute paa hver aapen tid — tre plasser om dagen i
-        // fjorten dager blir en vegg av kort. Vi viser de aatte forste, og
-        // sier hvor mange flere som finnes. Lenken «Alle events» staar alt
-        // over lista.
-        const VIS = 8;
+        // Ett kort, ikke ett per dato.
+        //
+        // Paint on Pots ligger ute paa hver aapen dag. Ett kort per dag ble en
+        // vegg — fjorten kort med det samme bildet og den samme teksten, der
+        // bare datoen skiller dem. Naa staar kurset som ett kort, og datoen
+        // velger man inne i bestillingen, der datovelgeren alt staar.
+        const forste = fra[0] || null;
+        const kort = forste === null ? [] : [Object.assign({}, forste, {
+            // Kortet sier naar det neste er. Resten staar i bestillingen.
+            date: forste.date,
+            status: fra.length === 1
+              ? forste.status
+              : (fra.length + ' ledige tider'),
+          })];
         return {
-          popFlereDatoer: fra.length > VIS
-            ? ('… og ' + (fra.length - VIS) + ' flere tider de neste to ukene.')
+          popFlereDatoer: fra.length > 1
+            ? ('Du velger dag og tid i bestillingen — ' + fra.length
+               + ' ledige tider de neste to ukene.')
             : '',
-          popHarFlere: fra.length > VIS,
-          popDatoer: fra.slice(0, VIS).map(k => Object.assign({}, k, {
+          popHarFlere: fra.length > 1,
+          popDatoer: kort.map(k => Object.assign({}, k, {
             book: () => {
               this.setState({
                 side: 'booking', fra: 'paintonpots', valgtKurs: k,
                 bookOrdre: false, bookKvittert: false,
-                bDato: k.date || null, bOktId: k.oktId || null, ventelisteBekreftet: null,
+                // Ingen dato er valgt paa forhaand: kunden velger selv i
+                // lista. Sto den forste som valgt, var valget alt tatt.
+                bDato: null, bOktId: null, ventelisteBekreftet: null,
               });
               window.scrollTo(0, 0);
             },

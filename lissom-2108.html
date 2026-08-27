@@ -1690,10 +1690,10 @@ window.__resources = {
         <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
           <div style="max-width: var(--width-content); margin: 0 auto; background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
             <div style="min-width: 0;">
-              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">Usikker på hva kursene går ut på?</div>
-              <p style="margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Hvert kurs står beskrevet: hva du gjør, hvor lenge det varer og hva som er inkludert.</p>
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ keLesMerTittel }}</div>
+              <p style="margin: 4px 0 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ keLesMerTekst }}</p>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ goKursoversikt }}" hint-size="auto,44px">Les mer om våre kurs her</x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon-after="arrow-right" on-click="{{ goKursoversikt }}" hint-size="auto,44px">{{ keLesMerKnapp }}</x-import>
           </div>
         </section>
       </sc-if>
@@ -2376,7 +2376,16 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ nyLestKategoriNavn }}</div>
             </sc-if>
             <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-4xl); text-wrap: balance;">{{ nyLestTittel }}</h1>
-            <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-8);">{{ nyLestDato }}</div>
+            <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">{{ nyLestDato }}</div>
+            <!-- Bildet paa artikkelen.
+                 Det ble valgt da artikkelen ble laget, og lagret paa raden —
+                 men det ble bare brukt paa kortet i lista. Selve artikkelen
+                 sto uten bilde, og den som hadde valgt et, saa det aldri.
+                 Bildene inne i teksten er noe annet: de staar mellom
+                 avsnittene, med bildetekst og plassering. -->
+            <sc-if value="{{ nyLestHarBilde }}" hint-placeholder-val="{{ false }}">
+              <img data-src="{{ nyLestBilde }}" alt="{{ nyLestBildeAlt }}" style="{{ nyLestBildeStil }}" loading="lazy" decoding="async">
+            </sc-if>
             <!-- Teksten og bildene i den, avsnitt for avsnitt.
                  En artikkel hadde ett bilde, og det sto over teksten. Naa
                  kan bilder staa mellom avsnittene, med bildetekst, alt-tekst,
@@ -10328,11 +10337,27 @@ const SIDEINNHOLD = {
       { l: 'Overskrift, passer for', v: 'Passer for' },
       { l: 'Overskrift, ikke for', v: 'Ikke ideelt for' } ] },
     { navn: 'Ordensregler og HMS', type: 'Redigeres under Nyttig info → Plakater', synlig: 'Publisert', felter: [] },
+    // Staar sist med vilje: numrene paa seksjonene over er noekler nettsiden
+    // slaar opp paa, og en ny seksjon i midten ville flyttet alle sammen.
+    { navn: 'Les mer-knappen', type: 'Fører til «Kursene våre»', synlig: 'Publisert', felter: [
+      { l: 'Overskrift', v: 'Usikker på hva kursene går ut på?' },
+      { l: 'Tekst', v: 'Hvert kurs står beskrevet: hva du gjør, hvor lenge det varer og hva som er inkludert.', lang: true },
+      { l: 'Knapp', v: 'Les mer om våre kurs her' } ] },
   ],
   // Blokk 1 og 2 var prislister med medlemskapsnavnene skrevet inn — et
   // annet sted aa endre den samme prisen, ved siden av Kurs og medlemskap →
   // Medlemskap. To steder for det samme betyr at ett av dem alltid er feil.
   // Prisene staar naa bare ett sted, i basen.
+  // Sida der hvert kurs staar beskrevet. Bildene og selve beskrivelsene
+  // kommer fra kursoppsettet — ett sted, ikke to — saa her staar bare
+  // toppteksten og en peker til hvor resten redigeres.
+  'Kursene våre': [
+    { navn: 'Topptekst', type: 'Tittel og ingress', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Kursene våre' },
+      { l: 'Overskrift', v: 'Hva du lærer, kurs for kurs' },
+      { l: 'Ingress', v: 'Her står hvert kurs med sin egen beskrivelse: hva du gjør, hvor lenge det varer, hva som er inkludert og hvem det passer for. Datoene og prisene finner du under Kurs.', lang: true } ] },
+    { navn: 'Kursene', type: 'Bilde og tekst hentes fra hvert kurs under Kurs og medlemskap', synlig: 'Publisert', felter: [] },
+  ],
   'Medlemskap': [
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Medlemskap' },
@@ -10611,6 +10636,7 @@ const SIDEINNHOLD = {
 const SEO_DEFAULTS = {
   'Forside': ['Keramikkurs og keramikkverksted i Tønsberg | Lissom Keramikk', 'Dreiekurs, Paint on Pots, drop-in og medlemskap i keramikkverkstedet på Teie, rett utenfor Tønsberg sentrum. Håndlaget keramikk i butikken.'],
   'Kurs og events': ['Keramikkurs i Tønsberg — verksted på Teie | Lissom', 'Finn et keramikkurs som passer deg: dreiing, plateteknikk og Paint on Pots. Leire, glasur og brenning inkludert. Meld deg på med Vipps.'],
+  'Kursene våre': ['Kursene våre — keramikkurs i Tønsberg | Lissom', 'Les om hvert enkelt keramikkurs hos Lissom i Tønsberg: hva du lærer, hvor lang tid det tar, hva som er inkludert og hvem det passer for.'],
   'Medlemskap': ['Medlemskap i keramikkverksted — fast plass i Tønsberg (Teie) | Lissom', 'Bli medlem og bruk verkstedet når det passer deg. Prøv 30 dager, 30 timer i måneden eller fri tilgang. Dørkode, brenning og fellesskap inkludert.'],
   'Butikk': ['Håndlaget keramikk — kopper, boller og fat | Lissom, Tønsberg', 'Kjøp håndlaget keramikk fra verkstedet på Teie. Hver kopp er unik. Spesialbestillinger til bryllup, jubileum og firmagaver.'],
   'Bedrift og event': ['Bedriftsevent og utdrikningslag med keramikk — Tønsberg', 'Samle kollegene eller vennegjengen rundt dreieskiven. Private events for 6–16 personer med alt inkludert. Send forespørsel, vi svarer raskt.'],
@@ -25313,6 +25339,17 @@ class Component extends DCLogic {
           nyLukk: () => this.setState({ nyLest: null }),
           nyLestTittel: lest ? lest.tittel : '',
           nyLestTekst: lest ? (lest.innhold || '') : '',
+          // Bildet som ble valgt da artikkelen ble laget. Laa lagret paa
+          // raden og ble bare brukt paa kortet i lista.
+          nyLestHarBilde: !!(lest && lest.bilde),
+          nyLestBilde: (lest && lest.bilde) || '',
+          nyLestBildeAlt: lest ? (lest.tittel || 'Bilde til artikkelen') : '',
+          nyLestBildeStil: {
+            width: '100%', maxHeight: 460, objectFit: 'cover',
+            objectPosition: this.fokusFor((lest && lest.bilde) || ''),
+            borderRadius: 'var(--radius-lg)',
+            display: 'block', marginBottom: 'var(--space-8)',
+          },
           // ── Teksten med bildene i ────────────────────────────────────
           //
           // «etter» sier hvilket avsnitt bildet staar etter: 0 er foerst i
@@ -27565,6 +27602,9 @@ class Component extends DCLogic {
       // sida av seg selv, med den teksten som er skrevet inn.
       erKursoversikt: side === 'kursoversikt',
       goKursoversikt: this.go('kursoversikt'),
+      keLesMerTittel: this.innh('Kurs og events/6/Overskrift'),
+      keLesMerTekst: this.innh('Kurs og events/6/Tekst'),
+      keLesMerKnapp: this.innh('Kurs og events/6/Knapp'),
       ...(side !== 'kursoversikt' ? {} : (() => {
         const kort = this.kursKort()
           // Drop-in er ikke et kurs man leser om og melder seg paa; det er
@@ -27573,12 +27613,9 @@ class Component extends DCLogic {
           .filter(k => (k.title || '') !== 'Drop-in i verkstedet');
 
         return {
-          koKicker: this.innh('Kurs/oversikt/kicker') || 'Kursene våre',
-          koTittel: this.innh('Kurs/oversikt/tittel') || 'Hva du lærer, kurs for kurs',
-          koIngress: this.innh('Kurs/oversikt/ingress')
-            || 'Her står hvert kurs med sin egen beskrivelse: hva du gjør, hvor lenge '
-             + 'det varer, hva som er inkludert og hvem det passer for. Datoene og '
-             + 'prisene finner du under Kurs.',
+          koKicker: this.innh('Kursene våre/0/Kicker'),
+          koTittel: this.innh('Kursene våre/0/Overskrift'),
+          koIngress: this.innh('Kursene våre/0/Ingress'),
           koTomt: kort.length === 0,
           koKurs: kort.map(k => {
             const fakta = [

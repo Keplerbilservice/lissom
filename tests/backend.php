@@ -165,6 +165,45 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Testplass apen'");
     }
 
+    // Plassene er hoyst to timer, og de ligger inne i en aapen periode —
+    // ikke i timene mellom to oekter, der huset staar tomt.
+    DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
+    Apent::leggUtPaaApneTider();
+    $utc2 = new DateTimeZone('UTC');
+    $oslo2 = new DateTimeZone('Europe/Oslo');
+    $forLange = 0;
+    $perDag = [];
+    $iHull = 0;
+    $kilder2 = Apent::dager()['kilder'];
+    foreach (DB::alle('SELECT start_tid, slutt_tid FROM course_sessions WHERE fra_apningstid = 1') as $r) {
+        $a = new DateTimeImmutable((string) $r['start_tid'], $utc2);
+        $b2 = new DateTimeImmutable((string) $r['slutt_tid'], $utc2);
+        if ($b2->getTimestamp() - $a->getTimestamp() > Apent::PLASS_MINUTTER * 60) {
+            $forLange++;
+        }
+        $lokal = $a->setTimezone($oslo2);
+        $dag = $lokal->format('Y-m-d');
+        $perDag[$dag] = ($perDag[$dag] ?? 0) + 1;
+
+        $liste = $kilder2[$dag] ?? [];
+        if ($liste === []) {
+            continue;
+        }
+        $inne = false;
+        foreach ($liste as $o) {
+            if ($lokal->format('H:i') >= $o['fra'] && $lokal->format('H:i') < $o['til']) {
+                $inne = true;
+            }
+        }
+        if (!$inne) {
+            $iHull++;
+        }
+    }
+    sjekk('ingen plass er lengre enn to timer', $forLange === 0, $forLange . ' for lange');
+    sjekk('hoyst tre plasser per dag', max($perDag ?: [0]) <= Apent::PLASSER_PER_DAG,
+        'flest paa en dag: ' . max($perDag ?: [0]));
+    sjekk('ingen plass ligger i et hull mellom oektene', $iHull === 0, $iHull . ' i hull');
+
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
     Apent::leggUtPaaApneTider();
 }

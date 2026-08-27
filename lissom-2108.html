@@ -1528,6 +1528,9 @@ window.__resources = {
               </sc-for>
             </div>
           </sc-if>
+          <sc-if value="{{ popHarFlere }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: var(--space-6) 0 0; font-size: var(--text-sm); color: var(--text-muted);">{{ popFlereDatoer }}</p>
+          </sc-if>
           <sc-if value="{{ popManglerDatoer }}" hint-placeholder-val="{{ false }}">
             <p style="margin: 0; font-size: var(--text-base); color: var(--text-body);">Ingen åpne datoer akkurat nå. <button type="button" onClick="{{ goForesporsel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--text-heading); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Send en forespørsel</button>, så setter vi opp en kveld for dere.</p>
           </sc-if>
@@ -31902,8 +31905,17 @@ class Component extends DCLogic {
               { level: 'Event', title: 'Paint on Pots', date: 'søn. 4. okt', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: 'Ledig', image: 'uploads_shutterstock_2830576853.jpg' },
             ];
 
+        // Paint on Pots ligger ute paa hver aapen tid — tre plasser om dagen i
+        // fjorten dager blir en vegg av kort. Vi viser de aatte forste, og
+        // sier hvor mange flere som finnes. Lenken «Alle events» staar alt
+        // over lista.
+        const VIS = 8;
         return {
-          popDatoer: fra.map(k => Object.assign({}, k, {
+          popFlereDatoer: fra.length > VIS
+            ? ('… og ' + (fra.length - VIS) + ' flere tider de neste to ukene.')
+            : '',
+          popHarFlere: fra.length > VIS,
+          popDatoer: fra.slice(0, VIS).map(k => Object.assign({}, k, {
             book: () => {
               this.setState({
                 side: 'booking', fra: 'paintonpots', valgtKurs: k,

@@ -343,12 +343,31 @@ har egne punkter: det er ingen leire i dem.
 Stegene («Velg keramikk», «Mal den her», …) og FAQ-en på `/paint-on-pots`
 ligger fortsatt fast i koden og kan ikke redigeres fra admin.
 
-**Bookbar når verkstedet er åpent** — Lissom ba 27. august om at Paint on Pots
-skal kunne bookes når hun allerede er der: når det går et planlagt kurs, eller
-når hun har stemplet inn. Ikke bygget ennå. Åpningstidene finnes som de skal i
-`api/apningstider.php` (planlagte kurs + manuell overstyring + innstempling);
-det som mangler er å gjøre de åpne vinduene til bookbare plasser, og å unngå at
-en slik plass i sin tur teller som åpningstid.
+**Bookbar når verkstedet er åpent — gjort 27. august.** Paint on Pots følger
+døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd.
+
+- Regelen for når det er åpent lå inne i `api/apningstider.php`, og bare der.
+  Den er flyttet til `app/lib/apent.php`; endepunktet bruker den, og
+  utleggingen bruker den. Endepunktet svarer nøyaktig som før — kontrollert mot
+  den gamle fila på samme data.
+- Migrasjon 076 gir `course_sessions.fra_apningstid`. Den trengs til to ting:
+  rydding (en generert plass ingen har booket, og som ikke lenger svarer til en
+  åpen tid, tas bort igjen — en plass lagt inn for hånd røres aldri), og
+  sirkelen (åpningstiden regnes av øktene som står ute, så talte de genererte
+  med, ville verkstedet holdt seg åpent av sin egen skygge).
+- **Plassene er to timer**, og de ligger inne i de faktiske øktene — ikke
+  spredt over timene mellom dem. Går det drop-in 10–13 og en samling 20–22, blir
+  det plasser 10–12, 12–13 og 20–22, og ingenting klokka 15 når huset er tomt.
+  Høyst tre per dag; siden viser de åtte første og sier hvor mange flere.
+- **Interne samlinger teller med** — bestemt av Lissom 27. august. En
+  medlemskveld gjør både at bunnteksten sier åpent, og at Paint on Pots kan
+  bookes den kvelden. Se punkt 13.
+- **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
+  Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
+  Økta gjenkjennes på sluttiden, så den ikke slettes og lages på nytt hvert
+  kvarter mens døren står åpen.
+- **Stemplet inn** åpner tre timer fram, også når kalenderen er tom.
+  Utleggingen kjøres på stempling inn og ut, og ellers på bakgrunnstikket.
 
 ---
 
@@ -479,8 +498,13 @@ kurs det er: en intern samling for medlemmer teller med, selv om den ikke
 vises i kurskalenderen ute. Lissom spurte 27. august hvilket kurs som lå til
 19:00 og fant det ikke — det er sannsynligvis dette.
 
-Regelen står som den er til Lissom sier noe annet. Skal interne samlinger
-ikke telle med, er det én linje i `api/apningstider.php`.
+**Avklart 27. august: de teller med.** Lissom valgte at en intern samling både
+skal gjøre at bunnteksten sier åpent, og at Paint on Pots kan bookes den
+kvelden. Regelen står som den er.
+
+Verdt å vite hva det betyr: går det en glasurkveld for medlemmer 20–22, kan en
+kunde utenfra booke en Paint on Pots-plass 20–22 samme kveld. Det var et
+bevisst valg — verkstedet er bemannet, og døren er åpen.
 
 ## Ferdig, men verdt å vite
 

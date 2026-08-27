@@ -32,6 +32,12 @@ final class Apent
     /** Hvor mange dager fram vi svarer for. */
     public const DAGER_FRAM = 14;
 
+    /** Hvor lenge en Paint on Pots-plass varer. Lissom: «maks 2 timer». */
+    public const PLASS_MINUTTER = 120;
+
+    /** Hoyst saa mange plasser per dag. Ellers blir sida en vegg av kort. */
+    public const PLASSER_PER_DAG = 3;
+
     /**
      * Dagene med aapningstid, og hvilke oekter tallene er regnet av.
      *
@@ -307,12 +313,38 @@ final class Apent
         };
 
         // ── Vinduene doeren staar aapen i ──────────────────────────────────
+        //
+        // Ikke hele dagen fra forste til siste oekt: mellom drop-in som
+        // slutter 13 og en samling som begynner 20 staar huset tomt, og da
+        // skal ingen kunne booke seg inn klokka 15. Vi merger oektene som
+        // henger sammen, og faar de periodene doeren faktisk er aapen.
+        $alt = self::dager();
         $vinduer = [];
-        foreach (self::dager()['dager'] as $d) {
+        foreach ($alt['dager'] as $d) {
+            $dato = (string) $d['dato'];
             if ($d['stengt'] || $d['fra'] === null || $d['til'] === null) {
                 continue;
             }
-            $vinduer[(string) $d['dato']] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
+            $spenn = [];
+            foreach ($alt['kilder'][$dato] ?? [] as $o) {
+                $spenn[] = ['fra' => (string) $o['fra'], 'til' => (string) $o['til']];
+            }
+            // En dag satt for haand har ingen oekter. Da er dagen én periode.
+            if ($spenn === []) {
+                $spenn[] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
+            }
+            usort($spenn, static fn(array $a, array $b): int => strcmp($a['fra'], $b['fra']));
+
+            $slaatt = [];
+            foreach ($spenn as $s2) {
+                $siste = $slaatt === [] ? null : array_key_last($slaatt);
+                if ($siste !== null && $s2['fra'] <= $slaatt[$siste]['til']) {
+                    $slaatt[$siste]['til'] = max($slaatt[$siste]['til'], $s2['til']);
+                    continue;
+                }
+                $slaatt[] = $s2;
+            }
+            $vinduer[$dato] = array_values($slaatt);
         }
 
         // Stemplet inn: doeren staar aapen naa, uansett hva kalenderen sier.
@@ -320,14 +352,13 @@ final class Apent
         // aapen, men slutter for, forlenges den — noen ER der.
         $bemannet = Stempling::verkstedetBemannet();
         if ($bemannet['apen']) {
-            $til = $nesteKvarter($naa)->modify('+3 hours');
+            $fra = $nesteKvarter($naa);
+            $til = $fra->modify('+3 hours');
             if ($til->format('Y-m-d') !== $idag) {
                 $til = $naa->setTime(23, 45);
             }
-            if (!isset($vinduer[$idag])) {
-                $vinduer[$idag] = ['fra' => $nesteKvarter($naa)->format('H:i'), 'til' => $til->format('H:i')];
-            } elseif ($vinduer[$idag]['til'] < $til->format('H:i')) {
-                $vinduer[$idag]['til'] = $til->format('H:i');
+            if ($til > $fra) {
+                $vinduer[$idag][] = ['fra' => $fra->format('H:i'), 'til' => $til->format('H:i')];
             }
         }
 
@@ -337,22 +368,48 @@ final class Apent
         // doeren fortsatt aapen — da skal plassen begynne naa, ikke i
         // formiddag. Ellers ville ingen faatt booket i dag etter at dagens
         // forste kurs hadde begynt.
+        // Paint on Pots varer inntil to timer. Vi klipper hver aapen periode i
+        // to-timers plasser, saa folk har noe aa velge mellom paa en lang dag
+        // — og saa ingen booker et vindu som strekker seg over timer huset
+        // staar tomt.
+        //
+        // Hoyst tre plasser per dag. Fjorten dager à fem plasser blir en vegg
+        // av kort paa sida, og ingen velger mellom sytti ting.
         $onsket = [];
-        foreach ($vinduer as $dato => $v) {
-            $start = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
-            $slutt = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
-            if ($start <= $naa) {
-                $start = $nesteKvarter($naa);
+        foreach ($vinduer as $dato => $perioder) {
+            $paaDagen = 0;
+            foreach ($perioder as $v) {
+                if ($paaDagen >= self::PLASSER_PER_DAG) {
+                    break;
+                }
+                $start = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
+                $slutt = new DateTimeImmutable($dato . ' ' . $v['til'], $oslo);
+                // En periode som har begynt staar fortsatt aapen. Da begynner
+                // plassen naa, ikke i formiddag.
+                if ($start <= $naa) {
+                    $start = $nesteKvarter($naa);
+                }
+                while ($start < $slutt && $paaDagen < self::PLASSER_PER_DAG) {
+                    $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
+                    if ($til > $slutt) {
+                        $til = $slutt;
+                    }
+                    // Under en time er ikke en Paint on Pots-time.
+                    if ($til->getTimestamp() - $start->getTimestamp() < 3600) {
+                        break;
+                    }
+                    $onsket[] = [
+                        'dag'   => $dato,
+                        'start' => $start->setTimezone($utc)->format('Y-m-d H:i:s'),
+                        'slutt' => $til->setTimezone($utc)->format('Y-m-d H:i:s'),
+                    ];
+                    $paaDagen++;
+                    $start = $til;
+                }
             }
-            // Vinduet er over, eller for kort til aa vaere en plass.
-            if ($slutt <= $start->modify('+15 minutes')) {
-                continue;
-            }
-            $onsket[$dato] = [
-                'start' => $start->setTimezone($utc)->format('Y-m-d H:i:s'),
-                'slutt' => $slutt->setTimezone($utc)->format('Y-m-d H:i:s'),
-            ];
         }
+        // Nokkel paa starttid: det er den som avgjor om en plass alt staar ute.
+        $onsket = array_column($onsket, null, 'start');
 
         $laget = 0;
         $fjernet = 0;
@@ -374,25 +431,39 @@ final class Apent
                     AND COALESCE(cs.slutt_tid, cs.start_tid) > UTC_TIMESTAMP()",
                 ['c' => $kursId]
             ) as $rad) {
-                $dag = (new DateTimeImmutable((string) $rad['start_tid'], $utc))
-                    ->setTimezone($oslo)->format('Y-m-d');
+                $s = (string) $rad['start_tid'];
 
-                // Stemmer sluttiden med vinduet, er oekta fortsatt riktig —
-                // ogsaa naar den begynte for en time siden. Starttiden flytter
-                // seg hvert kvarter saa lenge doeren staar aapen, og aa
-                // slette og lage paa nytt hvert kvarter ville vaert stoy.
-                $passer = isset($skalLages[$dag])
-                    && (string) $rad['slutt_tid'] === $skalLages[$dag]['slutt'];
-
-                if ($passer) {
-                    unset($skalLages[$dag]);
+                // Staar plassen alt der, med samme start og slutt, er den
+                // riktig og skal bli staaende.
+                if (isset($skalLages[$s]) && (string) $rad['slutt_tid'] === $skalLages[$s]['slutt']) {
+                    unset($skalLages[$s]);
                     continue;
                 }
-                // Har noen booket, staar den. Plassen er noen sin.
+
+                // Har noen booket, staar den uansett. Plassen er noen sin, og
+                // den skal ikke forsvinne under foettene paa dem.
                 if ((int) $rad['booket'] === 1) {
-                    unset($skalLages[$dag]);
+                    unset($skalLages[$s]);
                     continue;
                 }
+
+                // En plass som har begynt, men ikke sluttet, staar. Doeren er
+                // aapen naa, og starttiden flytter seg hvert kvarter — aa
+                // slette og lage den paa nytt hvert kvarter ville vaert stoy.
+                $start = new DateTimeImmutable($s, $utc);
+                $slutt = new DateTimeImmutable((string) ($rad['slutt_tid'] ?? $s), $utc);
+                $naaUtc = new DateTimeImmutable('now', $utc);
+                if ($start <= $naaUtc && $slutt > $naaUtc) {
+                    $dagen = $start->setTimezone($oslo)->format('Y-m-d');
+                    foreach (array_keys($skalLages) as $n) {
+                        if ($skalLages[$n]['dag'] === $dagen) {
+                            unset($skalLages[$n]);
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
                 DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => (int) $rad['id']]);
                 $fjernet++;
             }

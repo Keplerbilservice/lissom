@@ -2007,6 +2007,16 @@ window.__resources = {
                        ble skrevet. Naa staar innloggingens adresse her, og kan
                        rettes. -->
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bEpost }}" on-change="{{ settBEpost }}" hint-size="100%,66px"></x-import>
+                  <div style="height: var(--space-4);"></div>
+                  <!-- Telefonnummeret.
+                       Serveren har krevd det hele tiden — api/book.php
+                       avviser en paamelding uten — men skjemaet spurte
+                       aldri om det. Den som ikke var logget inn med Vipps
+                       fikk «Vi trenger telefonnummeret ditt» uten et felt
+                       aa skrive det i. Verkstedet trenger det ogsaa: det er
+                       slik de faar tak i folk samme dag. -->
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ bTelefon }}" on-change="{{ settBTelefon }}" hint-size="100%,66px"></x-import>
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Vi bruker det bare hvis vi må få tak i deg om kurset — for eksempel hvis en dato må flyttes.</div>
                 </sc-if>
                 <sc-if value="{{ visIdentitet }}" hint-placeholder-val="{{ true }}">
                   <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-5); display: flex; align-items: center; gap: var(--space-4);">
@@ -13671,6 +13681,9 @@ class Component extends DCLogic {
           erMedlemBruker: !!d.erMedlem,
           soknadStatus: d.soknadStatus || null,
           medlemEpost: (d.medlem && d.medlem.epost) || '',
+          // Nummeret fra kontoen, saa den som er logget inn slipper aa
+          // skrive det paa nytt for hver paamelding.
+          medlemTelefon: (d.medlem && d.medlem.telefon) || '',
           vippsNavn: (d.medlem && d.medlem.navn) || '',
           internInfo: d.internInfo || {},
           vippsSteg: null, // lukk en eventuell innloggingsboks
@@ -19048,6 +19061,7 @@ class Component extends DCLogic {
         oktId: oktId, antall: 1,
         gavekort: (this.state.gkKode || '').trim(),
         epost: (this.state.bEpost || '').trim(),
+        telefon: (this.state.bTelefon || '').trim(),
         // Bare naar man har krysset av for aa komme sammen med et medlem.
         folgeMedlem: this.state.dropinGodkjenning === 'medlem' ? (this.state.bFolge || '').trim() : '',
         harAllergier: this.state.bAllergiKryss ? 'ja' : 'nei',
@@ -20952,6 +20966,10 @@ class Component extends DCLogic {
 
       bEpost: this.state.bEpost ?? (this.state.medlemEpost || ''),
       settBEpost: e => this.setState({ bEpost: e.target.value }),
+      // Er man logget inn, staar nummeret fra kontoen der og kan rettes —
+      // som e-posten rett over.
+      bTelefon: this.state.bTelefon ?? (this.state.medlemTelefon || ''),
+      settBTelefon: e => this.setState({ bTelefon: e.target.value }),
       bFolge: this.state.bFolge || '',
       settBFolge: e => this.setState({ bFolge: e.target.value }),
       visIdentitet: (this.state.valgtKurs && (this.state.valgtKurs.price === 'Gratis' || this.state.valgtKurs.level === 'Kun for medlemmer')),

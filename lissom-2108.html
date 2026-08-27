@@ -11910,6 +11910,33 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Kommende Paint on Pots' },
       { l: 'Lenke', v: 'Alle events' },
       { l: 'Tom liste', v: 'Ingen åpne datoer akkurat nå.' } ] },
+    // De fire stegene og de fire sporsmaalene sto fast i koden. Skulle et
+    // punktum rettes, matte noen inn i kildefila.
+    //
+    // De ligger sist med vilje: noeklene er «Paint on Pots/indeks/Felt», og
+    // en ny blokk midt i lista ville flyttet indeksen paa alt under — da
+    // ville teksten Lissom har skrevet havnet paa feil sted.
+    //
+    // Toemmer man baade tittelen og teksten paa et steg, faller steget ut.
+    // Tre steg er like greit som fire hvis det er det som stemmer.
+    { navn: 'Slik gjør du det', type: 'Fire steg', synlig: 'Publisert', felter: [
+      { l: 'Steg 1', v: 'Velg keramikk' },
+      { l: 'Steg 1 tekst', v: 'Kopper, boller, fat og figurer — ferdig brent og klar til å males.', lang: true },
+      { l: 'Steg 2', v: 'Mal den her' },
+      { l: 'Steg 2 tekst', v: 'Pensler, farger og hjelp er inkludert. Ta den tiden du trenger.', lang: true },
+      { l: 'Steg 3', v: 'Vi glaserer og brenner' },
+      { l: 'Steg 3 tekst', v: 'Vi gjør ferdig arbeidet, så fargene blir blanke og tåler bruk.', lang: true },
+      { l: 'Steg 4', v: 'Hent den ferdig' },
+      { l: 'Steg 4 tekst', v: 'Klar til henting i verkstedet etter ca. to uker.', lang: true } ] },
+    { navn: 'Spørsmål og svar', type: 'Fire spørsmål', synlig: 'Publisert', felter: [
+      { l: 'Spørsmål 1', v: 'Må jeg kunne male?' },
+      { l: 'Svar 1', v: 'Nei. Vi viser deg teknikkene, og det er lov å holde det enkelt.', lang: true },
+      { l: 'Spørsmål 2', v: 'Kan barn være med?' },
+      { l: 'Svar 2', v: 'Ja, Paint on Pots passer godt for barn i følge med voksen.', lang: true },
+      { l: 'Spørsmål 3', v: 'Når er den ferdig?' },
+      { l: 'Svar 3', v: 'Glasering og brenning tar ca. to uker. Vi sier fra når den kan hentes.', lang: true },
+      { l: 'Spørsmål 4', v: 'Kan vi komme som gruppe?' },
+      { l: 'Svar 4', v: 'Ja — send oss en forespørsel, så setter vi opp en egen kveld for dere.', lang: true } ] },
   ],
   // Kontakt sto som fast tekst i malen og kunne ikke rettes uten aa gaa i
   // kildekoden. Verdiene under er det som sto der fra for.
@@ -27371,12 +27398,32 @@ class Component extends DCLogic {
         if (this.state.side !== 'paintonpots') { this.setState({ side: 'paintonpots' }); }
         setTimeout(() => { const el = document.getElementById('pop-datoer'); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); } }, 60);
       },
+      // Stegene og sporsmaalene sto som faste lister her. Naa staar de under
+      // Nettsiden → Innhold → Paint on Pots, og nummereringen folger de
+      // stegene som faktisk har tekst: toemmer man steg 3, blir det gamle
+      // steg 4 til nummer 3.
+      // Noeklene staar skrevet ut. Satt sammen med «+ n» ser ikke
+      // bin/innholdssjekk.mjs dem, og da kan et felt bli staaende uten at noe
+      // leser det uten at noen sier fra.
       popSteg: [
-        { nr: '1', tittel: 'Velg keramikk', tekst: 'Kopper, boller, fat og figurer — ferdig brent og klar til å males.' },
-        { nr: '2', tittel: 'Mal den her', tekst: 'Pensler, farger og hjelp er inkludert. Ta den tiden du trenger.' },
-        { nr: '3', tittel: 'Vi glaserer og brenner', tekst: 'Vi gjør ferdig arbeidet, så fargene blir blanke og tåler bruk.' },
-        { nr: '4', tittel: 'Hent den ferdig', tekst: 'Klar til henting i verkstedet etter ca. to uker.' },
-      ],
+        { tittel: this.innh('Paint on Pots/7/Steg 1'), tekst: this.innh('Paint on Pots/7/Steg 1 tekst') },
+        { tittel: this.innh('Paint on Pots/7/Steg 2'), tekst: this.innh('Paint on Pots/7/Steg 2 tekst') },
+        { tittel: this.innh('Paint on Pots/7/Steg 3'), tekst: this.innh('Paint on Pots/7/Steg 3 tekst') },
+        { tittel: this.innh('Paint on Pots/7/Steg 4'), tekst: this.innh('Paint on Pots/7/Steg 4 tekst') },
+      ]
+        .filter(x => String(x.tittel).trim() !== '' || String(x.tekst).trim() !== '')
+        .map((x, i) => Object.assign({ nr: String(i + 1) }, x)),
+
+      // «popFaq» sto her og ble slettet sammen med prislista 27. august.
+      // Sporsmaalene forsvant fra sida uten at noen sa fra: en sc-for over
+      // en liste som ikke finnes tegner ingenting, og ingen av vaktene saa
+      // det. bin/listesjekk.mjs gjor det naa.
+      popFaq: [
+        { q: this.innh('Paint on Pots/8/Spørsmål 1'), a: this.innh('Paint on Pots/8/Svar 1') },
+        { q: this.innh('Paint on Pots/8/Spørsmål 2'), a: this.innh('Paint on Pots/8/Svar 2') },
+        { q: this.innh('Paint on Pots/8/Spørsmål 3'), a: this.innh('Paint on Pots/8/Svar 3') },
+        { q: this.innh('Paint on Pots/8/Spørsmål 4'), a: this.innh('Paint on Pots/8/Svar 4') },
+      ].filter(f => String(f.q).trim() !== ''),
       // ── Hva gjenstandene koster ──────────────────────────────────────
       //
       // Prislista sto som fire faste linjer i koden — «Kopp fra 290», «Bolle

@@ -366,10 +366,24 @@ sto med tema NULL og fikk «Innføring i plateteknikk og dekor» på et kurs der
 maler ferdig brent keramikk. Uten tema leses det av navnet nå, og Paint on Pots
 har egne punkter: det er ingen leire i dem.
 
-### Ikke bygget i denne runden
+### Stegene og spørsmålene — gjort 27. august
 
-Stegene («Velg keramikk», «Mal den her», …) og FAQ-en på `/paint-on-pots`
-ligger fortsatt fast i koden og kan ikke redigeres fra admin.
+De fire stegene og de fire spørsmålene lå fast i koden. Nå ligger de under
+**Nettsiden → Innhold → Paint on Pots**, som blokk 7 «Slik gjør du det» og
+blokk 8 «Spørsmål og svar». Tømmer du både tittel og tekst på et steg, faller
+steget ut og de andre nummereres om; tømmer du et spørsmål, faller det ut.
+
+Blokkene ligger **sist** med vilje: nøklene er `Paint on Pots/indeks/Felt`, og
+en ny blokk midt i lista ville flyttet indeksen på alt under — da havner teksten
+Lissom har skrevet på feil sted.
+
+**Underveis: `popFaq` var slettet.** Den forsvant sammen med prislista tidligere
+samme dag, og spørsmålene hadde vært borte fra siden siden da. Ingen vakt sa
+fra: en `sc-for` over en liste som ikke finnes tegner bare ingenting, og
+knappesjekken teller bindinger som *har* en verdi — en binding som er borte
+forsvinner også ut av tellingen. `bin/listesjekk.mjs` er ny og fanger det: den
+finner hver `sc-for` og `sc-if` i malen og sier fra om navnet ikke settes noe
+sted. Kontrollert ved å fjerne `popFaq` med vilje — den fanget det.
 
 **Bookbar når verkstedet er åpent — gjort 27. august.** Paint on Pots følger
 døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd.

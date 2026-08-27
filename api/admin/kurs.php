@@ -85,6 +85,9 @@ if (Foresporsel::metode() === 'GET') {
             'ferdigTid'       => (string) ($k['ferdig_tid'] ?? ''),
             'tillegg'         => (string) ($k['tillegg'] ?? ''),
             'varighetTekst'   => (string) ($k['varighet_tekst'] ?? ''),
+            // «Gjenstanden betales i verkstedet» (migrasjon 074). Paint on
+            // Pots: plassen bookes, gjenstanden slaas inn i kassa.
+            'gjenstandIKassa' => (bool) ($k['gjenstand_i_kassa'] ?? 0),
             'mal'             => Kursmal::forKurs($k),
             // Varigheten regnet av oektene, slik kunden faktisk ser den.
             'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [
@@ -212,6 +215,7 @@ switch ($handling) {
             'ferdigTid'       => 'ferdig_tid',
             'tillegg'         => 'tillegg',
             'varighetTekst'   => 'varighet_tekst',
+            'gjenstandIKassa' => 'gjenstand_i_kassa',
         ];
         foreach ($tekstfelter as $inn => $kolonne) {
             if (!array_key_exists($inn, Foresporsel::kropp()) || !DB::harKolonne('courses', $kolonne)) {
@@ -223,6 +227,11 @@ switch ($handling) {
             // sin egen prikk. Samme regel som paa medlemskapene.
             if ($kolonne === 'punkter') {
                 $verdi = implode("\n", Medlemskap::punkter($verdi));
+            }
+            // En hake er 0 eller 1, aldri NULL.
+            if ($kolonne === 'gjenstand_i_kassa') {
+                $data[$kolonne] = ($verdi === 'ja' || $verdi === '1') ? 1 : 0;
+                continue;
             }
             // Det interne nivaaet er et valg, ikke en fritekst. Tomt betyr
             // nybegynner — kolonnen skal aldri staa uten verdi.

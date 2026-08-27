@@ -119,7 +119,7 @@ har bestemt seg.
 
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–073 må kjøres
+### 7b. Migrasjon 052–074 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -145,6 +145,8 @@ til den er lastet opp.
 «Dette får du med hjem», «Når er den ferdig» og «Godt å vite».
 073 retter «faar» til «får» og «verktoy» til «verktøy» i kursteksten på
 Keramikk Workshop.
+074 gir «Gjenstanden betales i verkstedet», og slår den på for Paint on
+Pots.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
@@ -268,6 +270,45 @@ avspilling — det må bestemmes hvor filmene skal ligge før noe kan bygges.
 Lissom 26. august: «videokurs er noe vi kan se på senere, men du kan bygge et
 kort under kurs og medlemskap som heter videokurs, og la det være tomt.»
 Kortet står der nå, og fører til en skjerm som sier hva som mangler.
+
+---
+
+## Paint on Pots — bygget etter alternativ B
+
+Lissom valgte B: **plassen bookes, gjenstanden betales i verkstedet.**
+
+Slik var det: Paint on Pots lå som et vanlig kurs til 690 kroner. Alle betalte
+det samme uansett hva de valgte å male — en sommerfuglkopp til 300 og en tekopp
+med skål til 750 kostet likt. Prislista på siden sto skrevet inn i koden med
+fire linjer, og ingen av tallene stemte: «Bolle fra 340» og «Figurer fra 190»
+fantes ikke som kategorier i butikken i det hele tatt.
+
+Slik er det nå:
+
+- **Ny kolonne `courses.gjenstand_i_kassa`** (migrasjon 074), på for Paint on
+  Pots og av på alt annet.
+- **Prislista på `/paint-on-pots` kommer fra butikkvarene.** Kategori og
+  laveste pris, regnet av det som faktisk står publisert og ikke er utsolgt.
+  Endrer prisen eller utvalget seg, følger siden etter.
+- **«Slik betaler du»** står under prislista: hva plassen koster, og at
+  gjenstanden velges i verkstedet og betales der.
+- **Bookingen sier det samme** i en egen ramme under prisen — «Gjenstanden
+  kommer i tillegg», med laveste pris fra butikken. Den vises bare på kurs der
+  haken er på.
+- **Haken står i kursoppsettet**, i prisseksjonen. Den advarer når prisen på
+  plassen fortsatt ser ut som gjenstandsprisen: *«Plassen står til 690 kroner.
+  Var det prisen med gjenstanden, betaler kunden nå den summen for plassen og
+  gjenstanden i tillegg.»*
+- **Gjenstanden slås inn i kassa** under «Varer i butikken» — da trekkes
+  lageret, og salget føres på butikkontoen med mva, som alt annet butikksalg.
+
+**Prisen på plassen er ikke rørt.** Paint on Pots står fortsatt til 690, og det
+er Lissom som eier det tallet. Skjermen sier fra, men endrer ikke noe selv.
+
+### Ikke bygget i denne runden
+
+Stegene («Velg keramikk», «Mal den her», …) og FAQ-en på `/paint-on-pots`
+ligger fortsatt fast i koden og kan ikke redigeres fra admin.
 
 ---
 

@@ -1499,6 +1499,15 @@ window.__resources = {
                 </div>
               </sc-for>
             </div>
+
+            <!-- To priser, og de er ikke det samme.
+                 Prislista over er gjenstandene. Plassen er det du booker paa
+                 en dato. Sto det ikke her, sto det ingen steder — og da
+                 trodde folk at det ene tallet var hele prisen. -->
+            <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-top: var(--space-3);">
+              <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">{{ popBetalingTittel }}</div>
+              <p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; color: var(--text-body); max-width: 46ch; text-wrap: pretty;">{{ popBetaling }}</p>
+            </div>
           </div>
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pFaqKicker }}</div>
@@ -1984,6 +1993,14 @@ window.__resources = {
               </sc-if>
               <sc-if value="{{ bRabattTeaser }}" hint-placeholder-val="{{ false }}">
                 <div style="font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600; margin: -8px 0 var(--space-5);">{{ bRabattTeaser }}</div>
+              </sc-if>
+              <!-- Paint on Pots: prisen over er plassen, ikke gjenstanden.
+                   Sto det ikke her, oppdaget kunden det foerst i doera. -->
+              <sc-if value="{{ bGjenstandIKassa }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: var(--clay-50); padding: var(--space-4); margin: -4px 0 var(--space-5);">
+                  <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 4px;">{{ bGjenstandTittel }}</div>
+                  <p style="margin: 0; font-size: var(--text-sm); line-height: 1.55; color: var(--text-body); text-wrap: pretty;">{{ bGjenstandTekst }}</p>
+                </div>
               </sc-if>
               <div style="font-size: var(--text-sm); color: var(--text-body); margin: -8px 0 var(--space-5);">{{ bOppsummering }}</div>
               <sc-if value="{{ harPlasser }}" hint-placeholder-val="{{ true }}">
@@ -5837,6 +5854,21 @@ window.__resources = {
                     <input type="checkbox" checked="{{ kMva }}" onChange="{{ toggleKMva }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                     Med 25 % mva
                   </label>
+
+                  <!-- Paint on Pots-maaten aa selge paa.
+                       Prisen over er da plassen, ikke det kunden gaar hjem
+                       med. Gjenstanden er en butikkvare, valgt i verkstedet
+                       og slaatt inn i kassa — da trekkes lageret, og salget
+                       foeres paa butikkontoen. -->
+                  <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading); margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                    <input type="checkbox" checked="{{ kGjenstandIKassa }}" onChange="{{ toggleKGjenstand }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer; flex-shrink: 0; margin-top: 2px;">
+                    <span>Gjenstanden betales i verkstedet<br><span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kGjenstandHjelp }}</span></span>
+                  </label>
+                  <sc-if value="{{ kGjenstandAdvarsel }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--clay-100); border: 1px solid var(--terracotta-500);">
+                      <p style="margin: 0; font-size: var(--text-xs); color: var(--text-body); text-wrap: pretty;">{{ kGjenstandAdvarsel }}</p>
+                    </div>
+                  </sc-if>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -18104,6 +18136,7 @@ class Component extends DCLogic {
       lagerDu: this.state.kLagerDu || '', medHjem: this.state.kMedHjem || '',
       ferdigTid: this.state.kFerdigTid || '', tillegg: this.state.kTillegg || '',
       varighetTekst: this.state.kVarighetTekst || '',
+      gjenstandIKassa: this.state.kGjenstandIKassa ? 'ja' : 'nei',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva',
       // Uten SMS-leverandoer staar haken av og lar seg ikke sette. Da skal
       // lagring heller ikke skrive den av: valget paa kurset blir staaende
@@ -18172,7 +18205,7 @@ class Component extends DCLogic {
         ...['punkter', 'laerer', 'praktisk', 'allergener',
             'passerNivaa', 'passerHvem', 'metode', 'varighet',
             'nivaaIntern', 'nivaaTekst', 'kortBeskrivelse', 'lagerDu',
-            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst']
+            'medHjem', 'ferdigTid', 'tillegg', 'varighetTekst', 'gjenstandIKassa']
           .reduce((m, n) => {
             if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
             return m;
@@ -19293,6 +19326,7 @@ class Component extends DCLogic {
       kLagerDu: raa.lagerDu || '', kMedHjem: raa.medHjem || '',
       kFerdigTid: raa.ferdigTid || '', kTillegg: raa.tillegg || '',
       kVarighetTekst: raa.varighetTekst || '',
+      kGjenstandIKassa: !!raa.gjenstandIKassa,
       // Gjentakelsen staar i regelen paa serveren, ikke i kortteksten.
       // Ligger det en regel der, er det den som gjelder.
       ...(() => {
@@ -22407,6 +22441,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
+            kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
           kGjentak: 'Ingen', kAntall: '',
           kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -22425,6 +22460,30 @@ class Component extends DCLogic {
       erFullbooket: (this.state.valgtKurs && this.state.valgtKurs.status) === 'Fullbooket',
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis',
       bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ('totalt for ' + this.state.bAntallN + ' personer') : 'per person',
+      // Paint on Pots og andre der gjenstanden velges i verkstedet.
+      //
+      // Prisen i boksen er plassen. Gjenstanden er en butikkvare, valgt naar
+      // du staar der, og slaas inn i kassa. Uten denne linja ser det ut som
+      // om det du betaler paa nett er alt.
+      ...(() => {
+        const k = this.state.valgtKurs || {};
+        const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel));
+        const paa = !!(kat ? kat.gjenstandIKassa : k.gjenstandIKassa);
+        // Billigste gjenstanden i butikken, saa tallet ikke er skrevet inn.
+        const varer = (this.state.butikkvareListe || [])
+          .filter(v => !v.kunMedlemmer && !v.utsolgt && v.prisOre > 0);
+        const fra = varer.length
+          ? ('fra kr. ' + Math.round(Math.min.apply(null, varer.map(v => v.prisOre)) / 100)
+             .toLocaleString('nb-NO') + ',-') : '';
+        return {
+          bGjenstandIKassa: paa,
+          bGjenstandTittel: 'Gjenstanden kommer i tillegg',
+          bGjenstandTekst: 'Prisen over er plassen. Gjenstanden velger du når du kommer'
+            + (fra ? ' — ' + fra : '')
+            + ', og betaler den i verkstedet. Farger, pensler, hjelp, glasering og '
+            + 'brenning er inkludert.',
+        };
+      })(),
       erIntern: (this.state.valgtKurs && this.state.valgtKurs.level) === 'Kun for medlemmer',
       vlNavn: this.state.vlNavn || '',
       settVlNavn: e => this.setState({ vlNavn: e.target.value, vlFeil: null }),
@@ -23315,6 +23374,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
+            kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
             kGjentak: 'Ingen', kAntall: '',
             kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -23407,6 +23467,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
+            kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                   kGjentak: 'Ingen', kAntall: '',
                   kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -23467,6 +23528,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
+            kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
                 kGjentak: 'Ingen', kAntall: '',
                 kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
@@ -26054,6 +26116,7 @@ class Component extends DCLogic {
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
+            kGjenstandIKassa: false,
             kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '', kGjentak: 'Ingen', kAntall: '', kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true, kDatoer: [{ dato: '', fra: '', til: '' }] }),
       kNavn: this.state.kNavn ?? '', settKNavn: (e) => this.setState({ kNavn: e.target.value }),
       // Hva som skjer naar et kurs som finnes faar nytt navn.
@@ -26164,6 +26227,28 @@ class Component extends DCLogic {
 
           kTillegg: st.kTillegg ?? '',
           settKTillegg: e => this.setState({ kTillegg: e.target.value }),
+
+          kGjenstandIKassa: !!st.kGjenstandIKassa,
+          toggleKGjenstand: () => this.setState(x => ({ kGjenstandIKassa: !x.kGjenstandIKassa })),
+          kGjenstandHjelp: st.kGjenstandIKassa
+            ? 'Prisen over er plassen. Gjenstanden velger kunden i verkstedet og '
+              + 'betaler den i kassa, som en butikkvare — lageret trekkes, og salget '
+              + 'føres på butikkontoen. Kurssiden og bookingen sier fra om dette.'
+            : 'Huk av for Paint on Pots og lignende, der kunden velger og betaler '
+              + 'gjenstanden i verkstedet. Prisen over blir da prisen på plassen.',
+          // Prisen som ble staaende.
+          //
+          // Paint on Pots kostet 690 fordi gjenstanden var med. Slaar man paa
+          // haken uten aa endre prisen, betaler kunden 690 for plassen og
+          // gjenstanden i tillegg — og det er ingen som ber om.
+          kGjenstandAdvarsel: (() => {
+            if (!st.kGjenstandIKassa) return '';
+            const pris = parseInt(String(st.kPris || '').replace(/[^\d]/g, ''), 10) || 0;
+            if (pris <= 200) return '';
+            return 'Plassen står til ' + pris.toLocaleString('nb-NO') + ' kroner. Var det '
+                 + 'prisen med gjenstanden, betaler kunden nå den summen for plassen og '
+                 + 'gjenstanden i tillegg. Sett prisen til 0, eller til et bordgebyr.';
+          })(),
         };
       })(),
 
@@ -27257,12 +27342,58 @@ class Component extends DCLogic {
         { nr: '3', tittel: 'Vi glaserer og brenner', tekst: 'Vi gjør ferdig arbeidet, så fargene blir blanke og tåler bruk.' },
         { nr: '4', tittel: 'Hent den ferdig', tekst: 'Klar til henting i verkstedet etter ca. to uker.' },
       ],
-      popPriser: [
-        { navn: 'Kopp', pris: 'fra kr. 290,-' },
-        { navn: 'Bolle', pris: 'fra kr. 340,-' },
-        { navn: 'Fat', pris: 'fra kr. 390,-' },
-        { navn: 'Figurer og annet', pris: 'fra kr. 190,-' },
-      ],
+      // ── Hva gjenstandene koster ──────────────────────────────────────
+      //
+      // Sto som fire faste linjer i koden: «Kopp fra 290», «Bolle fra 340»,
+      // «Fat fra 390», «Figurer fra 190». Ingen av tallene stemte, og to av
+      // kategoriene fantes ikke i butikken i det hele tatt. Naa kommer lista
+      // fra varene som faktisk staar der — og retter seg selv naar prisen
+      // eller utvalget endrer seg.
+      ...(() => {
+        const varer = (this.state.butikkvareListe || [])
+          .filter(v => !v.kunMedlemmer && !v.utsolgt && v.kategori && v.prisOre > 0);
+        if (varer.length === 0) {
+          // Forhaandsvisningen har ingen butikk aa hente fra.
+          return {
+            popPriser: this.erPublisert() ? [] : [
+              { navn: 'Kopper', pris: 'fra kr. 300,-' },
+              { navn: 'Tallerkener', pris: 'fra kr. 750,-' },
+              { navn: 'Vaser', pris: 'fra kr. 550,-' },
+            ],
+            popHarPriser: !this.erPublisert(),
+            popFraPris: 'fra kr. 300,-',
+          };
+        }
+        const lavest = {};
+        varer.forEach(v => {
+          const k = String(v.kategori).trim();
+          if (lavest[k] === undefined || v.prisOre < lavest[k]) lavest[k] = v.prisOre;
+        });
+        const kr = (ore) => 'fra kr. ' + Math.round(ore / 100).toLocaleString('nb-NO') + ',-';
+        const rader = Object.keys(lavest)
+          .sort((a, b) => lavest[a] - lavest[b])
+          .map(k => ({ navn: k, pris: kr(lavest[k]) }));
+        const billigst = Math.min.apply(null, Object.keys(lavest).map(k => lavest[k]));
+        return {
+          popPriser: rader,
+          popHarPriser: rader.length > 0,
+          popFraPris: kr(billigst),
+        };
+      })(),
+      // Hva plassen koster, og hva gjenstanden koster. To ting.
+      ...(() => {
+        const kat = (this.state.katalog || []).find(k => k.tema === 'Paint on pots'
+          || k.tittel === 'Paint on Pots');
+        const plass = kat ? (kat.prisOre === 0 ? 'Plassen er gratis.'
+                                               : 'Plassen koster ' + kat.pris + '.')
+                          : 'Plassen booker du på en dato.';
+        return {
+          popBetalingTittel: 'Slik betaler du',
+          popBetaling: plass + ' Gjenstanden velger du når du kommer, og betaler '
+            + 'den i verkstedet. Farger, pensler, hjelp, glasering og brenning er '
+            + 'inkludert — du betaler bare for tingen du tar med deg hjem.',
+        };
+      })(),
       popFaq: [
         { q: 'Må jeg kunne male?', a: 'Nei. Vi viser deg teknikkene, og det er lov å holde det enkelt.' },
         { q: 'Kan barn være med?', a: 'Ja, Paint on Pots passer godt for barn i følge med voksen.' },

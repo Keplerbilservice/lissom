@@ -30,9 +30,11 @@ $bilderFelt   = DB::harKolonne('courses', 'bilder') ? ', bilder' : '';
 // Kursnivaa, tekstene og varigheten. Kom med migrasjon 072.
 $tekstFelt = DB::harKolonne('courses', 'nivaa_tekst')
     ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
+// «Gjenstanden betales i verkstedet». Kom med migrasjon 074.
+$kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -97,6 +99,13 @@ foreach ($kurs as $k) {
                 ], $okter)),
             ];
         })(),
+        // Paint on Pots og andre der gjenstanden velges i verkstedet.
+        //
+        // Prisen paa kurset er da prisen paa plassen, ikke paa det du gaar
+        // hjem med. «gjenstandFra» er den billigste tingen i butikken som
+        // faktisk kan males, saa siden slipper aa love et tall som er
+        // skrevet inn i koden.
+        'gjenstandIKassa' => (bool) ($k['gjenstand_i_kassa'] ?? 0),
         // Antall plasser kurset har. Nettsida skrev det som fast tekst —
         // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
         // sto rett over hverandre og var uenige. Naa kommer begge herfra.

@@ -5648,9 +5648,13 @@ window.__resources = {
               </div>
               <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ apnLinje }}</p>
               <sc-if value="{{ apnHarKilder }}" hint-placeholder-val="{{ true }}">
-                <div style="display: flex; flex-direction: column; gap: 4px; margin-top: var(--space-3);">
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: var(--space-3);">
                   <sc-for list="{{ apnKilder }}" as="a" hint-placeholder-count="2">
-                    <div style="font-size: var(--text-sm); color: var(--text-body);">{{ a.tekst }}</div>
+                    <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;">
+                      <span style="{{ a.merkeStil }}">{{ a.slag }}</span>
+                      <span style="font-size: var(--text-sm); color: var(--text-body);">{{ a.tekst }}</span>
+                      <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ a.hvor }}</span>
+                    </div>
                   </sc-for>
                 </div>
               </sc-if>
@@ -22590,11 +22594,25 @@ class Component extends DCLogic {
                     : 'Ingen kursdatoer i dag.'),
               apnHarKilder: kilder.length > 0,
               apnKilder: kilder.map(o => ({
-                tekst: o.tittel + ' · ' + o.naar
-                  + (o.tema === 'Kun for medlemmer' ? ' · intern samling' : '')
+                // Hva slags oppforing det er staar forst. «Drop-in i
+                // verkstedet» er ikke et kurs man melder seg paa — det er
+                // aapningstidene under Drop-in, lagt ut som oekter. Sto det
+                // bare et navn her, lette man etter et kurs som ikke finnes.
+                slag: o.slag || 'Kursdato',
+                tekst: o.naar + ' · ' + o.tittel
                   // Uten sluttid regner serveren tre timer. Da er sluttiden
                   // et tall ingen har skrevet inn, og det skal staa.
                   + (o.antattSlutt ? ' · sluttid mangler, regnet som tre timer' : ''),
+                hvor: 'Settes under ' + (o.satt || 'kurset'),
+                merkeStil: {
+                  display: 'inline-block', flex: '0 0 auto',
+                  fontSize: 11, fontWeight: 700,
+                  letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+                  padding: '2px 9px', borderRadius: 999,
+                  background: o.slag === 'Drop-in-tid' ? 'var(--lissom-yellow)'
+                    : o.slag === 'Intern samling' ? 'var(--clay-200)' : 'var(--clay-100)',
+                  color: 'var(--lissom-brown)',
+                },
               })),
             };
           })(),

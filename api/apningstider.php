@@ -44,7 +44,7 @@ $slutt = $idag->modify('+' . DAGER_FRAM . ' days');
 // et tidspunkt. En drop-in ingen har meldt seg paa er en aapen doer og
 // teller med — den er nettopp en aapningstid.
 $okter = DB::alle(
-    "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.tema
+    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid, c.tittel, c.tema, c.type
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.status = 'planlagt'
@@ -100,10 +100,27 @@ foreach ($okter as $o) {
             $avKurs[$nokkel]['fra'] = min($avKurs[$nokkel]['fra'], $fra);
             $avKurs[$nokkel]['til'] = max($avKurs[$nokkel]['til'], $til);
         }
+        // Hva slags oppforing det er, og hvor den settes.
+        //
+        // «Drop-in i verkstedet» er ikke et kurs man melder seg paa — det er
+        // aapningstidene under Drop-in, lagt ut som bookbare oekter. Staar
+        // det bare et kursnavn her, leter man etter et kurs som ikke finnes.
+        $slag = 'Kursdato';
+        $satt  = 'Kurs og medlemskap → kurset';
+        if ((string) ($o['type'] ?? '') === 'dropin' || $o['fra_dropin_tid'] !== null) {
+            $slag = 'Drop-in-tid';
+            $satt = 'Kurs og medlemskap → Drop-in';
+        } elseif ((string) ($o['tema'] ?? '') === 'Kun for medlemmer') {
+            $slag = 'Intern samling';
+            $satt = 'Medlemmer → Kurs';
+        }
+
         $kilder[$nokkel][] = [
             'oktId'       => (int) $o['id'],
             'tittel'      => (string) $o['tittel'],
             'tema'        => (string) ($o['tema'] ?? ''),
+            'slag'        => $slag,
+            'satt'        => $satt,
             'fra'         => $fra,
             'til'         => $til,
             'antattSlutt' => $antattSlutt,
@@ -177,6 +194,8 @@ for ($i = 0; $i < DAGER_FRAM; $i++) {
             static fn(array $kilde) => [
                 'tittel'      => $kilde['tittel'],
                 'tema'        => $kilde['tema'],
+                'slag'        => $kilde['slag'],
+                'satt'        => $kilde['satt'],
                 'naar'        => $kilde['fra'] . '–' . $kilde['til'],
                 'antattSlutt' => $kilde['antattSlutt'],
             ],

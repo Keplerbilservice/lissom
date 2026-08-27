@@ -986,6 +986,11 @@ window.__resources = {
       .lx-foto { height: 320px !important; }
       .lx-fotokol { height: auto !important; }
       .lx-split { grid-template-columns: 1fr !important; }
+      /* Et bilde som flyter ved siden av teksten trenger plass paa hver
+         side. Paa en telefon er det ikke plass til begge deler: da staar
+         bildet i full bredde over avsnittet, som de andre. */
+      .lx-artfigur { float: none !important; width: 100% !important; max-width: 100% !important;
+                     margin-left: 0 !important; margin-right: 0 !important; }
       .lx-cols4 { grid-template-columns: 1fr 1fr !important; }
       .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
       html, body { overflow-x: clip; max-width: 100%; overscroll-behavior-x: none; }
@@ -2312,7 +2317,27 @@ window.__resources = {
             </sc-if>
             <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-4xl); text-wrap: balance;">{{ nyLestTittel }}</h1>
             <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-8);">{{ nyLestDato }}</div>
-            <p style="margin: 0; font-size: var(--text-lg); line-height: 1.75; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ nyLestTekst }}</p>
+            <!-- Teksten og bildene i den, avsnitt for avsnitt.
+                 En artikkel hadde ett bilde, og det sto over teksten. Naa
+                 kan bilder staa mellom avsnittene, med bildetekst, alt-tekst,
+                 plassering og stoerrelse. En artikkel uten slike bilder
+                 tegnes som for: ett avsnitt etter det andre. -->
+            <sc-for list="{{ nyLestBlokker }}" as="bl" hint-placeholder-count="3">
+              <sc-if value="{{ bl.erTekst }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-lg); line-height: 1.75; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ bl.tekst }}</p>
+              </sc-if>
+              <sc-if value="{{ bl.erBilde }}" hint-placeholder-val="{{ false }}">
+                <figure class="lx-artfigur" style="{{ bl.figurStil }}">
+                  <img data-src="{{ bl.url }}" alt="{{ bl.alt }}" style="{{ bl.bildeStil }}" loading="lazy" decoding="async">
+                  <sc-if value="{{ bl.harBildetekst }}" hint-placeholder-val="{{ true }}">
+                    <figcaption style="margin-top: 8px; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ bl.bildetekst }}</figcaption>
+                  </sc-if>
+                </figure>
+              </sc-if>
+            </sc-for>
+            <!-- Et flytende bilde til slutt ville ellers stukket ut under
+                 artikkelen og lagt seg oppaa det som kommer etter. -->
+            <div style="clear: both;"></div>
           </div>
         </section>
       </sc-if>
@@ -8454,6 +8479,69 @@ window.__resources = {
                   <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted);"># overskrift · ## mellomtittel · - punkt for lister</p>
                   <textarea value="{{ abInnhold }}" onChange="{{ settAbInnhold }}" rows="18" style="{{ abTekstStil }}"></textarea>
                 </div>
+                <!-- Bildene inne i teksten.
+                     En artikkel hadde ett bilde, og det sto over teksten.
+                     Her legges bilder mellom avsnittene, med bildetekst,
+                     alt-tekst, plassering og stoerrelse. Bildet oeverst i
+                     lista — articles.bilde — er noe annet, og byttes med
+                     «Bytt bilde» paa raden. -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2);">
+                    <label style="{{ abEtikett }}">Bilder i teksten</label>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ abBilderHjelp }}</span>
+                  </div>
+                  <sc-if value="{{ abIngenBilder }}" hint-placeholder-val="{{ true }}">
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-muted);">Ingen bilder i teksten. Artikkelen vises med bildet fra lista øverst, som før.</p>
+                  </sc-if>
+                  <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                    <sc-for list="{{ abBilder }}" as="ab" hint-placeholder-count="2">
+                      <div style="display: flex; gap: var(--space-4); align-items: flex-start; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); flex-wrap: wrap;">
+                        <button type="button" onClick="{{ ab.bytt }}" aria-label="Bytt bilde" style="{{ ab.ruteStil }}"></button>
+                        <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-3);">
+                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3);">
+                            <div>
+                              <label for="{{ ab.etterId }}" style="{{ abLitenEtikett }}">Står etter</label>
+                              <select id="{{ ab.etterId }}" value="{{ ab.etter }}" onChange="{{ ab.settEtter }}" style="{{ abFeltStil }}">
+                                <sc-for list="{{ ab.etterValg }}" as="v" hint-placeholder-count="3">
+                                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                </sc-for>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="{{ ab.plassId }}" style="{{ abLitenEtikett }}">Plassering</label>
+                              <select id="{{ ab.plassId }}" value="{{ ab.plassering }}" onChange="{{ ab.settPlassering }}" style="{{ abFeltStil }}">
+                                <sc-for list="{{ ab.plassValg }}" as="v" hint-placeholder-count="4">
+                                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                </sc-for>
+                              </select>
+                            </div>
+                            <div>
+                              <label for="{{ ab.storrId }}" style="{{ abLitenEtikett }}">Størrelse</label>
+                              <select id="{{ ab.storrId }}" value="{{ ab.storrelse }}" onChange="{{ ab.settStorrelse }}" style="{{ abFeltStil }}">
+                                <sc-for list="{{ ab.storrValg }}" as="v" hint-placeholder-count="3">
+                                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                </sc-for>
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label for="{{ ab.tekstId }}" style="{{ abLitenEtikett }}">Bildetekst — står under bildet</label>
+                            <input id="{{ ab.tekstId }}" value="{{ ab.bildetekst }}" onChange="{{ ab.settBildetekst }}" placeholder="Valgfritt" style="{{ abFeltStil }}">
+                          </div>
+                          <div>
+                            <label for="{{ ab.altId }}" style="{{ abLitenEtikett }}">Alt-tekst — hva bildet viser, for den som ikke ser det</label>
+                            <input id="{{ ab.altId }}" value="{{ ab.alt }}" onChange="{{ ab.settAlt }}" placeholder="La stå tom hvis bildet bare er pynt" style="{{ abFeltStil }}">
+                          </div>
+                        </div>
+                        <button type="button" onClick="{{ ab.fjern }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern</button>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ abLeggTilBilde }}" hint-size="auto,38px">Legg til bilde</x-import>
+                  </div>
+                </div>
+
                 <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ abLagre }}" hint-size="auto,44px">Lagre</x-import>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ abStatusTekst }}</span>
@@ -13708,6 +13796,21 @@ class Component extends DCLogic {
       this.endreReferanse({ bilde: url || '' });
       return;
     }
+    // Bildene inne i en artikkel lagres sammen med artikkelen, ikke for seg:
+    // rekkefolgen og plasseringene henger sammen, og lista skrives hel.
+    if (v.slag === 'artikkelbilde') {
+      this.setState(st => {
+        const b = (st.abBilder || []).slice();
+        if (!b[v.rute]) return {};
+        if (!url) {
+          // Ingen fil valgt: raden har ingenting aa vise, og fjernes.
+          return { abBilder: b.filter((_, j) => j !== v.rute) };
+        }
+        b[v.rute] = Object.assign({}, b[v.rute], { fil: url });
+        return { abBilder: b };
+      });
+      return;
+    }
     this.artikkelKall({ handling: 'bilde', id: v.id, bilde: url || '' });
   }
 
@@ -13729,7 +13832,10 @@ class Component extends DCLogic {
       ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
       : (v && v.slag === 'referanse')
         ? { tittel: (this.state.refRed || {}).navn || 'kunden', bilde: (this.state.refRed || {}).bilde || '' }
-        : ((v && kilde.find(x => x.id === v.id)) || {});
+        : (v && v.slag === 'artikkelbilde')
+          ? { tittel: this.state.abTittel || 'artikkelen',
+              bilde: ((this.state.abBilder || [])[v.rute] || {}).fil || '' }
+          : ((v && kilde.find(x => x.id === v.id)) || {});
     // Ruta viser den lille fila og lagrer den store. Foer lastet velgeren
     // originalene i full stoerrelse — over hundre av dem, hver gang den ble
     // aapnet — og paa mobil var det en telefon full av bilder ingen skulle se.
@@ -18891,6 +18997,7 @@ class Component extends DCLogic {
       // ligger her framfor inne i én av skjermene.
       ...this.bildevalgVals(),
       mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
+        : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
         : (this.state.bildeFor || {}).slag === 'kurs'
           ? ((this.state.bildeFor || {}).rute === 0 ? 'Hovedbilde til kurset' : 'Bilde til kurset')
           : 'Bilde til artikkelen',
@@ -23414,6 +23521,58 @@ class Component extends DCLogic {
           nyLukk: () => this.setState({ nyLest: null }),
           nyLestTittel: lest ? lest.tittel : '',
           nyLestTekst: lest ? (lest.innhold || '') : '',
+          // ── Teksten med bildene i ────────────────────────────────────
+          //
+          // «etter» sier hvilket avsnitt bildet staar etter: 0 er foerst i
+          // artikkelen, 1 er etter foerste avsnitt. Et bilde med et tall
+          // hoyere enn antall avsnitt havner til slutt — det er tryggere
+          // enn aa la det forsvinne fordi noen kortet ned teksten.
+          nyLestBlokker: (() => {
+            if (!lest) return [];
+            const avsnitt = String(lest.innhold || '').split(/\n\s*\n/)
+              .map(t => t.trim()).filter(Boolean);
+            const bilder = (lest.bilder || []);
+            if (!bilder.length) return avsnitt.map(t => ({ erTekst: true, erBilde: false, tekst: t }));
+
+            const bredde = { liten: 200, medium: 360, stor: 560 };
+            const figur = (b) => {
+              const px = bredde[b.storrelse] || 360;
+              const felles = { margin: '0 0 var(--space-6)' };
+              if (b.plassering === 'venstre') {
+                return Object.assign({}, felles, { float: 'left', width: px, maxWidth: '45%', marginRight: 'var(--space-6)' });
+              }
+              if (b.plassering === 'hoyre') {
+                return Object.assign({}, felles, { float: 'right', width: px, maxWidth: '45%', marginLeft: 'var(--space-6)' });
+              }
+              if (b.plassering === 'midtstilt') {
+                return Object.assign({}, felles, { width: px, maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto' });
+              }
+              return Object.assign({}, felles, { width: '100%' });
+            };
+            const somBlokk = (b) => ({
+              erTekst: false, erBilde: true,
+              url: b.fil,
+              // Tom alt-tekst er et valg: da er bildet pynt, og skjermleseren
+              // hopper over det framfor aa lese opp et filnavn.
+              alt: b.alt || '',
+              harBildetekst: !!b.bildetekst,
+              bildetekst: b.bildetekst || '',
+              figurStil: figur(b),
+              bildeStil: { display: 'block', width: '100%', height: 'auto',
+                           borderRadius: 'var(--radius-md)' },
+            });
+
+            const ut = [];
+            const foran = n => bilder.filter(b => (b.etter || 0) === n);
+            foran(0).forEach(b => ut.push(somBlokk(b)));
+            avsnitt.forEach((t, i) => {
+              ut.push({ erTekst: true, erBilde: false, tekst: t });
+              foran(i + 1).forEach(b => ut.push(somBlokk(b)));
+            });
+            // Bilder som peker forbi siste avsnitt staar til slutt.
+            bilder.filter(b => (b.etter || 0) > avsnitt.length).forEach(b => ut.push(somBlokk(b)));
+            return ut;
+          })(),
           nyLestDato: lest ? (lest.dato || '') : '',
           nyLestKategori: !!(lest && lest.kategori),
           nyLestKategoriNavn: lest ? (lest.kategori || '') : '',
@@ -25551,6 +25710,13 @@ class Component extends DCLogic {
               abId: a.id, abTittel: a.tittel, abKategori: a.kategori || '',
               abIngress: a.ingress || '', abInnhold: a.innhold || '',
               abStatus: a.status,
+              // Bildene i teksten redigeres som en liste, og lagres hel
+              // sammen med artikkelen.
+              abBilder: (a.bilder || []).map(b => ({
+                fil: b.fil, etter: b.etter || 0,
+                plassering: b.plassering || 'full', storrelse: b.storrelse || 'medium',
+                bildetekst: b.bildetekst || '', alt: b.alt || '',
+              })),
             }),
           })),
 
@@ -25568,7 +25734,7 @@ class Component extends DCLogic {
             const id = this.state.abId || 0;
             return {
               abApen: id > 0,
-              abLukk: () => this.setState({ abId: 0 }),
+              abLukk: () => this.setState({ abId: 0, abBilder: [] }),
               abFeltStil: felt,
               abTekstStil: Object.assign({}, felt, { font: '13px/1.6 ui-monospace, monospace' }),
               abEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
@@ -25584,6 +25750,85 @@ class Component extends DCLogic {
               abStatusTekst: this.state.abStatus === 'publisert'
                 ? 'Artikkelen er ute. Endringen vises med én gang du lagrer.'
                 : 'Artikkelen er kladd. Den vises ikke på nettsiden før du publiserer den.',
+
+              // ── Bildene inne i teksten ──────────────────────────────
+              ...(() => {
+                const liste = this.state.abBilder || [];
+                const avsnitt = String(this.state.abInnhold || '')
+                  .split(/\n\s*\n/).map(t => t.trim()).filter(Boolean).length;
+                const litenEtikett = { display: 'block', fontSize: 'var(--text-xs)',
+                  color: 'var(--text-muted)', marginBottom: 4 };
+                // Hele lista skrives om igjen ved hver endring. Det er den
+                // som lagres, hel — rekkefolgen og plasseringene henger
+                // sammen, og en halv lagring ville gitt to bilder etter
+                // samme avsnitt.
+                const endre = (i, felt) => this.setState(st => {
+                  const b = (st.abBilder || []).slice();
+                  b[i] = Object.assign({}, b[i], felt);
+                  return { abBilder: b };
+                });
+                const etterValg = [{ verdi: '0', navn: 'Først i artikkelen' }].concat(
+                  Array.from({ length: Math.max(avsnitt, 1) }, (_, n) => ({
+                    verdi: String(n + 1), navn: 'Avsnitt ' + (n + 1),
+                  })));
+                return {
+                  abLitenEtikett: litenEtikett,
+                  abIngenBilder: liste.length === 0,
+                  abBilderHjelp: avsnitt
+                    ? 'Teksten har ' + avsnitt + (avsnitt === 1 ? ' avsnitt' : ' avsnitt') + '. Skill avsnitt med en blank linje.'
+                    : 'Skriv teksten først, så kan bildene plasseres mellom avsnittene.',
+                  abBilder: liste.map((b, i) => ({
+                    ruteStil: {
+                      appearance: 'none', cursor: 'pointer', padding: 0, flex: '0 0 auto',
+                      width: 96, height: 72, borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--border-subtle)',
+                      backgroundImage: b.fil ? "url('" + b.fil + "')" : 'none',
+                      backgroundColor: 'var(--clay-100)',
+                      backgroundSize: 'cover', backgroundPosition: this.fokusFor(b.fil || ''),
+                    },
+                    bytt: () => this.apneBildevalg({ slag: 'artikkelbilde', rute: i }),
+                    etterId: 'ab-etter-' + i,
+                    plassId: 'ab-plass-' + i,
+                    storrId: 'ab-storr-' + i,
+                    tekstId: 'ab-tekst-' + i,
+                    altId: 'ab-alt-' + i,
+                    etter: String(b.etter === undefined ? 0 : b.etter),
+                    etterValg,
+                    settEtter: e => endre(i, { etter: parseInt(e.target.value, 10) || 0 }),
+                    plassering: b.plassering || 'full',
+                    plassValg: [
+                      { verdi: 'full', navn: 'Full bredde' },
+                      { verdi: 'venstre', navn: 'Til venstre' },
+                      { verdi: 'hoyre', navn: 'Til høyre' },
+                      { verdi: 'midtstilt', navn: 'Midtstilt' },
+                    ],
+                    settPlassering: e => endre(i, { plassering: e.target.value }),
+                    storrelse: b.storrelse || 'medium',
+                    storrValg: [
+                      { verdi: 'liten', navn: 'Liten' },
+                      { verdi: 'medium', navn: 'Medium' },
+                      { verdi: 'stor', navn: 'Stor' },
+                    ],
+                    settStorrelse: e => endre(i, { storrelse: e.target.value }),
+                    bildetekst: b.bildetekst || '',
+                    settBildetekst: e => endre(i, { bildetekst: e.target.value }),
+                    alt: b.alt || '',
+                    settAlt: e => endre(i, { alt: e.target.value }),
+                    fjern: () => this.setState(st => ({
+                      abBilder: (st.abBilder || []).filter((_, j) => j !== i),
+                    })),
+                  })),
+                  // Ny rad foerst, saa velgeren — da vet den hvilken rad
+                  // bildet skal i, og raden staar der med det samme selv om
+                  // velgeren lukkes uten at noe ble valgt.
+                  abLeggTilBilde: () => this.setState(st => {
+                    const b = (st.abBilder || []).slice();
+                    b.push({ fil: '', etter: 0, plassering: 'full', storrelse: 'medium', bildetekst: '', alt: '' });
+                    return { abBilder: b };
+                  }, () => this.apneBildevalg({ slag: 'artikkelbilde', rute: (this.state.abBilder || []).length - 1 })),
+                };
+              })(),
+
               abLagre: () => {
                 if (!(this.state.abTittel || '').trim()) {
                   this.setState({ kvittering: 'Artikkelen må ha en tittel' });
@@ -25595,8 +25840,11 @@ class Component extends DCLogic {
                   kategori: (this.state.abKategori || '').trim(),
                   ingress: (this.state.abIngress || '').trim(),
                   innhold: this.state.abInnhold || '',
+                  // Hele lista om gangen. Tomme rader — en som ble lagt til
+                  // og angret — faller bort paa serveren.
+                  bilder: (this.state.abBilder || []).filter(b => (b.fil || '').trim() !== ''),
                 });
-                this.setState({ abId: 0 });
+                this.setState({ abId: 0, abBilder: [] });
               },
             };
           })(),

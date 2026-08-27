@@ -29,6 +29,9 @@ $ut = static fn(array $a): array => [
     'ingress'  => $a['ingress'],
     'innhold'  => $a['innhold'],
     'bilde'    => $a['bilde'],
+    // Bildene inne i teksten, med bildetekst, alt-tekst, plassering og
+    // stoerrelse. Tom liste betyr en artikkel med bare tekst, som for.
+    'bilder'   => Artikler::bilder((int) $a['id']),
     'dato'     => $a['dato'] ?: Booking::norskDatoKort((string) $a['updated_at']),
 ];
 

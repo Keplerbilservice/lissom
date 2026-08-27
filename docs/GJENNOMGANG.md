@@ -278,9 +278,33 @@ over hva som kommer står som før.
 
 ---
 
-## 9. Artikler, nyhetsbrev og sosiale medier
+## 9. Artikler, nyhetsbrev og sosiale medier — **gjort 27. august**
 
-**Finnes, og mer enn bestillingen antar.**
+En artikkel kan nå ha bilder inne i teksten (migrasjon 064): hvert med
+bildetekst, alt-tekst, plassering (full bredde, venstre, høyre, midtstilt)
+og størrelse (liten, medium, stor). «Står etter» velger hvilket avsnitt
+bildet kommer etter — lista over avsnitt regnes av teksten du har skrevet,
+så du velger «Avsnitt 2», ikke et tall.
+
+`articles.bilde` står som før. Det er bildet lista viser og det som følger
+med når noen deler lenken, og det er noe annet enn bildene i teksten.
+
+Alt-teksten kan stå tom. Det er et valg, ikke en mangel: da er bildet pynt,
+og skjermleseren hopper over det framfor å lese opp et filnavn. Feltet sier
+det.
+
+På mobil flyter ingen bilder ved siden av teksten — det er ikke plass til
+begge deler. Da står bildet i full bredde over avsnittet.
+
+**Testet:** 17 kontroller gjennom hele veien — tre bilder lagret med hver
+sin plassering, rekkefølgen på nettsiden (bilde, avsnitt, avsnitt, bilde,
+avsnitt, bilde), alt-tekstene, bildetekstene, at et høyrestilt bilde faktisk
+flyter til høyre, og at ingenting flyter på 390 piksler. Og 17 i admin —
+legge til, velge fil, fylle ut, lagre, åpne igjen, fjerne.
+
+Nedenfor står kartleggingen som lå til grunn.
+
+**Fantes, og mer enn bestillingen antok.**
 
 | Del | Hvor |
 |---|---|
@@ -568,11 +592,11 @@ Minst avhengig først, og slik at ingenting står halvferdig:
 | 6 | 7 kalender | ✅ gjort 27. august (push kan ikke verifiseres herfra) |
 | 7 | 15 referansekunder | ✅ gjort 27. august |
 | 8 | 1, 2, 16 Min side og admin | ✅ gjort 27. august |
-| 9 | 9, 10, 11 innhold | står igjen |
+| 9 | 9, 10, 11 innhold | ✅ gjort 27. august |
 
-Punkt 8 og 14 ble gjort 26. august. Tolv av sytten er ferdige. Igjen står
-punkt 4 (kursoppsettet i tolv seksjoner) og punkt 9, 10 og 11 (artikler med
-flere bilder, publiseringstilstander, e-postsignatur).
+Punkt 8 og 14 ble gjort 26. august. Seksten av sytten er ferdige. Igjen står
+punkt 4 — kursoppsettet i tolv seksjoner, med punktlista flyttet fra koden
+til basen.
 
 ---
 

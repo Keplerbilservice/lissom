@@ -48,6 +48,80 @@ final class Artikler
         return $svar->rowCount();
     }
 
+    /** Plasseringene og stoerrelsene et bilde i teksten kan ha. */
+    public const PLASSERINGER = ['full', 'venstre', 'hoyre', 'midtstilt'];
+    public const STORRELSER   = ['liten', 'medium', 'stor'];
+
+    /**
+     * Bildene som staar inne i teksten paa en artikkel.
+     *
+     * articles.bilde er noe annet: det er bildet lista viser og det som
+     * foelger med naar noen deler lenken. Disse staar mellom avsnittene.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function bilder(int $artikkelId): array
+    {
+        if (!DB::harTabell('artikkel_bilder')) {
+            return [];
+        }
+        return array_map(static fn(array $b): array => [
+            'id'         => (int) $b['id'],
+            'fil'        => (string) $b['fil'],
+            // Hvilket avsnitt bildet staar etter. 0 = foerst i artikkelen.
+            'etter'      => (int) $b['rekkefolge'],
+            'bildetekst' => (string) ($b['bildetekst'] ?? ''),
+            // Tom alt-tekst er et valg, ikke en mangel: da er bildet pynt,
+            // og skjermleseren hopper over det framfor aa lese opp et
+            // filnavn.
+            'alt'        => (string) ($b['alt_tekst'] ?? ''),
+            'plassering' => (string) $b['plassering'],
+            'storrelse'  => (string) $b['storrelse'],
+        ], DB::alle(
+            'SELECT * FROM artikkel_bilder WHERE artikkel_id = :a ORDER BY rekkefolge, id',
+            ['a' => $artikkelId]
+        ));
+    }
+
+    /**
+     * Lagrer hele bildelista paa en artikkel.
+     *
+     * Hele lista om gangen, ikke ett og ett. Rekkefolgen og plasseringene
+     * henger sammen — en halv lagring ville gitt en artikkel der to bilder
+     * staar etter samme avsnitt fordi det tredje ikke rakk fram.
+     *
+     * @param list<array<string,mixed>> $liste
+     */
+    public static function lagreBilder(int $artikkelId, array $liste): int
+    {
+        if (!DB::harTabell('artikkel_bilder')) {
+            return 0;
+        }
+
+        DB::kjor('DELETE FROM artikkel_bilder WHERE artikkel_id = :a', ['a' => $artikkelId]);
+
+        $antall = 0;
+        foreach ($liste as $b) {
+            $fil = trim((string) ($b['fil'] ?? ''));
+            if ($fil === '') {
+                continue;   // en tom rad er en rad som ble angret
+            }
+            $plassering = (string) ($b['plassering'] ?? 'full');
+            $storrelse  = (string) ($b['storrelse'] ?? 'medium');
+            DB::settInn('artikkel_bilder', [
+                'artikkel_id' => $artikkelId,
+                'fil'         => mb_substr($fil, 0, 255),
+                'rekkefolge'  => max(0, min(999, (int) ($b['etter'] ?? 0))),
+                'bildetekst'  => mb_substr(trim((string) ($b['bildetekst'] ?? '')), 0, 255) ?: null,
+                'alt_tekst'   => mb_substr(trim((string) ($b['alt'] ?? '')), 0, 255) ?: null,
+                'plassering'  => in_array($plassering, self::PLASSERINGER, true) ? $plassering : 'full',
+                'storrelse'   => in_array($storrelse, self::STORRELSER, true) ? $storrelse : 'medium',
+            ]);
+            $antall++;
+        }
+        return $antall;
+    }
+
     /**
      * Hva som staar paa knappen og merket for en gitt tilstand.
      *

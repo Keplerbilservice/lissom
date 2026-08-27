@@ -78,6 +78,10 @@ if (Foresporsel::metode() === 'GET') {
                     ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('Y-m-d\TH:i')
                 : '',
             'lenke'       => trim((string) $a['slug']) !== '' ? '/nyheter/' . $a['slug'] : '',
+            // Bildene inne i teksten. articles.bilde er noe annet — det er
+            // bildet lista viser og det som foelger med naar noen deler
+            // lenken.
+            'bilder'      => Artikler::bilder((int) $a['id']),
         ], $rader),
         // Kategoriene er ikke en fast liste — de vokser med det som skrives.
         'kategorier' => array_values(array_filter(array_unique(
@@ -131,9 +135,20 @@ switch (Foresporsel::tekst('handling')) {
             $id = DB::settInn('articles', $felter);
         }
 
+        // Bildene i teksten. Sendes lista med, byttes hele lista ut; er den
+        // ikke med, roeres den ikke — saa en lagring fra et skjema som ikke
+        // kjenner bilder ikke tommer dem.
+        if (array_key_exists('bilder', $kropp) && is_array($kropp['bilder'])) {
+            if (!DB::harTabell('artikkel_bilder')) {
+                Svar::feil('Migrasjon 064 er ikke kjørt. Kjør oppdateringen først, så kan bildene lagres.');
+            }
+            Artikler::lagreBilder($id, $kropp['bilder']);
+        }
+
         revider('artikkel_lagret', 'article', $id, ['tittel' => $tittel]);
         Svar::ok(['beskjed' => 'Artikkelen er lagret.', 'id' => $id,
-                  'slug' => $felter['slug'] ?? null]);
+                  'slug' => $felter['slug'] ?? null,
+                  'bilder' => Artikler::bilder($id)]);
 
     // Bildet for seg. «lagre» krever tittel og tekst, og aa sende hele
     // artikkelen fram og tilbake bare for aa bytte bilde er en unodig sjanse

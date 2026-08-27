@@ -41,8 +41,13 @@ $utc = new DateTimeZone('UTC');
 
 // Det som ligger foran oss, og litt bak — en kalender uten forrige uke er
 // vanskelig aa kjenne seg igjen i.
+// Endringstida kommer med migrasjon 059. Uten den staar SEQUENCE paa 0, og
+// feeden virker som for.
+$harEndret = DB::harKolonne('course_sessions', 'updated_at');
+
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status,
+            " . ($harEndret ? 'cs.updated_at,' : 'NULL AS updated_at,') . "
             c.tittel, c.type, c.tema,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
             (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
@@ -126,17 +131,52 @@ foreach ($okter as $o) {
     $slutt = $o['slutt_tid'] !== null
         ? new DateTimeImmutable((string) $o['slutt_tid'], $utc)
         : $start->modify('+3 hours');
+    // En hendelse som slutter naar den begynner har ingen varighet, og vises
+    // som et streif i kalenderen. Datoer lagret for sluttiden ble tatt vare
+    // paa har det — da gjelder samme reserve som for en dato uten sluttid.
+    if ($slutt <= $start) {
+        $slutt = $start->modify('+3 hours');
+    }
 
     $kapasitet = (int) $o['kapasitet'];
     $om = $pameldte . ' av ' . $kapasitet . ' plasser'
         . ($pameldte >= $kapasitet && $kapasitet > 0 ? ' — fullbooket' : '')
         . ($o['tema'] !== null && $o['tema'] !== '' ? "\n" . $o['tema'] : '');
 
+    // Hvor mange ganger okta er endret.
+    //
+    // Apple Kalender og Outlook leser SEQUENCE for aa avgjore om en hendelse
+    // de alt har er endret. Sto den ikke i det hele tatt, kunne en flyttet
+    // kursdato bli staaende paa telefonen slik den var — feeden serveres hel
+    // hver gang, saa de fleste tar den likevel, men det er ikke garantert.
+    //
+    // Tallet er antall halvtimer siden okta ble laget til den ble endret. Det
+    // maa bare vokse naar noe endres, og det gjor dette.
+    $sekvens = 0;
+    $endret = null;
+    if ($o['updated_at'] !== null) {
+        try {
+            $endret = new DateTimeImmutable((string) $o['updated_at'], $utc);
+            // Referansepunktet er fast — 1. januar 2020 — slik at tallet ikke
+            // hopper nedover om starttida flyttes bakover. Minutter og ikke
+            // halvtimer: rettes en okt to ganger paa en halvtime, skal
+            // telefonen se begge.
+            $null = new DateTimeImmutable('2020-01-01 00:00:00', $utc);
+            $sekvens = max(0, (int) floor(($endret->getTimestamp() - $null->getTimestamp()) / 60));
+        } catch (Throwable) {
+            $sekvens = 0;
+        }
+    }
+
     $linjer[] = 'BEGIN:VEVENT';
     // Fast id per okt, slik at en endring oppdaterer hendelsen framfor aa
     // legge til en ny ved siden av den gamle.
     $linjer[] = 'UID:okt-' . (int) $o['id'] . '@lissom.no';
     $linjer[] = 'DTSTAMP:' . $naa;
+    $linjer[] = 'SEQUENCE:' . $sekvens;
+    if ($endret !== null) {
+        $linjer[] = 'LAST-MODIFIED:' . $endret->format('Ymd\THis\Z');
+    }
     $linjer[] = 'DTSTART:' . $start->format('Ymd\THis\Z');
     $linjer[] = 'DTEND:' . $slutt->format('Ymd\THis\Z');
     $linjer[] = 'SUMMARY:' . $tekst((string) $o['tittel']);
@@ -146,8 +186,20 @@ foreach ($okter as $o) {
     // staaende igjen paa telefonen for alltid — feeden sier bare hva som
     // finnes, ikke hva som er borte.
     $linjer[] = 'STATUS:' . ($o['status'] === 'avlyst' ? 'CANCELLED' : 'CONFIRMED');
-    // Ingen LAST-MODIFIED: okter har ingen endringstid i basen. Feeden
-    // serveres hel hver gang, saa klienten ser endringen uansett.
+
+    // Et varsel dagen for, klokka atten.
+    //
+    // Dette er en anbefaling til kalenderen, ikke en push fra oss: et
+    // abonnement er henting, ikke sending. Telefonen sporr serveren naar den
+    // vil, og Apple bestemmer selv hvor ofte. Vi kan ikke faa en melding til
+    // aa dukke opp i det oyeblikket noe endres — men vi kan si fra at
+    // hendelsen er verdt et varsel.
+    $linjer[] = 'BEGIN:VALARM';
+    $linjer[] = 'ACTION:DISPLAY';
+    $linjer[] = 'TRIGGER:-P1DT0H0M0S';
+    $linjer[] = 'DESCRIPTION:' . $tekst((string) $o['tittel'] . ' i morgen');
+    $linjer[] = 'END:VALARM';
+
     $linjer[] = 'END:VEVENT';
 }
 

@@ -2529,6 +2529,7 @@ window.__resources = {
                       <span>{{ a.dag }}</span><span style="color: var(--text-muted); text-align: right;">{{ a.tid }}</span>
                     </div>
                   </sc-for>
+                  <p style="margin: var(--space-2) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ apningsforklaring }}</p>
                 </div>
               </div>
             </div>
@@ -7927,6 +7928,9 @@ window.__resources = {
               <div style="margin-top: 10px; font-size: var(--text-sm); line-height: 1.45; color: var(--clay-300); display: flex; flex-direction: column;">
                 <span style="font: var(--type-label); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: 2px;">{{ ftApningTittel }}</span>
                 <span>{{ ftApning1 }}</span>
+                <sc-if value="{{ ftHarApningNeste }}" hint-placeholder-val="{{ false }}">
+                  <span>{{ ftApningNeste }}</span>
+                </sc-if>
                 <span>{{ ftApning2 }}</span>
               </div>
             </div>
@@ -12125,28 +12129,19 @@ class Component extends DCLogic {
 
     let valgte = medDato.filter(o => o.d < til);
 
-    // Er det tomt i perioden, men noe lenger fram: vis det.
+    // Her sto det at en tom periode skulle fylles med de tre neste, uansett
+    // hvor langt fram de laa. Sammen med en linje som forklarte det.
     //
-    // Kortet sto tomt paa en dag uten kurs, selv om det var satt opp fire
-    // stykker neste uke. «Ingenting i dag» er sant, men ubrukelig — det du
-    // vil vite er naar det neste er.
-    const blar = v === 'Måned' && (this.state.ovMnd || 0) !== 0;
-    const tomtNaa = valgte.length === 0 && medDato.length > 0 && !blar;
-    if (tomtNaa) {
-      valgte = medDato.slice(0, 3);
-    }
-
+    // Linja er fjernet etter bestilling, og da sto september under «I dag».
+    // Velger du «I dag», skal du se i dag — er det ingenting, sier kortet
+    // det, framfor aa vise noe annet.
     return valgte
-      .map(o => Object.assign({}, o, { senere: tomtNaa }))
       .map(o => ({
         oktId: o.oktId || 0,
-        senere: !!o.senere,
-        // Staar det noe lenger fram enn perioden, maa datoen staa der ogsaa
-        // paa «I dag» — ellers ser det ut som det skjer i dag.
-        tid: (v === 'I dag' && !o.senere) ? (o.klokke || '')
-          : DAG[o.d.getDay()] + ' ' + o.d.getDate() + '.',
+        senere: false,
+        tid: v === 'I dag' ? (o.klokke || '') : DAG[o.d.getDay()] + ' ' + o.d.getDate() + '.',
         hva: o.tittel,
-        detalj: ((v === 'I dag' && !o.senere) ? '' : (o.klokke || '') + ' · ')
+        detalj: (v === 'I dag' ? '' : (o.klokke || '') + ' · ')
           + o.pameldte + ' av ' + o.kapasitet + ' påmeldte'
           + (o.pameldte >= o.kapasitet ? ' · fullbooket' : ''),
       }));
@@ -17473,6 +17468,19 @@ class Component extends DCLogic {
         && !this.state.ferdigbrentAdmin) {
       this.hentFerdigbrentAdmin();
     }
+    // Aapningstidene i bunnteksten. Hentes én gang, paa de sidene som har
+    // bunntekst — det er ett lite oppslag, og uten det staar det «etter
+    // avtale» ogsaa naar det gaar kurs i dag.
+    if (!this._apningHentes && !this.state.apningsdager
+        && ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'kasse', 'omoss',
+            'personvern', 'nyttig', 'bedrift', 'vilkar', 'gavekortside', 'kontakt',
+            'ferdigbrent'].indexOf(side) !== -1) {
+      this._apningHentes = true;
+      fetch('/api/apningstider.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => { if (d && d.dager) this.setState({ apningsdager: d }); })
+        .catch(() => {});
+    }
     if (side === 'nyheter' && !this.state.nyheter) {
       this.hentNyheter();
     }
@@ -21102,7 +21110,14 @@ class Component extends DCLogic {
           kalVeksle: () => this.setState(st => ({ kalApent: !st.kalApent, kalKopiert: false })),
           kalAdresse: adr,
           kalForklaring: 'På iPhone: Innstillinger → Kalender → Kontoer → Legg til konto → Annet → '
-            + 'Legg til abonnementskalender, og lim inn adressen. Telefonen henter den på nytt av seg selv.',
+            + 'Legg til abonnementskalender, og lim inn adressen. '
+            // Aerlig om hva dette er: telefonen henter, vi sender ikke. Det
+            // sto «telefonen henter den paa nytt av seg selv», som er sant —
+            // men ikke at det kan ta timer, og at ingen melding kommer i det
+            // oyeblikket noe endres.
+            + 'Telefonen henter den på nytt av seg selv, men bestemmer selv hvor ofte — '
+            + 'det kan gå timer. Endrer du en kursdato, kommer det ingen melding til telefonen; '
+            + 'endringen står der neste gang den henter. Hver kursdato foreslår et varsel dagen før.',
           kalAdvarsel: 'Den som har adressen, ser programmet — den spør ikke om innlogging. '
             + 'Del den bare med dem som skal ha den. «Lag ny adresse» stopper alle gamle på én gang, '
             + 'og da må abonnementene settes opp på nytt.',
@@ -21188,16 +21203,18 @@ class Component extends DCLogic {
         };
       })(),
       ingenProgram: this.erPublisert() && this.programListe().length === 0,
+      // Sier hva som ikke er der, for den perioden du staar i. «Ingen datoer
+      // ligger ute» sto ogsaa naar det laa tjue datoer ute, bare ingen i dag.
       ingenProgramTekst: (this.state.ovProgram || 'I dag') === 'I dag'
-        ? 'Ingen datoer ligger ute. Åpne et kurs og legg inn en dato under steg 2.'
+        ? 'Ingen planlagte kurs i dag.'
         : (this.state.ovProgram === 'Uke'
-            ? 'Ingenting satt opp denne uka, og ingenting senere heller.'
+            ? 'Ingen planlagte kurs denne uka.'
             : (() => {
                 const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
                              'august', 'september', 'oktober', 'november', 'desember'];
                 const naa = new Date();
                 const d = new Date(naa.getFullYear(), naa.getMonth() + (this.state.ovMnd || 0), 1);
-                return 'Ingenting satt opp i ' + MND[d.getMonth()] + '.';
+                return 'Ingen planlagte kurs i ' + MND[d.getMonth()] + '.';
               })()),
       ovLeggTilDeltaker: () => this.gaaAdmin('adminpameldte', { mpApen: true }),
       ovNyttMedlem: () => this.gaaAdmin('adminmedlem', {
@@ -22940,11 +22957,50 @@ class Component extends DCLogic {
         'Rydd og vask plassen din før du går.',
       ],
       visFooter: ['forside', 'kurs', 'booking', 'medlemskap', 'butikk', 'kasse', 'omoss', 'personvern', 'nyttig', 'bedrift', 'vilkar', 'gavekortside', 'kontakt', 'ferdigbrent'].indexOf(side) !== -1,
-      apningstider: [
-        { dag: 'Verkstedet', tid: 'Etter avtale' },
-        { dag: 'Kurs og events', tid: 'Se datoer under kurs' },
-        { dag: 'Medlemmer', tid: 'Døgnåpent, 24 timer' },
-      ],
+      // ── Aapningstider i bunnteksten ──────────────────────────────────
+      //
+      // Sto som tre faste linjer skrevet inn her: «Verkstedet — etter
+      // avtale», «Kurs og events — se datoer under kurs». De sa ingenting om
+      // naar det faktisk er noen her, og kunne ikke endres noe sted.
+      //
+      // Naa regnes de av kursene som er lagt ut: gaar det kurs en dag, er
+      // verkstedet aapent fra det forste begynner til det siste slutter.
+      // Ligger det en overstyring inne for dagen — helligdag, ferie, stengt —
+      // gaar den foran. Er det ingenting, staar det «Etter avtale», som for.
+      ...(() => {
+        const dager = (this.state.apningsdager || {}).dager || null;
+        const idag = dager ? dager.find(d => d.idag) : null;
+        const neste = dager ? dager.filter(d => !d.idag).slice(0, 2) : [];
+
+        const linjer = [];
+        if (idag && idag.stengt) {
+          linjer.push({ dag: 'I dag', tid: idag.merknad || 'Stengt' });
+        } else if (idag) {
+          linjer.push({ dag: 'I dag', tid: idag.tid });
+        } else {
+          // Ingen kurs i dag. Da er verkstedet aapent etter avtale, som for.
+          linjer.push({ dag: 'I dag', tid: 'Etter avtale' });
+        }
+        neste.forEach(d => linjer.push({
+          dag: d.dag + ' ' + d.naar,
+          tid: d.stengt ? (d.merknad || 'Stengt') : d.tid,
+        }));
+        if (!dager) {
+          // Ikke hentet ennaa: vis det som sto her for, framfor aa blafre.
+          linjer.length = 0;
+          linjer.push({ dag: 'Verkstedet', tid: 'Etter avtale' });
+          linjer.push({ dag: 'Kurs og events', tid: 'Se datoer under kurs' });
+        }
+        linjer.push({ dag: 'Medlemmer', tid: 'Døgnåpent, 24 timer' });
+
+        return {
+          apningstider: linjer,
+          // Sier hva tidene gjelder. Uten den staar det «10–19», og noen
+          // kommer for aa handle midt i et kurs.
+          apningsforklaring: (this.state.apningsdager || {}).forklaring
+            || 'Verkstedet er åpent når det går kurs. Butikken og drop-in har egne tider.',
+        };
+      })(),
       // «Utforsk» er tatt bort fra bunnteksten — de seks lenkene staar alt i
       // toppmenyen, og paa mobil ble bunnteksten 1300 piksler lang.
       //
@@ -23923,12 +23979,22 @@ class Component extends DCLogic {
           { navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', tid: '21. aug' },
           { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: '20. aug' },
         ])),
+        // Raden kunne aapnes, og saa var det ingenting aa gjore. En
+        // paamelding til et kurs uten dato blir staaende her for alltid —
+        // den finnes ikke under Paameldte heller, for der sorteres det paa
+        // dato. Naa kan den avbestilles herfra.
         n => [n.navn, n.hva, [
           { navn: 'Tidspunkt', verdi: n.tid },
-          { navn: 'Belop', verdi: n.belop || '' },
+          { navn: 'Kursdato', verdi: n.naar || 'Ingen dato satt' },
+          { navn: 'Beløp', verdi: n.belop || '' },
           { navn: 'Status', verdi: n.status || '' },
           { navn: 'Referanse', verdi: n.referanse || '' },
-        ], 'Lukk']),
+        ], n.id ? 'Avbestill påmeldingen' : 'Lukk', null, false,
+           n.id ? () => {
+             if (!window.confirm('Avbestille påmeldingen til ' + n.navn + '?\n\n'
+                 + 'Plassen blir ledig igjen. Er det betalt, må beløpet refunderes i Vipps.')) return;
+             this.pameldingKall({ handling: 'fjern', id: n.id });
+           } : null]),
       erAdminOkonomi: side === 'adminokonomi',
       // ── Dagsoppgjor ──────────────────────────────────────────────────
       //
@@ -24081,9 +24147,44 @@ class Component extends DCLogic {
       ftAdresse: this.innh('Footer/1/Adresse'),
       ftTelefon: this.innh('Footer/1/Telefon'),
       ftEpost: this.innh('Footer/1/E-post'),
+      // Aapningstida i bunnteksten.
+      //
+      // Sto som to faste linjer: «Verkstedet: etter avtale» og «Medlemmer:
+      // dognaapent». De sa ingenting om naar det faktisk er noen her.
+      //
+      // Naa regnes forste linje av kursene som er lagt ut: gaar det kurs i
+      // dag, staar tidsrommet fra det forste begynner til det siste slutter.
+      // Ligger det en overstyring inne for dagen — helligdag, ferie, stengt —
+      // gaar den foran. Er det ingenting, staar det som for.
+      //
+      // Har eieren skrevet noe eget i feltet under Nettsiden → Innhold,
+      // gjelder det. Teksten er hens, ikke vaar.
       ftApningTittel: this.innh('Footer/2/Overskrift'),
-      ftApning1: this.innh('Footer/2/Linje 1'),
-      ftApning2: this.innh('Footer/2/Linje 2'),
+      ...(() => {
+        const egen1 = this.innh('Footer/2/Linje 1');
+        const egen2 = this.innh('Footer/2/Linje 2');
+        const dager = (this.state.apningsdager || {}).dager || null;
+        const idag = dager ? dager.find(d => d.idag) : null;
+
+        const regnet = !dager ? null
+          : (idag
+              ? (idag.stengt
+                  ? 'I dag: ' + (idag.merknad || 'stengt')
+                  : 'I dag: ' + idag.tid + (idag.merknad ? ' · ' + idag.merknad : ''))
+              : 'Ingen planlagte kurs i dag — verkstedet er åpent etter avtale');
+
+        return {
+          ftApning1: regnet || egen1,
+          ftApning2: egen2,
+          // Det neste som skjer, saa linja over ikke bare er et nei.
+          ftApningNeste: (() => {
+            if (!dager) return '';
+            const neste = dager.find(d => !d.idag && !d.stengt);
+            return neste ? 'Neste: ' + neste.dag.toLowerCase() + ' ' + neste.naar + ', ' + neste.tid : '';
+          })(),
+          ftHarApningNeste: !!(dager && dager.find(d => !d.idag && !d.stengt)),
+        };
+      })(),
       ftFirmanavn: this.innh('Footer/3/Firmanavn'),
       ftOrgnr: this.innh('Footer/3/Org. nr.'),
       ftMerkelinje: this.innh('Footer/3/Merkelinje'),

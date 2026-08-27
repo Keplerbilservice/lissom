@@ -186,15 +186,33 @@ før man åpner.
 4. **Ingen `VALARM`.** Hendelsene foreslår ingen varsling. Varselet en bruker
    eventuelt får, kommer fra hens egne innstillinger i Kalender.
 
-**Skal gjøres.** `updated_at` på `course_sessions`, `SEQUENCE` og
-`LAST-MODIFIED` i feeden, og en valgfri `VALARM`. Og det skal stå i
-dokumentasjonen, ikke bare her, at push ikke finnes og ikke kan finnes med
-denne løsningen.
+**Gjort 27. august** (migrasjon 059):
 
-**Kan ikke testes herfra.** Ingen iPhone. Feeden kan kontrolleres teknisk —
-at den er gyldig iCalendar, at UID-ene er stabile, at en endring gir nytt
-`SEQUENCE` — men at den faktisk dukker opp i Apple Kalender må kontrolleres
-på en fysisk telefon. Det skal ikke merkes som verifisert.
+- `course_sessions.updated_at`, som holder seg selv oppdatert uansett hvor i
+  koden en økt endres.
+- `SEQUENCE` i feeden, regnet som antall minutter siden 1. januar 2020. Den
+  må bare vokse når noe endres, og det gjør den — også når en økt rettes to
+  ganger på en halvtime.
+- `LAST-MODIFIED` på hver hendelse.
+- `VALARM` som foreslår et varsel dagen før, klokka atten. Det er en
+  anbefaling til kalenderen, ikke en push fra oss.
+- En hendelse som sluttet når den begynte fikk tre timers varighet. Datoer
+  lagret før sluttiden ble tatt vare på hadde det, og et streif i kalenderen
+  er vanskelig å se.
+- Teksten i admin sier nå hva et abonnement er: telefonen henter, vi sender
+  ikke, og det kan gå timer.
+
+**Testet teknisk:** feeden hentet, `SEQUENCE` lest før og etter at en
+kursdato ble flyttet en time — 3499622 → 3499623, og `LAST-MODIFIED` fulgte
+med. 34 hendelser, alle med `SEQUENCE`, `LAST-MODIFIED` og `VALARM`. Avlyste
+datoer står med `STATUS:CANCELLED`.
+
+**Ikke verifisert:** at endringen faktisk dukker opp i Apple Kalender på en
+iPhone. Det finnes ingen telefon her, og det kan ikke prøves fra dette
+miljøet. Det må kontrolleres fysisk før det kan kalles bekreftet.
+
+**Push finnes ikke, og kan ikke finnes med denne løsningen.** Et
+kalenderabonnement er henting, ikke sending.
 
 ---
 

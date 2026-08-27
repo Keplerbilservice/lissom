@@ -244,6 +244,10 @@ Svar::json([
         'sms' => Varsel::smsMulig(),
     ],
     'nyeste' => array_map(static fn($b) => [
+        // Uten id-en kunne raden aapnes, men ikke gjores noe med. En
+        // paamelding til et kurs uten dato ble staaende her for alltid: den
+        // har ingen dato aa finne den igjen paa under Paameldte heller.
+        'id'        => (int) $b['id'],
         'navn'      => $b['navn'],
         'epost'     => $b['epost'],
         'hva'       => $b['tittel'] . ((int) $b['antall'] > 1 ? ', ' . $b['antall'] . ' plasser' : ''),

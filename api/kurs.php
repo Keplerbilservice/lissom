@@ -33,8 +33,9 @@ $kurs = DB::alle(
 
 $ut = [];
 foreach ($kurs as $k) {
+    $ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
     $okter = DB::alle(
-        "SELECT id, start_tid, slutt_tid, kapasitet
+        "SELECT id, start_tid, slutt_tid, kapasitet{$ekstra}
            FROM course_sessions
           WHERE course_id = :c
             AND status = 'planlagt'
@@ -77,6 +78,15 @@ foreach ($kurs as $k) {
             'ledige'   => Booking::ledigePlasser((int) $o['id']),
             // Datoen kan ha faerre plasser enn kurset ellers.
             'plasser'  => (int) ($o['kapasitet'] ?: $k['kapasitet']),
+            // Prisen kan avvike paa én dato. Tomt betyr «som kurset».
+            'pris'     => isset($o['pris_ore']) && $o['pris_ore'] !== null
+                            ? Booking::kroner((int) $o['pris_ore']) : null,
+            'prisOre'  => isset($o['pris_ore']) && $o['pris_ore'] !== null
+                            ? (int) $o['pris_ore'] : null,
+            'info'     => (string) ($o['info'] ?? ''),
+            // Samlingene, naar kurset gaar over flere dager. Deltakeren skal
+            // se at paameldingen gjelder alle sammen — ikke bare den forste.
+            'samlinger' => Samlinger::forOkt((int) $o['id']),
         ], $okter),
     ];
 }

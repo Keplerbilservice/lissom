@@ -9,6 +9,7 @@
  *   POST handling=endredato endre tidspunktet paa én dato
  *   POST handling=avlys     avlys en dato
  *   POST handling=slettdato ta bort en dato (avlyses om noen er paameldt)
+ *   POST handling=dato      pris, info og samlinger paa én dato
  *   POST handling=slett     fjern et kurs (avlyses om noen er paameldt)
  *   POST handling=bekreftelseStandard  lagre teksten nye kurs fylles ut med
  *
@@ -27,8 +28,9 @@ if (Foresporsel::metode() === 'GET') {
     $kurs = DB::alle('SELECT * FROM courses ORDER BY status, tittel');
 
     Svar::json(['kurs' => array_map(static function ($k) {
+        $ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
         $okter = DB::alle(
-            'SELECT id, start_tid, slutt_tid, kapasitet, status
+            'SELECT id, start_tid, slutt_tid, kapasitet, status' . $ekstra . '
                FROM course_sessions WHERE course_id = :c ORDER BY start_tid',
             ['c' => $k['id']]
         );
@@ -62,6 +64,14 @@ if (Foresporsel::metode() === 'GET') {
                 'sluttUtc'  => $o['slutt_tid'],
                 'status'    => $o['status'],
                 'ledige'    => Booking::ledigePlasser((int) $o['id']),
+                // Pris og informasjon som gjelder bare denne datoen. NULL
+                // betyr «som kurset» — da skal feltet staa tomt i skjemaet,
+                // ikke fylt med kursets pris som om den var satt her.
+                'pris'      => isset($o['pris_ore']) && $o['pris_ore'] !== null
+                                 ? (int) $o['pris_ore'] / 100 : null,
+                'info'      => (string) ($o['info'] ?? ''),
+                // Samlingene, for et kurs som gaar over flere dager.
+                'samlinger' => Samlinger::forOkt((int) $o['id']),
             ], $okter),
         ];
     }, $kurs),
@@ -490,6 +500,57 @@ switch ($handling) {
             'beskjed' => $antall > 0
                 ? "Datoen er avlyst. {$antall} har betalt og må refunderes manuelt under Økonomi."
                 : 'Datoen er avlyst.',
+        ]);
+
+    // ------------------------------------------- alt som gjelder én dato
+    //
+    // Pris, informasjon og samlingene i et flerdagerskurs. Alt tre hoerer til
+    // datoen og ikke til kurset: en kveld kan koste noe annet, ha noe eget aa
+    // si, og bestaa av tre moeter.
+    case 'dato':
+        $oktId = Foresporsel::heltall('oktId');
+        $okt = DB::en('SELECT id, course_id FROM course_sessions WHERE id = :i', ['i' => $oktId]);
+        if ($okt === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+        if (!DB::harKolonne('course_sessions', 'pris_ore')) {
+            Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+        }
+
+        $kropp = Foresporsel::kropp();
+        $endring = [];
+
+        // Tomt felt betyr «som kurset», ikke «gratis». Uten dette skillet
+        // ville et tomt prisfelt satt datoen til null kroner.
+        if (array_key_exists('pris', $kropp)) {
+            $raa = trim((string) $kropp['pris']);
+            $endring['pris_ore'] = $raa === '' ? null : max(0, (int) preg_replace('/[^\d]/', '', $raa)) * 100;
+        }
+        if (array_key_exists('info', $kropp)) {
+            $endring['info'] = trim(mb_substr((string) $kropp['info'], 0, 4000)) ?: null;
+        }
+        if ($endring !== []) {
+            DB::oppdater('course_sessions', $endring, ['id' => $oktId]);
+        }
+
+        $antall = null;
+        if (array_key_exists('samlinger', $kropp)) {
+            if (!DB::harTabell('okt_samlinger')) {
+                Svar::feil('Flerdagerskurs krever en oppdatering av databasen. Kjør vedlikeholdet under Oversikt først.');
+            }
+            $antall = Samlinger::lagre($oktId, (array) $kropp['samlinger']);
+        }
+
+        revider('dato_endret', 'course_session', $oktId,
+                ['felter' => array_keys($endring), 'samlinger' => $antall]);
+
+        Svar::ok([
+            'samlinger' => Samlinger::forOkt($oktId),
+            'beskjed'   => $antall === null
+                ? 'Lagret.'
+                : ($antall === 0
+                    ? 'Lagret. Kurset går på én dag.'
+                    : 'Lagret. ' . $antall . ($antall === 1 ? ' samling.' : ' samlinger.')),
         ]);
 
     // ------------------------------------------------- slett én kursdato

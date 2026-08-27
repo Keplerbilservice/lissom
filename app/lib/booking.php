@@ -130,9 +130,14 @@ final class Booking
         string $gavekortKode = '',
         ?string $allergier = null
     ): array {
+        // Prisen paa datoen gaar foran kursets, naar den er satt. COALESCE
+        // og ikke to sporringer: da er det ett sted prisen kommer fra, og
+        // resten av metoden trenger ikke vite at det finnes to.
+        $egenPris = DB::harKolonne('course_sessions', 'pris_ore')
+            ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
         $okt = DB::en(
             'SELECT cs.id, cs.course_id, cs.start_tid,
-                    c.tittel, c.pris_ore, c.type, c.tema, c.slug
+                    c.tittel, ' . $egenPris . ' AS pris_ore, c.type, c.tema, c.slug
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.id = :id

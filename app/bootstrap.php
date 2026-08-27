@@ -56,6 +56,7 @@ require APP_DIR . '/lib/booking.php';
 require APP_DIR . '/lib/stempling.php';
 require APP_DIR . '/lib/bilder.php';
 require APP_DIR . '/lib/serier.php';
+require APP_DIR . '/lib/samlinger.php';
 require APP_DIR . '/lib/medlemskap.php';
 require APP_DIR . '/lib/tikk.php';
 require APP_DIR . '/lib/ai.php';

@@ -33,6 +33,23 @@ $tekstFelt = DB::harKolonne('courses', 'nivaa_tekst')
 // «Gjenstanden betales i verkstedet». Kom med migrasjon 074.
 $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
 
+// ── Billigste gjenstanden i butikken ────────────────────────────────────
+//
+// Paint on Pots og lignende: prisen kunden ser skal vaere det lavest mulige
+// hen kan betale — plassen pluss den rimeligste tingen som faktisk staar til
+// salgs. «Fra kr. 290,-» sto skrevet inn i koden foer, og var ikke et tall
+// som fantes noe sted.
+//
+// Bare det som er aapent for alle, og bare det som er paa lager. En vare det
+// er null igjen av er ikke en pris noen kan faa.
+$gjenstandFra = DB::harKolonne('courses', 'gjenstand_i_kassa')
+    ? (int) (DB::verdi(
+        "SELECT MIN(pris_ore) FROM products
+          WHERE status = 'publisert' AND kun_medlemmer = 0 AND pris_ore > 0
+            AND (lager IS NULL OR lager > 0)"
+      ) ?? 0)
+    : 0;
+
 $kurs = DB::alle(
     "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}
        FROM courses
@@ -105,7 +122,22 @@ foreach ($kurs as $k) {
         // hjem med. «gjenstandFra» er den billigste tingen i butikken som
         // faktisk kan males, saa siden slipper aa love et tall som er
         // skrevet inn i koden.
-        'gjenstandIKassa' => (bool) ($k['gjenstand_i_kassa'] ?? 0),
+        ...(static function () use ($k, $gjenstandFra): array {
+            if (!($k['gjenstand_i_kassa'] ?? 0)) {
+                return ['gjenstandIKassa' => false];
+            }
+            // Det laveste kunden kan betale: plassen pluss den rimeligste
+            // gjenstanden. Er plassen gratis, er det gjenstanden alene.
+            $fra = (int) $k['pris_ore'] + $gjenstandFra;
+            return [
+                'gjenstandIKassa' => true,
+                'gjenstandFraOre' => $gjenstandFra,
+                'gjenstandFra'    => $gjenstandFra > 0 ? Booking::kroner($gjenstandFra) : '',
+                // Prisen kortene skal vise. «Fra» staar i teksten paa kortet.
+                'prisFraOre'      => $fra,
+                'prisFra'         => $fra > 0 ? Booking::kroner($fra) : 'Gratis',
+            ];
+        })(),
         // Antall plasser kurset har. Nettsida skrev det som fast tekst —
         // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
         // sto rett over hverandre og var uenige. Naa kommer begge herfra.
@@ -119,7 +151,16 @@ foreach ($kurs as $k) {
         // «Maks N deltakere» staar ikke i lista. Den regnes av kapasiteten
         // rett under, saa de to ikke kan bli uenige — det var nettopp den
         // feilen som ble rettet i juni.
-        'punkter' => Medlemskap::punkter((string) ($k['punkter'] ?? '')),
+        // Punktlista. Er den ikke skrevet paa kurset, kommer den fra malen
+        // — «Leire, verktoy, glasur og brenning» hoerer ikke hjemme paa et
+        // kurs der man maler ferdig brent keramikk.
+        'punkter' => (static function () use ($k): array {
+            $egne = Medlemskap::punkter((string) ($k['punkter'] ?? ''));
+            if ($egne !== []) {
+                return $egne;
+            }
+            return Medlemskap::punkter((string) (Kursmal::forKurs($k)['punkter'] ?? ''));
+        })(),
         // Seksjonene fra kursoppsettet. Tomme felt vises ikke.
         //
         // «laerer» staar ikke her: den settes over, med malen som reserve.

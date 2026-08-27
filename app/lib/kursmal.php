@@ -106,6 +106,13 @@ final class Kursmal
             'Paint on pots' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
                 'laererKort'      => 'Maling og dekor',
+                // «Leire, verktoy, glasur og brenning er inkludert» sto her
+                // som paa alle andre kurs. Paa Paint on Pots faar man ingen
+                // leire — man maler ferdig brent keramikk.
+                'punkter'         => "Farger, pensler og hjelp er inkludert.\n"
+                    . "Glasering og brenning er inkludert.\n"
+                    . "Du velger og betaler gjenstanden i verkstedet.\n"
+                    . "Passer fra 6 år, med voksen.",
                 'kortBeskrivelse' => 'Bestill en hyggelig stund med keramikkmaling hos oss. Velg blant '
                     . 'et stort utvalg kopper, skåler, fat og figurer når du kommer, og skap noe helt unikt.',
                 'beskrivelse'     => "Paint on Pots passer for både barn og voksne, enten du kommer alene, "
@@ -162,6 +169,24 @@ final class Kursmal
         // Temaene som staar for det samme.
         $samme = ['Date Night' => 'Events', 'Sip & Clay' => 'Events', 'Workshop' => 'Plateteknikk'];
         $tema  = $samme[$tema] ?? $tema;
+
+        // Uten tema: les det av navnet.
+        //
+        // Paint on Pots sto med tema NULL i basen, og falt dermed paa
+        // standardmalen — «Innfoering i plateteknikk og dekor» paa et kurs
+        // der man maler ferdig brent keramikk. Et kurs uten tema skal
+        // gjenkjennes paa det det heter.
+        if ($tema === '') {
+            $tittel = mb_strtolower(trim((string) ($kurs['tittel'] ?? '')));
+            foreach (['paint on pots' => 'Paint on pots', 'date night' => 'Events',
+                      'sip & clay' => 'Events', 'drop-in' => 'Drop-in',
+                      'workshop' => 'Plateteknikk', 'dreie' => 'Dreiing'] as $del => $til) {
+                if (mb_strpos($tittel, $del) !== false) {
+                    $tema = $til;
+                    break;
+                }
+            }
+        }
 
         $mal = $maler[$tema] ?? $maler['*'];
 

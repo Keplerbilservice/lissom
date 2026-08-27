@@ -156,21 +156,48 @@ switch ($handling) {
             Svar::feil('Prisen kan ikke være negativ.');
         }
 
-        $data = [
-            'tittel'            => $tittel,
-            'type'              => in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
-                                    ? Foresporsel::tekst('type') : 'kurs',
-            'tema'              => mb_substr(Foresporsel::tekst('tema'), 0, 64) ?: null,
-            'pris_ore'          => $pris * 100,
-            'kapasitet'         => max(1, min(999, Foresporsel::heltall('kapasitet', 8))),
-            'sms_paaminnelse'   => Foresporsel::tekst('sms') === 'nei' ? 0 : 1,
-            'beskrivelse'       => Foresporsel::tekst('om') ?: null,
-            // Navnet paa kursbeviset. Tomt betyr Monica, som staar i malen.
-            'instruktor'        => mb_substr(Foresporsel::tekst('instruktor'), 0, 191) ?: null,
-            'bekreftelse_tekst' => Foresporsel::tekst('bekreftelse') ?: null,
-            'status'            => in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)
-                                    ? Foresporsel::tekst('status') : 'kladd',
-        ];
+        // Bare det kallet faktisk har med.
+        //
+        // Alt sto her ubetinget, med en standardverdi bak. «kapasitet» falt
+        // dermed til 8 hver gang noe lagret et kurs uten aa sende plasstallet
+        // — et kurs med tolv plasser ble stille satt til aatte, og ingen saa
+        // det for noen lurte paa hvor de fire plassene ble av. Det samme
+        // gjaldt tema, pris, beskrivelse og SMS-haken.
+        //
+        // Tittel og status staar igjen som paakrevde: et kurs uten navn er
+        // avvist lenger oppe, og status er alltid med fra skjemaene.
+        $kropp = Foresporsel::kropp();
+        $har = static fn(string $n): bool => array_key_exists($n, $kropp);
+
+        $data = ['tittel' => $tittel];
+        if ($har('type')) {
+            $data['type'] = in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
+                ? Foresporsel::tekst('type') : 'kurs';
+        }
+        if ($har('tema')) {
+            $data['tema'] = mb_substr(Foresporsel::tekst('tema'), 0, 64) ?: null;
+        }
+        if ($har('pris')) {
+            $data['pris_ore'] = $pris * 100;
+        }
+        if ($har('kapasitet')) {
+            $data['kapasitet'] = max(1, min(999, Foresporsel::heltall('kapasitet', 8)));
+        }
+        if ($har('sms')) {
+            $data['sms_paaminnelse'] = Foresporsel::tekst('sms') === 'nei' ? 0 : 1;
+        }
+        if ($har('om')) {
+            $data['beskrivelse'] = Foresporsel::tekst('om') ?: null;
+        }
+        // Navnet paa kursbeviset. Tomt betyr Monica, som staar i malen.
+        if ($har('instruktor')) {
+            $data['instruktor'] = mb_substr(Foresporsel::tekst('instruktor'), 0, 191) ?: null;
+        }
+        if ($har('bekreftelse')) {
+            $data['bekreftelse_tekst'] = Foresporsel::tekst('bekreftelse') ?: null;
+        }
+        $data['status'] = in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)
+            ? Foresporsel::tekst('status') : 'kladd';
 
         // Vis kurset paa nettsida ogsaa naar det ikke har datoer — da staar
         // det med «Kontakt oss» framfor en bookingknapp.

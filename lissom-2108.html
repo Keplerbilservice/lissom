@@ -1491,23 +1491,11 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pPrisKicker }}</div>
             <h2 style="margin: 0 0 var(--space-5);">{{ pPrisOverskrift }}</h2>
             <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 40ch; text-wrap: pretty;">{{ pPrisBrodtekst }}</p>
-            <div style="display: flex; flex-direction: column;">
-              <sc-for list="{{ popPriser }}" as="p" hint-placeholder-count="4">
-                <div style="display: flex; justify-content: space-between; gap: var(--space-6); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0; font-size: var(--text-base);">
-                  <span style="color: var(--text-heading); font-weight: 600;">{{ p.navn }}</span>
-                  <span style="color: var(--text-body); white-space: nowrap;">{{ p.pris }}</span>
-                </div>
-              </sc-for>
-            </div>
-
-            <!-- To priser, og de er ikke det samme.
-                 Prislista over er gjenstandene. Plassen er det du booker paa
-                 en dato. Sto det ikke her, sto det ingen steder — og da
-                 trodde folk at det ene tallet var hele prisen. -->
-            <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-top: var(--space-3);">
-              <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-bottom: 6px;">{{ popBetalingTittel }}</div>
-              <p style="margin: 0; font-size: var(--text-sm); line-height: 1.6; color: var(--text-body); max-width: 46ch; text-wrap: pretty;">{{ popBetaling }}</p>
-            </div>
+            <!-- Her sto en prisliste: kategori og laveste pris, én rad
+                 hver. Tekst og tall om hverandre gjor at ingen av delene
+                 leses, og en pris paa en side blir staaende feil den dagen
+                 den endrer seg. Prisen staar der den skal brukes — i
+                 bestillingen — og der hentes den fra varene. -->
           </div>
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ pFaqKicker }}</div>
@@ -12432,7 +12420,8 @@ class Component extends DCLogic {
       // sto rett over hverandre og var uenige.
       plasser: kat.plasser || 0,
       prisOre: kat.prisOre,
-      price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
+      // «price» settes lenger nede — Paint on Pots har en egen regel, og to
+      // noekler med samme navn i samme objekt gir at den siste vinner.
       // Hele oktlista folger med kortet. «man. 24. aug» kan ikke regnes paa,
       // og uten datoene kunne ikke kurslista skille dagtid fra kveldstid —
       // og heller ikke vise den datoen som faktisk passer valget.
@@ -12452,6 +12441,11 @@ class Component extends DCLogic {
       // paa serveren. Sto med «2 datoer aa velge mellom» — hvor mange
       // kvelder man kan velge mellom er noe annet, og det staar i
       // datovelgeren. Endrer verkstedet tidene, foelger tallet med.
+      // Paint on Pots: prisen paa kurset er plassen, ikke det du gaar hjem
+      // med, og et tall paa et kort ville sagt noe annet enn det som skjer i
+      // kassa. Kortet staar uten pris; den staar der den skal brukes — i
+      // bestillingen — som «Fra kr. N,-», regnet av den rimeligste varen.
+      price: kat.gjenstandIKassa ? '' : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
       duration: kat.varighetVist || k.duration,
       nivaaTekst: kat.nivaaTekst || k.nivaaTekst || '',
       laererTekst: kat.laerer || k.laererTekst || '',
@@ -22634,14 +22628,21 @@ class Component extends DCLogic {
         const admin = this.kursData().find(a => a.navn === (k.title || k.tittel));
         return (admin && admin.bekreftelse) || (k.bekreftelse) || 'Takk for bestillingen! 🧡 Bestillingen din er registrert, og du vil snart motta en bekreftelse på e-post. Vi gleder oss til å se deg hos Lissom Keramikk & Håndverk. Har du spørsmål i mellomtiden, er det bare å ta kontakt. 😊';
       })(),
-      bOm: (this.state.valgtKurs && this.state.valgtKurs.om)
-        || ({
-          // Reservetekst naar kurset ikke har egen beskrivelse. Sentrering,
-          // dreiing og trimming hoerer bare hjemme paa dreiekurs.
-          'Plateteknikk': 'Du bygger din egen gjenstand med tradisjonell plateteknikk. Vi kjevler ut leira, former den og jobber med kanter og sammenføyninger. Vi glaserer og brenner arbeidene for deg.',
-          'Håndbygging': 'Du bygger din egen gjenstand for hånd, uten dreieskive. Vi glaserer og brenner arbeidene for deg.',
-        }[(this.state.valgtKurs || {}).tema])
-        || 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.',
+      // Beskrivelsen paa bookingsida.
+      //
+      // Siste utvei her var dreiekursets tekst — «to okter over to dager,
+      // sentrere, dreie og trimme foten» — og den sto dermed paa hvert
+      // eneste kurs som manglet en egen beskrivelse. Paint on Pots handler
+      // om aa male ferdig brent keramikk. Naa kommer reserveteksten fra
+      // kursets egen mal, som serveren sender med, og finnes den ikke, staar
+      // det ingenting. Ingenting er bedre enn et annet kurs.
+      bOm: (() => {
+        const k = this.state.valgtKurs || {};
+        return String(k.om || '').trim()
+            || String(k.kortBeskrivelse || '').trim()
+            || String(k.laererTekst || k.laerer || '').trim()
+            || '';
+      })(),
       erBetalt: (this.state.valgtKurs && this.state.valgtKurs.price) !== 'Gratis',
       harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket',
       betalingsvalg: ['Vipps'].map(navn => ({
@@ -23145,6 +23146,21 @@ class Component extends DCLogic {
         const brutto = grunn * antall;
         const netto = brutto * (1 - rabatt / 100);
         const maks = this.maksRabatt(k);
+        // Paint on Pots og andre der gjenstanden velges i verkstedet.
+        //
+        // Det laveste kunden kan betale er plassen pluss den rimeligste
+        // gjenstanden som staar til salgs. Det tallet regnes paa serveren og
+        // kommer med kurset, saa det aldri kan bli lavere enn det kassa
+        // faktisk krever.
+        const kat2 = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
+        if (kat2 && kat2.gjenstandIKassa && kat2.prisFraOre) {
+          return {
+            bPris: 'Fra ' + fmt(kat2.prisFraOre / 100 * antall),
+            bPrisAntallNote: antall > 1 ? (antall + ' × fra ' + fmt(kat2.prisFraOre / 100)) : '',
+            bRabattLinje: '',
+            bRabattTeaser: '',
+          };
+        }
         return {
           bPris: k.price === 'Gratis' ? 'Gratis'
             : (grunn > 0 ? (antall > 1 ? '' : 'Fra ') + fmt(netto) : (k.price || '')),
@@ -27344,62 +27360,13 @@ class Component extends DCLogic {
       ],
       // ── Hva gjenstandene koster ──────────────────────────────────────
       //
-      // Sto som fire faste linjer i koden: «Kopp fra 290», «Bolle fra 340»,
-      // «Fat fra 390», «Figurer fra 190». Ingen av tallene stemte, og to av
-      // kategoriene fantes ikke i butikken i det hele tatt. Naa kommer lista
-      // fra varene som faktisk staar der — og retter seg selv naar prisen
-      // eller utvalget endrer seg.
-      ...(() => {
-        const varer = (this.state.butikkvareListe || [])
-          .filter(v => !v.kunMedlemmer && !v.utsolgt && v.kategori && v.prisOre > 0);
-        if (varer.length === 0) {
-          // Forhaandsvisningen har ingen butikk aa hente fra.
-          return {
-            popPriser: this.erPublisert() ? [] : [
-              { navn: 'Kopper', pris: 'fra kr. 300,-' },
-              { navn: 'Tallerkener', pris: 'fra kr. 750,-' },
-              { navn: 'Vaser', pris: 'fra kr. 550,-' },
-            ],
-            popHarPriser: !this.erPublisert(),
-            popFraPris: 'fra kr. 300,-',
-          };
-        }
-        const lavest = {};
-        varer.forEach(v => {
-          const k = String(v.kategori).trim();
-          if (lavest[k] === undefined || v.prisOre < lavest[k]) lavest[k] = v.prisOre;
-        });
-        const kr = (ore) => 'fra kr. ' + Math.round(ore / 100).toLocaleString('nb-NO') + ',-';
-        const rader = Object.keys(lavest)
-          .sort((a, b) => lavest[a] - lavest[b])
-          .map(k => ({ navn: k, pris: kr(lavest[k]) }));
-        const billigst = Math.min.apply(null, Object.keys(lavest).map(k => lavest[k]));
-        return {
-          popPriser: rader,
-          popHarPriser: rader.length > 0,
-          popFraPris: kr(billigst),
-        };
-      })(),
-      // Hva plassen koster, og hva gjenstanden koster. To ting.
-      ...(() => {
-        const kat = (this.state.katalog || []).find(k => k.tema === 'Paint on pots'
-          || k.tittel === 'Paint on Pots');
-        const plass = kat ? (kat.prisOre === 0 ? 'Plassen er gratis.'
-                                               : 'Plassen koster ' + kat.pris + '.')
-                          : 'Plassen booker du på en dato.';
-        return {
-          popBetalingTittel: 'Slik betaler du',
-          popBetaling: plass + ' Gjenstanden velger du når du kommer, og betaler '
-            + 'den i verkstedet. Farger, pensler, hjelp, glasering og brenning er '
-            + 'inkludert — du betaler bare for tingen du tar med deg hjem.',
-        };
-      })(),
-      popFaq: [
-        { q: 'Må jeg kunne male?', a: 'Nei. Vi viser deg teknikkene, og det er lov å holde det enkelt.' },
-        { q: 'Kan barn være med?', a: 'Ja, Paint on Pots passer godt for barn i følge med voksen.' },
-        { q: 'Når er den ferdig?', a: 'Glasering og brenning tar ca. to uker. Vi sier fra når den kan hentes.' },
-        { q: 'Kan vi komme som gruppe?', a: 'Ja — send oss en forespørsel, så setter vi opp en egen kveld for dere.' },
-      ],
+      // Prislista sto som fire faste linjer i koden — «Kopp fra 290», «Bolle
+      // fra 340» — og ingen av tallene stemte med butikken. Den ble hentet
+      // fra varene i stedet, og deretter tatt bort fra sida helt: pris hoerer
+      // hjemme i bestillingen, ikke midt i brodteksten. «gjenstandFra» fra
+      // api/kurs.php er det som brukes naa, og den regnes av den rimeligste
+      // varen som faktisk staar til salgs.
+
       erNyttig: side === 'nyttig',
       erPlakatCone: side === 'plakatcone',
       erPlakatInfo: side === 'plakatinfo',
@@ -31897,12 +31864,20 @@ class Component extends DCLogic {
         const kat = (this.state.katalog || []).find(k => k.tittel === 'Paint on Pots');
         const okter = (kat && kat.datoer) || [];
 
+        // Kortene bygges paa kurset selv, ikke paa en haandskrevet kopi.
+        //
+        // Her sto ti felter listet opp for haand — level, title, image og
+        // resten — og alt som ikke sto der manglet. Booket du herfra, sto
+        // dreiekursets beskrivelse og punktliste paa Paint on Pots, fordi
+        // bookingskjermen falt tilbake paa designlista for feltene som ikke
+        // fulgte med.
+        const grunnlag = this.medServerdata({ title: 'Paint on Pots' });
         const fra = this.erPublisert()
-          ? okter.map(o => ({
-              level: 'Event', title: 'Paint on Pots',
-              date: o.dato, duration: '', price: kat.pris,
+          ? okter.map(o => Object.assign({}, grunnlag, {
+              level: 'Event',
+              // Uten pris: den staar i bestillingen, ikke paa kortet.
+              date: o.dato, duration: '', price: '',
               status: o.ledige > 0 ? o.ledige + ' plasser igjen' : 'Fullt',
-              image: 'uploads_shutterstock_2830576853.jpg',
               oktId: o.oktId, tema: 'Paint on pots', slug: kat.slug,
               full: o.ledige <= 0,
             }))

@@ -192,6 +192,12 @@ RewriteRule ^sitemap\.xml$ /api/sitemap.php [L]
 # gjor oppslaget internt, uten en ny forespoersel.
 RewriteRule ^lissom-2108(-uten-admin)?\.html$ / [R=301,L]
 
+# Det samme for den ferdigtegnede toppen. Den er en bit av forsida — menylinja
+# og heroen — som side.php limer inn i svaret. Alene er den ikke en side: uten
+# <html> og <head> ville Google sett en stump med den samme teksten som
+# forsida, paa sin egen adresse. Ingen skal komme dit direkte.
+RewriteRule ^forside-topp\.html$ / [R=301,L]
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle

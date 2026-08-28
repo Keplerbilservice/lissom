@@ -434,6 +434,15 @@ img{max-width:100%;display:block}
      her daekker toppen: overskrifta og broedteksten. Resten kommer som for. -->
 <link rel="preload" href="/fonts/bitter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/alegreya-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<!-- De to andre som ogsaa staar over skjermkanten: den kursive delen av
+     overskrifta, og knappetekstene. En nettleser ber ikke om en skrift for
+     den moter tekst som bruker den, saa de ble hentet forst 2148 ms ut i
+     lastingen — lenge etter de to over. Med den ferdigtegnede toppen er
+     teksten synlig hele tiden, og da hoppet den naar skriftene kom:
+     hele heroen flyttet seg 8 piksler, 0,295 av utseendeforskyvningen.
+     Maalt: uten disse to 0,429, med dem under. -->
+<link rel="preload" href="/fonts/bitter-latin-600-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/alegreya-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 
 <!-- ds-bundle.js tegner komponentene og maa vaere der for foerste
      tegning. Den staar her, i hodet, og ikke lenger inne i <helmet> nede i
@@ -862,6 +871,413 @@ window.__resources = {
 <!-- Minifisert utgave. Kilden ligger som support.js ved siden av;
      bin/minifiser.mjs lager denne. -->
 <script src="./support.min.js"></script>
+
+<script>
+// Bytter ut den ferdigtegnede toppen med den ekte, i samme bilde.
+//
+// side.php limer inn <div id="lissom-topp"> rett etter <body> paa forsida:
+// menylinja og heroen, tegnet ferdig av bin/forhaandstegn.mjs. Nettleseren
+// tegner den med det samme, i stedet for aa staa tom i to og et halvt
+// sekund mens dc-runtime bygger sida.
+//
+// Naar den ekte toppen er i DOM-en, skal kopien vekk. En MutationObserver
+// kalles som en mikrooppgave rett etter endringen og for nettleseren tegner
+// neste bilde — saa det finnes ikke et oyeblikk der begge er synlige.
+// setTimeout eller requestAnimationFrame ville gitt akkurat det.
+//
+// Finnes ingen kopi — alle sider unntatt forsida — gjor dette ingenting.
+(function () {
+  var EKTE = '[data-screen-label="Forside"] section.lx-hero';
+  // Malen ligger fortsatt i DOM-en, skjult inne i <x-dc>, og treffer den
+  // samme velgeren. Ble den regnet med, forsvant kopien med det samme —
+  // for noe var tegnet i det hele tatt. Derfor: bare treff som ikke ligger
+  // inne i malen teller.
+  function ekteFinnes() {
+    var alle = document.querySelectorAll(EKTE);
+    for (var i = 0; i < alle.length; i++) {
+      if (!alle[i].closest('x-dc')) return true;
+    }
+    return false;
+  }
+  function rydd() {
+    var kopi = document.getElementById('lissom-topp');
+    if (!kopi) return true;                       // ingen kopi: ferdig.
+    if (!ekteFinnes()) return false;
+    kopi.remove();
+    return true;
+  }
+  function start() {
+    if (rydd()) return;
+    var o = new MutationObserver(function () { if (rydd()) o.disconnect(); });
+    o.observe(document.body, { childList: true, subtree: true });
+    // Reserve: skulle skjermen aldri komme — en feil i oppstarten — blir
+    // kopien staaende framfor at sida blir staaende tom. Den er ekte
+    // innhold, bare uten knapper som virker.
+  }
+  if (document.body) start();
+  else document.addEventListener('DOMContentLoaded', start);
+})();
+</script>
+
+<!-- Sidas egne stiler.
+     De sto inne i <helmet> nede i kroppen, og dc-runtime flyttet dem opp
+     hit forst naar oppstarten var ferdig. Med den ferdigtegnede toppen ble
+     det synlig: toppen ble tegnet med ds-stilene alene, og da stilarket kom
+     3528 ms ut i lastingen flyttet hele heroen seg 8 piksler. Det var 0,295
+     av en utseendeforskyvning paa 0,393.
+
+     Her staar de fra foerste byte. Rekkefolgen er den samme som for:
+     dc-runtime la dem sist i hodet, og det er her.
+
+     bin/toppsjekk.mjs kontrollerer at de ikke har flyttet seg tilbake. -->
+<style>
+  /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
+     slik at plassen settes av for bildet er lastet. De skal ikke bestemme
+     stoerrelsen.
+
+     Uten denne linja blir et bilde som bare har «width» i CSS tvunget til
+     hoyden fra attributtet: koppmerket bak toppbildet sto med 560 piksler
+     bredde og 112 hoyde i stedet for 327, og hjertet i bunnteksten var
+     trykket flatt. Inline-stil vinner over denne regelen, saa bildene som
+     med vilje har en fast hoyde beholder den. */
+  img { height: auto; }
+
+  html { background: var(--lissom-brown); overflow-x: clip; max-width: 100%; }
+  body { margin: 0; background: var(--clay-100); overflow-x: clip; --section-y: 96px; --text-2xs: 11px; --text-xs: 12px; --text-sm: 14px; --text-base: 15px; --text-lg: 17px; --text-xl: 19px; --text-2xl: 22px; --text-3xl: 27px; --text-4xl: 34px; --text-5xl: 44px; --text-6xl: 56px; --text-7xl: 72px; }
+  h2 { font-size: clamp(30px, 2.4vw, 44px); letter-spacing: var(--tracking-display); }
+  header > div:first-child { min-height: 100px !important; }
+  /* Logoen i toppmenyen, 35 % mindre. Alle fire maalene skaleres med
+     samme faktor — ellers glir koppen fra ordmerket. */
+  header span:has(> img[data-logo-cup]) { height: 35px !important; }
+  header img[data-logo-cup] { height: 27px !important; }
+  header img[src$="mark-cup-saucer.svg"] { height: 8px !important; }
+  header img[src*="wordmark-lissom"] { height: 18px !important; }
+  /* Sikringsnett til det over: lager iOS lenka likevel, skal den se ut som
+     teksten rundt. -webkit-text-fill-color maa med — color alene holder
+     ikke mot Safaris egen lenkefarge. */
+  a[href^="tel:"], a[x-apple-data-detectors] {
+    color: inherit !important;
+    -webkit-text-fill-color: inherit !important;
+    text-decoration: inherit !important;
+    font-size: inherit !important;
+    font-family: inherit !important;
+  }
+
+  /* 404-siden: koppen snurrer som i toppmenyen.
+     Der gjor den 720 grader paa 1600 ms naar man holder musa over. Her er
+     det ingen meny aa holde musa over, saa den gjor det samme av seg selv
+     — og hviler et par sekunder mellom hver runde, ellers blir det uro.
+     40 % av 4 s er nettopp 1600 ms, saa farten er den samme. */
+  /* Nye meldinger i medlemschatten.
+     Prikken skal fange oyet uten aa mase: to sekunder per slag, og den
+     staar stille for den som har bedt om mindre bevegelse. */
+  @keyframes lx-puls {
+    0%, 100% { transform: scale(1);   opacity: 1; }
+    50%      { transform: scale(1.5); opacity: .45; }
+  }
+  .lx-puls { animation: lx-puls 2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .lx-puls { animation: none; }
+  }
+
+  @keyframes lx-kopp-snurr {
+    0%   { transform: perspective(600px) rotateY(0deg); }
+    40%  { transform: perspective(600px) rotateY(720deg); }
+    100% { transform: perspective(600px) rotateY(720deg); }
+  }
+  .lx-404-kopp {
+    animation: lx-kopp-snurr 4s linear infinite;
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+  /* Snurring uten stopp er nettopp det noen blir uvel av. Ber nettleseren
+     om mindre bevegelse, staar koppen stille. */
+  @media (prefers-reduced-motion: reduce) {
+    .lx-404-kopp { animation: none; }
+  }
+  /* Toppmeny: fjern 1.35x-oppskalering av søk + Book nå, stram menypunktene */
+  header [style*="zoom: 1.35"] { zoom: 1 !important; }
+  header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
+  span[style*="radius-pill"][style*="inline-flex"] { white-space: nowrap; }
+  /* Kurskort-bunn: mindre pris, så pris + knapp balanserer i kortet.
+
+     Hoyden sto her som «height: 36px». Raden har 8 px toppfyll og en knapp
+     paa 34, altsaa 42 — og «overflow: hidden» klippet de tre nederste
+     pikslene av knappen paa hvert eneste kort. min-height gjor det samme
+     for korte rader, men lar raden vokse naar innholdet trenger det. */
+  div[style*="margin-top: auto"][style*="height: 44px"] {
+    height: auto !important;
+    min-height: 36px !important;
+  }
+  div[style*="margin-top: auto"][style*="height: 44px"] > span[style*="white-space: nowrap"] { font-size: var(--text-base) !important; font-weight: 700 !important; }
+  /* Kvitteringsboksen: teksten maa faa bryte. Med nowrap stakk lange
+     meldinger ut av boksen i stedet for aa gaa over flere linjer. */
+  div[role="status"] { white-space: normal; max-width: min(92vw, 420px); }
+  /* Kapasitetsbadge: diskret mini-pill oppe til høyre, dekker ikke motivet */
+  span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] { font-size: 10px !important; padding: 3px 9px !important; top: 10px !important; right: 10px !important; left: auto !important; letter-spacing: 0.05em !important; background: rgba(251,246,238,.94) !important; color: var(--lissom-brown) !important; box-shadow: 0 1px 5px rgba(46,16,2,.2) !important; }
+  span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] > span { display: none !important; }
+  /* Nedskalert: DS-knapper (faste min-høyder) — kun desktop, mobil beholder 44px+ trykkflater */
+  @media (min-width: 761px) {
+    button[style*="min-height: 52px"][style*="text-transform: uppercase"], a[style*="min-height: 52px"][style*="text-transform: uppercase"] { min-height: 42px !important; padding: 10px 22px !important; font-size: var(--text-sm) !important; letter-spacing: 0.08em !important; }
+    button[style*="min-height: 44px"][style*="text-transform: uppercase"], a[style*="min-height: 44px"][style*="text-transform: uppercase"] { min-height: 36px !important; padding: 8px 16px !important; letter-spacing: 0.08em !important; }
+    button[style*="min-height: 34px"][style*="text-transform: uppercase"], a[style*="min-height: 34px"][style*="text-transform: uppercase"] { min-height: 28px !important; padding: 5px 12px !important; font-size: 11px !important; letter-spacing: 0.08em !important; }
+  }
+  /* «Kontakt oss» i toppmenyen, 25 % mindre enn de andre store knappene.
+     Bare paa desktop — paa mobil er knappen alt nede i 38 px, og under det
+     blir den for liten aa treffe med en tommel. */
+  @media (min-width: 761px) {
+    header button[style*="min-height: 52px"][style*="text-transform: uppercase"] {
+      min-height: 32px !important;
+      padding: 7px 17px !important;
+      font-size: 11px !important;
+    }
+  }
+  a { color: var(--lissom-brown); text-decoration: none; }
+  a:hover { color: var(--terracotta-500); }
+  .lx-kortgrid img { object-position: center 32%; }
+  @keyframes lissomBolge { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+  @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+  button[aria-label="Meny"] { order: 3; }
+  .lx-kunmobil { display: none; }
+
+  /* Adminmenyen paa smal skjerm.
+     Under 980px legger menyen seg som en topplinje. Logoen i full
+     stoerrelse og «I verkstedet naa» tok da all plassen, og selve menyen
+     ble klemt bort — paa mobil kom man ikke videre fra den sida man sto
+     paa. Logoen krymper, statuslinja gaar ut (den er status, ikke
+     navigasjon), og menyen faar bredden. */
+  /* Mobilmenyen i admin. Den inline-stilen setter display, saa regelen
+     som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
+     si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
+     spalter, saa hele menyen faar plass uten aa rulle. */
+  .lx-admmob, .lx-admmobpanel { display: none !important; }
+  @media (max-width: 979px) {
+    /* Uten en bredde her regner nettleseren SVG-en til 300px og
+       dytter menyen ut av skjermen. */
+    .lx-adminaside img { height: 30px !important; width: auto !important; max-width: 92px; flex: 0 0 auto; }
+    /* «I verkstedet naa» er status, ikke navigasjon, og tok plassen fra
+       menyen paa en telefon. */
+    .lx-adminaside .lx-admstatus { display: none !important; }
+    /* Den sidelengs menyraden er byttet ut med «hvor du er» + Meny.
+       Se .lx-admmob under. */
+    .lx-adminaside nav { display: none !important; }
+    .lx-admmob { display: flex !important; }
+    .lx-admmobpanel { display: grid !important; }
+  }
+
+  @media (max-width: 760px) {
+    [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
+  }
+  @media (max-width: 900px) {
+    body { zoom: 1; --width-content: 100%; --width-wide: 100%; --section-y: 64px; }
+    section { padding-left: 20px !important; padding-right: 20px !important; }
+    .lx-hide-m { display: none !important; }
+    .lx-kunmobil { display: block !important; }
+    /* Medlemskap/events og butikken staar rett under hverandre paa mobil —
+       salgsuke-banneret mellom dem er skjult der. To fulle seksjonsmarger
+       mot hverandre ble et tomrom paa 157 px, som leste som at noe manglet. */
+    .lx-tettbunn { padding-bottom: var(--space-6) !important; }
+    .lx-tetttopp { padding-top: var(--space-8) !important; }
+    .lx-hero { min-height: auto !important; overflow: visible !important; }
+    .lx-hero-pad { padding: 140px 20px 56px !important; }
+    .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
+    .lx-kunnskap-h1 { font-size: clamp(26px, 8.5vw, 40px) !important; word-break: break-word; hyphens: auto; }
+    .lx-hero-p { font-size: 18px !important; }
+    .lx-hero-cta { zoom: 1 !important; }
+    .lx-hero-hjerte { display: none !important; }
+    .lx-hjertelogo { display: block !important; }
+    .lx-footlinks { flex-direction: row !important; flex-wrap: wrap !important; gap: 10px 18px !important; }
+    .lx-foto { height: 320px !important; }
+    .lx-fotokol { height: auto !important; }
+    .lx-split { grid-template-columns: 1fr !important; }
+    /* Et bilde som flyter ved siden av teksten trenger plass paa hver
+       side. Paa en telefon er det ikke plass til begge deler: da staar
+       bildet i full bredde over avsnittet, som de andre. */
+    .lx-artfigur { float: none !important; width: 100% !important; max-width: 100% !important;
+                   margin-left: 0 !important; margin-right: 0 !important; }
+    .lx-cols4 { grid-template-columns: 1fr 1fr !important; }
+    /* Deltakerpanelet under Ferdig glassert staar i to spalter paa skjerm.
+       Paa en telefon er 300 piksler til bildene og resten til notatet
+       ikke to spalter — det er to smale striper. */
+    .lx-fbpanel { grid-template-columns: 1fr !important; }
+    .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
+    html, body { overflow-x: clip; max-width: 100%; overscroll-behavior-x: none; }
+    .lx-wrapm { white-space: normal !important; }
+    .lx-band { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
+    .lx-band > * { max-width: 100% !important; }
+    .lx-band button, .lx-band a[class] { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; justify-content: center !important; white-space: normal !important; }
+  }
+  /* 901–1023px: desktop-layout, men rent hero-design uten foto (brun hjerte-logo på gult) */
+  @media (min-width: 901px) and (max-width: 1023px) {
+    .lx-hero-hjerte { display: none !important; }
+    .lx-hjertelogo { display: block !important; }
+    .lx-hero-grad { display: none !important; }
+    .lx-hero-h1 { font-size: clamp(44px, 7vw, 84px) !important; }
+    .lx-hero-p { font-size: clamp(18px, 1.8vw, 24px) !important; }
+    .lx-hero-pad { padding: 160px 32px 72px !important; }
+    .lx-hero-cta { zoom: 1.15 !important; }
+  }
+  @media (min-width: 901px) and (max-width: 1250px) {
+    .lx-fotokol { height: auto !important; }
+    .lx-fotokol > div { flex: none !important; }
+    .lx-foto { height: 460px !important; }
+  }
+  /* ≥1024px: fotoet bruker alltid fullskjerm-oppsettet — ingen mellomjusteringer */
+  @media (max-width: 1250px) {
+    .lx-kortgrid { grid-template-columns: repeat(2, 1fr) !important; }
+    .lx-split button, .lx-split span { white-space: normal !important; }
+    .lx-split span.lx-pris { white-space: nowrap !important; }
+    .lx-split { min-width: 0; }
+    .lx-split > * { min-width: 0; }
+  }
+  /* Flytende handlekurv. Bare mobil — paa desktop staar vogna i toppmenyen. */
+  .lx-kurvflyt { display: none; }
+  @media (max-width: 760px) {
+    .lx-kurvflyt {
+      position: fixed;
+      right: var(--space-5);
+      bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+      z-index: 60;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: var(--radius-pill, 999px);
+      background: var(--lissom-brown);
+      color: var(--clay-50);
+      font: var(--type-body-sm);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(43, 20, 12, 0.28);
+    }
+    .lx-kurvflyt-tall {
+      background: var(--lissom-yellow);
+      color: var(--lissom-brown);
+      border-radius: 999px;
+      min-width: 22px;
+      padding: 1px 7px;
+      line-height: 20px;
+      text-align: center;
+      font-size: 12px;
+    }
+  }
+  .lx-bedriftmobil { display: none !important; }
+  @media (max-width: 900px) { .lx-omoss-h1 { font-size: clamp(22px, 6.8vw, 44px) !important; } }
+  @media (max-width: 560px) {
+    .lx-kurvpopup { padding: var(--space-4) !important; }
+    .lx-kurvrad { flex-wrap: wrap !important; row-gap: 8px !important; }
+    .lx-kurvnavn { flex: 1 1 100% !important; }
+    .lx-kurvsum { width: auto !important; margin-left: auto !important; }
+    .lx-kurvknapper { grid-template-columns: 1fr !important; }
+  }
+  @media (max-width: 560px) {
+    .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
+
+    /* Butikken er en butikk, ikke en artikkelliste. Med ett kort i bredden
+       ble hver vare 350 x 550 piksler og hele sida 13 700 lang — nitten
+       varer er da tjue skjermhoyder med rulling. To i bredden er det en
+       nettbutikk pleier aa gjore, og det er hva folk leter etter: bildet,
+       navnet og prisen. Beskrivelsen staar i sin helhet naar du aapner
+       varen. */
+    .lx-varegrid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+    .lx-varekort > div:last-child { padding: 12px !important; gap: 4px !important; }
+    .lx-varetekst {
+      display: -webkit-box !important; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden; font-size: 12px !important; line-height: 1.45 !important;
+    }
+    .lx-varebunn { padding-top: 10px !important; gap: 8px !important; }
+
+    /* Svarraden i kursvelgeren: felt, kursvalg og en sletteknapp paa 28 px.
+       I 230 pikslers bredde ble kursvalget 95 px, og «Nybegynner
+       dreiekurs» fikk plass til «Nybegynn». Feltene under hverandre, med
+       sletteknappen til hoyre for det siste. */
+    .lx-svarrad { grid-template-columns: 1fr 28px !important; }
+    .lx-svarrad > *:first-child { grid-column: 1 / -1 !important; }
+
+    /* Bunnteksten paa mobil.
+       Stablet under hverandre ble den 1300 piksler lang — halvannen
+       skjermhoyde med rulling forbi noe folk sjelden leser. «Besok oss» og
+       «Lissom» er begge korte lister, og staar fint side om side. «Folg
+       oss» tar bredden under, for logoen trenger plassen. */
+    .lx-footcols {
+      grid-template-columns: 1fr 1fr !important;
+      gap: var(--space-8) var(--space-6) !important;
+      padding: var(--space-8) 0 !important;
+    }
+    .lx-footcols > div:last-child { grid-column: 1 / -1; }
+    /* Under 900 px legges lenkene paa rad. I en halv skjermbredde blir det
+       et rotete brekk — her staar de under hverandre igjen, like tett som
+       adressen ved siden av. */
+    .lx-footcols .lx-footlinks {
+      flex-direction: column !important;
+      gap: 2px !important;
+    }
+    .lx-footcols .lx-footlinks > button { padding: 3px 0 !important; line-height: 1.45; }
+
+    /* Nyheter og produkter som karusell paa mobil.
+       Bygget paa scroll-snap framfor JavaScript: det gir ekte
+       fingerbevegelse med treghet, virker med tastatur og skjermleser, og
+       staar seg om skriptet skulle feile.
+       Kortene er 82 % brede med vilje — det neste stikker saa vidt fram i
+       kanten, og det er den eneste maaten aa vise at det finnes mer uten
+       aa maatte skrive det. */
+    .lx-karusell {
+      display: flex !important;
+      grid-template-columns: none !important;
+      gap: var(--space-4) !important;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      /* Strekk ut til skjermkanten, saa kortene ikke stopper midt i luften */
+      margin-inline: calc(var(--space-5) * -1);
+      padding-inline: var(--space-5);
+      scroll-padding-inline: var(--space-5);
+    }
+    .lx-karusell::-webkit-scrollbar { display: none; }
+    /* Kortene ligger inne i en sc-host-x-innpakning som har display:contents.
+       Den er ikke en boks, saa selve kortet er flex-barnet — derfor maa
+       bredden settes ett niva ned. Uten dette krympet alle kortene inn paa
+       en linje. */
+    .lx-karusell > .sc-host-x > *,
+    .lx-karusell > *:not(.sc-host-x) {
+      flex: 0 0 84% !important;
+      scroll-snap-align: start;
+    }
+
+    /* Rekkefolgen paa Min side, mobil.
+       «Selg keramikk» og «Interne kurs» skyves nederst — det man kommer for
+       er plassene sine og beskjeder, ikke aa legge ut varer.
+       order virker paa flex-barn, og kolonnen er allerede flex. Klassen
+       staar bade paa sc-if og paa kortet inni, siden det er sc-if som er
+       flex-barnet naar den blir staaende i DOM-en. */
+    /* Toppmenyen paa mobil.
+       Knappene til hoyre tok all plassen og klemte logoen ned til tre
+       piksler — den ble borte. Logoen faar ikke lenger krympe, sokeknappen
+       ligger uansett i hamburgermenyen, og «Kontakt oss» settes ned til en
+       storrelse som passer resten av designet. */
+    header > div > a { flex: 0 0 auto !important; }
+    header > div > div { gap: var(--space-3) !important; }
+    header > div > div > button[aria-label="Søk"] { display: none !important; }
+    header > div > div > button:not([aria-label]) {
+      font-size: 11px !important;
+      padding: 9px 15px !important;
+      min-height: 38px !important;
+    }
+
+    .lx-ms-selg { order: 99 !important; }
+    #minside-internkurs { order: 98 !important; }
+    .lx-bedriftdesk { display: none !important; }
+    .lx-bedriftmobil { display: flex !important; }
+  }
+  @media (max-width: 760px) {
+    .lx-cone-rad { grid-template-columns: 64px 1fr 96px 1fr 64px !important; }
+    .lx-cone-side { display: none !important; }
+    .lx-plakat-ark { padding: 32px 16px 40px !important; }
+    .lx-plakat-kropp { padding: 40px 24px !important; }
+  }
+</style>
 </head>
 <body>
 <x-dc>
@@ -870,354 +1286,6 @@ window.__resources = {
        Som egne filer sto de her, og dc-runtime flyttet dem opp etter at
        support.js hadde kjort — nettleseren ventet i to omganger, over ett
        sekund paa mobilnett, for noe ble tegnet. -->
-  <style>
-    /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
-       slik at plassen settes av for bildet er lastet. De skal ikke bestemme
-       stoerrelsen.
-
-       Uten denne linja blir et bilde som bare har «width» i CSS tvunget til
-       hoyden fra attributtet: koppmerket bak toppbildet sto med 560 piksler
-       bredde og 112 hoyde i stedet for 327, og hjertet i bunnteksten var
-       trykket flatt. Inline-stil vinner over denne regelen, saa bildene som
-       med vilje har en fast hoyde beholder den. */
-    img { height: auto; }
-
-    html { background: var(--lissom-brown); overflow-x: clip; max-width: 100%; }
-    body { margin: 0; background: var(--clay-100); overflow-x: clip; --section-y: 96px; --text-2xs: 11px; --text-xs: 12px; --text-sm: 14px; --text-base: 15px; --text-lg: 17px; --text-xl: 19px; --text-2xl: 22px; --text-3xl: 27px; --text-4xl: 34px; --text-5xl: 44px; --text-6xl: 56px; --text-7xl: 72px; }
-    h2 { font-size: clamp(30px, 2.4vw, 44px); letter-spacing: var(--tracking-display); }
-    header > div:first-child { min-height: 100px !important; }
-    /* Logoen i toppmenyen, 35 % mindre. Alle fire maalene skaleres med
-       samme faktor — ellers glir koppen fra ordmerket. */
-    header span:has(> img[data-logo-cup]) { height: 35px !important; }
-    header img[data-logo-cup] { height: 27px !important; }
-    header img[src$="mark-cup-saucer.svg"] { height: 8px !important; }
-    header img[src*="wordmark-lissom"] { height: 18px !important; }
-    /* Sikringsnett til det over: lager iOS lenka likevel, skal den se ut som
-       teksten rundt. -webkit-text-fill-color maa med — color alene holder
-       ikke mot Safaris egen lenkefarge. */
-    a[href^="tel:"], a[x-apple-data-detectors] {
-      color: inherit !important;
-      -webkit-text-fill-color: inherit !important;
-      text-decoration: inherit !important;
-      font-size: inherit !important;
-      font-family: inherit !important;
-    }
-
-    /* 404-siden: koppen snurrer som i toppmenyen.
-       Der gjor den 720 grader paa 1600 ms naar man holder musa over. Her er
-       det ingen meny aa holde musa over, saa den gjor det samme av seg selv
-       — og hviler et par sekunder mellom hver runde, ellers blir det uro.
-       40 % av 4 s er nettopp 1600 ms, saa farten er den samme. */
-    /* Nye meldinger i medlemschatten.
-       Prikken skal fange oyet uten aa mase: to sekunder per slag, og den
-       staar stille for den som har bedt om mindre bevegelse. */
-    @keyframes lx-puls {
-      0%, 100% { transform: scale(1);   opacity: 1; }
-      50%      { transform: scale(1.5); opacity: .45; }
-    }
-    .lx-puls { animation: lx-puls 2s ease-in-out infinite; }
-    @media (prefers-reduced-motion: reduce) {
-      .lx-puls { animation: none; }
-    }
-
-    @keyframes lx-kopp-snurr {
-      0%   { transform: perspective(600px) rotateY(0deg); }
-      40%  { transform: perspective(600px) rotateY(720deg); }
-      100% { transform: perspective(600px) rotateY(720deg); }
-    }
-    .lx-404-kopp {
-      animation: lx-kopp-snurr 4s linear infinite;
-      transform-origin: 50% 50%;
-      will-change: transform;
-    }
-    /* Snurring uten stopp er nettopp det noen blir uvel av. Ber nettleseren
-       om mindre bevegelse, staar koppen stille. */
-    @media (prefers-reduced-motion: reduce) {
-      .lx-404-kopp { animation: none; }
-    }
-    /* Toppmeny: fjern 1.35x-oppskalering av søk + Book nå, stram menypunktene */
-    header [style*="zoom: 1.35"] { zoom: 1 !important; }
-    header a[style*="padding-bottom: 7px"] { font-size: clamp(12px, 0.95vw, 15px) !important; padding-bottom: 5px !important; }
-    span[style*="radius-pill"][style*="inline-flex"] { white-space: nowrap; }
-    /* Kurskort-bunn: mindre pris, så pris + knapp balanserer i kortet.
-
-       Hoyden sto her som «height: 36px». Raden har 8 px toppfyll og en knapp
-       paa 34, altsaa 42 — og «overflow: hidden» klippet de tre nederste
-       pikslene av knappen paa hvert eneste kort. min-height gjor det samme
-       for korte rader, men lar raden vokse naar innholdet trenger det. */
-    div[style*="margin-top: auto"][style*="height: 44px"] {
-      height: auto !important;
-      min-height: 36px !important;
-    }
-    div[style*="margin-top: auto"][style*="height: 44px"] > span[style*="white-space: nowrap"] { font-size: var(--text-base) !important; font-weight: 700 !important; }
-    /* Kvitteringsboksen: teksten maa faa bryte. Med nowrap stakk lange
-       meldinger ut av boksen i stedet for aa gaa over flere linjer. */
-    div[role="status"] { white-space: normal; max-width: min(92vw, 420px); }
-    /* Kapasitetsbadge: diskret mini-pill oppe til høyre, dekker ikke motivet */
-    span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] { font-size: 10px !important; padding: 3px 9px !important; top: 10px !important; right: 10px !important; left: auto !important; letter-spacing: 0.05em !important; background: rgba(251,246,238,.94) !important; color: var(--lissom-brown) !important; box-shadow: 0 1px 5px rgba(46,16,2,.2) !important; }
-    span[style*="position: absolute"][style*="border-radius: 999px"][style*="text-transform: uppercase"] > span { display: none !important; }
-    /* Nedskalert: DS-knapper (faste min-høyder) — kun desktop, mobil beholder 44px+ trykkflater */
-    @media (min-width: 761px) {
-      button[style*="min-height: 52px"][style*="text-transform: uppercase"], a[style*="min-height: 52px"][style*="text-transform: uppercase"] { min-height: 42px !important; padding: 10px 22px !important; font-size: var(--text-sm) !important; letter-spacing: 0.08em !important; }
-      button[style*="min-height: 44px"][style*="text-transform: uppercase"], a[style*="min-height: 44px"][style*="text-transform: uppercase"] { min-height: 36px !important; padding: 8px 16px !important; letter-spacing: 0.08em !important; }
-      button[style*="min-height: 34px"][style*="text-transform: uppercase"], a[style*="min-height: 34px"][style*="text-transform: uppercase"] { min-height: 28px !important; padding: 5px 12px !important; font-size: 11px !important; letter-spacing: 0.08em !important; }
-    }
-    /* «Kontakt oss» i toppmenyen, 25 % mindre enn de andre store knappene.
-       Bare paa desktop — paa mobil er knappen alt nede i 38 px, og under det
-       blir den for liten aa treffe med en tommel. */
-    @media (min-width: 761px) {
-      header button[style*="min-height: 52px"][style*="text-transform: uppercase"] {
-        min-height: 32px !important;
-        padding: 7px 17px !important;
-        font-size: 11px !important;
-      }
-    }
-    a { color: var(--lissom-brown); text-decoration: none; }
-    a:hover { color: var(--terracotta-500); }
-    .lx-kortgrid img { object-position: center 32%; }
-    @keyframes lissomBolge { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-    @keyframes lissomPuls { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
-    button[aria-label="Meny"] { order: 3; }
-    .lx-kunmobil { display: none; }
-
-    /* Adminmenyen paa smal skjerm.
-       Under 980px legger menyen seg som en topplinje. Logoen i full
-       stoerrelse og «I verkstedet naa» tok da all plassen, og selve menyen
-       ble klemt bort — paa mobil kom man ikke videre fra den sida man sto
-       paa. Logoen krymper, statuslinja gaar ut (den er status, ikke
-       navigasjon), og menyen faar bredden. */
-    /* Mobilmenyen i admin. Den inline-stilen setter display, saa regelen
-       som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
-       si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
-       spalter, saa hele menyen faar plass uten aa rulle. */
-    .lx-admmob, .lx-admmobpanel { display: none !important; }
-    @media (max-width: 979px) {
-      /* Uten en bredde her regner nettleseren SVG-en til 300px og
-         dytter menyen ut av skjermen. */
-      .lx-adminaside img { height: 30px !important; width: auto !important; max-width: 92px; flex: 0 0 auto; }
-      /* «I verkstedet naa» er status, ikke navigasjon, og tok plassen fra
-         menyen paa en telefon. */
-      .lx-adminaside .lx-admstatus { display: none !important; }
-      /* Den sidelengs menyraden er byttet ut med «hvor du er» + Meny.
-         Se .lx-admmob under. */
-      .lx-adminaside nav { display: none !important; }
-      .lx-admmob { display: flex !important; }
-      .lx-admmobpanel { display: grid !important; }
-    }
-
-    @media (max-width: 760px) {
-      [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
-    }
-    @media (max-width: 900px) {
-      body { zoom: 1; --width-content: 100%; --width-wide: 100%; --section-y: 64px; }
-      section { padding-left: 20px !important; padding-right: 20px !important; }
-      .lx-hide-m { display: none !important; }
-      .lx-kunmobil { display: block !important; }
-      /* Medlemskap/events og butikken staar rett under hverandre paa mobil —
-         salgsuke-banneret mellom dem er skjult der. To fulle seksjonsmarger
-         mot hverandre ble et tomrom paa 157 px, som leste som at noe manglet. */
-      .lx-tettbunn { padding-bottom: var(--space-6) !important; }
-      .lx-tetttopp { padding-top: var(--space-8) !important; }
-      .lx-hero { min-height: auto !important; overflow: visible !important; }
-      .lx-hero-pad { padding: 140px 20px 56px !important; }
-      .lx-hero-h1 { font-size: clamp(38px, 11vw, 56px) !important; }
-      .lx-kunnskap-h1 { font-size: clamp(26px, 8.5vw, 40px) !important; word-break: break-word; hyphens: auto; }
-      .lx-hero-p { font-size: 18px !important; }
-      .lx-hero-cta { zoom: 1 !important; }
-      .lx-hero-hjerte { display: none !important; }
-      .lx-hjertelogo { display: block !important; }
-      .lx-footlinks { flex-direction: row !important; flex-wrap: wrap !important; gap: 10px 18px !important; }
-      .lx-foto { height: 320px !important; }
-      .lx-fotokol { height: auto !important; }
-      .lx-split { grid-template-columns: 1fr !important; }
-      /* Et bilde som flyter ved siden av teksten trenger plass paa hver
-         side. Paa en telefon er det ikke plass til begge deler: da staar
-         bildet i full bredde over avsnittet, som de andre. */
-      .lx-artfigur { float: none !important; width: 100% !important; max-width: 100% !important;
-                     margin-left: 0 !important; margin-right: 0 !important; }
-      .lx-cols4 { grid-template-columns: 1fr 1fr !important; }
-      /* Deltakerpanelet under Ferdig glassert staar i to spalter paa skjerm.
-         Paa en telefon er 300 piksler til bildene og resten til notatet
-         ikke to spalter — det er to smale striper. */
-      .lx-fbpanel { grid-template-columns: 1fr !important; }
-      .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
-      html, body { overflow-x: clip; max-width: 100%; overscroll-behavior-x: none; }
-      .lx-wrapm { white-space: normal !important; }
-      .lx-band { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
-      .lx-band > * { max-width: 100% !important; }
-      .lx-band button, .lx-band a[class] { width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; justify-content: center !important; white-space: normal !important; }
-    }
-    /* 901–1023px: desktop-layout, men rent hero-design uten foto (brun hjerte-logo på gult) */
-    @media (min-width: 901px) and (max-width: 1023px) {
-      .lx-hero-hjerte { display: none !important; }
-      .lx-hjertelogo { display: block !important; }
-      .lx-hero-grad { display: none !important; }
-      .lx-hero-h1 { font-size: clamp(44px, 7vw, 84px) !important; }
-      .lx-hero-p { font-size: clamp(18px, 1.8vw, 24px) !important; }
-      .lx-hero-pad { padding: 160px 32px 72px !important; }
-      .lx-hero-cta { zoom: 1.15 !important; }
-    }
-    @media (min-width: 901px) and (max-width: 1250px) {
-      .lx-fotokol { height: auto !important; }
-      .lx-fotokol > div { flex: none !important; }
-      .lx-foto { height: 460px !important; }
-    }
-    /* ≥1024px: fotoet bruker alltid fullskjerm-oppsettet — ingen mellomjusteringer */
-    @media (max-width: 1250px) {
-      .lx-kortgrid { grid-template-columns: repeat(2, 1fr) !important; }
-      .lx-split button, .lx-split span { white-space: normal !important; }
-      .lx-split span.lx-pris { white-space: nowrap !important; }
-      .lx-split { min-width: 0; }
-      .lx-split > * { min-width: 0; }
-    }
-    /* Flytende handlekurv. Bare mobil — paa desktop staar vogna i toppmenyen. */
-    .lx-kurvflyt { display: none; }
-    @media (max-width: 760px) {
-      .lx-kurvflyt {
-        position: fixed;
-        right: var(--space-5);
-        bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
-        z-index: 60;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 12px 18px;
-        border: none;
-        border-radius: var(--radius-pill, 999px);
-        background: var(--lissom-brown);
-        color: var(--clay-50);
-        font: var(--type-body-sm);
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 8px 24px rgba(43, 20, 12, 0.28);
-      }
-      .lx-kurvflyt-tall {
-        background: var(--lissom-yellow);
-        color: var(--lissom-brown);
-        border-radius: 999px;
-        min-width: 22px;
-        padding: 1px 7px;
-        line-height: 20px;
-        text-align: center;
-        font-size: 12px;
-      }
-    }
-    .lx-bedriftmobil { display: none !important; }
-    @media (max-width: 900px) { .lx-omoss-h1 { font-size: clamp(22px, 6.8vw, 44px) !important; } }
-    @media (max-width: 560px) {
-      .lx-kurvpopup { padding: var(--space-4) !important; }
-      .lx-kurvrad { flex-wrap: wrap !important; row-gap: 8px !important; }
-      .lx-kurvnavn { flex: 1 1 100% !important; }
-      .lx-kurvsum { width: auto !important; margin-left: auto !important; }
-      .lx-kurvknapper { grid-template-columns: 1fr !important; }
-    }
-    @media (max-width: 560px) {
-      .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
-
-      /* Butikken er en butikk, ikke en artikkelliste. Med ett kort i bredden
-         ble hver vare 350 x 550 piksler og hele sida 13 700 lang — nitten
-         varer er da tjue skjermhoyder med rulling. To i bredden er det en
-         nettbutikk pleier aa gjore, og det er hva folk leter etter: bildet,
-         navnet og prisen. Beskrivelsen staar i sin helhet naar du aapner
-         varen. */
-      .lx-varegrid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
-      .lx-varekort > div:last-child { padding: 12px !important; gap: 4px !important; }
-      .lx-varetekst {
-        display: -webkit-box !important; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-        overflow: hidden; font-size: 12px !important; line-height: 1.45 !important;
-      }
-      .lx-varebunn { padding-top: 10px !important; gap: 8px !important; }
-
-      /* Svarraden i kursvelgeren: felt, kursvalg og en sletteknapp paa 28 px.
-         I 230 pikslers bredde ble kursvalget 95 px, og «Nybegynner
-         dreiekurs» fikk plass til «Nybegynn». Feltene under hverandre, med
-         sletteknappen til hoyre for det siste. */
-      .lx-svarrad { grid-template-columns: 1fr 28px !important; }
-      .lx-svarrad > *:first-child { grid-column: 1 / -1 !important; }
-
-      /* Bunnteksten paa mobil.
-         Stablet under hverandre ble den 1300 piksler lang — halvannen
-         skjermhoyde med rulling forbi noe folk sjelden leser. «Besok oss» og
-         «Lissom» er begge korte lister, og staar fint side om side. «Folg
-         oss» tar bredden under, for logoen trenger plassen. */
-      .lx-footcols {
-        grid-template-columns: 1fr 1fr !important;
-        gap: var(--space-8) var(--space-6) !important;
-        padding: var(--space-8) 0 !important;
-      }
-      .lx-footcols > div:last-child { grid-column: 1 / -1; }
-      /* Under 900 px legges lenkene paa rad. I en halv skjermbredde blir det
-         et rotete brekk — her staar de under hverandre igjen, like tett som
-         adressen ved siden av. */
-      .lx-footcols .lx-footlinks {
-        flex-direction: column !important;
-        gap: 2px !important;
-      }
-      .lx-footcols .lx-footlinks > button { padding: 3px 0 !important; line-height: 1.45; }
-
-      /* Nyheter og produkter som karusell paa mobil.
-         Bygget paa scroll-snap framfor JavaScript: det gir ekte
-         fingerbevegelse med treghet, virker med tastatur og skjermleser, og
-         staar seg om skriptet skulle feile.
-         Kortene er 82 % brede med vilje — det neste stikker saa vidt fram i
-         kanten, og det er den eneste maaten aa vise at det finnes mer uten
-         aa maatte skrive det. */
-      .lx-karusell {
-        display: flex !important;
-        grid-template-columns: none !important;
-        gap: var(--space-4) !important;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        /* Strekk ut til skjermkanten, saa kortene ikke stopper midt i luften */
-        margin-inline: calc(var(--space-5) * -1);
-        padding-inline: var(--space-5);
-        scroll-padding-inline: var(--space-5);
-      }
-      .lx-karusell::-webkit-scrollbar { display: none; }
-      /* Kortene ligger inne i en sc-host-x-innpakning som har display:contents.
-         Den er ikke en boks, saa selve kortet er flex-barnet — derfor maa
-         bredden settes ett niva ned. Uten dette krympet alle kortene inn paa
-         en linje. */
-      .lx-karusell > .sc-host-x > *,
-      .lx-karusell > *:not(.sc-host-x) {
-        flex: 0 0 84% !important;
-        scroll-snap-align: start;
-      }
-
-      /* Rekkefolgen paa Min side, mobil.
-         «Selg keramikk» og «Interne kurs» skyves nederst — det man kommer for
-         er plassene sine og beskjeder, ikke aa legge ut varer.
-         order virker paa flex-barn, og kolonnen er allerede flex. Klassen
-         staar bade paa sc-if og paa kortet inni, siden det er sc-if som er
-         flex-barnet naar den blir staaende i DOM-en. */
-      /* Toppmenyen paa mobil.
-         Knappene til hoyre tok all plassen og klemte logoen ned til tre
-         piksler — den ble borte. Logoen faar ikke lenger krympe, sokeknappen
-         ligger uansett i hamburgermenyen, og «Kontakt oss» settes ned til en
-         storrelse som passer resten av designet. */
-      header > div > a { flex: 0 0 auto !important; }
-      header > div > div { gap: var(--space-3) !important; }
-      header > div > div > button[aria-label="Søk"] { display: none !important; }
-      header > div > div > button:not([aria-label]) {
-        font-size: 11px !important;
-        padding: 9px 15px !important;
-        min-height: 38px !important;
-      }
-
-      .lx-ms-selg { order: 99 !important; }
-      #minside-internkurs { order: 98 !important; }
-      .lx-bedriftdesk { display: none !important; }
-      .lx-bedriftmobil { display: flex !important; }
-    }
-    @media (max-width: 760px) {
-      .lx-cone-rad { grid-template-columns: 64px 1fr 96px 1fr 64px !important; }
-      .lx-cone-side { display: none !important; }
-      .lx-plakat-ark { padding: 32px 16px 40px !important; }
-      .lx-plakat-kropp { padding: 40px 24px !important; }
-    }
-  </style>
 </helmet>
 
 <div style="background: var(--clay-50); min-height: 100vh; padding-bottom: 120px;">

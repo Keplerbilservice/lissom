@@ -48,6 +48,8 @@ const SIDE_FIL  = __DIR__ . '/lissom-2108.html';
 // bin/utenadmin.mjs, kontrollert av bin/adminsjekk.mjs.
 const SIDE_LETT = __DIR__ . '/lissom-2108-uten-admin.html';
 const SIDE_KART = __DIR__ . '/seo-kart.json';
+// Toppen av forsida, tegnet ferdig av bin/forhaandstegn.mjs.
+const SIDE_TOPP = __DIR__ . '/forside-topp.html';
 const ROT       = 'https://lissom.no';
 
 // Markorene rundt hodet som byttes. De staar i lissom-2108.html og er det
@@ -296,4 +298,70 @@ $hode = MERKE_START . "\n"
     . '<meta name="twitter:card" content="summary_large_image">' . "\n"
     . MERKE_SLUTT;
 
-$ut(substr_replace($html, $hode, $start, $slutt + strlen(MERKE_SLUTT) - $start));
+$html = substr_replace($html, $hode, $start, $slutt + strlen(MERKE_SLUTT) - $start);
+
+// ── Toppen av forsida, ferdig tegnet ────────────────────────────────────
+//
+// Nettsida er én fil som dc-runtime bygger om til React etter at den er
+// lastet. Fram til det er ferdig staar <x-dc> med «display:none», og den
+// besokende ser ingenting. PageSpeed 28. august, mobil: tid til foerste
+// byte 130 ms, forsinkelse for gjengivelse 2450 ms.
+//
+// Menylinja og heroen — alt over skjermkanten — ligger derfor ferdig tegnet
+// i forside-topp.html, laget av bin/forhaandstegn.mjs fra den samme malen
+// og de samme stilene. Den limes inn rett etter <body>, nettleseren tegner
+// den med det samme, og skriptet i hodet bytter den mot den ekte i samme
+// bilde naar dc-runtime er ferdig.
+//
+// Bare forsida. De andre sidene har sine egne topper, og de er ikke tegnet.
+//
+// Mangler fila, gaar sida ut uten. Da er den treg, ikke odelagt.
+if ($adresse === '/') {
+    $topp = @file_get_contents(SIDE_TOPP);
+    if (is_string($topp) && $topp !== '') {
+        // Teksten eieren har skrevet under Nettsiden → Innhold.
+        //
+        // Det som staar i fila er verdien slik den var da den ble bygget.
+        // Hvert felt er merket «data-innh="Forside/0/Overskrift"», og
+        // innholdet byttes mot det som ligger i basen. Endrer eieren
+        // teksten, endres ogsaa forhaandstegningen — uten ny bygging.
+        //
+        // «??» og ikke «||», samme regel som innh() i nettsida: tommer
+        // eieren et felt med vilje, skal teksten bort, ikke komme tilbake.
+        try {
+            $lastBackend();
+            $rader = DB::alle(
+                "SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'Forside/0/%'"
+            );
+            $lagret = [];
+            foreach ($rader as $r) { $lagret[(string) $r['nokkel']] = (string) $r['verdi']; }
+            if ($lagret !== []) {
+                $topp = (string) preg_replace_callback(
+                    '~(<span class="sc-interp" data-innh="([^"]*)">)(.*?)(</span>)~su',
+                    static function (array $m) use ($lagret): string {
+                        $n = htmlspecialchars_decode($m[2], ENT_QUOTES);
+                        if (!array_key_exists($n, $lagret)) { return $m[0]; }
+                        return $m[1]
+                             . htmlspecialchars($lagret[$n], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                             . $m[4];
+                    },
+                    $topp
+                );
+            }
+        } catch (Throwable) {
+            // Basen er nede. Da staar teksten fra byggingen, og den er
+            // riktig helt til noen har endret den.
+        }
+
+        // Etter </head>, ikke bare etter foerste «<body>» i fila: ordet
+        // staar ogsaa i en kommentar og i et skript lenger oppe, og en
+        // strpos uten startpunkt traff kommentaren.
+        $hode = strpos($html, '</head>');
+        $kropp = $hode === false ? false : strpos($html, '<body>', $hode);
+        if ($kropp !== false) {
+            $html = substr_replace($html, '<body>' . "\n" . $topp, $kropp, strlen('<body>'));
+        }
+    }
+}
+
+$ut($html);

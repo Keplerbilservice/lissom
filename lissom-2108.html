@@ -6626,6 +6626,68 @@ window.__resources = {
                   <button type="button" onClick="{{ o.slettDato }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm); white-space: nowrap;">Slett dato</button>
                 </div>
 
+                <!-- Legg til en deltaker, her, paa denne datoen.
+                     «Legg til» sendte deg for til Paameldte-skjermen og
+                     aapnet et skjema der, med et nedtrekk du matte finne
+                     datoen i paa nytt. Naa folder skjemaet seg ut i raden,
+                     paa samme maate som datoredigeringen rett under.
+                     Feltene og lagringen er de samme som paa Paameldte —
+                     det er de samme «mp»-verdiene som ligger bak. -->
+                <sc-if value="{{ o.leggerTil }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex: 1 1 100%; padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
+                    <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+                      <strong style="font-size: var(--text-sm); color: var(--text-heading);">Legg til deltaker · {{ o.naar }}</strong>
+                      <button type="button" onClick="{{ mpLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Lukk</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-4);">
+                      <div>
+                        <label style="{{ mpEtikett }}">Navn</label>
+                        <input value="{{ mpNavn }}" onChange="{{ settMpNavn }}" placeholder="Fornavn Etternavn" style="{{ mpFeltStil }}">
+                      </div>
+                      <div>
+                        <label style="{{ mpEtikett }}">Telefon</label>
+                        <input value="{{ mpTlf }}" onChange="{{ settMpTlf }}" placeholder="Valgfritt" style="{{ mpFeltStil }}">
+                      </div>
+                      <div>
+                        <label style="{{ mpEtikett }}">E-post</label>
+                        <input value="{{ mpEpost }}" onChange="{{ settMpEpost }}" placeholder="Valgfritt" style="{{ mpFeltStil }}">
+                      </div>
+                      <div>
+                        <label style="{{ mpEtikett }}">Antall</label>
+                        <input value="{{ mpAntall }}" onChange="{{ settMpAntall }}" placeholder="1" style="{{ mpFeltStil }}">
+                      </div>
+                      <div>
+                        <label style="{{ mpEtikett }}">Betalt med</label>
+                        <select value="{{ mpMaate }}" onChange="{{ settMpMaate }}" style="{{ mpValgStil }}">
+                          <sc-for list="{{ mpMaater }}" as="m" hint-placeholder-count="4">
+                            <option value="{{ m }}">{{ m }}</option>
+                          </sc-for>
+                        </select>
+                      </div>
+                      <div>
+                        <label style="{{ mpEtikett }}">Beløp</label>
+                        <input value="{{ mpBelop }}" onChange="{{ settMpBelop }}" placeholder="{{ mpBelopHint }}" style="{{ mpFeltStil }}">
+                      </div>
+                    </div>
+                    <div style="margin-top: var(--space-4);">
+                      <label style="{{ mpEtikett }}">Notat</label>
+                      <input value="{{ mpNotat }}" onChange="{{ settMpNotat }}" placeholder="Valgfritt — f.eks. «betaler ved oppmøte»" style="{{ mpFeltStil }}">
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-4);">
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ mpLedigTekst }}</div>
+                      <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                        <sc-if value="{{ mpKanVarsle }}" hint-placeholder-val="{{ false }}">
+                          <label style="display: flex; align-items: center; gap: 8px; font-size: var(--text-sm); color: var(--text-body); cursor: pointer;">
+                            <input type="checkbox" checked="{{ mpVarsle }}" onChange="{{ vekslMpVarsle }}" style="width: 16px; height: 16px;">
+                            Send bekreftelse på e-post
+                          </label>
+                        </sc-if>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mpLagre }}" hint-size="auto,44px">Legg til</x-import>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+
                 <!-- Redigering av selve datoen. Kunne ikke gjores for: ble
                      klokkeslettet feil, var eneste vei aa avlyse og lage den
                      paa nytt — og da mistet de paameldte plassen sin. -->
@@ -25657,9 +25719,13 @@ class Component extends DCLogic {
             plassTekst: kap ? kap + ' plasser' : 'som kurset',
             faerre: () => this.settPlasser(o.oktId, Math.max(0, (kap || 0) - 1)),
             flere: () => this.settPlasser(o.oktId, (kap || 0) + 1),
+            // Skjemaet folder seg ut her, i raden. Det sendte deg for til
+            // Paameldte-skjermen, der du matte finne datoen igjen i et
+            // nedtrekk — og det var nettopp det som gjorde at man heller
+            // gikk inn fra kurset.
+            leggerTil: !!this.state.mpApen && String(this.state.mpOkt || '') === String(o.oktId),
             leggTil: () => {
-              this.setState({ side: 'adminpameldte', mpApen: true, mpOkt: String(o.oktId) });
-              window.scrollTo(0, 0);
+              this.setState({ mpApen: true, mpOkt: String(o.oktId), oktRediger: null });
             },
             sePameldte: () => {
               this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
@@ -26038,18 +26104,21 @@ class Component extends DCLogic {
           this.setState({ datoerFor: '' });
           this.apneKursRed(k, i);
         },
-        // Kurslista hadde Rediger og Slett, men ingen vei til aa melde noen
-        // paa. Du maatte scrolle forbi hele lista til «Datoer som ligger ute»
-        // og finne riktig dato der. Naa aapner knappen paameldingen med
-        // kursets neste dato valgt — er det flere, byttes den i velgeren.
+        // Legg til noen paa dette kurset, uten aa forlate skjermen.
+        //
+        // Knappen sendte deg for til Paameldte-skjermen. Naa aapner den
+        // datolista for kurset her — den staar rett over — og folder ut
+        // paameldingsskjemaet paa kursets forste dato. Har kurset flere
+        // datoer, staar de under hverandre, og du trykker «Legg til» paa den
+        // du vil ha.
         leggTil: (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
           const neste = (this.state.adminOkter || []).find(o => o.tittel === k.navn);
           this.setState({
-            side: 'adminpameldte', mpApen: true,
-            mpOkt: neste ? String(neste.oktId) : '',
+            datoerFor: k.navn, kRed: false, oktRediger: null,
+            mpApen: !!neste, mpOkt: neste ? String(neste.oktId) : '',
           });
-          window.scrollTo(0, 0);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         },
         harDato: (this.state.adminOkter || []).some(o => o.tittel === k.navn),
         // «Slett» fjernet bare raden fra skjermbildet. Kurset var tilbake ved

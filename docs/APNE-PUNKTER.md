@@ -471,6 +471,11 @@ default må være dreiing, plateteknikk og workshop».
   som det skal, framfor å bli usynlig.
 - Alle sju knappene står som før, og «Vis alle» viser fortsatt alt. De tre
   arrangementene velges manuelt — valgt i samråd med Lissom.
+- **Dreiekursene ligger først.** Det er dreieskiva folk har sett for seg når
+  de kommer. Hva som *er* et dreiekurs står ett sted — `kursIKategori` — så
+  knappen «Dreiing» og sorteringen ikke kan bli uenige om det samme kurset.
+  Resten beholder rekkefølgen sin, og har man valgt én kategori skjer det
+  ingenting.
 - **Kategoriraden er borte fra /events og /drop-in.** De nås fra menyen og er
   hver sin side; der sto hele raden likevel, over en side som handler om én
   ting. Første trykk tok deg vekk fra siden du nettopp valgte.

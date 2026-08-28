@@ -12929,6 +12929,24 @@ class Component extends DCLogic {
       ut = ut.map(k => this.medValgtTid(k, naar)).filter(Boolean);
     }
 
+    // Dreiekursene forst.
+    //
+    // Lissom 28. august. Dreiing er det folk kommer for — det er
+    // dreieskiva de har sett for seg — og da skal de staa oeverst framfor
+    // aa ligge mellom plateteknikk og workshop i den rekkefolgen serveren
+    // tilfeldigvis sendte dem.
+    //
+    // Hva som ER et dreiekurs staar ett sted: kursIKategori. Skrev jeg
+    // regelen paa nytt her, kunne knappen «Dreiing» og denne sorteringen
+    // vaert uenige om det samme kurset.
+    //
+    // Resten beholder rekkefolgen sin. Har man valgt en kategori, er det
+    // ingenting aa flytte paa — da er alle kursene i den samme.
+    const dreie = new Set(this.kursIKategori(ut, 'Dreiing'));
+    if (dreie.size > 0 && dreie.size < ut.length) {
+      ut = ut.filter(k => dreie.has(k)).concat(ut.filter(k => !dreie.has(k)));
+    }
+
     return ut;
   }
 

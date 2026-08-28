@@ -443,6 +443,11 @@ img{max-width:100%;display:block}
      Maalt: uten disse to 0,429, med dem under. -->
 <link rel="preload" href="/fonts/bitter-latin-600-italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/alegreya-sans-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<!-- Og denne. «med hendene.» i overskrifta er kursiv med vekt 700, og Bitter
+     har ingen 700-kursiv — nettleseren henter derfor 700-normal i tillegg og
+     heller den selv. Den laa i den kritiske banen i PageSpeed-maalingen paa
+     966 ms, som den eneste skrifta over skjermkanten som ikke var varslet. -->
+<link rel="preload" href="/fonts/bitter-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
 
 <!-- ds-bundle.js tegner komponentene og maa vaere der for foerste
      tegning. Den staar her, i hodet, og ikke lenger inne i <helmet> nede i
@@ -539,7 +544,18 @@ window.LISSOM_SIZES_STOR = '(max-width: 760px) 100vw, 700px';
       var el = alle[i], v = el.getAttribute('data-src');
       // Uregnet mal, tom verdi — la den staa til neste tegning.
       if (!v || v.indexOf('{{') !== -1) continue;
-      el.removeAttribute('data-src');
+      // Allerede satt. Da er det ingenting aa gjore.
+      //
+      // Her sto «el.removeAttribute('data-src')» i stedet. Det gjorde React
+      // og DOM-en uenige: React husker fortsatt at attributtet har den gamle
+      // verdien, mens den ikke lenger staar der. Kommer React siden fram til
+      // at verdien er den samme som den husker, skriver den ingenting — og da
+      // fyres ingen endring, denne koden kjorer ikke, og «src» blir staaende
+      // paa det forrige bildet mens teksten ved siden av har byttet.
+      //
+      // Attributtet blir naa staaende, og det er «src» som avgjor om noe skal
+      // gjores. Da ser vi hver eneste endring.
+      if (el.getAttribute('src') === v) continue;
       el.setAttribute('src', v);
       if (el.tagName === 'IMG' && window.lissomSrcset) {
         var ss = window.lissomSrcset(v);
@@ -1312,7 +1328,7 @@ window.__resources = {
             <p class="lx-hero-p" style="font: var(--type-body); font-size: clamp(17px, 1.2vw, 21px); line-height: 1.55; color: var(--brown-500); margin: 0; text-wrap: pretty;">{{ heroTekst }}</p>
             <div class="lx-hero-cta" style="display: flex; gap: var(--space-5); margin-top: var(--space-8); flex-wrap: wrap; zoom: 1.15;">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="lg" icon-after="arrow-right" on-click="{{ goKurs }}" hint-size="auto,56px">{{ heroKnapp1 }}</x-import>
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ goPop }}" hint-size="auto,56px">{{ heroKnapp2 }}</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" on-click="{{ popTilDatoer }}" hint-size="auto,56px">{{ heroKnapp2 }}</x-import>
             </div>
             <p class="lx-hero-p" style="margin: calc(var(--space-8) + 40px) 0 0; font-size: clamp(17px, 1.2vw, 21px); line-height: 1.5; color: var(--brown-500);">{{ fsGruppelinje }} <button type="button" onClick="{{ goForesporsel }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">{{ fsGruppelenke }}</button></p>
             <sc-if value="{{ visKursvelger }}" hint-placeholder-val="{{ true }}">
@@ -1400,7 +1416,14 @@ window.__resources = {
            De to faste har knapper; kundene har en logo og en lenke til seg
            selv. Feltet tegner det som finnes. -->
       <section class="lx-tettbunn" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div class="lx-split" onMouseEnter="{{ rotPause }}" onMouseLeave="{{ rotFortsett }}" onTouchStart="{{ rotPause }}" style="{{ rotSplitStil }}">
+        <!-- «onTouchEnd» og «onTouchCancel» maa staa.
+
+               «onTouchStart» satte pausen, og bare «onMouseLeave» slapp den
+               igjen — og den kommer aldri paa en telefon. Én finger paa
+               feltet, ogsaa en som bare rullet forbi, stoppet dermed
+               rotasjonen for godt. Provd: etter én beroering byttet den
+               ikke paa 27 sekunder. -->
+          <div class="lx-split" onMouseEnter="{{ rotPause }}" onMouseLeave="{{ rotFortsett }}" onTouchStart="{{ rotPause }}" onTouchEnd="{{ rotFortsett }}" onTouchCancel="{{ rotFortsett }}" style="{{ rotSplitStil }}">
           <img data-src="{{ rotBilde }}" alt="{{ rotAlt }}" style="width: 100%; height: 440px; object-fit: cover; border-radius: var(--radius-xl, 22px); display: block;" fetchpriority="high" decoding="async">
           <div>
             <sc-if value="{{ rotHarLogo }}" hint-placeholder-val="{{ false }}">
@@ -14744,10 +14767,28 @@ class Component extends DCLogic {
   tonBytt(nokkel, antall, nr) {
     if (antall < 2) return;
     const laas = '_bytter' + nokkel;
-    if (this[laas]) return;
+    const maal = '_maal' + nokkel;
 
     const naa = this.state[nokkel + 'Nr'] || 0;
-    const neste = ((nr === undefined ? naa + 1 : nr) % antall + antall) % antall;
+    // Toner den allerede, er det den vi er paa vei TIL som er utgangspunktet
+    // — ikke den som staar paa skjermen.
+    const fra = this[laas] ? (this[maal] || 0) : naa;
+    const neste = ((nr === undefined ? fra + 1 : nr) % antall + antall) % antall;
+
+    // Trykk midt i en toning ble kastet.
+    //
+    // Toningen varer 800 ms. Trykket man en prikk i det vinduet, gikk det i
+    // bakken, og feltet ble staaende paa den forrige — provd: med 400 ms
+    // mellom trykkene ga prikk 2 innholdet til prikk 1, og prikk 4 innholdet
+    // til prikk 3. Naa bytter trykket maalet for toningen som allerede gaar,
+    // saa den lander der man trykket.
+    //
+    // Bare trykk. Klokka som bytter av seg selv skal ikke overstyre en
+    // toning som er i gang; da ville feltet hoppet over ett.
+    if (this[laas]) {
+      if (nr !== undefined) this[maal] = neste;
+      return;
+    }
     if (neste === naa) return;
 
     // Uten animasjon: bytt med en gang. Noen har slaatt av bevegelse i
@@ -14758,9 +14799,11 @@ class Component extends DCLogic {
     }
 
     this[laas] = true;
+    this[maal] = neste;
     this.setState({ [nokkel + 'Ute']: true });
     this['_timer' + nokkel] = setTimeout(() => {
-      this.setState({ [nokkel + 'Nr']: neste, [nokkel + 'Ute']: false });
+      // Leser maalet paa nytt: et trykk underveis kan ha flyttet det.
+      this.setState({ [nokkel + 'Nr']: this[maal], [nokkel + 'Ute']: false });
       this[laas] = false;
     }, Component.ROT_TONING);
   }

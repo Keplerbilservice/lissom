@@ -85,7 +85,8 @@ si(!kropp.includes('.lx-hero-pad'), 'stilarket ligger ikke igjen i <helmet>');
 
 // 5. Skriftene over skjermkanten.
 for (const f of ['bitter-latin-800-normal', 'alegreya-sans-latin-400-normal',
-                 'bitter-latin-600-italic', 'alegreya-sans-latin-700-normal']) {
+                 'bitter-latin-600-italic', 'alegreya-sans-latin-700-normal',
+                 'bitter-latin-700-normal']) {
   si(hode.includes('preload" href="/fonts/' + f + '.woff2'), 'skrifta ' + f + ' er varslet');
 }
 

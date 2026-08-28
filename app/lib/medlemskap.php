@@ -358,18 +358,96 @@ final class Medlemskap
         return ['status' => 'aktiv', 'avtale' => $a];
     }
 
-    /** Sier opp. Avtalen stoppes i Vipps, saa ingen flere trekk kommer. */
+    /**
+     * Hvorfor et medlemskap ikke kan sies opp naa — eller null naar det kan.
+     *
+     * To regler:
+     *
+     *   Bindingstid. To maaneder fra innmelding, tolv paa aarsavtalen. Den
+     *   staar i «binding_til», satt da avtalen ble opprettet.
+     *
+     *   Én oppsigelse om gangen. Er den alt sagt opp, staar sluttdatoen.
+     *
+     * @param array<string,mixed> $avtale
+     */
+    public static function hvorforIkkeSiOpp(array $avtale): ?string
+    {
+        if ($avtale['slutter'] !== null) {
+            return 'Medlemskapet er alt sagt opp, og gjelder ut '
+                . Booking::norskDatoKort((string) $avtale['slutter'] . ' 12:00:00') . '.';
+        }
+        $binding = $avtale['binding_til'] ?? null;
+        if ($binding !== null && (string) $binding >= gmdate('Y-m-d')) {
+            $plan = self::plan((string) $avtale['plan']);
+            $aar = $plan !== null && (int) $plan['binding_mnd'] >= 12;
+            return ($aar
+                ? 'Årsavtalen kan ikke sies opp før året er ute. Den løper til '
+                : 'Medlemskapet er bundet til ')
+                . Booking::norskDatoKort((string) $binding . ' 12:00:00')
+                . '. Ta kontakt om noe har endret seg, så finner vi ut av det.';
+        }
+        return null;
+    }
+
+    /** Siste dag et medlemskap gjelder naar det sies opp i dag. */
+    public static function sluttdato(array $avtale): string
+    {
+        $plan = self::plan((string) $avtale['plan']);
+        $mnd = $plan === null ? 1 : max(0, (int) ($plan['oppsigelse_mnd'] ?? 1));
+        return (new DateTimeImmutable('now'))->modify('+' . $mnd . ' months')->format('Y-m-d');
+    }
+
+    /**
+     * Sier opp — med oppsigelsestid.
+     *
+     * Her ble avtalen stoppet i Vipps med det samme, og medlemmet mistet
+     * tilgangen samme sekund. Med én maaneds oppsigelsestid er det feil begge
+     * veier: medlemmet har betalt for en maaned til, og verkstedet skal ha den
+     * maaneden.
+     *
+     * Naa settes bare sluttdatoen. Avtalen loper videre, trekket gaar som for,
+     * og cron stopper den den dagen den skal — se Medlemskap::tilAvslutning().
+     */
     public static function siOpp(array $avtale): void
     {
+        $hindring = self::hvorforIkkeSiOpp($avtale);
+        if ($hindring !== null) {
+            throw new RuntimeException($hindring);
+        }
+        DB::oppdater('subscriptions', [
+            'sagt_opp_at' => gmdate('Y-m-d H:i:s'),
+            'slutter'     => self::sluttdato($avtale),
+        ], ['id' => (int) $avtale['id']]);
+    }
+
+    /**
+     * Medlemskap der oppsigelsestida er ute. Kjores av cron.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function tilAvslutning(): array
+    {
+        return DB::alle(
+            "SELECT * FROM subscriptions
+              WHERE slutter IS NOT NULL AND slutter <= CURDATE()
+                AND status <> 'stoppet'"
+        );
+    }
+
+    /** Stopper et medlemskap som har gaatt ut oppsigelsestida si. */
+    public static function avslutt(array $avtale): void
+    {
         if ($avtale['vipps_agreement_id']) {
-            Vipps::stoppAvtale((string) $avtale['vipps_agreement_id']);
+            try {
+                Vipps::stoppAvtale((string) $avtale['vipps_agreement_id']);
+            } catch (Throwable $e) {
+                logg_feil('Fikk ikke stoppet avtale ' . $avtale['id'] . ' i Vipps', $e);
+            }
         }
         DB::oppdater('subscriptions', [
             'status'      => 'stoppet',
             'neste_trekk' => null,
-            'sagt_opp_at' => gmdate('Y-m-d H:i:s'),
         ], ['id' => (int) $avtale['id']]);
-
         DB::oppdater('members', ['status' => 'oppsagt'], ['id' => (int) $avtale['member_id']]);
     }
 
@@ -387,6 +465,9 @@ final class Medlemskap
               WHERE s.status = 'aktiv'
                 AND s.neste_trekk IS NOT NULL
                 AND s.neste_trekk <= CURDATE()
+                -- Er det sagt opp, trekkes det ikke for en periode som
+                -- begynner etter siste dag.
+                AND (s.slutter IS NULL OR s.neste_trekk <= s.slutter)
                 AND m.anonymisert_at IS NULL"
         );
     }

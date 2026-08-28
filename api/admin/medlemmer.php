@@ -462,6 +462,47 @@ foreach (DB::alle('SELECT member_id FROM check_ins WHERE ut_tid IS NULL') as $r)
     $inne[(int) $r['member_id']] = true;
 }
 
+// ── Bindingstid og oppsigelse, per medlem ──────────────────────────────
+//
+// Eieren: «jeg maa paa en eller annen maate ha oversikt over disse to
+// maanedene og den ene maaneden med oppsigelsestid».
+//
+// Én sporring for alle, ikke én per medlem. Den nyeste avtalen teller — det
+// er den som loper.
+$avtaler = [];
+foreach (DB::alle(
+    "SELECT s.member_id, s.plan, s.status, s.binding_til, s.sagt_opp_at, s.slutter,
+            s.neste_trekk, s.vipps_agreement_id
+       FROM subscriptions s
+       JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions GROUP BY member_id) n
+         ON n.siste = s.id"
+) as $r) {
+    $avtaler[(int) $r['member_id']] = $r;
+}
+
+$idag = gmdate('Y-m-d');
+$dato = static fn(?string $d): ?string => $d ? Booking::norskDatoKort($d . ' 12:00:00') : null;
+
+/** Hva staar det om bindingen og oppsigelsen paa dette medlemmet? */
+$avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
+    $a = $avtaler[$id] ?? null;
+    if ($a === null) {
+        return ['fastTrekk' => false, 'bundetTil' => null, 'bundet' => false,
+                'sagtOpp' => null, 'slutter' => null, 'iOppsigelse' => false, 'avtale' => null];
+    }
+    $bundet = $a['binding_til'] !== null && (string) $a['binding_til'] >= $idag;
+    return [
+        // Tom avtale-id betyr «gjor opp selv» — ingen automatiske trekk.
+        'fastTrekk'   => trim((string) ($a['vipps_agreement_id'] ?? '')) !== '',
+        'bundetTil'   => $dato($a['binding_til']),
+        'bundet'      => $bundet,
+        'sagtOpp'     => $a['sagt_opp_at'] ? $dato(substr((string) $a['sagt_opp_at'], 0, 10)) : null,
+        'slutter'     => $dato($a['slutter']),
+        'iOppsigelse' => $a['slutter'] !== null && (string) $a['slutter'] >= $idag,
+        'avtale'      => (string) $a['status'],
+    ];
+};
+
 Svar::json(['medlemmer' => array_map(static fn($m) => [
     'id'         => (int) $m['id'],
     'navn'       => $m['navn'],
@@ -479,7 +520,7 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
     'erInne'     => isset($inne[(int) $m['id']]),
     'antallKurs' => $kurs[(int) $m['id']] ?? 0,
-], $medlemmer),
+] + $avtaleInfo((int) $m['id']), $medlemmer),
     // Medlemskapene som finnes, saa innmelding for haand kan tilby de
     // samme valgene som nettsida — ikke en liste skrevet av paa nytt.
     'planer' => array_map(static fn($p) => [

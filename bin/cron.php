@@ -93,10 +93,21 @@ switch ($jobb) {
             usleep(200_000);
         }
 
-        if ($gjort > 0 || $feilet > 0) {
-            logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet]);
+        // Oppsigelsestida ute: her stoppes avtalen i Vipps og tilgangen tas
+        // bort. Selve oppsigelsen setter bare sluttdatoen — medlemmet har
+        // betalt for maaneden, og skal ha den.
+        $avsluttet = 0;
+        foreach (Medlemskap::tilAvslutning() as $a) {
+            Medlemskap::avslutt($a);
+            $avsluttet++;
+            usleep(200_000);
         }
-        $si("Medlemstrekk: {$gjort} trekk, {$feilet} feilet, " . count($venter) . ' avtaler sjekket.');
+
+        if ($gjort > 0 || $feilet > 0 || $avsluttet > 0) {
+            logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet, 'avsluttet' => $avsluttet]);
+        }
+        $si("Medlemstrekk: {$gjort} trekk, {$feilet} feilet, " . count($venter)
+            . ' avtaler sjekket, ' . $avsluttet . ' avsluttet.');
         break;
 
     // -----------------------------------------------------------------------

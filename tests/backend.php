@@ -1103,6 +1103,74 @@ sjekk('en ny kjoring gjor ingenting mer', (static function () use ($eAb) {
 DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eAb]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
 
+// ── Bindingstid og oppsigelsestid ──────────────────────────────────────
+//
+// To maaneder fra innmelding, tolv paa aarsavtalen, én maaneds oppsigelse.
+echo "\n== Binding og oppsigelse ==\n";
+
+foreach (['Basis 30' => 2, 'Fri tilgang' => 2, 'Prøv Lissom' => 2, 'Årsmedlemskap' => 12] as $navn => $mnd) {
+    $pl = Medlemskap::plan($navn);
+    sjekk('«' . $navn . '» har ' . $mnd . ' maaneders binding',
+        $pl !== null && (int) $pl['binding_mnd'] === $mnd, (string) ($pl['binding_mnd'] ?? '?'));
+    sjekk('«' . $navn . '» har én maaneds oppsigelse',
+        $pl !== null && (int) $pl['oppsigelse_mnd'] === 1);
+}
+
+$bMedlem = (int) DB::settInn('members', [
+    'navn' => 'Binding Testesen', 'epost' => 'binding@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv',
+]);
+$lagAvtale = static function (string $plan, ?string $bindingTil) use ($bMedlem): array {
+    $pl = Medlemskap::plan($plan);
+    $id = (int) DB::settInn('subscriptions', [
+        'member_id' => $bMedlem, 'plan' => $plan, 'pris_ore' => (int) $pl['pris_ore'],
+        'vipps_agreement_id' => '', 'status' => 'aktiv', 'binding_til' => $bindingTil,
+    ]);
+    return DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $id]);
+};
+
+// Bundet: kan ikke sies opp.
+$aar = $lagAvtale('Årsmedlemskap', gmdate('Y-m-d', strtotime('+300 days')));
+$h = Medlemskap::hvorforIkkeSiOpp($aar);
+sjekk('aarsavtalen kan ikke sies opp for aaret er ute', $h !== null);
+sjekk('… og beskjeden sier at det er aarsavtalen',
+    $h !== null && str_contains($h, 'Årsavtalen'), (string) $h);
+$feilet = false;
+try { Medlemskap::siOpp($aar); } catch (RuntimeException $e) { $feilet = true; }
+sjekk('… og oppsigelsen blir avvist', $feilet);
+sjekk('… uten aa sette sluttdato',
+    DB::verdi('SELECT slutter FROM subscriptions WHERE id = :i', ['i' => (int) $aar['id']]) === null);
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => (int) $aar['id']]);
+
+// Bindingen ute: kan sies opp, og loper en maaned til.
+$fri = $lagAvtale('Basis 30', gmdate('Y-m-d', strtotime('-1 day')));
+sjekk('et medlemskap uten binding kan sies opp', Medlemskap::hvorforIkkeSiOpp($fri) === null);
+Medlemskap::siOpp($fri);
+$etter = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => (int) $fri['id']]);
+$venta = (new DateTimeImmutable('now'))->modify('+1 months')->format('Y-m-d');
+sjekk('oppsigelsen setter sluttdato én maaned fram',
+    $etter['slutter'] === $venta, (string) $etter['slutter'] . ' mot ' . $venta);
+sjekk('… og medlemskapet loper videre til da', $etter['status'] === 'aktiv');
+sjekk('… og medlemmet har fortsatt tilgang',
+    DB::verdi('SELECT status FROM members WHERE id = :i', ['i' => $bMedlem]) === 'aktiv');
+sjekk('… og det kan ikke sies opp to ganger',
+    Medlemskap::hvorforIkkeSiOpp($etter) !== null);
+sjekk('… og det staar ikke til avslutning ennaa',
+    !in_array((int) $fri['id'], array_map('intval', array_column(Medlemskap::tilAvslutning(), 'id')), true));
+
+// Sluttdagen: da stoppes det.
+DB::oppdater('subscriptions', ['slutter' => gmdate('Y-m-d')], ['id' => (int) $fri['id']]);
+$forfalt = array_map('intval', array_column(Medlemskap::tilAvslutning(), 'id'));
+sjekk('paa sluttdagen staar det til avslutning', in_array((int) $fri['id'], $forfalt, true));
+Medlemskap::avslutt(DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => (int) $fri['id']]));
+sjekk('… og da stoppes medlemskapet',
+    DB::verdi('SELECT status FROM subscriptions WHERE id = :i', ['i' => (int) $fri['id']]) === 'stoppet');
+sjekk('… og tilgangen tas bort',
+    DB::verdi('SELECT status FROM members WHERE id = :i', ['i' => $bMedlem]) === 'oppsagt');
+
+DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $bMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $bMedlem]);
+
 // Samme adresse i to skrivemaater skal telle som én mottaker.
 $forNokler = Varsel::adminEposter();
 sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(', ', $forNokler));

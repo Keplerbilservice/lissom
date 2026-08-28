@@ -3491,8 +3491,18 @@ window.__resources = {
               <sc-if value="{{ erOppsagt }}" hint-placeholder-val="{{ false }}">
                 <div style="background: rgba(196,90,58,.1); border: 1px solid var(--terracotta-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-body);">{{ oppsigelseTekst }} <button type="button" onClick="{{ angreOppsigelse }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--terracotta-600); text-decoration: underline;">Angre</button></div>
               </sc-if>
+              <!-- Hvorfor oppsigelsen ikke gaar naa. Knappen sto ikke her i
+                   det hele tatt: oppsigelsen fantes bare som endepunkt, og et
+                   aarsmedlem som ville si opp fikk ingen vei og ingen
+                   forklaring. -->
+              <sc-if value="{{ aboHarHindring }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-2); font-size: var(--text-xs); color: var(--text-muted);">{{ aboHindring }}</p>
+              </sc-if>
               <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: auto; padding-top: var(--space-2); border-top: 1px solid var(--border-subtle);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,32px">Forny</x-import>
+                <sc-if value="{{ aboKanSiOpp }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ aboSiOpp }}" hint-size="auto,32px">Si opp</x-import>
+                </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ vekslByttAbo }}" hint-size="auto,32px">Bytt abonnement</x-import>
               </div>
             </div>
@@ -9031,6 +9041,16 @@ window.__resources = {
                   <div style="font-size: var(--text-sm); color: var(--text-body);">{{ m.abonnement }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ m.undertekst }}</div>
                 </div>
+                <!-- Bindingstid og oppsigelse. Gul mens medlemmet er bundet,
+                     rod mens en oppsigelse loper, gronn naar det staar fritt.
+                     Sto ingen steder for — verkstedet hadde ingen maate aa se
+                     hvem som var bundet til naar. -->
+                <sc-if value="{{ m.harBinding }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex: 0 1 190px; min-width: 0;">
+                    <span style="{{ m.bindingStil }}">{{ m.bindingTekst }}</span>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.trekkTekst }}</div>
+                  </div>
+                </sc-if>
                 <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 130px; min-width: 105px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ m.barStil }}"></div>
@@ -19070,7 +19090,10 @@ class Component extends DCLogic {
    */
   harSagtOpp() {
     const a = this.state.minAvtale;
-    return a ? (a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
+    // «sagtOpp» er den nye: oppsigelsen loper, men medlemskapet gjelder ut
+    // oppsigelsestida. Statusen er fortsatt «aktiv» — det er riktig, og det
+    // er nettopp derfor den maa spoerres om for seg.
+    return a ? (a.sagtOpp || a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
   }
 
   siOppAbonnement() {
@@ -21733,6 +21756,26 @@ class Component extends DCLogic {
         : (m.antallKurs > 0 ? 'Kursdeltaker' : 'Konto uten kjøp')),
       kursTekst: (m.antallKurs || 0) === 0 ? 'ingen kurs'
         : (m.antallKurs === 1 ? '1 kurs' : m.antallKurs + ' kurs'),
+      // Bindingstida og oppsigelsen, i klartekst paa raden.
+      //
+      // To maaneders binding fra innmelding, tolv paa aarsavtalen, og én
+      // maaneds oppsigelsestid. Uten dette sto det ingen steder naar noen var
+      // bundet til, eller naar en oppsigelse faktisk tar slutt.
+      bindingTekst: m.slutter ? 'Sagt opp ' + (m.sagtOpp || '') + ' · ut ' + m.slutter
+        : (m.bundet ? 'Bundet til ' + m.bundetTil : (m.bundetTil ? 'Fri' : '')),
+      iOppsigelse: !!m.iOppsigelse,
+      erBundet: !!m.bundet,
+      harBinding: !!(m.slutter || m.bundetTil),
+      bindingStil: {
+        fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+        textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
+        whiteSpace: 'nowrap',
+        background: m.iOppsigelse ? 'rgba(196,90,58,.14)'
+          : (m.bundet ? 'rgba(255,207,56,.28)' : 'rgba(90,140,80,.16)'),
+        color: m.iOppsigelse ? 'var(--terracotta-600)'
+          : (m.bundet ? 'var(--lissom-brown)' : '#3E6B36'),
+      },
+      trekkTekst: m.fastTrekk ? 'Fast trekk' : 'Gjør opp selv',
       abonnement: m.medlemskap || 'Ingen',
       // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
       // viser bare hvor mye som er brukt.
@@ -22921,8 +22964,23 @@ class Component extends DCLogic {
           : (this.erPublisert() ? 'Avtalen gjøres opp direkte med verkstedet' : 'Fornyes 1. september · kan sies opp når du vil');
 
         return {
-          aboStatus: status + (a && a.binding ? ' · bundet til ' + a.binding : ''),
+          aboStatus: (a && a.slutter ? 'Sagt opp — gjelder ut ' + a.slutter : status)
+            + (a && a.bundetTil && !a.slutter ? ' · bundet til ' + a.bundetTil : ''),
           erOppsagt: oppsagt,
+          // Naar knappen ikke kan trykkes, skal det staa hvorfor. Foer sto den
+          // bare borte, og et aarsmedlem som ville si opp fikk ingen forklaring.
+          aboKanSiOpp: !!(a && a.kanSiOpp),
+          // Ett sporsmaal foer. En oppsigelse skal ikke skje fordi noen traff
+          // feil knapp paa en telefon.
+          aboSiOpp: () => {
+            const naar = a && a.slutter ? a.slutter : 'utgangen av oppsigelsestida';
+            if (!window.confirm('Si opp medlemskapet?\n\n'
+                + 'Det har én måneds oppsigelsestid, så det gjelder ut '
+                + naar + '. Du kan bruke verkstedet som vanlig til da.')) return;
+            this.siOppAbonnement();
+          },
+          aboHarHindring: !!(a && a.hindring && !a.slutter),
+          aboHindring: (a && a.hindring) || '',
           aboBadge: a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
                       : (oppsagt ? 'Sagt opp' : 'Aktivt'),
           aboBadgeStil: {
@@ -22936,7 +22994,9 @@ class Component extends DCLogic {
             : (this.erPublisert() ? 'Avtales med verkstedet' : '1. sep · ' + plan.pris),
           oppsigelseTekst: a && a.status === 'utlopt'
             ? 'Avtalen har løpt ut.'
-            : 'Sagt opp. Du blir ikke trukket igjen.',
+            : (a && a.slutter
+                ? 'Sagt opp. Medlemskapet gjelder ut ' + a.slutter + '.'
+                : 'Sagt opp. Du blir ikke trukket igjen.'),
         };
       })(),
       aboFordeler: (plan.punkter && plan.punkter.length) ? plan.punkter.slice(0, 2)

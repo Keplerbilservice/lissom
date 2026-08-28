@@ -60,8 +60,16 @@ if (Foresporsel::metode() === 'GET') {
                     ? Booking::norskDatoKort((string) $a['neste_trekk'] . ' 12:00:00') : null,
                 'binding'    => $a['binding_til']
                     ? Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00') : null,
-                'kanSiOpp'   => $a['status'] === 'aktiv'
-                    && ($a['binding_til'] === null || $a['binding_til'] < gmdate('Y-m-d')),
+                // Hvorfor det ikke gaar, naar det ikke gaar. Min side viser
+                // teksten framfor en knapp som ikke kan trykkes.
+                'hindring'   => $a['status'] === 'aktiv'
+                    ? Medlemskap::hvorforIkkeSiOpp($a) : 'Medlemskapet løper ikke nå.',
+                'kanSiOpp'   => $a['status'] === 'aktiv' && Medlemskap::hvorforIkkeSiOpp($a) === null,
+                'bundetTil'  => $a['binding_til']
+                    ? Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00') : null,
+                'sagtOpp'    => !empty($a['sagt_opp_at']),
+                'slutter'    => !empty($a['slutter'])
+                    ? Booking::norskDatoKort((string) $a['slutter'] . ' 12:00:00') : null,
             ];
         }
     }
@@ -91,17 +99,17 @@ switch (Foresporsel::tekst('handling')) {
         if ($a === null) {
             Svar::feil('Du har ingen løpende avtale.');
         }
-        if ($a['binding_til'] !== null && $a['binding_til'] >= gmdate('Y-m-d')) {
-            Svar::feil('Årsavtalen løper til ' . Booking::norskDatoKort((string) $a['binding_til'] . ' 12:00:00')
-                . '. Ta kontakt om noe har endret seg, saa finner vi ut av det.');
-        }
+        // Bindingstida og «én oppsigelse om gangen» ligger i regelen selv, saa
+        // den gjelder uansett hvem som kaller — ogsaa herfra.
         try {
             Medlemskap::siOpp($a);
         } catch (RuntimeException $e) {
             Svar::feil($e->getMessage());
         }
-        revider('medlemsavtale_sagt_opp', 'subscription', (int) $a['id']);
-        Svar::ok(['beskjed' => 'Medlemskapet er sagt opp. Du blir ikke trukket igjen.']);
+        $slutter = DB::verdi('SELECT slutter FROM subscriptions WHERE id = :i', ['i' => (int) $a['id']]);
+        revider('medlemsavtale_sagt_opp', 'subscription', (int) $a['id'], ['slutter' => $slutter]);
+        Svar::ok(['beskjed' => 'Medlemskapet er sagt opp, og gjelder ut '
+            . Booking::norskDatoKort((string) $slutter . ' 12:00:00') . '.']);
 
     // Kunden kan ha godkjent i appen uten aa komme tilbake til nettsiden.
     // Denne lar Min side sporre Vipps paa nytt.

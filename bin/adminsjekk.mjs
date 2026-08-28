@@ -17,7 +17,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { utenAdmin } from './utenadmin.mjs';
+import { lettUtgave } from './utenadmin.mjs';
 
 const ROT = path.resolve(import.meta.dirname, '..');
 const kilde = fs.readFileSync(path.join(ROT, 'lissom-2108.html'), 'utf8');
@@ -26,7 +26,7 @@ const maalFil = path.join(ROT, 'lissom-2108-uten-admin.html');
 let feil = 0;
 const si = (ok, t) => { if (!ok) feil++; console.log((ok ? '  OK  ' : '  FEIL') + '  ' + t); };
 
-const { html, blokker } = utenAdmin(kilde);
+const { html, blokker, skript } = await lettUtgave(kilde);
 
 if (!fs.existsSync(maalFil)) {
   si(false, 'lissom-2108-uten-admin.html finnes — kjor «node bin/utenadmin.mjs»');
@@ -80,6 +80,12 @@ const iSide = (side.match(/const SIDE_COOKIE = '([^']+)'/) || [])[1];
 si(!!iSesjon && iSesjon === iSide,
    'side.php og Sesjon::COOKIE er enige om cookienavnet ('
    + iSesjon + (iSesjon === iSide ? '' : ' mot ' + iSide) + ')');
+
+// Skriptet skal vaere komprimert, ikke bare med. Glipper terser-steget,
+// gaar fila ut 439 kB tyngre uten at noe annet sier fra.
+si(skript.etter > 0 && skript.etter < skript.for * 0.8,
+   'skriptet er komprimert ('
+   + Math.round(skript.for / 1024) + ' kB → ' + Math.round(skript.etter / 1024) + ' kB)');
 
 const kb = (n) => Math.round(Buffer.byteLength(n) / 1024);
 console.log('\n' + kb(kilde) + ' kB → ' + kb(html) + ' kB ('

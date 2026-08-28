@@ -39,7 +39,18 @@ foreach (glob($rot . '/*.jpg') ?: [] as $sti) {
         }
     }
     // Utgavene selv skal ikke faa utgaver.
-    if (preg_match('/-\d+\.jpg$/', $navn)) {
+    //
+    // Bare de breddene dette skriptet selv lager. Monsteret var «-\d+.jpg»,
+    // og det traff ogsaa ekte originalnavn: «uploads_shutterstock_2767913113-1
+    // .jpg», «assets_datenight-1.jpg» og «assets_datenight-3.jpg» ble hoppet
+    // over, fikk aldri mindre utgaver, og sto ikke i bildekartet.
+    //
+    // Det var synlig paa forsida. Events-bildet i rotasjonen er det ene av de
+    // seks uten mindre utgaver, og «flytt()» lot da srcset-en fra det forrige
+    // bildet staa igjen — Keplers kopper dukket opp paa «En kveld de kommer
+    // til aa snakke om». Selve srcset-feilen er rettet i lissom-2108.html; her
+    // rettes grunnen til at bildet manglet utgaver i det hele tatt.
+    if (preg_match('/-(' . implode('|', BREDDER) . ')\.jpg$/', $navn)) {
         continue;
     }
 

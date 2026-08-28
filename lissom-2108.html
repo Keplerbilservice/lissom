@@ -1862,14 +1862,6 @@ window.__resources = {
             <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--text-body); line-height: 1.65; max-width: 44ch; text-wrap: pretty;">Lissom handler ikke bare om keramikk. Det handler om å senke skuldrene, være kreativ, lære noe nytt og skape noe med egne hender. Vi ønsker at verkstedet skal være et sted hvor mennesker møtes, finner inspirasjon og opplever gleden ved å lage noe selv.</p>
             <p style="margin: 0; font-size: var(--text-base); font-weight: 700; color: var(--text-heading); text-wrap: pretty;">Velkommen til Lissom – et kreativt pusterom på Teie, rett utenfor Tønsberg</p>
           </div>
-          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
-            <sc-for list="{{ tilbudKort }}" as="t" hint-placeholder-count="6">
-              <button type="button" onClick="{{ t.velg }}" style="appearance: none; cursor: pointer; text-align: left; font: inherit; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--text-body); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); transition: all .18s ease;" style-hover="border-color: var(--lissom-brown); box-shadow: var(--shadow-sm);">
-                <span>{{ t.navn }}</span>
-                <span aria-hidden="true" style="color: var(--terracotta-600); font-weight: 700; flex: 0 0 auto;">→</span>
-              </button>
-            </sc-for>
-          </div>
         </div>
       </section>
 
@@ -28335,17 +28327,6 @@ class Component extends DCLogic {
         pDatoTomliste: this.innh('Paint on Pots/6/Tom liste'),
       }),
       goPop: this.go('paintonpots'),
-      tilbudKort: [
-        { navn: 'Dreiekurs for nybegynnere og viderekomne', side: 'kurs', filter: 'Dreiing' },
-        { navn: 'Kurs i plateteknikk og håndbygging', side: 'kurs', filter: 'Plateteknikk' },
-        { navn: 'Paint on Pots', side: 'paintonpots' },
-        { navn: 'Datenights og kreative kvelder', side: 'kurs', filter: 'Events' },
-        { navn: 'Private arrangementer og events', side: 'bedrift' },
-        { navn: 'Medlemskap med tilgang til verkstedet og egne prosjekter', side: 'medlemskap' },
-      ].map(t => ({
-        navn: t.navn,
-        velg: () => { this.setState(t.filter ? { side: t.side, kursFilter: t.filter } : { side: t.side }); window.scrollTo(0, 0); },
-      })),
       // «Se datoer og book» gaar rett i bestillingen.
       //
       // Den rullet ned til datolista, der man matte trykke «Book plass» én

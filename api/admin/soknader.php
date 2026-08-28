@@ -66,6 +66,34 @@ if ($soknad['status'] !== 'venter') {
 $type        = mb_substr(Foresporsel::tekst('type') ?: (string) ($soknad['onsket_type'] ?? ''), 0, 64);
 $begrunnelse = mb_substr(Foresporsel::tekst('begrunnelse'), 0, 500);
 
+// ── Betalingen skal vaere paa plass for noen slippes inn ────────────────
+//
+// Soknaden oppretter avtalen i Vipps med det samme, men trekket holdes igjen
+// til her (se Medlemskap::oppdaterFraVipps). Godkjenner vi uten at avtalen er
+// godkjent i appen, faar medlemmet tilgang uten at det finnes noe aa trekke
+// fra — og cron henter bare avtaler som er aktive. Da kommer det ingen penger,
+// ikke den maaneden og ikke noen gang.
+//
+// Eldre soknader, sendt inn for avtalen ble en del av innmeldingen, har ingen
+// avtale i det hele tatt. De kan fortsatt godkjennes — men det staar i svaret
+// at det maa kreves inn paa annen maate, saa det ikke gaar stille forbi.
+$avtaleStatus = 'ingen';
+if ($vedtak === 'godkjent') {
+    $ut = Medlemskap::slippForsteTrekk((int) $soknad['member_id']);
+    $avtaleStatus = $ut['status'];
+
+    if ($avtaleStatus === 'venter') {
+        Svar::feil('Betalingsavtalen er ikke godkjent i Vipps ennå. '
+            . $soknad['navn'] . ' har fått lenken på e-post — be hen godkjenne den, '
+            . 'så kan du si ja her etterpå.');
+    }
+    if (!in_array($avtaleStatus, ['aktiv', 'ingen'], true)) {
+        Svar::feil('Betalingsavtalen i Vipps er ' . $avtaleStatus . '. '
+            . 'Da kan ikke medlemskapet starte. ' . $soknad['navn']
+            . ' må opprette avtalen på nytt fra medlemskapssiden.');
+    }
+}
+
 DB::iTransaksjon(static function () use ($soknad, $vedtak, $type, $begrunnelse, $admin): void {
     DB::oppdater('membership_applications', [
         'status'       => $vedtak,
@@ -111,6 +139,25 @@ if ($vedtak === 'godkjent') {
     );
 }
 
+// Avslag: avtalen stoppes, saa den ikke blir liggende som en fullmakt hos
+// noen vi har sagt nei til. Ingen har betalt noe — trekket er aldri sluppet.
+if ($vedtak !== 'godkjent') {
+    $a = Medlemskap::avtale((int) $soknad['member_id'])
+        ?? DB::en("SELECT * FROM subscriptions WHERE member_id = :m AND status = 'venter'
+                   ORDER BY id DESC LIMIT 1", ['m' => (int) $soknad['member_id']]);
+    if ($a !== null) {
+        try { Medlemskap::siOpp($a); } catch (Throwable $e) { logg_feil('Fikk ikke stoppet avtalen etter avslag', $e); }
+    }
+}
+
 revider('medlemssoknad_' . $vedtak, 'membership_application', (int) $soknad['id'], ['medlem' => (int) $soknad['member_id']]);
 
-Svar::ok(['status' => $vedtak]);
+Svar::ok([
+    'status'  => $vedtak,
+    'beskjed' => $vedtak !== 'godkjent'
+        ? 'Søknaden er avslått, og betalingsavtalen er stoppet.'
+        : ($avtaleStatus === 'aktiv'
+            ? 'Godkjent. Første trekk går ut i natt.'
+            : 'Godkjent. Denne søknaden har ingen betalingsavtale — '
+              . 'den er fra før innmeldingen krevde det, så beløpet må kreves inn selv.'),
+]);

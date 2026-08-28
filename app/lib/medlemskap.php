@@ -171,10 +171,22 @@ final class Medlemskap
 
         $endring = ['status' => $ny];
 
+        // Ligger det en soknad til behandling, holdes trekket igjen.
+        //
+        // Soknaden oppretter avtalen med det samme, saa ingen kommer inn uten
+        // aa ha betalingen paa plass. Men verkstedet skal fortsatt kunne si
+        // nei — og da skal ingen ha blitt trukket. Forste trekk slippes av
+        // godkjenningen i admin, ikke av at kunden trykket ja i Vipps.
+        $venterSvar = (int) DB::verdi(
+            "SELECT COUNT(*) FROM membership_applications
+              WHERE member_id = :m AND status = 'venter'",
+            ['m' => (int) $avtale['member_id']]
+        ) > 0;
+
         // Forste trekk settes naar avtalen blir aktiv. Vi trekker fra dagen
         // etter godkjenning, ikke fra den 1. — da slipper vi aa forklare
         // hvorfor noen betaler full pris for en halv maaned.
-        if ($ny === 'aktiv' && $avtale['neste_trekk'] === null) {
+        if ($ny === 'aktiv' && $avtale['neste_trekk'] === null && !$venterSvar) {
             $endring['neste_trekk'] = (new DateTimeImmutable('now'))->format('Y-m-d');
         }
         if ($ny !== 'aktiv') {
@@ -185,7 +197,7 @@ final class Medlemskap
 
         // Medlemsstatusen folger avtalen. Uten dette ville noen betalt uten aa
         // faa tilgang, eller hatt tilgang uten aa betale.
-        if ($ny === 'aktiv') {
+        if ($ny === 'aktiv' && !$venterSvar) {
             DB::oppdater('members', [
                 'status'          => 'aktiv',
                 'medlemskap_type' => $avtale['plan'],
@@ -197,6 +209,42 @@ final class Medlemskap
         }
 
         return $ny;
+    }
+
+    /**
+     * Slipper forste trekk paa en avtale som har ventet paa godkjenning.
+     *
+     * Soknaden oppretter avtalen med det samme, men holder trekket igjen til
+     * verkstedet har sagt ja (se oppdaterFraVipps). Denne kalles av
+     * godkjenningen: den sporr Vipps om avtalen faktisk er godkjent, og setter
+     * forste trekk til i dag hvis den er det.
+     *
+     * @return array{status:string,avtale:?array<string,mixed>}
+     */
+    public static function slippForsteTrekk(int $medlemId): array
+    {
+        $a = DB::en(
+            'SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+            ['m' => $medlemId]
+        );
+        if ($a === null) {
+            return ['status' => 'ingen', 'avtale' => null];
+        }
+
+        // Fasiten er Vipps, ikke raden vaar. Kunden kan ha godkjent uten aa
+        // komme tilbake til nettsiden.
+        $status = self::oppdaterFraVipps($a);
+        if ($status !== 'aktiv') {
+            return ['status' => $status, 'avtale' => $a];
+        }
+
+        $a = DB::en('SELECT * FROM subscriptions WHERE id = :id', ['id' => (int) $a['id']]);
+        if ($a !== null && $a['neste_trekk'] === null) {
+            DB::oppdater('subscriptions', [
+                'neste_trekk' => (new DateTimeImmutable('now'))->format('Y-m-d'),
+            ], ['id' => (int) $a['id']]);
+        }
+        return ['status' => 'aktiv', 'avtale' => $a];
     }
 
     /** Sier opp. Avtalen stoppes i Vipps, saa ingen flere trekk kommer. */

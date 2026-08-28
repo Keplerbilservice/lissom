@@ -94,10 +94,21 @@ final class Varsel
             $liste = [(string) Config::hent('epost_svar_til', (string) Config::hent('epost_fra', 'post@lissom.no'))];
         }
 
+        // Samme adresse skal telle som én, ogsaa naar den staar med ulik
+        // skrivemaate. «Monica@lissom.no» og «monica@lissom.no» er samme
+        // postkasse — de sto som to, og da kom hvert varsel dobbelt.
+        //
+        // Merk: er det to ULIKE adresser som begge gaar til samme person,
+        // hjelper ikke dette. Naar «admin_eposter» ikke er satt — og den
+        // settes ingen steder i dag — er lista alle medlemmer med rollen
+        // «admin». Staar noen der to ganger, kommer varselet to ganger.
         $rene = [];
+        $sett = [];
         foreach ($liste as $e) {
             $e = trim((string) $e);
-            if (filter_var($e, FILTER_VALIDATE_EMAIL) && !in_array($e, $rene, true)) {
+            $noekkel = mb_strtolower($e);
+            if (filter_var($e, FILTER_VALIDATE_EMAIL) && !isset($sett[$noekkel])) {
+                $sett[$noekkel] = true;
                 $rene[] = $e;
             }
         }

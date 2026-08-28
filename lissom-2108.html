@@ -15924,6 +15924,27 @@ class Component extends DCLogic {
   //
   // Den som logger inn med Vipps er en kunde. Medlem blir man naar
   // verkstedet har sagt ja — ellers ville alle med Vipps hatt dorkode.
+  /**
+   * Medlemskapene som kan soekes om.
+   *
+   * Planene kommer fra api/medlemskap.php. Har de ikke rukket fram — eller
+   * kjorer vi uten server — staar de fire som ligger i basen, saa skjemaet
+   * ikke blir staaende tomt.
+   */
+  medlemsplaner() {
+    const fra = this.state.planListe || [];
+    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '' }));
+    return [{ navn: 'Prøv Lissom' }, { navn: 'Basis 30' },
+            { navn: 'Årsmedlemskap' }, { navn: 'Fri tilgang' }];
+  }
+
+  /** Valgt medlemskap — det forste hvis ingen er valgt ennaa. */
+  bmValgt() {
+    const p = this.medlemsplaner();
+    const v = this.state.bmType || '';
+    return p.some(x => x.navn === v) ? v : (p[0] ? p[0].navn : '');
+  }
+
   sendMedlemssoknad() {
     const epost = (this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost).trim();
     if (!epost || epost.indexOf('@') < 1) {
@@ -15938,7 +15959,7 @@ class Component extends DCLogic {
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: this.state.bmType || '',
+        type: this.bmValgt(),
         epost: epost,
         erfaring: (this.state.bmErfaring || '').trim(),
         melding: (this.state.bmMelding || '').trim(),
@@ -15951,13 +15972,18 @@ class Component extends DCLogic {
           this.setState({ bmFeil: d.feil || 'Fikk ikke sendt søknaden. Prøv igjen om litt.' });
           return;
         }
+        this.maal('sign_up', { method: 'Medlemssøknad', form: this.state.bmType || '' });
+        // Soknaden oppretter betalingsavtalen i Vipps, og serveren svarer med
+        // adressen den godkjennes paa. Uten dette steget kom man inn som
+        // medlem uten at det fantes noe aa trekke fra — og da kom det aldri
+        // penger, verken den maaneden eller senere.
+        if (d.url) { window.location.href = d.url; return; }
         this.setState({
           soknadStatus: 'venter',
           bmFeil: null,
           kvittering: 'Søknaden er sendt',
           kvitteringDetalj: 'Vi ser på den og svarer deg på e-post.',
         });
-        this.maal('sign_up', { method: 'Medlemssøknad', form: this.state.bmType || '' });
       })
       .catch(() => {
         this._soknadPagaar = false;
@@ -32353,15 +32379,22 @@ class Component extends DCLogic {
       bmTekst: this.state.soknadStatus === 'venter'
         ? 'Vi ser på søknaden din og svarer på e-post. Plassene dine på kurs finner du som vanlig lenger nede på siden.'
         : 'Som medlem får du dørkode, egen hylle og verkstedtid — og du kan legge ut egne arbeider for salg i nettbutikken. Vi tar en prat før du starter, så vi vet at du er trygg på utstyret.',
-      bmTyper: ['Prøv Lissom', '30 timer', 'Årsmedlemskap', 'Fri tilgang'].map(navn => ({
-        navn,
-        velg: () => this.setState({ bmType: navn, bmFeil: null }),
+      // Medlemskapene slik de faktisk staar i basen, med pris.
+      //
+      // Lista sto skrevet inn her: «Prøv Lissom», «30 timer»,
+      // «Årsmedlemskap», «Fri tilgang». Basen har «Basis 30», ikke «30
+      // timer». Soknaden ble dermed sendt med et medlemskap som ikke fantes —
+      // og naa som soknaden ogsaa oppretter betalingsavtalen, er navnet det
+      // prisen hentes fra. Da maa det vaere det ekte.
+      bmTyper: this.medlemsplaner().map(pl => ({
+        navn: pl.navn + (pl.pris ? ' · ' + pl.pris : ''),
+        velg: () => this.setState({ bmType: pl.navn, bmFeil: null }),
         stil: {
           appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '10px 18px',
           font: 'var(--type-body-sm)', fontWeight: 700,
           border: '2px solid var(--lissom-brown)',
-          background: this.state.bmType === navn ? 'var(--lissom-brown)' : 'transparent',
-          color: this.state.bmType === navn ? 'var(--clay-50)' : 'var(--lissom-brown)',
+          background: this.bmValgt() === pl.navn ? 'var(--lissom-brown)' : 'transparent',
+          color: this.bmValgt() === pl.navn ? 'var(--clay-50)' : 'var(--lissom-brown)',
         },
       })),
       bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,

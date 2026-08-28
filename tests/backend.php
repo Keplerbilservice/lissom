@@ -995,6 +995,85 @@ foreach ($betalinger as $pid) {
 }
 DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $enPlass]);
 
+// ── Ingen kommer inn som medlem uten aa betale ─────────────────────────
+//
+// Soknaden om medlemskap oppretter betalingsavtalen i Vipps. Gjorde den ikke
+// det, fantes det to veier inn: medlemskapssida med avtale og trekk, og
+// soknadsskjemaet uten. Den andre ga tilgang uten at det fantes noe aa trekke
+// fra — og cron henter bare avtaler som er aktive.
+//
+// Vipps naas ikke herfra, saa selve avtalen kan ikke opprettes i en test. Det
+// som kan proves er alt rundt: at planen maa finnes, at godkjenningen krever
+// en avtale, og at ingen soknad blir liggende igjen naar avtalen ikke lot seg
+// opprette.
+echo "\n== Medlemskap krever betaling ==\n";
+
+$planer = array_column(Medlemskap::planer(), 'navn');
+sjekk('det finnes medlemskap aa soke om', count($planer) > 0, implode(', ', $planer));
+
+// Navnene skjemaet tilbyr maa vaere de samme som basen har. Sto som en fast
+// liste i nettsida med «30 timer», mens basen heter «Basis 30» — soknaden ble
+// sendt med et medlemskap som ikke fantes.
+$iSida = [];
+$html = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+if (preg_match('/bmTyper: this\.medlemsplaner\(\)/', $html) === 1) {
+    sjekk('skjemaet henter medlemskapene fra basen, ikke fra en fast liste', true);
+} else {
+    sjekk('skjemaet henter medlemskapene fra basen, ikke fra en fast liste', false,
+        'bmTyper staar fortsatt som en skrevet liste');
+}
+
+foreach (['30 timer', 'Tullemedlemskap'] as $tull) {
+    sjekk('«' . $tull . '» er ikke et medlemskap som finnes',
+        Medlemskap::plan($tull) === null);
+}
+
+// Godkjenning uten avtale: tillatt, men skal si fra. Eldre soknader har ingen.
+$uten = Medlemskap::slippForsteTrekk(999999);
+sjekk('et medlem uten avtale svarer «ingen»', $uten['status'] === 'ingen', $uten['status']);
+
+// En avtale som staar til godkjenning holder trekket igjen.
+$tPlan = Medlemskap::planer()[0];
+$tMedlem = (int) DB::settInn('members', [
+    'navn' => 'Testsoker Betaling', 'epost' => 'testsoker@example.test',
+    'telefon' => '+4790000001', 'rolle' => 'medlem', 'status' => 'ingen',
+]);
+$tSoknad = (int) DB::settInn('membership_applications', [
+    'member_id' => $tMedlem, 'onsket_type' => $tPlan['navn'],
+    'navn' => 'Testsoker Betaling', 'epost' => 'testsoker@example.test',
+    'status' => 'venter',
+]);
+$tAvtale = (int) DB::settInn('subscriptions', [
+    'member_id' => $tMedlem, 'plan' => $tPlan['navn'],
+    'pris_ore' => (int) $tPlan['pris_ore'], 'vipps_agreement_id' => '',
+    'status' => 'venter',
+]);
+$rad = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $tAvtale]);
+sjekk('en ny avtale staar som «venter» og har ingen trekkdato',
+    $rad['status'] === 'venter' && $rad['neste_trekk'] === null);
+
+// Uten avtale-id spor vi ikke Vipps, og statusen staar. Da skal godkjenningen
+// nekte — ingen skal inn paa en avtale som ikke er godkjent.
+$ut = Medlemskap::slippForsteTrekk($tMedlem);
+sjekk('godkjenning slipper ikke trekket naar avtalen ikke er aktiv',
+    $ut['status'] !== 'aktiv', $ut['status']);
+sjekk('trekkdatoen staar fortsatt tom', DB::verdi(
+    'SELECT neste_trekk FROM subscriptions WHERE id = :i', ['i' => $tAvtale]) === null);
+
+// Og medlemmet er ikke sluppet inn.
+sjekk('medlemmet har ikke faatt tilgang', DB::verdi(
+    'SELECT status FROM members WHERE id = :i', ['i' => $tMedlem]) === 'ingen');
+
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $tAvtale]);
+DB::kjor('DELETE FROM membership_applications WHERE id = :i', ['i' => $tSoknad]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMedlem]);
+
+// Samme adresse i to skrivemaater skal telle som én mottaker.
+$forNokler = Varsel::adminEposter();
+sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(', ', $forNokler));
+sjekk('ingen adresse staar to ganger i adminlista',
+    count($forNokler) === count(array_unique(array_map('mb_strtolower', $forNokler))));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

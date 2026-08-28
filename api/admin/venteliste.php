@@ -40,7 +40,7 @@ if (Foresporsel::metode() === 'GET') {
      */
     $datoer = static function (int $kursId): array {
         $ut = [];
-        foreach (DB::alle(
+        $rader = DB::alle(
             "SELECT cs.id, cs.start_tid, cs.course_id, c.tittel
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
@@ -49,8 +49,14 @@ if (Foresporsel::metode() === 'GET') {
                 AND c.type <> 'dropin'
            ORDER BY cs.start_tid
               LIMIT 60"
-        ) as $o) {
-            $ledige = Booking::ledigePlasser((int) $o['id']);
+        );
+        // Ledige plasser paa alle seksti i én sporring, ikke tre per dato.
+        $ledigeKart = Booking::ledigePlasserFlere(
+            array_map(static fn(array $o): int => (int) $o['id'], $rader)
+        );
+
+        foreach ($rader as $o) {
+            $ledige = $ledigeKart[(int) $o['id']] ?? 0;
             if ($ledige <= 0) {
                 continue;
             }

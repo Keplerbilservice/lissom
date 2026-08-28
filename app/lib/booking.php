@@ -29,38 +29,77 @@ final class Booking
         //
         // Utenfor en transaksjon gir FOR UPDATE ingen mening; visningen av
         // «3 plasser igjen» skal heller ikke laase noe.
-        $laas = $medLaas && DB::kobling()->inTransaction() ? ' FOR UPDATE' : '';
-
-        $okt = DB::en(
-            'SELECT cs.id, cs.manuelt_opptatt, COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet
-               FROM course_sessions cs
-               JOIN courses c ON c.id = cs.course_id
-              WHERE cs.id = :id AND cs.status = \'planlagt\'' . $laas,
-            ['id' => $oktId]
-        );
-        if ($okt === null) {
-            return 0;
+        if ($medLaas && DB::kobling()->inTransaction()) {
+            DB::en('SELECT id FROM course_sessions WHERE id = :id FOR UPDATE', ['id' => $oktId]);
         }
 
-        // En reservasjon som er lagt inn for haand har ingen frist — den
-        // frigis ikke av seg selv. Uten «reservert_til IS NULL» ville
-        // nettsiden solgt plassen til noen som staar i verkstedets egen bok.
-        $opptatt = (int) DB::verdi(
-            "SELECT COALESCE(SUM(antall), 0)
-               FROM bookings
-              WHERE course_session_id = :id
-                AND (status = 'betalt'
-                     OR (status = 'reservert'
-                         AND (reservert_til IS NULL OR reservert_til > UTC_TIMESTAMP())))",
-            ['id' => $oktId]
-        );
+        // Regnestykket staar ett sted, i ledigePlasserFlere. Sto det ogsaa
+        // her, ville de to kunnet svare forskjellig — og den ene brukes til
+        // aa vise «3 plasser igjen», den andre til aa selge den siste stolen.
+        return self::ledigePlasserFlere([$oktId])[$oktId] ?? 0;
+    }
 
-        // Plasser som er tatt utenfor nettsiden — paamelding i verkstedet, paa
-        // telefon eller Instagram. De finnes ikke som bookinger, men de er
-        // opptatt, og maa trekkes fra her. Ellers ville nettsiden solgt dem.
-        $opptatt += (int) ($okt['manuelt_opptatt'] ?? 0);
+    /**
+     * Ledige plasser paa mange okter i én sporring.
+     *
+     * Katalogen viser hver eneste kursdato med «N plasser igjen». Ett kall per
+     * dato ble tre sporringer per dato: 83 datoer ga 249 sporringer paa én
+     * sidevisning, og tallet vokser med hver dato som legges ut. Etter at
+     * Paint on Pots og drop-in begynte aa folge aapningstidene lages datoene
+     * av seg selv, og da vokser det fort.
+     *
+     * Samme regnestykke som for, i ett svar:
+     *
+     *   kapasitet (oktas egen, ellers kursets)
+     *   − plasser tatt utenfor nettsiden (manuelt_opptatt)
+     *   − betalte og gyldige reservasjoner
+     *
+     * En reservasjon som er lagt inn for haand har ingen frist — den frigis
+     * ikke av seg selv. Uten «reservert_til IS NULL» ville nettsiden solgt
+     * plassen til noen som staar i verkstedets egen bok.
+     *
+     * @param list<int> $oktIder
+     * @return array<int, int> oktId => ledige
+     */
+    public static function ledigePlasserFlere(array $oktIder): array
+    {
+        $ider = array_values(array_unique(array_map('intval', $oktIder)));
+        if ($ider === []) {
+            return [];
+        }
 
-        return max(0, (int) $okt['kapasitet'] - $opptatt);
+        // Ingen navngitte parametre i en IN-liste: heltallene er allerede
+        // castet med intval over, saa de kan staa i SQL-en.
+        $inn = implode(',', $ider);
+
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT cs.id,
+                    GREATEST(0,
+                        COALESCE(cs.kapasitet, c.kapasitet)
+                        - COALESCE(cs.manuelt_opptatt, 0)
+                        - COALESCE((SELECT SUM(b.antall) FROM bookings b
+                                     WHERE b.course_session_id = cs.id
+                                       AND (b.status = 'betalt'
+                                            OR (b.status = 'reservert'
+                                                AND (b.reservert_til IS NULL
+                                                     OR b.reservert_til > UTC_TIMESTAMP())))), 0)
+                    ) AS ledige
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt' AND cs.id IN ({$inn})"
+        ) as $r) {
+            $ut[(int) $r['id']] = (int) $r['ledige'];
+        }
+
+        // En okt som ikke er «planlagt» — avlyst, eller som ikke finnes — har
+        // ingen ledige plasser. Den staar ikke i svaret over, og skal svare 0
+        // slik den gjorde da hvert kall sto for seg.
+        foreach ($ider as $i) {
+            $ut[$i] ??= 0;
+        }
+
+        return $ut;
     }
 
     /**

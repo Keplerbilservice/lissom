@@ -27,13 +27,46 @@ krev_admin();
 if (Foresporsel::metode() === 'GET') {
     $kurs = DB::alle('SELECT * FROM courses ORDER BY status, tittel');
 
-    Svar::json(['kurs' => array_map(static function ($k) {
-        $ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
-        $okter = DB::alle(
-            'SELECT id, start_tid, slutt_tid, kapasitet, status' . $ekstra . '
-               FROM course_sessions WHERE course_id = :c ORDER BY start_tid',
-            ['c' => $k['id']]
-        );
+    // ── Datoene, hentet én gang ─────────────────────────────────────────
+    //
+    // Her sto det én sporring per kurs etter datoene, og deretter ett kall
+    // per dato etter ledige plasser og ett etter samlinger. Kursoppsettet er
+    // skjermen Lissom har oppe oftest, og etter at Paint on Pots og drop-in
+    // begynte aa lage datoene sine av aapningstidene teller den fort et par
+    // hundre datoer. Da ble det over 250 sporringer for aa tegne én skjerm.
+    $ekstra   = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
+    $kursIder = array_map(static fn(array $k): int => (int) $k['id'], $kurs);
+
+    $okterPerKurs = [];
+    $datoerFramover = [];
+    if ($kursIder !== []) {
+        $inn = implode(',', $kursIder);
+        foreach (DB::alle(
+            'SELECT id, course_id, start_tid, slutt_tid, kapasitet, status' . $ekstra . '
+               FROM course_sessions WHERE course_id IN (' . $inn . ') ORDER BY start_tid'
+        ) as $o) {
+            $okterPerKurs[(int) $o['course_id']][] = $o;
+        }
+        // «Hvor mange datoer ligger framover» sto som en egen COUNT per kurs.
+        foreach (DB::alle(
+            "SELECT course_id, COUNT(*) n FROM course_sessions
+              WHERE course_id IN ({$inn}) AND status = 'planlagt'
+                AND start_tid > UTC_TIMESTAMP()
+           GROUP BY course_id"
+        ) as $r) {
+            $datoerFramover[(int) $r['course_id']] = (int) $r['n'];
+        }
+    }
+
+    $alleOkter   = array_merge(...(array_values($okterPerKurs) ?: [[]]));
+    $oktIder     = array_map(static fn(array $o): int => (int) $o['id'], $alleOkter);
+    $ledigeKart  = Booking::ledigePlasserFlere($oktIder);
+    $samlingKart = Samlinger::forOkter($oktIder);
+
+    Svar::json(['kurs' => array_map(static function ($k) use (
+        $okterPerKurs, $datoerFramover, $ledigeKart, $samlingKart
+    ) {
+        $okter = $okterPerKurs[(int) $k['id']] ?? [];
         return [
             'id'         => (int) $k['id'],
             'slug'       => $k['slug'],
@@ -53,11 +86,7 @@ if (Foresporsel::metode() === 'GET') {
             'serier'     => Serier::forKurs((int) $k['id']),
             // Hvor mange datoer som ligger framover. Kursoppsettet sier med
             // dette hva et nytt navn faktisk gjelder for.
-            'datoerFramover' => (int) DB::verdi(
-                "SELECT COUNT(*) FROM course_sessions
-                  WHERE course_id = :c AND status = 'planlagt' AND start_tid > UTC_TIMESTAMP()",
-                ['c' => (int) $k['id']]
-            ),
+            'datoerFramover' => $datoerFramover[(int) $k['id']] ?? 0,
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
             'bekreftelse'=> $k['bekreftelse_tekst'],
@@ -104,7 +133,7 @@ if (Foresporsel::metode() === 'GET') {
                 // — en okt uten varighet.
                 'sluttUtc'  => $o['slutt_tid'],
                 'status'    => $o['status'],
-                'ledige'    => Booking::ledigePlasser((int) $o['id']),
+                'ledige'    => $ledigeKart[(int) $o['id']] ?? 0,
                 // Pris og informasjon som gjelder bare denne datoen. NULL
                 // betyr «som kurset» — da skal feltet staa tomt i skjemaet,
                 // ikke fylt med kursets pris som om den var satt her.
@@ -112,7 +141,7 @@ if (Foresporsel::metode() === 'GET') {
                                  ? (int) $o['pris_ore'] / 100 : null,
                 'info'      => (string) ($o['info'] ?? ''),
                 // Samlingene, for et kurs som gaar over flere dager.
-                'samlinger' => Samlinger::forOkt((int) $o['id']),
+                'samlinger' => $samlingKart[(int) $o['id']] ?? [],
             ], $okter),
         ];
     }, $kurs),

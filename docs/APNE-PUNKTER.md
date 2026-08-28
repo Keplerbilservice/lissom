@@ -460,6 +460,26 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
 
+**Katalogen spurte tre ganger per kursdato — rettet 28. august.** Målt, ikke
+gjettet: `api/kurs.php` kjørte **279 spørringer** på én sidevisning, og
+`api/admin/kurs.php` 254.
+
+- Mønsteret var det samme tre steder: én spørring per kurs etter datoene, og
+  så inne i visningen ett kall etter ledige plasser og ett etter samlinger —
+  per dato. 83 datoer ble 249 spørringer.
+- Det vokser av seg selv nå. Paint on Pots og drop-in lager datoene sine av
+  åpningstidene, og fjorten dager framover blir fort et par hundre. Katalogen
+  er det første nettsiden henter, så alle besøkende betaler den.
+- `Booking::ledigePlasserFlere()` og `Samlinger::forOkter()` henter alle i én
+  spørring. `ledigePlasser()` og `forOkt()` kaller dem med én id, så
+  regnestykket står **ett** sted — sto det to steder, kunne det ene tallet
+  vist «3 plasser igjen» og det andre solgt den siste stolen. Den låste
+  lesningen (`FOR UPDATE`) er beholdt: økta låses først, så regnes det.
+- Etter: **kurs.php 279 → 21 spørringer** (103 → 24 ms), **admin/kurs.php
+  254 → 36** (100 → 29 ms), påmeldte 102 → 13, marked 76 → 26, venteliste
+  63 → 11. Svaret er byte-identisk før og etter, kontrollert med `cmp`.
+- Ingen endepunkter ligger over 36 spørringer nå.
+
 **Drop-in følger det samme — gjort 27. august.** «Samme bestilling med datoer
 og tider, og tilgjengeligheten skal følge kurs og når jeg er innstemplet.»
 

@@ -15,27 +15,63 @@ final class Samlinger
     /** Samlingene paa én kursdato, i rekkefolge. */
     public static function forOkt(int $oktId): array
     {
-        if (!DB::harTabell('okt_samlinger')) {
+        return self::forOkter([$oktId])[$oktId] ?? [];
+    }
+
+    /**
+     * Samlingene paa mange kursdatoer, i én sporring.
+     *
+     * Katalogen spurte én gang per dato. Tabellen har som regel ingen rader i
+     * det hele tatt — de fleste kurs er ett moete — saa det var 83 sporringer
+     * for aa faa 83 tomme svar.
+     *
+     * @param list<int> $oktIder
+     * @return array<int, list<array<string, mixed>>> oktId => samlinger
+     */
+    public static function forOkter(array $oktIder): array
+    {
+        $ider = array_values(array_unique(array_map('intval', $oktIder)));
+        if ($ider === [] || !DB::harTabell('okt_samlinger')) {
             return [];
         }
-        return array_map(static function (array $r): array {
-            $fra = $r['fra'] !== null ? substr((string) $r['fra'], 0, 5) : '';
-            $til = $r['til'] !== null ? substr((string) $r['til'], 0, 5) : '';
-            return [
-                'id'         => (int) $r['id'],
-                'nummer'     => (int) $r['nummer'],
-                'dato'       => (string) $r['dato'],
-                'fra'        => $fra,
-                'til'        => $til,
-                'overskrift' => (string) ($r['overskrift'] ?? ''),
-                'tekst'      => (string) ($r['tekst'] ?? ''),
-                // Ferdig skrevet, slik den vises: «Samling 1 · onsdag 9.
-                // september, 17:00–20:00».
-                'naar'       => self::norskDag((string) $r['dato'])
-                                . ($fra !== '' ? ', ' . $fra . ($til !== '' ? '–' . $til : '') : ''),
-            ];
-        }, DB::alle('SELECT * FROM okt_samlinger WHERE session_id = :s ORDER BY nummer, dato',
-                    ['s' => $oktId]));
+
+        // Heltallene er castet over, saa de kan staa i IN-lista.
+        $inn = implode(',', $ider);
+
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT * FROM okt_samlinger WHERE session_id IN ({$inn}) ORDER BY session_id, nummer, dato"
+        ) as $r) {
+            $ut[(int) $r['session_id']][] = self::enSamling($r);
+        }
+
+        return $ut;
+    }
+
+    /**
+     * Én samling, slik den vises.
+     *
+     * @param array<string, mixed> $r
+     * @return array<string, mixed>
+     */
+    private static function enSamling(array $r): array
+    {
+        $fra = $r['fra'] !== null ? substr((string) $r['fra'], 0, 5) : '';
+        $til = $r['til'] !== null ? substr((string) $r['til'], 0, 5) : '';
+
+        return [
+            'id'         => (int) $r['id'],
+            'nummer'     => (int) $r['nummer'],
+            'dato'       => (string) $r['dato'],
+            'fra'        => $fra,
+            'til'        => $til,
+            'overskrift' => (string) ($r['overskrift'] ?? ''),
+            'tekst'      => (string) ($r['tekst'] ?? ''),
+            // Ferdig skrevet, slik den vises: «Samling 1 · onsdag 9.
+            // september, 17:00–20:00».
+            'naar'       => self::norskDag((string) $r['dato'])
+                            . ($fra !== '' ? ', ' . $fra . ($til !== '' ? '–' . $til : '') : ''),
+        ];
     }
 
     /**

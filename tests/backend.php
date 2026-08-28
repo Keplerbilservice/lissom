@@ -102,6 +102,40 @@ $oktId = DB::settInn('course_sessions', ['course_id'=>$kapKurs,'start_tid'=>gmda
 $okt = ['id'=>$oktId, 'kap'=>12];
 sjekk('full kapasitet naar ingen har booket', Booking::ledigePlasser($oktId) === (int)$okt['kap'], Booking::ledigePlasser($oktId) . ' av ' . $okt['kap']);
 
+echo "\n== Ledige plasser, én og mange ==\n";
+//
+// Katalogen spurte én gang per kursdato. Naa hentes alle i én sporring, og
+// da maa de to svare likt — det ene tallet viser «3 plasser igjen», det
+// andre selger den siste stolen.
+{
+    $prove = array_map(
+        static fn(array $r): int => (int) $r['id'],
+        DB::alle('SELECT id FROM course_sessions ORDER BY id DESC LIMIT 25')
+    );
+    // En som ikke finnes skal svare 0, slik den gjorde da hvert kall sto for seg.
+    $prove[] = 999999999;
+
+    $kart = Booking::ledigePlasserFlere($prove);
+    $ulike = [];
+    foreach ($prove as $id) {
+        $en = Booking::ledigePlasser($id);
+        if (($kart[$id] ?? null) !== $en) {
+            $ulike[] = $id . ': ' . ($kart[$id] ?? 'mangler') . ' mot ' . $en;
+        }
+    }
+    sjekk('samlekallet svarer som ett og ett', $ulike === [],
+        count($prove) . ' okter' . ($ulike ? ' — ' . implode(', ', array_slice($ulike, 0, 3)) : ''));
+    sjekk('en okt som ikke finnes har null plasser', ($kart[999999999] ?? null) === 0);
+    sjekk('tom liste gir tomt svar', Booking::ledigePlasserFlere([]) === []);
+
+    // En avlyst okt selger ingenting.
+    $avlyst = DB::en("SELECT id FROM course_sessions WHERE status = 'avlyst' LIMIT 1");
+    if ($avlyst !== null) {
+        sjekk('en avlyst okt har null plasser',
+            Booking::ledigePlasserFlere([(int) $avlyst['id']])[(int) $avlyst['id']] === 0);
+    }
+}
+
 echo "\n== Medlem og sesjon ==\n";
 $medlemId = DB::settInn('members', ['vipps_sub'=>'test-sub-1','navn'=>'Test Testesen','epost'=>'test@example.com','telefon'=>'+4791234567']);
 $token = Sesjon::opprett($medlemId);

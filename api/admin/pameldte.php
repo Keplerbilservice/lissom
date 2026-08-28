@@ -115,6 +115,10 @@ if ($oktId <= 0) {
           ORDER BY cs.start_tid"
     );
 
+    $ledigeKart = Booking::ledigePlasserFlere(
+        array_map(static fn(array $o): int => (int) $o['id'], $okter)
+    );
+
     // Flat liste over alle deltakere framover — det admin-siden viser.
     // Rettelsene paa kursbeviset kom med migrasjon 045.
     $bevisKol = DB::harKolonne('bookings', 'bevis_navn')
@@ -188,6 +192,9 @@ if ($oktId <= 0) {
             'bevisKurs'    => (string) ($d['bevis_kurs'] ?? ''),
             'bevisSperret' => !empty($d['bevis_sperret']),
         ], $alle),
+        // Ledige plasser paa alle oektene i én sporring. Sto det ett kall
+        // per oekt, var det tre sporringer per dato — og datoene lages naa av
+        // aapningstidene, saa de blir mange.
         'okter' => array_map(static fn($o) => [
         'oktId'     => (int) $o['id'],
         'tittel'    => $o['tittel'],
@@ -195,7 +202,7 @@ if ($oktId <= 0) {
         'betalt'    => (int) $o['betalt'],
         'reservert' => (int) $o['reservert'],
         'kapasitet' => (int) $o['kapasitet'],
-        'ledige'    => Booking::ledigePlasser((int) $o['id']),
+        'ledige'    => $ledigeKart[(int) $o['id']] ?? 0,
         // Hva slags oekt det er. Uten dette kunne ikke admin skille kurs,
         // event og drop-in fra hverandre naar noen skal registreres paa én
         // av dem — alt sto i én lang liste.

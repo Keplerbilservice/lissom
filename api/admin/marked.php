@@ -101,6 +101,11 @@ if (Foresporsel::metode() === 'GET') {
           ORDER BY cs.start_tid"
     );
 
+    // Ledige plasser paa alle oektene i én sporring, ikke tre per dato.
+    $ledigeKart = Booking::ledigePlasserFlere(
+        array_map(static fn(array $o): int => (int) $o['id'], $okter)
+    );
+
     $tomme = [];
     $fulle = [];
     foreach ($okter as $o) {
@@ -108,7 +113,7 @@ if (Foresporsel::metode() === 'GET') {
         if ($kap <= 0) {
             continue;
         }
-        $ledige = Booking::ledigePlasser((int) $o['id']);
+        $ledige = $ledigeKart[(int) $o['id']] ?? 0;
         $tatt   = $kap - $ledige;
         $start  = (new DateTimeImmutable((string) $o['start_tid'], $utc))->setTimezone($oslo);
         $dager  = (int) $naa->diff($start)->format('%a');

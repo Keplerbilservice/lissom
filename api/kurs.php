@@ -60,18 +60,41 @@ $kurs = DB::alle(
       ORDER BY type, tittel"
 );
 
-$ut = [];
-foreach ($kurs as $k) {
-    $ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
-    $okter = DB::alle(
-        "SELECT id, start_tid, slutt_tid, kapasitet{$ekstra}
+// ── Datoene, i tre sporringer i alt ─────────────────────────────────────
+//
+// Her sto det én sporring per kurs etter datoene, og deretter — inne i
+// visningen — ett kall per dato etter ledige plasser og ett etter samlinger.
+// Tre sporringer per dato: 83 datoer ble 249 sporringer paa én sidevisning.
+//
+// Det tallet vokser av seg selv naa. Paint on Pots og drop-in lager datoene
+// sine av aapningstidene, og fjorten dager framover blir fort et par hundre.
+// Katalogen er det forste nettsiden henter, saa den betaler alle.
+$ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
+$kursIder = array_map(static fn(array $k): int => (int) $k['id'], $kurs);
+
+$okterPerKurs = [];
+if ($kursIder !== []) {
+    $inn = implode(',', $kursIder);
+    foreach (DB::alle(
+        "SELECT id, course_id, start_tid, slutt_tid, kapasitet{$ekstra}
            FROM course_sessions
-          WHERE course_id = :c
+          WHERE course_id IN ({$inn})
             AND status = 'planlagt'
             AND start_tid > UTC_TIMESTAMP()
-          ORDER BY start_tid",
-        ['c' => $k['id']]
-    );
+          ORDER BY start_tid"
+    ) as $o) {
+        $okterPerKurs[(int) $o['course_id']][] = $o;
+    }
+}
+
+$alleOkter  = array_merge(...(array_values($okterPerKurs) ?: [[]]));
+$oktIder    = array_map(static fn(array $o): int => (int) $o['id'], $alleOkter);
+$ledigeKart = Booking::ledigePlasserFlere($oktIder);
+$samlingKart = Samlinger::forOkter($oktIder);
+
+$ut = [];
+foreach ($kurs as $k) {
+    $okter = $okterPerKurs[(int) $k['id']] ?? [];
 
     $ut[] = [
         'id'      => (int) $k['id'],
@@ -248,7 +271,7 @@ foreach ($kurs as $k) {
             // Raa starttid slik den staar i basen. Kalenderen trenger den for
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],
-            'ledige'   => Booking::ledigePlasser((int) $o['id']),
+            'ledige'   => $ledigeKart[(int) $o['id']] ?? 0,
             // Datoen kan ha faerre plasser enn kurset ellers.
             'plasser'  => (int) ($o['kapasitet'] ?: $k['kapasitet']),
             // Prisen kan avvike paa én dato. Tomt betyr «som kurset».
@@ -259,7 +282,7 @@ foreach ($kurs as $k) {
             'info'     => (string) ($o['info'] ?? ''),
             // Samlingene, naar kurset gaar over flere dager. Deltakeren skal
             // se at paameldingen gjelder alle sammen — ikke bare den forste.
-            'samlinger' => Samlinger::forOkt((int) $o['id']),
+            'samlinger' => $samlingKart[(int) $o['id']] ?? [],
         ], $okter),
     ];
 }

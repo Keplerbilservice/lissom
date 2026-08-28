@@ -21,9 +21,25 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 $jobb = $argv[1] ?? '';
 $start = microtime(true);
 
-/** Skriver til skjerm når du kjører for hånd, og til loggen ellers. */
-$si = static function (string $t): void {
-    echo $t . "\n";
+/**
+ * Skriver til skjerm naar du kjorer for haand — og tier naar cron kjorer.
+ *
+ * cPanel sender e-post hver gang en cron-jobb skriver noe som helst. Skrev
+ * disse jobbene en linje hver gang, ble det rundt tre hundre e-poster i
+ * dognet fra fem jobber som alle gjorde nettopp det de skulle. Da slutter
+ * man aa lese dem, og den ene som betyr noe drukner.
+ *
+ * Naa staar det ingenting naar alt gaar bra. Feil gaar fortsatt til
+ * feilloggen og til stderr, og da sender cPanel e-post — som er akkurat den
+ * beskjeden man vil ha.
+ *
+ * Kjorer du kommandoen selv i et terminalvindu, skriver den som for.
+ */
+$tilSkjerm = stream_isatty(STDOUT);
+$si = static function (string $t) use ($tilSkjerm): void {
+    if ($tilSkjerm) {
+        echo $t . "\n";
+    }
 };
 
 switch ($jobb) {

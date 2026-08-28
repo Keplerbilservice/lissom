@@ -183,21 +183,40 @@ fra admin-panelet. Poenget er at du aldri kan låse deg selv ute.
 
 ## 7. Sett opp de planlagte jobbene
 
-cPanel → **Cron Jobs**. Legg inn fem:
+cPanel → **Cron Jobs**. Legg inn fem.
 
-| Når | Kommando |
-|---|---|
-| Hvert 5. minutt | `php ~/lissom-app/bin/cron.php varsler` |
-| Hvert 5. minutt | `php ~/lissom-app/bin/cron.php betalinger` |
-| Daglig 07:00 | `php ~/lissom-app/bin/cron.php paaminnelser` |
-| Hver time | `php ~/lissom-app/bin/cron.php anmeldelser` |
-| Daglig 01:00 | `php ~/lissom-app/bin/cron.php vedlikehold` |
+Øverst i skjemaet er det en nedtrekksmeny som heter **Common Settings**. Velger
+du noe der, fyller cPanel ut de fem feltene under — Minute, Hour, Day, Month,
+Weekday — helt av seg selv. Da trenger du ikke røre dem. Bare to av de fem
+jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
+
+| Jobb | Common Settings | Feltene blir | Kommando |
+|---|---|---|---|
+| Varselkøen | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php varsler` |
+| Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger` |
+| «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser` |
+| Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser` |
+| Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold` |
+
+For de to siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`
+til `7` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
+«hver».
 
 Klokkeslettene i cPanel er som regel servertid. Sjekk hva serveren står i, og
-juster hvis påminnelsene skal gå ut om morgenen norsk tid.
+juster hvis påminnelsene skal gå ut om morgenen norsk tid. De to som går hver
+femte minutt og den som går hver time bryr seg ikke om det.
 
-Sett e-postadressen din øverst på Cron Jobs-siden, så får du beskjed hvis en
-jobb feiler.
+**Sett e-postadressen din øverst på Cron Jobs-siden.** Jobbene skriver
+ingenting når de gjør det de skal, så du får bare post når noe faktisk er
+galt. (Fram til 28. august skrev de en linje hver gang, og da ville den samme
+innstillingen gitt deg rundt tre hundre e-poster i døgnet.)
+
+Kjører du en kommando selv i cPanel → **Terminal**, skriver den derimot hva den
+gjorde. Det er slik du sjekker at en jobb virker uten å vente på klokka.
+
+Virker ikke en jobb i det hele tatt, er `php` som regel synderen: cron finner
+ikke alltid samme PHP som nettsiden bruker. Skriv `which php` i Terminal, og
+bytt ut `php` i kommandoen med hele stien den svarer med.
 
 ---
 

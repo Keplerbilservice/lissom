@@ -181,13 +181,16 @@ AddDefaultCharset UTF-8
 # ville servert den gamle fila fordi den finnes.
 RewriteRule ^sitemap\.xml$ /api/sitemap.php [L]
 
-# Nettsidefila har sin egen adresse fordi den ligger som en ekte fil. Den er
-# den samme sida som «/», og to adresser med samme innhold er en duplikat i
-# soket — den ene stjeler fra den andre. Her sendes den dit den hoerer hjemme.
+# Nettsidefilene har sine egne adresser fordi de ligger som ekte filer. Begge
+# er den samme sida som «/», og tre adresser med samme innhold er duplikater i
+# soket — de stjeler fra hverandre. Her sendes de dit de hoerer hjemme.
+#
+# «-uten-admin» er utgaven uten adminpanelet, som side.php sender til alle som
+# ikke er innlogget som admin. Den skal ingen komme til direkte.
 #
 # Regelen kan ikke lage en runddans: «/» treffer den ikke, og DirectoryIndex
 # gjor oppslaget internt, uten en ny forespoersel.
-RewriteRule ^lissom-2108\.html$ / [R=301,L]
+RewriteRule ^lissom-2108(-uten-admin)?\.html$ / [R=301,L]
 
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #

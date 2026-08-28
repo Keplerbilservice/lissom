@@ -460,6 +460,29 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
 
+**Besøkende laster ikke lenger ned adminpanelet — 28. august.** Målt med
+Lighthouse mot ekte tall fra lissom.no (LCP 5,0 s, FCP 3,8 s, CLS 0,248).
+
+- Hver besøkende lastet ned alle 30 adminskjermene: **583 kB markup** de aldri
+  fikk se. De lå bak en `sc-if` — skjult, men sendt.
+- `bin/utenadmin.mjs` lager en utgave uten dem, `side.php` sender den til alle
+  som ikke har en admin-sesjon. **2081 kB → 1499 kB**; komprimert 430 → 361 kB.
+  Den største gevinsten er ikke nedlastingen, men at nettleseren slipper å
+  lese 583 kB HTML.
+- **De aller fleste har ingen sesjonscookie.** Da vet vi svaret uten å spørre
+  basen. Er noe i veien — mangler fila, er basen nede — sendes hele siden;
+  den tunge utgaven virker alltid.
+- **Innlogging fra en side uten panel** henter siden på nytt. Uten det ville
+  «adminoversikt» gitt en tom skjerm: skjermene fantes ikke i dokumentet.
+
+**Beviset for at utseendet er uendret.** Skjermbilder duger ikke — 12 av 32
+varierte mellom to kjøringer av *samme* kode, fordi bilder lastes i ulik
+rekkefølge. I stedet sammenlignes et avtrykk av DOM-en: all synlig tekst,
+antall synlige elementer, plasseringen og størrelsen på hvert av dem, og
+sidens høyde. Det avtrykket er helt stabilt (0 av 32 varierer mellom to
+kjøringer), og **0 av 32 sider skiller seg mellom lett og full utgave** — 16
+sider, mobil og skjerm.
+
 **Kurssiden åpner på kursene, ikke på alt — 28. august.** Lissom: «oppstart
 default må være dreiing, plateteknikk og workshop».
 

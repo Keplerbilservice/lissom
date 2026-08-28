@@ -44,6 +44,9 @@
 declare(strict_types=1);
 
 const SIDE_FIL  = __DIR__ . '/lissom-2108.html';
+// Den samme sida uten adminpanelet — 582 kB mindre. Laget av
+// bin/utenadmin.mjs, kontrollert av bin/adminsjekk.mjs.
+const SIDE_LETT = __DIR__ . '/lissom-2108-uten-admin.html';
 const SIDE_KART = __DIR__ . '/seo-kart.json';
 const ROT       = 'https://lissom.no';
 
@@ -53,7 +56,60 @@ const ROT       = 'https://lissom.no';
 const MERKE_START = '<!-- seo:start -->';
 const MERKE_SLUTT = '<!-- seo:slutt -->';
 
-$html = @file_get_contents(SIDE_FIL);
+/**
+ * Adminpanelet sendes bare til den som er admin.
+ *
+ * 30 adminskjermer, 582 kB markup, som hver eneste besokende lastet ned og
+ * aldri fikk se. De laa bak en «sc-if» — skjult, men sendt.
+ *
+ * De aller fleste har ingen sesjonscookie i det hele tatt. Da vet vi svaret
+ * uten aa spore basen, og det er den billige veien: ingen tilkobling, ingen
+ * sporring. Finnes cookien, maa vi sporre — og da er det verdt det.
+ *
+ * Er noe i veien — mangler fila, er basen nede — sendes hele sida. Den
+ * tunge utgaven virker alltid; den lette er en besparelse, ikke en
+ * forutsetning.
+ */
+/**
+ * Laster resten av koden — én gang, og i sin egen skygge.
+ *
+ * «require» paa toppnivaa deler variabler med fila som krever. bootstrap.php
+ * og api/_boot.php har begge en adressevariabel av sin egen, og den skrev
+ * over vaar: adressen ble plutselig «/home/user/lissom/app/secrets.php», og
+ * alle varesidene falt tilbake til forsidas tittel. Inne i en lukking blir
+ * de variablene lukkingens, ikke vaare. Klasser og konstanter er globale
+ * uansett, saa DB og Lenker er der etterpaa.
+ *
+ * Den lastes forst naar noe faktisk trenger basen. Er secrets.php borte,
+ * stopper bootstrap — og da skal nettsida likevel gaa ut, med hodet den har.
+ */
+$lastBackend = static function (): void {
+    require_once __DIR__ . '/api/_boot.php';
+};
+
+// Navnet paa sesjonscookien. Staar som Sesjon::COOKIE i app/lib/session.php,
+// men den klassen finnes ikke for backend er lastet — og hele poenget her er
+// aa slippe aa laste den for den som ikke har noen cookie. bin/adminsjekk.mjs
+// kontrollerer at de to er like.
+const SIDE_COOKIE = 'lissom_sesjon';
+
+$erAdmin = false;
+if (($_COOKIE[SIDE_COOKIE] ?? '') !== '') {
+    try {
+        $lastBackend();
+        $erAdmin = Sesjon::erAdmin();
+    } catch (Throwable) {
+        $erAdmin = true;   // I tvil: send alt. Da mangler ingenting.
+    }
+}
+
+$html = false;
+if (!$erAdmin) {
+    $html = @file_get_contents(SIDE_LETT);
+}
+if ($html === false) {
+    $html = @file_get_contents(SIDE_FIL);
+}
 if ($html === false) {
     http_response_code(500);
     exit('Nettsiden mangler.');
@@ -73,23 +129,6 @@ $slutt = strpos($html, MERKE_SLUTT);
 if ($start === false || $slutt === false || $slutt < $start) {
     $ut($html);
 }
-
-/**
- * Laster resten av koden — én gang, og i sin egen skygge.
- *
- * «require» paa toppnivaa deler variabler med fila som krever. bootstrap.php
- * og api/_boot.php har begge en adressevariabel av sin egen, og den skrev
- * over vaar: adressen ble plutselig «/home/user/lissom/app/secrets.php», og
- * alle varesidene falt tilbake til forsidas tittel. Inne i en lukking blir
- * de variablene lukkingens, ikke vaare. Klasser og konstanter er globale
- * uansett, saa DB og Lenker er der etterpaa.
- *
- * Den lastes forst naar noe faktisk trenger basen. Er secrets.php borte,
- * stopper bootstrap — og da skal nettsida likevel gaa ut, med hodet den har.
- */
-$lastBackend = static function (): void {
-    require_once __DIR__ . '/api/_boot.php';
-};
 
 $adresse = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
 $adresse = rtrim($adresse, '/');

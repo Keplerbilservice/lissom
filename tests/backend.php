@@ -1171,6 +1171,31 @@ sjekk('… og tilgangen tas bort',
 DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $bMedlem]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $bMedlem]);
 
+// ── Vippskrav og teksten som sto to ganger ─────────────────────────────
+echo "\n== Vippskrav og «Passer for» ==\n";
+
+// Push krever et nummer. Uten det skal det stoppe her, ikke hos Vipps.
+$utenNr = false;
+try {
+    Vipps::opprettBetaling('TEST-' . bin2hex(random_bytes(3)), 10000, 'Test', 'https://x/', null, true);
+} catch (RuntimeException $e) {
+    $utenNr = str_contains($e->getMessage(), 'telefonnummer');
+}
+sjekk('et vippskrav uten telefonnummer avvises for det gaar til Vipps', $utenNr);
+
+// Regelen som fjerner gjentakelsen. Den staar i nettsida; her kontrolleres
+// at den finnes og at kortet bruker den — ellers staar «Passer for: deg som
+// deg som er nysgjerrig» der igjen ved neste endring.
+$sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('nettsida har regelen som fjerner gjentatt «Passer for»',
+    str_contains($sida, 'utenGjentakelse(tekst, ledd)'));
+sjekk('medlemskapskortet bruker den',
+    str_contains($sida, "this.utenGjentakelse(o.passerFor, ['passer for', 'for deg som', 'deg som'])"));
+sjekk('kurskortet bruker den',
+    str_contains($sida, "this.utenGjentakelse(k.passerFor, ['passer for'])"));
+sjekk('planredigeringen viser hele setningen',
+    str_contains($sida, 'plPasserForVis'));
+
 // Samme adresse i to skrivemaater skal telle som én mottaker.
 $forNokler = Varsel::adminEposter();
 sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(', ', $forNokler));

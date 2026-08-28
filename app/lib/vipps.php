@@ -308,7 +308,8 @@ final class Vipps
         int $belopOre,
         string $beskrivelse,
         string $returUrl,
-        ?string $telefon = null
+        ?string $telefon = null,
+        bool $push = false
     ): array {
         // Fanges her framfor aa la Vipps svare med noe som peker feil vei.
         // Er beloepet null, skal det ikke innom Vipps i det hele tatt — det
@@ -322,6 +323,20 @@ final class Vipps
 
         $idempotens = self::uuid();
 
+        // To maater aa be om penger paa.
+        //
+        //   WEB_REDIRECT — kunden staar foran skjermen og sendes til Vipps.
+        //   PUSH_MESSAGE — kravet dukker opp i Vipps-appen til den vi ber.
+        //                  Kunden trenger ikke vaere paa nettsida i det hele
+        //                  tatt. Det er dette verkstedet mangler naar det skal
+        //                  kreves inn et medlemskap eller et salg i etterkant.
+        //
+        // Push krever et telefonnummer, og Vipps godtar ikke «returnUrl» der —
+        // det finnes ingen nettleser aa sende noen tilbake til.
+        if ($push && ($telefon === null || $telefon === '')) {
+            throw new RuntimeException('Et Vipps-krav må ha et telefonnummer.');
+        }
+
         $kropp = [
             'amount' => [
                 'currency' => 'NOK',
@@ -329,10 +344,12 @@ final class Vipps
             ],
             'paymentMethod'     => ['type' => 'WALLET'],
             'reference'         => $referanse,
-            'userFlow'          => 'WEB_REDIRECT',
-            'returnUrl'         => $returUrl,
+            'userFlow'          => $push ? 'PUSH_MESSAGE' : 'WEB_REDIRECT',
             'paymentDescription'=> mb_substr($beskrivelse, 0, 100),
         ];
+        if (!$push) {
+            $kropp['returnUrl'] = $returUrl;
+        }
 
         if ($telefon !== null && $telefon !== '') {
             // Vipps vil ha nummeret uten pluss, med landkode.

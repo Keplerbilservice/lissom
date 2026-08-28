@@ -1843,7 +1843,10 @@ window.__resources = {
         </div>
       </section>
 
-      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+      <!-- «Spørsmål og svar» i bunnteksten gaar hit, ikke til toppen av Om
+           oss. Foer havnet man oeverst paa sida og matte rulle forbi
+           historien, verkstedet og folkene for aa finne spoersmaalene. -->
+      <section id="sporsmal-og-svar" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
         <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spørsmål og svar</div>
@@ -5463,9 +5466,17 @@ window.__resources = {
                   <label for="ut-salgkunde" style="{{ utEtikett }}">Kunde</label>
                   <input id="ut-salgkunde" value="{{ utKunde }}" onChange="{{ settUtKunde }}" placeholder="Valgfritt — navn på kvitteringen" style="{{ utFeltStil }}">
                 </div>
+                <!-- Mobilnummer, for kravet som sendes i Vipps.
+                     «Registrer et salg» bokforer at noe ER betalt — den sender
+                     ingenting. Skal pengene kreves inn, maa vi vite hvem. -->
+                <div style="margin-top: var(--space-4);">
+                  <label for="ut-salgtlf" style="{{ utEtikett }}">Mobil</label>
+                  <input id="ut-salgtlf" inputmode="tel" value="{{ utTelefon }}" onChange="{{ settUtTelefon }}" placeholder="Bare hvis du skal sende Vipps-krav" style="{{ utFeltStil }}">
+                </div>
 
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utRegistrerSalg }}" hint-size="auto,52px">Registrer salget</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ utSendKrav }}" hint-size="auto,52px">Send Vipps-krav</x-import>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utSalgBeskjed }}</span>
                 </div>
 
@@ -5936,6 +5947,11 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Passer for deg som …</label>
                   <input value="{{ plPasserFor }}" onChange="{{ settPlPasserFor }}" placeholder="F.eks. vil ha fast plass i uka" style="{{ plFeltStil }}">
+                  <!-- Hele setningen, slik den blir staaende paa sida.
+                       «Passer for: deg som » skrives av nettsida og staar ikke
+                       i feltet — og da gikk det ikke an aa se at man hadde
+                       skrevet den én gang til selv. -->
+                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">På nettsiden: <em>{{ plPasserForVis }}</em></p>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
@@ -15969,6 +15985,32 @@ class Component extends DCLogic {
    * kjorer vi uten server — staar de fire som ligger i basen, saa skjemaet
    * ikke blir staaende tomt.
    */
+  /**
+   * Tar bort begynnelsen av setningen naar den staar to ganger.
+   *
+   * Nettsida skriver «Passer for: deg som » foran verdien fra medlemskapet.
+   * Det prefikset staar i koden — eieren ser det ikke i admin, og feltet der
+   * heter «Passer for deg som …». Skriver man da «deg som er nysgjerrig», blir
+   * det til «Passer for: deg som deg som er nysgjerrig» paa sida, og det er
+   * ingen vei til aa rette det: halve setningen finnes ikke i skjemaet.
+   *
+   * Her fjernes gjentakelsen naar den finnes. Verdier som er skrevet riktig
+   * roeres ikke.
+   *
+   * @param {string} tekst   verdien fra basen
+   * @param {string[]} ledd  det prefikset allerede sier, i rekkefolge
+   */
+  utenGjentakelse(tekst, ledd) {
+    let ut = String(tekst || '').trim();
+    for (const l of ledd) {
+      // «^\s*passer for\s*:?\s*» og liknende, uten aa bry seg om store
+      // bokstaver eller kolon.
+      const re = new RegExp('^' + l.replace(/ /g, '\\s+') + '\\s*:?\\s*', 'i');
+      if (re.test(ut)) ut = ut.replace(re, '');
+    }
+    return ut;
+  }
+
   medlemsplaner() {
     const fra = this.state.planListe || [];
     if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '', fastTrekk: !!p.fastTrekk }));
@@ -19096,6 +19138,26 @@ class Component extends DCLogic {
     return a ? (a.sagtOpp || a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
   }
 
+  /**
+   * Til spoersmaalene, ikke til toppen av Om oss.
+   *
+   * «Spoersmaal og svar» i bunnteksten gikk til Om oss og la deg oeverst paa
+   * sida. Da matte du rulle forbi historien, verkstedet og folkene for aa
+   * finne det du kom for.
+   */
+  goSporsmal() {
+    this.setState({ side: 'omoss' });
+    // Etter tegningen: seksjonen finnes ikke for skjermen er byttet.
+    setTimeout(() => {
+      const el = document.getElementById('sporsmal-og-svar');
+      if (el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+      } else {
+        window.scrollTo(0, 0);
+      }
+    }, 60);
+  }
+
   siOppAbonnement() {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
     // medlemskapKall() henter avtalen paa nytt selv. Statusen paa Min side
@@ -22006,7 +22068,10 @@ class Component extends DCLogic {
     // Naa folger alt med planen. Navnet er bare et navn.
     const abo = (o) => {
       const m = o.mork;
-      const passer = o.passerFor ? 'Passer for: deg som ' + o.passerFor : '';
+      // «Passer for: deg som » staar her, ikke i basen. Er det skrevet inn
+      // i feltet ogsaa, staar det to ganger paa sida — se utenGjentakelse().
+      const halen = this.utenGjentakelse(o.passerFor, ['passer for', 'for deg som', 'deg som']);
+      const passer = halen ? 'Passer for: deg som ' + halen : '';
       // Salg gjennom lissom.no folger med medlemskapet, ikke proveperioden.
       const punkter = o.engangs ? (o.punkter || []) : (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']);
       const oppsigelse = o.engangs
@@ -24911,6 +24976,31 @@ class Component extends DCLogic {
             })),
           utSlagHjelp: SLAGTEKST[slag] || '',
           utSalgBeskjed: st.utSalgBeskjed || '',
+          utTelefon: st.utTelefon || '',
+          settUtTelefon: e => this.setState({ utTelefon: e.target.value, utSalgBeskjed: '' }),
+          // Kravet sendes i Vipps, til mobilen. Salget staar som «venter» til
+          // det er betalt — det er hele forskjellen fra «Registrer salget»,
+          // som sier at pengene alt er inne.
+          utSendKrav: () => {
+            const raa = String(st.utBelop || '').trim();
+            if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
+              this.setState({ utSalgBeskjed: 'Skriv inn et beløp først.' });
+              return;
+            }
+            if (!String(st.utTelefon || '').trim()) {
+              this.setState({ utSalgBeskjed: 'Skriv inn mobilnummeret kravet skal til.' });
+              return;
+            }
+            this.uttakKall({
+              handling: 'vippskrav',
+              belop: raa,
+              slag,
+              kunde: (st.utKunde || '').trim(),
+              telefon: String(st.utTelefon || '').trim(),
+            }).then(ok => {
+              if (ok) this.setState({ utBelop: '', utKunde: '', utTelefon: '', utSalgBeskjed: '' });
+            });
+          },
           utRegistrerSalg: () => {
             const raa = String(st.utBelop || '').trim();
             if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
@@ -26249,6 +26339,10 @@ class Component extends DCLogic {
           plBeskrivelse: v('beskrivelse'), settPlBeskrivelse: sett('beskrivelse'),
           plPunkter: v('punkter'),      settPlPunkter: sett('punkter'),
           plPasserFor: v('passerFor'),  settPlPasserFor: sett('passerFor'),
+          plPasserForVis: (() => {
+            const t = this.utenGjentakelse(v('passerFor'), ['passer for', 'for deg som', 'deg som']);
+            return t ? 'Passer for: deg som ' + t : '(står ikke på kortet)';
+          })(),
           plBilde: v('bilde'),          settPlBilde: sett('bilde'),
 
           plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
@@ -28998,8 +29092,10 @@ class Component extends DCLogic {
         // se api/ferdigbrent.php, som velger de tre feltene og ikke roerer
         // paameldingene.
         { navn: 'Klar til henting', velg: this.go('ferdigbrent') },
-        { navn: 'Spørsmål og svar', velg: this.go('omoss') },
-        { navn: 'Bedrift og event', velg: this.go('bedrift') },
+        // Rett til spoersmaalene, ikke til toppen av Om oss.
+        { navn: 'Spørsmål og svar', velg: () => this.goSporsmal() },
+        // «Bedrift og event» tatt ut etter onske fra eieren. Sida ligger der
+        // som for, og naas fra menyen og fra kortene paa forsida.
         { navn: 'Personvern', velg: this.go('personvern') },
         { navn: 'Vilkår og angrerett', velg: this.go('vilkar') },
       ],
@@ -30830,7 +30926,10 @@ class Component extends DCLogic {
       ]),
       bPasserFor: (() => {
         const k = this.state.valgtKurs || {};
-        if (k.passerFor) return k.passerFor;
+        // Markupen skriver «Passer for:» foran. Staar det i verdien ogsaa,
+        // blir det staaende to ganger — og «Passer for:» finnes ikke i
+        // kursskjemaet, saa det gaar ikke an aa rette der.
+        if (k.passerFor) return this.utenGjentakelse(k.passerFor, ['passer for']);
         return {
           'Nybegynner': 'Deg som aldri har prøvd leire før — ingen forkunnskaper nødvendig.',
           'Event': 'Alle — ingen erfaring nødvendig. Kom som du er, vi viser deg resten.',

@@ -761,6 +761,132 @@ final class Booking
         );
     }
 
+    // ── Betaling registrert for haand ────────────────────────────────────
+    //
+    // Kom pengene kontant, paa faktura eller paa Vipps i verkstedet, sto det
+    // en tekst i «betalt_maate» paa bookingen og ikke noe mer. Ingen rad i
+    // payments. Da fantes det ikke noe svar paa hvem som registrerte
+    // betalingen, naar, eller hvor mye — og en feilregistrering kunne bare
+    // skrives over, ikke angres.
+    //
+    // Reglene staar her og ikke i endepunktet, slik resten av pengelogikken
+    // gjor: da kan de testes, og da kan bare ett sted svare paa hva som er
+    // betalt.
+
+    /** Maatene en betaling kan komme paa naar den legges inn for haand. */
+    public const MAATER = ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Bankoverføring', 'Gratis'];
+
+    /**
+     * Betalingene som gjelder én paamelding, og summen av dem.
+     *
+     * Annullerte teller ikke i summen, men blir staaende i lista — det er
+     * hele poenget med aa annullere framfor aa slette. Raden er et bilag.
+     *
+     * @return array{rader: list<array<string,mixed>>, sum: int}
+     */
+    public static function betalingerFor(int $bookingId): array
+    {
+        // Kolonnene kommer med migrasjon 084. Uten dem finnes det ingen
+        // manuelle betalinger aa hente, og da skal dette svare tomt framfor
+        // aa doe paa en kolonne som ikke er der.
+        if (!DB::harKolonne('payments', 'booking_id')) {
+            return ['rader' => [], 'sum' => 0];
+        }
+
+        $rader = DB::alle(
+            'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, p.status, p.maate,
+                    p.kommentar, p.annullert_at, p.created_at,
+                    p.registrert_av, m.navn AS registrert_navn
+               FROM payments p
+          LEFT JOIN members m ON m.id = p.registrert_av
+              WHERE p.booking_id = :b
+           ORDER BY p.id',
+            ['b' => $bookingId]
+        );
+
+        $sum = 0;
+        foreach ($rader as $r) {
+            if ($r['annullert_at'] === null
+                && in_array((string) $r['status'], ['betalt', 'autorisert', 'delvis_refundert'], true)) {
+                $sum += (int) $r['belop_ore'];
+            }
+        }
+
+        return ['rader' => $rader, 'sum' => $sum];
+    }
+
+    /**
+     * Setter status paa paameldingen etter det som faktisk er betalt.
+     *
+     * Ett sted, saa registrering og annullering aldri kan svare forskjellig:
+     * paameldingen er betalt naar summen av betalingene som staar dekker
+     * beloepet, og ikke ellers.
+     *
+     * Avbestilte og «ikke mott» roeres ikke. En som ikke kom, skal ikke bli
+     * «reservert» igjen fordi noen annullerte en betaling.
+     *
+     * @return array{status: string, sum: int, skyldig: int}
+     */
+    public static function settBetaltStatus(int $bookingId): array
+    {
+        $b = DB::en('SELECT id, belop_ore, status FROM bookings WHERE id = :i', ['i' => $bookingId]);
+        if ($b === null) {
+            return ['status' => 'reservert', 'sum' => 0, 'skyldig' => 0];
+        }
+
+        $bet = self::betalingerFor($bookingId);
+
+        // Den nyeste manuelle betalingen som fortsatt staar bestemmer hva som
+        // vises som betalingsmaate. Bare manuelle: en Vipps-rad har ingen
+        // «maate», og ville toemt feltet — og Paameldte viser uansett «Vipps»
+        // naar det finnes en referanse.
+        $siste = null;
+        foreach ($bet['rader'] as $r) {
+            if ((string) $r['type'] === 'manuell' && $r['annullert_at'] === null
+                && (string) $r['status'] === 'betalt') {
+                $siste = $r;
+            }
+        }
+
+        $ny = (string) $b['status'];
+        if (in_array($ny, ['betalt', 'reservert'], true)) {
+            $ny = $bet['sum'] >= (int) $b['belop_ore'] ? 'betalt' : 'reservert';
+        }
+
+        // «payment_id» og «betalt_maate» roeres bare naar det finnes en
+        // manuell betaling aa peke paa, eller naar den siste ble annullert.
+        // Ellers ville en Vipps-booking mistet pekeren sin.
+        $data = ['status' => $ny];
+        if ($siste !== null) {
+            $data['payment_id']   = (int) $siste['id'];
+            $data['betalt_maate'] = $siste['maate'];
+        } elseif (self::harManuell($bet['rader'])) {
+            // Alle de manuelle er annullert. Da skal ikke pekeren staa igjen
+            // paa en betaling som ikke gjelder.
+            $data['payment_id']   = null;
+            $data['betalt_maate'] = null;
+        }
+
+        DB::oppdater('bookings', $data, ['id' => $bookingId]);
+
+        return [
+            'status'  => $ny,
+            'sum'     => $bet['sum'],
+            'skyldig' => max(0, (int) $b['belop_ore'] - $bet['sum']),
+        ];
+    }
+
+    /** @param list<array<string,mixed>> $rader */
+    private static function harManuell(array $rader): bool
+    {
+        foreach ($rader as $r) {
+            if ((string) $r['type'] === 'manuell') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** 2026-09-02 15:30:00 UTC → «onsdag 2. september, 17:30» */
     public static function norskDato(string $utc): string
     {

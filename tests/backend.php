@@ -1202,6 +1202,91 @@ sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(
 sjekk('ingen adresse staar to ganger i adminlista',
     count($forNokler) === count(array_unique(array_map('mb_strtolower', $forNokler))));
 
+// ── Betaling registrert for haand ────────────────────────────────────────
+//
+// «Marker som betalt» satte en status og ikke noe mer: ingen sum, ingen hvem,
+// ingen naar, og ingen vei tilbake om noen slo inn feil. Reglene ligger naa i
+// Booking, og de kontrolleres her — en pengeregel som ikke er testet, er en
+// paastand.
+(static function () use (&$ok, &$feil): void {
+    DB::kjor("DELETE FROM payments WHERE vipps_reference LIKE 'MANUELL-TEST%'");
+    DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Betalingsprove'");
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug = 'testbetalt')");
+    DB::kjor("DELETE FROM courses WHERE slug = 'testbetalt'");
+
+    $kursId = DB::settInn('courses', [
+        'slug' => 'testbetalt', 'tittel' => 'Testkurs betaling',
+        'pris_ore' => 100000, 'kapasitet' => 8, 'status' => 'kladd',
+    ]);
+    $oktId = DB::settInn('course_sessions', [
+        'course_id' => $kursId,
+        'start_tid' => gmdate('Y-m-d H:i:s', time() + 86400),
+    ]);
+    $b = DB::settInn('bookings', [
+        'course_id' => $kursId, 'course_session_id' => $oktId,
+        'gjest_navn' => 'Betalingsprove', 'antall' => 1,
+        'belop_ore' => 100000, 'status' => 'reservert',
+    ]);
+
+    $legg = static function (int $b, int $ore, string $maate) : int {
+        return DB::settInn('payments', [
+            'vipps_reference' => 'MANUELL-TEST-' . bin2hex(random_bytes(4)),
+            'type' => 'manuell', 'formal' => 'booking', 'booking_id' => $b,
+            'maate' => $maate, 'belop_ore' => $ore, 'status' => 'betalt',
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+    };
+
+    sjekk('en paamelding uten betaling staar som ubetalt',
+        Booking::betalingerFor($b)['sum'] === 0);
+
+    // Et delbeloep gjor den ikke betalt. Det var her «marker som betalt»
+    // loey: den sa betalt uansett hvor mye som faktisk hadde kommet.
+    $p1 = $legg($b, 40000, 'Kontant');
+    $e = Booking::settBetaltStatus($b);
+    sjekk('et delbeloep gjor ikke paameldingen betalt',
+        $e['status'] === 'reservert' && $e['skyldig'] === 60000,
+        $e['status'] . ', skyldig ' . $e['skyldig']);
+
+    $p2 = $legg($b, 60000, 'Faktura');
+    $e = Booking::settBetaltStatus($b);
+    sjekk('resten av beloepet gjoer den betalt', $e['status'] === 'betalt' && $e['skyldig'] === 0);
+    sjekk('betalingsmaaten folger den siste betalingen',
+        (string) DB::verdi('SELECT betalt_maate FROM bookings WHERE id = :i', ['i' => $b]) === 'Faktura');
+
+    // Annullering: raden blir staaende, men teller ikke.
+    DB::oppdater('payments', ['status' => 'avbrutt', 'annullert_at' => gmdate('Y-m-d H:i:s')], ['id' => $p2]);
+    $e = Booking::settBetaltStatus($b);
+    sjekk('en annullert betaling teller ikke i summen', $e['sum'] === 40000);
+    sjekk('paameldingen blir ubetalt igjen naar betalingen annulleres', $e['status'] === 'reservert');
+    sjekk('den annullerte raden blir staaende — den er et bilag',
+        count(Booking::betalingerFor($b)['rader']) === 2);
+
+    DB::oppdater('payments', ['status' => 'avbrutt', 'annullert_at' => gmdate('Y-m-d H:i:s')], ['id' => $p1]);
+    $e = Booking::settBetaltStatus($b);
+    sjekk('er alle betalingene annullert, staar ingen peker igjen',
+        DB::verdi('SELECT payment_id FROM bookings WHERE id = :i', ['i' => $b]) === null);
+
+    // En avbestilt paamelding skal ikke bli «reservert» igjen fordi noen
+    // rorte en betaling. Hen kommer ikke.
+    DB::oppdater('bookings', ['status' => 'avbestilt'], ['id' => $b]);
+    $e = Booking::settBetaltStatus($b);
+    sjekk('en avbestilt paamelding roeres ikke av betalingene', $e['status'] === 'avbestilt');
+
+    // Rydd opp etter oss.
+    DB::kjor('DELETE FROM payments WHERE booking_id = :b', ['b' => $b]);
+    DB::kjor('DELETE FROM bookings WHERE id = :b', ['b' => $b]);
+    DB::kjor('DELETE FROM course_sessions WHERE id = :o', ['o' => $oktId]);
+    DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
+})();
+
+// Endepunktet skal ikke ha sine egne regler ved siden av bibliotekets.
+$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+sjekk('kursbetaling.php bruker reglene i Booking, ikke sine egne',
+    str_contains($betFil, 'Booking::settBetaltStatus(') && str_contains($betFil, 'Booking::betalingerFor('));
+sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
+    str_contains($betFil, "'MANUELL-' . Vipps::nyReferanse"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

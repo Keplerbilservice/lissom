@@ -460,6 +460,37 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
 
+**Hver vare i butikken har fått sin egen adresse — 28. august.** `/butikk`
+var én side. Ingen kopp kunne deles med en lenke som viste nettopp den, ingen
+kunne rangere på sitt eget navn, og varene kunne ikke ligge i Googles gratis
+handletreff — de krever en adresse per vare.
+
+- Adressen er `/butikk/8-kaffekopp-gronn`. **Tallet er det som gjelder**;
+  navnet bak leses ikke. En vare kan derfor døpes om uten at gamle lenker
+  ryker, og `side.php` setter canonical til adressen slik den heter nå.
+  Derfor er det ingen slug-kolonne på `products`: en lagret slug ville blitt
+  stående feil den dagen navnet ble endret.
+- **Medlemsvarene får ingen adresse.** Leire og ekstra brenning er verkstedets
+  interne hylle. Serveren gir dem ingen `sti`, og `/butikk/6-leire-10-kg`
+  svarer `noindex` uten å åpne noe.
+- **`Product` i strukturerte data**, med pris, valuta, lagerstatus og selger.
+  Det er dette Google leser når den plasserer en vare i handletreffene.
+- Sitemapet gikk fra 31 til 50 adresser.
+- `Lenker::slug()` samler regelen som lå duplisert i artikler og kurs. De to
+  var *nesten* like — én brukte `mb_strtolower`, den andre `strtolower` — og
+  kunne gitt hver sin adresse for samme navn.
+
+To feil ble funnet av testene underveis, begge verdt å notere:
+
+- **`bootstrap.php` har en variabel som heter det samme som `side.php` sin.**
+  `require` på toppnivå deler variabler, så adressen ble overskrevet med
+  `/home/user/lissom/app/secrets.php` og alle varesidene falt tilbake til
+  forsidens tittel. Innlastingen skjer nå inne i en lukking, der de variablene
+  blir lukkingens.
+- **Baseraden heter `tittel`, kortet heter `title`.** En vare åpnet fra sin
+  egen adresse fikk raden rett inn, og ruta viste pris og tekst uten navn.
+  `varekort()` gjør nå den samme oversettelsen begge steder.
+
 **«Takk for sist» etter kurset — bygget 28. august, står av.** Lissom har
 **null anmeldelser på Google**. For et lokalt verksted er det den største
 enkeltfaktoren i «keramikkurs i nærheten»: kartet svarer før de organiske

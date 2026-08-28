@@ -90,6 +90,32 @@ try {
     // De faste sidene gaar ut uansett.
 }
 
+// Varene i butikken. Hver av dem har sin egen adresse; uten dem her ville
+// ingen kopp blitt funnet, og butikken var én side som skulle rangere paa
+// alt den inneholdt.
+//
+// Bare det som er aapent for alle. Medlemsvarene — leire, ekstra brenning —
+// er verkstedets interne hylle og har ingen offentlig side.
+//
+// Utsolgte staar likevel. En vare uten lager kommer ofte igjen, og en side
+// som forsvinner og kommer tilbake er verre enn en som sier «utsolgt».
+try {
+    foreach (DB::alle(
+        "SELECT id, tittel, created_at FROM products
+          WHERE status = 'publisert' AND kun_medlemmer = 0
+       ORDER BY tittel"
+    ) as $v) {
+        $linjer[] = [
+            ROT . Lenker::vare((int) $v['id'], (string) $v['tittel']),
+            $v['created_at'] ? date('Y-m-d', strtotime((string) $v['created_at'])) : $idag,
+            'weekly',
+            '0.6',
+        ];
+    }
+} catch (Throwable) {
+    // De faste sidene gaar ut uansett.
+}
+
 header('Content-Type: application/xml; charset=UTF-8');
 header('Cache-Control: public, max-age=3600');
 header('X-Content-Type-Options: nosniff');

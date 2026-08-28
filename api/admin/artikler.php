@@ -21,12 +21,10 @@ krev_admin();
 
 /** Lager en adresse av tittelen, og passer paa at to ikke blir like. */
 $lagSlug = static function (string $tittel, ?int $unntaId = null): string {
-    $s = mb_strtolower(trim($tittel));
-    $s = strtr($s, ['æ' => 'ae', 'ø' => 'o', 'å' => 'a', 'Æ' => 'ae', 'Ø' => 'o', 'Å' => 'a']);
-    $s = trim(preg_replace('/[^a-z0-9]+/', '-', $s) ?? '', '-');
-    if ($s === '') {
-        $s = 'artikkel';
-    }
+    // Selve regelen staar i Lenker::slug — den samme som kurs og butikk
+    // bruker. Her legges bare til det som er artiklenes eget: at to ikke kan
+    // faa samme adresse.
+    $s = Lenker::slug($tittel, 'artikkel');
     $grunn = $s;
     $n = 2;
     while (true) {

@@ -74,9 +74,26 @@ if ($start === false || $slutt === false || $slutt < $start) {
     $ut($html);
 }
 
-$sti = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
-$sti = rtrim($sti, '/');
-if ($sti === '') { $sti = '/'; }
+/**
+ * Laster resten av koden — én gang, og i sin egen skygge.
+ *
+ * «require» paa toppnivaa deler variabler med fila som krever. bootstrap.php
+ * og api/_boot.php har begge en adressevariabel av sin egen, og den skrev
+ * over vaar: adressen ble plutselig «/home/user/lissom/app/secrets.php», og
+ * alle varesidene falt tilbake til forsidas tittel. Inne i en lukking blir
+ * de variablene lukkingens, ikke vaare. Klasser og konstanter er globale
+ * uansett, saa DB og Lenker er der etterpaa.
+ *
+ * Den lastes forst naar noe faktisk trenger basen. Er secrets.php borte,
+ * stopper bootstrap — og da skal nettsida likevel gaa ut, med hodet den har.
+ */
+$lastBackend = static function (): void {
+    require_once __DIR__ . '/api/_boot.php';
+};
+
+$adresse = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH);
+$adresse = rtrim($adresse, '/');
+if ($adresse === '') { $adresse = '/'; }
 
 $kart = json_decode((string) @file_get_contents(SIDE_KART), true);
 if (!is_array($kart) || !isset($kart['stier'], $kart['sider'])) {
@@ -89,9 +106,9 @@ $d = null;
 // Kurssidene: /kurs/<slug>. Teksten er kursets egen, hentet fra basen, og
 // bygges som seoKurs() i nettsida gjor det — samme kutt ved siste punktum,
 // samme reservetekst naar kurset ikke har noen beskrivelse.
-if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $sti, $treff) === 1) {
+if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $adresse, $treff) === 1) {
     try {
-        require __DIR__ . '/api/_boot.php';
+        $lastBackend();
         $k = DB::en(
             "SELECT tittel, beskrivelse, bilde FROM courses
               WHERE slug = :s AND status = 'publisert'
@@ -128,13 +145,59 @@ if (preg_match('~^/kurs/([a-z0-9\-]+)$~i', $sti, $treff) === 1) {
     }
 }
 
+// Varene i butikken: /butikk/<id>-<navn>. Tallet er det som gjelder; navnet
+// bak staar der for menneskene. Er navnet utdatert, er det fortsatt riktig
+// vare — og canonical peker paa adressen slik den heter naa.
+if ($d === null && str_starts_with($adresse, '/butikk/')) {
+    try {
+        $lastBackend();
+        $vareId = Lenker::vareId($adresse);
+        $v = $vareId === null ? null : DB::en(
+            "SELECT id, tittel, beskrivelse, bilde, pris_ore, lager, kun_medlemmer
+               FROM products WHERE id = :i AND status = 'publisert'",
+            ['i' => $vareId]
+        );
+        // Medlemsvarene — leire, ekstra brenning — er verkstedets interne
+        // hylle. De skal ikke ha en side i soket, og ikke en adresse noen
+        // kan dele. Da er det ingen side her.
+        if ($v !== null && (int) $v['kun_medlemmer'] === 0) {
+            $navn = (string) $v['tittel'];
+            $meta = trim((string) preg_replace('/\s+/u', ' ', (string) ($v['beskrivelse'] ?? '')));
+            if (mb_strlen($meta) > 158) {
+                $kort = mb_substr($meta, 0, 158);
+                $punktum = mb_strrpos($kort, '. ');
+                $meta = ($punktum !== false && $punktum > 60)
+                    ? mb_substr($kort, 0, $punktum + 1)
+                    : trim($kort) . ' …';
+            }
+            if ($meta === '') {
+                $meta = $navn . ' — håndlaget keramikk fra verkstedet på Teie i Tønsberg. '
+                      . 'Hvert stykke er dreid for hånd, så farge og form varierer litt.';
+            }
+            $bilde = trim((string) ($v['bilde'] ?? ''));
+            $d = [
+                'tittel'        => $navn . ' — håndlaget keramikk | Lissom',
+                'meta'          => $meta,
+                'canonical'     => ROT . Lenker::vare((int) $v['id'], $navn),
+                'ogTittel'      => $navn . ' — håndlaget keramikk | Lissom',
+                'ogBeskrivelse' => $meta,
+                'delingsbilde'  => $bilde !== '' ? ROT . '/' . ltrim($bilde, '/') : '',
+                'altTekst'      => $navn . ', håndlaget keramikk fra Lissom i Tønsberg',
+                'index'         => 'Index',
+            ];
+        }
+    } catch (Throwable) {
+        // Basen er nede, eller varen finnes ikke. Da staar hodet som det gjor.
+    }
+}
+
 if ($d === null) {
-    $id = $kart['stier'][$sti] ?? null;
+    $id = $kart['stier'][$adresse] ?? null;
     if ($id !== null && isset($kart['sider'][$id])) {
         $d = $kart['sider'][$id];
         // Det eieren har lagret under Nettsiden → Innhold gaar foran.
         try {
-            require_once __DIR__ . '/api/_boot.php';
+            $lastBackend();
             $lagret = DB::verdi(
                 'SELECT verdi FROM content_blocks WHERE nokkel = :n',
                 ['n' => 'SEO/' . $id]
@@ -163,8 +226,15 @@ $meta   = (string) ($d['meta'] ?? '');
 $canon  = (string) ($d['canonical'] ?? '');
 $ogT    = (string) ($d['ogTittel'] ?? $tittel);
 $ogB    = (string) ($d['ogBeskrivelse'] ?? $meta);
+// Delingsbildet. Har sida sitt eget — et kurs, en kopp — er det det som
+// skal opp naar lenken deles. Ellers verkstedets faste.
+//
+// Maalene sendes bare for det faste. De er 1200 x 675; et produktbilde er
+// kvadratisk, og oppgitte maal som ikke stemmer faar Facebook til aa hoppe
+// over bildet helt. Uten maal henter den bildet og finner dem selv.
 $ogBilde = (string) ($d['delingsbilde'] ?? '');
-if ($ogBilde === '') { $ogBilde = ROT . '/delingsbilde.jpg'; }
+$egetBilde = $ogBilde !== '';
+if (!$egetBilde) { $ogBilde = ROT . '/delingsbilde.jpg'; }
 $ogAlt  = (string) ($d['altTekst'] ?? 'Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg');
 
 $e = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
@@ -181,8 +251,8 @@ $hode = MERKE_START . "\n"
     . '<meta property="og:title" content="' . $e($ogT) . '">' . "\n"
     . ($ogB !== '' ? '<meta property="og:description" content="' . $e($ogB) . '">' . "\n" : '')
     . '<meta property="og:image" content="' . $e($ogBilde) . '">' . "\n"
-    . '<meta property="og:image:width" content="1200">' . "\n"
-    . '<meta property="og:image:height" content="675">' . "\n"
+    . ($egetBilde ? '' : '<meta property="og:image:width" content="1200">' . "\n"
+        . '<meta property="og:image:height" content="675">' . "\n")
     . '<meta property="og:image:alt" content="' . $e($ogAlt) . '">' . "\n"
     . '<meta name="twitter:card" content="summary_large_image">' . "\n"
     . MERKE_SLUTT;

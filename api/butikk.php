@@ -25,6 +25,11 @@ $varer = DB::alle(
 
 Svar::json(['varer' => array_map(static fn($v) => [
     'id'           => (int) $v['id'],
+    // Varens egen adresse. Regnes her, ett sted, saa nettsida og serveren
+    // ikke kan lage hver sin — det er serveren som svarer paa den.
+    // Medlemsvarene faar ingen: de skal ikke ha en side noen kan lenke til.
+    'sti'          => (int) $v['kun_medlemmer'] === 1
+                        ? '' : Lenker::vare((int) $v['id'], (string) $v['tittel']),
     'tittel'       => $v['tittel'],
     'detalj'       => $v['beskrivelse'],
     'bilde'        => $v['bilde'],

@@ -325,11 +325,9 @@ switch ($handling) {
             Svar::ok(['id' => $id]);
         }
 
-        // Ny: lag en slug som ikke kolliderer med en eksisterende.
-        $grunn = strtolower(strtr($tittel, [
-            'æ' => 'ae', 'ø' => 'o', 'å' => 'a', 'Æ' => 'ae', 'Ø' => 'o', 'Å' => 'a',
-        ]));
-        $grunn = trim(preg_replace('/[^a-z0-9]+/', '-', $grunn) ?? '', '-') ?: 'kurs';
+        // Ny: lag en slug som ikke kolliderer med en eksisterende. Regelen
+        // staar i Lenker::slug, sammen med artiklenes og butikkens.
+        $grunn = Lenker::slug($tittel, 'kurs');
         $slug = $grunn;
         $n = 2;
         while (DB::en('SELECT id FROM courses WHERE slug = :s', ['s' => $slug]) !== null) {

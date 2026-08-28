@@ -12321,6 +12321,56 @@ class Component extends DCLogic {
     return true;
   }
 
+  /**
+   * Aapner varen med denne id-en i butikken.
+   *
+   * Varelista kommer fra serveren, og der ligger ogsaa adressen hver vare
+   * har. Er lista ikke lastet ennaa, svarer denne nei, og folgRute() venter
+   * paa den — det er det samme /kurs/<slug> gjor.
+   *
+   * @return {boolean} om varen ble funnet
+   */
+  aapneVare(id) {
+    const v = (this.state.butikkvareListe || []).find(x => Number(x.id) === Number(id));
+    if (!v) return false;
+    // Medlemsvarene har ingen offentlig adresse, og skal ikke kunne aapnes
+    // med en. Serveren gir dem ingen «sti», og det er den vi gaar etter.
+    if (!v.sti) return false;
+    // Gjennom varekort() — ruta leser «title», mens baseraden heter
+    // «tittel». Sto raden rett inn, aapnet en delt lenke ruta uten navn.
+    this.setState({ side: 'butikk', piProdukt: this.varekort(v) });
+    return true;
+  }
+
+  /**
+   * Baseraden slik butikken viser den.
+   *
+   * Brukes bade av varegrida og av en vare aapnet fra sin egen adresse. Sto
+   * den to steder, var det nettopp navnet som falt ut det ene stedet.
+   */
+  varekort(v) {
+    return {
+      // Nummeret foelger med helt inn i kurven. To varer kan hete det
+      // samme; da er navnet ikke nok til aa vite hvilken som ble valgt.
+      id: v.id,
+      // Varens egen adresse, regnet av serveren. Den staar i adressefeltet
+      // naar varen aapnes, og er det som gjor at en kopp kan deles med en
+      // lenke som viser nettopp den.
+      sti: v.sti || '',
+      title: v.tittel,
+      detalj: v.detalj || '',
+      pris: v.pris,
+      // Tallet, ikke bare «kr. 380,-». Strukturerte data vil ha prisen som
+      // et tall, og det er den som gjor at varen kan staa i Googles gratis
+      // handletreff med pris og lagerstatus.
+      prisOre: v.prisOre || 0,
+      image: v.bilde || FOTO + 'butikken.jpg',
+      badge: v.kategori || '',
+      kategori: v.kategori || 'Annet',
+      utsolgt: !!v.utsolgt,
+    };
+  }
+
   medBooking(liste) {
     return liste
       .map(k0 => this.medServerdata(k0))
@@ -13514,6 +13564,13 @@ class Component extends DCLogic {
       return '/nyheter/' + this.state.nyLest.slug;
     }
 
+    // Samme for en aapen vare. Adressen kommer fra serveren, som ogsaa
+    // svarer paa den — den lages ikke to steder.
+    if (this._ventendeVare) return null;
+    if (side === 'butikk' && this.state.piProdukt && this.state.piProdukt.sti) {
+      return this.state.piProdukt.sti;
+    }
+
     const treff = Component.STIER.find(r => {
       if (r.side !== side) return false;
       if (r.dropin) return this.bookerDropin();
@@ -13567,6 +13624,21 @@ class Component extends DCLogic {
       return { sti, side: 'nyheter', nyhetSlug: nyhetTreff[1] };
     }
 
+    // Hver vare i butikken sin egen adresse: /butikk/8-kaffekopp-gronn.
+    //
+    // Butikken var én side. Ingen kopp kunne deles med en lenke som viste
+    // nettopp den, ingen kunne rangere paa sitt eget navn, og varene kunne
+    // ikke ligge i Googles gratis handletreff — de krever en adresse per
+    // vare.
+    //
+    // Tallet er det som gjelder. Navnet bak leses ikke, saa en vare kan
+    // doepes om uten at gamle lenker ryker; serveren setter canonical til
+    // adressen slik den heter naa.
+    const vareTreff = sti.match(/^\/butikk\/(\d+)(?:-[^/]*)?$/);
+    if (vareTreff) {
+      return { sti, side: 'butikk', vareId: parseInt(vareTreff[1], 10) };
+    }
+
     // Ingen treff. For sto skjermen igjen paa forsida, og den som hadde
     // skrevet feil trodde de var framme — og lette etter kurset som ikke var
     // der. Na sier sida fra. Adressen blir staaende som den er, fordi
@@ -13597,6 +13669,19 @@ class Component extends DCLogic {
       return;
     }
 
+    if (rute.vareId) {
+      // Varelista kommer fra serveren. Er den ikke der ennaa, staar
+      // oensket til den kommer — som med /kurs/<slug>. Ellers ville en delt
+      // vareslenke aapnet butikken uten aa vise varen det gjaldt.
+      if (this.aapneVare(rute.vareId)) {
+        this._ventendeVare = null;
+        return;
+      }
+      this._ventendeVare = rute.vareId;
+      this.setState({ side: 'butikk', piProdukt: null });
+      return;
+    }
+
     if (rute.dropin) {
       const k = (this._kursListe || []).find(x => x.title === 'Drop-in i verkstedet');
       if (k) {
@@ -13616,6 +13701,11 @@ class Component extends DCLogic {
     this.setState({
       side: rute.side,
       kursFilter: rute.filter || (rute.side === 'kurs' ? 'Alle' : this.state.kursFilter),
+      // En adresse uten vare betyr at varen ikke er aapen. Uten dette ble
+      // ruta til butikken lest, men den aapne varen ble staaende — og
+      // adressen ble straks skrevet tilbake til varen igjen. Tilbakeknappen
+      // satt fast.
+      piProdukt: null,
     });
   }
 
@@ -15097,7 +15187,18 @@ class Component extends DCLogic {
         if (!d || !d.varer) return;
         const ny = { butikkvareListe: d.varer };
         if (d.fokus) ny.bildeFokus = Object.assign({}, this.state.bildeFokus, d.fokus);
-        this.setState(ny);
+        this.setState(ny, () => {
+          // Kom noen rett inn paa /butikk/<id> for lista var lastet, staar
+          // oensket her. Naa er varene der, og varen kan aapnes.
+          if (!this._ventendeVare) return;
+          const id = this._ventendeVare;
+          this._ventendeVare = null;
+          if (!this.aapneVare(id)) {
+            // Varen finnes ikke lenger, eller er en medlemsvare. Da skal
+            // adressen si fra framfor aa late som butikken er svaret.
+            this.setState({ side: 'ikkefunnet' });
+          }
+        });
       })
       .catch(() => {});
   }
@@ -18785,13 +18886,14 @@ class Component extends DCLogic {
     // Haandverk» og ingen beskrivelse — altsaa det som ville blitt vist i
     // sokeresultatet. Naa staar riktig tittel der fra forste tegning, uten
     // aa spore noen om noe.
-    const kursSeo = this.seoKurs();
+    const kursSeo = this.seoKurs() || this.seoVare();
     const d = kursSeo || Object.assign({}, (id && Component.SEO_FERDIG[id]) || {}, id ? this.seoData(id) : {});
     const std = (id && this.seoSider().find(x => x.id === id)) || null;
     const tittel = d.tittel
       || (std ? std.navn + ' | Lissom Keramikk & Håndverk' : this.seoStandardTittel(side));
     const merke = side + '|' + tittel + '|' + (this.state.katalog || []).length
-      + '|' + ((this.state.valgtKurs || {}).slug || '');
+      + '|' + ((this.state.valgtKurs || {}).slug || '')
+      + '|' + ((this.state.piProdukt || {}).sti || '');
     if (this._seoSatt === merke) return;
     this._seoSatt = merke;
 
@@ -18914,6 +19016,44 @@ class Component extends DCLogic {
    * skriver hvert kurs sin egen — av det som faktisk staar om det, ikke av
    * en mal med kursnavnet satt inn.
    */
+  /**
+   * Hodet for en aapen vare i butikken.
+   *
+   * side.php setter det samme i svaret for sida gaar ut. Her settes det paa
+   * nytt naar man aapner en vare uten aa laste sida — da har serveren aldri
+   * sett adressen.
+   *
+   * Teksten maa vaere ord for ord den samme som i side.php. Spriker de, faar
+   * en robot ett svar og et menneske et annet paa samme adresse.
+   * Nettlesertesten «varesider» holder de to opp mot hverandre.
+   */
+  seoVare() {
+    const v = this.state.piProdukt || null;
+    if (this.state.side !== 'butikk' || !v || !v.sti) return null;
+
+    const navn = v.title || v.tittel || '';
+    let meta = String(v.detalj || '').replace(/\s+/g, ' ').trim();
+    if (meta.length > 158) {
+      const kort = meta.slice(0, 158);
+      const punktum = kort.lastIndexOf('. ');
+      meta = punktum > 60 ? kort.slice(0, punktum + 1) : kort.trim() + ' …';
+    }
+    if (!meta) {
+      meta = navn + ' — håndlaget keramikk fra verkstedet på Teie i Tønsberg. '
+           + 'Hvert stykke er dreid for hånd, så farge og form varierer litt.';
+    }
+
+    return {
+      tittel: navn + ' — håndlaget keramikk | Lissom',
+      meta: meta,
+      canonical: 'https://lissom.no' + v.sti,
+      ogTittel: navn + ' — håndlaget keramikk | Lissom',
+      ogBeskrivelse: meta,
+      delingsbilde: v.image ? 'https://lissom.no/' + String(v.image).replace(/^\//, '') : '',
+      index: 'Index',
+    };
+  }
+
   seoKurs() {
     const k = this.state.valgtKurs || {};
     if (this.state.side !== 'booking' || !k.slug || this.bookerDropin()) return null;
@@ -19070,6 +19210,36 @@ class Component extends DCLogic {
             url: rot + '/kurs/' + valgt.slug,
           } : undefined,
         })),
+      });
+    }
+
+    // Varen man staar paa. Uten dette er en kopp bare en blaa lenke: pris og
+    // lagerstatus i strukturerte data er det Google leser naar den plasserer
+    // en vare i handletreffene — de gratis, som ikke krever annonsekonto.
+    const vare = this.state.piProdukt || null;
+    if (this.state.side === 'butikk' && vare && vare.sti) {
+      graf.push({
+        '@type': 'Product',
+        '@id': rot + vare.sti + '#vare',
+        name: vare.title,
+        description: vare.detalj || undefined,
+        url: rot + vare.sti,
+        image: vare.image ? rot + '/' + String(vare.image).replace(/^\//, '') : undefined,
+        category: vare.kategori || undefined,
+        brand: { '@type': 'Brand', name: 'Lissom Keramikk & Håndverk' },
+        // Hver kopp er dreid for haand. Det er ikke en vare med strekkode,
+        // og den har ingen GTIN — men den har en adresse, og den er unik.
+        sku: 'lissom-' + vare.id,
+        offers: vare.prisOre > 0 ? {
+          '@type': 'Offer',
+          price: String(vare.prisOre / 100),
+          priceCurrency: 'NOK',
+          availability: vare.utsolgt
+            ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+          itemCondition: 'https://schema.org/NewCondition',
+          url: rot + vare.sti,
+          seller: { '@id': rot + '/#verksted' },
+        } : undefined,
       });
     }
 
@@ -27038,15 +27208,7 @@ class Component extends DCLogic {
         // aldri dukket opp og «Bolle, liten» sto som utsolgt for alltid.
         const fraBasen = (this.state.butikkvareListe || [])
           .filter(v => !v.kunMedlemmer)
-          .map(v => ({
-            // Nummeret foelger med helt inn i kurven. To varer kan hete det
-            // samme; da er navnet ikke nok til aa vite hvilken som ble valgt.
-            id: v.id,
-            title: v.tittel, detalj: v.detalj || '', pris: v.pris,
-            image: v.bilde || FOTO + 'butikken.jpg',
-            badge: v.kategori || '', kategori: v.kategori || 'Annet',
-            utsolgt: !!v.utsolgt,
-          }));
+          .map(v => this.varekort(v));
 
         const egne = this.medBildeCss((this.erPublisert() ? fraBasen : [
           { title: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl. Tåler oppvaskmaskin.', pris: 'kr. 390,-', image: 'uploads_shutterstock_2830582037.jpg', badge: 'Matsikret', kategori: 'Kopper' },

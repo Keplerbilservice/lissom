@@ -436,8 +436,33 @@ img{max-width:100%;display:block}
 <link rel="preload" href="/fonts/alegreya-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
 
 <!-- ds-bundle.js tegner komponentene og maa vaere der for foerste
-     tegning. Den varsles her saa nedlastingen starter med det samme. -->
-<link rel="preload" href="/ds-bundle.min.js" as="script">
+     tegning. Den staar her, i hodet, og ikke lenger inne i <helmet> nede i
+     kroppen.
+
+     Der ble den hentet og kjort to ganger: én gang av nettleseren, som
+     kjorer et <script src> i kroppen enten det ligger i en skjult <x-dc>
+     eller ikke, og én gang til naar dc-runtime flyttet <helmet> opp i hodet
+     og laget elementet paa nytt. 76 kB kjort dobbelt, og andre gangen midt i
+     den tyngste delen av oppstarten.
+
+     Her kjores den én gang, og den er ferdig for boot begynner. -->
+<script src="/ds-bundle.min.js"></script>
+
+<!-- React og ReactDOM. De ble hentet forst etter at support.min.js hadde
+     lastet ned OG kjort — en hel rundtur som laa og ventet paa slutten av
+     koen. Maalt 28. august: support.min.js ferdig 128 ms, React startet
+     226 ms. Paa mobilnett med 150 ms svartid er det mer.
+
+     support.js henter dem selv, med window.__resources til aa peke paa
+     vaare egne filer; dette er bare et varsel til nettleseren om aa starte
+     nedlastingen med det samme. Naar support.js ber om dem, ligger de der.
+
+     Ikke <script>-tagger: da ville de kjort for support.min.js, og
+     loadReactUmd() ville hoppet over sin egen lasting — det virker, men det
+     gjor rekkefolgen avhengig av noe vi ikke styrer. Preload flytter bare
+     nedlastingen fram. -->
+<link rel="preload" href="/vendor/react-18.3.1.min.js" as="script">
+<link rel="preload" href="/vendor/react-dom-18.3.1.min.js" as="script">
 
 <script>
 // Bildene finnes i flere stoerrelser.
@@ -845,7 +870,6 @@ window.__resources = {
        Som egne filer sto de her, og dc-runtime flyttet dem opp etter at
        support.js hadde kjort — nettleseren ventet i to omganger, over ett
        sekund paa mobilnett, for noe ble tegnet. -->
-  <script src="ds-bundle.min.js"></script>
   <style>
     /* Maalene i width- og height-attributtene skal bare gi forholdstallet,
        slik at plassen settes av for bildet er lastet. De skal ikke bestemme

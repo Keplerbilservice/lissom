@@ -19,3 +19,7 @@ lokal-ruter.php
 opplastinger/avledet/
 ekte-ruter.php
 csp-ruter.php
+
+# terser hentes med «npm install terser» for bin/utenadmin.mjs og
+# bin/minifiser.mjs. Pakkene skal ikke i repoet.
+node_modules/

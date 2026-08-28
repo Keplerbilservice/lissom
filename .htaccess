@@ -27,6 +27,10 @@ RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L,NE]
 #
 # Naa serveres nettsida direkte paa «/». Ingen omdirigering, ett hopp
 # faerre, og adressen blir staaende slik den ble skrevet.
+#
+# Rekkefolgen er reserven, ikke veien: «/» tas av en egen omskriving lenger
+# nede, som sender den til side.php. Blir mod_rewrite borte, er det denne
+# lista som svarer — og da skal nettsida staa der som for.
 DirectoryIndex lissom-2108.html index.html
 
 # Tegnkoding.
@@ -177,6 +181,14 @@ AddDefaultCharset UTF-8
 # ville servert den gamle fila fordi den finnes.
 RewriteRule ^sitemap\.xml$ /api/sitemap.php [L]
 
+# Nettsidefila har sin egen adresse fordi den ligger som en ekte fil. Den er
+# den samme sida som «/», og to adresser med samme innhold er en duplikat i
+# soket — den ene stjeler fra den andre. Her sendes den dit den hoerer hjemme.
+#
+# Regelen kan ikke lage en runddans: «/» treffer den ikke, og DirectoryIndex
+# gjor oppslaget internt, uten en ny forespoersel.
+RewriteRule ^lissom-2108\.html$ / [R=301,L]
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle
@@ -184,11 +196,23 @@ RewriteRule ^sitemap\.xml$ /api/sitemap.php [L]
 # for søkemotorer. Finnes ikke fila som etterspørres, serveres nettsiden, og
 # den finner selv ut hvilken skjerm adressen peker på.
 #
+# Fila går om side.php, som setter tittel, beskrivelse, canonical og
+# delingstekst for den enkelte adressen før svaret går ut. Før dette hadde
+# alle adresser samme tittel og ingen canonical for alt som ikke kjører
+# JavaScript — deling på Instagram og Facebook, Bing, og AI-assistentene.
+# Går noe galt i side.php, sendes fila ut slik den er.
+#
+# Forsida har sin egen regel. Den treffer ikke den under: REQUEST_FILENAME
+# for «/» er katalogen, og «!-d» slaar regelen av. Uten dette ville forsida
+# vaert den ene sida som IKKE fikk sitt eget hode — og den er den viktigste
+# av dem alle.
+RewriteRule ^$ /side.php [L]
+
 # Ekte filer, mapper og /api går uendret gjennom.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_URI} !^/api/
-RewriteRule ^ /lissom-2108.html [L]
+RewriteRule ^ /side.php [L]
 
 # Skjulte filer og oppsettfiler skal ikke kunne lastes ned.
 <FilesMatch "^\.|(\.(ya?ml|md|sql|json|lock|example\.php))$">

@@ -46,7 +46,16 @@
      som paakrevd, og uten hele det paakrevde settet — og:url, og:type,
      og:title, og:image — lager den ingen forhaandsvisning i det hele tatt.
      Prisen er at en delt kurslenke krediteres forsida hos Facebook. En
-     forhaandsvisning som peker litt feil er bedre enn ingen. -->
+     forhaandsvisning som peker litt feil er bedre enn ingen.
+
+     28. august: side.php bytter ut blokka under for fila gaar ut, saa hver
+     adresse faar sin egen tittel, sin egen beskrivelse og sin egen canonical
+     ogsaa uten JavaScript. Verdiene her er forsidas og staar igjen som
+     reserve — gaar noe galt i side.php, er det disse som gjelder.
+
+     Markorene under er bindeleddet. Flyttes eller endres de, finner side.php
+     ikke blokka og sender fila ut urort; bin/seosjekk.mjs sier fra. -->
+<!-- seo:start -->
 <title>Keramikkurs i Tønsberg | Lissom Keramikk</title>
 <meta name="description" content="Keramikkurs, dreiekurs og events på Teie ved Tønsberg — for hele Vestfold. Lag din egen keramikk fra første kveld. Leire, verktøy og brenning inkludert.">
 <meta property="og:type" content="website">
@@ -60,6 +69,7 @@
 <meta property="og:image:height" content="675">
 <meta property="og:image:alt" content="Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg">
 <meta name="twitter:card" content="summary_large_image">
+<!-- seo:slutt -->
 <!-- ds-css:start — skrevet av bin/inline-css.php, ikke rediger her -->
 <style>
 /* ds-fonts.css */

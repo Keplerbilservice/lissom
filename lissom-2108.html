@@ -428,6 +428,99 @@ img{max-width:100%;display:block}
 </style>
 <!-- ds-css:slutt -->
 
+<!-- ══ reserveskrift:start ═════════════════════════════════════════════
+     RESERVESKRIFTENE HAR SAMME MAAL SOM DE EKTE.
+
+     Vil du tilbake til slik det var: slett alt fra denne linja til
+     «reserveskrift:slutt» lenger nede. Ingenting annet i fila peker paa
+     det. bin/skriftsjekk.mjs sier fra hvis blokka blir staaende halvveis.
+
+     ── Hva den loser ─────────────────────────────────────────────────
+     Toppen av forsida ligger ferdig tegnet i svaret, og skriftene kommer
+     ned rundt 950 ms. Tegnes sida etter det, skjer alt én gang. Tegnes den
+     for, tegnes teksten i systemskrifta og bytter naar Bitter og Alegreya
+     kommer — teksten flytter seg, og den ferdige teksten blir en ny og
+     storre LCP-kandidat. Maalt: LCP 1508 ms mot 3520 ms, CLS 0,083 mot
+     0,145, avhengig av hvilken side av de 950 millisekundene tegningen
+     havner paa.
+
+     Sida ligger paa den grensa, og derfor spriker maalingene.
+
+     Her faar systemskriftene noyaktig samme linjehoyde og omtrent samme
+     bredde som de ekte. Da flytter ingenting seg naar de ekte kommer, og
+     det spiller ingen rolle hvem som vinner kappløpet.
+
+     ── Tallene ───────────────────────────────────────────────────────
+     Maalt ut av skriftfilene selv, ikke slaatt opp:
+
+       Bitter 800     93,50 % over, 26,50 % under, 0,4922 em bred i snitt
+       Alegreya 400   90,00 % over, 30,00 % under, 0,3929 em
+       Times New Rom. 89,11 %,      21,63 %,       0,4138 em
+       Arial          90,53 %,      21,19 %,       0,4575 em
+
+     Snittbredden er maalt over den samme setningen i alle fire.
+     Times og Arial er maalt gjennom Liberation Serif og Liberation Sans,
+     som er laget med noyaktig de samme maalene.
+
+       size-adjust = ekte bredde / reservens bredde
+       ascent/descent = den ektes verdi delt paa size-adjust, fordi
+       overstyringene regnes av stoerrelsen ETTER justeringen.
+
+     ── Det som ikke er maalt ─────────────────────────────────────────
+     «ascent-override» og «descent-override» ERSTATTER reservens egne
+     hoydemaal, uansett hvilken skrift som faktisk finnes paa maskinen. Den
+     delen er derfor riktig overalt — ogsaa paa Android og Mac, der
+     Roboto, Noto Serif, Helvetica eller Georgia trer inn.
+
+     «size-adjust» er bredden, og den er regnet mot Times og Arial. Georgia
+     er litt bredere, Roboto litt smalere. Da kan en linje briste ett ord
+     for tidlig eller for sent i det halve sekundet for skriften er nede.
+     Det er en linje, ikke et hopp i hele sida — og det er det denne blokka
+     er verdt.
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+  @font-face {
+    font-family: 'Bitter reserve';
+    src: local('Times New Roman'), local('Liberation Serif'), local('Tinos'),
+         local('Noto Serif'), local('Georgia'), local('DejaVu Serif');
+    size-adjust: 118.95%;
+    ascent-override: 78.61%;
+    descent-override: 22.28%;
+    line-gap-override: 0%;
+    /* Noyaktig samme tegnomraade som den ekte skrifta.
+       Uten dette fanget reserven ogsaa tegn Bitter og Alegreya IKKE har —
+       pila «→» er ett av dem — og de ble tegnet i Times med
+       «size-adjust: 118.95%», altsaa bredere enn for. Avtrykket av de 16
+       adressene viste at 26 av 32 sider flyttet seg noen piksler. Med samme
+       omraade faller de tegnene videre i stakken, til Georgia og serif,
+       akkurat som de gjorde for. */
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family: 'Alegreya Sans reserve';
+    src: local('Arial'), local('Liberation Sans'), local('Helvetica'),
+         local('Roboto'), local('Segoe UI'), local('DejaVu Sans');
+    size-adjust: 85.88%;
+    ascent-override: 104.80%;
+    descent-override: 34.93%;
+    line-gap-override: 0%;
+    /* Noyaktig samme tegnomraade som den ekte skrifta.
+       Uten dette fanget reserven ogsaa tegn Bitter og Alegreya IKKE har —
+       pila «→» er ett av dem — og de ble tegnet i Times med
+       «size-adjust: 85.88%», altsaa bredere enn for. Avtrykket av de 16
+       adressene viste at 26 av 32 sider flyttet seg noen piksler. Med samme
+       omraade faller de tegnene videre i stakken, til Georgia og serif,
+       akkurat som de gjorde for. */
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  /* Reservene settes inn rett bak de ekte. Staar etter ds-css over, saa
+     denne vinner. Resten av stakken staar urort som siste utvei. */
+  :root {
+    --font-display: "Bitter","Bitter reserve","Clarendon","Georgia",serif;
+    --font-sans: "Alegreya Sans","Alegreya Sans reserve","Segoe UI",system-ui,sans-serif;
+  }
+</style>
+<!-- ══ reserveskrift:slutt ════════════════════════════════════════════ -->
 <!-- Skriftene som brukes over skjermkanten, hentet med én gang.
      Uten dette tegnes overskriften i reserveskrifta, og hopper naar Bitter
      kommer — det var det som ga utseendeforskyvningen paa forsida. De to

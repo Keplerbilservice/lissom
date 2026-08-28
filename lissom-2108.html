@@ -1798,6 +1798,36 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- Spoersmaal og svar, paa egen side.
+       Sto som en seksjon paa Om oss. Eieren: «her vil jeg bare ha bilde av
+       monica og om oss, altsaa vil jeg ikke ha spoersmaal og svar der ogsaa».
+       Spoersmaalene er de samme, og redigeres samme sted som for — under
+       Nettsiden → Innhold → Om oss. -->
+  <sc-if value="{{ erSporsmal }}" hint-placeholder-val="{{ false }}">
+    <div role="main" data-screen-label="Spørsmål og svar">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
+        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spørsmål og svar</div>
+            <h2 style="margin: 0 0 var(--space-5);">Det folk lurer på</h2>
+            <p style="margin: 0 0 var(--space-6); color: var(--text-muted); font-size: var(--text-base); text-wrap: pretty;">Finner du ikke svaret? Ring oss eller send en e-post, vi svarer som regel samme dag.</p>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="mail" hint-size="auto,44px">monica@lissom.no</x-import>
+          </div>
+          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--space-10); align-content: start;">
+            <sc-for list="{{ sporsmal }}" as="s" hint-placeholder-count="7">
+              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-5) 0;">
+                <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ s.q }}</h3>
+                <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ s.a }}</p>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erOmOss }}" hint-placeholder-val="{{ true }}">
     <div role="main" data-screen-label="Om oss">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" active="Om oss" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
@@ -1838,28 +1868,6 @@ window.__resources = {
                 <span>{{ t.navn }}</span>
                 <span aria-hidden="true" style="color: var(--terracotta-600); font-weight: 700; flex: 0 0 auto;">→</span>
               </button>
-            </sc-for>
-          </div>
-        </div>
-      </section>
-
-      <!-- «Spørsmål og svar» i bunnteksten gaar hit, ikke til toppen av Om
-           oss. Foer havnet man oeverst paa sida og matte rulle forbi
-           historien, verkstedet og folkene for aa finne spoersmaalene. -->
-      <section id="sporsmal-og-svar" style="background: var(--clay-50); padding: var(--section-y) var(--space-8);">
-        <div class="lx-split" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1.4fr; gap: var(--space-16); align-items: start;">
-          <div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Spørsmål og svar</div>
-            <h2 style="margin: 0 0 var(--space-5);">Det folk lurer på</h2>
-            <p style="margin: 0 0 var(--space-6); color: var(--text-muted); font-size: var(--text-base); text-wrap: pretty;">Finner du ikke svaret? Ring oss eller send en e-post, vi svarer som regel samme dag.</p>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="mail" hint-size="auto,44px">monica@lissom.no</x-import>
-          </div>
-          <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0 var(--space-10); align-content: start;">
-            <sc-for list="{{ sporsmal }}" as="s" hint-placeholder-count="7">
-              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-5) 0;">
-                <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--text-heading);">{{ s.q }}</h3>
-                <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ s.a }}</p>
-              </div>
             </sc-for>
           </div>
         </div>
@@ -13896,6 +13904,10 @@ class Component extends DCLogic {
       // med dato og pris; her staar hva kurset faktisk er.
       { sti: '/kursene-vare',  side: 'kursoversikt' },
       { sti: '/nyttig-info',   side: 'nyttig' },
+      // Spoersmaal og svar. Sto som en seksjon paa Om oss, og hadde derfor
+      // ingen adresse — den kunne verken deles eller finnes i et sok, enda
+      // det er akkurat slike spoersmaal folk googler.
+      { sti: '/sporsmal-og-svar', side: 'sporsmal' },
       // Klar til henting. Alle skal kunne sjekke selv om tingene deres er
       // ferdige, uten aa logge inn og uten aa ringe.
       { sti: '/ferdigbrent',   side: 'ferdigbrent' },
@@ -14689,6 +14701,23 @@ class Component extends DCLogic {
       canonical: 'https://lissom.no/gavekort',
       internlenker: 'Kurs, Butikk, Medlemskap',
       schema: 'Product',
+      index: 'Index',
+    },
+    sporsmal: {
+      fokus: 'keramikkurs spørsmål',
+      tittel: 'Spørsmål og svar om keramikkurs | Lissom Keramikk',
+      meta: 'Må jeg kunne noe fra før? Hvor lang tid tar det før keramikken er ferdig? Svar på det folk lurer på om kurs, drop-in og medlemskap hos Lissom på Teie.',
+      slug: 'sporsmal-og-svar',
+      h1: 'Det folk lurer på',
+      sekundare: 'keramikk for nybegynnere, hvor lang tid tar keramikk, drop-in keramikk, bli medlem keramikkverksted',
+      altTekst: 'Deltakere på keramikkurs hos Lissom i Tønsberg',
+      ogTittel: 'Spørsmål og svar om keramikkurs | Lissom',
+      ogBeskrivelse: 'Svar på det folk lurer på om kurs, drop-in og medlemskap hos Lissom Keramikk på Teie ved Tønsberg.',
+      canonical: 'https://lissom.no/sporsmal-og-svar',
+      internlenker: 'Kurs, Drop-in, Medlemskap, Kontakt',
+      // FAQPage gir svarene rett i Google-treffet. Det er nettopp slike
+      // spoersmaal folk skriver inn, og da staar svaret der med det samme.
+      schema: 'FAQPage',
       index: 'Index',
     },
     omoss: {
@@ -19138,26 +19167,6 @@ class Component extends DCLogic {
     return a ? (a.sagtOpp || a.status === 'stoppet' || a.status === 'utlopt') : !!this.state.oppsagt;
   }
 
-  /**
-   * Til spoersmaalene, ikke til toppen av Om oss.
-   *
-   * «Spoersmaal og svar» i bunnteksten gikk til Om oss og la deg oeverst paa
-   * sida. Da matte du rulle forbi historien, verkstedet og folkene for aa
-   * finne det du kom for.
-   */
-  goSporsmal() {
-    this.setState({ side: 'omoss' });
-    // Etter tegningen: seksjonen finnes ikke for skjermen er byttet.
-    setTimeout(() => {
-      const el = document.getElementById('sporsmal-og-svar');
-      if (el) {
-        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
-      } else {
-        window.scrollTo(0, 0);
-      }
-    }, 60);
-  }
-
   siOppAbonnement() {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
     // medlemskapKall() henter avtalen paa nytt selv. Statusen paa Min side
@@ -19408,7 +19417,7 @@ class Component extends DCLogic {
       // etter, men de manglet oppforing: ingen beskrivelse, ingen canonical,
       // og en generisk fanetittel.
       dropin: 'dropin', kalender: 'kalender', nyttig: 'nyttig', nyheter: 'nyheter',
-      kursoversikt: 'kursoversikt',
+      kursoversikt: 'kursoversikt', sporsmal: 'sporsmal',
     }[side] || null;
   }
 
@@ -19417,6 +19426,7 @@ class Component extends DCLogic {
   seoStandardTittel(side) {
     const n = {
       booking: 'Book plass', kalender: 'Kalender', nyttig: 'Nyttig info',
+      sporsmal: 'Spørsmål og svar',
       kasse: 'Kasse', login: 'Logg inn', minside: 'Min side',
       personvern: 'Personvern', vilkar: 'Vilkår', vipps: 'Betaling med Vipps',
       ikkefunnet: 'Siden finnes ikke',
@@ -28745,6 +28755,7 @@ class Component extends DCLogic {
       erAdminMedlem: side === 'adminmedlem',
       erAdminOversikt: side === 'adminoversikt',
       erOmOss: side === 'omoss',
+      erSporsmal: side === 'sporsmal',
       erKasse: side === 'kasse',
       erVipps: side === 'vipps',
       goVipps: this.go('vipps'),
@@ -29092,8 +29103,7 @@ class Component extends DCLogic {
         // se api/ferdigbrent.php, som velger de tre feltene og ikke roerer
         // paameldingene.
         { navn: 'Klar til henting', velg: this.go('ferdigbrent') },
-        // Rett til spoersmaalene, ikke til toppen av Om oss.
-        { navn: 'Spørsmål og svar', velg: () => this.goSporsmal() },
+        { navn: 'Spørsmål og svar', velg: this.go('sporsmal') },
         // «Bedrift og event» tatt ut etter onske fra eieren. Sida ligger der
         // som for, og naas fra menyen og fra kortene paa forsida.
         { navn: 'Personvern', velg: this.go('personvern') },

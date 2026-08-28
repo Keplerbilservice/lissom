@@ -16,6 +16,7 @@
     "/kalender": "kalender",
     "/kursene-vare": "kursoversikt",
     "/nyttig-info": "nyttig",
+    "/sporsmal-og-svar": "sporsmal",
     "/nyheter": "nyheter"
   },
   "sider": {
@@ -287,6 +288,21 @@
       "canonical": "https://lissom.no/gavekort",
       "internlenker": "Kurs, Butikk, Medlemskap",
       "schema": "Product",
+      "index": "Index"
+    },
+    "sporsmal": {
+      "fokus": "keramikkurs spørsmål",
+      "tittel": "Spørsmål og svar om keramikkurs | Lissom Keramikk",
+      "meta": "Må jeg kunne noe fra før? Hvor lang tid tar det før keramikken er ferdig? Svar på det folk lurer på om kurs, drop-in og medlemskap hos Lissom på Teie.",
+      "slug": "sporsmal-og-svar",
+      "h1": "Det folk lurer på",
+      "sekundare": "keramikk for nybegynnere, hvor lang tid tar keramikk, drop-in keramikk, bli medlem keramikkverksted",
+      "altTekst": "Deltakere på keramikkurs hos Lissom i Tønsberg",
+      "ogTittel": "Spørsmål og svar om keramikkurs | Lissom",
+      "ogBeskrivelse": "Svar på det folk lurer på om kurs, drop-in og medlemskap hos Lissom Keramikk på Teie ved Tønsberg.",
+      "canonical": "https://lissom.no/sporsmal-og-svar",
+      "internlenker": "Kurs, Drop-in, Medlemskap, Kontakt",
+      "schema": "FAQPage",
       "index": "Index"
     },
     "omoss": {

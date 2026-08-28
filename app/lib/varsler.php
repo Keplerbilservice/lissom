@@ -438,7 +438,13 @@ final class Utsending
 
     private static function sendEpost(string $til, string $emne, string $tekst, ?string $html = null): bool
     {
-        $fra     = Config::hent('epost_fra', 'post@lissom.no');
+        // Avsenderadressen gaar bade i From-headeren og i konvolutten
+        // (MAIL FROM / «-f»). Er den ikke en adresse, er den ikke noe vi skal
+        // sende med — da er standardadressen bedre enn en halv linje.
+        $fra = trim((string) Config::hent('epost_fra', 'post@lissom.no'));
+        if (!filter_var($fra, FILTER_VALIDATE_EMAIL)) {
+            $fra = 'post@lissom.no';
+        }
         $fraNavn = Config::hent('epost_fra_navn', 'Lissom Keramikk');
         $svarTil = Config::hent('epost_svar_til', $fra);
 
@@ -450,6 +456,19 @@ final class Utsending
             'Content-Transfer-Encoding' => '8bit',
             'X-Mailer'                  => 'lissom.no',
         ];
+
+        // Ingen linjeskift i en headerverdi.
+        //
+        // Verdiene under kommer fra Varsler → oppsett, som eieren fyller ut.
+        // Et linjeskift midt i «Svar til»-adressen ville blitt en ekte
+        // headerlinje naar de settes sammen lenger nede — «Bcc: en@annen.no»
+        // gaar like fint som noe annet. trim() i skjemaet tar bare enden av
+        // strengen, ikke midten. Her klippes de vekk ett sted, saa det
+        // gjelder ogsaa de headerne vi maatte legge til senere.
+        $headere = array_map(
+            static fn(string $v): string => str_replace(["\r", "\n"], '', $v),
+            $headere
+        );
 
         $emneKodet = '=?UTF-8?B?' . base64_encode($emne) . '?=';
         $kropp = str_replace("\r\n", "\n", $tekst);

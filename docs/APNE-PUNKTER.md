@@ -482,6 +482,14 @@ nett. To funn, begge rettet.
   om det stod på lissom.no. Navnet er skrevet i et fritekstfelt. Escapes nå,
   som månedsrapporten alt gjorde.
 
+- **E-postheadere tok imot linjeskift.** «Svar til» og avsenderadressen under
+  Varsler → oppsett gikk rett inn i headerblokka, som settes sammen med CRLF.
+  Et linjeskift midt i verdien ble en ekte headerlinje — `Bcc:` går like fint
+  som noe annet. `trim()` i skjemaet tar bare endene, ikke midten. Bare en
+  innlogget admin kan skrive feltet, så det var ingen vei inn utenfra, men et
+  overtatt admin-passord skulle ikke også bli en postsentral. CR og LF klippes
+  nå ett sted, for alle headere, og avsenderadressen må validere som e-post.
+
 Resten holdt. Ingen SQL-injeksjon — alle strengene som settes sammen er
 kodelitteraler, hvitlister eller heltall. Alle 37 admin-endepunkter krever
 admin, kontrollert både i koden og med kall utenfra. Alle skrivende

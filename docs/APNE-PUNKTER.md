@@ -460,6 +460,21 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
 
+**Kurssiden åpner på kursene, ikke på alt — 28. august.** Lissom: «oppstart
+default må være dreiing, plateteknikk og workshop».
+
+- Filteret starter på `Kursene`. Det holder utenfor arrangementene (Sip &
+  Clay, Date Night), drop-in, interne samlinger — og Paint on Pots.
+- **Paint on Pots og drop-in kjennes på `folgerApningstid`**, ikke på navnet.
+  Det er en egenskap ved dem: datoene lages av åpningstidene. Et nytt kurs
+  Lissom lager uten å sette kategori faller derfor inn i standardvisningen,
+  som det skal, framfor å bli usynlig.
+- Alle sju knappene står som før, og «Vis alle» viser fortsatt alt. De tre
+  arrangementene velges manuelt — valgt i samråd med Lissom.
+- **Kategoriraden er borte fra /events og /drop-in.** De nås fra menyen og er
+  hver sin side; der sto hele raden likevel, over en side som handler om én
+  ting. Første trykk tok deg vekk fra siden du nettopp valgte.
+
 **Hver vare i butikken har fått sin egen adresse — 28. august.** `/butikk`
 var én side. Ingen kopp kunne deles med en lenke som viste nettopp den, ingen
 kunne rangere på sitt eget navn, og varene kunne ikke ligge i Googles gratis

@@ -1649,11 +1649,19 @@ window.__resources = {
               </sc-for>
             </div>
           </div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <sc-for list="{{ kursFiltre }}" as="f" hint-placeholder-count="6">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ f.valgt }}" on-click="{{ f.velg }}" hint-size="auto,32px">{{ f.navn }}</x-import>
-            </sc-for>
-          </div>
+          <!-- Kategoriene. Staar bare paa kurssida.
+               Events og drop-in naas fra menyen og er hver sin side. Der sto
+               hele kategorirada likevel — «Vis alle, Dreiing, Plateteknikk,
+               Workshop, Sip & Clay, Date Night, Paint on pots» — over en side
+               som handler om én ting. Det ser ut som et valg man skal ta, og
+               foerste trykk tar deg vekk fra sida du nettopp valgte. -->
+          <sc-if value="{{ visKursFiltre }}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <sc-for list="{{ kursFiltre }}" as="f" hint-placeholder-count="6">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ f.valgt }}" on-click="{{ f.velg }}" hint-size="auto,32px">{{ f.navn }}</x-import>
+              </sc-for>
+            </div>
+          </sc-if>
           <!-- Et filter kan gi null treff. Uten dette sto sida bare tom. -->
           <sc-if value="{{ kursIngenTreff }}" hint-placeholder-val="{{ false }}">
             <div style="margin-top: var(--space-6); display: flex; gap: var(--space-4); align-items: center; flex-wrap: wrap;">
@@ -12257,7 +12265,7 @@ const TALLDETALJER = {
 };
 
 class Component extends DCLogic {
-  state = { side: 'forside', innstemplet: true, synlig: true, kursFilter: 'Alle', detalj: null };
+  state = { side: 'forside', innstemplet: true, synlig: true, kursFilter: 'Kursene', detalj: null };
 
   // fhRolle nullstilles: en forhandsvisning skal ikke folge med videre til
   // neste skjerm. Den settes bare av de to kortene i admin.
@@ -12518,6 +12526,10 @@ class Component extends DCLogic {
         // over kurslista, der alle kursene deler én adresse.
         slug: kat.slug || '',
         katId: kat.id,
+        // «Datoene lages av aapningstidene» — Paint on Pots og drop-in.
+        // Kurslista bruker den til aa holde dem utenfor det som vises ved
+        // oppstart; de har hver sin knapp og hver sin side.
+        folgerApningstid: !!kat.folgerApningstid,
         prisOre: kat.prisOre,
         price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
         status: 'Ta kontakt for dato',
@@ -12579,6 +12591,7 @@ class Component extends DCLogic {
       // med, og et tall paa et kort ville sagt noe annet enn det som skjer i
       // kassa. Kortet staar uten pris; den staar der den skal brukes — i
       // bestillingen — som «Fra kr. N,-», regnet av den rimeligste varen.
+      folgerApningstid: !!kat.folgerApningstid,
       price: kat.gjenstandIKassa ? '' : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
       duration: kat.varighetVist || k.duration,
       nivaaTekst: kat.nivaaTekst || k.nivaaTekst || '',
@@ -12879,6 +12892,24 @@ class Component extends DCLogic {
    */
   kursIKategori(liste, f) {
     if (!f || f === 'Alle' || f === 'Vis alle') return liste;
+    // Det kurssida staar med naar man kommer inn: kursene, ikke
+    // arrangementene.
+    //
+    // Foer sto alt her — Sip & Clay, Date Night, Paint on Pots og drop-in
+    // sammen med dreiekursene. De tre forste har sin egen side under Events,
+    // drop-in har sin, og alle har hver sin knapp i rada under. De skal
+    // velges, ikke komme av seg selv.
+    //
+    // Paint on Pots og drop-in kjennes paa at datoene lages av
+    // aapningstidene. Det er en egenskap ved dem, ikke et navn jeg har
+    // skrevet inn — og et nytt kurs Lissom lager uten aa sette kategori
+    // faller derfor inn her, som det skal, framfor aa bli usynlig.
+    if (f === 'Kursene') {
+      const utenom = ['Events', 'Event', 'Drop-in', 'Sip & Clay', 'Date Night',
+                      'Kun medlemmer', 'Kun for medlemmer'];
+      return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1
+        && !k.folgerApningstid);
+    }
     if (f === 'Kurs') {
       // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
       const utenom = ['Events', 'Event', 'Drop-in'];
@@ -13659,7 +13690,7 @@ class Component extends DCLogic {
       // naar den kommer — framfor en tom bookingskjerm eller en 404 paa noe
       // som finnes.
       this._ventendeSlug = rute.kursSlug;
-      this.setState({ side: 'kurs', kursFilter: 'Alle' });
+      this.setState({ side: 'kurs', kursFilter: 'Kursene' });
       return;
     }
 
@@ -13700,7 +13731,7 @@ class Component extends DCLogic {
     // tilbakeknappen ville sittet fast mellom de to.
     this.setState({
       side: rute.side,
-      kursFilter: rute.filter || (rute.side === 'kurs' ? 'Alle' : this.state.kursFilter),
+      kursFilter: rute.filter || (rute.side === 'kurs' ? 'Kursene' : this.state.kursFilter),
       // En adresse uten vare betyr at varen ikke er aapen. Uten dette ble
       // ruta til butikken lest, men den aapne varen ble staaende — og
       // adressen ble straks skrevet tilbake til varen igjen. Tilbakeknappen
@@ -21935,7 +21966,7 @@ class Component extends DCLogic {
         transition: 'transform .18s var(--ease-clay, ease), color .18s ease',
       },
       kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Workshop': 'Workshops', 'Sip & Clay': 'Sip & Clay', 'Date Night': 'Date Night', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
-      erKursFilter: ['Alle', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop'].indexOf(this.state.kursFilter || 'Alle') >= 0,
+      erKursFilter: ['Alle', 'Kursene', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop'].indexOf(this.state.kursFilter || 'Kursene') >= 0,
       medlemFordeler: [
         'Tilgang til verksted og utstyr',
         'Mulighet til å jobbe med egne prosjekter',
@@ -22314,6 +22345,10 @@ class Component extends DCLogic {
           kursTomTekst: naar
             ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen' }[naar] || '') + ' akkurat nå.'
             : 'Ingen kurs i denne kategorien akkurat nå.',
+          // Rada med kategorier hoerer til kurssida. Events og drop-in er
+          // hver sin side, naadd fra menyen, og der er det ingenting aa
+          // filtrere paa.
+          visKursFiltre: ['Events', 'Drop-in'].indexOf(this.state.kursFilter) === -1,
           kursNullstill: () => this.setState({ kursTid: null, kursFilter: 'Vis alle' }),
           kursFiltre: KATEGORIER
             // «Vis alle» staar alltid. Den valgte staar ogsaa, selv naar den
@@ -22417,7 +22452,7 @@ class Component extends DCLogic {
                               bookKvittert: false, bDato: p.dato || null, bOktId: p.oktId || null,
                               ventelisteBekreftet: null });
               window.scrollTo(0, 0);
-            } else { this.setState({ side: 'kurs', kursFilter: 'Alle' }); window.scrollTo(0, 0); }
+            } else { this.setState({ side: 'kurs', kursFilter: 'Kursene' }); window.scrollTo(0, 0); }
           },
           stil: {
             appearance: 'none', border: 'none', width: '100%', textAlign: 'left',
@@ -32179,7 +32214,7 @@ class Component extends DCLogic {
           'Book nå': ['kurs', 'Alle'], 'Book': ['kurs', 'Alle'],
         };
         const mal = ruter[lenke];
-        if (mal) { this.setState({ side: mal[0], kursFilter: mal[1] || 'Alle' }); window.scrollTo(0, 0); }
+        if (mal) { this.setState({ side: mal[0], kursFilter: mal[1] || 'Kursene' }); window.scrollTo(0, 0); }
       },
       goEvents: () => { this.setState({ side: 'kurs', kursFilter: 'Events' }); window.scrollTo(0, 0); },
       ...(() => {

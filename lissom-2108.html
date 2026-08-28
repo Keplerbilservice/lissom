@@ -7424,6 +7424,36 @@ window.__resources = {
               </div>
             </div>
 
+        <!-- Oppfolgingen etter kurset.
+             Null anmeldelser paa Google 28. august. For et lokalt verksted
+             er det den storste enkeltfaktoren i «keramikkurs i naerheten» —
+             kartet svarer for de organiske treffene gjor det.
+             Meldingen gaar én gang per kursdato, noen timer etter at den er
+             holdt, til dem som betalte. Lenken staar ikke i koden: den limes
+             inn her, og kan byttes uten en ny utlegging. -->
+        <div style="margin-top: var(--space-6); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Takk for sist — etter kurset</div>
+          <div style="padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); max-width: 74ch; text-wrap: pretty;">En melding til dem som var på kurset, noen timer etterpå, med lenken til å legge igjen en anmeldelse. Den går én gang per kursdato, bare til dem som betalte, og aldri for et kurs som er mer enn tre døgn gammelt.</p>
+
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Send oppfølging etter kurs" checked="{{ vaAnmPaa }}" on-change="{{ vaAnmVeksle }}" hint-size="100%,28px"></x-import>
+
+            <div>
+              <label for="va-anm-lenke" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Lenken de sendes til</label>
+              <input id="va-anm-lenke" value="{{ vaAnmLenke }}" onChange="{{ settVa.anmeldelse_lenke }}" placeholder="Lim inn lenken fra Google-bedriftsprofilen" style="{{ vaFeltStil }}">
+              <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Uten en lenke sendes ingenting, uansett om bryteren står på. Du finner den i Google-bedriftsprofilen under «Be om anmeldelser».</p>
+            </div>
+
+            <div>
+              <label for="va-anm-timer" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvor lenge etter kurset</label>
+              <input id="va-anm-timer" value="{{ vaAnmTimer }}" onChange="{{ settVa.anmeldelse_timer }}" placeholder="3" inputmode="numeric" style="{{ vaFeltStil }}">
+              <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Timer. Mellom 1 og 72 — den skal komme mens de fortsatt husker det.</p>
+            </div>
+
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ vaAnmStatus }}</div>
+          </div>
+        </div>
+
             <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
               <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: var(--space-2);">Hvilke meldinger den står på</div>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-4);">
@@ -31214,6 +31244,31 @@ class Component extends DCLogic {
           vaFraNavn: verdi('epost_fra_navn'),
           vaSvarTil: verdi('epost_svar_til'),
 
+          // ── Oppfolgingen etter kurset ────────────────────────────────
+          //
+          // Bryteren er den eneste som styrer. Malen ligger klar med kanal
+          // «sms», og Varsel::mal() sender e-post i stedet saa lenge SMS
+          // ikke er satt opp — samme melding, annen vei.
+          vaAnmPaa: verdi('anmeldelse_paa') === '1',
+          vaAnmVeksle: () => this.setState(st => ({
+            varslerUtkast: Object.assign({}, st.varslerUtkast, {
+              anmeldelse_paa: (st.varslerUtkast || {}).anmeldelse_paa !== undefined
+                ? ((st.varslerUtkast || {}).anmeldelse_paa === '1' ? '0' : '1')
+                : (((d.oppsett || {}).anmeldelse_paa || {}).verdi === '1' ? '0' : '1'),
+            }),
+          })),
+          vaAnmLenke: verdi('anmeldelse_lenke'),
+          vaAnmTimer: verdi('anmeldelse_timer') || '3',
+          // Hva som faktisk skjer, ikke bare hva bryteren staar paa.
+          vaAnmStatus: (() => {
+            const a = d.anmeldelse || {};
+            if (!a.paa) { return 'Står av. Ingen oppfølging sendes.'; }
+            if (!a.lenke) { return 'Bryteren står på, men lenken mangler — ingenting sendes før den er fylt ut.'; }
+            return 'På. Går ' + a.timer + ' timer etter kurset, som ' + a.kanal + '.'
+              + (a.kanal === 'e-post' ? ' Den går som SMS av seg selv den dagen SMS er satt opp.' : '')
+              + (a.sendt ? ' ' + a.sendt + ' sendt hittil.' : '');
+          })(),
+
           vaSveveBruker: verdi('sveve_bruker'),
           vaSvevePassord: u.sveve_passord || '',
           vaSvevePassordHint: satt('sveve_passord') ? 'Lagret — skriv bare hvis det skal byttes' : 'Passordet hos Sveve',
@@ -31264,6 +31319,7 @@ class Component extends DCLogic {
             'smtp_vert', 'smtp_port', 'smtp_bruker', 'smtp_passord', 'smtp_sikkerhet',
             'epost_fra', 'epost_fra_navn', 'epost_svar_til',
             'sveve_bruker', 'sveve_passord', 'sms_avsender', 'epost_signatur',
+            'anmeldelse_lenke', 'anmeldelse_timer',
           ].reduce((m, n) => {
             m[n] = (e) => this.setState({
               varslerUtkast: Object.assign({}, this.state.varslerUtkast || {}, {

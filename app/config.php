@@ -55,6 +55,11 @@ final class Config
         // Sto den i koden, matte hele nettsida legges ut paa nytt for aa
         // endre et komma.
         'kurs_bekreftelse',
+        // Oppfoelgingen etter kurset (migrasjon 080): bryteren, lenken folk
+        // sendes til, og hvor mange timer etter kurset den gaar. Lenken er
+        // Lissom sin og staar med vilje ikke i koden — den limes inn i admin
+        // og skal kunne byttes uten en ny utlegging.
+        'anmeldelse_paa', 'anmeldelse_lenke', 'anmeldelse_timer',
         // Signaturen i e-postene systemet sender, og hvilke malgrupper den
         // staar paa. Den er ingen hemmelighet — den staar nederst i hver
         // e-post — og den skal kunne rettes fra admin naar et telefonnummer

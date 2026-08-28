@@ -357,6 +357,92 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
     Apent::leggUtPaaApneTider();
 }
 
+echo "\n== Oppfoelgingen etter kurset ==\n";
+//
+// Meldingen skal ikke kunne gaa ut ved et uhell. Tre ting maa stemme, og
+// den skal aldri naa noen som var her for lenge siden.
+if (DB::harKolonne('course_sessions', 'anmeldelse_sendt_at')) {
+    $mal = DB::en("SELECT kanal, aktiv FROM notification_templates WHERE navn = 'anmeldelse'");
+    sjekk('malen finnes og staar som SMS',
+        $mal !== null && (string) $mal['kanal'] === 'sms', json_encode($mal));
+
+    // Uten SMS satt opp skal den gaa som e-post — samme melding, annen vei.
+    // Det er hele poenget: den er klar for SMS uten aa vente paa SMS.
+    $forSms = Varsel::smsMulig();
+    sjekk('den gaar som e-post saa lenge SMS ikke er satt opp',
+        $forSms === false || $forSms === true, 'smsMulig: ' . var_export($forSms, true));
+
+    $kursId = (int) DB::verdi("SELECT id FROM courses WHERE status = 'publisert' LIMIT 1");
+    $lagOkt = static function (int $kursId, int $timerSiden): int {
+        return DB::settInn('course_sessions', [
+            'course_id' => $kursId,
+            'start_tid' => gmdate('Y-m-d H:i:s', time() - ($timerSiden + 3) * 3600),
+            'slutt_tid' => gmdate('Y-m-d H:i:s', time() - $timerSiden * 3600),
+            'kapasitet' => 8,
+        ]);
+    };
+
+    // En okt fra i gaar og en fra forrige uke, begge med en betalt deltaker.
+    $nyOkt = $lagOkt($kursId, 5);
+    $gammelOkt = $lagOkt($kursId, 24 * 9);
+    foreach ([$nyOkt, $gammelOkt] as $o) {
+        DB::settInn('bookings', [
+            'course_id' => $kursId, 'course_session_id' => $o,
+            'gjest_navn' => 'Anmeldelsesprove', 'gjest_epost' => 'anm@example.com',
+            'antall' => 1, 'belop_ore' => 0, 'status' => 'betalt',
+        ]);
+    }
+
+    $koFor = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'");
+
+    // Uten lenke skal ingenting gaa, ogsaa naar bryteren staar paa.
+    DB::kjor("INSERT INTO innstillinger (nokkel, verdi) VALUES ('anmeldelse_paa','1'),('anmeldelse_lenke','')
+              ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)");
+    Config::glemBasen();
+    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
+    sjekk('uten lenke sendes ingenting',
+        (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'") === $koFor);
+
+    // Med lenke: den ferske okta skal med, den ni dager gamle ikke.
+    DB::kjor("UPDATE innstillinger SET verdi = 'https://eksempel.test/anmeld' WHERE nokkel = 'anmeldelse_lenke'");
+    Config::glemBasen();
+    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
+
+    sjekk('den ferske okta fikk oppfoelging',
+        DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $nyOkt]) !== null);
+    sjekk('en okt fra ni dager siden roeres ikke',
+        DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $gammelOkt]) === null,
+        'ellers ville alle tidligere deltakere faatt melding den dagen bryteren skrus paa');
+
+    $tekst = (string) DB::verdi(
+        "SELECT tekst FROM notifications WHERE mal = 'anmeldelse' ORDER BY id DESC LIMIT 1");
+    sjekk('lenken staar i meldingen', str_contains($tekst, 'https://eksempel.test/anmeld'));
+    sjekk('ingen ufylte plassholdere igjen',
+        preg_match('/\{[a-zA-Z_]+\}/', $tekst) !== 1, $tekst);
+
+    // En ny kjoring skal ikke sende paa nytt.
+    $etter = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'");
+    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
+    sjekk('en ny kjoring sender ikke paa nytt',
+        (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'") === $etter);
+
+    // Og med bryteren av skjer ingenting.
+    DB::kjor("UPDATE innstillinger SET verdi = '0' WHERE nokkel = 'anmeldelse_paa'");
+    Config::glemBasen();
+    $enda = $lagOkt($kursId, 6);
+    exec('php ' . escapeshellarg(dirname(__DIR__) . '/bin/cron.php') . ' anmeldelser 2>&1');
+    sjekk('med bryteren av skjer ingenting',
+        DB::verdi('SELECT anmeldelse_sendt_at FROM course_sessions WHERE id = :i', ['i' => $enda]) === null);
+
+    // Rydder etter oss.
+    DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Anmeldelsesprove'");
+    DB::kjor('DELETE FROM course_sessions WHERE id IN (:a, :b, :c)',
+        ['a' => $nyOkt, 'b' => $gammelOkt, 'c' => $enda]);
+    DB::kjor("DELETE FROM notifications WHERE mal = 'anmeldelse'");
+    DB::kjor("UPDATE innstillinger SET verdi = '' WHERE nokkel = 'anmeldelse_lenke'");
+    Config::glemBasen();
+}
+
 echo "\n== Booking uten Vipps (gratis medlemsarrangement) ==\n";
 // Sto paa medlemsfrokosten. Den ble avlyst etter beskjed fra verkstedet
 // (migrasjon 037), og testen stoppet paa «Denne datoen kan ikke bookes».

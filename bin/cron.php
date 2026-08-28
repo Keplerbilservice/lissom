@@ -155,6 +155,88 @@ switch ($jobb) {
         break;
 
     // -----------------------------------------------------------------------
+    //
+    // Oppfoelgingen etter kurset: «takk for sist, legg gjerne igjen noen ord».
+    //
+    // Tre sperrer, og alle tre maa vaere aapne for det gaar en melding:
+    //
+    //   1. anmeldelse_paa staar paa. Skrus paa under Markedsforing → E-post
+    //      og SMS, av eieren, naar hun vil.
+    //   2. anmeldelse_lenke er fylt ut. Uten en lenke har meldingen ingenting
+    //      aa peke paa, og «legg igjen noen ord» uten sted er bare stoy.
+    //   3. Malen «anmeldelse» er aktiv.
+    //
+    // Og uansett: aldri lenger tilbake enn tre dogn. Skrur du den paa i
+    // november, skal ingen faa «takk for sist» for et kurs i august.
+    case 'anmeldelser':
+        $paa    = (string) Config::hent('anmeldelse_paa', '0') === '1';
+        $lenke  = trim((string) Config::hent('anmeldelse_lenke', ''));
+        $malPaa = (int) (DB::verdi(
+            "SELECT aktiv FROM notification_templates WHERE navn = 'anmeldelse'"
+        ) ?? 0) === 1;
+
+        if (!$paa || $lenke === '' || !$malPaa) {
+            $si('Oppfølging etter kurs: står av'
+                . (!$paa ? ' (bryteren)' : '')
+                . ($lenke === '' ? ' (mangler lenke)' : '')
+                . (!$malPaa ? ' (malen er slått av)' : '')
+                . '. Ingenting sendt.');
+            break;
+        }
+
+        // Hvor lenge etter kurset. Timer, ikke dager: SMS-en skal komme mens
+        // de fortsatt husker det, ikke uken etter.
+        $timer = max(1, min(72, (int) Config::hent('anmeldelse_timer', '3')));
+
+        $okter = DB::alle(
+            "SELECT cs.id, cs.start_tid, c.tittel, c.sms_paaminnelse
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt'
+                AND cs.anmeldelse_sendt_at IS NULL
+                AND COALESCE(cs.slutt_tid, cs.start_tid)
+                    <= DATE_SUB(UTC_TIMESTAMP(), INTERVAL :t HOUR)
+                AND COALESCE(cs.slutt_tid, cs.start_tid)
+                    > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)
+                AND COALESCE(c.tema, '') <> 'Kun for medlemmer'",
+            ['t' => $timer]
+        );
+
+        $antall = 0;
+        foreach ($okter as $okt) {
+            $deltakere = DB::alle(
+                "SELECT b.gjest_navn, b.gjest_epost, b.gjest_telefon,
+                        m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
+                   FROM bookings b
+              LEFT JOIN members m ON m.id = b.member_id
+                  WHERE b.course_session_id = :s AND b.status = 'betalt'",
+                ['s' => $okt['id']]
+            );
+
+            foreach ($deltakere as $d) {
+                Varsel::mal('anmeldelse', [
+                    'epost'   => $d['m_epost'] ?? $d['gjest_epost'],
+                    // Samme regel som paaminnelsen: SMS bare der kurset har
+                    // sagt ja til det. Har ikke kurset det, gaar den som
+                    // e-post — Varsel::mal() ordner det selv.
+                    'telefon' => $okt['sms_paaminnelse'] ? ($d['m_telefon'] ?? $d['gjest_telefon']) : null,
+                ], [
+                    'navn'  => (string) ($d['m_navn'] ?: $d['gjest_navn']),
+                    'kurs'  => (string) $okt['tittel'],
+                    'lenke' => $lenke,
+                ], 'course_session', (int) $okt['id']);
+                $antall++;
+            }
+
+            // Merkes ogsaa naar okta ikke hadde deltakere. Ellers ville den
+            // blitt sett paa igjen ved hver kjoring i tre dogn.
+            DB::oppdater('course_sessions',
+                ['anmeldelse_sendt_at' => gmdate('Y-m-d H:i:s')], ['id' => $okt['id']]);
+        }
+        $si("Oppfølging etter kurs: {$antall} lagt i kø for " . count($okter) . ' økt(er).');
+        break;
+
+    // -----------------------------------------------------------------------
     case 'vedlikehold':
         $sesjoner = Sesjon::ryddUtlopte();
         $rater = Rate::rydd();
@@ -214,6 +296,8 @@ switch ($jobb) {
             . "  varsler        Sender det som ligger i varselkøen\n"
             . "  betalinger     Henter status fra Vipps for betalinger som henger\n"
             . "  paaminnelser   Kurspåminnelser og ventelistevarsler\n"
+            . "  anmeldelser    «Takk for sist» etter kurs, med lenke til anmeldelse\n"
+            . "  medlemstrekk   Månedstrekk for medlemskapene\n"
             . "  vedlikehold    Rydder utløpte sesjoner, reservasjoner og gavekort\n");
         exit(1);
 }

@@ -460,6 +460,27 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
 
+**«Takk for sist» etter kurset — bygget 28. august, står av.** Lissom har
+**null anmeldelser på Google**. For et lokalt verksted er det den største
+enkeltfaktoren i «keramikkurs i nærheten»: kartet svarer før de organiske
+treffene gjør det.
+
+- Migrasjon 080 gir malen `anmeldelse`, kolonnen `course_sessions.anmeldelse_sendt_at`
+  og tre innstillinger. `bin/cron.php anmeldelser` sender, én gang per
+  kursdato, til dem som betalte.
+- **Kanalen er SMS.** Malen står som `kanal = 'sms'`, og `Varsel::mal()` gjør
+  da det den skal så lenge SMS ikke er satt opp: sender e-post i stedet. Den
+  dagen SMS skrus på, går den samme meldingen som SMS — kanalen med høyest
+  svarprosent — uten at noen rører koden.
+- **Lenken står ikke i koden.** Den er verkstedets egen og limes inn under
+  Markedsføring → E-post og SMS. Uten lenke sendes ingenting, uansett bryter.
+- **Aldri lenger tilbake enn tre døgn.** Skrus den på i november, går det
+  ingen melding til dem som var her i august. Det er den feilen som ville
+  gjort mest skade, og den er den eneste som ikke lar seg angre.
+- Skjermen sier hva som faktisk skjer, ikke bare hva bryteren står på: «Går 3
+  timer etter kurset, som e-post. Den går som SMS av seg selv den dagen SMS er
+  satt opp.»
+
 **Sikkerhetsgjennomgang 28. august.** Hele koden gått gjennom: SQL, tilgang,
 opplasting, CSRF, XSS, hemmeligheter, headere og hva som ligger åpent over
 nett. To funn, begge rettet.

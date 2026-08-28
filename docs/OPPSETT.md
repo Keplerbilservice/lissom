@@ -183,13 +183,14 @@ fra admin-panelet. Poenget er at du aldri kan låse deg selv ute.
 
 ## 7. Sett opp de planlagte jobbene
 
-cPanel → **Cron Jobs**. Legg inn fire:
+cPanel → **Cron Jobs**. Legg inn fem:
 
 | Når | Kommando |
 |---|---|
 | Hvert 5. minutt | `php ~/lissom-app/bin/cron.php varsler` |
 | Hvert 5. minutt | `php ~/lissom-app/bin/cron.php betalinger` |
 | Daglig 07:00 | `php ~/lissom-app/bin/cron.php paaminnelser` |
+| Hver time | `php ~/lissom-app/bin/cron.php anmeldelser` |
 | Daglig 01:00 | `php ~/lissom-app/bin/cron.php vedlikehold` |
 
 Klokkeslettene i cPanel er som regel servertid. Sjekk hva serveren står i, og

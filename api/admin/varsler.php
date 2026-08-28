@@ -53,6 +53,9 @@ const FELTER = [
     'epost_signatur',
     'epost_signatur_system', 'epost_signatur_ordre',
     'epost_signatur_kurs', 'epost_signatur_nyhetsbrev',
+    // Oppfoelgingen etter kurset. Lenken staar ikke i koden — den er
+    // verkstedets egen, og skal kunne byttes herfra.
+    'anmeldelse_paa', 'anmeldelse_lenke', 'anmeldelse_timer',
 ];
 
 /** De fire gruppene en mal kan hoere til, og hva de heter for et menneske. */
@@ -197,6 +200,21 @@ $svar['kan_lagre'] = DB::harTabell('innstillinger');
 $svar['epost_maate'] = trim((string) Config::hent('smtp_vert', '')) !== ''
     ? 'SMTP' : 'serverens mail()';
 $svar['sms_klar'] = Varsel::smsMulig();
+
+// ── Oppfoelgingen etter kurset ──────────────────────────────────────────
+//
+// Skjermen skal kunne si om den faktisk gaar, ikke bare om bryteren staar
+// paa. Den sender ikke uten lenke, og den gaar som e-post til SMS er satt
+// opp — begge deler er noe eieren skal se uten aa gjette.
+$svar['anmeldelse'] = [
+    'paa'    => (string) Config::hent('anmeldelse_paa', '0') === '1',
+    'lenke'  => trim((string) Config::hent('anmeldelse_lenke', '')) !== '',
+    'kanal'  => Varsel::smsMulig() ? 'SMS' : 'e-post',
+    'timer'  => max(1, min(72, (int) Config::hent('anmeldelse_timer', '3'))),
+    'sendt'  => (int) (DB::verdi(
+        "SELECT COUNT(*) FROM notifications WHERE mal = 'anmeldelse'"
+    ) ?? 0),
+];
 
 if (!isset($svar['stoppet'])) {
     $svar['hvordan'] = 'Legg til ?stopp=ja for å avbryte alt som ligger i køen.';

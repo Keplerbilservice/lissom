@@ -12265,7 +12265,23 @@ const SIDEINNHOLD = {
     { navn: 'Om verkstedet', type: 'Tekst og bilde', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Om Lissom' },
       { l: 'Overskrift', v: 'Keramikkverkstedet vårt' } ] },
-    { navn: 'Spørsmål og svar', type: '11 spørsmål', synlig: 'Publisert', felter: [
+    { navn: 'Finn fram', type: 'Brun seksjon', synlig: 'Publisert', felter: [
+      { l: 'Kicker', v: 'Finn fram' },
+      { l: 'Adresse', v: 'Nordre Løkkevei 15' },
+      { l: 'Veibeskrivelse', v: 'På Teie, få minutter fra Tønsberg sentrum, på vei mot Tjøme. Adresse: Nordre Løkkevei 15, 3120 Nøtterøy. Inngang på baksiden av bygget, gå gjennom porten og følg skiltet.', lang: true } ] },
+  ],
+
+  // Spoersmaalene har egen side, og hoerer derfor til seg selv her ogsaa.
+  //
+  // De laa som en seksjon under «Om oss». Da sto tekstene til to
+  // forskjellige sider i det samme skjemaet, og eieren maatte lete i Om oss
+  // for aa rette et spoersmaal.
+  //
+  // Noeklene folger med: «Om oss/1/Spørsmål 1» er naa
+  // «Spørsmål og svar/0/Spørsmål 1», og «Finn fram» rykket fra 2 til 1.
+  // Migrasjon 083 flytter det som ligger lagret, saa ingen tekst gaar tapt.
+  'Spørsmål og svar': [
+    { navn: 'Det folk lurer på', type: '11 spørsmål', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Det folk lurer på' },
       { l: 'Undertekst', v: 'Finner du ikke svaret? Ring oss eller send en e-post, vi svarer raskt.', lang: true },
       { l: 'Spørsmål 1', v: 'Må jeg kunne noe om keramikk fra før?' },
@@ -12289,11 +12305,7 @@ const SIDEINNHOLD = {
       { l: 'Spørsmål 10', v: 'Hva er inkludert i drop-in?' },
       { l: 'Svar 10', v: 'Leire, verktøy, materialer og brenning av ett ferdig arbeid opptil 20 × 20 cm.', lang: true },
       { l: 'Spørsmål 11', v: 'Kan jeg spise og drikke av keramikken?' },
-      { l: 'Svar 11', v: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.', lang: true } ] },
-    { navn: 'Finn fram', type: 'Brun seksjon', synlig: 'Publisert', felter: [
-      { l: 'Kicker', v: 'Finn fram' },
-      { l: 'Adresse', v: 'Nordre Løkkevei 15' },
-      { l: 'Veibeskrivelse', v: 'På Teie, få minutter fra Tønsberg sentrum, på vei mot Tjøme. Adresse: Nordre Løkkevei 15, 3120 Nøtterøy. Inngang på baksiden av bygget, gå gjennom porten og følg skiltet.', lang: true } ] },
+      { l: 'Svar 11', v: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.', lang: true } ] }
   ],
   // Avbestillingsvilkaarene sto her som tre felter, og samtidig i teksten
   // paa Vilkaar-sida. Bare den siste vises. Serveren regner dessuten
@@ -29167,8 +29179,11 @@ class Component extends DCLogic {
       levering: ['Hent i butikken på Teie', 'Send som pakke (kr. 89,-)'],
       sporsmal: (() => {
         const il = this.state.innholdLagret || {};
-        const seksjon = (SIDEINNHOLD['Om oss'] || []).findIndex(s => s.navn === 'Spørsmål og svar');
-        const hent = (l, fallback) => il['Om oss/' + seksjon + '/' + l] ?? fallback;
+        // Blokknummeret slaas opp paa navnet, ikke skrives inn. Da folger
+        // noeklene med hvis seksjonen flyttes — og bin/innholdssjekk.mjs
+        // kjenner igjen formen og ser at feltene er koblet.
+        const seksjon = (SIDEINNHOLD['Spørsmål og svar'] || []).findIndex(s => s.navn === 'Det folk lurer på');
+        const hent = (l, fallback) => il['Spørsmål og svar/' + seksjon + '/' + l] ?? fallback;
         return [
         { q: 'Må jeg kunne noe om keramikk fra før?', a: 'Nei. Kursene starter fra bunnen, og vi veileder deg gjennom hele prosessen.' },
         { q: 'Hvor lang tid tar det før keramikken er ferdig?', a: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar normalt 2–3 uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige.' },
@@ -30805,9 +30820,9 @@ class Component extends DCLogic {
       beTilbudKnapp: this.innh('Bedrift og event/1/Knapp'),
       ooKicker: this.innh('Om oss/0/Kicker'),
       ooTittel: this.innh('Om oss/0/Overskrift'),
-      ooFinnKicker: this.innh('Om oss/2/Kicker'),
-      ooAdresse: this.innh('Om oss/2/Adresse'),
-      ooVeibeskrivelse: this.innh('Om oss/2/Veibeskrivelse'),
+      ooFinnKicker: this.innh('Om oss/1/Kicker'),
+      ooAdresse: this.innh('Om oss/1/Adresse'),
+      ooVeibeskrivelse: this.innh('Om oss/1/Veibeskrivelse'),
       kaKnapp: this.innh('Booking/1/Knapp'),
       goForesporsel: () => this.apneForesporsel(),
       goForesporselGammel: () => {

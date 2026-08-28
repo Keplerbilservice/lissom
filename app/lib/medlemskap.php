@@ -40,6 +40,22 @@ final class Medlemskap
      *
      * @return list<string>
      */
+    /**
+     * Maa dette medlemskapet ha fast trekk?
+     *
+     * Aarsmedlemskapet bindes i tolv maaneder, og da er det avtalen som er
+     * hele grunnlaget. De andre lar medlemmet velge selv.
+     *
+     * Kolonna kom med migrasjon 081. Er den ikke kjort, krever ingen plan
+     * fast trekk — altsaa som for.
+     *
+     * @param array<string,mixed> $plan
+     */
+    public static function kreverFastTrekk(array $plan): bool
+    {
+        return (int) ($plan['krever_fast_trekk'] ?? 0) === 1;
+    }
+
     public static function punkter(?string $raa): array
     {
         $ut = [];
@@ -140,6 +156,97 @@ final class Medlemskap
     }
 
     /**
+     * Medlemskap uten fast trekk: én betaling i Vipps for forste periode.
+     *
+     * Eieren: «de skal ha fast trekk eller haandtere selv». Velger medlemmet
+     * aa haandtere selv, skal det likevel betales med det samme — det er bare
+     * de senere periodene verkstedet krever inn for haand.
+     *
+     * Raden i «subscriptions» faar ingen avtale-id og ingen trekkdato. Da
+     * rorer oppdaterFraVipps() den ikke, og tilTrekk() henter den aldri — det
+     * kommer altsaa ingen automatiske trekk. Medlemskapet blir aktivt naar
+     * betalingen er i havn, i Booking::markerBetalt().
+     *
+     * @return array{url:string,id:int}
+     */
+    public static function startEngangs(array $medlem, string $planNavn): array
+    {
+        $plan = self::plan($planNavn);
+        if ($plan === null) {
+            throw new RuntimeException('Ukjent medlemskap.');
+        }
+        $fra = self::avtale((int) $medlem['id']);
+        if ($fra !== null && $fra['status'] === 'aktiv') {
+            throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
+        }
+
+        $binding = (int) $plan['binding_mnd'];
+        $id = DB::settInn('subscriptions', [
+            'member_id'          => (int) $medlem['id'],
+            'plan'               => $planNavn,
+            'pris_ore'           => (int) $plan['pris_ore'],
+            'vipps_agreement_id' => '',
+            'status'             => 'venter',
+            'binding_til'        => $binding > 0
+                ? (new DateTimeImmutable('now'))->modify('+' . $binding . ' months')->format('Y-m-d')
+                : null,
+        ]);
+
+        $referanse = Vipps::nyReferanse('MED');
+        $betalingId = DB::settInn('payments', [
+            'vipps_reference' => $referanse,
+            'type'            => 'epayment',
+            'formal'          => 'medlemskap',
+            'member_id'       => (int) $medlem['id'],
+            'subscription_id' => $id,
+            'belop_ore'       => (int) $plan['pris_ore'],
+            'status'          => 'opprettet',
+        ]);
+
+        try {
+            $betaling = Vipps::opprettBetaling(
+                $referanse,
+                (int) $plan['pris_ore'],
+                'Medlemskap hos Lissom — ' . $planNavn,
+                Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse),
+                $medlem['telefon'] ?? null
+            );
+        } catch (Throwable $e) {
+            // Betalingen kom aldri i gang. Da skal det ikke ligge igjen et
+            // halvt medlemskap som ser ut som om noen venter paa aa betale.
+            DB::oppdater('payments', ['status' => 'feilet'], ['id' => $betalingId]);
+            DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $id]);
+            logg_feil('Fikk ikke startet medlemsbetaling for medlem ' . $medlem['id'], $e);
+            throw new RuntimeException('Fikk ikke startet betalingen. Prøv igjen om litt.');
+        }
+
+        DB::oppdater('payments', ['status' => 'venter'], ['id' => $betalingId]);
+        return ['url' => $betaling['url'], 'id' => $id];
+    }
+
+    /**
+     * Slaar paa et medlemskap som er betalt med én betaling.
+     *
+     * Kalles fra Booking::markerBetalt(). Ingen trekkdato settes — det er
+     * nettopp poenget med denne maaten: verkstedet krever inn de neste
+     * periodene selv.
+     */
+    public static function betaltEngangs(int $abonnementId): void
+    {
+        $a = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $abonnementId]);
+        if ($a === null || $a['status'] === 'aktiv') {
+            return;
+        }
+        DB::oppdater('subscriptions', ['status' => 'aktiv', 'neste_trekk' => null], ['id' => $abonnementId]);
+        DB::oppdater('members', [
+            'status'          => 'aktiv',
+            'medlemskap_type' => (string) $a['plan'],
+            'start_dato'      => DB::verdi('SELECT start_dato FROM members WHERE id = :m', ['m' => (int) $a['member_id']])
+                                  ?: gmdate('Y-m-d'),
+        ], ['id' => (int) $a['member_id']]);
+    }
+
+    /**
      * Spor Vipps om status og setter avtalen deretter.
      *
      * Kalles bade naar kunden kommer tilbake og fra cron. Den er trygg aa
@@ -177,9 +284,13 @@ final class Medlemskap
         // aa ha betalingen paa plass. Men verkstedet skal fortsatt kunne si
         // nei — og da skal ingen ha blitt trukket. Forste trekk slippes av
         // godkjenningen i admin, ikke av at kunden trykket ja i Vipps.
+        // Bare soknader som faktisk venter paa en avtale. En gammel soknad
+        // der medlemmet gjor opp selv skal ikke holde igjen noe.
+        $harKol = DB::harKolonne('membership_applications', 'betaling');
         $venterSvar = (int) DB::verdi(
             "SELECT COUNT(*) FROM membership_applications
-              WHERE member_id = :m AND status = 'venter'",
+              WHERE member_id = :m AND status = 'venter'"
+            . ($harKol ? " AND betaling = 'trekk'" : ''),
             ['m' => (int) $avtale['member_id']]
         ) > 0;
 

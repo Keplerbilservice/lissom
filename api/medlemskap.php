@@ -22,6 +22,8 @@ $planer = static fn(): array => array_map(static fn($p) => [
     'timer'    => $p['timer'] === null ? null : (int) $p['timer'],
     'binding'  => (int) $p['binding_mnd'],
     'engangs'  => (bool) $p['engangs'],
+    // Krever planen fast trekk, faar ikke medlemmet velge betalingsmaate.
+    'fastTrekk' => Medlemskap::kreverFastTrekk($p),
     // Teksten kunden leser. Den staar i basen fordi verkstedet skal kunne
     // skrive den om selv — «for 30 dager» sier ingenting om de ti timene.
     'merke'      => (string) ($p['merke'] ?? ''),

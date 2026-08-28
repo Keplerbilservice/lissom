@@ -1,31 +1,29 @@
 <?php
 /**
- * Soknad om medlemskap.
+ * Innmelding i medlemskap.
  *
- * Vipps Login sier hvem noen er. Det er ikke det samme som at de skal inn i
- * verkstedet. Den som vil bli medlem sender en soknad her; verkstedet
- * godkjenner den i admin, og forst da apner medlemsdelen av Min side.
+ * Eieren: «jeg vil ikke ha soknad, men rett paa vipps betaling».
  *
- * GET  — status paa egen soknad (venter, godkjent, avslatt eller ingen).
- * POST — send inn soknad. En om gangen; en ny soknad mens en venter avvises.
+ * Her sto det for et soknadsskjema: du sendte inn, verkstedet sa ja eller
+ * nei i admin, og forst da apnet medlemsdelen. Ingen betalte noe underveis —
+ * og siden cron bare henter avtaler som er aktive, kom det aldri penger fra
+ * dem som ble tatt opp den veien. Ikke den maaneden, og ikke noen gang.
  *
- * ── Betalingen ────────────────────────────────────────────────────────
+ * Naa gaar innmeldingen rett til Vipps:
  *
- * Soknaden oppretter ogsaa betalingsavtalen i Vipps, og svarer med adressen
- * sokeren skal godkjenne den paa.
+ *   fast trekk  → avtale i Vipps, trekkes hver periode av seg selv
+ *   ordner selv → én betaling naa; verkstedet krever inn de neste periodene
  *
- * For gjorde den ikke det. Da var det to veier inn i medlemskapet:
+ * Medlemmet velger. Planer med «krever_fast_trekk = 1» — i dag
+ * aarsmedlemskapet, som bindes i tolv maaneder — gir ikke valget.
  *
- *   medlemskapssida → «Opprett avtale i Vipps» → avtale → trekk hver maaned
- *   soknadsskjemaet → godkjent i admin → medlem, uten avtale, aldri trukket
+ * Medlemskapet slaas paa naar pengene er i havn, ikke naar noen trykket ja:
+ * avtalen gjennom Medlemskap::oppdaterFraVipps(), engangsbetalingen gjennom
+ * Booking::markerBetalt(). Vi sporr Vipps; vi stoler ikke paa at kunden kom
+ * tilbake til riktig side.
  *
- * Den andre veien ga tilgang uten at det fantes noe aa trekke fra. Cron
- * henter avtaler som skal belastes; finnes det ingen avtale, kommer det
- * ingen penger — ikke den maaneden, og ikke noen gang.
- *
- * Avtalen belastes ikke her. Den er en fullmakt som ligger og venter, og
- * forste trekk slippes forst naar verkstedet har godkjent soknaden. Blir
- * soknaden avslatt, stoppes avtalen og ingen har betalt noe.
+ * GET  — status paa egen innmelding, og gamle soknader som ligger til svar.
+ * POST — meld inn. Svarer med adressen til Vipps.
  */
 
 declare(strict_types=1);
@@ -56,13 +54,13 @@ if (er_aktivt_medlem($medlem)) {
     Svar::feil('Du er allerede medlem.');
 }
 
-$venter = DB::verdi(
-    'SELECT COUNT(*) FROM membership_applications WHERE member_id = :m AND status = :s',
-    ['m' => $medlem['id'], 's' => 'venter']
+// Ligger det en gammel soknad fra tida for innmeldingen gikk om Vipps, skal
+// den ikke stoppe noen fra aa melde seg inn og betale. Den lukkes her.
+$gammel = DB::en(
+    "SELECT id FROM membership_applications
+      WHERE member_id = :m AND status = 'venter' ORDER BY id DESC LIMIT 1",
+    ['m' => $medlem['id']]
 );
-if ((int) $venter > 0) {
-    Svar::feil('Du har allerede en søknad til behandling. Vi tar kontakt.');
-}
 
 // Hvilket medlemskap. Maa vaere et som finnes: avtalen i Vipps opprettes
 // med planens pris, og uten plan er det ingenting aa opprette.
@@ -84,8 +82,18 @@ if ($navn === '') {
 if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
     Svar::feil('Vi trenger en e-postadresse vi kan svare på.');
 }
-if ($type === '' || Medlemskap::plan($type) === null) {
+$plan = $type === '' ? null : Medlemskap::plan($type);
+if ($plan === null) {
     Svar::feil('Velg hvilket medlemskap du søker om.');
+}
+
+// Fast trekk eller ikke.
+//
+// Krever planen fast trekk, er valget tatt — da er avtalen en forutsetning.
+// Ellers bestemmer sokeren selv, og «trekk» er utgangspunktet.
+$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';
+if (Medlemskap::kreverFastTrekk($plan)) {
+    $betaling = 'trekk';
 }
 
 // Betalingsavtalen, for soknaden lagres.
@@ -93,51 +101,75 @@ if ($type === '' || Medlemskap::plan($type) === null) {
 // Gaar den ikke gjennom, skal det heller ikke ligge igjen en soknad — da
 // ville den blitt godkjent senere uten at noe kunne trekkes.
 try {
-    $avtale = Medlemskap::startAvtale($medlem, $type);
+    $avtale = $betaling === 'trekk'
+        ? Medlemskap::startAvtale($medlem, $type)
+        : Medlemskap::startEngangs($medlem, $type);
 } catch (RuntimeException $e) {
     Svar::feil($e->getMessage());
 }
 
+// Innmeldingen lagres fortsatt i «membership_applications», men ikke som noe
+// som venter paa svar: den staar som godkjent med det samme. Tabellen er
+// historikken over hvem som har meldt seg inn, med erfaring og melding — den
+// staar der eieren leser den, og de gamle radene blir liggende urort.
 $id = DB::settInn('membership_applications', [
-    'member_id'   => $medlem['id'],
-    'onsket_type' => $type !== '' ? $type : null,
-    'navn'        => $navn,
-    'epost'       => $epost,
-    'telefon'     => $telefon !== '' ? normaliser_telefon($telefon) : null,
-    'erfaring'    => $erfaring !== '' ? $erfaring : null,
-    'melding'     => $melding !== '' ? $melding : null,
-    'status'      => 'venter',
+    'member_id'    => $medlem['id'],
+    'onsket_type'  => $type,
+    'betaling'     => $betaling,
+    'navn'         => $navn,
+    'epost'        => $epost,
+    'telefon'      => $telefon !== '' ? normaliser_telefon($telefon) : null,
+    'erfaring'     => $erfaring !== '' ? $erfaring : null,
+    'melding'      => $melding !== '' ? $melding : null,
+    'status'       => 'godkjent',
+    'behandlet_at' => gmdate('Y-m-d H:i:s'),
 ]);
+
+// Og den gamle soknaden, om det laa en. Den er ikke lenger til behandling.
+if ($gammel !== null) {
+    DB::oppdater('membership_applications', [
+        'status'       => 'godkjent',
+        'behandlet_at' => gmdate('Y-m-d H:i:s'),
+        'begrunnelse'  => 'Meldte seg inn og betalte selv.',
+    ], ['id' => (int) $gammel['id']]);
+}
 
 // Sokeren far en kvittering, og verkstedet beskjed om at det ligger en soknad.
 Varsel::epost(
     $epost,
-    'Vi har fått søknaden din',
-    "Hei {$navn},\n\nTakk for at du vil bli medlem hos Lissom. Vi ser på søknaden din "
-    . "og gir deg beskjed så snart vi har tatt stilling til den.\n\n"
+    'Velkommen som medlem hos Lissom',
+    "Hei {$navn},\n\nTakk for at du melder deg inn hos Lissom.\n\n"
     . "Ønsket medlemskap: {$type}\n\n"
-    . "Du har godkjent en betalingsavtale i Vipps. Den blir ikke trukket nå — "
-    . "første trekk kommer først når vi har sagt ja til søknaden, og du får "
-    . "beskjed før det skjer. Sier vi nei, stopper vi avtalen, og du har ikke "
-    . "betalt noe.\n\n"
+    . ($betaling === 'trekk'
+        ? "Du har opprettet en fast betalingsavtale i Vipps. Den trekkes automatisk, "
+        . "og du får beskjed før hvert trekk. Du kan si den opp fra Min side.\n\n"
+        : "Du har betalt for denne perioden. Det kommer ingen automatiske trekk — "
+        . "vi tar kontakt før neste periode.\n\n")
+    . "Medlemskapet er aktivt så snart betalingen er registrert. "
+    . "Vi går gjennom dørkode og ordensregler første gang du kommer.\n\n"
     . "Hilsen Lissom Keramikk & Håndverk\nNordre Løkkevei 15, 3120 Nøtterøy"
 );
 
 // Beskjeden til verkstedet gaar paa e-post, og som SMS i tillegg naar det er
 // satt opp. E-posten er den som alltid kommer fram — en soknad som blir
 // liggende fordi ingen fikk vite om den, er verre enn en soknad for mye.
-$kort = "Ny medlemssøknad fra {$navn}" . ($type !== '' ? " ({$type})" : '') . '. Se Admin → Medlemmer.';
+$betalingTekst = $betaling === 'trekk' ? 'fast trekk i Vipps' : 'gjør opp selv';
+$kort = "{$navn} har meldt seg inn ({$type}, {$betalingTekst}). Se Admin → Medlemmer.";
 
 Varsel::tilAdmin(
-    'Ny medlemssøknad fra ' . $navn,
-    "Det har kommet en ny medlemssøknad.\n\n"
+    'Nytt medlem: ' . $navn,
+    "Det har meldt seg inn et nytt medlem.\n\n"
     . "Navn: {$navn}\n"
     . 'E-post: ' . $epost . "\n"
     . 'Telefon: ' . ($telefon !== '' ? $telefon : '(ikke oppgitt)') . "\n"
-    . ($type !== '' ? "Ønsket medlemskap: {$type}\n" : '')
+    . "Ønsket medlemskap: {$type}\n"
+    . "Betaling: {$betalingTekst}\n"
     . ($erfaring !== '' ? "\nErfaring:\n{$erfaring}\n" : '')
     . ($melding !== '' ? "\nMelding:\n{$melding}\n" : '')
-    . "\nSøknaden ligger under Admin → Medlemmer, og venter på svar.",
+    . ($betaling === 'trekk'
+        ? "\nAvtalen trekkes automatisk hver periode."
+        : "\nDenne har ingen fast trekk. Neste periode må kreves inn selv.")
+    . "\n\nMedlemmet ligger under Admin → Medlemmer.",
     'membership_application',
     $id
 );
@@ -146,13 +178,18 @@ foreach (Config::adminNumre() as $nr) {
     Varsel::sms($nr, $kort);
 }
 
-revider('medlemssoknad_sendt', 'membership_application', $id, ['type' => $type]);
+revider('medlemsinnmelding', 'membership_application', $id, ['type' => $type, 'betaling' => $betaling]);
 
 // «url» sender sokeren til Vipps for aa godkjenne avtalen. Nettsida
 // videresender dit med det samme.
+// «url» sender sokeren til Vipps for aa godkjenne avtalen. Har hen valgt aa
+// gjore opp selv, er det ingen avtale, og da blir hen staaende paa sida.
+// «url» sender medlemmet til Vipps. Nettsida videresender dit med det samme;
+// medlemskapet blir aktivt naar Vipps sier at pengene er i havn.
 Svar::ok([
-    'status'  => 'venter',
+    'status'  => 'betaler',
     'url'     => $avtale['url'],
-    'beskjed' => 'Søknaden er sendt. Godkjenn betalingsavtalen i Vipps, '
-               . 'så tar vi kontakt på e-post.',
+    'beskjed' => $betaling === 'trekk'
+        ? 'Godkjenn betalingsavtalen i Vipps, så er du i gang.'
+        : 'Betal i Vipps, så er du i gang.',
 ]);

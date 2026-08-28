@@ -128,6 +128,10 @@ if ($handling === 'lagre') {
         'binding_mnd' => $binding,
         'engangs'     => $engangs,
         'aktiv'       => $aktiv,
+        // Maa medlemmet ha fast trekk i Vipps, eller kan hen gjore opp selv?
+        // Kolonna kom med migrasjon 081; er den ikke kjort, tas feltet ut
+        // lenger nede saa resten av lagringen gaar gjennom.
+        'krever_fast_trekk' => !empty($kropp['fastTrekk']) ? 1 : 0,
         'sortering'   => (int) ($kropp['sortering'] ?? 0),
         'merke'       => mb_substr(trim((string) ($kropp['merke'] ?? '')), 0, 40),
         'undertekst'  => mb_substr(trim((string) ($kropp['undertekst'] ?? '')), 0, 120),
@@ -137,6 +141,10 @@ if ($handling === 'lagre') {
         'bilde'       => mb_substr(trim((string) ($kropp['bilde'] ?? '')), 0, 200),
         'fremhevet'   => $fremhevet,
     ];
+
+    if (!DB::harKolonne('membership_plans', 'krever_fast_trekk')) {
+        unset($felter['krever_fast_trekk']);
+    }
 
     // Staar migrasjonen ukjort, lagrer vi det vi kan i stedet for aa la alt
     // falle. Prisen skal kunne endres selv om teksten maa vente.

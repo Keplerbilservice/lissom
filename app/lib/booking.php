@@ -397,6 +397,19 @@ final class Booking
                 return true;
             }
 
+            // Et medlemskap uten fast trekk. Betalingen peker paa raden i
+            // «subscriptions», og medlemskapet slaas paa naar den er i havn.
+            // Uten dette ble medlemmet staaende som «venter» selv om pengene
+            // var betalt.
+            $ab = DB::en(
+                'SELECT subscription_id FROM payments WHERE id = :p AND subscription_id IS NOT NULL',
+                ['p' => $betaling['id']]
+            );
+            if ($ab !== null) {
+                Medlemskap::betaltEngangs((int) $ab['subscription_id']);
+                return true;
+            }
+
             return false;
         });
     }

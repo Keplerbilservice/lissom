@@ -1068,6 +1068,41 @@ DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $tAvtale]);
 DB::kjor('DELETE FROM membership_applications WHERE id = :i', ['i' => $tSoknad]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMedlem]);
 
+// ── Fast trekk eller ordne selv ────────────────────────────────────────
+sjekk('aarsmedlemskapet krever fast trekk',
+    Medlemskap::kreverFastTrekk(Medlemskap::plan('Årsmedlemskap') ?? []));
+foreach (['Basis 30', 'Fri tilgang', 'Prøv Lissom'] as $fritt) {
+    $pl = Medlemskap::plan($fritt);
+    sjekk('«' . $fritt . '» lar medlemmet velge',
+        $pl !== null && !Medlemskap::kreverFastTrekk($pl));
+}
+
+// Et medlemskap uten fast trekk skal aldri hentes av det automatiske trekket.
+$eMedlem = (int) DB::settInn('members', [
+    'navn' => 'Engangs Testesen', 'epost' => 'engangs@example.test',
+    'rolle' => 'medlem', 'status' => 'ingen',
+]);
+$ePlan = Medlemskap::plan('Basis 30');
+$eAb = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMedlem, 'plan' => 'Basis 30',
+    'pris_ore' => (int) $ePlan['pris_ore'], 'vipps_agreement_id' => '',
+    'status' => 'venter',
+]);
+Medlemskap::betaltEngangs($eAb);
+$eRad = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => $eAb]);
+sjekk('betalt engangsmedlemskap blir aktivt', $eRad['status'] === 'aktiv', $eRad['status']);
+sjekk('… men faar ingen trekkdato', $eRad['neste_trekk'] === null);
+sjekk('… og medlemmet slippes inn',
+    DB::verdi('SELECT status FROM members WHERE id = :i', ['i' => $eMedlem]) === 'aktiv');
+sjekk('… og det automatiske trekket henter den ikke',
+    !in_array($eAb, array_map('intval', array_column(Medlemskap::tilTrekk(), 'id')), true));
+sjekk('en ny kjoring gjor ingenting mer', (static function () use ($eAb) {
+    Medlemskap::betaltEngangs($eAb);
+    return DB::verdi('SELECT neste_trekk FROM subscriptions WHERE id = :i', ['i' => $eAb]) === null;
+})());
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eAb]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
+
 // Samme adresse i to skrivemaater skal telle som én mottaker.
 $forNokler = Varsel::adminEposter();
 sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(', ', $forNokler));

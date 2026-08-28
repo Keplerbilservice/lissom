@@ -3542,13 +3542,31 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}" hint-size="100%,64px"></x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Har du jobbet med leire før?" rows="2" placeholder="F.eks. «Gikk nybegynnerkurs hos dere i vår», eller «helt fersk»." value="{{ bmErfaring }}" on-change="{{ settBmErfaring }}" hint-size="100%,96px"></x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Noe du vil si oss? (valgfritt)" rows="2" placeholder="Når du helst vil bruke verkstedet, hva du vil lage …" value="{{ bmMelding }}" on-change="{{ settBmMelding }}" hint-size="100%,96px"></x-import>
+                  <!-- Fast trekk eller ikke.
+                       Vises bare naar medlemskapet gir valget. Aarsmedlemskapet
+                       bindes i tolv maaneder og maa ha fast trekk; da staar det
+                       en linje om det i stedet for to knapper som ikke gjor noe. -->
+                  <sc-if value="{{ bmKanVelgeBetaling }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">Betaling</div>
+                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                        <sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">
+                          <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                        </sc-for>
+                      </div>
+                      <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ bmBetalingTekst }}</p>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ bmMaaHaTrekk }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ bmTrekkTekst }}</p>
+                  </sc-if>
                   <sc-if value="{{ bmFeil }}" hint-placeholder-val="{{ false }}">
                     <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ bmFeil }}</div>
                   </sc-if>
                   <div>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bmSend }}" hint-size="auto,52px">Send søknad</x-import>
                   </div>
-                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Vi ser på søknaden og svarer på e-post. Medlemskapet starter først når vi har snakket sammen.</p>
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ bmVilkar }}</p>
                 </div>
               </sc-if>
             </div>
@@ -15933,9 +15951,21 @@ class Component extends DCLogic {
    */
   medlemsplaner() {
     const fra = this.state.planListe || [];
-    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '' }));
+    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '', fastTrekk: !!p.fastTrekk }));
     return [{ navn: 'Prøv Lissom' }, { navn: 'Basis 30' },
             { navn: 'Årsmedlemskap' }, { navn: 'Fri tilgang' }];
+  }
+
+  /**
+   * Fast trekk, eller ordne opp selv.
+   *
+   * Krever planen fast trekk, er valget tatt. Serveren avgjor det samme paa
+   * nytt — dette er bare for at skjermen og svaret skal si det samme.
+   */
+  bmBetalingsvalgt() {
+    const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
+    if (pl.fastTrekk) return 'trekk';
+    return this.state.bmBetaling === 'selv' ? 'selv' : 'trekk';
   }
 
   /** Valgt medlemskap — det forste hvis ingen er valgt ennaa. */
@@ -15960,6 +15990,7 @@ class Component extends DCLogic {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: this.bmValgt(),
+        betaling: this.bmBetalingsvalgt(),
         epost: epost,
         erfaring: (this.state.bmErfaring || '').trim(),
         melding: (this.state.bmMelding || '').trim(),
@@ -32397,6 +32428,39 @@ class Component extends DCLogic {
           color: this.bmValgt() === pl.navn ? 'var(--clay-50)' : 'var(--lissom-brown)',
         },
       })),
+      // ── Fast trekk eller ordne selv ──────────────────────────────
+      //
+      // Planen bestemmer om valget finnes. «krever_fast_trekk» staar paa
+      // aarsmedlemskapet, som bindes i tolv maaneder.
+      ...(() => {
+        const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
+        const maa = !!pl.fastTrekk;
+        const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'trekk');
+        const knapp = (verdi, navn) => ({
+          navn,
+          velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),
+          stil: {
+            appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+            padding: '10px 18px', font: 'var(--type-body-sm)', fontWeight: 700,
+            border: '2px solid var(--lissom-brown)',
+            background: valgt === verdi ? 'var(--lissom-brown)' : 'transparent',
+            color: valgt === verdi ? 'var(--clay-50)' : 'var(--lissom-brown)',
+          },
+        });
+        return {
+          bmKanVelgeBetaling: !maa,
+          bmMaaHaTrekk: maa,
+          bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',
+          bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Jeg ordner selv')],
+          bmBetalingValgt: valgt,
+          // Vilkaarene, der de skal staa: for man melder seg inn, ikke etter.
+          bmVilkar: 'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '
+            + 'og 1 måneds oppsigelsestid. Du sier opp fra Min side.',
+          bmBetalingTekst: valgt === 'trekk'
+            ? 'Du godkjenner én avtale i Vipps. Den trekkes automatisk, og du kan si den opp fra Min side.'
+            : 'Du betaler denne perioden i Vipps nå. Vi tar kontakt før neste periode.',
+        };
+      })(),
       bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,
       settBmEpost: e => this.setState({ bmEpost: e.target.value, bmFeil: null }),
       bmErfaring: this.state.bmErfaring || '',

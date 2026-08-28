@@ -77,8 +77,13 @@ $begrunnelse = mb_substr(Foresporsel::tekst('begrunnelse'), 0, 500);
 // Eldre soknader, sendt inn for avtalen ble en del av innmeldingen, har ingen
 // avtale i det hele tatt. De kan fortsatt godkjennes — men det staar i svaret
 // at det maa kreves inn paa annen maate, saa det ikke gaar stille forbi.
+// Hva sokeren valgte. Kolonna kom med migrasjon 081; staar den ukjort, er
+// alle soknader «trekk», som var det eneste som fantes for.
+$betaling = DB::harKolonne('membership_applications', 'betaling')
+    ? (string) ($soknad['betaling'] ?? 'trekk') : 'trekk';
+
 $avtaleStatus = 'ingen';
-if ($vedtak === 'godkjent') {
+if ($vedtak === 'godkjent' && $betaling === 'trekk') {
     $ut = Medlemskap::slippForsteTrekk((int) $soknad['member_id']);
     $avtaleStatus = $ut['status'];
 
@@ -141,7 +146,7 @@ if ($vedtak === 'godkjent') {
 
 // Avslag: avtalen stoppes, saa den ikke blir liggende som en fullmakt hos
 // noen vi har sagt nei til. Ingen har betalt noe — trekket er aldri sluppet.
-if ($vedtak !== 'godkjent') {
+if ($vedtak !== 'godkjent' && $betaling === 'trekk') {
     $a = Medlemskap::avtale((int) $soknad['member_id'])
         ?? DB::en("SELECT * FROM subscriptions WHERE member_id = :m AND status = 'venter'
                    ORDER BY id DESC LIMIT 1", ['m' => (int) $soknad['member_id']]);
@@ -158,6 +163,9 @@ Svar::ok([
         ? 'Søknaden er avslått, og betalingsavtalen er stoppet.'
         : ($avtaleStatus === 'aktiv'
             ? 'Godkjent. Første trekk går ut i natt.'
-            : 'Godkjent. Denne søknaden har ingen betalingsavtale — '
-              . 'den er fra før innmeldingen krevde det, så beløpet må kreves inn selv.'),
+            : ($betaling === 'selv'
+                ? 'Godkjent. ' . $soknad['navn'] . ' gjør opp selv for hver periode — '
+                  . 'det kommer ingen automatiske trekk.'
+                : 'Godkjent. Denne søknaden har ingen betalingsavtale — '
+                  . 'den er fra før innmeldingen krevde det, så beløpet må kreves inn selv.')),
 ]);

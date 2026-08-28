@@ -7809,17 +7809,33 @@ window.__resources = {
             </div>
 
             <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 780px;">
-              <div>
-                <label style="{{ mpEtikett }}">Dato</label>
-                <select value="{{ mpOkt }}" onChange="{{ settMpOkt }}" style="{{ mpValgStil }}">
-                  <sc-for list="{{ mpOkter }}" as="o" hint-placeholder-count="6">
-                    <option value="{{ o.verdi }}">{{ o.navn }}</option>
-                  </sc-for>
-                </select>
-                <sc-if value="{{ mpIngenOkter }}" hint-placeholder-val="{{ false }}">
-                  <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">Ingen kommende datoer. Legg inn en kursdato først, under Kurs og events.</p>
-                </sc-if>
+              <!-- Kurs forst, saa dato.
+                   Her sto ett nedtrekk med alle oktene i, sortert paa dato:
+                   88 linjer med alle kursene blandet. Skulle du melde paa
+                   noen paa et bestemt kurs, matte du lete gjennom hele lista
+                   — og det var enklere aa gaa via kurset i kurslista. Naa
+                   velger du kurset, og faar bare det kursets datoer. -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
+                <div>
+                  <label style="{{ mpEtikett }}">Kurs</label>
+                  <select value="{{ mpKurs }}" onChange="{{ settMpKurs }}" style="{{ mpValgStil }}">
+                    <sc-for list="{{ mpKursvalg }}" as="k" hint-placeholder-count="6">
+                      <option value="{{ k.verdi }}">{{ k.navn }}</option>
+                    </sc-for>
+                  </select>
+                </div>
+                <div>
+                  <label style="{{ mpEtikett }}">Dato</label>
+                  <select value="{{ mpOkt }}" onChange="{{ settMpOkt }}" style="{{ mpValgStil }}">
+                    <sc-for list="{{ mpOkter }}" as="o" hint-placeholder-count="6">
+                      <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                    </sc-for>
+                  </select>
+                </div>
               </div>
+              <sc-if value="{{ mpIngenOkter }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: -8px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">Ingen kommende datoer. Legg inn en kursdato først, under Kurs og events.</p>
+              </sc-if>
 
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
                 <div>
@@ -28808,7 +28824,28 @@ class Component extends DCLogic {
       // deltakerlista og i beskjedene — som alle andre.
       ...(() => {
         const okter = this.state.adminOkter || [];
-        const valgt = this.state.mpOkt || (okter[0] ? String(okter[0].oktId) : '');
+
+        // Kurset som er valgt, og bare det kursets datoer.
+        //
+        // Nedtrekket sto med alle oktene i, sortert paa dato — 88 linjer med
+        // alle kursene blandet. Naa velges kurset forst.
+        //
+        // Kommer man hit fra et kurs eller en dato, staar «mpOkt» allerede,
+        // og da er det den som bestemmer hvilket kurs som er valgt. Alle de
+        // gamle snarveiene fungerer derfor som for, uten aa vite om dette.
+        const fraOkt = okter.find(o => String(o.oktId) === String(this.state.mpOkt || ''));
+        const kursnavn = [];
+        for (const o of okter) if (kursnavn.indexOf(o.tittel) < 0) kursnavn.push(o.tittel);
+        const valgtKurs = fraOkt ? fraOkt.tittel
+          : (kursnavn.indexOf(this.state.mpKurs || '') >= 0 ? this.state.mpKurs : (kursnavn[0] || ''));
+        const kursOkter = okter.filter(o => o.tittel === valgtKurs);
+
+        // Datoen: den som er valgt hvis den hoerer til kurset, ellers kursets
+        // forste. Bytter man kurs, skal ikke datoen fra det forrige bli
+        // staaende — da hadde man meldt paa til feil kurs.
+        const valgt = (fraOkt && fraOkt.tittel === valgtKurs)
+          ? String(fraOkt.oktId)
+          : (kursOkter[0] ? String(kursOkter[0].oktId) : '');
         const okt = okter.find(o => String(o.oktId) === String(valgt));
         const feltStil = {
           width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
@@ -28826,9 +28863,21 @@ class Component extends DCLogic {
           mpEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
           mpFeltStil: feltStil,
           mpValgStil: Object.assign({}, feltStil, { cursor: 'pointer' }),
-          mpOkter: okter.map(o => ({
+          // Kursnavnet staar ikke i datolinjene lenger — det staar i
+          // nedtrekket over.
+          mpKursvalg: kursnavn.map(t => ({ verdi: t, navn: t })),
+          mpKurs: valgtKurs,
+          // Bytter man kurs, settes datoen til kursets forste med det samme.
+          // Uten det ble «mpOkt» staaende paa forrige kurs sin dato helt til
+          // man rorte datovelgeren, og «Legg til» ville meldt paa dit.
+          settMpKurs: e => {
+            const nytt = e.target.value;
+            const forste = okter.find(o => o.tittel === nytt);
+            this.setState({ mpKurs: nytt, mpOkt: forste ? String(forste.oktId) : '' });
+          },
+          mpOkter: kursOkter.map(o => ({
             verdi: String(o.oktId),
-            navn: o.tittel + ' · ' + o.naar + ' · ' + o.ledige + ' ledige',
+            navn: o.naar + ' · ' + o.ledige + ' ledige',
           })),
           mpIngenOkter: okter.length === 0,
           mpOkt: valgt, settMpOkt: e => this.setState({ mpOkt: e.target.value }),

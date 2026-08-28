@@ -460,6 +460,15 @@ img{max-width:100%;display:block}
      den tyngste delen av oppstarten.
 
      Her kjores den én gang, og den er ferdig for boot begynner. -->
+<!-- Malen skjules her, ikke av support.js.
+     support.js gjor det forste den kjorer: den legger inn «x-dc{display:none}»
+     saa raamalen — hele nettsida med «{{ }}» staaende i teksten — aldri vises.
+     Det bandt tegningen til at skriptet hadde kjort. Naa som toppen er tegnet
+     ferdig i svaret, trenger ikke skriptene blokkere lenger, og da maa denne
+     linja staa her for de kjorer. support.js legger inn den samme regelen en
+     gang til; to like regler er ingen forskjell. -->
+<style>x-dc{display:none!important}</style>
+
 <script src="/ds-bundle.min.js"></script>
 
 <!-- React og ReactDOM. De ble hentet forst etter at support.min.js hadde
@@ -885,7 +894,26 @@ window.__resources = {
 };
 </script>
 <!-- Minifisert utgave. Kilden ligger som support.js ved siden av;
-     bin/minifiser.mjs lager denne. -->
+     bin/minifiser.mjs lager denne.
+
+     UTEN «defer», med vilje. PageSpeed vil ha det: de to skriptene blokkerer
+     gjengivelsen, og den anslaar 320 ms paa aa slippe dem los. Provd, maalt,
+     og tatt ut igjen:
+
+                       FCP        LCP        CLS
+       uten defer    1364 ms    1432 ms     0,083
+       med defer      428 ms    3520 ms     0,145
+
+     Fordi skriftene kommer ned rundt 950 ms. Uten «defer» tegnes toppen
+     forst paa 1364 — etter skriftene, i riktig skrift, én gang. Med «defer»
+     tegnes den paa 428, i reserveskrifta, og bytter naar skriftene kommer:
+     teksten flytter seg, og den ferdige teksten blir en ny og storre
+     LCP-kandidat. FCP blir penere, LCP og CLS blir vesentlig verre — og det
+     er LCP Google maaler.
+
+     Skal dette tas igjen en dag, maa reserveskriftene forst faa
+     «size-adjust» og «ascent-override» slik at de opptar noyaktig samme
+     plass. Da flytter ingenting seg naar de ekte kommer. -->
 <script src="./support.min.js"></script>
 
 <script>

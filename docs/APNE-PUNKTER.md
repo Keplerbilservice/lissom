@@ -460,6 +460,38 @@ døren: hver åpen periode gir bookbare plasser, og de settes ikke opp for hånd
 - **Et vindu som alt har begynt** gir en plass fra nå, ikke fra i formiddag.
   Ellers kunne ingen booke samme dag etter at dagens første kurs startet.
 
+**Sikkerhetsgjennomgang 28. august.** Hele koden gått gjennom: SQL, tilgang,
+opplasting, CSRF, XSS, hemmeligheter, headere og hva som ligger åpent over
+nett. To funn, begge rettet.
+
+- **`api/sjekk-secrets.php` sto åpent for alle.** Den skrev ut hele oversikten
+  over hva som er satt opp — hvilke tjenester vi bruker, om vi står i test
+  eller produksjon, og hva som mangler. Verre: ved en skrivefeil i fila skrev
+  den ut PHPs egen feilmelding, og den siterer symbolet den snublet i. Er
+  feilen inne i en verdi, er det verdien den siterer — prøvd:
+  `'passord med ' fnutt inni'` ga `unexpected identifier "fnutt"`. Et
+  passordfragment til hvem som helst.
+
+  Nå: er fila i stykker, er siden fortsatt åpen — det er da den trengs, og da
+  virker ingen innlogging — men svaret er bare et linjenummer. Er fila i
+  orden, kreves `?nokkel=` med `cron_nokkel`. Nøkkelen leses rett ut av fila,
+  så siden virker også når databasen er nede.
+
+- **Glasurlappen skrev oppskriftsnavnet rått inn i utskriftsvinduet.**
+  `window.open('')` arver vårt opphav, så det som skrives inn der kjører som
+  om det stod på lissom.no. Navnet er skrevet i et fritekstfelt. Escapes nå,
+  som månedsrapporten alt gjorde.
+
+Resten holdt. Ingen SQL-injeksjon — alle strengene som settes sammen er
+kodelitteraler, hvitlister eller heltall. Alle 37 admin-endepunkter krever
+admin, kontrollert både i koden og med kall utenfra. Alle skrivende
+endepunkter har opphavssjekk unntatt Vipps-webhooken, som er HMAC-signert i
+stedet og aldri får endre en betaling uten gyldig signatur. Opplastede bilder
+tegnes om gjennom GD og får tilfeldig navn, så en fil som utgir seg for å være
+et bilde blir et bilde. Filnavn valideres mot `^[0-9a-f]{32}\.jpg$`, så
+`../` ikke er et gyldig bildenavn. Ingen `eval`, `exec`, `unserialize` eller
+`include $variabel`. Ingen nøkler i git, hverken nå eller i historikken.
+
 **Katalogen spurte tre ganger per kursdato — rettet 28. august.** Målt, ikke
 gjettet: `api/kurs.php` kjørte **279 spørringer** på én sidevisning, og
 `api/admin/kurs.php` 254.

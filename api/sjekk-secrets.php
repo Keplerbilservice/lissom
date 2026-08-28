@@ -7,8 +7,28 @@
  * feilloggen. Denne sida leser fila som tekst og peker paa linja.
  *
  * Den laster med vilje IKKE bootstrap.php, for den ville stoppet paa samme
- * feil. Og den skriver aldri ut innholdet i fila — kun linjenummer og hva
- * slags feil det er.
+ * feil. Derfor kan den heller ikke sporre databasen om hvem som spor.
+ *
+ * ── Hvem som slipper til ──────────────────────────────────────────────
+ *
+ * To niveauer, og skillet gaar ved hva svaret roper ut:
+ *
+ *   Er fila i stykker  → aapent. Da staar nettstedet, og eieren maa kunne
+ *                        se hvilken linje det gjelder uten aa logge inn
+ *                        noe sted. Svaret er bare et linjenummer.
+ *   Er fila i orden    → krever cron_nokkel i adressen. Da virker
+ *                        nettstedet, og oversikten over hva som er satt
+ *                        opp er ikke noe en fremmed skal ha: den sier
+ *                        hvilke tjenester vi bruker, om vi staar i test
+ *                        eller produksjon, og hva som ikke er paa plass.
+ *
+ * Noekkelen leses rett ut av fila vi nettopp har lest, saa dette virker
+ * ogsaa naar databasen er nede — det er nettopp da sida trengs.
+ *
+ * PHP sin egen feilmelding skrives aldri ut. Den siterer symbolet den
+ * snublet i, og staar feilen inne i en verdi, er det verdien den siterer:
+ * «unexpected identifier "fnutt"» der passordet var «passord med ' fnutt
+ * inni». Linjenummeret sier alt eieren trenger, og roper ingenting.
  */
 
 declare(strict_types=1);
@@ -55,11 +75,11 @@ try {
     token_get_all($kilde, TOKEN_PARSE);
 } catch (ParseError $e) {
     http_response_code(500);
+    // $e->getMessage() staar med vilje ikke her. Se toppen av fila.
     $ut([
         'ok'      => false,
         'problem' => 'Skrivefeil i secrets.php',
         'linje'   => $e->getLine(),
-        'hva'     => $e->getMessage(),
         'sjekk'   => [
             'Mangler det en fnutt rundt verdien?',
             'Mangler det komma på slutten av linja?',
@@ -77,6 +97,17 @@ if (!is_array($verdier)) {
 }
 
 $fylt = static fn(string $k): bool => trim((string) ($verdier[$k] ?? '')) !== '';
+
+// ── Herfra og ned krever noekkel ───────────────────────────────────────
+//
+// Fila er i orden, saa nettstedet virker og eieren kommer til admin. Da er
+// det ingen grunn til at en fremmed skal faa vite hva som er satt opp.
+$nokkel  = trim((string) ($verdier['cron_nokkel'] ?? ''));
+$oppgitt = (string) ($_GET['nokkel'] ?? '');
+if ($nokkel === '' || $oppgitt === '' || !hash_equals($nokkel, $oppgitt)) {
+    http_response_code(404);
+    $ut(['ok' => false, 'problem' => 'Fant ikke siden.']);
+}
 
 // Gruppert etter hva det faktisk slaar ut paa. En flat liste over noekler
 // sier ikke hva som slutter aa virke naar en av dem mangler.

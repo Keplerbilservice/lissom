@@ -262,12 +262,17 @@ Svar::json([
     'hendelser' => array_merge($hendelser, $verksted),
     'stengte'   => $stengt,
     // Kursholderne, saa kolonnene i dagsvisningen kan settes opp uten et
-    // kall til.
+    // kall til. «standard» er den som vanligvis holder kursene — den staar
+    // som spalte ogsaa paa en dag der ingen har noe planlagt, mens de andre
+    // bare kommer fram naar de faktisk har en okt, eller naar de velges.
     'kursholdere' => DB::harTabell('kursholdere')
         ? array_map(static fn(array $h): array => [
-            'id'   => (int) $h['id'],
-            'navn' => (string) $h['navn'],
-        ], DB::alle('SELECT id, navn FROM kursholdere WHERE aktiv = 1 ORDER BY navn'))
+            'id'       => (int) $h['id'],
+            'navn'     => (string) $h['navn'],
+            'standard' => isset($h['standard']) && (int) $h['standard'] === 1,
+        ], DB::alle(DB::harKolonne('kursholdere', 'standard')
+            ? 'SELECT id, navn, standard FROM kursholdere WHERE aktiv = 1 ORDER BY navn'
+            : 'SELECT id, navn FROM kursholdere WHERE aktiv = 1 ORDER BY navn'))
         : [],
     'fra' => substr($fra, 0, 10),
     'til' => substr($til, 0, 10),

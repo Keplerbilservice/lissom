@@ -1222,9 +1222,13 @@ window.__resources = {
   @media (max-width: 760px) {
     .lx-kalbred { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
     .lx-kalbred > div { min-width: 640px; }
-    /* «Uke 35 · 24. august – 30. august» faar ikke plass paa én linje ved
-       siden av pilene. Uten dette ble slutten klippet av kanten. */
-    .lx-kaltittel { white-space: normal !important; margin-left: 0 !important; font-size: var(--text-lg) !important; }
+    /* «Loerdag 29. august 2026» faar ikke plass ved siden av pilene. Raden
+       hadde ingen flex-wrap, saa tittelen ble klemt ned i en smal spalte og
+       brakk paa hvert ord — og teksten etter falt utenfor kanten. Raden
+       bryter naa, og tittelen faar sin egen linje. */
+    .lx-kaltopp { flex-wrap: wrap !important; }
+    .lx-kaltittel { white-space: normal !important; margin-left: 0 !important; font-size: var(--text-lg) !important; flex: 1 0 100%; }
+    .lx-kaldagsum { white-space: normal !important; margin-left: 0 !important; }
   }
 
   @media (max-width: 760px) {
@@ -5167,13 +5171,13 @@ window.__resources = {
         </div>
 
         <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
-          <div style="display: flex; align-items: center; gap: var(--space-2);">
+          <div class="lx-kaltopp" style="display: flex; align-items: center; gap: var(--space-2);">
             <button type="button" onClick="{{ klForrige }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">‹</button>
             <button type="button" onClick="{{ klIdag }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; padding: 7px 14px; white-space: nowrap;">I dag</button>
             <button type="button" onClick="{{ klNesteSteg }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">›</button>
             <span class="lx-kaltittel" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-left: var(--space-3); white-space: nowrap;">{{ klTittel }}</span>
             <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ false }}">
-              <span style="font-size: var(--text-sm); color: var(--text-muted); margin-left: var(--space-2); white-space: nowrap;">· {{ klDagSammendrag }}</span>
+              <span class="lx-kaldagsum" style="font-size: var(--text-sm); color: var(--text-muted); margin-left: var(--space-2); white-space: nowrap;">· {{ klDagSammendrag }}</span>
             </sc-if>
             <sc-if value="{{ klErStengt }}" hint-placeholder-val="{{ false }}">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-50); background: var(--terracotta-500); border-radius: var(--radius-pill); padding: 3px 12px; margin-left: var(--space-2); font-weight: 700;">Stengt</span>
@@ -5376,7 +5380,16 @@ window.__resources = {
         </sc-if>
 
         <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
-          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <!-- Hvem som skal ha en spalte i dag. Den som vanligvis holder
+               kursene staar der, og verkstedet. De andre slaas paa her —
+               eller kommer av seg selv den dagen de har noe. -->
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Viser</span>
+            <sc-for list="{{ klHolderSpalter }}" as="h" hint-placeholder-count="3">
+              <button type="button" onClick="{{ h.velg }}" title="{{ h.tittel }}" style="{{ h.stil }}">{{ h.navn }}</button>
+            </sc-for>
+          </div>
+          <div class="lx-kalbred" style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="{{ klBoardHodeStil }}">
               <div style="border-right: 1px solid var(--border-subtle);"></div>
               <sc-for list="{{ klBoardKolonner }}" as="k" hint-placeholder-count="3">
@@ -22297,6 +22310,22 @@ class Component extends DCLogic {
     return ut;
   }
 
+  /**
+   * Den som vanligvis holder kursene.
+   *
+   * Verkstedet har én standard kursholder — «Monica er default». Det er hen
+   * som staar som spalte i dagsvisningen ogsaa naar ingenting er planlagt.
+   * De andre kommer fram naar de faktisk har en okt, eller naar de velges.
+   *
+   * Registeret er kilden, ikke et navn i koden: slutter noen, eller settes en
+   * annen som standard, foelger kalenderen med av seg selv.
+   */
+  klStandardHolder() {
+    const alle = (this.state.adminKursholdere || []).concat(this.state.kalHoldere || []);
+    const std = alle.find(h => h && h.standard && h.aktiv !== false && h.aktiv !== 0);
+    return std ? std.navn : '';
+  }
+
   /** Skriver kalenderen enda? Fase 6 setter denne til true. */
   get klSkriver() { return false; }
 
@@ -22578,8 +22607,22 @@ class Component extends DCLogic {
         }),
       };
     });
-    const aktiveKolonner = alleKolonner.filter(k => k.harNoe);
-    const kolonner = aktiveKolonner.length ? aktiveKolonner : alleKolonner;
+    // Hvem som faar en spalte.
+    //
+    // Her sto alle de aktive kursholderne saa snart ingen av dem hadde noe —
+    // og en dag uten kurs ble tre tomme spalter. Eieren spurte hvorfor hun
+    // saa seg selv: hun holder sjelden kurs, og «Monica er default».
+    //
+    // Naa staar den som vanligvis holder kursene, og verkstedet. De andre
+    // kommer fram naar de faktisk har en okt den dagen — ingenting skal
+    // kunne gjemme seg — eller naar hun slaar dem paa selv.
+    const stdHolder = this.klStandardHolder();
+    const valgteHoldere = this.state.klVisHolder || {};
+    const staarFast = kn => kn === 'Verkstedet' || kn === stdHolder;
+    const visesNa = k => k.harNoe || (valgteHoldere[k.navn] === undefined
+      ? staarFast(k.navn) : valgteHoldere[k.navn] === true);
+    const valgteKolonner = alleKolonner.filter(visesNa);
+    const kolonner = valgteKolonner.length ? valgteKolonner : alleKolonner;
     const naNu = new Date();
     const naM = naNu.getHours() * 60 + naNu.getMinutes();
     const ukeIsos = uked.map((n, i) => { const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i); return isoAv(d); });
@@ -22715,9 +22758,28 @@ class Component extends DCLogic {
       klUkeGutterStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
       klListe: liste,
       klBoardKolonner: kolonner,
+      // Én brikke per aktiv kursholder, pluss verkstedet. Den som har en okt
+      // denne dagen kan ikke slaas av — da ville okta hennes forsvunnet fra
+      // skjermen, og en kalender som skjuler noe er verre enn ingen.
+      klHolderSpalter: alleKolonner.map(k => ({
+        navn: k.navn,
+        stil: chipStil(visesNa(k), null),
+        tittel: k.harNoe
+          ? k.navn + ' har noe denne dagen og kan ikke skjules'
+          : (visesNa(k) ? 'Skjul ' + k.navn : 'Vis ' + k.navn),
+        velg: () => {
+          if (k.harNoe) return;
+          this.setState(st => ({ klVisHolder: Object.assign({}, st.klVisHolder, {
+            [k.navn]: !visesNa(k),
+          }) }));
+        },
+      })),
       klBoardTimer: (() => { const t = []; for (let h = bStart / 60; h < bSluttMin / 60; h++) t.push({ navn: String(h).padStart(2, '0') + ':00', stil: { position: 'absolute', top: ((h - bStart / 60) * pxTime - 1) + 'px', right: '8px', fontSize: '11px', color: 'var(--text-muted)' } }); return t; })(),
-      klBoardHodeStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--clay-100)' },
-      klBoardKroppStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden' },
+      // Paa telefon faar hver spalte 150 px og rammen ruller sidelengs. Med
+      // to spalter faar dagen plass uten aa rulle i det hele tatt; med fire
+      // ruller den, framfor at navnene blir klippet av kanten.
+      klBoardHodeStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--clay-100)', minWidth: this.erSmal() ? (56 + kolonner.length * 150) + 'px' : 0 },
+      klBoardKroppStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden', minWidth: this.erSmal() ? (56 + kolonner.length * 150) + 'px' : 0 },
       klGutterStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
       klKolonneStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)', backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxTime - 1) + 'px, var(--clay-100) ' + (pxTime - 1) + 'px, var(--clay-100) ' + pxTime + 'px)' },
       klNaStil: dagIso === idagIso && naM >= bStart && naM <= bSluttMin ? { position: 'absolute', left: '56px', right: 0, top: ((naM - bStart) / 60 * pxTime) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },

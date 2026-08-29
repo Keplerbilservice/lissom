@@ -1558,7 +1558,8 @@ sjekk('kalenderen har sin egen adresse, saa den taaler en omlasting',
 // Manedsrutenettet er sju spalter. Paa en telefon falt sondagen utenfor
 // kanten med «overflow: hidden» — nu ruller rammen sidelengs i stedet.
 sjekk('de brede visningene ruller sidelengs paa telefon',
-    substr_count($sida, 'class="lx-kalbred"') === 2
+    // Maaned, uke og dag. Alle tre er flere spalter enn en telefon er bred.
+    substr_count($sida, 'class="lx-kalbred"') === 3
     && str_contains($sida, '.lx-kalbred { overflow-x: auto !important;'));
 // Og velger hun Maned eller Dag paa telefon, skal hun faa det. Lista er
 // standardvisningen der, ikke den eneste.
@@ -1566,6 +1567,31 @@ sjekk('visningsknappene virker ogsaa paa telefon',
     str_contains($sida, "this.state.klVisning || (this.erSmal() ? 'liste' : 'dag')"));
 sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
     str_contains($sida, "? { minWidth: 0, order: 1 }"));
+
+// ── Spaltene i dagsvisningen ─────────────────────────────────────────────
+//
+// Alle de aktive kursholderne sto som spalter saa snart ingen av dem hadde
+// noe, saa en dag uten kurs ble tre tomme spalter. Eieren spurte hvorfor hun
+// saa seg selv — hun holder sjelden kurs, og «Monica er default».
+sjekk('den som vanligvis holder kursene staar som spalte',
+    str_contains($sida, 'klStandardHolder()')
+    && str_contains($sida, "const staarFast = kn => kn === 'Verkstedet' || kn === stdHolder;"));
+// Navnet skal ikke staa i koden. Settes en annen som standard, eller slutter
+// hen, foelger kalenderen med av seg selv.
+sjekk('standarden leses av registeret, ikke av et navn i koden',
+    !str_contains($sida, "stdHolder = 'Monica'"));
+sjekk('de andre kursholderne kan slaas paa og av',
+    str_contains($sida, 'klHolderSpalter:') && str_contains($sida, 'klVisHolder'));
+// En kursholder med en okt den dagen kan ikke skjules. Da ville okta hennes
+// forsvunnet fra skjermen, og en kalender som gjemmer noe er verre enn ingen.
+sjekk('en kursholder med en okt kan ikke skjules bort',
+    str_contains($sida, 'har noe denne dagen og kan ikke skjules'));
+$kalFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('kalenderen faar vite hvem som er standard kursholder',
+    str_contains($kalFil2, "'standard' => isset(\$h['standard'])"));
+// Kolonnen kom med migrasjon 086. Uten den skal endepunktet svare, ikke doe.
+sjekk('kalenderen taaler at migrasjon 086 ikke er kjort',
+    str_contains($kalFil2, "DB::harKolonne('kursholdere', 'standard')"));
 
 sjekk('kursholderne i kalenderen kommer fra registeret',
     str_contains($sida, 'klHoldere()')

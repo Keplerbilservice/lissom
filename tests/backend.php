@@ -2604,6 +2604,11 @@ sjekk('«detail» gaar foran «title»',
     str_contains($vippsFil, "\$detalj = trim((string) (\$j['detail'] ?? ''));"));
 sjekk('feltet som er galt staar med navn',
     str_contains($vippsFil, "\$biter[] = (\$f !== '' ? \$f . ': ' : '') . \$r;"));
+// ErrorCode 5080: salgsenheten har ikke lov til aa sende betalingskrav. Ingen
+// kode retter det — meldingen skal si hva som skal gjores.
+sjekk('feil 5080 sier hva som skal gjores',
+    str_contains($vippsFil, "str_contains(\$tekst, 'PUSH_MESSAGE') || str_contains(\$tekst, '5080')")
+    && str_contains($vippsFil, 'Be Vipps skru på PUSH_MESSAGE for salgsenheten'));
 sjekk('kassa viser grunnen',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php'),
                  "'Fikk ikke sendt kravet. ' . \$e->getMessage()"));

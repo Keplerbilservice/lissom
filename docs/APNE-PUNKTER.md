@@ -420,6 +420,31 @@ ikke bare lissom.no. Node henter sidene over TLS med full sertifikatsjekk og
 serverer dem til nettleseren lokalt. Ingenting er slaatt av; det er bare
 ClientHello-en som byttes ut.
 
+### 11c. Vippskrav: salgsenheten mangler tillatelse hos Vipps
+
+29. august, kveld. «Send Vipps-krav» i kassa svarer:
+
+```
+Vipps svarte 400: The sales unit with MSN 1143163 is not allowed to use
+PUSH_MESSAGE flow. · ErrorCode: 5080
+```
+
+Vanlige Vipps-betalinger virker: kunden står foran skjermen og sendes til
+Vipps. Et krav som dukker opp i appen til noen andre — `PUSH_MESSAGE` — er en
+egen tillatelse på salgsenheten, og den må Vipps skru på. Ingen kode retter
+det.
+
+**Lissom må be Vipps om det**, med MSN-et som står i meldingen. Salgsenhetens
+nummer, ikke en nøkkel.
+
+Alt annet står klart: kravet lages, betalingsraden knyttes til bookingen eller
+ordren begge veier, og webhooken setter den til betalt når pengene kommer. Den
+dagen tillatelsen er på plass, virker knappen uten at noe endres.
+
+Om det tar tid: alternativet er å lage en vanlig betaling og sende lenken på
+SMS i stedet. Da får kunden en lenke framfor et krav i appen. Ikke bygget —
+det er en annen løsning, og den skal bestilles, ikke antas.
+
 ### 12. Video på kurs
 
 Ikke bygget. Feltet i veiviseren sier fra at det ikke er koblet opp. Film på

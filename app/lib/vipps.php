@@ -354,6 +354,20 @@ final class Vipps
         }
         $status = (int) ($svar['status'] ?? 0);
         $tekst = mb_substr(implode(' · ', array_unique($biter)), 0, 240);
+
+        // Den ene feilen som ikke er en feil hos oss.
+        //
+        // «ErrorCode 5080 — The sales unit with MSN … is not allowed to use
+        // PUSH_MESSAGE flow.» Vanlige betalinger virker: kunden staar foran
+        // skjermen og sendes til Vipps. Et krav som dukker opp i appen til
+        // noen andre er en egen tillatelse paa salgsenheten, og den maa Vipps
+        // skru paa. Ingen kode retter det, saa meldingen sier hva som skal
+        // gjores framfor aa la eieren oversette engelsk feiltekst hver gang.
+        if (str_contains($tekst, 'PUSH_MESSAGE') || str_contains($tekst, '5080')) {
+            $tekst .= ' — Salgsenheten har ikke lov til å sende betalingskrav.'
+                    . ' Be Vipps skru på PUSH_MESSAGE for salgsenheten;'
+                    . ' vanlige Vipps-betalinger virker som før.';
+        }
         // Setningen skal kunne staa midt i en annen: «Fikk ikke sendt kravet.
         // Vipps svarte 403: … Ingen plass er lagt inn.»
         if ($tekst !== '' && !str_ends_with($tekst, '.')) {

@@ -2876,6 +2876,53 @@ sjekk('… og naar de lagres',
 sjekk('serveren gir et oppsett til artikkel og brev ogsaa',
     str_contains($marked, "'slag'    => 'artikkel'") && str_contains($marked, "'slag'    => 'brev'"));
 
+// ── Meld inn feil ──────────────────────────────────────────────────────
+//
+// To slag, som fanger hver sin type feil. Det tomme nedtrekket paa iPhone
+// kastet ingenting — sida virket teknisk sett og manglet bare innholdet.
+// Uten et menneske som sier fra, faar ingen vite om den slags.
+sjekk('feilvakta fanger unntak, lovnader og serverfeil',
+    str_contains($sida2, "window.addEventListener('error', this._feilLytter, true)")
+    && str_contains($sida2, "window.addEventListener('unhandledrejection', this._feilLovnad)")
+    && str_contains($sida2, "r.status >= 500"));
+// Vakta bruker fetch selv. Melder den om sin egen melding, blir det en sloyfe.
+sjekk('vakta melder ikke om sitt eget kall',
+    str_contains($sida2, "adresse.indexOf('/api/feil.php') === -1"));
+sjekk('… og aldri mer enn fem fra én sideinnlasting',
+    str_contains($sida2, 'this._feilAntall >= 5'));
+// Knappen staar tre steder, og bare naar eieren har slaatt den paa.
+sjekk('«Meld inn feil» staar i bunnteksten',
+    substr_count($sida2, 'onClick="{{ fmAapne }}"') === 2);
+sjekk('… og i adminmenyen', str_contains($sida2, "navn: '⚑  Meld inn feil',"));
+sjekk('… bak bryteren, ikke alltid',
+    substr_count($sida2, '{{ fmKnappVis }}') === 2);
+sjekk('skjemaet ligger utenfor skjermene, saa det virker overalt',
+    str_contains($sida2, '{{ fmVises }}') && str_contains($sida2, '{{ fmOmraadeStil }}'));
+// Skjermen som viser dem, og veien til aa lime dem inn.
+sjekk('feilmeldingsskjermen finnes med kopiknapp og bryter',
+    str_contains($sida2, 'data-screen-label="Admin – feilmeldinger"')
+    && str_contains($sida2, 'on-click="{{ frKopier }}"')
+    && str_contains($sida2, 'on-click="{{ frSlaaPaa }}"'));
+sjekk('… og staar under Nettsiden', str_contains($sida2, "['Feilmeldinger', 'adminfeil'],"));
+sjekk('kortet paa Oversikt staar bare naar noe venter',
+    str_contains($sida2, "kort('Feil meldt inn',"));
+// Endepunktene.
+$fapi = file_get_contents(__DIR__ . '/../api/feil.php');
+sjekk('api/feil.php lagrer ikke IP-adressen', !str_contains($fapi, "'ip'"));
+sjekk('… og tar nettleseren fra hodet, ikke fra kroppen',
+    str_contains($fapi, 'Foresporsel::userAgent()'));
+sjekk('… og har egne grenser for menneske og maskin',
+    str_contains($fapi, "Rate::sjekk('feilmelding'") && str_contains($fapi, "Rate::sjekk('feilfangst'"));
+sjekk('… og teller opp den samme feilen framfor aa lage en rad til',
+    str_contains($fapi, 'ON DUPLICATE KEY UPDATE'));
+sjekk('en melding krever at bryteren staar paa',
+    str_contains($fapi, 'innmelding av feil er stengt akkurat nå.'));
+
+// Bildene i kassa ba om «{{ utQrBilde }}» som om det var en filadresse.
+// Feilvakta fant det selv, forste gang den kjorte.
+sjekk('ingen bilder binder paa src — alle bruker data-src',
+    preg_match('~<img [^>]*(?<![-\\w])src="\\{\\{~', $sida2) !== 1);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

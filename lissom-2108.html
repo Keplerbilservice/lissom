@@ -4149,6 +4149,12 @@ window.__resources = {
           </div>
           </sc-if>
 
+          <!-- Meld inn feil, ogsaa herfra. Den som er innlogget er den som
+               bruker sidene mest, og som stanser paa noe som ikke virker.
+               Staar bare naar eieren har slaatt innmeldingen paa. -->
+          <sc-if value="{{ fmKnappVis }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: var(--space-8) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Er det noe som ikke virker? <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Meld inn feil</button>, så ser vi på det.</p>
+          </sc-if>
         </div>
       </section>
     </div>
@@ -6690,7 +6696,7 @@ window.__resources = {
                 </div>
                 <sc-if value="{{ utFastVis }}" hint-placeholder-val="{{ false }}">
                   <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-card); padding: var(--space-5); display: flex; flex-direction: column; align-items: center; gap: var(--space-3);">
-                    <img src="{{ utFastBilde }}" alt="Fast QR-kode til betalingssiden" style="width: min(220px, 60vw); height: auto; image-rendering: pixelated; background: #fff; border-radius: var(--radius-md);">
+                    <img data-src="{{ utFastBilde }}" alt="Fast QR-kode til betalingssiden" style="width: min(220px, 60vw); height: auto; image-rendering: pixelated; background: #fff; border-radius: var(--radius-md);">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="printer" on-click="{{ utFastSkrivUt }}" hint-size="auto,38px">Skriv ut</x-import>
                   </div>
                 </sc-if>
@@ -6705,7 +6711,7 @@ window.__resources = {
                       <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading);">{{ utQrBelop }}</span>
                       <button type="button" onClick="{{ utQrLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-muted); padding: 0 2px;">×</button>
                     </div>
-                    <img src="{{ utQrBilde }}" alt="QR-kode for Vipps-betaling" style="width: min(260px, 70vw); height: auto; image-rendering: pixelated; background: #fff; border-radius: var(--radius-md);">
+                    <img data-src="{{ utQrBilde }}" alt="QR-kode for Vipps-betaling" style="width: min(260px, 70vw); height: auto; image-rendering: pixelated; background: #fff; border-radius: var(--radius-md);">
                     <sc-if value="{{ utQrIkkeBetalt }}" hint-placeholder-val="{{ true }}">
                       <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ utQrStatus }}</span>
                     </sc-if>
@@ -9066,6 +9072,116 @@ window.__resources = {
             </div>
           </div>
         </sc-if>
+      </main>
+    </div>
+  </sc-if>
+
+  <!-- ── Feilmeldinger ─────────────────────────────────────────────────
+       To slag havner her, og de fanger hver sin type feil: det nettleseren
+       kaster av seg selv, og det et menneske skriver. Nedtrekket som sto
+       tomt paa iPhone kastet ingenting — sida virket teknisk sett og
+       manglet bare innholdet. Uten et menneske som sier fra, faar ingen
+       vite om den slags. -->
+  <sc-if value="{{ erAdminFeil }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – feilmeldinger" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavFeil }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </aside>
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Feilmeldinger</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Feil nettleseren fanger av seg selv, og feil folk melder inn. «Kopier alt» gir deg hele bunken som tekst — lim den inn i samtalen med den som skal rette.</p>
+        </div>
+
+        <sc-if value="{{ frMangler }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6);">
+            <p style="margin: 0; font-size: var(--text-base); color: var(--text-body);">Databaseoppdateringen er ikke kjørt ennå. Kjør «Vedlikehold» nederst i menyen, så begynner den å samle.</p>
+          </div>
+        </sc-if>
+
+        <!-- Bryteren. En dato, ikke av/paa: eieren slaar den paa i en uke
+             etter en endring, og den slaar seg av selv. Ellers blir det
+             enda en ting som maa huskes. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;">
+          <div style="min-width: 0;">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Knappen på nettsiden</div>
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ frBryterTekst }} Den automatiske fangsten står alltid på.</p>
+          </div>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <sc-if value="{{ frErApen }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ frSlaaAv }}" hint-size="auto,38px">Slå av</x-import>
+            </sc-if>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ frSlaaPaa }}" hint-size="auto,38px">Slå på i en uke</x-import>
+          </div>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ frAntall }}</span>
+            <sc-if value="{{ frHarRapporter }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="copy" on-click="{{ frKopier }}" hint-size="auto,36px">Kopier alt</x-import>
+                <button type="button" onClick="{{ frLukkAlle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Merk alle som sett</button>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ frIngen }}" hint-placeholder-val="{{ true }}">
+            <div style="padding: var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingenting er meldt inn, og ingenting har feilet av seg selv. Det er den tilstanden vi vil ha.</div>
+          </sc-if>
+          <sc-for list="{{ frRapporter }}" as="r" hint-placeholder-count="4">
+            <div style="{{ r.stil }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="{{ r.merkeStil }}">{{ r.merke }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.naar }}</span>
+              </div>
+              <sc-if value="{{ r.harMelding }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0; font-size: var(--text-base); color: var(--text-heading); text-wrap: pretty;">{{ r.melding }}</p>
+              </sc-if>
+              <sc-if value="{{ r.harFeiltekst }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font: 12px/1.5 ui-monospace, monospace; color: var(--terracotta-600); word-break: break-word;">{{ r.feiltekst }}</p>
+              </sc-if>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); word-break: break-word;">{{ r.linje }}</p>
+              <sc-if value="{{ r.harNavn }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ r.navn }}</p>
+              </sc-if>
+              <sc-if value="{{ r.harKontakt }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ r.kontakt }}</p>
+              </sc-if>
+              <button type="button" onClick="{{ r.lukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sett på</button>
+            </div>
+          </sc-for>
+        </div>
       </main>
     </div>
   </sc-if>
@@ -12008,6 +12124,13 @@ window.__resources = {
             <span style="text-transform: none; letter-spacing: 0; opacity: .68; display: inline-flex; align-items: center; gap: 6px;">EDB system av<svg viewBox="0 0 290 74" width="100" height="26" role="img" aria-label="Joika Design" style="display: block;"><defs><linearGradient id="jdToning" gradientUnits="userSpaceOnUse" x1="150" y1="4" x2="150" y2="70"><stop offset="0" stop-color="currentColor" stop-opacity=".82"></stop><stop offset=".42" stop-color="currentColor" stop-opacity=".38"></stop><stop offset=".66" stop-color="currentColor" stop-opacity=".12"></stop><stop offset="1" stop-color="currentColor" stop-opacity=".05"></stop></linearGradient></defs><g fill="none" stroke="url(#jdToning)" stroke-linejoin="round" stroke-linecap="round"><path stroke-width="3.4" d="M74 59 L54 27 L110 47 L97 9 L150 40 L204 4 L226 59"></path><rect x="70" y="57" width="160" height="13" rx="6.5" stroke-width="3.4"></rect></g><text x="145" y="54" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="31" font-weight="700" letter-spacing="0.4" fill="currentColor">Joika Design</text></svg></span>
           </div>
           <div style="display: flex; align-items: center; gap: var(--space-3);">
+            <!-- «Meld inn feil». Staar bare naar eieren har slaatt den paa,
+                 og bare i en periode han bestemmer selv — en knapp som
+                 alltid staar der blir en knapp ingen ser. Samme pille som
+                 de to ved siden av, saa den ikke roper. -->
+            <sc-if value="{{ fmKnappVis }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);">Meld inn feil</button>
+            </sc-if>
             <button type="button" onClick="{{ goMinSideFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="user" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Min side</button>
             <sc-if value="{{ visAdminLenke }}" hint-placeholder-val="{{ true }}">
             <button type="button" onClick="{{ goAdminFooter }}" style="appearance: none; background: transparent; border: 1px solid rgba(244,235,222,.35); border-radius: var(--radius-pill); cursor: pointer; padding: 7px 16px; display: inline-flex; align-items: center; gap: 7px; font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-200); transition: color .18s ease, border-color .18s ease;" style-hover="color: var(--lissom-yellow); border-color: var(--lissom-yellow);"><x-import component-from-global-scope="LissomDesignSystem_8402ac.Icon" name="lock" size="{{ fjorten }}" hint-size="14px,14px"></x-import>Admin</button>
@@ -13581,6 +13704,37 @@ window.__resources = {
             </div>
           </sc-if>
         </sc-if>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ── Meld inn feil ──────────────────────────────────────────────────
+     Ligger her, utenfor alle skjermene, fordi den skal kunne aapnes fra
+     nettsida, fra Min side og fra admin — og det er de samme feltene
+     uansett hvor man staar.
+
+     Bakgrunnen: nedtrekket for betalingsmaate sto tomt paa iPhone i
+     dagevis uten at noen visste det. Den automatiske feilfangsten fanger
+     unntak, men der ble det ikke kastet noe — sida virket teknisk sett
+     og manglet bare innholdet. Slike feil er det bare et menneske som
+     ser. -->
+<sc-if value="{{ fmVises }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ fmLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto;">
+    <div onClick="{{ fmStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(480px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+      <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Meld inn feil</div>
+      <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Hva gikk galt?</h2>
+      <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Skriv hva du prøvde å gjøre, og hva som skjedde</label>
+      <textarea value="{{ fmTekst }}" onChange="{{ fmSkriv }}" placeholder="Feks. «Jeg skulle velge betaling på workshop 2. september, men listen var tom.»" style="{{ fmOmraadeStil }}"></textarea>
+      <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-4) 0 4px;">E-post eller telefon, om du vil ha svar (valgfritt)</label>
+      <input value="{{ fmKontakt }}" onChange="{{ fmSkrivKontakt }}" placeholder="ola@epost.no" style="{{ fmFeltStil }}">
+      <p style="margin: var(--space-4) 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ fmTeknisk }}</p>
+      <sc-if value="{{ fmHarFeil }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--terracotta-600);">{{ fmFeil }}</p>
+      </sc-if>
+      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ fmSend }}" hint-size="auto,44px">{{ fmSendTekst }}</x-import>
+        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ fmLukk }}" hint-size="auto,44px">Avbryt</x-import>
       </div>
     </div>
   </div>
@@ -15493,6 +15647,7 @@ class Component extends DCLogic {
       // Samlesida med beskrivelsen av hvert kurs. Kurslista viser kortene
       // med dato og pris; her staar hva kurset faktisk er.
       { sti: '/kursene-vare',  side: 'kursoversikt' },
+      { sti: '/admin/feilmeldinger', side: 'adminfeil' },
       { sti: '/nyttig-info',   side: 'nyttig' },
       // Spoersmaal og svar. Sto som en seksjon paa Om oss, og hadde derfor
       // ingen adresse — den kunne verken deles eller finnes i et sok, enda
@@ -19589,6 +19744,286 @@ class Component extends DCLogic {
     });
   }
 
+  /**
+   * Feilvakta.
+   *
+   * Bakgrunnen: nedtrekket for betalingsmaate sto tomt paa iPhone i dagevis
+   * uten at noen visste det. Serverfeil gaar til feilloggen i cPanel, som
+   * ingen leser. Feil i nettleseren gikk ingen steder i det hele tatt.
+   *
+   * Denne fanger tre ting av seg selv: unntak som kastes, lovnader som
+   * ryker, og API-kall som svarer 500. Den fanger *ikke* en side som ser
+   * riktig ut for maskinen og feil for mennesket — som nettopp det tomme
+   * nedtrekket, der ingenting ble kastet og sida teknisk sett virket. Det
+   * er «Meld inn feil» til for. De to fanger hver sin type, og hverken
+   * den ene eller den andre klarer seg alene.
+   */
+  feilvaktStart() {
+    if (this._feilvakt) return;
+    this._feilvakt = true;
+    this._feilSendt = {};
+    this._feilAntall = 0;
+
+    this._feilLytter = (e) => {
+      // Et bilde eller et skript som ikke lot seg laste havner her ogsaa,
+      // men uten melding — da staar elementet i e.target.
+      const mal = e && e.target;
+      if (mal && mal !== window && mal.tagName) {
+        const url = String(mal.src || mal.href || '');
+        // Bare vaare egne filer. At noen andres tjener er nede er ikke en
+        // feil vi kan rette, og ville fylt lista med stoy.
+        if (!url || url.indexOf(window.location.origin) !== 0) return;
+        this.meldFeil({ feiltekst: 'Fikk ikke lastet ' + String(mal.tagName).toLowerCase(), kilde: url });
+        return;
+      }
+      this.meldFeil({
+        feiltekst: String((e && e.message) || 'Ukjent feil'),
+        kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno : '',
+      });
+    };
+    // Ressursfeil bobler ikke — de maa fanges paa vei ned.
+    window.addEventListener('error', this._feilLytter, true);
+
+    this._feilLovnad = (e) => {
+      const g = e && e.reason;
+      this.meldFeil({
+        feiltekst: 'Ubehandlet: ' + String((g && g.message) || g || 'ukjent'),
+        kilde: g && g.stack ? String(g.stack).split('\n').slice(1, 2).join('').trim() : '',
+      });
+    };
+    window.addEventListener('unhandledrejection', this._feilLovnad);
+
+    // Serverfeil.
+    //
+    // Kallene til API-et har ingen felles inngang i denne fila — de er
+    // spredt paa mange steder. Da er fetch selv den felles inngangen.
+    // Lofta gaar tilbake uendret; det som legges paa er en avstikker som
+    // ser paa svaret. Vakta skal aldri kunne velte kallet den vokter.
+    const opprinnelig = window.fetch;
+    if (typeof opprinnelig === 'function' && !opprinnelig.__lissomvakt) {
+      const vakt = (...arg) => {
+        const svar = opprinnelig.apply(window, arg);
+        try {
+          const adresse = String((arg[0] && arg[0].url) || arg[0] || '');
+          if (adresse.indexOf('/api/feil.php') === -1 && svar && svar.then) {
+            svar.then((r) => {
+              if (r && r.status >= 500) {
+                this.meldFeil({ feiltekst: 'Serveren svarte ' + r.status, kilde: adresse });
+              }
+            }, () => {}).catch(() => {});
+          }
+        } catch (_) { /* stille */ }
+        return svar;
+      };
+      vakt.__lissomvakt = true;
+      window.fetch = vakt;
+    }
+  }
+
+  feilvaktStopp() {
+    if (this._feilLytter) window.removeEventListener('error', this._feilLytter, true);
+    if (this._feilLovnad) window.removeEventListener('unhandledrejection', this._feilLovnad);
+  }
+
+  /**
+   * Én automatisk rapport.
+   *
+   * Samme feil om og om igjen — en tegnesloyfe som kaster — skal sendes én
+   * gang, ikke tusen. Og aldri mer enn fem fra én sideinnlasting: da er det
+   * noe stort i stykker, og den femte forteller ikke noe den forste ikke
+   * allerede har sagt.
+   */
+  meldFeil(data) {
+    const tekst = String((data && data.feiltekst) || '').slice(0, 500);
+    if (!tekst) return;
+    // Den siste feilen folger med naar noen skriver en melding etterpaa.
+    // «Det virket ikke» og et unntak fra samme minutt hoerer sammen.
+    this._feilSist = tekst;
+    const avtrykk = tekst + '|' + ((data && data.kilde) || '');
+    if (this._feilSendt[avtrykk] || this._feilAntall >= 5) return;
+    this._feilSendt[avtrykk] = true;
+    this._feilAntall += 1;
+    this.feilPost({
+      slag: 'automatisk',
+      feiltekst: tekst,
+      kilde: String((data && data.kilde) || '').slice(0, 300),
+    });
+  }
+
+  /** Selve kallet. Alt svelges — en feilmelder som feiler hoylytt er verre enn ingen. */
+  feilPost(kropp) {
+    const felles = {
+      side: (window.location.pathname + window.location.search + window.location.hash).slice(0, 300),
+      skjerm: window.innerWidth + '×' + window.innerHeight,
+    };
+    return fetch('/api/feil.php', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Object.assign(felles, kropp)),
+    }).then(r => r.json()).catch(() => ({}));
+  }
+
+  /** Staar «Meld inn feil» paa, og hvor lenge til? */
+  hentFeilbryter() {
+    if (this._fmHentes) return;
+    this._fmHentes = true;
+    fetch('/api/feil.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d && d.ok) this.setState({ fmApen: !!d.apen, fmTil: d.til || '' }); })
+      .catch(() => {});
+  }
+
+  /** Det mennesket skrev. */
+  feilSend() {
+    if (this.state.fmSender) return;
+    const tekst = String(this.state.fmTekst || '').trim();
+    if (!tekst) {
+      this.setState({ fmFeil: 'Skriv litt om hva som gikk galt, så vet vi hvor vi skal lete.' });
+      return;
+    }
+    this.setState({ fmSender: true, fmFeil: '' });
+    this.feilPost({
+      slag: 'melding',
+      melding: tekst.slice(0, 2000),
+      kontakt: String(this.state.fmKontakt || '').trim().slice(0, 191),
+      // Var det en feil rett for? Da folger den med, saa den som skal rette
+      // slipper aa gjette hvilken av dem meldinga handler om.
+      feiltekst: this._feilSist || '',
+    }).then(d => {
+      if (d && d.ok) {
+        this.setState({
+          fmDialog: false, fmTekst: '', fmKontakt: '', fmSender: false,
+          kvittering: 'Takk — feilen er meldt inn',
+          kvitteringDetalj: 'Verkstedet får den sammen med hvilken side og nettleser du var på.',
+        });
+        if (this.state.erAdminBruker) { this._frHentes = false; this.hentFeilrapporter(); }
+      } else {
+        this.setState({ fmSender: false, fmFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' });
+      }
+    });
+  }
+
+  /** Rapportene, for den som skal gjore noe med dem. */
+  hentFeilrapporter() {
+    if (this._frHentes) return;
+    this._frHentes = true;
+    fetch('/api/admin/feilrapporter.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d && d.ok) this.setState({ feilData: d }); })
+      .catch(() => {});
+  }
+
+  feilKall(kropp) {
+    fetch('/api/admin/feilrapporter.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.ok) {
+          this._frHentes = false;
+          this.hentFeilrapporter();
+          if (kropp.handling === 'bryter') {
+            this._fmHentes = false;
+            this.hentFeilbryter();
+            this.setState({
+              kvittering: kropp.til ? 'Meld inn feil er på' : 'Meld inn feil er av',
+              kvitteringDetalj: kropp.til ? 'Knappen står ute til og med ' + kropp.til + '.' : '',
+            });
+          }
+        } else {
+          this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: (d && d.feil) || '' });
+        }
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Verdiene til knappen og skjemaet. Ligger overalt, saa de er alltid med. */
+  feilVals() {
+    const s = this.state;
+    const felt = {
+      width: '100%', boxSizing: 'border-box', padding: '11px 14px',
+      borderRadius: 'var(--radius-md)', border: '1.5px solid var(--border-subtle)',
+      background: 'var(--surface-card)', font: 'var(--type-body)',
+      fontSize: 'var(--text-base)', color: 'var(--text-heading)',
+    };
+    return {
+      // Knappen paa nettsida staar bare naar eieren har slaatt den paa.
+      // Innlogget i admin staar den alltid — det er hans egen vei inn.
+      fmKnappVis: !!s.fmApen,
+      fmVises: !!s.fmDialog,
+      fmAapne: () => this.setState({ fmDialog: true, fmFeil: '' }),
+      fmLukk: () => this.setState({ fmDialog: false, fmFeil: '' }),
+      fmStopp: e => e.stopPropagation(),
+      fmTekst: s.fmTekst || '',
+      fmSkriv: e => this.setState({ fmTekst: e.target.value }),
+      fmKontakt: s.fmKontakt || '',
+      fmSkrivKontakt: e => this.setState({ fmKontakt: e.target.value }),
+      fmSend: () => this.feilSend(),
+      fmSendTekst: s.fmSender ? 'Sender …' : 'Send inn',
+      fmHarFeil: !!s.fmFeil,
+      fmFeil: s.fmFeil || '',
+      fmFeltStil: felt,
+      fmOmraadeStil: Object.assign({}, felt, { minHeight: 120, resize: 'vertical', lineHeight: 1.5 }),
+      // Det tekniske folger med av seg selv. Si det, saa slipper folk aa
+      // skrive «jeg bruker iPhone» — og saa de vet hva som sendes.
+      fmTeknisk: 'Vi får automatisk med hvilken side du står på, nettleseren din og skjermstørrelsen. Ingenting annet.',
+    };
+  }
+
+  /** Skjermen som viser rapportene. */
+  feilAdminVals() {
+    const d = this.state.feilData || {};
+    const liste = d.rapporter || [];
+    const uke = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    return {
+      frMangler: !!d.mangler,
+      frHarRapporter: liste.length > 0,
+      frIngen: liste.length === 0 && !d.mangler,
+      frAntall: liste.length === 1 ? 'Én rapport' : liste.length + ' rapporter',
+      frRapporter: liste.map(r => ({
+        merke: r.slag === 'melding' ? 'Meldt inn' : 'Fanget automatisk',
+        merkeStil: {
+          font: 'var(--type-label)', fontSize: 10, letterSpacing: 'var(--tracking-caps)',
+          textTransform: 'uppercase', padding: '3px 8px', borderRadius: 'var(--radius-sm)',
+          background: r.slag === 'melding' ? 'var(--lissom-yellow)' : 'var(--clay-100)',
+          color: r.slag === 'melding' ? 'var(--lissom-brown)' : 'var(--text-muted)',
+        },
+        harMelding: !!r.melding,
+        melding: r.melding || '',
+        harFeiltekst: !!r.feiltekst,
+        feiltekst: r.feiltekst || '',
+        linje: [r.side || 'ukjent side', r.nettleser, r.skjerm].filter(Boolean).join(' · ')
+          + (r.antall > 1 ? ' · ' + r.antall + ' ganger' : ''),
+        harNavn: !!r.navn,
+        navn: r.navn ? 'Innlogget: ' + r.navn : '',
+        harKontakt: !!r.kontakt,
+        kontakt: r.kontakt ? 'Kontakt: ' + r.kontakt : '',
+        naar: (r.sistSett || '').slice(0, 16).replace('T', ' '),
+        lukk: () => this.feilKall({ handling: 'status', id: r.id, status: 'lukket' }),
+        stil: {
+          borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-5) var(--space-6)',
+          display: 'flex', flexDirection: 'column', gap: 6,
+          background: r.status === 'ny' ? 'var(--clay-50)' : 'transparent',
+        },
+      })),
+      // Hele bunken som tekst. Bygget av serveren, saa det som limes inn er
+      // det samme som staar paa skjermen.
+      frKopier: () => this.kopier(d.tekst || '', 'Rapportene ligger på utklippstavla — lim dem inn i samtalen.'),
+      frLukkAlle: () => this.feilKall({ handling: 'lukkAlle' }),
+      frApenTil: d.apenTil || '',
+      frErApen: !!(d.apenTil && d.apenTil >= new Date().toISOString().slice(0, 10)),
+      frBryterTekst: d.apenTil && d.apenTil >= new Date().toISOString().slice(0, 10)
+        ? 'Knappen står ute til og med ' + d.apenTil + '.'
+        : 'Knappen er av. Ingen ser den på nettsiden nå.',
+      frSlaaPaa: () => this.feilKall({ handling: 'bryter', til: uke }),
+      frSlaaAv: () => this.feilKall({ handling: 'bryter', til: '' }),
+      frUke: uke,
+    };
+  }
+
   componentDidMount() {
     // #innlogget settes av vipps-callback.php ved retur fra Vipps. Den sier
     // bare at vi skal hente profilen — hvilken side man skal til, staar i
@@ -19638,6 +20073,10 @@ class Component extends DCLogic {
     }
 
     this.vaktNyUtgave();
+    // Feilvakta forst av alt som kan feile: en feil under oppstarten er
+    // den vi minst faar vite om paa annet vis.
+    this.feilvaktStart();
+    this.hentFeilbryter();
     this.hentInnlogget(kommerFraVipps);
     this.hentKatalog();
     this.hentInnhold();
@@ -19782,6 +20221,7 @@ class Component extends DCLogic {
   }
 
   componentWillUnmount() {
+    this.feilvaktStopp();
     if (window.lissomLagreKortrekkefolge) delete window.lissomLagreKortrekkefolge;
     if (this._utlogget) window.removeEventListener('lissom:utlogget', this._utlogget);
     clearInterval(this._utgaveVakt);
@@ -22713,6 +23153,9 @@ class Component extends DCLogic {
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
+        // Feilmeldingene hoerer til nettsida: det er der de oppstaar, og
+        // det er der knappen som melder dem inn staar.
+        ['Feilmeldinger', 'adminfeil'],
       ],
       // Butikken er eget menypunkt naa, og har to lister: den kundene ser, og
       // internbutikken medlemmene handler leire og brenning i. Foer sto det
@@ -22787,6 +23230,7 @@ class Component extends DCLogic {
           ? p('Markedsføring', 'Markedsføring', 'SEO')
           : p('Nettsiden', 'Nettsiden', 'SEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
+      case 'adminfeil':          return p('Nettsiden', 'Nettsiden', 'Feilmeldinger');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
@@ -25377,6 +25821,13 @@ class Component extends DCLogic {
         velg: () => this.testVipps(),
         stil: this.adminBunnStil(),
       },
+      // Meld inn feil, ogsaa herfra. Eieren staar oftere i admin enn paa
+      // nettsida, og en feil han ser her er like verdt aa notere.
+      {
+        navn: '⚑  Meld inn feil',
+        velg: () => this.setState({ fmDialog: true, fmFeil: '' }),
+        stil: this.adminBunnStil(),
+      },
       {
         navn: '⌁  Logg ut',
         velg: () => this.loggUtNaa(),
@@ -26023,6 +26474,11 @@ class Component extends DCLogic {
     // medlemmet selv, og admin-sidene for «i verkstedet naa».
     if ((side === 'minside' || this.erAdminSkjerm(side)) && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
+    }
+    // Feilrapportene. Hentes paa skjermen som viser dem, og paa Oversikt —
+    // der staar det et kort naar noe er meldt inn og ikke sett paa enda.
+    if ((side === 'adminfeil' || side === 'adminoversikt') && !this.state.feilData) {
+      this.hentFeilrapporter();
     }
     // Soknadene om frys, paa medlemsskjermen i admin.
     if (side === 'adminmedlem' && !this.state.frysAdmin) {
@@ -29672,6 +30128,21 @@ class Component extends DCLogic {
                    : venterMelding + ' kurs venter på beskjed om at arbeidene er ferdige.',
                  venterMelding, 'Meld dem klare',
                  () => this.gaaAdmin('adminferdigbrent', {}))] : []),
+
+            // Feil som er meldt inn eller fanget, og ikke sett paa enda.
+            // Samme regel som resten: kortet staar naar noe venter. Et kort
+            // som hver dag sier «ingen feil» er ett kort mer aa lese forbi —
+            // og et tomt kort er det uansett ingen som legger merke til den
+            // dagen det plutselig ikke er tomt.
+            ...(() => {
+              const nye = ((this.state.feilData || {}).rapporter || [])
+                .filter(r => r.status === 'ny').length;
+              return nye ? [kort('Feil meldt inn',
+                nye === 1 ? 'Én feil venter på at du ser på den.'
+                          : nye + ' feil venter på at du ser på dem.',
+                nye, 'Se dem',
+                () => this.gaaAdmin('adminfeil', {}), true)] : [];
+            })(),
 
             // Samme regel som ventelista: kortet staar naar noe venter.
             ...(ubesvarte ? [kort('Ubesvarte meldinger',
@@ -36842,6 +37313,15 @@ class Component extends DCLogic {
       })(),
       adminNavSeo: this.adminMeny(),
       erAdminMobilvis: side === 'adminmobilvis',
+
+      // ── Meld inn feil ────────────────────────────────────────────────
+      //
+      // Knappen og skjemaet ligger overalt — nettsida, Min side og admin —
+      // saa verdiene maa vaere med uansett hvilken skjerm som tegnes.
+      ...this.feilVals(),
+      erAdminFeil: side === 'adminfeil',
+      adminNavFeil: this.adminMeny(),
+      ...(side === 'adminfeil' ? this.feilAdminVals() : {}),
 
       // --- E-post og SMS ---------------------------------------------------
       //

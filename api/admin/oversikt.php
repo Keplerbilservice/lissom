@@ -310,6 +310,40 @@ Svar::json([
         $liste = is_string($raa) ? json_decode($raa, true) : null;
         return is_array($liste) ? array_values(array_filter($liste, 'is_string')) : [];
     })(),
+    // ── Ikke betalt ────────────────────────────────────────────────────
+    //
+    // Plasser som er lagt inn for haand og staar som «reservert»: noen har
+    // faatt plassen, men pengene er ikke kommet. Eieren, 29. august: han vil
+    // ha et kort som varsler om dem, saa han kan kreve dem inn derfra.
+    //
+    // Bare det som er lagt inn for haand. En nettbestilling som staar som
+    // reservert venter paa Vipps og ordner seg selv — eller faller bort naar
+    // reservasjonen gaar ut.
+    'ubetalte' => array_map(static function (array $r) use ($oslo, $utc): array {
+        return [
+            'id'      => (int) $r['id'],
+            'navn'    => (string) $r['gjest_navn'],
+            'kurs'    => (string) $r['tittel'],
+            'naar'    => Booking::norskDato((string) $r['start_tid']),
+            'belop'   => Booking::kroner((int) $r['belop_ore']),
+            'telefon' => (string) ($r['gjest_telefon'] ?? ''),
+            'maate'   => (string) ($r['betalt_maate'] ?? ''),
+            'dager'   => (int) $r['dager'],
+        ];
+    }, DB::alle(
+        "SELECT b.id, b.gjest_navn, b.gjest_telefon, b.belop_ore, b.betalt_maate,
+                c.tittel, cs.start_tid,
+                DATEDIFF(UTC_DATE(), DATE(b.created_at)) AS dager
+           FROM bookings b
+           JOIN courses c ON c.id = b.course_id
+      LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+          WHERE b.status = 'reservert'
+            AND b.payment_id IS NULL
+            AND b.lagt_inn_av IS NOT NULL
+            AND b.belop_ore > 0
+       ORDER BY b.created_at"
+    )),
+
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren
         // kan sortere okten paa dag, uke og maaned uten aa tolke norsk tekst.

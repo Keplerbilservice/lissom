@@ -8295,6 +8295,32 @@ window.__resources = {
                skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
                endring, og da maa lyttingen henge paa beholderen og ikke paa
                hvert kort. -->
+          <!-- Ikke betalt.
+               Plasser lagt inn for haand som staar som reservert: noen har
+               faatt plassen, pengene er ikke kommet. Eieren, 29. august: han
+               vil ha et kort som varsler om dem, saa han kan kreve dem inn
+               derfra. «Betalt» merker den av med ett trykk. -->
+          <sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">
+            <div style="border: 1.5px solid var(--terracotta-500); border-radius: var(--radius-lg); background: var(--surface-card); overflow: hidden; margin-bottom: var(--space-4);">
+              <div style="display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--terracotta-500); color: var(--clay-50);">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke betalt</span>
+                <span style="font: var(--type-body-sm); opacity: .9;">{{ ovSkylderSum }}</span>
+              </div>
+              <sc-for list="{{ ovSkylder }}" as="u" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
+                  <span style="min-width: 0; flex: 1 1 220px;">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ u.navn }}</span>
+                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
+                  </span>
+                  <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
+                  <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
           <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
             <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
               <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
@@ -16357,7 +16383,7 @@ class Component extends DCLogic {
    * valget som er kortet ned.
    */
   static get MAATER_OKT() {
-    return ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];
+    return ['Kontant', 'Vipps', 'Gavekort', 'Ikke betalt', 'Gratis'];
   }
 
   static get BANNER_STANDARD() {
@@ -24127,6 +24153,7 @@ class Component extends DCLogic {
                 const maate = maater.indexOf(u.maate) >= 0 ? u.maate : maater[0];
                 const krav = maate === 'Vippskrav';
                 const gave = maate === 'Gavekort';
+                const skylder = maate === 'Ikke betalt';
                 const sett = (n, v) => this.setState(st => ({ kdUtkast: Object.assign({}, st.kdUtkast, { [n]: v }) }));
                 const tekst = (n, etikett, hint, bred) => ({
                   erTekst: true, erValg: false, etikett: etikett, hint: hint || '',
@@ -24193,9 +24220,11 @@ class Component extends DCLogic {
                     ? 'Kravet sendes til mobilnummeret over. Plassen står som reservert til det er godtatt — den blir betalt av seg selv når pengene kommer.'
                     : (gave
                         ? 'Beløpet trekkes fra gavekortet. Har kortet for lite igjen, sier vi fra og ingenting blir lagt inn.'
-                        : (maate === 'Gratis'
-                            ? 'Ingen sum føres på plassen.'
-                            : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes prisen på denne datoen.')),
+                        : (skylder
+                            ? 'Plassen er reservert, men ingenting er betalt. Den dukker opp under «Ikke betalt» på Oversikt, der du kan kreve den inn.'
+                            : (maate === 'Gratis'
+                                ? 'Ingen sum føres på plassen.'
+                                : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes prisen på denne datoen.'))),
                   // «Legg til» alene sto alt i verktoylinja over kalenderen. To knapper
                   // med samme ord, én skjerm fra hverandre, er én for mye.
                   kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren',
@@ -29404,6 +29433,38 @@ class Component extends DCLogic {
           ovDraHjelp: this.state.ovRekkefolgeLagret
         ? 'Rekkefølgen er lagret.'
         : 'Hold inne på et kort og dra det dit du vil ha det. Rekkefølgen huskes til neste gang.',
+      ...(() => {
+        const liste = (this.state.adminData || {}).ubetalte || [];
+        const knapp = {
+          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+          padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
+          border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)',
+          color: 'var(--lissom-brown)', whiteSpace: 'nowrap',
+        };
+        const sum = liste.reduce((n, u) => n + (parseInt(String(u.belop).replace(/[^\d]/g, ''), 10) || 0), 0);
+        return {
+          ovSkylderVis: liste.length > 0,
+          ovSkylderSum: liste.length + (liste.length === 1 ? ' plass · ' : ' plasser · ')
+                      + 'kr. ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
+          ovSkylder: liste.map(u => ({
+            navn: u.navn,
+            // Hvor lenge den har staatt er det som avgjor om den haster.
+            under: [u.kurs, u.naar, u.dager > 0 ? u.dager + ' dager' : 'i dag'].filter(Boolean).join(' · '),
+            belop: u.belop,
+            // Ett trykk merker den betalt, med maaten. Samme endepunkt som
+            // deltakerlista bruker — «status» finnes fra for.
+            maater: ['Kontant', 'Vipps'].map(m => ({
+              navn: m,
+              stil: knapp,
+              velg: () => this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
+                // pameldingKall henter admin paa nytt av seg selv naar det
+                // gikk bra, saa kortet oppdaterer seg.
+                .then(() => {}),
+            })),
+          })),
+        };
+      })(),
+
       ovKort: (() => {
             // Her sto «Nytt kurs», «Medlemskap» og «Priser, tekst og bilder».
             // Fjernet 26. august paa bestilling. Alle tre naas fortsatt fra

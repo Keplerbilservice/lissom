@@ -33,7 +33,7 @@ $admin = krev_admin();
 // ned til fire. Begge staar: gamle paameldinger beholder maaten sin, og
 // dagsoppgjoret foerer dem samme sted uansett.
 const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Vippskrav', 'Gavekort',
-                'Faktura', 'Betaler ved oppmøte', 'Gratis'];
+                'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
 
 $handling = Foresporsel::tekst('handling', 'legg-til');
 $id       = Foresporsel::heltall('id');
@@ -156,14 +156,29 @@ if ($handling === 'status') {
         Svar::feil('Fant ikke påmeldingen.');
     }
 
-    DB::oppdater('bookings', [
+    $felt = [
         'status'        => $status,
         // En reservasjon lagt inn for haand skal ikke frigis av seg selv.
         // Verkstedet vet hvem det er, og rydder selv.
         'reservert_til' => null,
-    ], ['id' => $id]);
+    ];
 
-    revider('pamelding_status', 'booking', $id, ['status' => $status]);
+    // Hvordan den ble gjort opp.
+    //
+    // Kortet «Ikke betalt» paa Oversikt krever inn med ett trykk, og da maa
+    // maaten foelge med — ellers staar plassen som betalt uten at noe sier
+    // hvor pengene kom fra, og dagsoppgjoret vet ikke hvilken motkonto den
+    // hoerer til. Bare naar den settes til betalt: en plass som settes
+    // tilbake til reservert har ikke lenger en maate.
+    $nyMaate = Foresporsel::tekst('maate');
+    if ($status === 'betalt' && in_array($nyMaate, MAATER, true)) {
+        $felt['betalt_maate'] = $nyMaate;
+    }
+
+    DB::oppdater('bookings', $felt, ['id' => $id]);
+
+    revider('pamelding_status', 'booking', $id,
+            ['status' => $status] + ($nyMaate !== '' ? ['maate' => $nyMaate] : []));
     Svar::ok(['beskjed' => 'Statusen er endret.']);
 }
 
@@ -257,7 +272,10 @@ if ($belop < 0 || $belop > 10000000) {
 
 // «Betaler ved oppmote» og «Vippskrav» er ikke betalt enda. Resten er gjort
 // opp i det oyeblikket eieren registrerer dem.
-$status = in_array($maate, ['Betaler ved oppmøte', 'Vippskrav'], true)
+// «Ikke betalt» sier det rett ut: plassen er gitt, pengene er ikke kommet.
+// Den staar som reservert til den er gjort opp, og dukker opp paa kortet
+// «Ikke betalt» paa Oversikt til den er det.
+$status = in_array($maate, ['Betaler ved oppmøte', 'Vippskrav', 'Ikke betalt'], true)
     ? 'reservert' : 'betalt';
 
 // ── Gavekortet ───────────────────────────────────────────────────────

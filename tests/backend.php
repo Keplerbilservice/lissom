@@ -2397,8 +2397,8 @@ sjekk('et krav uten mobilnummer avvises',
     str_contains($pamFil, 'Et vippskrav må ha et mobilnummer'));
 sjekk('et krav paa null kroner avvises',
     str_contains($pamFil, 'Et vippskrav må ha et beløp over null'));
-sjekk('plassen staar som reservert til kravet er godtatt',
-    str_contains($pamFil, "in_array(\$maate, ['Betaler ved oppmøte', 'Vippskrav'], true)"));
+sjekk('plassen staar som reservert til den er gjort opp',
+    str_contains($pamFil, "in_array(\$maate, ['Betaler ved oppmøte', 'Vippskrav', 'Ikke betalt'], true)"));
 sjekk('kravet gaar som push, ikke som en nettleserbetaling',
     str_contains($pamFil, 'Vipps::opprettBetaling(') && str_contains($pamFil, "\$telefon,\n            true"));
 sjekk('betalingen knyttes til bookingen begge veier',
@@ -2466,7 +2466,31 @@ sjekk('panelet bruker det samme endepunktet som resten',
 // Lista hadde vokst til seks. Eieren, 29. august: «folk kan betale kontant,
 // med vipps eller gavekort. Og noen faar gratis.»
 sjekk('valget paa okta er kortet ned til det som brukes',
-    str_contains($sida2, "return ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
+    str_contains($sida2, "return ['Kontant', 'Vipps', 'Gavekort', 'Ikke betalt', 'Gratis'];"));
+
+// ── Ikke betalt ────────────────────────────────────────────────────────
+//
+// Eieren: «legg til ikke betalt paa alle manuelle betalinger», og «lag et
+// kort som varsler ikke betalt saa kan jeg kreve inn betaling fra dette
+// kortet».
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('Oversikt vet om de ubetalte',
+    str_contains($ovFil, "'ubetalte' => array_map("));
+// En nettbestilling som staar som reservert venter paa Vipps og ordner seg
+// selv. Bare det som er lagt inn for haand skal staa paa kortet.
+sjekk('… og bare de som er lagt inn for haand',
+    str_contains($ovFil, 'AND b.lagt_inn_av IS NOT NULL'));
+sjekk('kortet staar paa Oversikt', str_contains($sida2, '{{ ovSkylderSum }}')
+    && str_contains($sida2, '<sc-for list="{{ ovSkylder }}" as="u"'));
+// «ovUbetalte» var et tall fra for. renderVals gir ett flatt objekt, saa det
+// samme navnet to steder gjor at den siste vinner — og sc-for-en gikk over et
+// tall og tegnet ingenting.
+sjekk('kortet har sitt eget navn, ikke et som var tatt',
+    substr_count($sida2, 'ovSkylder:') === 1
+    && !str_contains($sida2, 'ovUbetalte: liste'));
+// Uten maaten staar plassen som betalt uten at noe sier hvor pengene kom fra.
+sjekk('maaten foelger med naar den kreves inn fra kortet',
+    str_contains($pamFil, "if (\$status === 'betalt' && in_array(\$nyMaate, MAATER, true)) {"));
 // De gamle maatene staar igjen i BETALT_MAATER, saa paameldinger som alt er
 // lagt inn med «Faktura» beholder maaten sin.
 sjekk('de gamle maatene finnes fortsatt for det som er lagt inn',

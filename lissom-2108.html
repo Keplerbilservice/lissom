@@ -3132,6 +3132,53 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- Betal i verkstedet.
+       Bak den faste QR-koden ved disken. Kunden skanner, velger hva det
+       gjelder, skriver beloepet og betaler med Vipps. Ingen innlogging:
+       hun staar foran deg, og et passord i doera er én ting for mye. -->
+  <sc-if value="{{ erBetal }}" hint-placeholder-val="{{ false }}">
+    <div role="main" data-screen-label="Betal i verkstedet">
+      <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
+
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-6);">
+        <div style="max-width: 480px; margin: 0 auto;">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Lissom Keramikk &amp; Håndverk</div>
+          <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-4xl);">Betal i verkstedet</h1>
+          <p style="margin: 0 0 var(--space-8); color: var(--text-body); font-size: var(--text-base); text-wrap: pretty;">Velg hva det gjelder, skriv beløpet du har blitt enig med oss om, og betal med Vipps.</p>
+
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
+            <div>
+              <div style="{{ btEtikett }}">Hva gjelder det?</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <sc-for list="{{ btSlagValg }}" as="sl" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ sl.velg }}" style="{{ sl.stil }}">{{ sl.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div>
+              <label for="bt-belop" style="{{ btEtikett }}">Beløp i kroner</label>
+              <input id="bt-belop" inputmode="decimal" value="{{ btBelop }}" onChange="{{ settBtBelop }}" placeholder="0" style="{{ btBelopStil }}">
+            </div>
+
+            <div>
+              <label for="bt-navn" style="{{ btEtikett }}">Navn</label>
+              <input id="bt-navn" value="{{ btNavn }}" onChange="{{ settBtNavn }}" placeholder="Valgfritt — så vet vi hvem som betalte" style="{{ btFeltStil }}">
+            </div>
+
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" disabled="{{ btJobber }}" on-click="{{ btBetal }}" hint-size="100%,52px">{{ btKnapp }}</x-import>
+
+            <sc-if value="{{ btHarBeskjed }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); text-wrap: pretty;">{{ btBeskjed }}</p>
+            </sc-if>
+
+            <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Du sendes til Vipps for å godkjenne. Kvittering får du i Vipps-appen.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erVipps }}" hint-placeholder-val="{{ true }}">
     <div role="main" data-screen-label="Vipps-flyt">
       <x-import component-from-global-scope="LissomDesignSystem_8402ac.NavBar" links="{{ navLinks }}" cta="Kontakt oss" asset-base="" on-navigate="{{ goNav }}" hint-size="100%,84px"></x-import>
@@ -6608,6 +6655,19 @@ window.__resources = {
                      nettsida bruker. Forskjellen fra kravet er bare hvordan
                      kunden kommer til den: med kameraet, framfor en melding i
                      appen sin. -->
+                <!-- Den faste koden. Henges opp ved disken én gang, og
+                     virker for alle belop: kunden skriver summen selv. -->
+                <div style="border-top: 1px dashed var(--border-subtle); padding-top: var(--space-4); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                  <button type="button" onClick="{{ utFastLag }}" style="appearance: none; border: 1.5px solid var(--border-subtle); background: var(--surface-card); cursor: pointer; border-radius: var(--radius-pill); padding: 7px 16px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">Fast kode til disken</button>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Én kode du henger opp. Kunden skriver beløpet selv på {{ utFastAdresse }}</span>
+                </div>
+                <sc-if value="{{ utFastVis }}" hint-placeholder-val="{{ false }}">
+                  <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-card); padding: var(--space-5); display: flex; flex-direction: column; align-items: center; gap: var(--space-3);">
+                    <img src="{{ utFastBilde }}" alt="Fast QR-kode til betalingssiden" style="width: min(220px, 60vw); height: auto; image-rendering: pixelated; background: #fff; border-radius: var(--radius-md);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="printer" on-click="{{ utFastSkrivUt }}" hint-size="auto,38px">Skriv ut</x-import>
+                  </div>
+                </sc-if>
+
                 <sc-if value="{{ utQrVenter }}" hint-placeholder-val="{{ false }}">
                   <div style="font-size: var(--text-sm); color: var(--text-muted);">Lager koden …</div>
                 </sc-if>
@@ -15380,6 +15440,10 @@ class Component extends DCLogic {
       { sti: '/personvern',    side: 'personvern' },
       { sti: '/vilkar',        side: 'vilkar' },
       { sti: '/betaling',      side: 'vipps' },
+      // Bak den faste QR-koden ved disken. Kort adresse med vilje: den skal
+      // kunne leses hoyt over en benk, og koden blir mindre og skanner
+      // raskere jo faerre tegn den baerer.
+      { sti: '/betal',         side: 'betal' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
       { sti: '/admin',              side: 'adminoversikt' },
@@ -29043,6 +29107,42 @@ class Component extends DCLogic {
               utSalgBeskjed: 'Fikk ikke tegnet koden. Prøv igjen.',
             }));
           },
+          // ── Den faste koden til disken ───────────────────────────────
+          //
+          // Én kode, én gang, hengt opp. Den peker paa /betal, der kunden
+          // velger hva det gjelder og skriver beloepet selv. Ingen ny
+          // tillatelse hos Vipps, og ingenting aa gjore i portalen.
+          //
+          // Vipps sin egen faste kode ville hatt en landingsside med
+          // Hurtigkasse — et annet produkt enn ePayment som nettsida bruker.
+          utFastVis: !!this.state.utFastQr,
+          utFastBilde: this.state.utFastQr || '',
+          utFastAdresse: (typeof window !== 'undefined' ? window.location.origin : '') + '/betal',
+          utFastLag: () => {
+            if (this.state.utFastQr) { this.setState({ utFastQr: null }); return; }
+            this.qrBilde(window.location.origin + '/betal')
+              .then(b2 => this.setState({ utFastQr: b2 }))
+              .catch(() => this.setState({ utSalgBeskjed: 'Fikk ikke tegnet koden.' }));
+          },
+          // Utskrift i et eget vindu. Skrev vi ut sida slik den staar, kom
+          // hele kassa med — menyen, dagens salg og alt annet.
+          utFastSkrivUt: () => {
+            const bilde = this.state.utFastQr;
+            if (!bilde) return;
+            const v = window.open('', '_blank', 'width=560,height=760');
+            if (!v) { this.setState({ utSalgBeskjed: 'Nettleseren blokkerte utskriftsvinduet.' }); return; }
+            v.document.write('<!doctype html><meta charset="utf-8"><title>Betal hos Lissom</title>'
+              + '<style>body{margin:0;font-family:system-ui,sans-serif;text-align:center;padding:48px 32px;color:#2e1002}'
+              + 'h1{font-size:28px;margin:0 0 8px}p{margin:0 0 28px;font-size:16px;color:#6b5a50}'
+              + 'img{width:min(420px,90vw);image-rendering:pixelated}'
+              + 'small{display:block;margin-top:24px;font-size:14px;color:#6b5a50}</style>'
+              + '<h1>Betal med Vipps</h1><p>Skann koden med kameraet på telefonen.</p>'
+              + '<img src="' + bilde + '" alt="">'
+              + '<small>lissom.no/betal</small>');
+            v.document.close();
+            v.focus();
+            setTimeout(() => v.print(), 300);
+          },
           utQrVises: !!this.state.utQr,
           utQrVenter: !!this.state.utQrVenter,
           utQrBilde: (this.state.utQr || {}).bilde || '',
@@ -32962,6 +33062,65 @@ class Component extends DCLogic {
       erSporsmal: side === 'sporsmal',
       erKasse: side === 'kasse',
       erVipps: side === 'vipps',
+      erBetal: side === 'betal',
+      ...(() => {
+        const slag = this.state.btSlag || 'produkt';
+        const navn = { kurs: 'Kurs', medlemskap: 'Medlemskap', produkt: 'Butikk' };
+        return {
+          btSlagValg: ['kurs', 'medlemskap', 'produkt'].map(v => ({
+            navn: navn[v],
+            velg: () => this.setState({ btSlag: v, btBeskjed: '' }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+              padding: '9px 18px', font: 'var(--type-body-sm)', fontWeight: 700,
+              border: '1.5px solid ' + (slag === v ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: slag === v ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: slag === v ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
+          btEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600,
+                       color: 'var(--text-heading)', marginBottom: 8 },
+          btFeltStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-md)', padding: '12px 14px', font: 'var(--type-body)',
+                        background: 'var(--clay-50)', color: 'var(--text-heading)' },
+          // Beloepet er det viktigste paa sida, og det skrives med tommelen
+          // paa en telefon. Da skal det vaere stort.
+          btBelopStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
+                         borderRadius: 'var(--radius-md)', padding: '14px 16px',
+                         fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-2xl)',
+                         background: 'var(--clay-50)', color: 'var(--text-heading)' },
+          btBelop: this.state.btBelop || '',
+          settBtBelop: e => this.setState({ btBelop: e.target.value, btBeskjed: '' }),
+          btNavn: this.state.btNavn || '',
+          settBtNavn: e => this.setState({ btNavn: e.target.value }),
+          btJobber: !!this.state.btJobber,
+          btKnapp: this.state.btJobber ? 'Sender deg til Vipps …' : 'Betal med Vipps',
+          btBeskjed: this.state.btBeskjed || '',
+          btHarBeskjed: !!this.state.btBeskjed,
+          btBetal: () => {
+            const raa = String(this.state.btBelop || '').trim();
+            if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
+              this.setState({ btBeskjed: 'Skriv inn beløpet du skal betale.' });
+              return;
+            }
+            if (this.state.btJobber) return;
+            this.setState({ btJobber: true, btBeskjed: '' });
+            fetch('/api/betal.php', {
+              method: 'POST', credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ slag: slag, belop: raa, navn: (this.state.btNavn || '').trim() }),
+            })
+              .then(r => r.json())
+              .then(d => {
+                if (d && d.ok && d.url) { window.location.href = d.url; return; }
+                this.setState({ btJobber: false,
+                                btBeskjed: (d && d.feil) || 'Fikk ikke startet betalingen.' });
+              })
+              .catch(() => this.setState({ btJobber: false,
+                                           btBeskjed: 'Fikk ikke kontakt med serveren.' }));
+          },
+        };
+      })(),
       goVipps: this.go('vipps'),
       vippsSteg: [
         { nr: '1', h: 'Du velger Vipps', p: 'Nettsiden oppretter en betaling gjennom Vipps sitt ePayment API og sender deg videre.' },

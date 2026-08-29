@@ -2652,6 +2652,38 @@ sjekk('… og naar koden lukkes', str_contains($sida2, 'utQrLukk: () => { this.u
 sjekk('uttakKall gir svaret tilbake uten aa velte de andre',
     str_contains($sida2, 'return ok ? d : false;'));
 
+// ── Fast QR til disken ─────────────────────────────────────────────────
+//
+// Vipps sin egen faste kode vil ha en landingsside med Hurtigkasse — Vipps
+// Checkout, et annet produkt enn ePayment som nettsida bruker. /betal gjor
+// det samme med det vi alt har.
+$betalFil = file_get_contents(dirname(__DIR__) . '/api/betal.php');
+sjekk('betalingssida har sitt eget endepunkt', is_file(dirname(__DIR__) . '/api/betal.php'));
+// Kunden staar i doera. Et passord der er én ting for mye.
+sjekk('den krever ingen innlogging', !str_contains($betalFil, 'krev_admin()')
+    && !str_contains($betalFil, 'Sesjon::krevMedlem'));
+// Beloepet kommer fra nettleseren her, og bare her. Grensa per IP er det som
+// staar imot soppel — det finnes ingen pris aa jukse med.
+sjekk('den har en grense per IP', str_contains($betalFil, "Rate::sjekk('betal'"));
+sjekk('den godtar ikke null eller smaabeloep',
+    str_contains($betalFil, 'if ($sum < Vipps::MINSTE_BELOP_ORE) {'));
+sjekk('… og ikke urimelig store', str_contains($betalFil, 'if ($sum > 10000000) {'));
+sjekk('den bruker den vanlige betalingen, ikke kravet',
+    str_contains($betalFil, 'Vipps::opprettBetaling(')
+    && !str_contains($betalFil, 'true' . "\n" . '    );'));
+sjekk('ordren ryddes bort naar betalingen ikke ble noe av',
+    substr_count($betalFil, 'DELETE FROM orders WHERE id = :o') === 2);
+sjekk('salget staar som «ny» til pengene er inne',
+    str_contains($betalFil, "'status'       => 'ny',"));
+sjekk('sida har sin egen adresse', str_contains($sida2, "{ sti: '/betal',         side: 'betal' },"));
+sjekk('sida er koblet opp', str_contains($sida2, "erBetal: side === 'betal',")
+    && str_contains($sida2, 'btBetal: () => {'));
+sjekk('kassa kan vise den faste koden',
+    str_contains($sida2, 'utFastLag:') && str_contains($sida2, '{{ utFastBilde }}'));
+// Skrev vi ut sida slik den staar, kom hele kassa med.
+sjekk('utskriften tar bare koden, ikke hele kassa',
+    str_contains($sida2, "utFastSkrivUt:") && str_contains($sida2, "window.open('', '_blank'"));
+
 // ── Vippskrav i den raske ruta ─────────────────────────────────────────
 //
 // Den enkle boksen nederst i deltakerlista tok navn, telefon og Vipps/Kontant.

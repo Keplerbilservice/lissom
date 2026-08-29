@@ -456,6 +456,21 @@ erstatning for kravet — be Vipps om `PUSH_MESSAGE` likevel.
 Koden lages av `vendor/qrcode-2.0.4.js` (Kazuhiko Arase, MIT), lagt hos oss
 som React-filene og lastet først når en kode skal vises.
 
+**Og en fast kode til disken, 29. august.** Eieren ville ha én kode å henge
+opp. Vipps-portalen kan lage en, men den vil ha en landingsside med
+Hurtigkasse — Vipps Checkout, et annet produkt enn ePayment som nettsida
+bruker. Vi har ingen slik side.
+
+`/betal` gjør det samme med det vi har: kunden velger Kurs, Medlemskap eller
+Butikk, skriver beløpet, og betaler med Vipps. Salget står som venter til
+pengene er inne, og havner i kassa som alt annet. Koden hentes fram under
+Kassa → «Fast kode til disken», med utskrift.
+
+Beløpet kommer fra nettleseren her, og bare her. Overalt ellers regnes summen
+av databasen — men her finnes ingen pris å jukse med: kunden bestemmer selv
+hva hun skal betale. Mot søppel står en grense per IP, og beløpet må være
+mellom én krone og 100 000.
+
 ### 12. Video på kurs
 
 Ikke bygget. Feltet i veiviseren sier fra at det ikke er koblet opp. Film på

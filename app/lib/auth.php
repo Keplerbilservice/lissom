@@ -21,7 +21,7 @@ function krev_medlem(): array
  * Vipps Login forteller hvem noen er. Det sier ingenting om at de skal ha
  * tilgang til verkstedet, døra eller de interne kursene. Alle som logger inn
  * får en rad i members med status «ingen»; medlem blir man først når
- * verkstedet har godkjent en søknad.
+ * verkstedet har tatt dem opp som medlem.
  *
  * @return array<string,mixed>
  */
@@ -29,7 +29,7 @@ function krev_aktivt_medlem(): array
 {
     $m = krev_medlem();
     if (!er_aktivt_medlem($m)) {
-        Svar::feil('Denne delen er for medlemmer. Send en søknad fra Min side, så ser vi på den.', 403, ['ikkeMedlem' => true]);
+        Svar::feil('Denne delen er for medlemmer. Du melder deg inn fra Min side.', 403, ['ikkeMedlem' => true]);
     }
     return $m;
 }

@@ -1675,6 +1675,28 @@ sjekk('en booket aapningstid kommer med likevel',
 sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
     str_contains($icsFil, '$utenLedige = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')'));
 
+// ── Adressen foelger navnet ──────────────────────────────────────────────
+//
+// Kurset het «Kurs boller» og fikk navnet «Lag din egen bolle» i 087.
+// Adressen sto igjen som «kurs-boller» med vilje den gangen — gamle lenker
+// skulle virke. Eieren 29. august: adressen skal foelge navnet.
+//
+// «courses.slug» er unik, og kladden 091 satte til side holder fortsatt paa
+// «lag-din-egen-bolle». Settes den nye adressen for den gamle raden har
+// sluppet den, feiler hele migrasjonen paa den unike noekkelen.
+$m92 = file_get_contents(dirname(__DIR__) . '/db/migrations/092_bolleadressen.sql');
+sjekk('kladden slipper adressen for det publiserte kurset tar den',
+    strpos($m92, "SET slug = ''lag-din-egen-bolle-gammel''")
+    < strpos($m92, "SET slug = ''lag-din-egen-bolle'' WHERE id = @kurs"));
+// Er adressen opptatt av noe annet, skal migrasjonen la vaere.
+sjekk('adressen flyttes bare naar den er ledig',
+    str_contains($m92, 'IF(@kurs IS NOT NULL AND @opptatt = 0,'));
+sjekk('slug er unik, saa to kurs ikke kan dele adresse',
+    (int) DB::verdi(
+        "SELECT COUNT(*) FROM information_schema.statistics
+          WHERE table_schema = DATABASE() AND table_name = 'courses'
+            AND index_name = 'uq_courses_slug' AND non_unique = 0") > 0);
+
 // ── Webp-tvillingen til originalen ───────────────────────────────────────
 //
 // .htaccess serverer «bilde.jpg.webp» til nettlesere som ber om webp, paa

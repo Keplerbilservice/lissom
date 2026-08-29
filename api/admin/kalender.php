@@ -92,7 +92,9 @@ if ($oktIder !== []) {
     foreach (DB::alle(
         "SELECT b.id, b.course_session_id, b.member_id, b.status, b.antall,
                 b.created_at, {$allergi} AS merknad,
-                COALESCE(m.navn, b.gjest_navn) AS navn
+                COALESCE(m.navn, b.gjest_navn) AS navn,
+                COALESCE(m.epost, b.gjest_epost) AS epost,
+                COALESCE(m.telefon, b.gjest_telefon) AS telefon
            FROM bookings b
       LEFT JOIN members m ON m.id = b.member_id
           WHERE b.course_session_id IN ({$inn})
@@ -224,6 +226,12 @@ foreach ($okter as $o) {
             'medlemId'  => $b['member_id'] !== null ? (int) $b['member_id'] : 0,
             'gjest'     => $b['member_id'] === null,
             'bookingId' => (int) $b['id'],
+            // Kontaktopplysningene, saa deltakerruta kan vise dem framfor aa
+            // regne dem ut av navnet. Den gjorde noeyaktig det: «kari.nordmann
+            // @epost.no» og et telefonnummer laget av lengden paa navnet.
+            // Ringte noen det nummeret, ringte de en fremmed.
+            'epost'     => trim((string) ($b['epost'] ?? '')),
+            'tlf'       => trim((string) ($b['telefon'] ?? '')),
         ];
     }
 

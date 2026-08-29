@@ -1573,6 +1573,34 @@ sjekk('trykk paa en dag i stripa gaar til dagen',
 sjekk('en tom dag i stripa gjor ingenting',
     str_contains($sida, "if (!(d.poster || []).length) return;"));
 
+// ── Fase 6: ingen oppdiktede data, og ingen dubletter ────────────────────
+//
+// Kalenderen henter tre maaneder — den vi tegner, og naboene — og hvert svar
+// er utvidet med en uke i hver ende. Da kommer samme okt i to av svarene, og
+// for laa de begge i lista: 138 hendelser der 86 var unike, og bollekurset
+// 3. september sto to ganger paa skjermen.
+sjekk('kalenderen teller hver okt én gang',
+    str_contains($sida, 'const alleredeMed = {};')
+    && str_contains($sida, 'if (alleredeMed[id]) return;'));
+
+// Deltakerruta regnet e-post og telefon ut av navnet: «kari.nordmann@epost.no»
+// og et nummer laget av lengden paa navnet. Det saa ekte ut, og var det ikke.
+sjekk('deltakerruta dikter ikke opp e-post og telefon',
+    !str_contains($sida, "'@epost.no' : ''")
+    && !str_contains($sida, "tlf: '+47 9' + String("));
+sjekk('kontaktopplysningene kommer fra paameldingen',
+    str_contains($kalFil, "COALESCE(m.epost, b.gjest_epost) AS epost")
+    && str_contains($kalFil, "COALESCE(m.telefon, b.gjest_telefon) AS telefon"));
+// Og «beskjeden er sendt» sto der uten at noe forlot nettleseren.
+sjekk('beskjed til en deltaker sendes faktisk',
+    str_contains($sida, "this.klKall('/api/admin/beskjed.php', {\n                  til: 'en'"));
+sjekk('beskjed til en kursholder sendes faktisk',
+    str_contains($sida, "til: 'en', navn: hNavn, epost: ep, telefon: tlf"));
+// Kalenderen har ingen egne skriveregler: den sender til endepunktene som
+// alt finnes, og henter maaneden paa nytt etterpaa.
+sjekk('kalenderen skriver gjennom endepunktene som finnes',
+    str_contains($sida, 'klKall(sti, kropp) {') && str_contains($sida, 'klFrisk() {'));
+
 // ── Kalenderskjermen paa telefon ─────────────────────────────────────────
 //
 // Skjermen kom fra designfila og hadde sin egen sidemeny: feil sti til logoen,

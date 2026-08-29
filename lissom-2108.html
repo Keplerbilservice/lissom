@@ -22355,6 +22355,62 @@ class Component extends DCLogic {
     });
   }
 
+  /**
+   * En endring fra kalenderen.
+   *
+   * Kalenderen har ingen egne skriveregler. Den sender til de endepunktene
+   * som alt finnes — kurs.php for datoene, pamelding.php for deltakerne,
+   * venteliste.php for koen — saa det er ett sted som vet hva som skjer naar
+   * en dato med fem paameldte flyttes. Hadde kalenderen skrevet selv, ville
+   * to steder hatt hver sine regler, og de to ville kommet i utakt.
+   *
+   * Etterpaa hentes maaneden paa nytt. Uten det ville skjermen vist det den
+   * trodde, ikke det som faktisk staar i basen — og den forskjellen oppdager
+   * man forst dagen noe gikk galt.
+   */
+  klKall(sti, kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._klLagrer) return Promise.resolve(false);
+    this._klLagrer = true;
+
+    return fetch(sti, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        this._klLagrer = false;
+        this.setState({
+          kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        });
+        if (ok) {
+          this.klFrisk();
+          this._adminHentes = false;
+          this.hentAdmin();
+        }
+        return ok;
+      })
+      .catch(() => {
+        this._klLagrer = false;
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
+  }
+
+  /**
+   * Glemmer maanedene som er hentet, saa kalenderen tegnes av basen paa nytt.
+   *
+   * Grovt med vilje: en flytting kan treffe to maaneder, en avlysing kan
+   * endre ventelista, og en ny dato kan komme hvor som helst. Ett kall til er
+   * billigere enn en skjerm som viser noe annet enn det som staar.
+   */
+  klFrisk() {
+    this.setState({ kalHentet: {}, kalHendelser: {} });
+  }
+
   klTypeInfo() {
     return {
       kurs: { navn: 'Kurs', bg: 'var(--lissom-yellow)', fg: 'var(--lissom-brown)' },
@@ -22436,12 +22492,29 @@ class Component extends DCLogic {
    * bekrefter.
    */
   klAlle(y, m) {
+    // Tre maaneder: den vi tegner, og naboene. Maanedsrutenettet viser dagene
+    // i uka som gaar over skiftet, og de hoerer til begge.
+    //
+    // Hvert svar er dessuten utvidet med en uke i hver ende — kalenderen skal
+    // kunne tegne kanten av en maaned uten et kall til. Det gjor at samme okt
+    // kommer i to av svarene, og for laa de begge i lista: en dato tidlig i
+    // september sto to ganger, én gang fra augustsvaret og én fra
+    // septembersvaret. 138 hendelser der 86 var unike.
+    //
+    // Derfor telles hver okt én gang, paa id. Overlappet er med vilje; det er
+    // sammenslaaingen som maa vite om det.
     let evts = [];
+    const alleredeMed = {};
     for (let k = -1; k <= 1; k++) {
       const dd = new Date(y, m + k, 1);
       const nokkel = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0');
       this.klHent(dd.getFullYear(), dd.getMonth());
-      evts = evts.concat((this.state.kalHendelser || {})[nokkel] || []);
+      ((this.state.kalHendelser || {})[nokkel] || []).forEach(e => {
+        const id = String(e.id);
+        if (alleredeMed[id]) return;
+        alleredeMed[id] = true;
+        evts.push(e);
+      });
     }
     // Fase 5: bare det som staar i basen tegnes. Lagene under blir staaende
     // i koden fordi de er det optimistiske svaret fase 6 skal bruke — men de
@@ -23019,17 +23092,41 @@ class Component extends DCLogic {
           })(),
           ...(() => {
             const dv = this.state.klDeltakerVis;
-            const dEpost = dv ? dv.navn.toLowerCase().replace(/ /g, '.').replace(/[^a-z.]/g, '') + '@epost.no' : '';
+            // E-posten og telefonnummeret sto her som en utregning av navnet:
+            // «kari.nordmann@epost.no» og et nummer laget av lengden paa
+            // navnet. Det saa ekte ut, og var det ikke — ringte noen det
+            // nummeret, ringte de en fremmed. Naa kommer begge fra
+            // paameldingen, og staar tomme naar de faktisk mangler.
             return {
               klDeltakerVises: !!dv,
               klDeltakerHarMerknad: !!(dv && dv.merknad),
-              klDeltaker: dv ? { navn: dv.navn, status: dv.status, merknad: dv.merknad || '', okt: dv.okt, tid: dv.tid, epost: dEpost, tlf: '+47 9' + String((dv.navn.length * 731) % 10000000).padStart(7, '0').replace(/(\d{2})(\d{2})(\d{3})/, '$1 $2 $3') } : { navn: '', status: '', okt: '', tid: '', epost: '', tlf: '' },
+              klDeltaker: dv
+                ? { navn: dv.navn, status: dv.status, merknad: dv.merknad || '', okt: dv.okt, tid: dv.tid,
+                    epost: dv.epost || 'Ikke oppgitt', tlf: dv.tlf || 'Ikke oppgitt' }
+                : { navn: '', status: '', okt: '', tid: '', epost: '', tlf: '' },
               klDeltakerLukk: () => this.setState({ klDeltakerVis: null }),
               klDBeskjed: this.state.klDBeskjed || '',
               settKlDBeskjed: e => this.setState({ klDBeskjed: e.target.value }),
-              klDSend: () => { if ((this.state.klDBeskjed || '').trim() && dv) this.setState({ klDSendtTil: dv.navn, klDBeskjed: '' }); },
+              // Beskjeden gaar til det samme endepunktet som «Send beskjed»
+              // under Paameldte. Foer sa ruta at den var sendt paa SMS og
+              // e-post uten at noe forlot nettleseren.
+              klDSend: () => {
+                const tekst = (this.state.klDBeskjed || '').trim();
+                if (!tekst || !dv) return;
+                if (!dv.epost && !dv.tlf) {
+                  this.setState({ kvittering: 'Ble ikke sendt',
+                                  kvitteringDetalj: dv.navn + ' har verken e-post eller telefon på påmeldingen.' });
+                  return;
+                }
+                this.klKall('/api/admin/beskjed.php', {
+                  til: 'en', navn: dv.navn, epost: dv.epost || '', telefon: dv.tlf || '',
+                  tekst: tekst, ogsaaSms: !!dv.tlf,
+                }).then(ok => { if (ok) this.setState({ klDSendtTil: dv.navn, klDBeskjed: '' }); });
+              },
               klDSendt: !!dv && this.state.klDSendtTil === dv.navn,
-              klDSendtTekst: dv ? 'Beskjeden er sendt til ' + dv.navn + ' på SMS og e-post.' : '',
+              klDSendtTekst: dv
+                ? 'Beskjeden er sendt til ' + dv.navn + (dv.tlf ? ' på SMS og e-post.' : ' på e-post.')
+                : '',
             };
           })(),
           klHolderVises: !!hProfil,
@@ -23039,9 +23136,24 @@ class Component extends DCLogic {
           klHolderOkterTom: hProfil ? dagensAlle.filter(e => e.holder === hNavn && e.type !== 'verksted' && e.type !== 'vakt').length === 0 : true,
           klHBeskjed: this.state.klHBeskjed || '',
           settKlHBeskjed: e => this.setState({ klHBeskjed: e.target.value }),
-          klHSend: () => { if ((this.state.klHBeskjed || '').trim()) this.setState({ klHSendtTil: hNavn, klHBeskjed: '' }); },
+          // Til kursholderen, paa adressen som staar i registeret. Ruta sa
+          // «sendt paa SMS og e-post» uten at noe ble sendt.
+          klHSend: () => {
+            const tekst = (this.state.klHBeskjed || '').trim();
+            if (!tekst || !hNavn) return;
+            const ep = (hReg && hReg.epost) || '', tlf = (hReg && hReg.telefon) || '';
+            if (!ep && !tlf) {
+              this.setState({ kvittering: 'Ble ikke sendt',
+                              kvitteringDetalj: hNavn + ' har verken e-post eller telefon i kursholderregisteret.' });
+              return;
+            }
+            this.klKall('/api/admin/beskjed.php', {
+              til: 'en', navn: hNavn, epost: ep, telefon: tlf, tekst: tekst, ogsaaSms: !!tlf,
+            }).then(ok => { if (ok) this.setState({ klHSendtTil: hNavn, klHBeskjed: '' }); });
+          },
           klHSendt: !!hNavn && this.state.klHSendtTil === hNavn,
-          klHSendtTekst: 'Beskjeden er sendt til ' + hNavn + ' på SMS og e-post.',
+          klHSendtTekst: 'Beskjeden er sendt til ' + hNavn
+            + ((hReg && hReg.telefon) ? ' på SMS og e-post.' : ' på e-post.'),
         };
       })(),
       klHarValgt: !!valgt,
@@ -23061,7 +23173,7 @@ class Component extends DCLogic {
         harKap: !!valgt.kap,
         kapTekst: valgt.pameldt + ' av ' + valgt.kap + ' plasser',
         beleggStil: { width: pct + '%', height: '8px', borderRadius: '4px', background: pct >= 100 ? 'var(--terracotta-500)' : 'var(--sage-500)' },
-        deltakere: valgt.deltakere.map(p => ({ navn: p.navn, status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status, ny: !!p.ny, velg: () => this.setState({ klDeltakerVis: { navn: p.navn, status: p.status, merknad: p.merknad || '', okt: valgt.tittel, tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : '') + ' · ' + valgt.dato }, klDBeskjed: '', klDSendtTil: null }) })),
+        deltakere: valgt.deltakere.map(p => ({ navn: p.navn, status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status, ny: !!p.ny, velg: () => this.setState({ klDeltakerVis: { navn: p.navn, status: p.status, merknad: p.merknad || '', okt: valgt.tittel, tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : '') + ' · ' + valgt.dato, epost: p.epost || '', tlf: p.tlf || '', bookingId: p.bookingId || 0, medlemId: p.medlemId || 0, oktId: valgt.oktId || 0 }, klDBeskjed: '', klDSendtTil: null }) })),
         ingenDeltakere: !!valgt.kap && valgt.deltakere.length === 0,
         harVenteliste: valgt.venteliste.length > 0,
         venteliste: valgt.venteliste.map(v => ({ navn: v.navn, pos: '#' + v.posisjon, erVarslet: !!varslet[valgt.id + v.navn], ikkeVarslet: !varslet[valgt.id + v.navn], tilby: () => this.setState(s => ({ klVarslet: Object.assign({}, s.klVarslet, { [valgt.id + v.navn]: true }) })) })),

@@ -197,21 +197,28 @@ final class Kursmal
         // Kurs med et eget navn i bestillingen. De arver malen for temaet og
         // retter det som er saerskilt for dem — saa «to boller» ikke blir
         // «ditt eget arbeid».
+        // Bollekurset heter «Lag din egen bolle» fra migrasjon 087. Begge
+        // navnene staar: kjores koden for migrasjonen — og det gjor den, de
+        // legges ut hver for seg — ville kurset ellers mistet teksten sin i
+        // mellomtiden og staatt med den generelle plateteknikk-malen.
+        $bolle = [
+            'kortBeskrivelse' => 'Lag to fine og personlige boller i keramikk. Et hyggelig kurs for '
+                . 'deg som vil prøve plateteknikk og skape noe du faktisk kan bruke hjemme.',
+            'beskrivelse'     => "Bli med på en rolig og kreativ stund med leire mellom hendene. På "
+                . "dette kurset lager du to egne boller ved hjelp av plateteknikk. Du trenger ingen "
+                . "erfaring fra før, og du får veiledning gjennom hele prosessen.\n\nDu velger selv "
+                . "uttrykk, form og dekor, slik at bollene blir akkurat så personlige som du ønsker. "
+                . "Her er det rom for å prøve seg frem, senke skuldrene og kose seg med den kreative "
+                . "prosessen.",
+            'laerer'          => self::PLATE . 'bollene.',
+            'lagerDu'         => 'To personlige boller i keramikk.',
+            'medHjem'         => 'Du får med deg de to bollene du lager. Vi glaserer og brenner dem '
+                . 'for deg. ' . self::HENTING,
+        ];
+
         $egne = [
-            'Kurs boller' => [
-                'kortBeskrivelse' => 'Lag to fine og personlige boller i keramikk. Et hyggelig kurs for '
-                    . 'deg som vil prøve plateteknikk og skape noe du faktisk kan bruke hjemme.',
-                'beskrivelse'     => "Bli med på en rolig og kreativ stund med leire mellom hendene. På "
-                    . "dette kurset lager du to egne boller ved hjelp av plateteknikk. Du trenger ingen "
-                    . "erfaring fra før, og du får veiledning gjennom hele prosessen.\n\nDu velger selv "
-                    . "uttrykk, form og dekor, slik at bollene blir akkurat så personlige som du ønsker. "
-                    . "Her er det rom for å prøve seg frem, senke skuldrene og kose seg med den kreative "
-                    . "prosessen.",
-                'laerer'          => self::PLATE . 'bollene.',
-                'lagerDu'         => 'To personlige boller i keramikk.',
-                'medHjem'         => 'Du får med deg de to bollene du lager. Vi glaserer og brenner dem '
-                    . 'for deg. ' . self::HENTING,
-            ],
+            'Lag din egen bolle' => $bolle,
+            'Kurs boller'        => $bolle,
             'Store fat kurs' => [
                 'kortBeskrivelse' => 'Lag et stort og personlig keramikkfat med ditt eget uttrykk. Vi '
                     . 'bruker plateteknikk og dekor for å skape et fat du kan glede deg over hjemme.',

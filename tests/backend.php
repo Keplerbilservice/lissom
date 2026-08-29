@@ -85,7 +85,20 @@ sjekk('Paint on Pots: gratis plass henger sammen med betaling i verkstedet',
 $test = DB::en("SELECT status FROM courses WHERE slug='testkurs'");
 sjekk('testkurset er ute av sirkulasjon', $test === null || $test['status'] === 'avlyst', $test['status'] ?? 'slettet');
 $boller = DB::en("SELECT tema FROM courses WHERE slug='kurs-boller'");
-sjekk('Kurs boller har tema Plateteknikk', $boller['tema'] === 'Plateteknikk', $boller['tema']);
+sjekk('bollekurset har tema Plateteknikk', $boller['tema'] === 'Plateteknikk', $boller['tema']);
+// Nytt navn fra migrasjon 087, og slugen staar: /kurs/kurs-boller er delt i
+// e-poster og indeksert av Google.
+$bTittel = DB::verdi("SELECT tittel FROM courses WHERE slug='kurs-boller'");
+sjekk('bollekurset heter «Lag din egen bolle»', $bTittel === 'Lag din egen bolle', (string) $bTittel);
+// Kursteksten henger paa navnet. Byttes det ene uten det andre, faller
+// kurssida tilbake paa den generelle plateteknikk-malen.
+$malFil = file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php');
+sjekk('kursteksten folger med det nye navnet',
+    str_contains($malFil, "'Lag din egen bolle' => \$bolle,")
+    && str_contains($malFil, "'Kurs boller'        => \$bolle,"));
+sjekk('bollekurset beholder sin egen tekst etter navnebyttet',
+    Kursmal::forKurs(['tittel' => 'Lag din egen bolle', 'tema' => 'Plateteknikk'])['lagerDu']
+        === 'To personlige boller i keramikk.');
 $dropin = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='drop-in'");
 // Antallet varierer: apningstidene i admin lager nye okter framover, og
 // «lag ut okter» rydder bort gamle uten paameldte. Det som betyr noe er at

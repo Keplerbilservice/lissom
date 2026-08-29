@@ -84,6 +84,28 @@ foreach (glob($rot . '/*.jpg') ?: [] as $sti) {
         $laget += 2;
     }
 
+    // Webp-tvillingen til originalen.
+    //
+    // Skriptet laget den bare for de nedskalerte utgavene. De fleste
+    // originalene hadde likevel en «.jpg.webp» ved siden av seg — laget en
+    // gang for haand — men ikke alle: «assets_photos_butikken.jpg» og
+    // «uploads_kepler-kopp.jpg» sto igjen som ren jpeg, og .htaccess hadde
+    // ingenting aa servere. Butikkbildet paa forsida ble derfor sendt som
+    // 69 kB jpeg til nettlesere som gjerne ville hatt 45 kB webp.
+    //
+    // Verre enn de to kilobytene: det neste bildet noen laster opp ville
+    // havnet i samme hull. Naa lages den her, saa lista ikke kan sprike.
+    // «delingsbilde» staar i HOPP og roeres ikke — den skal vaere ren jpeg.
+    $tvilling = $sti . '.webp';
+    if (!is_file($tvilling) || filemtime($tvilling) < filemtime($sti)) {
+        $im = @imagecreatefromjpeg($sti);
+        if ($im !== false) {
+            imagewebp($im, $tvilling, 78);
+            imagedestroy($im);
+            $laget++;
+        }
+    }
+
     $har[] = $bredde;
     $kart[$navn] = $har;
 }

@@ -1675,6 +1675,34 @@ sjekk('en booket aapningstid kommer med likevel',
 sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
     str_contains($icsFil, '$utenLedige = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')'));
 
+// ── Webp-tvillingen til originalen ───────────────────────────────────────
+//
+// .htaccess serverer «bilde.jpg.webp» til nettlesere som ber om webp, paa
+// den samme .jpg-adressen. Skriptet laget den tvillingen bare for de
+// nedskalerte utgavene; originalene hadde stort sett fatt sin en gang for
+// haand, men to sto igjen som ren jpeg — og da hadde .htaccess ingenting aa
+// servere. Verre enn de kilobytene: det neste bildet noen laster opp ville
+// havnet i samme hull.
+$bildFil = file_get_contents(dirname(__DIR__) . '/bin/bilder.php');
+sjekk('bildeskriptet lager webp ogsaa for originalen',
+    str_contains($bildFil, "\$tvilling = \$sti . '.webp';")
+    && str_contains($bildFil, 'imagewebp($im, $tvilling, 78);'));
+// «delingsbilde» skal vaere ren jpeg: Facebook, LinkedIn og WhatsApp henter
+// den, og flere av dem viser ingenting om de faar webp paa .jpg-adressen.
+sjekk('delingsbildet holdes utenfor', str_contains($bildFil, "'delingsbilde'];"));
+// Alle fotografiene har en tvilling naa, bortsett fra det ene.
+sjekk('bare delingsbildet mangler en webp-tvilling', (static function (): bool {
+    foreach (glob(dirname(__DIR__) . '/*.jpg') ?: [] as $sti) {
+        if (str_starts_with(basename($sti), 'delingsbilde')) {
+            continue;
+        }
+        if (!is_file($sti . '.webp')) {
+            return false;
+        }
+    }
+    return true;
+})());
+
 // ── En ledig tid gjor ingen opptatt ──────────────────────────────────────
 //
 // Eieren: «jeg vil at Paint on Pots skal vaere mulig aa booke naar det er

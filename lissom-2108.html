@@ -28597,6 +28597,23 @@ class Component extends DCLogic {
         // gaar dit.
 
         const ubetalte = deltakere.filter(x => x.status !== 'Betalt').length;
+        // Koene ingen sto vakt over. Tallene kommer fra api/admin/oversikt.php
+        // — ikke regnet ut her, saa kortet og skjermen ikke kan si hver sin
+        // ting. Er endepunktet ikke svart ennaa, er de null, og kortene staar
+        // ikke.
+        // Tallene er serverens, ikke regnet ut her. Kortet «Internbutikk»
+        // paa Medlemmer teller de samme radene fra lista i nettleseren; det
+        // er de samme radene i basen, og serveren er den som vet dem uten aa
+        // vente paa et eget oppslag. Svarer ikke endepunktet, staar kortene
+        // ikke — et kort med feil tall er verre enn ingen kort.
+        const koer = (this.state.adminData || {}).koer || {};
+        // Dagens salg, ferdig formatert av serveren. Tomt naar ingenting er
+        // solgt — «kr. 0,-» paa kortet ser ut som en feil, ikke som en rolig
+        // formiddag.
+        const kasseRaa = ((this.state.adminData || {}).omsetning || {}).idag || '';
+        const kasseIdag = /[1-9]/.test(kasseRaa) ? kasseRaa : '';
+        const tilGodkjenning = koer.medlemsvarer || 0;
+        const frysVenter = koer.frys || 0;
         // Oekter i dag, til kortet som aapner kalenderen. Samme kilde som
         // programmet rett over — to steder skal ikke telle hver sin sannhet.
         const oktIdag = (() => {
@@ -28711,8 +28728,16 @@ class Component extends DCLogic {
                    nrNotat: '', nrOkt: '', nrAntall: '', nrBelop: '',
                  })),
 
+            // Kortet sa hva kassa er, ikke hva som har skjedd i den. Dagens
+            // tall staar i teksten og ikke i merket: det er kroner, og et
+            // beloep i en tallboks ved siden av «3» paa ventelista leses som
+            // antall. Summen er den samme som «I dag» i omsetningen lenger
+            // nede — ett tall, ett sted det regnes ut.
             kort('Kasse',
-                 'Salg over disk: beløp, kontant eller Vipps, og om det var kurs, '
+                 (kasseIdag
+                    ? 'Solgt for ' + kasseIdag + ' i dag. '
+                    : 'Ingen salg over disk i dag ennå. ')
+                 + 'Beløp, kontant eller Vipps, og om det var kurs, '
                  + 'medlemskap eller en ting fra hylla. Går rett i regnskapet.',
                  null, 'Åpne kassa',
                  () => this.gaaAdmin('adminuttak', {
@@ -28795,6 +28820,35 @@ class Component extends DCLogic {
                                  : soknader2 + ' søknader venter på svar.',
                  soknader2, 'Behandle dem',
                  () => this.gaaAdmin('adminmedlemssoknader', {}))] : []),
+
+            // ── To koer ingen sto vakt over ───────────────────────────
+            //
+            // Et medlem som har lagt en gjenstand ut for salg staar og venter
+            // paa aa bli godkjent, og varen ligger ute av butikken saa lenge.
+            // Godkjenningen laa under Butikk → Internbutikk, og hadde ingen
+            // vei fra Oversikt: man maatte vite at den fantes for aa gaa og
+            // se etter. Det samme gjaldt soknadene om aa fryse
+            // medlemskapet — de ligger paa medlemsskjermen.
+            //
+            // Samme regel som ventelista: kortet staar bare naar noe venter.
+            ...(tilGodkjenning ? [kort('Medlemsvarer til godkjenning',
+                 tilGodkjenning === 1
+                   ? 'Ett medlem venter på at arbeidet skal legges ut i butikken.'
+                   : tilGodkjenning + ' arbeider venter på å bli lagt ut i butikken.',
+                 tilGodkjenning, 'Se dem over',
+                 () => this.gaaAdmin('adminbutikk', { butikkFane: 'Medlemssalg' }),
+                 true)] : []),
+
+            // Staar ogsaa naar «Selg egne arbeider»/frys er slaatt av for
+            // medlemmene: en soknad som alt er sendt, skal behandles uansett
+            // om skjemaet er stengt etterpaa.
+            ...(frysVenter ? [kort('Søknader om frys',
+                 frysVenter === 1
+                   ? 'Ett medlem har søkt om å fryse medlemskapet sitt.'
+                   : frysVenter + ' medlemmer har søkt om å fryse medlemskapet sitt.',
+                 frysVenter, 'Behandle dem',
+                 () => this.gaaAdmin('adminmedlem', {}),
+                 true)] : []),
 
             // Staar alltid, ogsaa naar tallet er null.
             //

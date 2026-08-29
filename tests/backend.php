@@ -1649,6 +1649,49 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Varselkort: to koer ingen sto vakt over ──────────────────────────────
+//
+// Et medlem som legger en gjenstand ut for salg venter paa aa bli godkjent,
+// og varen ligger ute av butikken saa lenge. Et medlem som soker om aa fryse
+// medlemskapet venter paa svar. Begge har hver sin skjerm i admin, men ingen
+// vei dit fra Oversikt — man maatte vite at koen fantes for aa gaa og se
+// etter, og da kan noe bli liggende i ukevis.
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('oversikten teller de to koene',
+    str_contains($ovFil, "SELECT COUNT(*) FROM member_sales WHERE status = 'til_godkjenning'")
+    && str_contains($ovFil, "SELECT COUNT(*) FROM medlem_frys WHERE status = 'sokt'"));
+// Begge tabellene kom med senere migrasjoner. Er de ikke kjort, skal
+// endepunktet svare, ikke doe.
+sjekk('oversikten taaler at tabellene ikke finnes',
+    str_contains($ovFil, "DB::harTabell('member_sales')")
+    && str_contains($ovFil, "DB::harTabell('medlem_frys')"));
+// Kortene staar bare naar noe venter — samme regel som ventelista. Et kort
+// som hver dag sier «ingen» er ett kort mer aa lese forbi.
+sjekk('kortene staar bare naar noe venter',
+    str_contains($sida, "...(tilGodkjenning ? [kort('Medlemsvarer til godkjenning',")
+    && str_contains($sida, "...(frysVenter ? [kort('Søknader om frys',"));
+// Tallet er serverens. Kortet «Internbutikk» paa Medlemmer teller de samme
+// radene fra lista i nettleseren; to utregninger av samme tall kan si hver
+// sin ting naar den ene ikke har lastet ennaa.
+sjekk('tallene kommer fra endepunktet, ikke fra en egen utregning',
+    str_contains($sida, 'const tilGodkjenning = koer.medlemsvarer || 0;')
+    && str_contains($sida, 'const frysVenter = koer.frys || 0;'));
+// Kortene maa fore dit man kan gjore noe.
+sjekk('kortene gaar dit koen behandles',
+    str_contains($sida, "this.gaaAdmin('adminbutikk', { butikkFane: 'Medlemssalg' }),")
+    && str_contains($sida, "this.gaaAdmin('adminmedlem', {}),"));
+// Kasse-kortet sa hva kassa er, ikke hva som har skjedd i den.
+sjekk('kassekortet viser dagens salg',
+    str_contains($sida, "'Solgt for ' + kasseIdag + ' i dag. '")
+    && str_contains($sida, "'Ingen salg over disk i dag ennå. '"));
+// «kr. 0,-» paa kortet ser ut som en feil, ikke som en rolig formiddag.
+sjekk('kassekortet viser ikke null kroner',
+    str_contains($sida, "const kasseIdag = /[1-9]/.test(kasseRaa) ? kasseRaa : '';"));
+// Beloepet hoerer ikke hjemme i tallmerket ved siden av «3» paa ventelista —
+// der leses et tall som antall.
+sjekk('beloepet staar i teksten, ikke i tallmerket',
+    str_contains($sida, "+ 'medlemskap eller en ting fra hylla. Går rett i regnskapet.',\n                 null, 'Åpne kassa',"));
+
 // ── Fase 9: opprydding ───────────────────────────────────────────────────
 //
 // Doed kode er ikke bare stygt. Den ser ut som noe som virker, og forrige

@@ -271,6 +271,24 @@ Svar::json([
         'aktive' => (int) DB::verdi("SELECT COUNT(*) FROM members WHERE status = 'aktiv'"),
         'totalt' => (int) DB::verdi('SELECT COUNT(*) FROM members WHERE anonymisert_at IS NULL'),
     ],
+    // ── Koer ingen sto vakt over ──────────────────────────────────────
+    //
+    // To ting kunne bli liggende i ukevis uten at noe sa fra: et medlem som
+    // har lagt en gjenstand ut for salg og venter paa aa bli godkjent, og et
+    // medlem som har sokt om aa fryse medlemskapet sitt. Begge har hver sin
+    // skjerm i admin, men ingen vei dit fra Oversikt — og da maa man vite at
+    // de finnes for aa gaa og se etter.
+    //
+    // «harTabell» fordi begge kom med senere migrasjoner. Er de ikke kjort,
+    // svarer endepunktet null i stedet for aa doe.
+    'koer' => [
+        'medlemsvarer' => DB::harTabell('member_sales')
+            ? (int) DB::verdi("SELECT COUNT(*) FROM member_sales WHERE status = 'til_godkjenning'")
+            : 0,
+        'frys' => DB::harTabell('medlem_frys')
+            ? (int) DB::verdi("SELECT COUNT(*) FROM medlem_frys WHERE status = 'sokt'")
+            : 0,
+    ],
     'venteliste' => $venteliste,
     'varsler'    => $varsler,
     // Om utsendingen er skrudd paa. Ligger her fordi denne hentes paa hver

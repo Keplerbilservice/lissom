@@ -5815,12 +5815,23 @@ window.__resources = {
                           <sc-if value="{{ f.erTekst }}" hint-placeholder-val="{{ true }}">
                             <input value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="{{ f.hint }}" style="{{ kdFeltStil }}">
                           </sc-if>
+                          <!-- Brikker, ikke et nedtrekk.
+                               Et nedtrekk godtar bare valg-elementer inni seg
+                               etter HTML-standarden. Malen la en sc-for-lokke
+                               der, og en parser som folger standarden kaster
+                               den — da sto lista tom. Chrome tolererte det;
+                               Safari paa iPhone gjorde det ikke, og eieren
+                               fikk et tomt nedtrekk med en hake i.
+                               Brikker er vanlige knapper i en div. Ingen
+                               regler om hva som kan staa inni, og det er samme
+                               form som betalingsvalget i kassa og i
+                               deltakerlista. -->
                           <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
-                            <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ kdValgStil }}">
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                               <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="6">
-                                <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                                <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
                               </sc-for>
-                            </select>
+                            </div>
                           </sc-if>
                         </div>
                       </sc-for>
@@ -24145,7 +24156,6 @@ class Component extends DCLogic {
                   kdLukk: () => this.setState({ kdApen: false, kdUtkast: {}, kdVarsle: false }),
                   kdNaar: d ? (uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · ' + redEvt.tid) : '',
                   kdFeltStil: felt,
-                  kdValgStil: Object.assign({}, felt, { cursor: 'pointer' }),
                   kdFelt: [
                     // «Navn» alene sto alt over, om okta. Feltet maa si hvem sitt.
                     tekst('navn', 'Deltakerens navn', 'Fornavn Etternavn', true),
@@ -24156,8 +24166,21 @@ class Component extends DCLogic {
                     tekst('antall', 'Antall plasser', '1'),
                     {
                       erTekst: false, erValg: true, etikett: 'Betaling', verdi: maate,
-                      valg: maater.map(m => ({ verdi: m, navn: m })),
-                      endre: e => sett('maate', e.target.value), boksStil: {},
+                      valg: maater.map(m => ({
+                        verdi: m, navn: m,
+                        velg: () => sett('maate', m),
+                        stil: {
+                          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                          padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600,
+                          border: '1.5px solid ' + (maate === m ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                          background: maate === m ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                          color: maate === m ? 'var(--clay-50)' : 'var(--text-heading)',
+                          whiteSpace: 'nowrap',
+                        },
+                      })),
+                      // Betalingsvalget tar hele bredden: seks brikker faar
+                      // ikke plass ved siden av et annet felt paa en telefon.
+                      boksStil: { gridColumn: '1 / -1' },
                     },
                     tekst('belop', 'Beløp i kroner', krav ? 'Må fylles ut' : 'Tomt = prisen på datoen'),
                     tekst('notat', 'Internt notat', 'Vises ikke for deltakeren', true),

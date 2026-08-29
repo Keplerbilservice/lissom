@@ -2671,6 +2671,21 @@ sjekk('teksten sier det koden gjor',
     str_contains($sida2, 'brukes prisen på denne datoen.')
     && !str_contains($sida2, 'brukes kursets ordinære pris.'));
 
+// ── Betalingsvalget paa iPhone ─────────────────────────────────────────
+//
+// Et nedtrekk godtar bare valg-elementer inni seg etter HTML-standarden.
+// Malen la en sc-for-lokke der. En parser som folger standarden kaster lokka
+// og lar én tom rad staa — provd med html5lib, som bygger treet slik
+// standarden sier. Chrome tolererte det og viste alle seks; Safari paa iPhone
+// gjorde det ikke, og eieren fikk et tomt nedtrekk med en hake i.
+//
+// Brikker er vanlige knapper i en div. Ingen regler om hva som kan staa inni.
+sjekk('betalingsvalget er brikker, ikke et nedtrekk',
+    str_contains($sida2, "erTekst: false, erValg: true, etikett: 'Betaling'")
+    && str_contains($sida2, '<button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>'));
+sjekk('… og stilen nedtrekket hadde er ryddet bort',
+    !str_contains($sida2, 'kdValgStil'));
+
 // ── Nedtrekkene paa iPhone ─────────────────────────────────────────────
 //
 // Motoren pakker {{ }} i et <span class="sc-interp">. Chrome faller tilbake
@@ -2688,7 +2703,7 @@ $utenLabel = array_values(array_filter(
 ));
 sjekk('hvert valg i et nedtrekk har en etikett Safari kan lese',
     $utenLabel === [], count($utenLabel) . ' uten label');
-sjekk('… og det gjelder alle nedtrekkene', count($treff[1] ?? []) >= 29,
+sjekk('… og det gjelder alle nedtrekkene', count($treff[1] ?? []) >= 28,
     count($treff[1] ?? []) . ' valg');
 
 // ── Fast QR til disken ─────────────────────────────────────────────────

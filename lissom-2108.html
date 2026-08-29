@@ -6598,9 +6598,35 @@ window.__resources = {
 
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utRegistrerSalg }}" hint-size="auto,52px">Registrer salget</x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="send" on-click="{{ utSendKrav }}" hint-size="auto,52px">Send Vipps-krav</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="qr-code" on-click="{{ utQrLag }}" hint-size="auto,52px">Vis Vipps-QR</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" icon="send" on-click="{{ utSendKrav }}" hint-size="auto,52px">Send Vipps-krav</x-import>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utSalgBeskjed }}</span>
                 </div>
+
+                <!-- Koden kunden skanner.
+                     Adressen er en helt vanlig Vipps-betaling — den samme som
+                     nettsida bruker. Forskjellen fra kravet er bare hvordan
+                     kunden kommer til den: med kameraet, framfor en melding i
+                     appen sin. -->
+                <sc-if value="{{ utQrVenter }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size: var(--text-sm); color: var(--text-muted);">Lager koden …</div>
+                </sc-if>
+                <sc-if value="{{ utQrVises }}" hint-placeholder-val="{{ false }}">
+                  <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-5); display: flex; flex-direction: column; align-items: center; gap: var(--space-3);">
+                    <div style="display: flex; align-items: baseline; gap: var(--space-3); width: 100%;">
+                      <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Skann for å betale</span>
+                      <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading);">{{ utQrBelop }}</span>
+                      <button type="button" onClick="{{ utQrLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-muted); padding: 0 2px;">×</button>
+                    </div>
+                    <img src="{{ utQrBilde }}" alt="QR-kode for Vipps-betaling" style="width: min(260px, 70vw); height: auto; image-rendering: pixelated; background: #fff; border-radius: var(--radius-md);">
+                    <sc-if value="{{ utQrIkkeBetalt }}" hint-placeholder-val="{{ true }}">
+                      <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ utQrStatus }}</span>
+                    </sc-if>
+                    <sc-if value="{{ utQrBetalt }}" hint-placeholder-val="{{ false }}">
+                      <span style="display: inline-flex; align-items: center; gap: 8px; border-radius: var(--radius-pill); padding: 6px 16px; background: var(--sage-500); color: var(--clay-50); font: var(--type-body-sm); font-weight: 700;">{{ utQrStatus }}</span>
+                    </sc-if>
+                  </div>
+                </sc-if>
 
               </div>
             </div>
@@ -22120,6 +22146,77 @@ class Component extends DCLogic {
    * Lista hentes paa nytt etterpaa: lageret og dagens salg er endret, og
    * skjermen skal ikke vise tallene fra for kallet.
    */
+  /**
+   * Laster QR-biblioteket, én gang.
+   *
+   * Fila ligger i vendor/ ved siden av React — samme maate, samme grunn: den
+   * skal ikke hentes fra et nettsted vi ikke styrer. 57 kB, og bare for den
+   * som faktisk aapner en QR. Derfor lastes den her og ikke i toppen av sida.
+   */
+  qrLast() {
+    if (window.qrcode) return Promise.resolve(window.qrcode);
+    if (this._qrLaster) return this._qrLaster;
+    this._qrLaster = new Promise((ja, nei) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/qrcode-2.0.4.js';
+      s.onload = () => (window.qrcode ? ja(window.qrcode) : nei(new Error('qrcode mangler')));
+      s.onerror = () => nei(new Error('fikk ikke lastet qrcode'));
+      document.head.appendChild(s);
+    });
+    return this._qrLaster;
+  }
+
+  /**
+   * Adressen som et bilde.
+   *
+   * Feilrettingsnivaa «M» taaler at en femtedel av koden er skitten eller
+   * borte. Adressene fra Vipps er lange, saa koden blir tett — 8 piksler per
+   * rute gir en kode som leses fra en armlengdes avstand paa en telefon.
+   */
+  qrBilde(tekst) {
+    return this.qrLast().then(lag => {
+      const q = lag(0, 'M');
+      q.addData(tekst);
+      q.make();
+      return q.createDataURL(8, 16);
+    });
+  }
+
+  /**
+   * Ser etter om QR-en er betalt.
+   *
+   * Webhooken setter betalingen til «betalt» naar pengene er inne, men
+   * skjermen faar ikke vite det av seg selv. Den sporr hvert tredje sekund
+   * mens koden staar framme, og gir seg etter ti minutter — lengre enn det
+   * staar ingen og venter, og en foresporsel i minuttet i evig tid er ikke
+   * noe aa la ligge igjen i en fane.
+   */
+  utQrFolg(referanse) {
+    this.utQrStopp();
+    const start = Date.now();
+    this._utQrTimer = setInterval(() => {
+      if (Date.now() - start > 600000) { this.utQrStopp(); return; }
+      fetch('/api/admin/uttak.php', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ handling: 'betalstatus', referanse: referanse }),
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (!d || !d.betalt) return;
+          this.utQrStopp();
+          this.setState(s2 => (s2.utQr ? { utQr: Object.assign({}, s2.utQr, { betalt: true }) } : {}));
+          this._uttakHentes = false; this.hentUttak();
+          this._adminHentes = false; this.hentAdmin();
+        })
+        .catch(() => {});
+    }, 3000);
+  }
+
+  utQrStopp() {
+    if (this._utQrTimer) { clearInterval(this._utQrTimer); this._utQrTimer = null; }
+  }
+
   uttakKall(kropp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._uttakLagrer) return Promise.resolve(false);
@@ -22145,7 +22242,9 @@ class Component extends DCLogic {
           this._adminHentes = false;
           this.hentAdmin();
         }
-        return ok;
+        // Svaret, ikke bare «ja». Vipps-QR trenger adressen som kom tilbake.
+        // De som bare sjekker «if (ok)» virker som for: et objekt er sant.
+        return ok ? d : false;
       })
       .catch(() => {
         this._uttakLagrer = false;
@@ -28914,6 +29013,47 @@ class Component extends DCLogic {
               if (ok) this.setState({ utBelop: '', utKunde: '', utTelefon: '', utSalgBeskjed: '' });
             });
           },
+          // ── Vipps-QR ────────────────────────────────────────────────
+          //
+          // Salgsenheten har ikke lov til aa sende betalingskrav — Vipps
+          // svarer «ErrorCode 5080», og det er en tillatelse hos dem. En
+          // vanlig betaling virker, og adressen den gir tilbake vises som en
+          // kode kunden skanner.
+          utQrLag: () => {
+            const raa = String(st.utBelop || '').trim();
+            if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
+              this.setState({ utSalgBeskjed: 'Skriv inn et beløp først.' });
+              return;
+            }
+            this.setState({ utQrVenter: true, utSalgBeskjed: '' });
+            this.uttakKall({
+              handling: 'vippsqr', belop: raa, slag,
+              kunde: (st.utKunde || '').trim(),
+            }).then(d => {
+              if (!d || !d.url) { this.setState({ utQrVenter: false }); return; }
+              return this.qrBilde(d.url).then(bilde => {
+                this.setState({
+                  utQr: { bilde: bilde, referanse: d.referanse, belop: d.belop, betalt: false },
+                  utQrVenter: false, utBelop: '', utKunde: '', utSalgBeskjed: '',
+                });
+                this.utQrFolg(d.referanse);
+              });
+            }).catch(() => this.setState({
+              utQrVenter: false,
+              utSalgBeskjed: 'Fikk ikke tegnet koden. Prøv igjen.',
+            }));
+          },
+          utQrVises: !!this.state.utQr,
+          utQrVenter: !!this.state.utQrVenter,
+          utQrBilde: (this.state.utQr || {}).bilde || '',
+          utQrBelop: (this.state.utQr || {}).belop || '',
+          utQrBetalt: !!(this.state.utQr || {}).betalt,
+          utQrIkkeBetalt: !(this.state.utQr || {}).betalt,
+          utQrStatus: (this.state.utQr || {}).betalt
+            ? 'Betalt. Salget er ført.'
+            : 'Venter på at kunden betaler …',
+          utQrLukk: () => { this.utQrStopp(); this.setState({ utQr: null }); },
+
           utRegistrerSalg: () => {
             const raa = String(st.utBelop || '').trim();
             if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {

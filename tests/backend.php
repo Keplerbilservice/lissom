@@ -2615,6 +2615,43 @@ sjekk('kassa viser grunnen',
 sjekk('paameldingen viser grunnen',
     str_contains($pamFil, "'Fikk ikke sendt kravet. ' . \$e->getMessage() . ' Ingen plass er lagt inn.'"));
 
+// ── Vipps-QR i kassa ───────────────────────────────────────────────────
+//
+// Salgsenheten har ikke lov til aa sende betalingskrav (ErrorCode 5080). En
+// vanlig betaling virker, og adressen den gir tilbake vises som en kode
+// kunden skanner.
+$utFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+sjekk('kassa kan lage en Vipps-QR', str_contains($utFil, "if (\$handling === 'vippsqr') {"));
+// Ingen telefon og ingen push: dette er den vanlige veien, den som virker.
+sjekk('QR-en bruker den vanlige betalingen, ikke kravet',
+    str_contains($utFil, "Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode(\$referanse)\n        );"));
+sjekk('adressen sendes til skjermen', str_contains($utFil, "'url'       => \$url,"));
+// Gir Vipps ingen adresse, staar vi igjen med en ordre ingen kan betale.
+sjekk('en ordre uten adresse ryddes bort',
+    str_contains($utFil, "Svar::feil('Vipps ga ingen betalingsadresse. Ingenting er registrert.');"));
+sjekk('skjermen kan sporre om det er betalt',
+    str_contains($utFil, "if (\$handling === 'betalstatus') {"));
+$qrFil = dirname(__DIR__) . '/vendor/qrcode-2.0.4.js';
+sjekk('QR-biblioteket ligger hos oss, ikke paa et fremmed nettsted',
+    is_file($qrFil) && str_contains((string) file_get_contents($qrFil), 'MIT license'));
+sjekk('biblioteket lastes forst naar koden skal vises',
+    str_contains($sida2, "s.src = '/vendor/qrcode-2.0.4.js';")
+    && str_contains($sida2, 'if (window.qrcode) return Promise.resolve(window.qrcode);'));
+sjekk('kassa viser koden og beloepet',
+    str_contains($sida2, 'utQrLag:') && str_contains($sida2, '{{ utQrBilde }}')
+    && str_contains($sida2, '{{ utQrBelop }}'));
+// Webhooken setter betalingen til «betalt», men skjermen faar ikke vite det
+// av seg selv.
+sjekk('skjermen foelger med til pengene er inne',
+    str_contains($sida2, 'utQrFolg(referanse) {') && str_contains($sida2, "handling: 'betalstatus'"));
+// En foresporsel i minuttet i evig tid er ikke noe aa la ligge igjen.
+sjekk('den gir seg etter ti minutter',
+    str_contains($sida2, 'if (Date.now() - start > 600000) { this.utQrStopp(); return; }'));
+sjekk('… og naar koden lukkes', str_contains($sida2, 'utQrLukk: () => { this.utQrStopp();'));
+// «if (ok)» skal virke som for hos alle de andre som kaller uttakKall.
+sjekk('uttakKall gir svaret tilbake uten aa velte de andre',
+    str_contains($sida2, 'return ok ? d : false;'));
+
 // ── Vippskrav i den raske ruta ─────────────────────────────────────────
 //
 // Den enkle boksen nederst i deltakerlista tok navn, telefon og Vipps/Kontant.

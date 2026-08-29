@@ -151,6 +151,126 @@ if ($handling === 'annuller') {
 // Ett belop, én betalingsmaate, og hva det var. Ingen varelinjer aa lete
 // fram: det aller meste som selges over disk er et kurs noen betaler for i
 // doera, et medlemskap, eller en ting fra hylla.
+// ── Vipps-QR ────────────────────────────────────────────────────────────
+//
+// Salgsenheten har ikke lov til aa sende betalingskrav — Vipps svarer 400 med
+// «ErrorCode 5080». Det er en tillatelse hos Vipps, og ingen kode retter den.
+//
+// En helt vanlig Vipps-betaling virker derimot. Den gir oss en betalingsadresse
+// tilbake, og den kan vises som en QR paa skjermen i verkstedet. Kunden skanner
+// med kameraet og betaler i Vipps.
+//
+// Forskjellen fra kravet: kunden maa vaere til stede. Til gjengjeld slipper hun
+// aa oppgi nummeret sitt, og vi slipper aa vente paa Vipps.
+//
+// Alt annet er likt: samme ordre, samme betalingsrad, «ny» til pengene er inne,
+// og webhooken gjor den ferdig.
+if ($handling === 'vippsqr') {
+    $slag = (string) ($kropp['slag'] ?? 'produkt');
+    if (!isset(SLAG[$slag])) {
+        Svar::feil('Velg om det er kurs, medlemskap eller produkt.');
+    }
+
+    $raa = str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($kropp['belop'] ?? ''));
+    $raa = str_replace(',', '.', trim($raa));
+    if ($raa === '' || !is_numeric($raa)) {
+        Svar::feil('Skriv inn et beløp.');
+    }
+    $sum = (int) round((float) $raa * 100);
+    if ($sum <= 0) {
+        Svar::feil('Beløpet må være over null.');
+    }
+    if ($sum > 10000000) {
+        Svar::feil('Beløpet må være under 100 000 kroner.');
+    }
+
+    $kunde   = mb_substr(trim((string) ($kropp['kunde'] ?? '')), 0, 191);
+    $ordrenr = 'Q-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+    $formal  = SLAG[$slag]['formal'];
+    $tittel  = SLAG[$slag]['tittel'];
+    $referanse = Vipps::nyReferanse('QR');
+
+    $ordreId = DB::iTransaksjon(static function () use ($sum, $kunde, $ordrenr, $formal, $tittel, $referanse): int {
+        $betalingId = DB::settInn('payments', [
+            'vipps_reference' => $referanse,
+            'type'            => 'epayment',
+            'formal'          => $formal,
+            'belop_ore'       => $sum,
+            'status'          => 'opprettet',
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+        $id = DB::settInn('orders', [
+            'ordrenr'      => $ordrenr,
+            'kunde_navn'   => $kunde !== '' ? $kunde : 'Vipps-QR',
+            'sum_ore'      => $sum,
+            'status'       => 'ny',
+            'betalt_maate' => 'Vipps',
+            'payment_id'   => $betalingId,
+        ]);
+        DB::settInn('order_lines', [
+            'order_id' => $id, 'product_id' => null,
+            'tittel' => $tittel, 'antall' => 1, 'pris_ore' => $sum,
+        ]);
+        return $id;
+    });
+
+    try {
+        // Ingen telefon, og push staar av: dette er den vanlige veien, der
+        // kunden foelger en adresse. Adressen er det QR-en peker paa.
+        $svar = Vipps::opprettBetaling(
+            $referanse,
+            $sum,
+            $tittel . ' — Lissom Keramikk',
+            Config::nettsted() . '/api/betaling-retur.php?ref=' . rawurlencode($referanse)
+        );
+    } catch (Throwable $e) {
+        DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => $ordreId]);
+        $pid = DB::verdi('SELECT payment_id FROM orders WHERE id = :o', ['o' => $ordreId]);
+        DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
+        if ($pid) { DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pid]); }
+        logg_feil('Fikk ikke laget Vipps-QR for ordre ' . $ordrenr, $e);
+        Svar::feil('Fikk ikke laget koden. ' . $e->getMessage() . ' Ingenting er registrert.');
+    }
+
+    $url = trim((string) ($svar['url'] ?? ''));
+    if ($url === '') {
+        DB::kjor('DELETE FROM order_lines WHERE order_id = :o', ['o' => $ordreId]);
+        $pid = DB::verdi('SELECT payment_id FROM orders WHERE id = :o', ['o' => $ordreId]);
+        DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
+        if ($pid) { DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pid]); }
+        Svar::feil('Vipps ga ingen betalingsadresse. Ingenting er registrert.');
+    }
+
+    DB::oppdater('payments', ['status' => 'venter'], ['vipps_reference' => $referanse]);
+    revider('vippsqr_laget', 'order', $ordreId, ['belop' => $sum, 'slag' => $slag]);
+
+    Svar::ok([
+        'url'       => $url,
+        'referanse' => $referanse,
+        'belop'     => Booking::kroner($sum),
+        'beskjed'   => 'Koden er klar. La kunden skanne den — salget står som '
+                     . 'venter til pengene er inne.',
+    ]);
+}
+
+// ── Betalt ennaa? ───────────────────────────────────────────────────────
+//
+// Skjermen viser QR-en mens kunden skanner. Webhooken setter betalingen til
+// «betalt» naar pengene er inne, men skjermen faar ikke vite det av seg selv.
+// Her spor den.
+if ($handling === 'betalstatus') {
+    $ref = trim((string) ($kropp['referanse'] ?? ''));
+    if ($ref === '') {
+        Svar::feil('Mangler referansen.');
+    }
+    $rad = DB::en('SELECT status FROM payments WHERE vipps_reference = :r', ['r' => $ref]);
+    if ($rad === null) {
+        Svar::feil('Fant ikke betalingen.', 404);
+    }
+    Svar::ok(['status' => (string) $rad['status'],
+              'betalt' => (string) $rad['status'] === 'betalt']);
+}
+
 // ── Vippskrav ───────────────────────────────────────────────────────────
 //
 // «Registrer et salg» bokforer at noe ER betalt. Den sender ingenting.

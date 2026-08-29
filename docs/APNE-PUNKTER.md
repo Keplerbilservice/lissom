@@ -160,6 +160,9 @@ hans blir liggende.
 **Vippskrav i den raske ruta.** Boksen nederst i deltakerlista kan sende krav
 også, ikke bare notere Vipps eller kontant.
 
+**Vipps-QR i kassa.** «Vis Vipps-QR» gir en kode kunden skanner. Skjermen
+følger med til pengene er inne.
+
 **Vipps sier hva som er galt.** Feilene sto bare i feilloggen på webhotellet;
 på skjermen sto det «Sjekk at nummeret har Vipps, og prøv igjen» uansett hva
 som var galt. Nå står Vipps' egen setning der — «Vipps svarte 403: The sale
@@ -441,9 +444,17 @@ Alt annet står klart: kravet lages, betalingsraden knyttes til bookingen eller
 ordren begge veier, og webhooken setter den til betalt når pengene kommer. Den
 dagen tillatelsen er på plass, virker knappen uten at noe endres.
 
-Om det tar tid: alternativet er å lage en vanlig betaling og sende lenken på
-SMS i stedet. Da får kunden en lenke framfor et krav i appen. Ikke bygget —
-det er en annen løsning, og den skal bestilles, ikke antas.
+**Bygget 29. august, kveld: Vipps-QR i kassa.** «Vis Vipps-QR» lager en helt
+vanlig Vipps-betaling — den veien som virker — og viser adressen som en kode
+kunden skanner med kameraet. Salget står som venter til pengene er inne, og
+skjermen sier fra når de er det.
+
+Forskjellen fra kravet: kunden må være til stede. Til gjengjeld slipper hun å
+oppgi nummeret sitt. Det er en løsning for den som står i døra, ikke en
+erstatning for kravet — be Vipps om `PUSH_MESSAGE` likevel.
+
+Koden lages av `vendor/qrcode-2.0.4.js` (Kazuhiko Arase, MIT), lagt hos oss
+som React-filene og lastet først når en kode skal vises.
 
 ### 12. Video på kurs
 

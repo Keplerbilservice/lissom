@@ -2582,6 +2582,48 @@ sjekk('okta merkes som endret naar samlingene rettes',
 sjekk('… og taaler at kolonnen mangler',
     str_contains($samlFil, "DB::harKolonne('course_sessions', 'updated_at')"));
 
+// ── Vipps sier hva som er galt ─────────────────────────────────────────
+//
+// Feilene sto bare i feilloggen paa webhotellet. Paa skjermen sto det «Sjekk
+// at nummeret har Vipps, og prov igjen» uansett hva som var galt — feil
+// nokler, en salgsenhet uten lov til aa sende betalingskrav, et nummer uten
+// Vipps. Eieren kunne ikke se forskjell, og ingen av dem loeses ved aa prove
+// igjen.
+$vippsFil = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+sjekk('grunnen fra Vipps naar fram', str_contains($vippsFil, 'private static function grunn(array $svar): string'));
+sjekk('betalingen kaster grunnen, ikke en gjetning',
+    str_contains($vippsFil, 'throw new RuntimeException(self::grunn($svar));')
+    && !str_contains($vippsFil, "throw new RuntimeException('Fikk ikke startet betalingen. Prøv igjen om litt.');"));
+sjekk('ogsaa naar noklene er feil',
+    !str_contains($vippsFil, "throw new RuntimeException('Vipps svarte ikke som forventet.');"));
+// Tokenkallet gaar som skjema, saa svaret staar bare i «kropp».
+sjekk('svaret leses ogsaa naar det ikke er avkodet fra for',
+    str_contains($vippsFil, "json_decode((string) (\$svar['kropp'] ?? ''), true)"));
+// «Forbidden» sier ikke mer enn tallet foran.
+sjekk('«detail» gaar foran «title»',
+    str_contains($vippsFil, "\$detalj = trim((string) (\$j['detail'] ?? ''));"));
+sjekk('feltet som er galt staar med navn',
+    str_contains($vippsFil, "\$biter[] = (\$f !== '' ? \$f . ': ' : '') . \$r;"));
+sjekk('kassa viser grunnen',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php'),
+                 "'Fikk ikke sendt kravet. ' . \$e->getMessage()"));
+sjekk('paameldingen viser grunnen',
+    str_contains($pamFil, "'Fikk ikke sendt kravet. ' . \$e->getMessage() . ' Ingen plass er lagt inn.'"));
+
+// ── Vippskrav i den raske ruta ─────────────────────────────────────────
+//
+// Den enkle boksen nederst i deltakerlista tok navn, telefon og Vipps/Kontant.
+// Eieren, 29. august: «vi vil ha vipps og betaling ja».
+sjekk('den raske ruta kan sende vippskrav',
+    str_contains($sida2, "klNyDBetValg: ['Vipps', 'Kontant', 'Vippskrav']"));
+sjekk('… og har et belopsfelt naar den skal det',
+    str_contains($sida2, 'klNyDErKrav:') && str_contains($sida2, 'settKlNyDBelop:'));
+sjekk('… og sier at nummeret er adressen kravet gaar til',
+    str_contains($sida2, "'Mobil — kravet går hit' : 'Telefon'"));
+sjekk('… og stopper et krav uten nummer eller belop',
+    str_contains($sida2, "if (krav && tlf === '') {")
+    && str_contains($sida2, 'if (krav && !(parseInt(belop, 10) > 0)) {'));
+
 // ── Klikk paa en hendelse i kalenderen ─────────────────────────────────
 //
 // «data-evt» paa den samme knappen som en bundet handler fikk motoren til aa

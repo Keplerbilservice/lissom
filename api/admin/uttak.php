@@ -239,7 +239,11 @@ if ($handling === 'vippskrav') {
         DB::kjor('DELETE FROM orders WHERE id = :o', ['o' => $ordreId]);
         if ($pid) { DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $pid]); }
         logg_feil('Fikk ikke sendt vippskrav til ' . $tlf, $e);
-        Svar::feil('Fikk ikke sendt kravet. Sjekk at nummeret har Vipps, og prøv igjen.');
+        // Grunnen slik Vipps ga den. Sto det bare «prov igjen», var det ingen
+        // vei videre for den som ikke har tilgang til feilloggen paa
+        // webhotellet — og de fleste grunnene loeses ikke ved aa prove igjen.
+        Svar::feil('Fikk ikke sendt kravet. ' . $e->getMessage()
+                 . ' Ingenting er registrert.');
     }
 
     DB::oppdater('payments', ['status' => 'venter'], ['vipps_reference' => $referanse]);

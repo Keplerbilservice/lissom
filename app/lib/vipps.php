@@ -89,8 +89,8 @@ final class Vipps
         );
 
         if ($svar['status'] !== 200) {
-            logg_feil('Fikk ikke adgangstoken fra Vipps: HTTP ' . $svar['status']);
-            throw new RuntimeException('Vipps svarte ikke som forventet.');
+            logg_feil('Fikk ikke adgangstoken fra Vipps: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
+            throw new RuntimeException(self::grunn($svar));
         }
 
         $d = json_decode($svar['kropp'], true);
@@ -297,6 +297,73 @@ final class Vipps
     public const MINSTE_BELOP_ORE = 100;
 
     /**
+     * Hva Vipps faktisk svarte, i en setning.
+     *
+     * Feilene sto bare i feilloggen paa webhotellet. Paa skjermen sto det
+     * «Sjekk at nummeret har Vipps, og prov igjen» uansett hva som var galt —
+     * feil nokler, en salgsenhet som ikke har lov til aa sende betalingskrav,
+     * et beloep Vipps ikke godtar. Eieren kunne ikke se forskjell, og ingen
+     * av dem loeses ved aa prove igjen.
+     *
+     * Vipps svarer etter RFC 7807: «title», «detail» og «extraDetails». Vi tar
+     * det som finnes av lesbar tekst. Svaret inneholder ingen nokler — det er
+     * en feilmelding om det vi nettopp sendte — og endepunktene som viser
+     * dette krever alt admin.
+     */
+    private static function grunn(array $svar): string
+    {
+        // «json» settes av http_post_json. Tokenkallet gaar som skjema, og da
+        // staar svaret bare i «kropp» — det er JSON likevel.
+        $j = is_array($svar['json'] ?? null) ? $svar['json'] : [];
+        if ($j === []) {
+            $forsok = json_decode((string) ($svar['kropp'] ?? ''), true);
+            $j = is_array($forsok) ? $forsok : [];
+        }
+
+        // «detail» er setningen som sier hva som er galt. «title» er sjangeren
+        // — «Forbidden», «Bad Request» — og sier ikke mer enn tallet foran.
+        // Den brukes bare naar det ikke finnes noe bedre.
+        $biter = [];
+        $detalj = trim((string) ($j['detail'] ?? ''));
+        if ($detalj !== '') {
+            $biter[] = $detalj;
+        }
+        foreach ((array) ($j['extraDetails'] ?? []) as $d) {
+            if (!is_array($d)) {
+                continue;
+            }
+            $r = trim((string) ($d['reason'] ?? ''));
+            if ($r !== '') {
+                $f = trim((string) ($d['name'] ?? ''));
+                $biter[] = ($f !== '' ? $f . ': ' : '') . $r;
+            }
+        }
+        if ($biter === []) {
+            $tittel = trim((string) ($j['title'] ?? ''));
+            if ($tittel !== '') {
+                $biter[] = $tittel;
+            }
+        }
+
+        // Ikke noe lesbart: da er svaret slik det kom bedre enn ingenting.
+        if ($biter === []) {
+            $raa = trim((string) ($svar['kropp'] ?? ''));
+            if ($raa !== '') {
+                $biter[] = mb_substr($raa, 0, 160);
+            }
+        }
+        $status = (int) ($svar['status'] ?? 0);
+        $tekst = mb_substr(implode(' · ', array_unique($biter)), 0, 240);
+        // Setningen skal kunne staa midt i en annen: «Fikk ikke sendt kravet.
+        // Vipps svarte 403: … Ingen plass er lagt inn.»
+        if ($tekst !== '' && !str_ends_with($tekst, '.')) {
+            $tekst .= '.';
+        }
+        return 'Vipps svarte ' . ($status > 0 ? (string) $status : 'ikke')
+             . ($tekst !== '' ? ': ' . $tekst : '.');
+    }
+
+    /**
      * Oppretter en betaling og returnerer adressen brukeren skal sendes til.
      *
      * Beløpet kommer ALLTID fra databasen, aldri fra nettleseren.
@@ -364,7 +431,7 @@ final class Vipps
 
         if ($svar['status'] !== 201 || !is_array($svar['json'])) {
             logg_feil('Kunne ikke opprette Vipps-betaling: HTTP ' . $svar['status'] . ' ' . $svar['kropp']);
-            throw new RuntimeException('Fikk ikke startet betalingen. Prøv igjen om litt.');
+            throw new RuntimeException(self::grunn($svar));
         }
 
         return [

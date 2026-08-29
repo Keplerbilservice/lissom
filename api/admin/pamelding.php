@@ -345,9 +345,10 @@ if ($maate === 'Vippskrav') {
             logg_feil('Fikk ikke ryddet booking ' . $bookingId . ' etter mislykket vippskrav', $r);
         }
 
+        // Grunnen slik Vipps ga den — se Vipps::grunn(). «Prov igjen» hjelper
+        // ikke mot feil nokler eller en salgsenhet uten lov til aa sende krav.
         Svar::feil($ryddet
-            ? 'Fikk ikke sendt kravet. Sjekk at nummeret har Vipps, og prøv igjen. '
-              . 'Ingen plass er lagt inn.'
+            ? 'Fikk ikke sendt kravet. ' . $e->getMessage() . ' Ingen plass er lagt inn.'
             : 'Fikk ikke sendt kravet, og plassen ble stående. ' . $navn
               . ' står nå som reservert på datoen — fjern den fra deltakerlista '
               . 'før du prøver på nytt.');

@@ -157,6 +157,17 @@ framfor å bli liggende igjen.
 **Migrasjon 093.** Alle kurs over på Monica, eieren står som sluttet. Timene
 hans blir liggende.
 
+**Vippskrav i den raske ruta.** Boksen nederst i deltakerlista kan sende krav
+også, ikke bare notere Vipps eller kontant.
+
+**Vipps sier hva som er galt.** Feilene sto bare i feilloggen på webhotellet;
+på skjermen sto det «Sjekk at nummeret har Vipps, og prøv igjen» uansett hva
+som var galt. Nå står Vipps' egen setning der — «Vipps svarte 403: The sale
+unit is not allowed to use userFlow PUSH\_MESSAGE», «Vipps svarte 401: Access
+denied due to invalid subscription key», «customer.phoneNumber: The phone
+number is not registered with Vipps». Ingen av dem løses ved å prøve igjen, og
+nå er det mulig å se hvilken det er.
+
 ---
 
 ## Gjort 28.–29. august
@@ -881,7 +892,15 @@ og tider, og tilgjengeligheten skal følge kurs og når jeg er innstemplet.»
 
 ## Venter på svar fra Lissom
 
-### 16. Den enkle «Legg til deltaker» i deltakervinduet
+### 16. ~~Den enkle «Legg til deltaker» i deltakervinduet~~ — avklart 29. august
+
+Eieren: «vi vil ha vipps og betaling ja». Den raske ruta har nå tre brikker —
+Vipps, Kontant og Vippskrav — og et beløpsfelt som kommer fram når kravet er
+valgt. Nummeret bytter etikett til «Mobil — kravet går hit», og knappen til
+«Send vippskrav». Begge veiene inn står, og begge skriver den samme
+påmeldingen.
+
+### 16b. Gammelt punkt (beholdt for historikken)
 
 Det finnes to veier inn nå. Den fyldige ligger i «Rediger økten» (navn,
 e-post, telefon, antall, betaling, beløp, notat, vippskrav). Den enkle ligger
@@ -891,14 +910,23 @@ Begge går til det samme endepunktet — samme booking, samme deltakerliste — 
 det er to skjemaer inn til én ting, ikke to systemer. Den enkle er raskere når
 noen står i døra. Skal den stå, tas bort, eller få vippskrav den også?
 
-### 17. Uke- og dagvisningen samler ikke
+### 17. ~~Uke- og dagvisningen samler ikke~~ — avklart 29. august
+
+Eieren: «jeg trenger ikke det». Måneds- og listevisningen samler; uke og dag
+står som de er, så hver økt kan dras til et nytt klokkeslett.
+
+### 17b. Gammelt punkt (beholdt for historikken)
 
 Drop-in og Paint on Pots står som én linje per dag i måneds- og listevisningen.
 I uke- og dagvisningen ligger de fortsatt som egne blokker på tidsaksen — der
 må hver enkelt kunne dras til et nytt klokkeslett, og en samlet linje kan ikke
 dras. Skal de samles der også, mister du flyttingen.
 
-### 18. «Få plasser» eller «Få ledige plasser»?
+### 18. ~~«Få plasser» eller «Få ledige plasser»?~~ — avklart 29. august
+
+Eieren: «det er forskjellig og riktig». Teksten står som den er.
+
+### 18b. Gammelt punkt (beholdt for historikken)
 
 Teksten når det er få igjen står som «Få plasser» på Dreiing og «Få ledige
 plasser» på de andre — slik det ble skrevet. Skal de være like?

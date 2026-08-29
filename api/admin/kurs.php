@@ -208,6 +208,63 @@ $holderId = static function (string $felt): ?int {
     return $id;
 };
 
+/**
+ * Staar kursholderen alt et annet sted paa den tida?
+ *
+ * Registeret over kursholdere fantes lenge uten aa vaere koblet til noe, og
+ * da kunne ingen dobbeltbookes fordi ingen var bookede. Naa hoerer
+ * kursholderen til datoen, og da kan den samme personen settes paa to kurs
+ * som gaar samtidig. Det oppdages foerst den kvelden begge skal gaa.
+ *
+ * Sjekken er en overlapp i tid: to okter kolliderer naar den ene begynner
+ * foer den andre slutter, og slutter etter at den andre begynner. Mangler
+ * sluttida, regnes okta som én time — det er bedre enn aa la den gaa fri.
+ *
+ * Avlyste okter teller ikke. De gaar ikke.
+ *
+ * @return array{tittel: string, naar: string}|null Den som kolliderer.
+ */
+$holderOpptatt = static function (?int $holder, string $start, ?string $slutt, int $utenom): ?array {
+    if ($holder === null || !DB::harKolonne('course_sessions', 'kursholder_id')) {
+        return null;
+    }
+    $slutt = $slutt ?? date('Y-m-d H:i:s', strtotime($start) + 3600);
+    $rad = DB::en(
+        "SELECT cs.id, cs.start_tid, c.tittel
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.kursholder_id = :h
+            AND cs.id <> :u
+            AND cs.status <> 'avlyst'
+            AND cs.start_tid < :slutt
+            AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 1 HOUR) > :start
+          ORDER BY cs.start_tid
+          LIMIT 1",
+        ['h' => $holder, 'u' => $utenom, 'slutt' => $slutt, 'start' => $start]
+    );
+    return $rad === null ? null : [
+        'tittel' => (string) $rad['tittel'],
+        'naar'   => Booking::norskDato((string) $rad['start_tid']),
+    ];
+};
+
+/** Feilmeldingen naar kursholderen er opptatt. Samme ord alle tre stedene. */
+$holderNavnAv = static function (?int $id): string {
+    if ($id === null) {
+        return 'Kursholderen';
+    }
+    $n = DB::verdi('SELECT navn FROM kursholdere WHERE id = :i', ['i' => $id]);
+    return $n !== null && (string) $n !== '' ? (string) $n : 'Kursholderen';
+};
+
+$krevLedigHolder = static function (?array $kollisjon, string $navn): void {
+    if ($kollisjon === null) {
+        return;
+    }
+    Svar::feil($navn . ' står allerede på «' . $kollisjon['tittel'] . '» '
+        . $kollisjon['naar'] . '. Velg en annen kursholder, eller flytt den andre datoen først.');
+};
+
 /** «2026-09-02 17:30» i norsk tid → «2026-09-02 15:30:00» UTC for lagring. */
 $tilUtc = static function (string $norsk): ?string {
     $norsk = trim($norsk);
@@ -440,6 +497,12 @@ switch ($handling) {
                     ? DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1 LIMIT 1')
                     : null);
         }
+
+        // Samme person kan ikke staa paa to kurs som gaar samtidig.
+        $krevLedigHolder(
+            $holderOpptatt($nyOkt['kursholder_id'] ?? null, $start, $slutt, 0),
+            $holderNavnAv($nyOkt['kursholder_id'] ?? null)
+        );
 
         $oktId = DB::settInn('course_sessions', $nyOkt);
         revider('dato_lagt_til', 'course_session', $oktId, ['kurs' => $kursId, 'start' => $start]);
@@ -697,6 +760,15 @@ switch ($handling) {
             Svar::feil('Slutt må være etter start.');
         }
 
+        // Flyttes datoen inn i noe kursholderen alt staar paa, sies det her.
+        if (DB::harKolonne('course_sessions', 'kursholder_id')) {
+            $hId = DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $oktId]);
+            $krevLedigHolder(
+                $holderOpptatt($hId !== null ? (int) $hId : null, $start, $slutt, $oktId),
+                $holderNavnAv($hId !== null ? (int) $hId : null)
+            );
+        }
+
         DB::oppdater(
             'course_sessions',
             ['start_tid' => $start, 'slutt_tid' => $slutt],
@@ -807,6 +879,17 @@ switch ($handling) {
         // det er en gyldig tilstand — ikke alt har en kursholder.
         if (array_key_exists('kursholderId', $kropp) && DB::harKolonne('course_sessions', 'kursholder_id')) {
             $endring['kursholder_id'] = $holderId('kursholderId');
+            // Tidene okta faktisk gaar paa — ikke dem som sendes inn, for
+            // dette kallet endrer ikke tid.
+            $naar = DB::en('SELECT start_tid, slutt_tid FROM course_sessions WHERE id = :i',
+                           ['i' => $oktId]);
+            if ($naar !== null) {
+                $krevLedigHolder(
+                    $holderOpptatt($endring['kursholder_id'], (string) $naar['start_tid'],
+                                   $naar['slutt_tid'] !== null ? (string) $naar['slutt_tid'] : null, $oktId),
+                    $holderNavnAv($endring['kursholder_id'])
+                );
+            }
         }
         if ($endring !== []) {
             DB::oppdater('course_sessions', $endring, ['id' => $oktId]);

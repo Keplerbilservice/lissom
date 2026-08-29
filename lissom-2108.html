@@ -5344,7 +5344,7 @@ window.__resources = {
                   <div data-dato="{{ d.iso }}" style="{{ d.stil }}">
                     <div style="{{ d.tallStil }}">{{ d.tall }}</div>
                     <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="0">
-                      <button type="button" onClick="{{ h.velg }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>
+                      <button type="button" data-evt="{{ h.id }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>
                     </sc-for>
                     <sc-if value="{{ d.harMer }}" hint-placeholder-val="{{ false }}">
                       <button type="button" onClick="{{ d.velgDag }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: left;">{{ d.mer }}</button>
@@ -5823,6 +5823,23 @@ window.__resources = {
               </sc-if>
             </sc-if>
 
+            <!-- Kursdagen: beskjeden til alle som staar paa lista, meldingen
+                 om at keramikken er klar, og timene kursholderen skal ha. Til
+                 naa laa de tre paa hver sin skjerm. -->
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4);">
+              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Kursdagen</div>
+              <div style="display: flex; gap: var(--space-2); align-items: center;">
+                <input value="{{ klOktBeskjed }}" onChange="{{ settKlOktBeskjed }}" placeholder="Beskjed til alle på denne datoen" style="box-sizing: border-box; flex: 1; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ klOktBeskjedSend }}" hint-size="auto,36px">Send</x-import>
+              </div>
+              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-3);">
+                <button type="button" onClick="{{ klOktFerdig }}" style="{{ klDHandlingStil }}">Meld keramikken klar</button>
+                <sc-if value="{{ klOktTimerKan }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ klOktTimer }}" style="{{ klDHandlingStil }}">{{ klOktTimerTekst }}</button>
+                </sc-if>
+              </div>
+            </div>
+
             <sc-if value="{{ klFlyttVises }}" hint-placeholder-val="{{ false }}">
               <div style="border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-4);">
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Flytt til ny dato</div>
@@ -5946,7 +5963,35 @@ window.__resources = {
             <sc-if value="{{ klDSendt }}" hint-placeholder-val="{{ false }}">
               <div style="margin-top: var(--space-3); background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--text-heading);">{{ klDSendtTekst }}</div>
             </sc-if>
-            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
+            <!-- Det som gjoeres paa én deltaker paa en kursdag. Til naa matte
+                 alle fire gjores fra Paameldte — og «Ikke moett» fantes ikke
+                 noe sted i det hele tatt. -->
+            <sc-if value="{{ klDKanEndre }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">På kursdagen</div>
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                  <button type="button" onClick="{{ klDIkkeMott }}" style="{{ klDHandlingStil }}">Møtte ikke opp</button>
+                  <button type="button" onClick="{{ klDSperrBevis }}" style="{{ klDHandlingStil }}">Sperr kursbeviset</button>
+                  <button type="button" onClick="{{ klDAapneBevis }}" style="{{ klDHandlingStil }}">Åpne kursbeviset</button>
+                  <button type="button" onClick="{{ klDAvbestill }}" style="{{ klDFareStil }}">Avbestill</button>
+                </div>
+                <sc-if value="{{ klDIngenFlytt }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">Kurset har ingen andre datoer å flytte til.</div>
+                </sc-if>
+                <sc-if value="{{ klDKanFlytte }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-top: var(--space-4);">
+                    <select value="{{ klDFlyttTil }}" onChange="{{ settKlDFlyttTil }}" style="{{ klDFlyttStil }}">
+                      <option value="">Flytt til en annen dato …</option>
+                      <sc-for list="{{ klDFlyttValg }}" as="o" hint-placeholder-count="3">
+                        <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                      </sc-for>
+                    </select>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klDFlyttUtfor }}" hint-size="auto,36px">Flytt</x-import>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
               <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Se full påmelding i Påmeldte →</button>
             </div>
           </div>
@@ -22729,7 +22774,7 @@ class Component extends DCLogic {
         tall: String(d) + (stengtDag ? ' · Stengt' : ''),
         stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
         tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: iso === idagIso ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
-        hendelser: evts.slice(0, mndMax).map(e => ({ tekst: (e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel, stil: pill(e, false), velg: velg(e), meny: meny(e) })),
+        hendelser: evts.slice(0, mndMax).map(e => ({ tekst: (e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel, id: e.id, stil: pill(e, false), velg: velg(e), meny: meny(e), ned: ev => this.klDragStart(e, ev) })),
         harMer: evts.length > mndMax, mer: '+ ' + (evts.length - mndMax) + ' til',
         velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
       });
@@ -23523,6 +23568,71 @@ class Component extends DCLogic {
               klDSendtTekst: dv
                 ? 'Beskjeden er sendt til ' + dv.navn + (dv.tlf ? ' på SMS og e-post.' : ' på e-post.')
                 : '',
+
+              // ── Det som gjoeres paa én deltaker paa en kursdag ─────────
+              //
+              // Fire ting verkstedet gjor hele tiden, og som til naa matte
+              // gjores fra Paameldte — eller ikke kunne gjores i det hele
+              // tatt. «Ikke moett» fantes bare som en verdi i pamelding.php:
+              // ingen knapp noe sted brukte den.
+              klDKanEndre: !!(dv && dv.bookingId),
+              klDIkkeMott: () => {
+                if (!dv || !dv.bookingId) return;
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'status', id: dv.bookingId, status: 'ikke_mott' })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+              },
+              // Avbestillingen frigir plassen. Er den betalt med Vipps, sier
+              // endepunktet fra: da skal den refunderes, ikke slettes.
+              klDAvbestill: () => {
+                if (!dv || !dv.bookingId) return;
+                if (!window.confirm('Ta ' + dv.navn + ' av lista?\n\n'
+                    + 'Plassen blir ledig med det samme. Er den betalt med Vipps, '
+                    + 'må den refunderes under Økonomi i stedet.')) return;
+                this.klKall('/api/admin/pamelding.php', { handling: 'fjern', id: dv.bookingId })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+              },
+              // De andre datoene paa det samme kurset.
+              klDFlyttValg: (dv ? alle.filter(e => e.kursId === dv.kursId && e.oktId
+                                                 && e.oktId !== dv.oktId && !e.avlyst
+                                                 && e.dato >= idagIso) : [])
+                .sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid))
+                .map(e => {
+                  const d2 = new Date(e.dato + 'T12:00:00');
+                  return { verdi: String(e.oktId),
+                           navn: uked[(d2.getDay() + 6) % 7] + ' ' + d2.getDate() + '. '
+                                 + mndNavn[d2.getMonth()] + ' · ' + e.tid
+                                 + (e.kap ? ' · ' + Math.max(0, e.kap - e.pameldt) + ' ledige' : '') };
+                }),
+              klDFlyttTil: this.state.klDFlyttTil || '',
+              settKlDFlyttTil: e => this.setState({ klDFlyttTil: e.target.value }),
+              klDFlyttUtfor: () => {
+                const til = parseInt(this.state.klDFlyttTil || '0', 10);
+                if (!dv || !dv.bookingId || !til) {
+                  this.setState({ kvittering: 'Velg en dato',
+                                  kvitteringDetalj: 'Velg datoen ' + (dv ? dv.navn : 'personen') + ' skal flyttes til.' });
+                  return;
+                }
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'flytt', id: dv.bookingId, oktId: til })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDFlyttTil: '' }); });
+              },
+              klDKanFlytte: !!(dv && alle.filter(e => e.kursId === dv.kursId && e.oktId && e.oktId !== dv.oktId && !e.avlyst && e.dato >= idagIso).length > 0),
+              klDIngenFlytt: !!(dv && alle.filter(e => e.kursId === dv.kursId && e.oktId
+                                                     && e.oktId !== dv.oktId && !e.avlyst
+                                                     && e.dato >= idagIso).length === 0),
+              // Kursbeviset. Det tegnes naar noen ber om det — her sperres
+              // det, for den som gikk hjem etter en halv time.
+              klDSperrBevis: () => {
+                if (!dv || !dv.bookingId) return;
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'bevis', id: dv.bookingId, sperret: 'ja' });
+              },
+              klDAapneBevis: () => {
+                if (!dv || !dv.bookingId) return;
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'bevis', id: dv.bookingId, sperret: 'nei' });
+              },
             };
           })(),
           klHolderVises: !!hProfil,
@@ -23552,6 +23662,60 @@ class Component extends DCLogic {
             + ((hReg && hReg.telefon) ? ' på SMS og e-post.' : ' på e-post.'),
         };
       })(),
+      // ── Det som gjoeres paa hele okta ────────────────────────────────
+      //
+      // Tre ting verkstedet gjor paa en kursdag, og som til naa laa paa hver
+      // sin skjerm: beskjeden til alle som staar paa lista, meldingen om at
+      // keramikken er klar til henting, og timene kursholderen skal ha betalt
+      // for. Alle tre gaar til endepunktene som alt finnes.
+      klOktBeskjed: this.state.klOktBeskjed || '',
+      settKlOktBeskjed: e => this.setState({ klOktBeskjed: e.target.value }),
+      klOktBeskjedSend: () => {
+        const tekst = (this.state.klOktBeskjed || '').trim();
+        if (!valgt || !valgt.oktId || !tekst) {
+          this.setState({ kvittering: 'Skriv beskjeden',
+                          kvitteringDetalj: 'Feltet er tomt.' });
+          return;
+        }
+        this.klKall('/api/admin/beskjed.php',
+          { til: 'okt', oktId: valgt.oktId, tekst: tekst, ogsaaSms: true })
+          .then(ok => { if (ok) this.setState({ klOktBeskjed: '' }); });
+      },
+      // «Ferdig glassert»: alle paa datoen som ikke alt har faatt beskjed.
+      klOktFerdig: () => {
+        if (!valgt || !valgt.oktId) return;
+        if (!window.confirm('Melde keramikken klar til henting for alle på «'
+            + valgt.tittel + '»?\n\nDe som alt har fått beskjed får ikke en ny.')) return;
+        this.klKall('/api/admin/ferdigbrent.php', { handling: 'meld-alle', oktId: valgt.oktId });
+      },
+      // Timene kursholderen skal ha betalt for. Lengden paa okta er regnet av
+      // klokkeslettene, saa det vanlige tilfellet er ett trykk.
+      klOktTimerKan: !!(valgt && valgt.holder && valgt.slutt),
+      klOktTimerTekst: valgt && valgt.holder && valgt.slutt
+        ? 'Før ' + (Math.round(Math.max(0, this.klMin(valgt.slutt) - this.klMin(valgt.tid)) / 6) / 10)
+          + ' t på ' + valgt.holder
+        : 'Før timer',
+      klOktTimer: () => {
+        if (!valgt || !valgt.holder || !valgt.slutt) {
+          this.setState({ kvittering: 'Kan ikke føre timer',
+                          kvitteringDetalj: 'Økta må ha både kursholder og sluttid.' });
+          return;
+        }
+        const hId = this.klHolderId(valgt.holder);
+        if (!hId) {
+          this.setState({ kvittering: 'Kan ikke føre timer',
+                          kvitteringDetalj: valgt.holder + ' står ikke i kursholderregisteret.' });
+          return;
+        }
+        const timer = Math.round(Math.max(0, this.klMin(valgt.slutt) - this.klMin(valgt.tid)) / 6) / 10;
+        this.klKall('/api/admin/kursholdere.php', {
+          handling: 'timer', id: hId, dato: valgt.dato, timer: String(timer),
+          hva: valgt.tittel,
+        });
+      },
+      klDHandlingStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--border-subtle)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap' },
+      klDFareStil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--terracotta-500)', background: 'transparent', color: 'var(--terracotta-600)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap' },
+      klDFlyttStil: { boxSizing: 'border-box', flex: '1 1 220px', minWidth: 0, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '9px 12px', font: 'var(--type-body-sm)', background: 'var(--clay-50)', color: 'var(--text-heading)', cursor: 'pointer' },
       klHarValgt: !!valgt,
       klNyDNavn: this.state.klNyDNavn || '',
       klNyDTlf: this.state.klNyDTlf || '',
@@ -23585,7 +23749,7 @@ class Component extends DCLogic {
         harKap: !!valgt.kap,
         kapTekst: valgt.pameldt + ' av ' + valgt.kap + ' plasser',
         beleggStil: { width: pct + '%', height: '8px', borderRadius: '4px', background: pct >= 100 ? 'var(--terracotta-500)' : 'var(--sage-500)' },
-        deltakere: valgt.deltakere.map(p => ({ navn: p.navn, status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status, ny: !!p.ny, velg: () => this.setState({ klDeltakerVis: { navn: p.navn, status: p.status, merknad: p.merknad || '', okt: valgt.tittel, tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : '') + ' · ' + valgt.dato, epost: p.epost || '', tlf: p.tlf || '', bookingId: p.bookingId || 0, medlemId: p.medlemId || 0, oktId: valgt.oktId || 0 }, klDBeskjed: '', klDSendtTil: null }) })),
+        deltakere: valgt.deltakere.map(p => ({ navn: p.navn, status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status, ny: !!p.ny, velg: () => this.setState({ klDeltakerVis: { navn: p.navn, status: p.status, merknad: p.merknad || '', okt: valgt.tittel, tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : '') + ' · ' + valgt.dato, epost: p.epost || '', tlf: p.tlf || '', bookingId: p.bookingId || 0, medlemId: p.medlemId || 0, oktId: valgt.oktId || 0, kursId: valgt.kursId || 0, betalt: p.status === 'Betalt' }, klDBeskjed: '', klDFlyttTil: '', klDSendtTil: null }) })),
         ingenDeltakere: !!valgt.kap && valgt.deltakere.length === 0,
         harVenteliste: valgt.venteliste.length > 0,
         venteliste: valgt.venteliste.map(v => ({ navn: v.navn, pos: '#' + v.posisjon, erVarslet: !!varslet[valgt.id + v.navn], ikkeVarslet: !varslet[valgt.id + v.navn], tilby: () => this.setState(s => ({ klVarslet: Object.assign({}, s.klVarslet, { [valgt.id + v.navn]: true }) })) })),
@@ -23813,6 +23977,12 @@ class Component extends DCLogic {
   klAngreUtfor() {
     const a = this.state.klAngre; if (!a) return;
     clearTimeout(this._klAngreTimer);
+    // En flytting som faktisk er lagret, angres av en flytting tilbake.
+    if (a.tilbake) {
+      this.setState({ klAngre: null });
+      this.klKall(a.tilbake.sti, a.tilbake.kropp);
+      return;
+    }
     this.setState(st => {
       const endr = Object.assign({}, st.klEndringer); if (a.hadEndr) endr[a.id] = a.prevEndr; else delete endr[a.id];
       const hold = Object.assign({}, st.klHolder); if (a.hadHold) hold[a.id] = a.prevHold; else delete hold[a.id];
@@ -23820,29 +23990,144 @@ class Component extends DCLogic {
     });
   }
 
+  /**
+   * Drar en okt til et nytt tidspunkt.
+   *
+   * Flyttingen gaar til kurs.php som alle andre — den teller hvem som staar
+   * paa lista, og avviser at kursholderen blir staaende paa to kurs
+   * samtidig. Konflikten sjekkes altsaa der endringen skjer, ikke i
+   * nettleseren: en sjekk i skjermen ville sett paa det skjermen tilfeldigvis
+   * hadde hentet, og sluppet gjennom en kollisjon med en dato i en annen
+   * maaned.
+   *
+   * Angre er en ekte flytting tilbake, ikke et lag over skjermen. Ellers
+   * ville «Angre» sett ut som den virket mens datoen ble staaende flyttet.
+   */
   klDragStart(evt, e) {
-    // Aa dra en okt til et nytt tidspunkt er ikke koblet.
-    //
-    // Selve flyttingen er det: hoyreklikk paa okta og velg «Flytt dato…»,
-    // eller aapne den og bruk «Flytt dato». Begge gaar til kurs.php, som
-    // teller hvor mange som staar paa lista og sier fra om at de ikke faar
-    // beskjed av seg selv.
-    //
-    // Draingen krever i tillegg en konfliktsjekk mot kursholderens andre
-    // okter og en angremulighet som gjelder det som faktisk er lagret. Den
-    // staar for tur. Til da skal ingenting kunne dras, framfor at det ser ut
-    // til aa virke og ikke lagres.
-    return;
+    if (e.button !== 0 || !evt || !evt.oktId) return;
+    e.preventDefault();
+    this._klFlytt = { evt: evt, moved: false };
+    const move = mv => {
+      const d = this._klFlytt; if (!d) return;
+      d.moved = true;
+      this.setState({ klDrag: { id: evt.id, dx: mv.clientX - e.clientX, dy: mv.clientY - e.clientY } });
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._klFlytt; this._klFlytt = null;
+      this.setState({ klDrag: null });
+      if (!d || !d.moved) return;
+
+      const lengde = evt.slutt ? Math.max(0, this.klMin(evt.slutt) - this.klMin(evt.tid)) : 0;
+      const mal = this.klSlippMaal(mv, lengde);
+      if (!mal) return;
+      // Maanedsrutenettet har ingen tidsakse. Da flyttes dagen, og
+      // klokkeslettet staar — det er det eneste svaret som ikke er en gjetning.
+      const nyFra = mal.fra || evt.tid;
+      if (mal.dato === evt.dato && nyFra === evt.tid) return;
+
+      this.klKall('/api/admin/kurs.php', {
+        handling: 'endredato', oktId: evt.oktId,
+        start: mal.dato + ' ' + nyFra,
+        slutt: lengde ? mal.dato + ' ' + this.klFmt(this.klMin(nyFra) + lengde) : '',
+      }).then(ok => {
+        if (!ok) return;
+        // Samme regel tilbake som fram. Er sluttida lik starten — det finnes
+        // slike okter — skal den ikke sendes noen av veiene: serveren avviser
+        // «slutt maa vaere etter start», og «Angre» ville sett ut som den
+        // virket mens datoen ble staaende flyttet.
+        this.klTilbyAngre(evt.tittel + ' er flyttet', {
+          sti: '/api/admin/kurs.php',
+          kropp: { handling: 'endredato', oktId: evt.oktId,
+                   start: evt.dato + ' ' + evt.tid,
+                   slutt: lengde ? evt.dato + ' ' + evt.slutt : '' },
+        });
+      });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
   }
 
+  /**
+   * Hvor slapp du?
+   *
+   * Enten i en kursholderspalte i dagsvisningen, eller paa en dag i maaneds-
+   * eller ukevisningen. Ellers ingen steder, og da skjer ingenting.
+   *
+   * @return {{dato: string, fra: string}|null}
+   */
+  klSlippMaal(mv, lengde) {
+    const els = document.elementsFromPoint(mv.clientX, mv.clientY);
+    const kolEl = els.find(el => el.getAttribute && el.getAttribute('data-kol'));
+    const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));
+    const omr = this._klRange || { start: 420, slutt: 1320, px: 52 };
+    const iAksen = (el, y) => {
+      const r = el.getBoundingClientRect();
+      let mn = omr.start + Math.round(((y - r.top) / (omr.px || 52) * 60) / 30) * 30;
+      return this.klFmt(Math.max(omr.start, Math.min(omr.slutt - Math.max(30, lengde || 60), mn)));
+    };
+    if (kolEl) {
+      const idag = new Date();
+      return {
+        dato: this.state.klAnker || (idag.getFullYear() + '-'
+              + String(idag.getMonth() + 1).padStart(2, '0') + '-'
+              + String(idag.getDate()).padStart(2, '0')),
+        fra: iAksen(kolEl, mv.clientY),
+      };
+    }
+    if (datoEl && datoEl.getAttribute('data-dato')) {
+      return {
+        dato: datoEl.getAttribute('data-dato'),
+        // I maanedsrutenettet er det ingen tidsakse: da beholdes klokkeslettet.
+        fra: datoEl.getAttribute('data-akse') ? iAksen(datoEl, mv.clientY) : null,
+      };
+    }
+    return null;
+  }
+
+  /**
+   * Tilbyr «Angre» i seks sekunder.
+   *
+   * Angringen er et ekte kall tilbake, saa knappen gjor det den sier ogsaa
+   * etter at siden er tegnet paa nytt.
+   */
+  klTilbyAngre(tekst, tilbake) {
+    this.setState({ klAngre: { tekst: tekst, tilbake: tilbake } });
+    clearTimeout(this._klAngreTimer);
+    this._klAngreTimer = setTimeout(() => this.setState(s => (s.klAngre ? { klAngre: null } : {})), 6000);
+  }
+
+  /**
+   * Drar en fra ventelista inn paa en okt.
+   *
+   * Slippet gir ikke plassen med det samme — det aapner bekreftelsen som alt
+   * finnes, med navnet, datoen og hvor mange plasser som er tatt. Aa gi bort
+   * en stol ved et uhell er ikke noe man oppdager og retter: den neste i koen
+   * har alt faatt e-posten.
+   */
   klVlDragStart(p, e) {
-    // Aa dra en fra ventelista inn paa en okt er ikke koblet.
-    //
-    // Selve tildelingen er det: aapne okta og bruk «Tildel neste», eller gaa
-    // til Venteliste. Begge gaar til venteliste.php, som sjekker at det
-    // faktisk finnes en ledig stol foer plassen gis — uten den sjekken kunne
-    // to fra lista faatt den samme, og det oppdages foerst den kvelden.
-    return;
+    if (e.button !== 0 || !p || !p.id) return;
+    e.preventDefault();
+    this._klVl = { p: p, moved: false };
+    const move = mv => {
+      const d = this._klVl; if (!d) return;
+      d.moved = true;
+      this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY } });
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._klVl; this._klVl = null;
+      this.setState({ klNyDrag: null });
+      if (!d || !d.moved) return;
+      // Maalet er en okt, ikke et tidspunkt: brikka baerer nummeret sitt i
+      // «data-evt».
+      const el = document.elementsFromPoint(mv.clientX, mv.clientY)
+        .find(x => x.getAttribute && x.getAttribute('data-evt'));
+      if (!el) return;
+      const malId = el.getAttribute('data-evt');
+      if (malId === p.srcId) return;
+      this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
   }
 
   klPaminData() {

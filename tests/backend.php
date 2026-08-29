@@ -1594,6 +1594,61 @@ sjekk('klMin finnes, saa dra-og-slipp av et kurs ikke stopper',
 
 $kursFil6 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 
+// ── Resten av fase 6 ─────────────────────────────────────────────────────
+//
+// Kursholderkonflikten. Registeret var lenge ikke koblet til noe, og da kunne
+// ingen dobbeltbookes fordi ingen var bookede. Naa hoerer kursholderen til
+// datoen, og den samme personen kunne settes paa to kurs som gaar samtidig.
+// Det oppdages foerst den kvelden begge skal gaa.
+sjekk('kursholderen kan ikke staa paa to kurs samtidig',
+    str_contains($kursFil6, '$holderOpptatt = static function')
+    && str_contains($kursFil6, 'AND cs.start_tid < :slutt')
+    && str_contains($kursFil6, 'AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 1 HOUR) > :start'));
+// Alle tre veiene en kursholder kan bli opptatt paa.
+sjekk('konflikten sjekkes paa ny dato, bytte av kursholder og flytting',
+    substr_count($kursFil6, '$krevLedigHolder(') === 3);
+// Avlyste okter gaar ikke, og skal ikke sperre noe.
+sjekk('en avlyst okt sperrer ikke kursholderen',
+    str_contains($kursFil6, "AND cs.status <> 'avlyst'\n            AND cs.start_tid < :slutt"));
+
+// De sju daglige oppgavene, fra kalenderen.
+foreach ([
+    'moette ikke opp'         => "handling: 'status', id: dv.bookingId, status: 'ikke_mott'",
+    'avbestiller en plass'    => "handling: 'fjern', id: dv.bookingId",
+    'flytter én deltaker'     => "handling: 'flytt', id: dv.bookingId, oktId: til",
+    'sperrer kursbeviset'     => "handling: 'bevis', id: dv.bookingId, sperret: 'ja'",
+    'sender til alle paa okta'=> "til: 'okt', oktId: valgt.oktId",
+    'melder keramikken klar'  => "handling: 'meld-alle', oktId: valgt.oktId",
+    'foerer kursholdertimer'  => "handling: 'timer', id: hId, dato: valgt.dato",
+] as $hva => $bit) {
+    sjekk('kalenderen ' . $hva, str_contains($sida, $bit));
+}
+// «Ikke moett» fantes bare som en verdi i pamelding.php. Ingen knapp noe sted
+// brukte den — statusen kunne ikke settes.
+sjekk('«ikke moett» kan endelig settes fra en skjerm',
+    str_contains($sida, 'klDIkkeMott: () => {'));
+
+// Dra-og-slipp. Konflikten sjekkes der endringen skjer, ikke i nettleseren:
+// en sjekk i skjermen ville sett paa det skjermen tilfeldigvis hadde hentet.
+sjekk('en okt kan dras til et nytt tidspunkt',
+    str_contains($sida, 'klDragStart(evt, e) {') && str_contains($sida, 'klSlippMaal(mv, lengde)'));
+// Maanedsrutenettet har ingen tidsakse. Da flyttes dagen, og klokkeslettet
+// staar — det er det eneste svaret som ikke er en gjetning.
+sjekk('draing i maanedsrutenettet beholder klokkeslettet',
+    str_contains($sida, 'const nyFra = mal.fra || evt.tid;'));
+// Angre er en ekte flytting tilbake, ikke et lag over skjermen.
+sjekk('angre flytter faktisk tilbake',
+    str_contains($sida, 'klTilbyAngre(tekst, tilbake) {')
+    && str_contains($sida, 'this.klKall(a.tilbake.sti, a.tilbake.kropp);'));
+// Samme regel begge veier: er sluttida lik starten, sendes den ikke — ellers
+// avviser serveren angringen, og knappen ser ut som den virket.
+sjekk('angringen bruker samme regel for sluttida som flyttingen',
+    str_contains($sida, "slutt: lengde ? evt.dato + ' ' + evt.slutt : '' },"));
+// Aa gi bort en stol ved et uhell er ikke noe man oppdager og retter: den
+// neste i koen har alt faatt e-posten. Slippet aapner bekreftelsen.
+sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
+    str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
+
 // ── Kurset redigeres der kortet staar ────────────────────────────────────
 //
 // Kortene i kurslista kunne bare dras. Ville eieren rette en pris eller en

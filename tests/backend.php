@@ -84,12 +84,25 @@ sjekk('Paint on Pots: gratis plass henger sammen med betaling i verkstedet',
     $pop['pris_ore'] . ' ore, gjenstand_i_kassa=' . $kassa);
 $test = DB::en("SELECT status FROM courses WHERE slug='testkurs'");
 sjekk('testkurset er ute av sirkulasjon', $test === null || $test['status'] === 'avlyst', $test['status'] ?? 'slettet');
-$boller = DB::en("SELECT tema FROM courses WHERE slug='kurs-boller'");
-sjekk('bollekurset har tema Plateteknikk', $boller['tema'] === 'Plateteknikk', $boller['tema']);
-// Nytt navn fra migrasjon 087, og slugen staar: /kurs/kurs-boller er delt i
-// e-poster og indeksert av Google.
-$bTittel = DB::verdi("SELECT tittel FROM courses WHERE slug='kurs-boller'");
-sjekk('bollekurset heter «Lag din egen bolle»', $bTittel === 'Lag din egen bolle', (string) $bTittel);
+// Navnet kom i migrasjon 087, adressen fulgte etter i 092. Testen slo opp
+// paa den gamle adressen og doede den dagen 092 ble kjort — den skal folge
+// kurset, ikke adressen kurset tilfeldigvis hadde. Begge godtas, saa den
+// virker enten migrasjonen er kjort eller ikke.
+$boller = DB::en("SELECT tema, slug, tittel FROM courses
+                   WHERE slug IN ('lag-din-egen-bolle', 'kurs-boller')
+                     AND status = 'publisert' LIMIT 1");
+sjekk('bollekurset finnes og er publisert', $boller !== null);
+sjekk('bollekurset har tema Plateteknikk',
+    $boller !== null && $boller['tema'] === 'Plateteknikk', (string) ($boller['tema'] ?? ''));
+sjekk('bollekurset heter «Lag din egen bolle»',
+    $boller !== null && $boller['tittel'] === 'Lag din egen bolle', (string) ($boller['tittel'] ?? ''));
+// Den gamle adressen er delt i e-poster og indeksert av Google. Er den
+// flyttet, maa .htaccess sende den videre — ellers er lenkene doede.
+if ($boller !== null && $boller['slug'] === 'lag-din-egen-bolle') {
+    sjekk('den gamle bolleadressen sendes videre',
+        str_contains(file_get_contents(dirname(__DIR__) . '/.htaccess'),
+                     'kurs/kurs-boller'));
+}
 // Kursteksten henger paa navnet. Byttes det ene uten det andre, faller
 // kurssida tilbake paa den generelle plateteknikk-malen.
 $malFil = file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php');

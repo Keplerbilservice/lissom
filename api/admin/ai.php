@@ -313,8 +313,17 @@ switch ($handling) {
             4000
         );
 
+        // AI-en blir bedt om aa svare uten emneknagg-tegnet og gjor det som
+        // regel — men ikke alltid. Skjermen setter selv en «#» foran hver,
+        // saa en som slapp gjennom ble til «##keramikk». Renskes her, én
+        // gang, framfor aa gjettes paa hvert sted de vises.
+        $tagger = array_values(array_filter(array_map(
+            static fn($h) => ltrim(trim((string) $h), '#'),
+            (array) ($r['hashtags'] ?? [])
+        )));
+
         $lagre('sosialt', $kanal . ' — ' . $om, (string) ($r['tekst'] ?? ''),
-            ['kanal' => $kanal, 'form' => $form, 'hashtags' => $r['hashtags'] ?? [],
+            ['kanal' => $kanal, 'form' => $form, 'hashtags' => $tagger,
              'bildeforslag' => (string) ($r['bildeforslag'] ?? ''),
              'bilde' => $valgtBilde($kropp)], $om, AI::sisteKostnad());
 
@@ -525,8 +534,13 @@ switch ($handling) {
             while ((int) DB::verdi('SELECT COUNT(*) FROM articles WHERE slug = :s', ['s' => $slug]) > 0) {
                 $slug = $grunn . '-' . $n++;
             }
+            // Overskriften er UNIQUE i basen. To utkast om det samme ga
+            // hele SQLSTATE-feilen paa skjermen og ingen publisering — se
+            // Artikler::ledigTittel(). Kvitteringen sier fra naar den ble
+            // endret, saa den kan doepes om framfor aa staa som «(2)».
+            $tittel = Artikler::ledigTittel((string) $u['tittel']);
             $resultat = DB::settInn('articles', [
-                'tittel'    => $u['tittel'],
+                'tittel'    => $tittel,
                 'kategori'  => $data['kategori'] ?? null,
                 'slug'      => $slug,
                 'fokus_ord' => $data['fokusord'] ?? ($data['sokeord'] ?? null),
@@ -543,6 +557,8 @@ switch ($handling) {
             ]);
         }
 
+        $doptOm = $resultat !== null && isset($tittel) && $tittel !== (string) $u['tittel'];
+
         DB::oppdater('ai_utkast', ['status' => 'godkjent', 'resultat_id' => $resultat], ['id' => $id]);
         revider('ai_godkjent', 'ai', $id, ['type' => $u['type']]);
 
@@ -558,15 +574,19 @@ switch ($handling) {
         $erBrev = in_array($u['type'], ['nyhetsbrev', 'medlemsbrev'], true);
         Svar::ok([
             'beskjed' => $resultat !== null
-                ? ($utNaa
+                ? (($utNaa
                     ? 'Publisert. Artikkelen ligger ute på nettsiden nå.'
                     : 'Lagt i kunnskapsbanken som kladd. Publiser den når du er klar.')
+                    . ($doptOm
+                        ? ' Det fantes en artikkel med samme overskrift, så denne heter «'
+                          . $tittel . '». Gi den gjerne et bedre navn under Kunnskapsbank.'
+                        : ''))
                 : ($erBrev
                     ? 'Åpnet under Beskjeder, med teksten klar. Velg mottakere og send.'
                     : 'Godkjent. Den ligger under «Godkjent» på tavla til du har brukt den.'),
             'artikkelId' => $resultat,
             'type'       => $u['type'],
-            'tittel'     => (string) $u['tittel'],
+            'tittel'     => $resultat !== null && isset($tittel) ? $tittel : (string) $u['tittel'],
             // Bildet eieren valgte da utkastet ble laget. Uten dette fulgte
             // det ikke med til Beskjeder, og nyhetsbrevet gikk ut uten det
             // bildet hun hadde valgt til det.

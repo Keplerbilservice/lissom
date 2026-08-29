@@ -2823,6 +2823,59 @@ sjekk('dra-og-slipp finner hendelsen paa id-en',
 sjekk('et klikk aapner okta i alle visningene',
     substr_count($sida2, 'id="{{ h.domId }}" onClick="{{ h.velg }}"') === 3);
 
+// ── Markedsforing: forhaandsvisning for alle typene ────────────────────
+//
+// Eieren 29. august: «jeg velger bilde, og genererer tekst — naa vil ikke
+// bilde komme med». Det stemte: bare innlegg til sosiale medier hadde en
+// forhaandsvisning. En artikkel og et nyhetsbrev fikk raa tekst og ingen
+// bilde, selv om bildet fulgte med hele veien i basen.
+sjekk('artikkelutkast har en forhaandsvisning',
+    str_contains($sida2, '{{ mkLesErArtikkel }}') && str_contains($sida2, '{{ mkLesOppsettTittel }}'));
+sjekk('nyhetsbrevutkast har en forhaandsvisning',
+    str_contains($sida2, '{{ mkLesErBrev }}'));
+sjekk('innlegg har fortsatt sin', str_contains($sida2, '{{ mkLesErSosialt }}'));
+// Bildet skal staa i alle tre, ikke bare i innlegget.
+sjekk('bildet tegnes i alle tre forhaandsvisningene',
+    substr_count($sida2, 'data-src="{{ mkLesBilde }}"') === 3);
+// Avsnittene tegnes hver for seg. «white-space: pre-wrap» ga bare linjeskift,
+// og en artikkel saa ut som en lapp.
+sjekk('avsnittene faar luft mellom seg',
+    str_contains($sida2, 'list="{{ mkLesAvsnitt }}"'));
+// Ett klikk: «jeg vil trykke publiser i artikkelen saa publiseres den».
+sjekk('«Publiser naa» staar i selve utkastet',
+    str_contains($sida2, 'on-click="{{ mkLesPubliser }}"'));
+sjekk('… og publiserer i samme kall som godkjenningen',
+    str_contains($sida2, "handling: 'godkjenn', id: l.id, publiser: true"));
+// Sperra sto foran alt og sa «AI-en svarer forst naar siden kjorer paa
+// serveren» — ogsaa for godkjenn og publiser, som ikke sporr AI-en om noe.
+sjekk('godkjenn og publiser stoppes ikke av AI-sperra',
+    str_contains($sida2, 'if (!laget && !this.erPublisert()) {'));
+// Et ferskt utkast staar ikke i lista enda. Sto det «return» her, aapnet
+// det seg ikke — og da var bildet borte i det oyeblikket det gjaldt.
+sjekk('et ferskt utkast kan aapnes for lista er hentet',
+    str_contains($sida2, '.find(x => x.id === id) || {};')
+    && str_contains($sida2, 'if (!laget && d && d.id) this.mkLes(d.id);'));
+
+// Overskriften er UNIQUE i articles. To utkast om det samme ga hele
+// SQLSTATE-feilen paa skjermen, og ingenting ble publisert.
+sjekk('en dublett-overskrift gir et tall bak, ikke en SQL-feil',
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/artikler.php'), 'public static function ledigTittel')
+    && str_contains(file_get_contents(__DIR__ . '/../api/admin/ai.php'), 'Artikler::ledigTittel('));
+sjekk('… og skjemaet i Kunnskapsbank sier fra i klartekst',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/artikler.php'),
+                 'Det finnes allerede en artikkel som heter'));
+
+// Emneknaggene lagres uten «#», og skjermen setter ett foran. Kom de fra
+// AI-en med tegnet alt paa, sto det «##keramikk».
+$marked = file_get_contents(__DIR__ . '/../api/admin/marked.php');
+sjekk('emneknagger renskes for «#» naar de leses',
+    str_contains($marked, "ltrim(trim((string) \$h), '#')"));
+sjekk('… og naar de lagres',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/ai.php'), "ltrim(trim((string) \$h), '#')"));
+// Serveren beskriver oppsettet for hver type, ikke bare for sosialt.
+sjekk('serveren gir et oppsett til artikkel og brev ogsaa',
+    str_contains($marked, "'slag'    => 'artikkel'") && str_contains($marked, "'slag'    => 'brev'"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

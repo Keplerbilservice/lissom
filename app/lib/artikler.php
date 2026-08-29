@@ -24,6 +24,48 @@ final class Artikler
     public const TILSTANDER = ['kladd', 'planlagt', 'publisert', 'avpublisert'];
 
     /**
+     * En overskrift som ikke kolliderer med en artikkel som alt finnes.
+     *
+     * articles.tittel er UNIQUE (migrasjon 018). Slug-en ble ryddet for det
+     * — «-2» bak — men overskriften ble skrevet rett inn. Lagde eieren en
+     * artikkel til om det samme, kom hele SQLSTATE-feilen opp paa skjermen:
+     *
+     *   SQLSTATE[23000]: Duplicate entry '...' for key 'uq_articles_tittel'
+     *
+     * Det er ikke en beskjed noen kan gjore noe med, og det stoppet
+     * «Publiser naa» uten aa si hvorfor. Her faar den et tall bak i stedet,
+     * og den som publiserte faar vite at den fikk det — saa hun kan gi den
+     * et bedre navn framfor aa lure paa hva som skjedde.
+     *
+     * @param int|null $utenom Artikkelen som selv har tittelen (ved lagring).
+     */
+    public static function ledigTittel(string $tittel, ?int $utenom = null): string
+    {
+        $tittel = trim($tittel) !== '' ? trim($tittel) : 'Uten overskrift';
+        $grunn  = $tittel;
+        $n      = 2;
+        while (self::tittelTatt($tittel, $utenom)) {
+            // 191 tegn er hele feltet. Kappes det ikke, bytter vi én feil ut
+            // med en annen.
+            $hale   = ' (' . $n . ')';
+            $tittel = mb_substr($grunn, 0, 191 - mb_strlen($hale)) . $hale;
+            $n++;
+            if ($n > 99) {
+                return mb_substr($grunn, 0, 180) . ' ' . bin2hex(random_bytes(4));
+            }
+        }
+        return $tittel;
+    }
+
+    private static function tittelTatt(string $tittel, ?int $utenom): bool
+    {
+        return (int) DB::verdi(
+            'SELECT COUNT(*) FROM articles WHERE tittel = :t' . ($utenom ? ' AND id <> :i' : ''),
+            $utenom ? ['t' => $tittel, 'i' => $utenom] : ['t' => $tittel]
+        ) > 0;
+    }
+
+    /**
      * Setter planlagte artikler som har naadd tidspunktet sitt til publisert.
      *
      * Returnerer hvor mange som ble flyttet. Trygg aa kalle sa ofte man vil.

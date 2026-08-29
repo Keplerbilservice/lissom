@@ -48,8 +48,14 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
         'status'    => $u['status'],
         // Emneknagger og billedforslag ligger i data-feltet, ikke i teksten.
         // De skal limes inn hver for seg, saa de vises hver for seg.
+        //
+        // Uten emneknagg-tegnet. AI-en blir bedt om aa svare uten det, men
+        // svarer med det omtrent halve tida — og skjermen setter selv en
+        // «#» foran hver. Da sto det «##keramikk» i forhaandsvisningen.
+        // Det er her det maa strippes: en gammel rad i basen har dem alt
+        // med, og den skal ogsaa vises riktig.
         'hashtags'  => array_values(array_filter(array_map(
-            static fn($h) => trim((string) $h),
+            static fn($h) => ltrim(trim((string) $h), '#'),
             (array) ($data['hashtags'] ?? [])
         ))),
         'bildeforslag' => trim((string) ($data['bildeforslag'] ?? '')),
@@ -57,6 +63,9 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
         // er AI-ens beskrivelse i ord av et bilde som ikke finnes.
         'bilde'        => trim((string) ($data['bilde'] ?? '')) ?: null,
         'ingress'   => trim((string) ($data['ingress'] ?? '')),
+        // Kategorien staar over overskriften paa den ferdige artikkelen.
+        // Uten den kunne ikke forhaandsvisningen vise det som faktisk blir.
+        'kategori'  => trim((string) ($data['kategori'] ?? '')),
         // Kanalen og formen innlegget ble skrevet for. Uten dem vet ikke
         // skjermen hvilket format bildet skal ha — Instagram vil ha 4:5,
         // en story 9:16, LinkedIn liggende.
@@ -66,13 +75,59 @@ if (Foresporsel::metode() === 'GET' && Foresporsel::tekst('utkast') !== '') {
         // og emneknaggene til slutt. Bygget av serveren, saa den som
         // kopierer faar noeyaktig det som staar i forhaandsvisningen.
         'limtekst'  => Oppsett::sosialTekst((string) $u['tekst'], (array) ($data['hashtags'] ?? [])),
-    ] + (static function () use ($data): array {
+    ] + (static function () use ($u, $data): array {
+        // ── Slik blir det ────────────────────────────────────────────
+        //
+        // Foer laa dette bare paa innlegg til sosiale medier: de fikk en
+        // ramme i kanalens format med bildet i. En artikkel og et
+        // nyhetsbrev fikk ingenting — eieren valgte et bilde, laget
+        // teksten, aapnet utkastet og saa bare raa tekst. Bildet var med
+        // hele veien i basen, men ingen steder paa skjermen, og da er det
+        // ikke med for den som ser paa.
+        //
+        // Hver type faar naa beskrevet sitt eget oppsett, og skjermen
+        // tegner det slik det faktisk blir der det havner.
+        $slag = (string) $u['type'];
         $kanal = trim((string) ($data['kanal'] ?? ''));
-        if ($kanal === '') {
-            return [];
+
+        if ($slag === 'sosialt' && $kanal !== '') {
+            [$b, $h, $navn] = Oppsett::format($kanal, trim((string) ($data['form'] ?? '')));
+            return [
+                'format'  => ['bredde' => $b, 'hoyde' => $h, 'navn' => $navn],
+                'oppsett' => [
+                    'slag'    => 'sosialt',
+                    'tittel'  => 'Slik blir innlegget',
+                    'merknad' => $navn . ' · ' . $b . ' × ' . $h . ' px',
+                ],
+            ];
         }
-        [$b, $h, $navn] = Oppsett::format($kanal, trim((string) ($data['form'] ?? '')));
-        return ['format' => ['bredde' => $b, 'hoyde' => $h, 'navn' => $navn]];
+
+        if (in_array($slag, ['artikkel', 'seo'], true)) {
+            return ['oppsett' => [
+                'slag'    => 'artikkel',
+                'tittel'  => 'Slik blir artikkelen',
+                'merknad' => 'Under Nyheter og guider på lissom.no',
+                // Toppbildet paa artikkelsida er bredt, ikke kvadratisk.
+                // Ramma i forhaandsvisningen maa ha samme forhold, ellers
+                // viser den et annet utsnitt enn det som blir publisert.
+                'bredde'  => 16,
+                'hoyde'   => 9,
+            ]];
+        }
+
+        if (in_array($slag, ['nyhetsbrev', 'medlemsbrev'], true)) {
+            return ['oppsett' => [
+                'slag'    => 'brev',
+                'tittel'  => 'Slik blir nyhetsbrevet',
+                'merknad' => 'I innboksen hos mottakerne',
+                // E-postbildet sendes 600 piksler bredt — bredden en
+                // e-postleser gir en melding.
+                'bredde'  => 3,
+                'hoyde'   => 2,
+            ]];
+        }
+
+        return [];
     })()]);
 }
 

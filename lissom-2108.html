@@ -12635,7 +12635,74 @@ window.__resources = {
               <sc-if value="{{ mkLesFeil }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body);">Teksten kom ikke fram. Lukk ruta og prøv igjen.</p>
               </sc-if>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); white-space: pre-wrap; line-height: 1.7;">{{ mkLesTekst }}</p>
+              <!-- ── Slik blir det ────────────────────────────────────
+                   Foer sto det bare raa tekst her, og bare innlegg til
+                   sosiale medier fikk se hvordan de kom til aa se ut. En
+                   artikkel og et nyhetsbrev fikk ingenting — eieren valgte
+                   et bilde, laget teksten, aapnet utkastet, og bildet var
+                   ingen steder aa se. Det laa i basen hele veien, men det
+                   hjelper ikke den som ser paa skjermen.
+
+                   Naa har alle tre sin egen forhaandsvisning, tegnet slik
+                   det faktisk blir der det havner. -->
+
+              <!-- Artikkelen slik den blir paa nettsiden: kategori over
+                   overskriften, bredt toppbilde, ingressen stoerre enn
+                   brodteksten. Samme rekkefolge som paa den ferdige sida. -->
+              <sc-if value="{{ mkLesErArtikkel }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-5);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); background: var(--clay-100);">
+                    <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ mkLesOppsettTittel }}</span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkLesOppsettMerknad }}</span>
+                  </div>
+                  <div style="padding: var(--space-6);">
+                    <sc-if value="{{ mkLesHarKategori }}" hint-placeholder-val="{{ false }}">
+                      <div style="font: var(--type-eyebrow); font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">{{ mkLesKategori }}</div>
+                    </sc-if>
+                    <h3 style="margin: 0 0 var(--space-4); font-family: var(--font-display); font-size: var(--text-2xl); line-height: 1.15; color: var(--text-heading); text-wrap: balance;">{{ mkLesTittel }}</h3>
+                    <div style="{{ mkLesRammeStil }}">
+                      <sc-if value="{{ mkLesHarBilde }}" hint-placeholder-val="{{ true }}">
+                        <img data-src="{{ mkLesBilde }}" alt="" style="{{ mkLesBildeStil }}" loading="lazy" decoding="async">
+                      </sc-if>
+                      <sc-if value="{{ mkLesUtenBilde }}" hint-placeholder-val="{{ false }}">
+                        <div style="{{ mkLesTomStil }}">Uten bilde blir artikkelen liggende uten toppbilde. Velg et før du lager neste.</div>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ mkLesHarIngress }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: var(--space-5) 0 var(--space-4); font-size: var(--text-lg); line-height: 1.6; color: var(--text-heading); font-weight: 500; text-wrap: pretty;">{{ mkLesIngress }}</p>
+                    </sc-if>
+                    <sc-for list="{{ mkLesAvsnitt }}" as="a" hint-placeholder-count="3">
+                      <p style="{{ a.stil }}">{{ a.tekst }}</p>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <!-- Nyhetsbrevet slik det blir i innboksen: bildet oeverst i
+                   full bredde, slik en e-postleser viser det, og teksten
+                   under. -->
+              <sc-if value="{{ mkLesErBrev }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-5);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); background: var(--clay-100);">
+                    <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ mkLesOppsettTittel }}</span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkLesOppsettMerknad }}</span>
+                  </div>
+                  <div style="padding: var(--space-6);">
+                    <div style="{{ mkLesRammeStil }}">
+                      <sc-if value="{{ mkLesHarBilde }}" hint-placeholder-val="{{ true }}">
+                        <img data-src="{{ mkLesBilde }}" alt="" style="{{ mkLesBildeStil }}" loading="lazy" decoding="async">
+                      </sc-if>
+                      <sc-if value="{{ mkLesUtenBilde }}" hint-placeholder-val="{{ false }}">
+                        <div style="{{ mkLesTomStil }}">Uten bilde går brevet ut som ren tekst.</div>
+                      </sc-if>
+                    </div>
+                    <h3 style="margin: var(--space-5) 0 var(--space-4); font-family: var(--font-display); font-size: var(--text-xl); line-height: 1.2; color: var(--text-heading); text-wrap: balance;">{{ mkLesTittel }}</h3>
+                    <sc-for list="{{ mkLesAvsnitt }}" as="a" hint-placeholder-count="3">
+                      <p style="{{ a.stil }}">{{ a.tekst }}</p>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
 
               <!-- Emneknaggene ligger for seg i basen, ikke i teksten. De
                    limes inn i et eget felt paa Instagram, saa de staar for
@@ -12648,17 +12715,14 @@ window.__resources = {
                 </div>
               </sc-if>
 
-              <!-- Innlegget slik det blir.
-                   Teksten sto her alene, og bildet eieren hadde valgt laa i
-                   basen og gikk ingen steder. Her staar de sammen, i det
-                   formatet kanalen faktisk bruker — og bildet kan lastes ned
-                   ferdig beskaaret, saa det ikke maa klippes for haand
-                   etterpaa. -->
-              <sc-if value="{{ mkLesHarOppsett }}" hint-placeholder-val="{{ false }}">
+              <!-- Innlegget slik det blir, i det formatet kanalen faktisk
+                   bruker — og bildet kan lastes ned ferdig beskaaret, saa det
+                   ikke maa klippes for haand etterpaa. -->
+              <sc-if value="{{ mkLesErSosialt }}" hint-placeholder-val="{{ false }}">
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-bottom: var(--space-5);">
                   <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4);">
-                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Slik blir innlegget</div>
-                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkLesFormat }}</span>
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ mkLesOppsettTittel }}</div>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ mkLesOppsettMerknad }}</span>
                   </div>
                   <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; align-items: flex-start;">
                     <div style="flex: 0 0 auto;">
@@ -12682,6 +12746,13 @@ window.__resources = {
                 </div>
               </sc-if>
 
+              <!-- Utkast uten et sted aa havne — SEO-forslag, autopilot —
+                   har ingen forhaandsvisning aa tegne. Da staar teksten som
+                   for. -->
+              <sc-if value="{{ mkLesUtenOppsett }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); white-space: pre-wrap; line-height: 1.7;">{{ mkLesTekst }}</p>
+              </sc-if>
+
               <!-- Teksten alene hjelper lite naar bildet skal tas paa
                    verkstedet. AI-en foreslar hva bildet bor vise. -->
               <sc-if value="{{ mkLesHarBildeforslag }}" hint-placeholder-val="{{ false }}">
@@ -12691,8 +12762,20 @@ window.__resources = {
                 </div>
               </sc-if>
 
+              <!-- Ett klikk.
+                   Eieren, 29. august: «jeg vil trykke publiser i artikkelen
+                   saa publiseres den, et klikk». For maatte utkastet lukkes,
+                   letes opp igjen paa tavla og publiseres derfra — etter at
+                   han nettopp hadde lest og sagt ja til det. Knappen staar
+                   her, der avgjorelsen tas. -->
               <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mkLesGodkjenn }}" hint-size="auto,44px">Ta i bruk</x-import>
+                <sc-if value="{{ mkLesErArtikkel }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mkLesPubliser }}" hint-size="auto,44px">Publiser nå</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ mkLesGodkjenn }}" hint-size="auto,44px">Lagre som kladd</x-import>
+                </sc-if>
+                <sc-if value="{{ mkLesIkkeArtikkel }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ mkLesGodkjenn }}" hint-size="auto,44px">{{ mkLesBrukTekst }}</x-import>
+                </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="copy" on-click="{{ mkLesKopier }}" hint-size="auto,44px">Kopier teksten</x-import>
               </div>
             </div>
@@ -19053,15 +19136,20 @@ class Component extends DCLogic {
   // Et AI-kall tar tid — modellen skriver en hel artikkel. Uten en beskjed
   // om at det er i gang, trykker man knappen en gang til.
   aiKall(kropp) {
-    if (!this.erPublisert()) {
+    // Handlingene som bare flytter noe som alt er skrevet. De tar et
+    // oyeblikk; de andre ber AI-en skrive, og det tar et halvt minutt.
+    const laget = ['godkjenn', 'forkast', 'publiser', 'slett'].indexOf(kropp.handling) !== -1;
+    // Sperra sto foran alle handlingene og sa «AI-en svarer forst naar siden
+    // kjorer paa serveren». For «godkjenn» og «publiser» var det ikke sant:
+    // de spor ikke AI-en om noe, de flytter en tekst som alt er skrevet.
+    // Resultatet var at «Publiser naa» ikke gjorde noe, med en begrunnelse
+    // som ikke stemte. Sperra gjelder naa bare det den handler om.
+    if (!laget && !this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden', kvitteringDetalj: 'AI-en svarer først når siden kjører på serveren.' });
       return;
     }
     if (this._aiJobber) return;
     this._aiJobber = true;
-    // Handlingene som bare flytter noe som alt er skrevet. De tar et
-    // oyeblikk; de andre ber AI-en skrive, og det tar et halvt minutt.
-    const laget = ['godkjenn', 'forkast', 'publiser', 'slett'].indexOf(kropp.handling) !== -1;
     this.setState({
       kvittering: laget ? 'Et øyeblikk' : 'AI-en skriver',
       kvitteringDetalj: laget ? '' : 'Dette tar gjerne et halvt minutt. Du får beskjed når utkastet er klart.',
@@ -19082,8 +19170,15 @@ class Component extends DCLogic {
         if (ok) {
           this._markedHentes = false; this.hentMarked();
           this._artiklerHentes = false; this.hentMarkedArtikler();
-          // Nytt utkast: aapne det med det samme, saa det leses framfor aa bli liggende.
-          if (!laget && d && d.id) this.setState({ mkLes: { id: d.id, tittel: d.tittel, tekst: d.tekst, type: kropp.handling } });
+          // Nytt utkast: aapne det med det samme, saa det leses framfor aa bli
+          // liggende.
+          //
+          // Hentes helt, ikke settes sammen av svaret her. Svaret fra AI-kallet
+          // baerer tittel og tekst, men ikke oppsettet — og uten oppsettet vet
+          // ikke ruta at den skal tegne en artikkel med toppbilde. Da sto
+          // eieren igjen med raa tekst og uten bildet han nettopp valgte,
+          // akkurat i det oyeblikket han skulle se hva det ble.
+          if (!laget && d && d.id) this.mkLes(d.id);
           // «Lagt i kunnskapsbanken» — men hvor er den? Sto som en beskjed
           // om et sted man selv maatte lete etter. Naa staar man i den.
           //
@@ -19157,10 +19252,14 @@ class Component extends DCLogic {
     const m = this.state.marked || {};
     // Ogsaa de godkjente: de staar paa tavla til de er brukt, og skal kunne
     // leses derfra.
-    const u = (m.utkast || []).concat(m.godkjente || []).find(x => x.id === id);
-    if (!u) return;
+    // Et utkast som nettopp ble laget staar ikke i lista enda — den hentes
+    // paa nytt i samme slengen, og svaret er ikke kommet. Foer sto det et
+    // «return» her, og da kunne et ferskt utkast ikke aapnes i det hele
+    // tatt fra denne veien. Naa aapnes ruta med det vi maatte ha, og resten
+    // kommer fra kallet under.
+    const u = (m.utkast || []).concat(m.godkjente || []).find(x => x.id === id) || {};
     // Aapne med det vi alt vet, saa ruta ikke blinker tom mens teksten kommer.
-    this.setState({ mkLes: { id: u.id, tittel: u.tittel, type: u.type, tekst: '', henter: true } });
+    this.setState({ mkLes: { id: id, tittel: u.tittel || '', type: u.type || '', tekst: '', henter: true } });
     // Svaret kan komme etter at ruta er lukket, eller etter at et annet
     // utkast er aapnet. Da skal det ikke inn.
     const gjelderFortsatt = s => s.mkLes && s.mkLes.id === id;
@@ -36636,33 +36735,82 @@ class Component extends DCLogic {
             'Emneknaggene ligger på utklippstavla.'
           ),
 
-          // ── Innlegget slik det blir ─────────────────────────────────
+          // ── Slik blir det ───────────────────────────────────────────
           //
-          // Ramma har formatet kanalen bruker: Instagram 4:5, story 9:16,
-          // LinkedIn liggende. Bildet legges inn med «cover», som i kanalen,
-          // saa det som staar i ramma her er det som blir synlig der.
+          // Dette laa foer bare paa innlegg til sosiale medier. En artikkel
+          // og et nyhetsbrev fikk ingen forhaandsvisning i det hele tatt, og
+          // dermed heller ikke bildet eieren hadde valgt — det laa i basen,
+          // fulgte med helt ut paa nettsida, men var usynlig i det oyeblikket
+          // han skulle bestemme seg. Da er det ikke med, for ham.
+          //
+          // Alle tre tegnes naa likt: en ramme i det formatet stedet faktisk
+          // bruker, med bildet lagt inn med «cover», slik det blir der.
+          // Serveren sier hvilket oppsett utkastet har; her tegnes det.
           ...(() => {
             const u = this.state.mkLes || {};
+            const o = u.oppsett || null;
             const f = u.format || null;
-            if (!f) {
-              return { mkLesHarOppsett: false, mkLesFormat: '', mkLesRammeStil: {},
-                       mkLesBildeStil: {}, mkLesTomStil: {}, mkLesBilde: '',
-                       mkLesHarBilde: false, mkLesUtenBilde: false, mkLesLimtekst: '',
-                       mkLesLastNedTekst: '', mkLesLastNed: () => {},
-                       mkLesKopierAlt: () => {} };
+            const slag = o ? o.slag : '';
+
+            const avsnittStil = {
+              margin: '0 0 var(--space-4)', fontSize: 'var(--text-base)',
+              lineHeight: 1.7, color: 'var(--text-body)', textWrap: 'pretty',
+            };
+            // Teksten kommer med doble linjeskift mellom avsnittene, slik
+            // AI-en blir bedt om aa skrive den. Ett avsnitt per element gir
+            // ekte avstand mellom dem — «white-space: pre-wrap» gir bare et
+            // linjeskift, og da ser en artikkel ut som en lapp.
+            const avsnitt = String(u.tekst || '').split(/\n\s*\n/)
+              .map(t => t.trim()).filter(Boolean)
+              .map(tekst => ({ tekst, stil: avsnittStil }));
+
+            const tomStil = { font: 'var(--type-body-sm)', fontSize: 'var(--text-xs)',
+                              color: 'var(--text-muted)', textAlign: 'center', padding: 12,
+                              textWrap: 'pretty' };
+
+            if (!o) {
+              return {
+                mkLesErArtikkel: false, mkLesErBrev: false, mkLesErSosialt: false,
+                mkLesIkkeArtikkel: true, mkLesUtenOppsett: true,
+                mkLesOppsettTittel: '', mkLesOppsettMerknad: '',
+                mkLesKategori: '', mkLesHarKategori: false,
+                mkLesIngress: '', mkLesHarIngress: false, mkLesAvsnitt: [],
+                mkLesRammeStil: {}, mkLesBildeStil: {}, mkLesTomStil: tomStil,
+                mkLesBilde: '', mkLesHarBilde: false, mkLesUtenBilde: false,
+                mkLesLimtekst: '', mkLesLastNedTekst: '',
+                mkLesLastNed: () => {}, mkLesKopierAlt: () => {},
+                mkLesBrukTekst: 'Ta i bruk', mkLesPubliser: () => {},
+              };
             }
-            // Ramma tegnes 220 piksler bred, med hoyden i samme forhold.
-            const bredde = 220;
-            const hoyde = Math.round(bredde * f.hoyde / f.bredde);
+
+            // Ramma. Sosialt bruker kanalens piksler; artikkel og brev bruker
+            // forholdstallet serveren oppgir, i full bredde i ruta.
+            const bredde = slag === 'sosialt' ? 220 : 0;
+            const ramme = slag === 'sosialt'
+              ? { width: bredde, height: Math.round(bredde * f.hoyde / f.bredde) }
+              : { width: '100%', aspectRatio: o.bredde + ' / ' + o.hoyde };
+
             return {
-              mkLesHarOppsett: true,
-              mkLesFormat: f.navn + ' · ' + f.bredde + ' × ' + f.hoyde + ' px',
-              mkLesRammeStil: {
-                width: bredde, height: hoyde, borderRadius: 'var(--radius-md)',
-                overflow: 'hidden', background: 'var(--clay-100)',
-                border: '1px solid var(--border-subtle)',
+              mkLesErArtikkel: slag === 'artikkel',
+              mkLesErBrev: slag === 'brev',
+              mkLesErSosialt: slag === 'sosialt',
+              // Knappene nederst: en artikkel kan publiseres med ett trykk,
+              // resten «tas i bruk». Motsatt av mkLesErArtikkel, fordi
+              // sc-if ikke kan snu et uttrykk.
+              mkLesIkkeArtikkel: slag !== 'artikkel',
+              mkLesUtenOppsett: false,
+              mkLesOppsettTittel: o.tittel || '',
+              mkLesOppsettMerknad: o.merknad || '',
+              mkLesKategori: u.kategori || '',
+              mkLesHarKategori: !!u.kategori,
+              mkLesIngress: u.ingress || '',
+              mkLesHarIngress: !!u.ingress,
+              mkLesAvsnitt: avsnitt,
+              mkLesRammeStil: Object.assign({
+                borderRadius: 'var(--radius-md)', overflow: 'hidden',
+                background: 'var(--clay-100)', border: '1px solid var(--border-subtle)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-              },
+              }, ramme),
               mkLesBilde: u.bilde || '',
               mkLesHarBilde: !!u.bilde,
               mkLesUtenBilde: !u.bilde,
@@ -36670,13 +36818,24 @@ class Component extends DCLogic {
                 width: '100%', height: '100%', objectFit: 'cover',
                 objectPosition: this.fokusFor(u.bilde || ''), display: 'block',
               },
-              mkLesTomStil: { font: 'var(--type-body-sm)', fontSize: 'var(--text-xs)',
-                              color: 'var(--text-muted)', textAlign: 'center', padding: 12 },
+              mkLesTomStil: tomStil,
               mkLesLimtekst: u.limtekst || u.tekst || '',
               mkLesKopierAlt: () => this.kopier(u.limtekst || u.tekst || '',
                 'Teksten og emneknaggene ligger på utklippstavla.'),
-              mkLesLastNedTekst: 'Last ned bildet i ' + f.bredde + ' × ' + f.hoyde,
-              mkLesLastNed: () => this.lastNedBeskaaret(u.bilde, f, u.tittel || 'innlegg'),
+              mkLesLastNedTekst: f ? 'Last ned bildet i ' + f.bredde + ' × ' + f.hoyde : '',
+              mkLesLastNed: () => f && this.lastNedBeskaaret(u.bilde, f, u.tittel || 'innlegg'),
+              // Et nyhetsbrev sendes fra Beskjeder, et innlegg limes inn i
+              // kanalen. Knappen sier hva som faktisk skjer.
+              mkLesBrukTekst: slag === 'brev' ? 'Åpne i Beskjeder' : 'Ta i bruk',
+              // Ett klikk: godkjenn og legg ut i samme kall. Serveren gjor
+              // begge deler i «godkjenn» med publiser=true, saa artikkelen
+              // aldri blir staaende som en kladd ingen visste om.
+              mkLesPubliser: () => {
+                const l = this.state.mkLes;
+                if (!l) return;
+                this.setState({ mkLes: null });
+                this.aiKall({ handling: 'godkjenn', id: l.id, publiser: true });
+              },
             };
           })(),
         };

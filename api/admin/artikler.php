@@ -103,6 +103,17 @@ switch (Foresporsel::tekst('handling')) {
         if ($tittel === '') {
             Svar::feil('Artikkelen må ha en tittel.');
         }
+        // Overskriften er UNIQUE i basen (migrasjon 018). Uten denne sjekken
+        // kom hele SQLSTATE-feilen opp naar to artikler fikk samme navn, og
+        // lagringen stoppet uten aa si hva som var galt. Her skriver eieren
+        // tittelen selv, saa hun skal faa vite det og velge en annen — ikke
+        // faa et tall satt bak i det stille.
+        if ((int) DB::verdi(
+            'SELECT COUNT(*) FROM articles WHERE tittel = :t AND id <> :i',
+            ['t' => $tittel, 'i' => $id]
+        ) > 0) {
+            Svar::feil('Det finnes allerede en artikkel som heter «' . $tittel . '». Gi denne en annen overskrift.');
+        }
         $innhold = trim((string) ($kropp['innhold'] ?? ''));
         if (mb_strlen($innhold) > 100000) {
             Svar::feil('Artikkelen er for lang.');

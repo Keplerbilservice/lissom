@@ -2652,6 +2652,25 @@ sjekk('… og naar koden lukkes', str_contains($sida2, 'utQrLukk: () => { this.u
 sjekk('uttakKall gir svaret tilbake uten aa velte de andre',
     str_contains($sida2, 'return ok ? d : false;'));
 
+// ── Prisen paa datoen gaar foran prisen paa kurset ─────────────────────
+//
+// «Prisen kan avvike paa én dato» er en egen kolonne, og nettsida og
+// Booking::forOkt() har alltid lest den. Den manuelle paameldingen leste bare
+// kursets pris, saa en dato med egen pris ble fort til feil sum naar
+// beloepsfeltet sto tomt. Eieren la merke til teksten: «dette stemmer vel
+// ikke».
+sjekk('den manuelle paameldingen leser prisen paa datoen',
+    str_contains($pamFil, "'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore'"));
+sjekk('… med det samme uttrykket som resten av systemet',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+                 "'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore'"));
+sjekk('… og taaler at kolonnen mangler',
+    str_contains($pamFil, "DB::harKolonne('course_sessions', 'pris_ore')"));
+// Teksten under feltet lovet kursets pris. Naa sier den det samme som koden.
+sjekk('teksten sier det koden gjor',
+    str_contains($sida2, 'brukes prisen på denne datoen.')
+    && !str_contains($sida2, 'brukes kursets ordinære pris.'));
+
 // ── Nedtrekkene paa iPhone ─────────────────────────────────────────────
 //
 // Motoren pakker {{ }} i et <span class="sc-interp">. Chrome faller tilbake

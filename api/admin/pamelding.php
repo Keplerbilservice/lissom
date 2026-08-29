@@ -209,11 +209,20 @@ if ($navn === '') {
     Svar::feil('Deltakeren må ha et navn.');
 }
 
+// Prisen paa datoen gaar foran prisen paa kurset.
+//
+// «Prisen kan avvike paa én dato» — det er en egen kolonne, og nettsida og
+// Booking::forOkt() har alltid lest den. Her sto bare kursets pris, saa en
+// dato med egen pris ble ført til feil sum naar beløpsfeltet sto tomt. Samme
+// uttrykk som app/lib/booking.php, saa de to ikke kan bli uenige.
+$prisKol = DB::harKolonne('course_sessions', 'pris_ore')
+    ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
+
 $okt = DB::en(
-    'SELECT cs.id, cs.course_id, cs.start_tid, c.tittel, c.pris_ore
+    "SELECT cs.id, cs.course_id, cs.start_tid, c.tittel, {$prisKol} AS pris_ore
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
-      WHERE cs.id = :i AND cs.status <> :a',
+      WHERE cs.id = :i AND cs.status <> :a",
     ['i' => $oktId, 'a' => 'avlyst']
 );
 if ($okt === null) {
@@ -232,7 +241,7 @@ if (!in_array($maate, MAATER, true)) {
     $maate = 'Kontant';
 }
 
-// Belopet: tomt felt betyr kursets ordinaere pris. «Gratis» er null kroner,
+// Belopet: tomt felt betyr prisen paa datoen. «Gratis» er null kroner,
 // uansett hva som staar i feltet — ellers ville en fribillett kunnet vise en
 // sum i regnskapet.
 $belopRaa = Foresporsel::tekst('belop');

@@ -6968,7 +6968,7 @@ window.__resources = {
                   </div>
                   <div>
                     <label style="{{ nrEtikett }}">Beløp i kroner</label>
-                    <input value="{{ nrBelop }}" onChange="{{ settNrBelop }}" placeholder="Tomt = prisen på kurset" style="{{ nrFeltStil }}">
+                    <input value="{{ nrBelop }}" onChange="{{ settNrBelop }}" placeholder="Tomt = prisen på datoen" style="{{ nrFeltStil }}">
                   </div>
                 </div>
               </div>
@@ -24159,7 +24159,7 @@ class Component extends DCLogic {
                       valg: maater.map(m => ({ verdi: m, navn: m })),
                       endre: e => sett('maate', e.target.value), boksStil: {},
                     },
-                    tekst('belop', 'Beløp i kroner', krav ? 'Må fylles ut' : 'Tomt = kursets pris'),
+                    tekst('belop', 'Beløp i kroner', krav ? 'Må fylles ut' : 'Tomt = prisen på datoen'),
                     tekst('notat', 'Internt notat', 'Vises ikke for deltakeren', true),
                   ],
                   kdForklaring: krav
@@ -24168,7 +24168,7 @@ class Component extends DCLogic {
                         ? 'Plassen står som reservert. Den settes til betalt fra deltakerlista når pengene er gjort opp.'
                         : (maate === 'Gratis'
                             ? 'Ingen sum føres på plassen.'
-                            : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes kursets ordinære pris.')),
+                            : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes prisen på denne datoen.')),
                   // «Legg til» alene sto alt i verktoylinja over kalenderen. To knapper
                   // med samme ord, én skjerm fra hverandre, er én for mye.
                   kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren',

@@ -1542,6 +1542,24 @@ sjekk('knappene som endrer noe sier fra at de ikke er koblet',
     substr_count($sida, 'this.klIkkeEnda(') >= 10);
 sjekk('beskjedene i kalenderen er ekte henvendelser, ikke oppdiktede',
     str_contains($sida, "klBeskjeder: (this.state.adminForesporsler || [])"));
+// ── Kurskalenderen paa nettsiden, paa telefon ────────────────────────────
+//
+// De sju dagskortene laa i en stripe man maatte dra sidelengs: tre fikk
+// plass, fire laa utenfor kanten. Ingenting sa at den kunne dras, og eieren
+// meldte at dagene 3.–6. september manglet i uke 36 — de var der hele tiden.
+sjekk('hele uka staar i ett bilde paa telefon',
+    str_contains($sida, 'ukeStripStil:')
+    && str_contains($sida, "gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px'"));
+sjekk('dagene under stripa staar i full bredde, ikke sidelengs',
+    str_contains($sida, 'class="lx-ukeliste"')
+    && str_contains($sida, '.lx-ukeliste { grid-template-columns: 1fr !important; }'));
+// Trykk paa en dag i stripa gaar ned til dagen. Har dagen ingenting, finnes
+// det ingen rute aa hoppe til — da skal trykket ikke sende deg til toppen.
+sjekk('trykk paa en dag i stripa gaar til dagen',
+    str_contains($sida, "document.getElementById('ukedag-' + dagIdx)"));
+sjekk('en tom dag i stripa gjor ingenting',
+    str_contains($sida, "if (!(d.poster || []).length) return;"));
+
 // ── Kalenderskjermen paa telefon ─────────────────────────────────────────
 //
 // Skjermen kom fra designfila og hadde sin egen sidemeny: feil sti til logoen,

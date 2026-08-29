@@ -1267,6 +1267,9 @@ window.__resources = {
        ikke to spalter — det er to smale striper. */
     .lx-fbpanel { grid-template-columns: 1fr !important; }
     .lx-week { grid-template-columns: repeat(7, minmax(112px, 1fr)) !important; overflow-x: auto !important; padding-bottom: 8px !important; }
+    /* Kalendersida: stripa over gir hele uka i ett bilde, saa dagene under
+       staar i full bredde — én under den andre. Ingen sidelengs draing. */
+    .lx-ukeliste { grid-template-columns: 1fr !important; }
     html, body { overflow-x: clip; max-width: 100%; overscroll-behavior-x: none; }
     .lx-wrapm { white-space: normal !important; }
     .lx-band { flex-direction: column !important; align-items: flex-start !important; gap: 20px !important; }
@@ -2963,9 +2966,25 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon-after="arrow-right" on-click="{{ ukeTomGaa }}" hint-size="auto,40px">{{ ukeTomKnapp }}</x-import>
             </div>
           </sc-if>
-          <div class="lx-week" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-3);">
+          <!-- Uka i ett bilde.
+               Paa en telefon fikk bare tre av de sju dagskortene plass, og
+               resten laa i en stripe man maatte dra sidelengs. Ingenting sa
+               at den kunne dras, og paa iPhone stjeler sida ofte den
+               bevegelsen — det saa ut som fire dager manglet i uka.
+               Naa staar hele uka som sju smale ruter som faar plass i
+               bredden, og dagene med noe staar i full bredde under. -->
+          <div style="{{ ukeStripStil }}">
             <sc-for list="{{ uke }}" as="d" hint-placeholder-count="7">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-4); min-height: 170px; display: flex; flex-direction: column;">
+              <button type="button" onClick="{{ d.gaaTilDag }}" style="{{ d.stripStil }}">
+                <span style="font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; opacity: .75;">{{ d.dagKort }}</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); line-height: 1.1;">{{ d.dato }}</span>
+                <span style="{{ d.stripPrikkStil }}">{{ d.antall }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div class="lx-ukeliste" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-3);">
+            <sc-for list="{{ uke }}" as="d" hint-placeholder-count="7">
+              <div id="{{ d.anker }}" style="{{ d.kortStil }}">
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ d.dag }}</div>
                 <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin: 2px 0 var(--space-3);">{{ d.dato }}</div>
                 <div style="display: flex; flex-direction: column; gap: 6px;">
@@ -25216,9 +25235,53 @@ class Component extends DCLogic {
         clearTimeout(this._fsTimer);
         this._fsTimer = setTimeout(() => this.setState({ fsApen: false }), 3000);
       },
+      // Stripa staar bare paa telefon. Paa skjerm er de sju dagskortene
+      // ved siden av hverandre alt hele uka i ett bilde.
+      ukeStripStil: this.erSmal()
+        ? { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: 'var(--space-5)' }
+        : { display: 'none' },
       uke: this.ukeData(this.state.ukeNr ?? this.ukeMedNoe(this.ukeNaa())).map((d, dagIdx) => Object.assign(d, {
         erTom: !(d.poster || []).length,
         tomTekst: 'Ingen kurs i dag',
+        // ── Uka i ett bilde paa telefon ─────────────────────────────────
+        //
+        // Sju smale ruter som faar plass i bredden: ukedag, dato og hvor
+        // mange ting som skjer. Trykk gaar ned til dagen.
+        dagKort: (d.dag || '').slice(0, 2),
+        antall: (d.poster || []).length ? String((d.poster || []).length) : '',
+        anker: 'ukedag-' + dagIdx,
+        // En dag uten noe har ingen rute under stripa aa hoppe til. Da skal
+        // trykket ikke gjore noe — ikke sende deg til toppen av sida.
+        gaaTilDag: () => {
+          if (!(d.poster || []).length) return;
+          const el = document.getElementById('ukedag-' + dagIdx);
+          if (!el || !el.getClientRects().length) return;
+          window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        },
+        stripStil: {
+          appearance: 'none', fontFamily: 'inherit',
+          cursor: (d.poster || []).length ? 'pointer' : 'default',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+          padding: '8px 2px 7px', minWidth: 0,
+          borderRadius: 'var(--radius-md)',
+          border: (d.poster || []).length ? '1px solid var(--lissom-brown)' : '1px solid var(--border-subtle)',
+          background: (d.poster || []).length ? 'var(--lissom-yellow)' : 'var(--surface-card)',
+          color: (d.poster || []).length ? 'var(--lissom-brown)' : 'var(--text-muted)',
+        },
+        // Tallet staar bare der det er noe. En tom rute skal se tom ut, ikke
+        // baere en null.
+        stripPrikkStil: (d.poster || []).length
+          ? { fontSize: '10px', fontWeight: 700, lineHeight: 1, background: 'var(--lissom-brown)',
+              color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '2px 6px' }
+          : { display: 'none' },
+        // Dagene uten noe gjentas ikke under stripa paa telefon — der ville
+        // de bare gjort lista lang uten aa si noe stripa ikke alt har sagt.
+        kortStil: {
+          background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+          minHeight: this.erSmal() ? 0 : '170px', flexDirection: 'column',
+          display: this.erSmal() && !(d.poster || []).length ? 'none' : 'flex',
+        },
         velgDag: (d.poster || []).length
           ? this.go('booking')
           : () => this.setState({ kvApen: true, kvSteg: 0, kvSvar: {} }),

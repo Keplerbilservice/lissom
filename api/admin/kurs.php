@@ -374,7 +374,29 @@ switch ($handling) {
         if ($id > 0) {
             DB::oppdater('courses', $data, ['id' => $id]);
             revider('kurs_endret', 'course', $id, ['tittel' => $tittel]);
-            Svar::ok(['id' => $id]);
+
+            // Hvor mange datoer endringen gjelder.
+            //
+            // Datoene har ingen egen tittel, pris eller tekst — de peker paa
+            // kurset. Endringen slaar altsaa gjennom paa alle sammen, og paa
+            // nettsida. Det er meningen, men det skal staa: den som retter en
+            // pris skal se hvor langt rettelsen rekker.
+            $framover = (int) DB::verdi(
+                "SELECT COUNT(*) FROM course_sessions
+                  WHERE course_id = :k AND status <> 'avlyst'
+                    AND start_tid >= UTC_TIMESTAMP()",
+                ['k' => $id]
+            );
+            Svar::ok([
+                'id'      => $id,
+                'datoer'  => $framover,
+                'beskjed' => $tittel . ' er lagret. '
+                    . ($framover === 0
+                        ? 'Kurset har ingen planlagte datoer ennå.'
+                        : ($framover === 1
+                            ? 'Endringen gjelder også den ene planlagte datoen.'
+                            : 'Endringen gjelder også de ' . $framover . ' planlagte datoene.')),
+            ]);
         }
 
         // Ny: lag en slug som ikke kolliderer med en eksisterende. Regelen

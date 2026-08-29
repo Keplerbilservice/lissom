@@ -1592,12 +1592,38 @@ sjekk('stengte dager leses av det serveren sier',
 sjekk('klMin finnes, saa dra-og-slipp av et kurs ikke stopper',
     str_contains($sida, 'klMin(t) {'));
 
+$kursFil6 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+
+// ── Kurset redigeres der kortet staar ────────────────────────────────────
+//
+// Kortene i kurslista kunne bare dras. Ville eieren rette en pris eller en
+// tekst, matte hun ut av kalenderen, inn i kursoppsettet, finne kurset igjen
+// og tilbake. Naa aapner et klikk kurset der det staar.
+sjekk('et klikk paa kurskortet aapner kurset',
+    str_contains($sida, 'klApneKursRed(kurs, mv);')
+    && str_contains($sida, 'klApneKursRed(kort, ev) {'));
+// Ruta legger seg ved kortet, ikke midt paa skjermen.
+sjekk('ruta staar der kortet staar',
+    str_contains($sida, "{ x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }"));
+// Lagrelinja kommer forst naar noe faktisk er endret.
+sjekk('lagrelinja kommer naar noe er endret',
+    str_contains($sida, 'klKursRedEndret: endret.length > 0,'));
+// «Lagre» sender forskjellen. Sendes alt, toemmes et felt skjermen ikke
+// kjenner — og status skrives ubetinget, saa uten den ville kurset falt til
+// kladd og forsvunnet fra nettsida.
+sjekk('lagringen sender det som er endret, pluss tittel og status',
+    str_contains($sida, "endret.forEach(f => { kropp[f.nokkel] = naa[f.nokkel] || ''; });")
+    && str_contains($sida, "status: naa.status || start.status || 'kladd' }"));
+// Endringen gjelder kurset, og datoene peker paa kurset. Svaret sier hvor
+// langt rettelsen rekker.
+sjekk('svaret sier hvor mange planlagte datoer endringen gjelder',
+    str_contains($kursFil6, "'Endringen gjelder også de ' . \$framover . ' planlagte datoene.'"));
+
 sjekk('stemplingen i kalenderen leser den samme kilden som resten',
     str_contains($sida, "klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',")
     && !str_contains($sida, 'klInneTid'));
 // En avlyst dato kunne ikke settes tilbake. Da matte den settes opp paa nytt,
 // og de paameldte fulgte ikke med.
-$kursFil6 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 $apnFil6  = file_get_contents(dirname(__DIR__) . '/api/admin/apningstider.php');
 sjekk('en avlyst dato kan gjenopprettes',
     str_contains($kursFil6, "case 'gjenopprett':")

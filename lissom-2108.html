@@ -5500,6 +5500,53 @@ window.__resources = {
         <div style="{{ klNyDragStil }}">{{ klNyDragNavn }}</div>
       </sc-if>
 
+      <!-- Kurset, redigert der kortet staar.
+           Ruta legger seg ved kortet, ikke midt paa skjermen, saa du ser
+           hvilket kurs du holder paa med. Lagrelinja staar oeverst — rett
+           over feltene — og kommer forst naar noe faktisk er endret. -->
+      <sc-if value="{{ klKursRedVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klKursRedLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.28); z-index: 77;"></div>
+        <div onClick="{{ klStopp }}" style="{{ klKursRedStil }}">
+          <div style="position: sticky; top: 0; z-index: 2; background: var(--surface-card); border-bottom: 1px solid var(--border-subtle); border-radius: 22px 22px 0 0; padding: var(--space-5) var(--space-6) var(--space-3);">
+            <div style="display: flex; align-items: baseline; gap: var(--space-3);">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kurset</span>
+              <button type="button" onClick="{{ klKursRedLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 0 2px;">×</button>
+            </div>
+            <h3 style="margin: 2px 0 2px; font-size: var(--text-xl);">{{ klKursRedNavn }}</h3>
+            <div style="font-size: var(--text-xs); color: var(--text-muted);">Endringen gjelder kurset. {{ klKursRedDatoer }}.</div>
+            <sc-if value="{{ klKursRedEndret }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); background: var(--lissom-yellow); border-radius: var(--radius-md); padding: 9px 12px;">
+                <span style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">{{ klKursRedEndretTekst }}</span>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="check" on-click="{{ klKursRedLagre }}" hint-size="auto,36px">Lagre endringer</x-import>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-4) var(--space-6) var(--space-6);">
+            <sc-for list="{{ klKursRedFelt }}" as="f" hint-placeholder-count="6">
+              <div>
+                <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">{{ f.etikett }}</label>
+                <sc-if value="{{ f.erTekst }}" hint-placeholder-val="{{ true }}">
+                  <input value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.feltStil }}">
+                </sc-if>
+                <sc-if value="{{ f.erLang }}" hint-placeholder-val="{{ false }}">
+                  <textarea value="{{ f.verdi }}" onChange="{{ f.endre }}" rows="3" style="{{ f.feltStil }}"></textarea>
+                </sc-if>
+                <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
+                  <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.feltStil }}">
+                    <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="3">
+                      <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                    </sc-for>
+                  </select>
+                </sc-if>
+                <sc-if value="{{ f.erHake }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ f.veksle }}" style="{{ f.hakeStil }}">{{ f.hakeTekst }}</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
       <sc-if value="{{ klAngreVises }}" hint-placeholder-val="{{ false }}">
         <div style="position: fixed; left: 50%; transform: translateX(-50%); bottom: 28px; z-index: 90; display: flex; align-items: center; gap: var(--space-4); background: var(--lissom-brown); color: var(--clay-50); border-radius: var(--radius-pill); padding: 10px 12px 10px 22px; box-shadow: var(--shadow-lg);">
           <span style="font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">{{ klAngreTekst }}</span>
@@ -23039,6 +23086,113 @@ class Component extends DCLogic {
             kortStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '4px', borderLeftStyle: 'solid', borderLeftColor: k.type === 'Event' ? (k.navn === 'Paint on Pots' ? 'var(--slip-500)' : 'var(--terracotta-500)') : 'var(--lissom-yellow)', borderRadius: 'var(--radius-md)', padding: '12px 14px', cursor: 'grab', userSelect: 'none', opacity: k.publisert === false ? .6 : 1 },
             ned: e => this.klNyDragStart(k, e),
           })),
+          // ── Kurset, redigert der det staar ──────────────────────────────
+          //
+          // Kortene i kurslista kunne bare dras. Ville du rette en pris eller
+          // en tekst, matte du ut av kalenderen, inn i kursoppsettet, finne
+          // kurset igjen og tilbake. Naa aapner et klikk kurset der det staar.
+          //
+          // Endringen gjelder kurset, ikke datoen: alle planlagte datoer og
+          // nettsida foelger med, fordi de leser kurset. Det er hele poenget
+          // — én pris ett sted.
+          ...(() => {
+            const red = this.state.klKursRedId
+              ? (this.state.adminKursRaa || []).find(x => x.id === this.state.klKursRedId)
+              : null;
+            if (!red) {
+              return { klKursRedVises: false, klKursRedFelt: [], klKursRedNavn: '',
+                       klKursRedStil: { display: 'none' }, klKursRedEndret: false,
+                       klKursRedEndretTekst: '', klKursRedLagre: () => {},
+                       klKursRedLukk: () => {}, klKursRedDatoer: '' };
+            }
+            const naa = this.state.klKursVerdier || {};
+            const start = this.state.klKursStart || {};
+            const sett = (n, v) => this.setState(st => ({
+              klKursVerdier: Object.assign({}, st.klKursVerdier, { [n]: v }),
+            }));
+            const felt = (nokkel, etikett, type, valg) => ({
+              nokkel: nokkel, etikett: etikett,
+              erTekst: type === 'tekst', erLang: type === 'lang',
+              erValg: type === 'valg', erHake: type === 'hake',
+              verdi: naa[nokkel] === undefined ? '' : String(naa[nokkel]),
+              paa: naa[nokkel] === 'ja',
+              valg: (valg || []).map(v => ({ verdi: v[0], navn: v[1] })),
+              endre: e => sett(nokkel, e.target.value),
+              veksle: () => sett(nokkel, naa[nokkel] === 'ja' ? 'nei' : 'ja'),
+              feltStil: { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '9px 12px', font: 'var(--type-body-sm)', background: 'var(--clay-50)', color: 'var(--text-heading)' },
+              hakeStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, background: naa[nokkel] === 'ja' ? 'var(--lissom-yellow)' : 'var(--surface-card)', color: 'var(--lissom-brown)' },
+              hakeTekst: naa[nokkel] === 'ja' ? 'På' : 'Av',
+            });
+            const felter = [
+              felt('tittel', 'Navn på kurset', 'tekst'),
+              felt('type', 'Type', 'valg', [['kurs', 'Kurs'], ['event', 'Event'], ['workshop', 'Workshop'], ['dropin', 'Drop-in']]),
+              felt('tema', 'Tema', 'tekst'),
+              felt('pris', 'Pris i kroner', 'tekst'),
+              felt('kapasitet', 'Plasser', 'tekst'),
+              felt('status', 'Status', 'valg', [['publisert', 'Publisert'], ['kladd', 'Kladd'], ['avlyst', 'Avlyst']]),
+              felt('visUtenDato', 'Vis på nettsiden uten datoer', 'hake'),
+              felt('sms', 'SMS-påminnelse', 'hake'),
+              felt('gjenstandIKassa', 'Gjenstanden betales i verkstedet', 'hake'),
+              felt('nivaaIntern', 'Nivå internt', 'valg', [['nybegynner', 'Nybegynner'], ['videregaende', 'Viderekomne']]),
+              felt('nivaaTekst', 'Nivå slik kunden leser det', 'tekst'),
+              felt('varighetTekst', 'Varighet i tekst', 'tekst'),
+              felt('instruktor', 'Navn på kursbeviset', 'tekst'),
+              felt('kortBeskrivelse', 'Kort beskrivelse', 'lang'),
+              felt('om', 'Beskrivelse', 'lang'),
+              felt('punkter', 'Punkter, ett per linje', 'lang'),
+              felt('laerer', 'Dette lærer du', 'lang'),
+              felt('lagerDu', 'Dette lager du', 'lang'),
+              felt('medHjem', 'Dette får du med hjem', 'lang'),
+              felt('ferdigTid', 'Når er det ferdig', 'lang'),
+              felt('tillegg', 'Tillegg', 'lang'),
+              felt('praktisk', 'Praktisk', 'lang'),
+              felt('passerHvem', 'Passer for', 'lang'),
+              felt('passerNivaa', 'Passer på nivå', 'lang'),
+              felt('metode', 'Metode', 'lang'),
+              felt('allergener', 'Allergener', 'lang'),
+              felt('bekreftelse', 'Tekst i bekreftelsen', 'lang'),
+            ];
+            const endret = felter.filter(f => (naa[f.nokkel] || '') !== (start[f.nokkel] || ''));
+            const pos = this.state.klKursRedPos || {};
+            return {
+              klKursRedVises: true,
+              klKursRedNavn: start.tittel || red.tittel || '',
+              klKursRedDatoer: (red.datoerFramover || 0) > 0
+                ? (red.datoerFramover === 1 ? 'Én planlagt dato følger med'
+                                            : red.datoerFramover + ' planlagte datoer følger med')
+                : 'Ingen planlagte datoer ennå',
+              klKursRedFelt: felter,
+              klKursRedEndret: endret.length > 0,
+              klKursRedEndretTekst: endret.length === 1
+                ? 'Du har endret «' + endret[0].etikett.toLowerCase() + '»'
+                : 'Du har endret ' + endret.length + ' felt',
+              klKursRedStil: {
+                position: 'fixed', zIndex: 78,
+                left: Math.max(12, Math.min((pos.x || 320), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 432)) + 'px',
+                top: Math.max(12, Math.min((pos.y || 90), (typeof window !== 'undefined' ? window.innerHeight : 800) - 200)) + 'px',
+                width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',
+                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
+              },
+              klKursRedLukk: () => this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null }),
+              klKursRedLagre: () => {
+                // Bare det som er endret, pluss de to serveren alltid trenger:
+                // tittelen, og statusen — den skrives ubetinget, saa uten den
+                // ville et lagret kurs falt til kladd og forsvunnet fra nettsida.
+                const kropp = { handling: 'lagre', id: red.id,
+                                tittel: naa.tittel || start.tittel || '',
+                                status: naa.status || start.status || 'kladd' };
+                endret.forEach(f => { kropp[f.nokkel] = naa[f.nokkel] || ''; });
+                if (!String(kropp.tittel).trim()) {
+                  this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Kurset må ha et navn.' });
+                  return;
+                }
+                this.klKall('/api/admin/kurs.php', kropp).then(ok => {
+                  if (ok) this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null });
+                });
+              },
+            };
+          })(),
           // Beskjedene i toppen.
           //
           // Her sto tre oppdiktede meldinger fra designverktoyet — «Silje
@@ -23593,6 +23747,47 @@ class Component extends DCLogic {
       } });
   }
 
+  /**
+   * Aapner et kurs for redigering, der kortet staar.
+   *
+   * Verdiene leses av «adminKursRaa» — kurset slik det staar i basen — og
+   * legges i to kopier: én som redigeres, og én som staar urort. «Lagre»
+   * sender forskjellen, saa et felt skjermen ikke kjenner ikke toemmes, og
+   * et felt ingen roerte ikke skrives paa nytt.
+   */
+  klApneKursRed(kort, ev) {
+    const raa = (this.state.adminKursRaa || []).find(x => x.tittel === kort.navn);
+    if (!raa) {
+      this.setState({ kvittering: 'Fant ikke kurset',
+                      kvitteringDetalj: 'Last siden på nytt, så henter vi kurslista igjen.' });
+      return;
+    }
+    const jaNei = v => (v ? 'ja' : 'nei');
+    const start = {
+      tittel: raa.tittel || '', type: raa.type || 'kurs', tema: raa.tema || '',
+      pris: String(raa.pris == null ? '' : raa.pris),
+      kapasitet: String(raa.kapasitet == null ? '' : raa.kapasitet),
+      status: raa.status || 'kladd',
+      visUtenDato: jaNei(raa.visUtenDato), sms: jaNei(raa.sms !== false),
+      gjenstandIKassa: jaNei(raa.gjenstandIKassa),
+      nivaaIntern: raa.nivaaIntern || 'nybegynner', nivaaTekst: raa.nivaaTekst || '',
+      varighetTekst: raa.varighetTekst || '', instruktor: raa.instruktor || '',
+      kortBeskrivelse: raa.kortBeskrivelse || '', om: raa.om || '',
+      punkter: raa.punkter || '', laerer: raa.laerer || '', lagerDu: raa.lagerDu || '',
+      medHjem: raa.medHjem || '', ferdigTid: raa.ferdigTid || '', tillegg: raa.tillegg || '',
+      praktisk: raa.praktisk || '', passerHvem: raa.passerHvem || '',
+      passerNivaa: raa.passerNivaa || '', metode: raa.metode || '',
+      allergener: raa.allergener || '', bekreftelse: raa.bekreftelse || '',
+    };
+    // Ruta staar der kortet staar — ikke midt paa skjermen, saa du ser hvilket
+    // kurs du holder paa med.
+    const r = ev && ev.clientX != null
+      ? { x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }
+      : { x: 320, y: 90 };
+    this.setState({ klKursRedId: raa.id, klKursRedPos: r,
+                    klKursStart: start, klKursVerdier: Object.assign({}, start) });
+  }
+
   klApneKurs(evt) {
     const base = (evt.tittel || '').split(' · ')[0];
     const liste = this.kursData();
@@ -23689,7 +23884,14 @@ class Component extends DCLogic {
     const opp = mv => {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._klNy; this._klNy = null;
-      if (!d || !d.moved) { this.setState({ klNyDrag: null }); return; }
+      // Slapp du uten aa dra, var det et klikk: da aapnes kurset der det
+      // staar. Kortene kunne bare dras for — ville du rette en pris eller en
+      // tekst, matte du ut av kalenderen og inn i kursoppsettet.
+      if (!d || !d.moved) {
+        this.setState({ klNyDrag: null });
+        this.klApneKursRed(kurs, mv);
+        return;
+      }
       const els = document.elementsFromPoint(mv.clientX, mv.clientY);
       const kolEl = els.find(el => el.getAttribute && el.getAttribute('data-kol'));
       const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));

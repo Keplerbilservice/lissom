@@ -2200,12 +2200,27 @@ sjekk('ventelista har faatt sin plass i fanerekka',
 // En fane som forer til en skjerm uten fanerad er en blindvei.
 sjekk('ventelisteskjermen har fanerekka, saa den ikke blir en blindvei',
     substr_count($sida, '{{ harOmrFaner }}') === 15);
-// Veien inn til dagen. Kalenderen sto som ett menypunkt blant elleve, og den
-// som aapnet Oversikt om morgenen fikk ingen vei dit.
-sjekk('«Kursadministrasjon» staar oeverst paa Oversikt',
-    str_contains($sida, "kort('Kursadministrasjon',")
-    && str_contains($sida, "if (i === -1 && k.navn === 'Kursadministrasjon') return -1;")
-    && str_contains($sida, "const ROR = ['Kursadministrasjon',"));
+// Oversikt var blitt en oppslagstavle med fjorten kort. Eieren, 29. august,
+// pekte ut fire som skulle bort: «Kursadministrasjon», «Meld noen paa»,
+// «Intern side» og programlista. Skjermene naas fra menyen som for — det er
+// snarveiene som er borte, ikke funksjonene.
+foreach (['Kursadministrasjon', 'Meld noen på', 'Intern side'] as $vekk) {
+    sjekk('«' . $vekk . '» staar ikke lenger paa Oversikt',
+        !str_contains($sida, "kort('" . $vekk . "',"));
+}
+sjekk('programlista er ute av Oversikt', !str_contains($sida, '{{ ovProgramValg }}'));
+// Kalenderabonnementet laa inne i det samme kortet. Det er det eneste stedet
+// adressen til telefonen finnes, saa det staar igjen.
+sjekk('… men kalenderabonnementet staar igjen',
+    str_contains($sida, 'Programmet på telefonen') && str_contains($sida, '{{ kalKnapp }}'));
+// Kortet skal staa der ogsaa naar ingen skylder — et kort som bare finnes
+// noen dager er ikke et kort man ser etter.
+sjekk('«Ikke betalt» staar alltid, med en tom tilstand',
+    str_contains($sida, 'ovSkylderVis: true,')
+    && str_contains($sida, 'Alle har gjort opp for seg.'));
+// Roedt hver dag naar alt er gjort opp slutter man aa se etter.
+sjekk('… men er bare roedt naar noen faktisk skylder',
+    str_contains($sida, "liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'"));
 
 // ── «Rediger okten» paa telefon ──────────────────────────────────────────
 //

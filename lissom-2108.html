@@ -8230,46 +8230,9 @@ window.__resources = {
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: var(--space-5); align-items: start; margin-bottom: var(--space-10);">
           <div style="min-width: 0;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Program</span>
-              <div style="display: flex; gap: 2px;">
-                <sc-for list="{{ ovProgramValg }}" as="p" hint-placeholder-count="3">
-                  <button type="button" onClick="{{ p.velg }}" style="{{ p.stil }}">{{ p.navn }}</button>
-                </sc-for>
-              </div>
+            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100);">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Programmet på telefonen</span>
             </div>
-            <!-- Bla i hele maaneder. Staar bare naar «Maaned» er valgt — paa
-                 «I dag» og «Uke» er det ingenting aa bla i. -->
-            <sc-if value="{{ visMaaneder }}" hint-placeholder-val="{{ false }}">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <button type="button" onClick="{{ mndForrige }}" aria-label="Forrige måned" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 8px; font-size: var(--text-lg); line-height: 1; color: var(--lissom-brown);">‹</button>
-                <span style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ mndNavn }}</span>
-                <button type="button" onClick="{{ mndNeste }}" aria-label="Neste måned" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 8px; font-size: var(--text-lg); line-height: 1; color: var(--lissom-brown);">›</button>
-              </div>
-            </sc-if>
-            <sc-for list="{{ ovProgramListe }}" as="p" hint-placeholder-count="4">
-              <div style="display: flex; align-items: center; gap: var(--space-4); row-gap: var(--space-2); flex-wrap: wrap; padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 66px; flex: 0 0 auto;">{{ p.tid }}</span>
-                <span style="flex: 1 1 140px; min-width: 0;">
-                  <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.hva }}</span>
-                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
-                </span>
-                <sc-if value="{{ p.harOkt }}" hint-placeholder-val="{{ true }}">
-                  <span style="display: flex; gap: var(--space-3); margin-left: auto;">
-                    <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til</button>
-                    <button type="button" onClick="{{ p.seDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
-                  </span>
-                </sc-if>
-              </div>
-            </sc-for>
-            <sc-if value="{{ ingenProgram }}" hint-placeholder-val="{{ false }}">
-              <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">
-                {{ ingenProgramTekst }}
-                <sc-if value="{{ visProgramNeste }}" hint-placeholder-val="{{ true }}">
-                  <span style="color: var(--text-body);"> {{ programNesteTekst }}</span>
-                </sc-if>
-              </div>
-            </sc-if>
 
             <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
                  kursene ikke skrives inn to steder. -->
@@ -8301,8 +8264,8 @@ window.__resources = {
                vil ha et kort som varsler om dem, saa han kan kreve dem inn
                derfra. «Betalt» merker den av med ett trykk. -->
           <sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">
-            <div style="border: 1.5px solid var(--terracotta-500); border-radius: var(--radius-lg); background: var(--surface-card); overflow: hidden; margin-bottom: var(--space-4);">
-              <div style="display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--terracotta-500); color: var(--clay-50);">
+            <div style="{{ ovSkylderRamme }}">
+              <div style="{{ ovSkylderHode }}">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke betalt</span>
                 <span style="font: var(--type-body-sm); opacity: .9;">{{ ovSkylderSum }}</span>
               </div>
@@ -8318,6 +8281,9 @@ window.__resources = {
                   </sc-for>
                 </div>
               </sc-for>
+              <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
+                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Alle har gjort opp for seg.</div>
+              </sc-if>
             </div>
           </sc-if>
 
@@ -19501,15 +19467,17 @@ class Component extends DCLogic {
     const erDisk = /[?&#]slag=ordre\b/.test(hash);
     const tekst = {
       ok: erDisk
-        ? 'Betalingen er gjennomført'
+        ? 'Betaling er gjennomført!'
         : 'Betalingen er gjennomført — kvittering kommer på e-post',
       avbrutt: 'Betalingen ble avbrutt. Plassen er ikke reservert.',
       venter: 'Vi venter på svar fra Vipps. Du får kvittering så snart betalingen er bekreftet.',
       ukjent: 'Fant ikke betalingen. Ta kontakt hvis beløpet er trukket.',
     }[m[1]] || '';
     const detalj = {
+      // Eieren: «Betaling er gjennomfoert! Ikke noe mer». Kvitteringen ligger
+      // i Vipps, og en linje til om det er en linje for mye.
       ok: erDisk
-        ? 'Kvitteringen ligger i Vipps-appen din.'
+        ? ''
         : 'Kvitteringen sendes til e-postadressen din. Plassen din er registrert.',
       avbrutt: 'Ingen penger er trukket. Du kan prøve igjen når du vil.',
       venter: 'Du trenger ikke gjøre noe. Vi gir beskjed så snart Vipps svarer.',
@@ -29454,9 +29422,24 @@ class Component extends DCLogic {
         };
         const sum = liste.reduce((n, u) => n + (parseInt(String(u.belop).replace(/[^\d]/g, ''), 10) || 0), 0);
         return {
-          ovSkylderVis: liste.length > 0,
-          ovSkylderSum: liste.length + (liste.length === 1 ? ' plass · ' : ' plasser · ')
-                      + 'kr. ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
+          ovSkylderVis: true,
+          ovSkylderTom: liste.length === 0,
+          // Roedt bare naar noen faktisk skylder. En roed ramme hver dag naar
+          // alt er gjort opp slutter man aa se etter en uke.
+          ovSkylderRamme: {
+            border: '1.5px solid ' + (liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'),
+            borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',
+            overflow: 'hidden', marginBottom: 'var(--space-4)',
+          },
+          ovSkylderHode: {
+            display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)',
+            padding: 'var(--space-4) var(--space-5)',
+            background: liste.length ? 'var(--terracotta-500)' : 'var(--clay-100)',
+            color: liste.length ? 'var(--clay-50)' : 'var(--text-muted)',
+          },
+          ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
+            : liste.length + (liste.length === 1 ? ' plass · ' : ' plasser · ')
+              + 'kr. ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
           ovSkylder: liste.map(u => ({
             navn: u.navn,
             // Hvor lenge den har staatt er det som avgjor om den haster.
@@ -29490,14 +29473,6 @@ class Component extends DCLogic {
             //
             // Kortet teller det som faktisk skjer i dag, saa det sier noe
             // ogsaa foer man trykker.
-            kort('Kursadministrasjon',
-                 oktIdag
-                   ? (oktIdag === 1 ? 'Én økt i dag. Datoer, påmeldte, venteliste og beskjeder — alt på ett sted.'
-                                    : oktIdag + ' økter i dag. Datoer, påmeldte, venteliste og beskjeder — alt på ett sted.')
-                   : 'Datoer, påmeldte, venteliste, beskjeder og kursene selv — alt på ett sted.',
-                 oktIdag || null, 'Åpne kalenderen',
-                 () => this.gaaAdmin('adminkalender', {})),
-
             // Ventelista staar bare naar noen faktisk venter. Et kort som
             // alltid staar der og sier «ingen», er ett kort mer aa lese
             // forbi hver dag.
@@ -29533,14 +29508,6 @@ class Component extends DCLogic {
             // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
             // den veien verkstedet er vant til aa gaa naar noen skal meldes
             // paa — det gaar bare rett inn i kassa naa.
-            kort('Meld noen på',
-                 'Kurs, event, Paint on Pots, drop-in eller medlemskap — betalt i verkstedet.',
-                 null, 'Registrer noen',
-                 () => this.gaaAdmin('adminnyreg', {
-                   nrValgt: null, nrSok: '', nrNavn: '', nrTlf: '', nrEpost: '',
-                   nrNotat: '', nrOkt: '', nrAntall: '', nrBelop: '',
-                 })),
-
             // Kortet sa hva kassa er, ikke hva som har skjedd i den. Dagens
             // tall staar i teksten og ikke i merket: det er kroner, og et
             // beloep i en tallboks ved siden av «3» paa ventelista leses som
@@ -29589,11 +29556,6 @@ class Component extends DCLogic {
 
             // Det interne innholdet hadde ingen vei fra Oversikt — det laa
             // inne under Medlemmer, og maatte letes fram.
-            kort('Intern side',
-                 'Det medlemmene ser: nyttige lenker, ordensregler og informasjon.',
-                 null, 'Se den interne siden',
-                 () => this.gaaAdmin('adminnyttig', {})),
-
             // Tallet manglet. Kortet handler om meldinger, og staar det én og
             // venter paa svar, skal det staa her ogsaa — ikke bare paa
             // «Ubesvarte meldinger», som forsvinner naar koen er tom.
@@ -29695,11 +29657,6 @@ class Component extends DCLogic {
             if (egen.length) {
               const nr = (k) => {
                 const i = egen.indexOf(k.navn);
-                // «Kursadministrasjon» er veien inn til dagen, og skal ikke
-                // legge seg bakerst slik nye kort ellers gjor. Har verkstedet
-                // dratt det et annet sted, gjelder det de gjorde — det er
-                // bare den forste gangen det staar oeverst av seg selv.
-                if (i === -1 && k.navn === 'Kursadministrasjon') return -1;
                 return i === -1 ? egen.length + alle.indexOf(k) : i;
               };
               return alle.slice().sort((x, y) => nr(x) - nr(y));
@@ -29711,11 +29668,10 @@ class Component extends DCLogic {
             // gjores i dag foerst, oppslagsverkene etterpaa.
             if ((this.state.vw || 1400) >= 980) return alle;
 
-            const ROR = ['Kursadministrasjon',
-                         'Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
+            const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
                          'Klar til henting', 'Kurs går tomme for datoer',
                          'Nye påmeldinger', 'Planlagte kurs',
-                         'Butikk', 'Kasse', 'Meld noen på', 'Intern side', 'Beskjeder'];
+                         'Butikk', 'Kasse', 'Beskjeder'];
             const plass = (k) => {
               const i = ROR.indexOf(k.navn);
               return i === -1 ? ROR.length : i;
@@ -36630,7 +36586,7 @@ class Component extends DCLogic {
           mkGaHendelser: [
             { navn: 'purchase', hva: 'Gjennomført betaling — kurs, drop-in, gavekort, butikk. Med beløp, så du ser hva hver kanal er verdt i kroner.' },
             { navn: 'generate_lead', hva: 'Kontaktskjema og forespørsel om bedriftsevent, bursdag eller utdrikningslag.' },
-            { navn: 'sign_up', hva: 'Sendt medlemssøknad.' },
+            { navn: 'sign_up', hva: 'Meldt seg inn i et medlemskap.' },
             { navn: 'join_waitlist', hva: 'Satt seg på venteliste til et fullt kurs.' },
           ],
           mkMestBookede: (() => {
@@ -37278,14 +37234,17 @@ class Component extends DCLogic {
       // under Medlemmer, «Hva kursdeltakere ser» under Deltakere — og en
       // fast vei tilbake ville sendt den ene feil.
       fhTilbake: () => this.gaaAdmin(this.state.fhFra || 'adminomrkurs', {}),
-      bmSkjema: (this.state.soknadStatus || 'ingen') !== 'venter',
-      bmTittel: this.state.soknadStatus === 'venter'
-        ? 'Søknaden din er til behandling'
-        : this.state.soknadStatus === 'avslatt'
-          ? 'Du kan søke på nytt'
-          : 'Bli medlem i verkstedet',
+      // Skjemaet staar alltid. For sto det ikke naar en gammel soknad laa
+      // som «venter», og da kom hen aldri videre: soknader behandles ikke
+      // lenger, saa den ville ligget der for alltid.
+      bmSkjema: true,
+      // Det finnes ingen soknad lenger — innmeldingen ER betalingen. Det
+      // eneste tilfellet som staar igjen er et medlem med en gammel rad fra
+      // den gangen det fantes. Hen skal ikke faa beskjed om at vi «ser paa
+      // den»; ingen gjor det. Hen skal faa vite at hen kan melde seg inn.
+      bmTittel: 'Bli medlem i verkstedet',
       bmTekst: this.state.soknadStatus === 'venter'
-        ? 'Vi ser på søknaden din og svarer på e-post. Plassene dine på kurs finner du som vanlig lenger nede på siden.'
+        ? 'Du har en gammel søknad hos oss, men du trenger ikke vente på svar — meld deg inn her, så er du i gang med det samme.'
         : 'Som medlem får du dørkode, egen hylle og verkstedtid — og du kan legge ut egne arbeider for salg i nettbutikken. Vi tar en prat før du starter, så vi vet at du er trygg på utstyret.',
       // Medlemskapene slik de faktisk staar i basen, med pris.
       //

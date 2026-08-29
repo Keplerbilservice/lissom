@@ -71,8 +71,12 @@ try {
         // «hour_usage» og «gift_card_uses» sto her av samme grunn.
         // gift_card_uses er tatt i bruk igjen fra 24. august: den er sporet
         // over hva gavekort er brukt paa. hour_usage leses fortsatt ikke av
-        // noe — timene regnes ut fra check_ins — men tabellen staar, og den
-        // fjernes ikke uten at eieren har sagt fra.
+        // noe — timene regnes ut fra check_ins.
+        //
+        // Begge de doede er droppet i migrasjon 090, men bare der de var
+        // tomme: hadde de rader, var det historikk, og da staar de igjen.
+        // Derfor blir lista under staaende — den sier om det finnes noe
+        // som ikke ble ryddet.
         'mangler'     => array_values(array_diff([
             'members', 'sessions', 'login_states', 'courses', 'course_sessions',
             'payments', 'vipps_webhook_events', 'bookings', 'waitlist',
@@ -83,9 +87,9 @@ try {
             'foresporsel_svar', 'kursholdere', 'kursholder_timer',
             'medlemsgaver', 'medlemsgave_bruk',
         ], $navn)),
-        // Tabeller ingen kode leser. De staar igjen fra 001_init, og fjernes
-        // ikke uten beskjed: er det rader i dem paa den ekte tjeneren, er det
-        // historikk.
+        // Tabeller ingen kode leser. De sto igjen fra 001_init. Migrasjon
+        // 090 fjerner dem naar de er tomme; staar de her etter at den er
+        // kjort, er det fordi de har innhold noen maa se paa foerst.
         'ubrukte'     => array_values(array_intersect(['checkins', 'hour_usage'], $navn)),
     ];
 

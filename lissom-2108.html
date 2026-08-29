@@ -14817,11 +14817,6 @@ class Component extends DCLogic {
     else this.setState({ detalj: null, kvittering: d ? tekst(d.handling) : '' });
   }
 
-  tilOrdre() {
-    if (this.state.side === 'minside') { this.setState({ ordreApen: true, popupTop: this.topNaa(200) }); return; }
-    const t = [...document.querySelectorAll('h3')].find(e => e.textContent === 'Din bestilling');
-    if (t) window.scrollTo({ top: t.getBoundingClientRect().top + window.scrollY - 120, behavior: 'smooth' });
-  }
 
   priser() {
     return {
@@ -15117,13 +15112,6 @@ class Component extends DCLogic {
         || { navn: '', timer: null, pris: '', periode: '', detalj: '' };
   }
 
-  kjopIntern(v) {
-    const naa = new Date();
-    const tid = 'I dag ' + naa.getHours() + ':' + String(naa.getMinutes()).padStart(2, '0');
-    this.setState(s => ({
-      kjop: [{ navn: v.navn, detalj: v.detalj, sum: v.pris, tid, ref: 'LIS-' + (10500 + ((s.kjop || []).length)) }].concat(s.kjop || []),
-    }));
-  }
 
   tilPublisert(k) {
     const plasser = ((k.pameldte || '0 / 8').split('/')[1] || '8').trim();
@@ -15190,9 +15178,6 @@ class Component extends DCLogic {
     return liste.filter(r => r.aktiv).reduce((m, r) => Math.max(m, parseFloat(r.prosent) || 0), 0);
   }
 
-  flyttPlass(tittel, nyDato) {
-    this.setState(s => ({ flyttet: Object.assign({}, s.flyttet, { [tittel]: nyDato }) }));
-  }
 
   avbestillPlass(tittel) {
     this.setState(s => ({ avbestilt: (s.avbestilt || []).concat([tittel]) }));
@@ -16470,9 +16455,6 @@ class Component extends DCLogic {
     }));
   }
 
-  rotasjonTil(nr) {
-    this.tonBytt('rot', this.rotasjonene().length, nr);
-  }
 
   roligBevegelse() {
     try {
@@ -19416,7 +19398,7 @@ class Component extends DCLogic {
 
     this._esc = (e) => {
       if (e.key !== 'Escape') return;
-      this.setState({ kurvApen: false, ordreApen: false, vippsBetaling: null, kvittering: null });
+      this.setState({ kurvApen: false, vippsBetaling: null, kvittering: null });
     };
     document.addEventListener('keydown', this._esc);
     // Her laa det en ruting til: en egen popstate-lytter som leste skjermen
@@ -25617,9 +25599,6 @@ class Component extends DCLogic {
       }),
       detaljHandling: (this.state.detalj && this.state.detalj.handling) || 'Lagre',
       detaljHarHandling: ((this.state.detalj && this.state.detalj.handling) || 'Lagre') !== 'Lukk',
-      detaljSkjema: !!(this.state.detalj && this.state.detalj.skjema),
-      detaljBilder: (this.state.detalj && this.state.detalj.skjema) === 'produkt',
-      adminFokusValg: this.fokusValg((this.state.detalj && this.state.detalj.tittel) || 'produkt'),
       detaljLese: !(this.state.detalj && this.state.detalj.skjema),
       lukkDetalj: () => this.setState({ detalj: null, kvittering: '' }),
       // Kursbevis fra detaljdialogen. Verkstedet skal kunne skrive ut for
@@ -25634,13 +25613,6 @@ class Component extends DCLogic {
       harKvittering: !!this.state.kvittering,
       toastTop: this.state.toastTop ?? 80,
       lukkKvittering: () => this.setState({ kvittering: '' }),
-      aNySerie: this.apne('Ny serie', 'Lag en kursserie som gjentar seg automatisk', [
-        { navn: 'Type', verdi: 'Kurs, event, drop-in eller workshop' },
-        { navn: 'Gjentakelse', verdi: 'Ukentlig, annenhver uke eller egendefinert' },
-        { navn: 'Plasser', verdi: 'Settes per dato' },
-        { navn: 'Synlighet', verdi: 'Åpent for alle, kun for medlemmer, eller kun for inviterte' },
-        { navn: 'Publisering', verdi: 'Legges ut med en gang, eller som kladd' },
-      ], 'Opprett serie'),
       // Dialogen beskrev «PDF eller Excel» og lukket seg igjen naar man
       // trykket «Last ned» — ingenting ble lastet ned, og verkstedet maatte
       // skrive av navnene fra skjermen. Naa lastes lista ned som CSV med
@@ -25712,8 +25684,6 @@ class Component extends DCLogic {
       ndApen: !!this.state.ndApen,
       ndLukk: () => this.setState({ ndApen: false }),
       ndKurs: this.ndValgtKurs(),
-      settNdKurs: e => this.setState({ ndKurs: e.target.value }),
-      ndKursValg: this.ndKursnavn(),
       ndDato: this.state.ndDato || '',
       settNdDato: e => this.setState({ ndDato: e.target.value }),
       ndFra: this.state.ndFra || '18:00',
@@ -25759,7 +25729,6 @@ class Component extends DCLogic {
           })(),
         };
       })(),
-      ndKanLegge: !!this.state.ndDato,
       ndLeggTilStil: { appearance: 'none', cursor: this.state.ndDato ? 'pointer' : 'not-allowed', opacity: this.state.ndDato ? 1 : 0.4, font: 'var(--type-body)', fontWeight: 700, padding: '10px 22px', borderRadius: 'var(--radius-pill)', border: '2px solid var(--lissom-brown)', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', transition: 'all .18s ease' },
       ndLeggTil: () => this.ndLeggTilNaa(),
       ndLeggTilTekst: (this.state.ndGjentak || 'Ingen') === 'Ingen' ? 'Legg ut dato' : 'Legg ut datoene',
@@ -25790,11 +25759,6 @@ class Component extends DCLogic {
         this.setState({ tider: liste.concat(nye), dRed: false, kvittering: 'Drop-in-tidene er lagt ut' });
       },
 
-      aEndreTider: this.apne('Endre åpningstider', 'Gjelder drop-in', [
-        { navn: 'Ukedager', verdi: 'Settes per dag' },
-        { navn: 'Unntak', verdi: 'Ferier og stengte dager' },
-        { navn: 'Virkning', verdi: 'Fra og med neste uke' },
-      ], 'Lagre tider'),
       // Siste kjop av medlemsvarer. Fire oppdiktede kjop med navn og
       // kvitteringsnummer sto her — ogsaa paa den ekte siden.
       internkjop: (this.state.adminInternkjop || (this.erPublisert() ? [] : [
@@ -27008,7 +26972,6 @@ class Component extends DCLogic {
       lukkKurv: () => this.setState({ kurvApen: false }),
       tilKasse: () => { this.setState({ side: 'kasse', kurvApen: false }); window.scrollTo(0, 0); },
       harKurv: Object.keys(this.state.kurv || {}).length > 0,
-      ordrePopup: Object.keys(this.state.kurv || {}).length > 0 && !!this.state.ordreApen,
       visKurvKnapp: Object.keys(this.state.kurv || {}).length > 0 && !this.state.kurvApen && side === 'minside',
       kurvAntall: Object.keys(this.state.kurv || {}).reduce((n, navn) => n + (this.state.kurv[navn] || 0), 0),
       visKurvKnapp: (() => {
@@ -27036,7 +26999,6 @@ class Component extends DCLogic {
         display: this.state.detalj ? 'block' : 'none',
       },
       dialogKortStil: { alignSelf: 'start', marginTop: '10vh' },
-      lukkOrdre: () => this.setState({ ordreApen: false }),
       stoppKlikk: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       kurvTom: Object.keys(this.state.kurv || {}).length === 0,
       kurvSum: (Object.keys(this.state.kurv || {}).reduce((n, navn) => n + this.prisAv(navn) * this.state.kurv[navn], 0)
@@ -27106,8 +27068,8 @@ class Component extends DCLogic {
         { tittel: 'Date Night', nyDato: 'fredag 25. september, 18:00', naar: 'Fredag 28. august, 18:00', sum: 'kr. 2 380,- · 2 plasser', status: 'Bekreftet', tone: 'success', frist: 'Full refusjon til 15. august, 50 % til 22. august', kanAvbestille: true },
         { tittel: 'Paint on Pots', nyDato: 'søndag 6. september, 12:00', naar: 'Søndag 23. august, 12:00', sum: 'kr. 690,-', status: 'Venteliste, nr. 2', tone: 'info', frist: 'Du belastes først når en plass blir ledig', kanAvbestille: false },
       ])).concat((this.state.nyePaameldt || []).map(n => Object.assign({}, n, { tone: n.intern ? 'info' : 'success', status: n.intern ? 'Intern samling' : 'Bekreftet', frist: 'Gratis avmelding inntil 24 timer før', kanAvbestille: true, nyDato: n.naar }))).filter(p => (this.state.avbestilt || []).indexOf(p.tittel) === -1).map(p => Object.assign(p, {
-        naar: ((this.state.flyttet || {})[p.tittel]) ? ((this.state.flyttet || {})[p.tittel]).charAt(0).toUpperCase() + ((this.state.flyttet || {})[p.tittel]).slice(1) : p.naar,
-        status: ((this.state.flyttet || {})[p.tittel]) ? 'Flyttet' : p.status,
+        naar: p.naar,
+        status: p.status,
         harKursbevis: !!p.kursbevis,
         apneKursbevis: () => { if (p.kursbevis) window.open(p.kursbevis, '_blank', 'noopener'); },
 

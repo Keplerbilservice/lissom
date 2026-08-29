@@ -1649,6 +1649,72 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Fase 9: opprydding ───────────────────────────────────────────────────
+//
+// Doed kode er ikke bare stygt. Den ser ut som noe som virker, og forrige
+// gang kostet det: en helsesjekk som leste feil tabell sa «alt i orden» mens
+// den ekte manglet, og fem ledninger i kalenderen gikk ingen steder.
+//
+// «tilOrdre» var det eneste stedet «ordreApen» ble satt. «ordrePopup» krevde
+// den, saa bestillingsboksen paa Min side kunne aldri aapne seg — og
+// «lukkOrdre» lukket noe som aldri sto aapent.
+sjekk('bestillingsboksen som aldri kunne aapne seg er borte',
+    !str_contains($sida, 'tilOrdre()') && !str_contains($sida, 'ordreApen')
+    && !str_contains($sida, 'ordrePopup:') && !str_contains($sida, 'lukkOrdre:'));
+// «Flyttet» sto som status paa Min side, lest av state.flyttet. Den ble bare
+// skrevet av «flyttPlass», som ingen kalte — og medlemmet har ingen
+// «Flytt»-knapp, bare «Avbestill». Statusen kunne aldri vises.
+sjekk('statusen «Flyttet» som aldri kunne settes er borte',
+    !str_contains($sida, 'flyttPlass(') && !str_contains($sida, 'this.state.flyttet'));
+// Avbestillingen blir staaende: den er forhaandsvisningens utgave av
+// avbestillEkte, og den kalles.
+sjekk('avbestillingen staar, den er fortsatt i bruk',
+    str_contains($sida, 'avbestillPlass(tittel)') && str_contains($sida, 'this.avbestillPlass(p.tittel)'));
+// Et internkjop som bare la seg i state og forsvant ved neste sidelasting.
+sjekk('internkjopet som aldri naadde serveren er borte',
+    !str_contains($sida, 'kjopIntern('));
+// Prikkene under rotasjonen er ikke knapper, saa ingen kunne hoppe med dem.
+sjekk('hoppet mellom rotasjonsbildene er borte', !str_contains($sida, 'rotasjonTil('));
+// Pilene bruker fortsatt tonBytt.
+sjekk('pilene i rotasjonen virker fortsatt', str_contains($sida, "this.tonBytt('rot'"));
+// Seks props som ingen skjerm binder. Skjemaet i detaljdialogen er bygget om,
+// og «Ny kursdato» velger kurs med brikker, ikke med en nedtrekksliste.
+foreach (['detaljSkjema:', 'detaljBilder:', 'adminFokusValg:', 'settNdKurs:',
+          'ndKursValg:', 'ndKanLegge:'] as $p) {
+    sjekk('propen «' . rtrim($p, ':') . '» er borte', !str_contains($sida, $p));
+}
+sjekk('kursvelgeren i «Ny kursdato» staar', str_contains($sida, 'ndKursListe:'));
+// To attrapper: dialoger som beskrev en funksjon i stedet for aa gjore den
+// («Type: Kurs, event, drop-in eller workshop»), og som ingen knapp aapnet.
+// Begge funksjonene finnes for ekte naa, saa beskrivelsene er bare i veien.
+sjekk('attrappdialogene «Ny serie» og «Endre aapningstider» er borte',
+    !str_contains($sida, 'aNySerie:') && !str_contains($sida, 'aEndreTider:'));
+// Den ekte serien lages fra «Ny kursdato» med en gjentakelse, og kurs.php
+// tar imot den.
+sjekk('kursserien lages for ekte',
+    str_contains($sida, "handling: 'serie',")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "case 'serie':"));
+// Aapningstidene redigeres for ekte fra drop-in-tidene og fra kalenderen.
+sjekk('aapningstidene redigeres for ekte',
+    str_contains($sida, 'aNyDropin: () => this.setState({ dRed: true')
+    && str_contains($sida, "this.klKall('/api/admin/apningstider.php'"));
+
+// To tabeller fra 001_init som ingen SQL leser. «checkins» er tvillingen til
+// «check_ins» med understrek — den ekte — og «hour_usage» ble aldri bygget:
+// timene regnes ut av check_ins.
+$m90 = file_get_contents(dirname(__DIR__) . '/db/migrations/090_rydder_to_doede_tabeller.sql');
+sjekk('migrasjon 090 dropper bare tabeller som er tomme',
+    str_contains($m90, 'SELECT COUNT(*) INTO @rader FROM checkins')
+    && str_contains($m90, 'IF(@n = 1 AND @rader = 0, \'DROP TABLE checkins\', \'DO 0\')')
+    && str_contains($m90, 'IF(@n = 1 AND @rader = 0, \'DROP TABLE hour_usage\', \'DO 0\')'));
+// Er de droppet, skal ingen SQL savne dem.
+sjekk('ingen SQL leser de to doede tabellene',
+    !preg_match('/(FROM|INTO|UPDATE|JOIN)\s+`?(checkins|hour_usage)`?\b/',
+        $sida . file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php')));
+// Innstemplingen leser den ekte.
+sjekk('innstemplingen leser check_ins med understrek',
+    DB::harTabell('check_ins'));
+
 // ── Fase 8: verkstedet ───────────────────────────────────────────────────
 //
 // Notatet og paaminnelsene i kalenderen sto i «localStorage» — i nettleseren

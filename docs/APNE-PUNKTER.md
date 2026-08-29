@@ -7,8 +7,9 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 29. august 2026 — etter fase 6 til 9, kursholderen på
-kurset, beskjedkortet i kalenderen og varselkortene.
+Sist gjennomgått: 29. august 2026, kveld — etter «Legg til deltaker» på økta
+med vippskrav, drop-in og Paint on Pots samlet i kalenderen, og
+flerdagerskurset i kalenderen og på telefonen.
 
 ---
 
@@ -129,6 +130,35 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ---
 
+## Gjort 29. august, kveld
+
+**«Legg til deltaker» på den planlagte økta.** Navn, e-post, telefon, antall,
+betaling, beløp og internt notat, rett i «Rediger økten». Samme endepunkt som
+skjemaet under Kurs. «Vippskrav» sender kravet til mobilnummeret; plassen står
+som reservert til det er godtatt, og settes til betalt av webhooken.
+
+Tre feil kom fram under testingen og er rettet: ryddingen etter et krav som
+ikke gikk gjennom slettet betalingen før bookingen og feilet på
+fremmednøkkelen; et klikk på en hendelse i kalenderen ga «h is not defined» i
+alle fire visningene; og uke- og dagvisningen åpnet ikke økta på klikk.
+
+**Drop-in og Paint on Pots samlet i kalenderen.** Én linje per kurs per dag i
+måneds- og listevisningen, med «6 tider» og tidene bak et trykk. Tid mellom to
+kurs deler ikke linja — da er verkstedet åpent — men et hull gjør det, for da
+var døra lukket. Bookingen er urørt: 1,5 timer som før.
+
+**Flerdagerskurset i kalenderen.** Dag to og tre står nå der, merket «Samling
+2 av 2». De kan ikke dras, og de åpner økta på den dagen du trykket på.
+
+**Flerdagerskurset på telefonen.** Én hendelse per kursdag i stedet for én
+blokk på 27 timer. Første dag beholder id-en, så den gamle blokka rettes
+framfor å bli liggende igjen.
+
+**Migrasjon 093.** Alle kurs over på Monica, eieren står som sluttet. Timene
+hans blir liggende.
+
+---
+
 ## Gjort 28.–29. august
 
 Kalenderen skriver nå (fase 6): tolv knapper som bare lukket seg er koblet,
@@ -164,6 +194,12 @@ viser dagens salg.
 ---
 
 ## Må gjøres av Lissom
+
+### 7c. Migrasjon 091–093 må kjøres — nye 29. august, kveld
+
+091 tar ned det andre bollekurset, hvis det er tomt.
+092 flytter adressen til `/kurs/lag-din-egen-bolle`, med 301 fra den gamle.
+093 setter alle kurs over på Monica og eieren som sluttet.
 
 ### 7b. Migrasjon 052–090 må kjøres
 
@@ -258,9 +294,16 @@ står igjen.
 De to andre interne samlingene fra samme seed står fortsatt: **«Store former,
 viderekomne»** og **«Medlemsfrokost»**. De er ikke spurt om, og ikke rørt.
 
-### 9. Dublettene i medlemslista
+### 9. ~~Dublettene i medlemslista~~ — verktøy bygget 29. august
 
-Flere rader for samme person. Slettes for hånd under Medlemmer.
+Flere rader for samme person. Under Medlemmer finner skjermen dem selv — lik
+e-post eller likt telefonnummer er sikkert, likt navn alene er et forslag — og
+slår dem sammen i én transaksjon. Alle sytten kolonnene som peker på et medlem
+flyttes over, den gamle raden anonymiseres framfor å slettes, og det som ikke
+lot seg flytte blir rapportert.
+
+Selve sammenslåingen må fortsatt startes av et menneske. Det er med vilje:
+to personer kan hete det samme.
 
 ### 10. `wp_`-tabellene og den gamle WordPress-brukeren
 
@@ -837,6 +880,34 @@ og tider, og tilgjengeligheten skal følge kurs og når jeg er innstemplet.»
   avtale på pause, bare stoppe den — og det står i klartekst begge steder.
 
 ## Venter på svar fra Lissom
+
+### 16. Den enkle «Legg til deltaker» i deltakervinduet
+
+Det finnes to veier inn nå. Den fyldige ligger i «Rediger økten» (navn,
+e-post, telefon, antall, betaling, beløp, notat, vippskrav). Den enkle ligger
+nederst i «Deltakere og venteliste» og tar navn, telefon og Vipps/Kontant.
+
+Begge går til det samme endepunktet — samme booking, samme deltakerliste — så
+det er to skjemaer inn til én ting, ikke to systemer. Den enkle er raskere når
+noen står i døra. Skal den stå, tas bort, eller få vippskrav den også?
+
+### 17. Uke- og dagvisningen samler ikke
+
+Drop-in og Paint on Pots står som én linje per dag i måneds- og listevisningen.
+I uke- og dagvisningen ligger de fortsatt som egne blokker på tidsaksen — der
+må hver enkelt kunne dras til et nytt klokkeslett, og en samlet linje kan ikke
+dras. Skal de samles der også, mister du flyttingen.
+
+### 18. «Få plasser» eller «Få ledige plasser»?
+
+Teksten når det er få igjen står som «Få plasser» på Dreiing og «Få ledige
+plasser» på de andre — slik det ble skrevet. Skal de være like?
+
+### 19. De to interne samlingene fra seeden
+
+«Store former, viderekomne» og «Medlemsfrokost» ble lagt inn av migrasjon 003,
+den gangen katalogen var gjettet framfor hentet. De er ikke spurt om, og ikke
+rørt. Skal de stå?
 
 ### 13. Teller interne samlinger med i åpningstiden?
 

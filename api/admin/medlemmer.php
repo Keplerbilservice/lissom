@@ -61,30 +61,66 @@ if (Foresporsel::metode() === 'POST') {
                      . 'Slike kontoer håndteres under Brukere, ikke herfra.');
         }
 
-        // Loper det en avtale i Vipps, blir kunden trukket videre selv om
-        // vi setter statusen her. Da ville lista sagt «sluttet» mens
-        // pengene fortsatt gikk.
+        // «plan» maa vaere med: den bestemmer oppsigelsestida.
         $avtale = DB::en(
-            "SELECT id, vipps_agreement_id FROM subscriptions
+            "SELECT id, plan, vipps_agreement_id FROM subscriptions
               WHERE member_id = :m AND status = 'aktiv' LIMIT 1",
             ['m' => $id]
         );
 
         if ($handling === 'avslutt') {
+            // Én regel for oppsigelse, uansett hvem som sier opp.
+            //
+            // Her sto to: medlemmet som sa opp selv fikk maaneden det hadde
+            // betalt for, mens verkstedet som sa opp for dem satte sluttdatoen
+            // til i dag — og medlemmet mistet tilgangen samme sekund. Sier
+            // eieren opp for noen som har ringt, skal det telle likt.
+            //
+            // Datoen er den samme regelen som paa Min side: siste dag i
+            // maaneden oppsigelsen kommer, pluss oppsigelsestida. Se
+            // Medlemskap::sluttdato().
+            $slutter = Medlemskap::sluttdato($avtale ?? ['plan' => (string) ($m['medlemskap_type'] ?? '')]);
+
+            // Loeper det en avtale i Vipps, stoppes den ikke naa: medlemmet
+            // skal trekkes ut oppsigelsestida, og cron stopper avtalen den
+            // dagen den gaar ut — samme vei som naar medlemmet sier opp selv.
+            // Her ble hele avslutningen avvist i stedet, saa eieren maatte
+            // inn i Vipps for haand og medlemskapet ble haengende.
             if ($avtale !== null) {
-                Svar::feil('Medlemmet har en løpende Vipps-avtale. Den må sies opp først, '
-                         . 'ellers fortsetter trekket etter at medlemskapet er avsluttet.');
+                DB::oppdater('subscriptions', [
+                    'sagt_opp_at' => gmdate('Y-m-d H:i:s'),
+                    'slutter'     => $slutter,
+                ], ['id' => (int) $avtale['id']]);
             }
-            DB::oppdater('members', [
-                'status'     => 'oppsagt',
-                'slutt_dato' => date('Y-m-d'),
-            ], ['id' => $id]);
-            revider('medlem_avsluttet', 'member', $id, ['av' => (int) $jeg['id']]);
-            Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står nå som sluttet. '
-                                 . 'Historikken og kursbevisene er beholdt.']);
+
+            // Statusen staar til datoen er ute. Cron setter «oppsagt» naar
+            // sluttdatoen har passert — baade for dem med avtale og dem som
+            // er meldt inn for haand.
+            DB::oppdater('members', ['slutt_dato' => $slutter], ['id' => $id]);
+
+            revider('medlem_avsluttet', 'member', $id,
+                    ['av' => (int) $jeg['id'], 'slutter' => $slutter,
+                     'avtale' => $avtale === null ? null : (int) $avtale['id']]);
+
+            $naar = Booking::norskDatoKort($slutter . ' 12:00:00');
+            Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' er sagt opp, og medlemskapet '
+                                 . 'gjelder ut ' . $naar . '.'
+                                 . ($avtale !== null
+                                     ? ' Vipps-avtalen løper til da og stoppes automatisk.'
+                                     : '')
+                                 . ' Historikken og kursbevisene er beholdt.']);
         }
 
         if ($handling === 'gjenapne') {
+            // Oppsigelsen trekkes tilbake, ikke bare statusen. Uten dette ble
+            // «slutter» staaende paa avtalen, og cron stoppet den i Vipps paa
+            // den gamle datoen — et medlem som var aapnet igjen ville mistet
+            // trekket uten at noe sa fra.
+            DB::kjor(
+                "UPDATE subscriptions SET sagt_opp_at = NULL, slutter = NULL
+                  WHERE member_id = :m AND status = 'aktiv'",
+                ['m' => $id]
+            );
             DB::oppdater('members', [
                 'status'     => 'aktiv',
                 'start_dato' => date('Y-m-d'),

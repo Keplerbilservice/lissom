@@ -70,6 +70,21 @@ if (Foresporsel::metode() === 'GET') {
                 'sagtOpp'    => !empty($a['sagt_opp_at']),
                 'slutter'    => !empty($a['slutter'])
                     ? Booking::norskDatoKort((string) $a['slutter'] . ' 12:00:00') : null,
+                // Hvilken dato en oppsigelse i dag ville landet paa.
+                //
+                // Bekreftelsen sa «det gjelder ut utgangen av oppsigelsestida»
+                // naar ingen oppsigelse loep ennaa — altsaa akkurat naar
+                // medlemmet skulle bestemme seg. Naa staar datoen der, regnet
+                // av den samme regelen som utfoerer den.
+                'sluttHvisOppsagt' => Booking::norskDatoKort(
+                    Medlemskap::sluttdato($a) . ' 12:00:00'
+                ),
+                // Oppsigelsestida hoerer til planen, ikke til teksten. «Én
+                // maaned» sto fast i bekreftelsen; har en plan to, loy den.
+                'oppsigelseMnd' => (static function () use ($a): int {
+                    $plan = Medlemskap::plan((string) $a['plan']);
+                    return $plan === null ? 1 : max(0, (int) ($plan['oppsigelse_mnd'] ?? 1));
+                })(),
             ];
         }
     }

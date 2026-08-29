@@ -389,12 +389,37 @@ final class Medlemskap
         return null;
     }
 
-    /** Siste dag et medlemskap gjelder naar det sies opp i dag. */
+    /**
+     * Siste dag et medlemskap gjelder naar det sies opp i dag.
+     *
+     * Eieren, 29. august: «settes til den siste dagen i maaneden man sier opp,
+     * pluss oppsigelsestiden». Sier noen opp 14. september med én maaneds
+     * oppsigelse, gjelder medlemskapet altsaa ut oktober — ikke til 14.
+     * oktober.
+     *
+     * Den forrige regelen la maanedene rett paa dagen i dag. To som sa opp
+     * samme maaned fikk da hver sin sluttdato, og trekket gikk et halvt
+     * intervall inn i en maaned ingen hadde bedt om.
+     *
+     * Regnestykket gaar via den foerste i maaneden, ikke den siste: «siste
+     * dag i denne maaneden» pluss én maaned gir 30. oktober naar man starter
+     * paa 30. september, for PHP teller maaneder fra dagen. Foerste i
+     * maaneden pluss (N+1) maaneder, minus én dag, treffer alltid den siste —
+     * ogsaa i februar.
+     *
+     * Datoen regnes i norsk tid. Serveren staar i UTC, og en oppsigelse
+     * levert 1. oktober klokka 00:30 norsk tid ville ellers telt som
+     * september.
+     */
     public static function sluttdato(array $avtale): string
     {
         $plan = self::plan((string) $avtale['plan']);
         $mnd = $plan === null ? 1 : max(0, (int) ($plan['oppsigelse_mnd'] ?? 1));
-        return (new DateTimeImmutable('now'))->modify('+' . $mnd . ' months')->format('Y-m-d');
+        return (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+            ->modify('first day of this month')
+            ->modify('+' . ($mnd + 1) . ' months')
+            ->modify('-1 day')
+            ->format('Y-m-d');
     }
 
     /**

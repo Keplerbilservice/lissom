@@ -1160,8 +1160,15 @@ $fri = $lagAvtale('Basis 30', gmdate('Y-m-d', strtotime('-1 day')));
 sjekk('et medlemskap uten binding kan sies opp', Medlemskap::hvorforIkkeSiOpp($fri) === null);
 Medlemskap::siOpp($fri);
 $etter = DB::en('SELECT * FROM subscriptions WHERE id = :i', ['i' => (int) $fri['id']]);
-$venta = (new DateTimeImmutable('now'))->modify('+1 months')->format('Y-m-d');
-sjekk('oppsigelsen setter sluttdato én maaned fram',
+// Regelen ble endret 29. august paa bestilling: sluttdatoen er den siste
+// dagen i maaneden oppsigelsen kommer, pluss oppsigelsestida. Foer laa den én
+// maaned fram fra dagen i dag, saa to som sa opp samme maaned fikk hver sin
+// dato — og trekket gikk et halvt intervall inn i en maaned ingen hadde bedt
+// om.
+$venta = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+    ->modify('first day of this month')->modify('+2 months')
+    ->modify('-1 day')->format('Y-m-d');
+sjekk('oppsigelsen gjelder ut maaneden etter, siste dag',
     $etter['slutter'] === $venta, (string) $etter['slutter'] . ' mot ' . $venta);
 sjekk('… og medlemskapet loper videre til da', $etter['status'] === 'aktiv');
 sjekk('… og medlemmet har fortsatt tilgang',
@@ -1648,6 +1655,69 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 // neste i koen har alt faatt e-posten. Slippet aapner bekreftelsen.
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
+
+// ── Oppsigelse: én regel, uansett hvem som sier opp ──────────────────────
+//
+// Eieren, 29. august: «settes til den siste dagen i maaneden man sier opp,
+// pluss oppsigelsestiden». Den forrige regelen la maanedene rett paa dagen i
+// dag, saa to som sa opp samme maaned fikk hver sin sluttdato.
+$medlFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('sluttdatoen er siste dag i maaneden pluss oppsigelsestida',
+    str_contains($medlFil, "->modify('first day of this month')")
+    && str_contains($medlFil, "->modify('+' . (\$mnd + 1) . ' months')")
+    && str_contains($medlFil, "->modify('-1 day')"));
+// Regnestykket gaar via den foerste i maaneden: «siste dag i denne maaneden»
+// pluss én maaned gir 30. oktober naar man starter paa 30. september.
+sjekk('regelen treffer siste dag ogsaa i februar', (static function (): bool {
+    foreach ([['2026-09-14', 1, '2026-10-31'], ['2026-09-30', 1, '2026-10-31'],
+              ['2026-01-15', 1, '2026-02-28'], ['2026-09-14', 0, '2026-09-30'],
+              ['2026-12-20', 1, '2027-01-31']] as [$naar, $mnd, $ventet]) {
+        $ut = (new DateTimeImmutable($naar, new DateTimeZone('Europe/Oslo')))
+            ->modify('first day of this month')
+            ->modify('+' . ($mnd + 1) . ' months')
+            ->modify('-1 day')->format('Y-m-d');
+        if ($ut !== $ventet) {
+            return false;
+        }
+    }
+    return true;
+})());
+// Datoen regnes i norsk tid. Serveren staar i UTC, og en oppsigelse levert
+// 1. oktober klokka 00:30 norsk tid ville ellers telt som september.
+sjekk('sluttdatoen regnes i norsk tid',
+    str_contains($medlFil, "new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo'))"));
+
+// Verkstedets egen avslutning fulgte en annen regel: sluttdato i dag, og
+// medlemmet mistet tilgangen samme sekund. Loep det en Vipps-avtale, ble hele
+// avslutningen avvist, saa eieren maatte inn i Vipps for haand.
+$medFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('verkstedets avslutning bruker den samme regelen',
+    str_contains($medFil, '$slutter = Medlemskap::sluttdato(')
+    && !str_contains($medFil, "'slutt_dato' => date('Y-m-d'),"));
+sjekk('en loepende Vipps-avtale stopper ikke lenger avslutningen',
+    !str_contains($medFil, 'Medlemmet har en løpende Vipps-avtale. Den må sies opp først')
+    && str_contains($medFil, "'sagt_opp_at' => gmdate('Y-m-d H:i:s'),"));
+// Statusen staar til datoen er ute — cron setter «oppsagt» naar den har
+// passert, baade for dem med avtale og dem som er meldt inn for haand.
+sjekk('medlemmet staar aktivt ut oppsigelsestida',
+    str_contains($medFil, "DB::oppdater('members', ['slutt_dato' => \$slutter], ['id' => \$id]);"));
+sjekk('cron avslutter naar sluttdatoen har passert',
+    str_contains(file_get_contents(dirname(__DIR__) . '/bin/cron.php'),
+                 'AND slutt_dato < CURDATE()'));
+// Aapnes medlemskapet igjen, maa oppsigelsen trekkes tilbake ogsaa paa
+// avtalen — ellers stopper cron den i Vipps paa den gamle datoen.
+sjekk('gjenaapning trekker oppsigelsen tilbake',
+    str_contains($medFil, 'UPDATE subscriptions SET sagt_opp_at = NULL, slutter = NULL'));
+
+// Medlemmet skal se datoen foer det bekrefter, ikke etterpaa.
+sjekk('medlemmet faar datoen foer det sier opp',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'),
+                 "'sluttHvisOppsagt' => Booking::norskDatoKort(")
+    && str_contains($sida, 'const naar = (a && (a.slutter || a.sluttHvisOppsagt))'));
+// «Én maaned» sto fast i teksten. Tallet hoerer til planen.
+sjekk('oppsigelsestida i teksten leses av planen',
+    str_contains($sida, 'const mnd = (a && a.oppsigelseMnd) || 1;')
+    && !str_contains($sida, "'Det har én måneds oppsigelsestid, så det gjelder ut '"));
 
 // ── Dubletter i medlemslista ─────────────────────────────────────────────
 //

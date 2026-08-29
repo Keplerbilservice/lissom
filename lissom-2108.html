@@ -26569,11 +26569,22 @@ class Component extends DCLogic {
           aboKanSiOpp: !!(a && a.kanSiOpp),
           // Ett sporsmaal foer. En oppsigelse skal ikke skje fordi noen traff
           // feil knapp paa en telefon.
+          // Datoen skal staa i bekreftelsen, ikke etterpaa.
+          //
+          // Her sto «det gjelder ut utgangen av oppsigelsestida» — nettopp
+          // naar medlemmet skulle bestemme seg, for «slutter» er tom for
+          // oppsigelsen er levert. Serveren regner ut hvor en oppsigelse i dag
+          // ville landet, med den samme regelen som utfoerer den: siste dag i
+          // maaneden, pluss oppsigelsestida. «Én maaned» sto ogsaa fast i
+          // teksten; det tallet hoerer til planen.
           aboSiOpp: () => {
-            const naar = a && a.slutter ? a.slutter : 'utgangen av oppsigelsestida';
+            const naar = (a && (a.slutter || a.sluttHvisOppsagt)) || 'utgangen av oppsigelsestida';
+            const mnd = (a && a.oppsigelseMnd) || 1;
+            const tid = mnd === 1 ? 'én måneds oppsigelsestid'
+                      : (mnd === 0 ? 'ingen oppsigelsestid' : mnd + ' måneders oppsigelsestid');
             if (!window.confirm('Si opp medlemskapet?\n\n'
-                + 'Det har én måneds oppsigelsestid, så det gjelder ut '
-                + naar + '. Du kan bruke verkstedet som vanlig til da.')) return;
+                + 'Det har ' + tid + ', regnet fra utgangen av denne måneden, '
+                + 'så det gjelder ut ' + naar + '. Du kan bruke verkstedet som vanlig til da.')) return;
             this.siOppAbonnement();
           },
           aboHarHindring: !!(a && a.hindring && !a.slutter),

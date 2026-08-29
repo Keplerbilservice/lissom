@@ -23130,7 +23130,11 @@ class Component extends DCLogic {
     };
     const prikk = e => ({ width: '10px', height: '10px', borderRadius: '3px', flex: '0 0 auto', background: farge(e).kant ? 'transparent' : farge(e).bg, border: farge(e).kant || 'none', opacity: e.avlyst ? .45 : 1 });
     const visDetaljer = e => () => this.setState(s => ({ klValgtId: e.id, klFlyttVis: false, klBekreftAvlys: false, klMeny: null, klSett: Object.assign({}, s.klSett, { [e.id]: true }) }));
-    const velg = e => () => this.klApneEnkel(e);
+    // Dag to og tre av et flerdagerskurs aapner okta slik den staar — med
+    // deltakerne, belegget og datoen du trykket paa. Redigereren ville vist
+    // startdagen og latt deg flytte hele kurset fra en dag som ikke er den
+    // det staar paa; det er ikke det man mener naar man trykker paa dag to.
+    const velg = e => (e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));
     const meny = e => ev => { ev.preventDefault(); this.setState({ klMeny: { id: e.id, x: ev.clientX, y: ev.clientY } }); };
     const dragState = this.state.klDrag;
     const dagEvts = iso => alle.filter(e => e.dato === iso).sort((a, b) => a.tid.localeCompare(b.tid));
@@ -23238,7 +23242,9 @@ class Component extends DCLogic {
     const erTomSnart = e => !!e.kap && e.pameldt === 0 && !e.avlyst && dagerTil(e) >= 0 && dagerTil(e) <= 3;
     const varsel = e => (erFull(e) ? { border: '2px solid var(--terracotta-600)' } : {});
     const puls = e => (erTomSnart(e) ? { animation: 'klPuls 1.6s ease-in-out infinite' } : {});
-    const detalj = e => [e.holder, belegg(e), e.nye ? '+' + e.nye + (e.nye === 1 ? ' ny' : ' nye') : '', erFull(e) ? 'Fullt' : '', erTomSnart(e) ? 'Ingen påmeldte' : '', e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · ');
+    // «Samling 2 av 2» staar forst: det er det som skiller dag to fra en
+    // vanlig okt, og uten det ser kurset ut til aa gaa flere ganger.
+    const detalj = e => [e.samling || '', e.holder, belegg(e), e.nye ? '+' + e.nye + (e.nye === 1 ? ' ny' : ' nye') : '', erFull(e) ? 'Fullt' : '', erTomSnart(e) ? 'Ingen påmeldte' : '', e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · ');
     const chipStil = (aktiv, f) => ({
       appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '5px 13px', font: 'var(--type-body-sm)', fontWeight: 600,
       border: aktiv ? '1.5px solid transparent' : '1.5px solid var(--border-subtle)',
@@ -23265,7 +23271,8 @@ class Component extends DCLogic {
         hendelser: evts.slice(0, mndMax).map(e => ({
           // Den samlede linja viser hele spennet: «10:00–13:00 Paint on Pots».
           tekst: e.gruppe ? (e.tid + '–' + e.slutt + ' ' + e.tittel)
-               : ((e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel),
+               : ((e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel
+                  + (e.samlingKort ? ' · ' + e.samlingKort : '')),
           id: e.id, domId: 'kalevt-' + e.id, stil: pill(e, false),
           velg: e.gruppe ? vekslUtvid(e.id) : velg(e),
           meny: e.gruppe ? (ev => ev.preventDefault()) : meny(e),
@@ -24694,7 +24701,10 @@ class Component extends DCLogic {
    * ville «Angre» sett ut som den virket mens datoen ble staaende flyttet.
    */
   klDragStart(evt, e) {
-    if (e.button !== 0 || !evt || !evt.oktId) return;
+    // Dag to og tre av et flerdagerskurs staar fast. De hoerer til den samme
+    // paameldingen som startdagen, og rettes der de settes opp — paa kursets
+    // dato. Aa dra dag to alene ville flyttet hele kurset dit.
+    if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;
     e.preventDefault();
     this._klFlytt = { evt: evt, moved: false };
     const move = mv => {

@@ -2522,6 +2522,37 @@ sjekk('en aapnet linje kan lukkes igjen',
 sjekk('bare maaneden og lista samler; tidsaksene staar urort',
     substr_count($sida2, 'samle(dagEvts(') === 2);
 
+// ── Dag to og tre av et flerdagerskurs i kalenderen ────────────────────
+//
+// Et kurs kan gaa over to eller tre dager paa én paamelding. Dagene ligger i
+// «okt_samlinger» med hver sin dato og klokkeslett. Kunden saa dem paa
+// kurssida, men kalenderen viste bare den forste — dag to og tre fantes ikke
+// for den som planla uka. Eieren, 29. august: «det maa og vises slik i
+// kalender».
+sjekk('kalenderen henter samlingene', str_contains($kalFil3, 'Samlinger::forOkter($oktIder)'));
+sjekk('startdagen legges ikke inn to ganger',
+    str_contains($kalFil3, "if ((string) \$sa['dato'] === \$iOslo((string) \$o['start_tid'], 'Y-m-d'))"));
+sjekk('dag to sier hvilken dag av kurset det er',
+    str_contains($kalFil3, "'samling'     => 'Samling ' . \$sa['nummer'] . ' av ' . \$antSaml,")
+    && str_contains($kalFil3, "'samlingKort' => \$sa['nummer'] . ' av ' . \$antSaml,"));
+sjekk('dag to baerer de samme paameldte som startdagen',
+    str_contains($kalFil3, '$hendelser[count($hendelser) - 1]'));
+sjekk('kalenderen viser hvilken dag av kurset det er',
+    str_contains($sida2, "const detalj = e => [e.samling || '', e.holder"));
+sjekk('maanedsbrikka faar den korte formen',
+    str_contains($sida2, "(e.samlingKort ? ' · ' + e.samlingKort : '')"));
+// Redigereren ville vist startdagen og latt deg flytte hele kurset fra en dag
+// som ikke er den det staar paa.
+sjekk('dag to aapner okta slik den staar, ikke redigeringen',
+    str_contains($sida2, "const velg = e => (e.samling ? visDetaljer(e) : () => this.klApneEnkel(e));"));
+// Aa dra dag to alene ville flyttet hele kurset dit.
+sjekk('dag to kan ikke dras',
+    str_contains($sida2, "if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;"));
+// Spennet kalenderen henter har en uke slingringsmonn i hver ende, saa et
+// kurs som begynner sist i maaneden faar med seg dag to i den neste.
+sjekk('spennet naar over et maanedsskifte',
+    str_contains($kalFil3, "\$dagStart(Foresporsel::tekst('fra'), -7)"));
+
 // ── Klikk paa en hendelse i kalenderen ─────────────────────────────────
 //
 // «data-evt» paa den samme knappen som en bundet handler fikk motoren til aa

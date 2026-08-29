@@ -85,6 +85,14 @@ $okter = DB::alle(
 
 $oktIder = array_map(static fn(array $o): int => (int) $o['id'], $okter);
 
+// ── Samlingene ──────────────────────────────────────────────────────────
+//
+// Et kurs kan gaa over to eller tre dager paa én paamelding. Dagene ligger i
+// «okt_samlinger» med hver sin dato og klokkeslett, satt opp under kursets
+// dato. Kunden ser dem paa kurssida; kalenderen viste bare den forste, saa
+// dag to og tre fantes ikke for den som planla uka.
+$samlingKart = Samlinger::forOkter($oktIder);
+
 // ── Deltakerne, i ett kall ──────────────────────────────────────────────
 //
 // Ett oppslag per okt ville blitt hundre spoerringer for én maaned.
@@ -330,6 +338,37 @@ foreach ($okter as $o) {
         // brikketype, bare en merking paa en event.
         'intern' => (string) ($o['tema'] ?? '') === 'Kun for medlemmer',
     ];
+
+    // ── Dag to og tre ───────────────────────────────────────────────────
+    //
+    // Én brikke per samling som IKKE er startdagen. Startdagen har alt
+    // brikka over; ble den lagt inn her ogsaa, laa den samme dagen to
+    // ganger.
+    //
+    // Brikka er den samme okta sett fra en annen dag: samme paameldte,
+    // samme belegg, samme kursholder. «samling» sier hvilken av dagene det
+    // er, saa det ikke ser ut som kurset gaar tre ganger.
+    //
+    // Den kan ikke dras. Aa flytte dag to alene gir ikke mening — dagene
+    // hoerer sammen, og de rettes der de settes opp: paa kursets dato.
+    $samlinger = $samlingKart[$id] ?? [];
+    $antSaml = count($samlinger);
+    foreach ($samlinger as $sa) {
+        if ((string) $sa['dato'] === $iOslo((string) $o['start_tid'], 'Y-m-d')) {
+            continue;
+        }
+        $hendelser[] = array_merge($hendelser[count($hendelser) - 1], [
+            'id'      => 'saml-' . $id . '-' . $sa['nummer'],
+            'dato'    => (string) $sa['dato'],
+            'tid'     => $sa['fra'] !== '' ? (string) $sa['fra']
+                                           : $iOslo((string) $o['start_tid'], 'H:i'),
+            'slutt'   => (string) $sa['til'],
+            'samling'     => 'Samling ' . $sa['nummer'] . ' av ' . $antSaml,
+            // Kort form til maanedsbrikka, der det er faa tegn aa ta av.
+            'samlingKort' => $sa['nummer'] . ' av ' . $antSaml,
+            'auto'    => false,
+        ]);
+    }
 }
 
 Svar::json([

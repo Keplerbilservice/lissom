@@ -23134,6 +23134,104 @@ class Component extends DCLogic {
     const meny = e => ev => { ev.preventDefault(); this.setState({ klMeny: { id: e.id, x: ev.clientX, y: ev.clientY } }); };
     const dragState = this.state.klDrag;
     const dagEvts = iso => alle.filter(e => e.dato === iso).sort((a, b) => a.tid.localeCompare(b.tid));
+
+    // ── Plassene som er klippet av aapningstida ──────────────────────────
+    //
+    // Paint on Pots og drop-in foelger aapningstida, og den klippes i plasser
+    // paa halvannen time (Apent::PLASS_MINUTTER). Gaar det et kurs 10-13, er
+    // verkstedet aapent 10-13, og begge to legges ut som to plasser: 10:00 og
+    // 11:30. I kalenderen ble det to like linjer under hverandre — og med to
+    // kurs som foelger tida, fire. Eieren, 29. august: «jeg vil ikke at det
+    // skal splittes».
+    //
+    // Plassene slaas sammen til én linje her, i visningen. Bookingen roeres
+    // ikke: kunden velger fortsatt et tidspunkt og har bordet halvannen time.
+    // Trykk paa linja, saa staar tidene der hver for seg.
+    //
+    // Tid mellom to kurs deler ikke linja. Eieren, 29. august: «selv om det er
+    // tid mellom de planlagte kursene saa er jeg der, og da skal det vises som
+    // ett i kalender». Det trengs ingen egen regel for det: aapningstida gaar
+    // fra dagens forste kurs til det siste i ett spenn, saa mellomtida er alt
+    // klippet i plasser. Rekka henger sammen av seg selv.
+    //
+    // Et hull i rekka betyr derfor noe annet: doeren var faktisk lukket. Det
+    // skjer naar eieren stempler inn etter at dagens kurs er ferdige — da
+    // aapnes tre timer til, loesrevet fra formiddagen. Eieren, samme dag: da
+    // skal kvelden ha sin egen linje. Derfor deler et hull linja.
+    //
+    // Det som aldri slaas sammen, er en oekt et menneske har satt opp selv.
+    // Serveren sender «auto» bare for de to som lages av en regel —
+    // aapningstida og ukereglene under Drop-in. Begge maa vaere med: uten
+    // ukereglene ble drop-in delt i to av sin egen ettermiddagstid.
+    const utvidet = this.state.klUtvid || {};
+    const vekslUtvid = id => () => this.setState(st => {
+      const n = Object.assign({}, st.klUtvid);
+      if (n[id]) { delete n[id]; } else { n[id] = true; }
+      return { klUtvid: n };
+    });
+    const gruppeAv = kjede => {
+      const f = kjede[0], sist = kjede[kjede.length - 1];
+      return {
+        // Klokkeslettet er med i id-en: er dagen delt i to fordi doeren var
+        // lukket i mellomtida, er det to linjer, og de skal kunne aapnes hver
+        // for seg.
+        id: 'gruppe|' + f.dato + '|' + f.kursId + '|' + f.tid,
+        gruppe: true, antallTider: kjede.length,
+        dato: f.dato, tid: f.tid, slutt: sist.slutt || '',
+        tittel: f.tittel, type: f.type, holder: f.holder,
+        kursId: f.kursId,
+        // Ingen oektId: gruppa er ikke en oekt. Det er ogsaa det som gjor at
+        // den ikke kan dras — klDragStart slipper alt uten oektId.
+        oktId: 0,
+        kap: kjede.reduce((n, e) => n + (e.kap || 0), 0),
+        pameldt: kjede.reduce((n, e) => n + (e.pameldt || 0), 0),
+        deltakere: kjede.reduce((a, e) => a.concat(e.deltakere || []), []),
+        venteliste: kjede.reduce((a, e) => a.concat(e.venteliste || []), []),
+        nye: kjede.reduce((n, e) => n + (e.nye || 0), 0),
+        avlyst: kjede.every(e => e.avlyst),
+      };
+    };
+    const samle = evts => {
+      const perKurs = {};
+      const ut = [];
+      evts.forEach(e => {
+        if (e.auto && e.kursId) { (perKurs[e.kursId] = perKurs[e.kursId] || []).push(e); }
+        else { ut.push(e); }
+      });
+      Object.keys(perKurs).forEach(k => {
+        const rekke = perKurs[k].slice().sort((a, b) => a.tid.localeCompare(b.tid));
+        let kjede = [];
+        const lukk = () => {
+          if (!kjede.length) return;
+          if (kjede.length === 1) { ut.push(kjede[0]); kjede = []; return; }
+          const g = gruppeAv(kjede);
+          // Aapen: linja blir staaende over tidene sine. Uten den var det
+          // ingen vei tilbake — tidene laa der, og ingenting kunne lukke dem.
+          ut.push(g);
+          if (utvidet[g.id]) { kjede.forEach(e => ut.push(e)); }
+          kjede = [];
+        };
+        rekke.forEach(e => {
+          const forrige = kjede[kjede.length - 1];
+          if (forrige && forrige.slutt && e.tid === forrige.slutt) { kjede.push(e); return; }
+          lukk();
+          kjede = [e];
+        });
+        lukk();
+      });
+      return ut.sort((a, b) => a.tid.localeCompare(b.tid));
+    };
+    // Teksten under en samlet linje. «6 tider» er det som skiller den fra en
+    // vanlig oekt, og det skal staa foerst.
+    //
+    // Belegget summeres ikke som «0 av 72». Plassene deler det samme bordet:
+    // seks tider a tolv er ikke syttito stoler, det er tolv stoler seks
+    // ganger. Tallet som betyr noe er hvor mange som faktisk kommer.
+    const gruppeDetalj = g => [g.antallTider + ' tider', g.holder,
+                               g.pameldt ? g.pameldt + (g.pameldt === 1 ? ' påmeldt' : ' påmeldte')
+                                         : 'Ingen påmeldte',
+                               g.nye ? '+' + g.nye + (g.nye === 1 ? ' ny' : ' nye') : '',
+                               utvidet[g.id] ? 'Skjul' : 'Vis tidene'].filter(Boolean).join(' · ');
     const belegg = e => (e.kap ? e.pameldt + ' av ' + e.kap : '');
     const erFull = e => !!e.kap && e.pameldt >= e.kap;
     const dagerTil = e => Math.round((new Date(e.dato + 'T12:00:00') - idag) / 86400000);
@@ -23157,14 +23255,22 @@ class Component extends DCLogic {
     for (let i = 0; i < offset; i++) celler.push(tomCelle());
     for (let d = 1; d <= dim; d++) {
       const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-      const evts = dagEvts(iso);
+      const evts = samle(dagEvts(iso));
       const stengtDag = !!this.klStengte()[iso];
       celler.push({
         iso,
         tall: String(d) + (stengtDag ? ' · Stengt' : ''),
         stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
         tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: iso === idagIso ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
-        hendelser: evts.slice(0, mndMax).map(e => ({ tekst: (e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel, id: e.id, domId: 'kalevt-' + e.id, stil: pill(e, false), velg: velg(e), meny: meny(e), ned: ev => this.klDragStart(e, ev) })),
+        hendelser: evts.slice(0, mndMax).map(e => ({
+          // Den samlede linja viser hele spennet: «10:00–13:00 Paint on Pots».
+          tekst: e.gruppe ? (e.tid + '–' + e.slutt + ' ' + e.tittel)
+               : ((e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel),
+          id: e.id, domId: 'kalevt-' + e.id, stil: pill(e, false),
+          velg: e.gruppe ? vekslUtvid(e.id) : velg(e),
+          meny: e.gruppe ? (ev => ev.preventDefault()) : meny(e),
+          ned: ev => this.klDragStart(e, ev),
+        })),
         harMer: evts.length > mndMax, mer: '+ ' + (evts.length - mndMax) + ' til',
         velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
       });
@@ -23174,7 +23280,13 @@ class Component extends DCLogic {
     const ukeStart = new Date(anker); ukeStart.setDate(anker.getDate() - ((anker.getDay() + 6) % 7));
     const ukeSlutt = new Date(ukeStart); ukeSlutt.setDate(ukeStart.getDate() + 6);
     const dagIso = isoAv(anker);
-    const radAv = e => ({ tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: detalj(e), prikkStil: prikk(e), strek: e.avlyst ? 'line-through' : 'none', velg: velg(e), meny: meny(e) });
+    const radAv = e => (e.gruppe
+      ? { tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: gruppeDetalj(e),
+          prikkStil: prikk(e), strek: 'none', velg: vekslUtvid(e.id),
+          // Hoyreklikkmenyen slaar opp okta paa id-en. En gruppe er ingen
+          // okt, saa den skal ikke aapne en meny som ikke finner noe.
+          meny: ev => ev.preventDefault() }
+      : { tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: detalj(e), prikkStil: prikk(e), strek: e.avlyst ? 'line-through' : 'none', velg: velg(e), meny: meny(e) });
     const minAv = t => { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); };
     const dagensAlle = dagEvts(dagIso);
     const rekkevidde = dagensAlle.filter(e => e.type !== 'vakt');
@@ -23334,7 +23446,7 @@ class Component extends DCLogic {
     const liste = [];
     for (let i = 0; i < 14; i++) {
       const d = new Date(anker); d.setDate(anker.getDate() + i); const iso = isoAv(d);
-      const evts = dagEvts(iso);
+      const evts = samle(dagEvts(iso));
       if (evts.length) liste.push({ dagTittel: dagNavn[d.getDay()] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()], hendelser: evts.map(radAv) });
     }
     const valgt = alle.find(e => e.id === this.state.klValgtId);

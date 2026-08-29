@@ -63,14 +63,18 @@ $iOslo = static function (string $utcTid, string $format) use ($oslo, $utc): str
 };
 
 // ── Oektene ─────────────────────────────────────────────────────────────
+$harAuto   = DB::harKolonne('course_sessions', 'fra_apningstid');
+$harDropinTid = DB::harKolonne('course_sessions', 'fra_dropin_tid');
 $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
 $holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
+$autoKol   = ($harAuto ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
+           . ($harDropinTid ? ', cs.fra_dropin_tid' : ', NULL AS fra_dropin_tid');
 $holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id' : '';
 
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
-            c.tittel, c.type, c.tema {$holderKol}
+            c.tittel, c.type, c.tema {$autoKol}{$holderKol}
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
        {$holderBli}
@@ -297,6 +301,18 @@ foreach ($okter as $o) {
         // dato paa det samme kurset uten aa gaa veien om navnet — to kurs kan
         // hete nesten det samme, og et navn er ikke en identitet.
         'kursId' => (int) $o['course_id'],
+        // Om okta er laget av en regel, eller satt opp for haand.
+        //
+        // To regler lager oekter: aapningstida, som klippes i plasser paa
+        // halvannen time (Apent::PLASS_MINUTTER), og ukereglene under
+        // Drop-in. Begge gir mange like rader paa den samme dagen — en aapen
+        // formiddag 10-13 blir to, en hel dag blir seks.
+        //
+        // Kalenderen samler dem til én linje per kurs per dag, og trenger aa
+        // vite hvilke det gjelder. En oekt noen har lagt inn selv staar
+        // alltid for seg: den er noen sin avgjorelse, ikke et utsnitt.
+        'auto'   => ($harAuto && (int) $o['fra_apningstid'] === 1)
+                 || ($harDropinTid && $o['fra_dropin_tid'] !== null),
         'dato'   => $iOslo((string) $o['start_tid'], 'Y-m-d'),
         'tid'    => $iOslo((string) $o['start_tid'], 'H:i'),
         'slutt'  => $o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : '',

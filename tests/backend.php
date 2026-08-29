@@ -2478,6 +2478,50 @@ sjekk('utkastet toemmes naar en annen okt aapnes',
 sjekk('kalenderen hentes paa nytt saa belegget stemmer',
     str_contains($sida2, "this.setState({ kdUtkast: {}, kdVarsle: false, kdApen: false });"));
 
+// ── Drop-in og Paint on Pots samlet til én linje ───────────────────────
+//
+// Begge foelger aapningstida, og den klippes i plasser paa halvannen time.
+// En aapen dag ble til seks like rader per kurs i kalenderen. Eieren, 29.
+// august: «jeg vil ikke at det skal splittes».
+$kalFil3 = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('kalenderen faar vite hvilke oekter en regel har laget',
+    str_contains($kalFil3, "'auto'   => (\$harAuto && (int) \$o['fra_apningstid'] === 1)"));
+// Uten ukereglene ble drop-in delt i to av sin egen ettermiddagstid: de
+// maskinklipte plassene stoppet der ukeregelen tok over.
+sjekk('begge reglene teller som laget av en regel',
+    str_contains($kalFil3, "\$harDropinTid && \$o['fra_dropin_tid'] !== null"));
+sjekk('kolonnene kan mangle uten at kalenderen doer',
+    str_contains($kalFil3, "DB::harKolonne('course_sessions', 'fra_apningstid')")
+    && str_contains($kalFil3, "DB::harKolonne('course_sessions', 'fra_dropin_tid')"));
+sjekk('kalenderen samler plassene til én linje',
+    str_contains($sida2, 'const samle = evts =>') && str_contains($sida2, 'gruppeAv'));
+// Tid mellom to kurs deler ikke linja — aapningstida gaar i ett spenn fra
+// dagens forste kurs til det siste, saa mellomtida er alt klippet i plasser
+// og rekka henger sammen. Et hull betyr at doeren var lukket, og da skal det
+// staa to linjer: eieren stemplet inn om kvelden.
+sjekk('et hull i rekka deler linja i to',
+    str_contains($sida2, "if (forrige && forrige.slutt && e.tid === forrige.slutt) { kjede.push(e); return; }"));
+sjekk('to linjer samme dag kan aapnes hver for seg',
+    str_contains($sida2, "id: 'gruppe|' + f.dato + '|' + f.kursId + '|' + f.tid,"));
+// En okt noen har satt opp selv er ingen utsnitt, og skal staa for seg.
+sjekk('bare det en regel har laget slaas sammen',
+    str_contains($sida2, 'if (e.auto && e.kursId)'));
+// Linja er ingen okt: den kan ikke dras, og hoyreklikkmenyen slaar opp paa
+// en id som ikke finnes blant oektene.
+sjekk('den samlede linja kan ikke dras', str_contains($sida2, "oktId: 0,"));
+sjekk('den samlede linja aapner seg selv, ikke en okt',
+    str_contains($sida2, 'velg: vekslUtvid(e.id)'));
+// Seks tider a tolv er ikke syttito stoler. Summen ville sagt «0 av 72».
+sjekk('belegget summeres ikke paa tvers av tidene',
+    !str_contains($sida2, 'const gruppeDetalj = g => [g.antallTider + \' tider\', g.holder, belegg(g),'));
+// Uten linja over tidene fantes det ingen vei tilbake naar den var aapnet.
+sjekk('en aapnet linje kan lukkes igjen',
+    str_contains($sida2, "utvidet[g.id] ? 'Skjul' : 'Vis tidene'"));
+// Uke- og dagvisningen staar urort: der ligger oektene paa en tidsakse, og
+// hver enkelt maa kunne dras til et nytt klokkeslett.
+sjekk('bare maaneden og lista samler; tidsaksene staar urort',
+    substr_count($sida2, 'samle(dagEvts(') === 2);
+
 // ── Klikk paa en hendelse i kalenderen ─────────────────────────────────
 //
 // «data-evt» paa den samme knappen som en bundet handler fikk motoren til aa

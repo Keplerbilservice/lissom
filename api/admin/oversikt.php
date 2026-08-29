@@ -289,6 +289,32 @@ Svar::json([
             ? (int) DB::verdi("SELECT COUNT(*) FROM medlem_frys WHERE status = 'sokt'")
             : 0,
     ],
+    // ── De mest populaere kursene ─────────────────────────────────────
+    //
+    // Eieren 30. august: «her vil jeg se mine mest populaere kurs». Regnet
+    // av plassene som faktisk er solgt siste tolv maaneder, ikke av hvor
+    // mange datoer et kurs har eller hvor ofte det staar i kalenderen —
+    // drop-in ville da ligget oeverst hver eneste gang.
+    //
+    // Avbestilte og avlyste teller ikke: en plass som ble refundert er
+    // ikke en plass noen kjopte.
+    'populaere' => array_map(static fn(array $r): array => [
+        'tittel'  => (string) $r['tittel'],
+        'plasser' => (int) $r['plasser'],
+        'kjop'    => (int) $r['kjop'],
+    ], DB::alle(
+        "SELECT c.tittel,
+                COALESCE(SUM(b.antall), 0) AS plasser,
+                COUNT(*) AS kjop
+           FROM bookings b
+           JOIN courses c ON c.id = b.course_id
+          WHERE b.status IN ('betalt', 'reservert')
+            AND b.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 12 MONTH)
+          GROUP BY c.id, c.tittel
+         HAVING plasser > 0
+       ORDER BY plasser DESC, c.tittel
+          LIMIT 6"
+    )),
     'venteliste' => $venteliste,
     'varsler'    => $varsler,
     // Om utsendingen er skrudd paa. Ligger her fordi denne hentes paa hver

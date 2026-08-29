@@ -2923,6 +2923,30 @@ sjekk('en melding krever at bryteren staar paa',
 sjekk('ingen bilder binder paa src — alle bruker data-src',
     preg_match('~<img [^>]*(?<![-\\w])src="\\{\\{~', $sida2) !== 1);
 
+// ── Datoer som ligger ute ──────────────────────────────────────────────
+//
+// api/admin/pameldte.php sender med de siste tretti dagene — deltakerlista
+// trenger dem. Datolista filtrerte bare oppover, saa «Neste aatte uker»
+// viste mandag 24. august fem dager etter at den var over.
+sjekk('datolista tar bort datoer som har vaert',
+    str_contains($sida2, 'const harVaert = (o) => {')
+    && str_contains($sida2, '.filter(o => !harVaert(o));'));
+sjekk('… men beholder dagen i dag',
+    str_contains($sida2, 'const iDagFra = new Date(new Date().toDateString()).getTime();'));
+// Kortet eieren ikke trengte.
+sjekk('kortet «Kurs gaar tomme for datoer» er borte',
+    !str_contains($sida2, "kort('Kurs går tomme for datoer'"));
+// Statistikk: de mest populaere kursene, regnet av solgte plasser.
+sjekk('statistikk-kortet staar paa Oversikt',
+    str_contains($sida2, 'Statistikk · mest populære kurs')
+    && str_contains($sida2, 'list="{{ ovPopulaere }}"'));
+sjekk('… og tallene kommer fra serveren',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'), "'populaere' => array_map")
+    && str_contains($sida2, "(this.state.adminData || {}).populaere"));
+sjekk('… regnet av solgte plasser, ikke av antall datoer',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'),
+                 "COALESCE(SUM(b.antall), 0) AS plasser"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

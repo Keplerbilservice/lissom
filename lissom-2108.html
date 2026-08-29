@@ -8284,6 +8284,35 @@ window.__resources = {
             </div>
           </sc-if>
 
+          <!-- Statistikk.
+               Eieren 30. august: «her vil jeg se mine mest populaere kurs».
+               Regnet av plassene som faktisk er solgt siste tolv maaneder —
+               ikke av hvor mange datoer et kurs har. Talte vi datoer, ville
+               drop-in ligget oeverst hver eneste gang uten at det sa noe om
+               hva folk vil ha. Streken bak hver rad er andelen av det
+               stoerste, saa forholdet mellom dem er til aa se og ikke bare
+               til aa lese. -->
+          <sc-if value="{{ ovPopVis }}" hint-placeholder-val="{{ false }}">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-5);">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovPopPeriode }}</span>
+              </div>
+              <sc-for list="{{ ovPopulaere }}" as="k" hint-placeholder-count="5">
+                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
+                  <span style="flex: 1 1 200px; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ k.tittel }}</span>
+                  <span style="flex: 2 1 160px; min-width: 80px;">
+                    <span style="{{ k.stolpeStil }}"></span>
+                  </span>
+                  <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ k.plasser }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ ovPopTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen påmeldinger siste tolv måneder ennå.</div>
+              </sc-if>
+            </div>
+          </sc-if>
+
           <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
             <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
               <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
@@ -29931,33 +29960,37 @@ class Component extends DCLogic {
         // rader som finnes.
         const refAntall = (this.state.refAdmin || []).filter(r => this.staarUte(r)).length;
 
-        // ── Kurs som gaar tomme for datoer ──────────────────────────────
-        //
-        // Kursidene lover tre datoer aa velge mellom. Det loeftet holder bare
-        // saa lenge det ligger tre datoer ute, og datoer tar slutt uten at
-        // noen sier fra: kurset blir staaende med én dato igjen, og
-        // datovelgeren har ingenting aa velge i.
-        //
-        // Interne samlinger er ikke lovet noe — de settes opp naar de settes
-        // opp — og avlyste kurs skal ikke maste.
-        const idag = new Date(new Date().toDateString());
-        const framoverPaa = (k) => (k.okter || []).filter(o => {
-          if (!o.dato) return false;
-          const d = new Date(o.dato + 'T' + (o.til || o.fra || '23:59'));
-          return !isNaN(d) && d >= idag;
-        }).length;
-        const tomme = this.kursData()
-          .filter(k => k.status === 'publisert'
-                    && (k.tema || '') !== 'Kun for medlemmer'
-                    && k.type !== 'Kun medlemmer')
-          .map(k => ({ navn: k.navn, igjen: framoverPaa(k) }))
-          .filter(k => k.igjen < 3)
-          .sort((a, b) => a.igjen - b.igjen);
+        // Kortet «Kurs gaar tomme for datoer» sto her. Eieren 30. august:
+        // han trenger det ikke.
 
         return {
           ovDraHjelp: this.state.ovRekkefolgeLagret
         ? 'Rekkefølgen er lagret.'
         : 'Hold inne på et kort og dra det dit du vil ha det. Rekkefølgen huskes til neste gang.',
+      // ── Statistikk: de mest populaere kursene ────────────────────────
+      //
+      // Eieren 30. august. Tallene er serverens — plasser solgt siste tolv
+      // maaneder — saa kortet og en eventuell rapport ikke kan si hver sin
+      // ting. Stolpen er andelen av det stoerste i lista, ikke av en
+      // oppdiktet maksverdi.
+      ...(() => {
+        const liste = (this.state.adminData || {}).populaere || [];
+        const storst = liste.reduce((n, k) => Math.max(n, k.plasser || 0), 0) || 1;
+        return {
+          ovPopVis: true,
+          ovPopTom: liste.length === 0,
+          ovPopPeriode: 'Siste tolv måneder',
+          ovPopulaere: liste.map(k => ({
+            tittel: k.tittel,
+            plasser: k.plasser === 1 ? 'Én plass' : k.plasser + ' plasser',
+            stolpeStil: {
+              display: 'block', height: 8, borderRadius: 999,
+              background: 'var(--lissom-yellow)',
+              width: Math.max(6, Math.round((k.plasser || 0) / storst * 100)) + '%',
+            },
+          })),
+        };
+      })(),
       ...(() => {
         const liste = (this.state.adminData || {}).ubetalte || [];
         const knapp = {
@@ -30033,23 +30066,6 @@ class Component extends DCLogic {
                  okter.length ? 'Datoene som ligger ute, nærmeste først.' : 'Ingen datoer ligger ute ennå.',
                  okter.length, 'Se kursene',
                  () => this.gaaAdmin('admin', { kursFane: 'alle' })),
-
-            // Samme regel som ventelista: kortet staar naar noe venter.
-            // Ligger det tre datoer ute paa alt, er det ingenting aa si.
-            ...(tomme.length ? [kort('Kurs går tomme for datoer',
-                 (tomme.length === 1
-                   ? tomme[0].navn + (tomme[0].igjen === 0
-                       ? ' har ingen datoer igjen.'
-                       : tomme[0].igjen === 1
-                         ? ' har én dato igjen.'
-                         : ' har ' + tomme[0].igjen + ' datoer igjen.')
-                   : tomme.slice(0, 3).map(t => t.navn).join(', ')
-                     + (tomme.length > 3 ? ' og ' + (tomme.length - 3) + ' til' : '')
-                     + ' har under tre datoer igjen.')
-                 + ' Kurssidene lover tre å velge mellom.',
-                 tomme.length, 'Sett opp datoer',
-                 () => this.gaaAdmin('admin', { kursFane: 'alle' }),
-                 true)] : []),
 
             // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
             // den veien verkstedet er vant til aa gaa naar noen skal meldes
@@ -30230,7 +30246,7 @@ class Component extends DCLogic {
             if ((this.state.vw || 1400) >= 980) return alle;
 
             const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
-                         'Klar til henting', 'Kurs går tomme for datoer',
+                         'Klar til henting',
                          'Nye påmeldinger', 'Planlagte kurs',
                          'Butikk', 'Kasse', 'Beskjeder'];
             const plass = (k) => {
@@ -30914,6 +30930,24 @@ class Component extends DCLogic {
         const UKER = 8;
         const alleUker = !!this.state.oktAlleUker;
         const grense = Date.now() + UKER * 7 * 24 * 3600 * 1000;
+        // Datoer som har vaert.
+        //
+        // api/admin/pameldte.php sender med de siste tretti dagene, og det
+        // skal den: deltakerlista under trenger dem — kursbevis, «klar til
+        // henting» og hvem som faktisk moette opp. Men denne lista heter
+        // «Datoer som ligger ute» og filtreres paa «Neste aatte uker», og
+        // der sto mandag 24. august fem dager etter at den var over.
+        // Grensa manglet i den ene enden.
+        //
+        // Fra midnatt i dag, ikke fra klokka naa: et kurs som gaar i kveld,
+        // eller et som gikk i formiddag og fortsatt skal ha en deltaker
+        // registrert, hoerer med i dag.
+        const iDagFra = new Date(new Date().toDateString()).getTime();
+        const harVaert = (o) => {
+          if (!o.dato) return false;
+          const t = new Date(o.dato + 'T' + (o.til || o.fra || '23:59')).getTime();
+          return !isNaN(t) && t < iDagFra;
+        };
         const innenfor = (o) => {
           if (alleUker || !o.dato) return true;
           const t = new Date(o.dato + 'T' + (o.fra || '00:00')).getTime();
@@ -30923,7 +30957,8 @@ class Component extends DCLogic {
         const raa = (this.state.adminOkter || [])
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1)
-          .filter(o => !aapentKurs || (o.tittel || '') === aapentKurs);
+          .filter(o => !aapentKurs || (o.tittel || '') === aapentKurs)
+          .filter(o => !harVaert(o));
         const utenfor = raa.length - raa.filter(innenfor).length;
         const okter = raa
           .filter(innenfor)

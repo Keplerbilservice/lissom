@@ -954,6 +954,17 @@ og tider, og tilgjengeligheten skal følge kurs og når jeg er innstemplet.»
   den er over. Trekket stopper ikke av seg selv — Vipps kan ikke sette en
   avtale på pause, bare stoppe den — og det står i klartekst begge steder.
 
+### 20. Gamle søknader som står som «venter»
+
+Innmeldingen går rett til Vipps — det finnes ingen søknad til behandling
+lenger. Men et medlem som har en gammel rad stående som «venter» fra den
+gangen det fantes, ser fortsatt «Søknaden din er til behandling» i stedet for
+innmeldingsskjemaet, og kommer ikke videre.
+
+Jeg vet ikke om det finnes slike rader på den ekte siden — jeg ser bare den
+lokale basen. Er det noen, må de settes til «godkjent» eller «avslått» før de
+slipper inn. Si fra, så skriver jeg en migrasjon som rydder dem.
+
 ## Venter på svar fra Lissom
 
 ### 16. ~~Den enkle «Legg til deltaker» i deltakervinduet~~ — avklart 29. august

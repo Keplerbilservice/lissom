@@ -84,7 +84,7 @@ if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
 }
 $plan = $type === '' ? null : Medlemskap::plan($type);
 if ($plan === null) {
-    Svar::feil('Velg hvilket medlemskap du søker om.');
+    Svar::feil('Velg hvilket medlemskap du vil ha.');
 }
 
 // Fast trekk eller ikke.

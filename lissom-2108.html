@@ -3659,7 +3659,7 @@ window.__resources = {
                     <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ bmFeil }}</div>
                   </sc-if>
                   <div>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bmSend }}" hint-size="auto,52px">Send søknad</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
                   </div>
                   <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ bmVilkar }}</p>
                 </div>
@@ -17658,21 +17658,20 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._soknadPagaar = false;
         if (!ok) {
-          this.setState({ bmFeil: d.feil || 'Fikk ikke sendt søknaden. Prøv igjen om litt.' });
+          this.setState({ bmFeil: d.feil || 'Fikk ikke startet innmeldingen. Prøv igjen om litt.' });
           return;
         }
-        this.maal('sign_up', { method: 'Medlemssøknad', form: this.state.bmType || '' });
+        this.maal('sign_up', { method: 'Innmelding', form: this.state.bmType || '' });
         // Soknaden oppretter betalingsavtalen i Vipps, og serveren svarer med
         // adressen den godkjennes paa. Uten dette steget kom man inn som
         // medlem uten at det fantes noe aa trekke fra — og da kom det aldri
         // penger, verken den maaneden eller senere.
         if (d.url) { window.location.href = d.url; return; }
-        this.setState({
-          soknadStatus: 'venter',
-          bmFeil: null,
-          kvittering: 'Søknaden er sendt',
-          kvitteringDetalj: 'Vi ser på den og svarer deg på e-post.',
-        });
+        // Serveren svarer alltid med en adresse til Vipps — innmeldingen ER
+        // betalingen, det finnes ingen soknad til behandling lenger. Kommer
+        // det ingen adresse, er noe galt, og da skal det staa at noe er galt
+        // framfor at «soknaden er sendt».
+        this.setState({ bmFeil: 'Fikk ikke sendt deg videre til Vipps. Prøv igjen om litt.' });
       })
       .catch(() => {
         this._soknadPagaar = false;

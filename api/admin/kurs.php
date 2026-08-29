@@ -233,6 +233,22 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
         return null;
     }
     $slutt = $slutt ?? date('Y-m-d H:i:s', strtotime($start) + 3600);
+    // En ledig tid gjor ingen opptatt.
+    //
+    // Paint on Pots og drop-in legges ut automatisk paa hver eneste
+    // aapningstid. Det er tilbud — «her kan noen komme» — ikke avtaler.
+    // Talte de med her, ville hver aapningstid gjort kursholderen «opptatt»,
+    // og verkstedet kunne ikke satt opp et kurs paa sine egne aapne kvelder.
+    // Det er nettopp da de skal settes opp: doeren er aapen og noen er der.
+    //
+    // Har noen booket, teller den likevel. Da er den en avtale med et
+    // menneske, og to ting samtidig er en ekte kollisjon.
+    $ledigTid = DB::harKolonne('course_sessions', 'fra_apningstid')
+        ? "AND (cs.fra_apningstid = 0
+               OR (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
+                    WHERE b.course_session_id = cs.id
+                      AND b.status IN ('betalt', 'reservert')) > 0)"
+        : '';
     $rad = DB::en(
         "SELECT cs.id, cs.start_tid, c.tittel
            FROM course_sessions cs
@@ -242,6 +258,7 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
             AND cs.status <> 'avlyst'
             AND cs.start_tid < :slutt
             AND COALESCE(cs.slutt_tid, cs.start_tid + INTERVAL 1 HOUR) > :start
+            {$ledigTid}
           ORDER BY cs.start_tid
           LIMIT 1",
         ['h' => $holder, 'u' => $utenom, 'slutt' => $slutt, 'start' => $start]

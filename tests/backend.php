@@ -1675,6 +1675,28 @@ sjekk('en booket aapningstid kommer med likevel',
 sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
     str_contains($icsFil, '$utenLedige = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')'));
 
+// ── En ledig tid gjor ingen opptatt ──────────────────────────────────────
+//
+// Eieren: «jeg vil at Paint on Pots skal vaere mulig aa booke naar det er
+// kurs, ikke vises som opptatt».
+//
+// Konfliktsjekken fra fase 6 talte hver eneste oekt kursholderen sto paa —
+// ogsaa de Paint on Pots- og drop-in-tidene som legges ut automatisk paa hver
+// aapningstid. Setter noen en kursholder paa dem, ville verkstedet ikke
+// kunnet legge et kurs paa sine egne aapne kvelder. Det er nettopp da de skal
+// settes opp: doeren er aapen og noen er der.
+$kursFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+sjekk('en tom aapningstid gjor ikke kursholderen opptatt',
+    str_contains($kursFil2, '$ledigTid = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')')
+    && str_contains($kursFil2, 'AND (cs.fra_apningstid = 0'));
+// Har noen booket, er den en avtale med et menneske, og to ting samtidig er
+// en ekte kollisjon.
+sjekk('en booket aapningstid teller likevel som opptatt',
+    str_contains($kursFil2, "AND b.status IN ('betalt', 'reservert')) > 0)"));
+// Og en ekte kollisjon mellom to kurs skal fortsatt stoppes.
+sjekk('to kurs paa samme kursholder og tid stoppes fortsatt',
+    str_contains($kursFil2, 'staar allerede paa') || str_contains($kursFil2, 'står allerede på'));
+
 // ── To kurs med samme navn ───────────────────────────────────────────────
 //
 // Paa den ekte siden laa «Lag din egen bolle» to ganger, begge med en oekt

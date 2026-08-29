@@ -1215,6 +1215,18 @@ window.__resources = {
     .lx-admmobpanel { display: grid !important; }
   }
 
+  /* Maneds- og ukevisningen i kalenderen er sju spalter. Paa en telefon er
+     det 55 px hver, og sondagen falt utenfor kanten med «overflow: hidden».
+     Rammen ruller sidelengs i stedet, slik at hele uka er der — og resten av
+     sida staar stille, som den skal. */
+  @media (max-width: 760px) {
+    .lx-kalbred { overflow-x: auto !important; -webkit-overflow-scrolling: touch; }
+    .lx-kalbred > div { min-width: 640px; }
+    /* «Uke 35 · 24. august – 30. august» faar ikke plass paa én linje ved
+       siden av pilene. Uten dette ble slutten klippet av kanten. */
+    .lx-kaltittel { white-space: normal !important; margin-left: 0 !important; font-size: var(--text-lg) !important; }
+  }
+
   @media (max-width: 760px) {
     [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
   }
@@ -5110,13 +5122,41 @@ window.__resources = {
        fase 6, saa reglene deres gjelder ogsaa herfra. -->
   <sc-if value="{{ erAdminKalender }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – kalender" style="{{ adminGridStil }}">
-      <aside style="{{ adminAsideStil }}">
-        <img src="assets/logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKalender }}" as="n" hint-placeholder-count="9">
             <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
           </sc-for>
         </nav>
+        <!-- Adminmenyen paa telefon. Den samme som paa alle de andre
+             skjermene: hvor du er, og ett trykk for hele kartet. Uten den
+             sto hele menyen utslaatt over kalenderen. -->
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </aside>
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
@@ -5131,7 +5171,7 @@ window.__resources = {
             <button type="button" onClick="{{ klForrige }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">‹</button>
             <button type="button" onClick="{{ klIdag }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; padding: 7px 14px; white-space: nowrap;">I dag</button>
             <button type="button" onClick="{{ klNesteSteg }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">›</button>
-            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-left: var(--space-3); white-space: nowrap;">{{ klTittel }}</span>
+            <span class="lx-kaltittel" style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-left: var(--space-3); white-space: nowrap;">{{ klTittel }}</span>
             <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ false }}">
               <span style="font-size: var(--text-sm); color: var(--text-muted); margin-left: var(--space-2); white-space: nowrap;">· {{ klDagSammendrag }}</span>
             </sc-if>
@@ -5269,7 +5309,7 @@ window.__resources = {
         <div style="{{ klHovedStil }}">
 
         <sc-if value="{{ klErManed }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div class="lx-kalbred" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="display: grid; grid-template-columns: repeat(7, 1fr);">
               <sc-for list="{{ klUkedager }}" as="u" hint-placeholder-count="7">
                 <div style="padding: var(--space-3) var(--space-3); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u }}</div>
@@ -5294,7 +5334,7 @@ window.__resources = {
         </sc-if>
 
         <sc-if value="{{ klErUke }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div class="lx-kalbred" style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="{{ klUkeHodeStil }}">
               <div style="border-right: 1px solid var(--border-subtle);"></div>
               <sc-for list="{{ klUkeDager }}" as="d" hint-placeholder-count="7">
@@ -9055,6 +9095,14 @@ window.__resources = {
                       </sc-for>
                       <sc-if value="{{ betIngenHistorikk }}" hint-placeholder-val="{{ false }}">
                         <div style="padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen betaling er registrert på denne ennå.</div>
+                      </sc-if>
+                      <!-- Merket betalt for verkstedet forte betalingene hver
+                           for seg. Da finnes det ingen rad aa vise, men
+                           bookingen vet hvordan pengene kom inn — og det maa
+                           staa her. Ellers sier merket over «BETALT» mens
+                           ruta under sier at ingenting er registrert. -->
+                      <sc-if value="{{ betFraFor }}" hint-placeholder-val="{{ false }}">
+                        <div style="padding: var(--space-3) 0; border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-body);">{{ betFraForTekst }}</div>
                       </sc-if>
 
                       <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
@@ -14973,6 +15021,7 @@ class Component extends DCLogic {
       { sti: '/admin/kurs/alle',    side: 'admin' },
       { sti: '/admin/kurs',         side: 'adminomrkurs' },
       { sti: '/admin/pameldte',     side: 'adminpameldte' },
+      { sti: '/admin/kalender',     side: 'adminkalender' },
       // Rekkefolgen betyr noe: forste treff vinner naar adressen skrives.
       // Lista maa derfor staa for forsida, ellers hadde begge to endt paa
       // /admin/deltakere.
@@ -22383,8 +22432,12 @@ class Component extends DCLogic {
     const mndNavn = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
     const dagNavn = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
     const uked = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
-    let visning = this.state.klVisning || 'dag';
-    if (this.erSmal() && (visning === 'maned' || visning === 'dag')) visning = 'liste';
+    // Paa telefon er lista standardvisningen: et manedsrutenett er sju
+    // spalter, og sju spalter paa 390 px er ikke til aa lese. Men velger hun
+    // selv Maned eller Dag, skal hun faa det — en knapp som ikke gjor det den
+    // sier, er verre enn ingen knapp. Rutenettet ruller sidelengs i sin egen
+    // ramme, saa resten av sida staar stille.
+    let visning = this.state.klVisning || (this.erSmal() ? 'liste' : 'dag');
     const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
     const modus = this.state.klFarge || 'type';
     const info = this.klTypeInfo(), hInfo = this.klHolderInfo();
@@ -22716,7 +22769,11 @@ class Component extends DCLogic {
               ? { navn: 'Gjenopprett økten', gjor: () => this.setState(s => ({ klMeny: null, klAvlyst: Object.assign({}, s.klAvlyst, { [menyEvt.id]: false }) })) }
               : { navn: 'Avlys økten…', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klBekreftAvlys: true, klFlyttVis: false }) },
           ].map(v => ({ navn: v.navn, gjor: v.gjor, stil: knappStil })) : [],
-          klSideGridStil: this.erSmal() ? { display: 'block' } : { display: 'grid', gridTemplateColumns: (visning === 'dag' ? '476px' : '272px') + ' minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' },
+          // Paa telefon staar kalenderen oeverst, saa kortene, saa
+          // sidespaltene. Med «display: block» kom beskjeder, notater og alle
+          // seksten kursene forst, og kalenderen laa 8000 piksler nede — den
+          // sa rett og slett ut som den manglet.
+          klSideGridStil: this.erSmal() ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' } : { display: 'grid', gridTemplateColumns: (visning === 'dag' ? '476px' : '272px') + ' minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' },
           klBoksBStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '22px', overflow: 'hidden', padding: 'var(--space-2) 0' },
           klBoksHodeStil: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-5) var(--space-2)' },
           klBoksIndreStil: {},
@@ -22724,13 +22781,13 @@ class Component extends DCLogic {
           klBoksEtikettStil: { fontSize: '12px', letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 'var(--space-3)' },
           klBoksPIndreStil: {},
           klToppKortStil: this.erSmal()
-            ? { display: 'grid', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }
+            ? { display: 'grid', gap: 'var(--space-4)', marginBottom: 'var(--space-4)', order: 2 }
             : { gridColumn: '1 / -1', gridRow: '1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' },
           klAsideStil: this.erSmal()
-            ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }
+            ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', order: 3 }
             : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '2' },
           klHovedStil: this.erSmal()
-            ? { minWidth: 0 }
+            ? { minWidth: 0, order: 1 }
             : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-17px' : visning === 'uke' ? '17px' : 0 },
           klSideAntall: this.kursData().length + ' kurs',
           klSideKurs: this.kursData().map(k => ({
@@ -31670,7 +31727,12 @@ class Component extends DCLogic {
           betSkyldig: har ? d.skyldig : '',
           betGjortOpp: har && !!d.gjortOpp,
           betIkkeGjortOpp: har && !d.gjortOpp,
-          betIngenHistorikk: har && (d.historikk || []).length === 0,
+          betIngenHistorikk: har && (d.historikk || []).length === 0 && !d.fraFor,
+          // Den som ble markert betalt for fase 1: ingen rad, men bookingen
+          // vet bade at den er betalt og hvordan. Da staar det, framfor at
+          // ruta motsier merket paa raden rett over.
+          betFraFor: har && !!d.fraFor,
+          betFraForTekst: har ? (d.fraForTekst || '') : '',
           betHistorikk: (har ? d.historikk : []).map(h => ({
             belop: h.belop,
             // Hvem, naar og hvordan. Det var nettopp dette som manglet:
@@ -31703,8 +31765,11 @@ class Component extends DCLogic {
           settBetBelop: e => this.setState({ betBelop: e.target.value }),
           // Tomt felt betyr det som staar igjen. Det maa staa, ellers gjetter
           // man — og gjetter feil den dagen noen har betalt en del av det.
+          // Etter det som faktisk er fort, ikke etter merket. En som staar
+          // som betalt fra for har ingenting i regnskapet — skal beloepet
+          // med, er det hele summen som skal inn, og da maa hintet si det.
           betBelopHint: har
-            ? (d.gjortOpp ? 'Alt er gjort opp' : 'Tomt = ' + d.skyldig)
+            ? (d.skyldigOre > 0 ? 'Tomt = ' + d.skyldig : 'Alt er gjort opp')
             : '',
           betKommentar: this.state.betKommentar || '',
           settBetKommentar: e => this.setState({ betKommentar: e.target.value }),

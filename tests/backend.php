@@ -1202,6 +1202,8 @@ sjekk('adminvarsler gaar til minst én adresse', count($forNokler) > 0, implode(
 sjekk('ingen adresse staar to ganger i adminlista',
     count($forNokler) === count(array_unique(array_map('mb_strtolower', $forNokler))));
 
+$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+
 // ── Betaling registrert for haand ────────────────────────────────────────
 //
 // «Marker som betalt» satte en status og ikke noe mer: ingen sum, ingen hvem,
@@ -1273,15 +1275,55 @@ sjekk('ingen adresse staar to ganger i adminlista',
     $e = Booking::settBetaltStatus($b);
     sjekk('en avbestilt paamelding roeres ikke av betalingene', $e['status'] === 'avbestilt');
 
+    // ── Den gamle pekeren teller ogsaa ──────────────────────────────────
+    //
+    // «bookings.payment_id» har pekt paa Vipps-betalingen siden dag én.
+    // «payments.booking_id» kom med migrasjon 084, og backfillen tok bare de
+    // radene som fantes da. Leser vi bare den nye, staar en betalt
+    // Vipps-plass som ubetalt — det var noeyaktig det eieren saa: «BETALT» paa
+    // kortet, «Betalt kr. 0,-» i ruta under.
+    DB::oppdater('bookings', ['status' => 'reservert'], ['id' => $b]);
+    $vipps = DB::settInn('payments', [
+        'vipps_reference' => 'MANUELL-TEST-V-' . bin2hex(random_bytes(4)),
+        'type' => 'epayment', 'formal' => 'booking',
+        'belop_ore' => 100000, 'status' => 'betalt',
+        'idempotency_key' => Vipps::uuid(),
+    ]);
+    DB::oppdater('bookings', ['payment_id' => $vipps], ['id' => $b]);
+    sjekk('en Vipps-betaling uten den nye pekeren blir likevel funnet',
+        Booking::betalingerFor($b)['sum'] === 100000);
+
     // Rydd opp etter oss.
-    DB::kjor('DELETE FROM payments WHERE booking_id = :b', ['b' => $b]);
     DB::kjor('DELETE FROM bookings WHERE id = :b', ['b' => $b]);
+    DB::kjor('DELETE FROM payments WHERE booking_id = :b OR id = :p', ['b' => $b, 'p' => $vipps]);
     DB::kjor('DELETE FROM course_sessions WHERE id = :o', ['o' => $oktId]);
     DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
 })();
 
+// ── Den som ble merket betalt for fase 1 ─────────────────────────────────
+//
+// «Marker som betalt» satte en status og ikke noe mer. De paameldingene staar
+// fortsatt slik: betalt, uten en eneste rad i payments. Ruta maa si det samme
+// som merket paa raden over — ellers staar det «BETALT» og «ingen betaling er
+// registrert» ved siden av hverandre, og ingen vet hva som gjelder.
+sjekk('en paamelding merket betalt for fase 1 leses som gjort opp',
+    str_contains($betFil, "\$fraFor = \$bet['rader'] === [] && (string) \$b['status'] === 'betalt'")
+    && str_contains($betFil, "'gjortOpp'  => \$skyldig === 0 || \$fraFor"));
+sjekk('ruta sier hvordan pengene kom inn, ogsaa uten en rad i payments',
+    str_contains($betFil, "'Merket betalt' . (\$maate !== ''"));
+// Vi later ikke som vi vet mer enn vi gjor: raden finnes ikke, saa hvem som
+// registrerte den og naar, kan ingen svare paa.
+sjekk('ruta paastaar ikke aa vite hvem som registrerte den',
+    str_contains($betFil, 'hvem som registrerte den, eller når'));
+
+// Og nye Vipps-betalinger skal ikke havne i den samme baaten. Betalingsraden
+// lages for bookingen — den maa ha en referanse for kunden sendes til Vipps —
+// saa koblingen settes rett etter at bookingen finnes.
+sjekk('en ny Vipps-betaling kobles til paameldingen med det samme',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+        "DB::oppdater('payments', ['booking_id' => \$bookingId], ['id' => \$paymentId])"));
+
 // Endepunktet skal ikke ha sine egne regler ved siden av bibliotekets.
-$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
 sjekk('kursbetaling.php bruker reglene i Booking, ikke sine egne',
     str_contains($betFil, 'Booking::settBetaltStatus(') && str_contains($betFil, 'Booking::betalingerFor('));
 sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
@@ -1450,7 +1492,13 @@ sjekk('en gjest uten e-post og telefon faar likevel sin egen paamelding',
 sjekk('ruta sier fra naar personen ikke har konto',
     str_contains($medFil, "'gjest'      => \$erGjest"));
 sjekk('betalingene hentes paa paameldingene',
-    str_contains($medFil, 'WHERE p.booking_id IN'));
+    str_contains($medFil, 'WHERE b.id IN ({$inn})'));
+// Begge pekerne mellom booking og betaling. «payments.booking_id» kom med
+// migrasjon 084; «bookings.payment_id» har pekt paa Vipps-betalingen siden
+// dag én. Leses bare den nye, mangler Vipps-betalingene — og en betalt plass
+// staar som ubetalt.
+sjekk('personruta finner ogsaa Vipps-betalinger uten den nye pekeren',
+    str_contains($medFil, 'JOIN bookings b ON (b.id = p.booking_id OR b.payment_id = p.id)'));
 sjekk('ventelistene hentes paa e-post og telefon',
     str_contains($medFil, "w.status IN ('venter','varslet')"));
 sjekk('endringsloggen leses ut av audit_log',
@@ -1494,6 +1542,31 @@ sjekk('knappene som endrer noe sier fra at de ikke er koblet',
     substr_count($sida, 'this.klIkkeEnda(') >= 10);
 sjekk('beskjedene i kalenderen er ekte henvendelser, ikke oppdiktede',
     str_contains($sida, "klBeskjeder: (this.state.adminForesporsler || [])"));
+// ── Kalenderskjermen paa telefon ─────────────────────────────────────────
+//
+// Skjermen kom fra designfila og hadde sin egen sidemeny: feil sti til logoen,
+// ingen «lx-adminaside», og ingen mobilmeny. Paa telefon sto logoen tom, hele
+// menyen laa utslaatt over sida, og kalenderen ble dyttet ned under den.
+sjekk('kalenderen bruker den samme logoen som resten av admin',
+    !str_contains($sida, 'src="assets/logo-lockup-yellow.svg"'));
+// Én aside per adminskjerm, og alle skal ha klassen som gjor menyen om til en
+// topplinje paa smal skjerm.
+sjekk('hver adminskjerm har klassen som gjor menyen mobilvennlig',
+    substr_count($sida, '<aside style="{{ adminAsideStil }}">') === 0);
+sjekk('kalenderen har sin egen adresse, saa den taaler en omlasting',
+    str_contains($sida, "{ sti: '/admin/kalender',     side: 'adminkalender' },"));
+// Manedsrutenettet er sju spalter. Paa en telefon falt sondagen utenfor
+// kanten med «overflow: hidden» — nu ruller rammen sidelengs i stedet.
+sjekk('de brede visningene ruller sidelengs paa telefon',
+    substr_count($sida, 'class="lx-kalbred"') === 2
+    && str_contains($sida, '.lx-kalbred { overflow-x: auto !important;'));
+// Og velger hun Maned eller Dag paa telefon, skal hun faa det. Lista er
+// standardvisningen der, ikke den eneste.
+sjekk('visningsknappene virker ogsaa paa telefon',
+    str_contains($sida, "this.state.klVisning || (this.erSmal() ? 'liste' : 'dag')"));
+sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
+    str_contains($sida, "? { minWidth: 0, order: 1 }"));
+
 sjekk('kursholderne i kalenderen kommer fra registeret',
     str_contains($sida, 'klHoldere()')
     // Navnene sto i tre lister og to standardverdier. Kommentaren som

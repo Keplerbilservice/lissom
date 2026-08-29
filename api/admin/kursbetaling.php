@@ -44,7 +44,7 @@ $admin = krev_admin();
 if (Foresporsel::metode() === 'GET') {
     $bookingId = Foresporsel::heltall('bookingId');
     $b = DB::en(
-        'SELECT b.id, b.belop_ore, b.status, b.payment_id,
+        'SELECT b.id, b.belop_ore, b.status, b.payment_id, b.betalt_maate,
                 COALESCE(m.navn, b.gjest_navn) AS navn
            FROM bookings b
       LEFT JOIN members m ON m.id = b.member_id
@@ -58,13 +58,35 @@ if (Foresporsel::metode() === 'GET') {
     $bet = Booking::betalingerFor($bookingId);
     $skyldig = max(0, (int) $b['belop_ore'] - $bet['sum']);
 
+    // Den som ble markert betalt før verkstedet førte betalingene.
+    //
+    // «Marker som betalt» satte en status og ikke noe mer. De påmeldingene
+    // står fortsatt slik: betalt, uten en eneste rad i payments. Her må det
+    // stå det samme som på kortet over — ellers sier den ene halvdelen av
+    // ruta «BETALT» mens den andre sier «ingen betaling er registrert», og da
+    // vet ingen hva som gjelder.
+    //
+    // Vi later ikke som vi vet mer enn vi gjør: raden finnes ikke, så hvem
+    // som registrerte den og når, kan vi ikke svare på.
+    $fraFor = $bet['rader'] === [] && (string) $b['status'] === 'betalt';
+    $maate  = trim((string) ($b['betalt_maate'] ?? ''));
+
     Svar::json([
         'navn'      => (string) $b['navn'],
         'skalBetale'=> Booking::kroner((int) $b['belop_ore']),
-        'betalt'    => Booking::kroner($bet['sum']),
+        'betalt'    => Booking::kroner($fraFor ? (int) $b['belop_ore'] : $bet['sum']),
         'skyldig'   => Booking::kroner($skyldig),
         'skyldigOre'=> $skyldig,
-        'gjortOpp'  => $skyldig === 0,
+        'gjortOpp'  => $skyldig === 0 || $fraFor,
+        'fraFor'    => $fraFor,
+        'fraForTekst' => $fraFor
+            ? ('Merket betalt' . ($maate !== '' ? ' — ' . mb_strtolower($maate) : '')
+               . ', før verkstedet begynte å føre betalingene hver for seg. '
+               . 'Derfor står det ikke hvem som registrerte den, eller når.'
+               . ($skyldig > 0
+                   ? ' Skal beløpet med i regnskapet, registrer det under — det er ikke ført noe sted fra før.'
+                   : ''))
+            : '',
         'maater'    => Booking::MAATER,
         'historikk' => array_map(static fn($r) => [
             'id'         => (int) $r['id'],

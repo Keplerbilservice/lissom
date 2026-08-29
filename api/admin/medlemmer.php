@@ -415,15 +415,19 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
     $betalinger = [];
     if ($bookingIder !== [] && DB::harKolonne('payments', 'booking_id')) {
         $inn = implode(',', $bookingIder);
+        // Begge pekerne. «payments.booking_id» kom med migrasjon 084, mens
+        // «bookings.payment_id» har pekt paa Vipps-betalingen siden dag én —
+        // og 084 fylte den nye bare for det som fantes da den kjorte. Leser
+        // vi bare den nye, mangler Vipps-betalingene i lista.
         $betalinger = DB::alle(
-            "SELECT p.id, p.booking_id, p.type, p.belop_ore, p.status, p.maate,
-                    p.kommentar, p.annullert_at, p.created_at, c.tittel,
-                    r.navn AS registrert_navn
+            "SELECT p.id, b.id AS booking_id, p.type, p.belop_ore, p.status,
+                    p.maate, p.kommentar, p.annullert_at, p.created_at,
+                    c.tittel, r.navn AS registrert_navn
                FROM payments p
-          LEFT JOIN bookings b ON b.id = p.booking_id
+               JOIN bookings b ON (b.id = p.booking_id OR b.payment_id = p.id)
           LEFT JOIN courses c ON c.id = b.course_id
           LEFT JOIN members r ON r.id = p.registrert_av
-              WHERE p.booking_id IN ({$inn})
+              WHERE b.id IN ({$inn})
            ORDER BY p.id DESC"
         );
     }

@@ -302,6 +302,17 @@ final class Booking
 
             $bookingId = DB::settInn('bookings', $felter);
 
+            // Betalingen peker tilbake paa paameldingen.
+            //
+            // Raden lages foer bookingen — den maa ha en referanse for kunden
+            // sendes til Vipps — saa koblingen settes her. Uten den staar
+            // betalingshistorikken tom paa en plass som faktisk er betalt,
+            // og «Betaling» i Paameldte sier «ingen betaling registrert» om
+            // penger som er kommet inn.
+            if ($paymentId !== null && DB::harKolonne('payments', 'booking_id')) {
+                DB::oppdater('payments', ['booking_id' => $bookingId], ['id' => $paymentId]);
+            }
+
             return ['bookingId' => $bookingId, 'paymentId' => $paymentId];
         });
 
@@ -793,6 +804,16 @@ final class Booking
             return ['rader' => [], 'sum' => 0];
         }
 
+        // To veier inn til den samme raden, og det er med vilje.
+        //
+        // «payments.booking_id» kom med migrasjon 084 og er den vi vil ha.
+        // Men «bookings.payment_id» har pekt paa Vipps-betalingen siden dag
+        // én, og 084 fylte booking_id av den bare for de radene som fantes da
+        // migrasjonen kjorte. En Vipps-betaling som kom til etterpaa, og for
+        // rettelsen i reserverOgBetal, har fortsatt bare den gamle pekeren.
+        //
+        // Leser vi bare den nye, staar en betalt Vipps-plass som ubetalt her
+        // — og det var noeyaktig det som skjedde. Vi leser begge.
         $rader = DB::alle(
             'SELECT p.id, p.vipps_reference, p.type, p.belop_ore, p.status, p.maate,
                     p.kommentar, p.annullert_at, p.created_at,
@@ -800,8 +821,9 @@ final class Booking
                FROM payments p
           LEFT JOIN members m ON m.id = p.registrert_av
               WHERE p.booking_id = :b
+                 OR p.id = (SELECT payment_id FROM bookings WHERE id = :b2)
            ORDER BY p.id',
-            ['b' => $bookingId]
+            ['b' => $bookingId, 'b2' => $bookingId]
         );
 
         $sum = 0;

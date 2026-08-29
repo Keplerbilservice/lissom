@@ -10006,6 +10006,51 @@ window.__resources = {
              dag i aaret, for noe som skjer to ganger i halvaaret, er stoy.
              Bryteren under Nettsiden avgjor om medlemmene kan soke i det
              hele tatt. -->
+        <!-- Dubletter i medlemslista.
+             Samme person ligger flere ganger: booket som gjest med e-posten,
+             meldte seg inn med telefonen, logget inn med Vipps en tredje
+             gang. Da staar timene paa én rad og kursbevisene paa en annen.
+             «Slettes for haand under Medlemmer» sto det i de aapne punktene
+             — men aa slette den ene er aa miste historikken hennes.
+             Panelet staar bare naar noe er funnet, som frys-panelet under. -->
+        <sc-if value="{{ dubHar }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6);">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Samme person flere ganger</div>
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ dubTall }}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <sc-for list="{{ dubGrupper }}" as="g" hint-placeholder-count="2">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                    <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ g.tittel }}</div>
+                    <span style="{{ g.merkeStil }}">{{ g.merke }}</span>
+                  </div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ g.grunn }}</p>
+                  <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                    <sc-for list="{{ g.rader }}" as="r" hint-placeholder-count="2">
+                      <div style="{{ r.stil }}">
+                        <div style="min-width: 0;">
+                          <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ r.navn }}</div>
+                          <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.kontakt }}</div>
+                          <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.historikk }}</div>
+                        </div>
+                        <sc-if value="{{ r.erBeholdt }}" hint-placeholder-val="{{ true }}">
+                          <span style="{{ r.beholdStil }}">Beholdes</span>
+                        </sc-if>
+                        <sc-if value="{{ r.kanSlaas }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ r.slaaSammen }}" style="appearance: none; border: 1.5px solid var(--lissom-brown); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); white-space: nowrap;">Slå inn i den over</button>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ dubForklaring }}</p>
+          </div>
+        </sc-if>
+
         <sc-if value="{{ frysHarSoknader }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-8); max-width: 860px;">
             <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
@@ -17814,6 +17859,52 @@ class Component extends DCLogic {
       .catch(() => { this._frysAdmHentes = false; this.setState({ frysAdmin: [] }); });
   }
 
+  /**
+   * Dubletter i medlemslista.
+   *
+   * Samme person ligger flere ganger — booket som gjest med e-posten, meldte
+   * seg inn med telefonen, logget inn med Vipps. Serveren finner gruppene;
+   * her vises de, og verkstedet bestemmer.
+   */
+  hentDubletter() {
+    if (!this.erPublisert() || this._dubHentes) return;
+    this._dubHentes = true;
+    fetch('/api/admin/dubletter.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._dubHentes = false;
+        this.setState({ dubletter: (d && d.grupper) ? d.grupper : [] });
+      })
+      .catch(() => { this._dubHentes = false; this.setState({ dubletter: [] }); });
+  }
+
+  /**
+   * Slaar to rader sammen. Lista hentes paa nytt, og medlemslista med — den
+   * ene raden er borte fra den naa, og en liste som viser noe som ikke
+   * finnes lenger er verre enn en som er tom et oeyeblikk.
+   */
+  dublettKall(behold, fjern) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    fetch('/api/admin/dubletter.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'slaa-sammen', behold, fjern }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        this.setState({
+          kvittering: (d && d.ok) ? 'Radene er slått sammen' : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+          dubletter: null, adminMedlemmer: null,
+        });
+        this._dubHentes = false;
+        this.hentDubletter();
+        this.hentAdmin();
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke',
+        kvitteringDetalj: 'Ingen forbindelse. Prøv igjen.' }));
+  }
+
   /** Godkjenn, avslaa eller avslutt. Lista hentes paa nytt etterpaa. */
   frysAdminKall(kropp) {
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return Promise.resolve(false); }
@@ -25278,6 +25369,10 @@ class Component extends DCLogic {
     if (side === 'adminmedlem' && !this.state.frysAdmin) {
       this.hentFrysAdmin();
     }
+    // Dublettene i medlemslista, samme sted.
+    if (side === 'adminmedlem' && !this.state.dubletter) {
+      this.hentDubletter();
+    }
     // Frys-soknadene. Bare naar verkstedet har slaatt funksjonen paa —
     // ellers er det et kall som aldri fører til noe paa skjermen.
     if (side === 'minside' && this.state.innlogget && !this.state.frys
@@ -29013,6 +29108,67 @@ class Component extends DCLogic {
         };
         return {
           miApen: !!this.state.miApen,
+          // ── Samme person flere ganger ──────────────────────
+          //
+          // Serveren finner gruppene og foreslaar hvem som skal beholdes:
+          // den med mest historikk, ellers den eldste raden. Forslaget er et
+          // forslag — knappen staar paa hver av de andre, saa den som ser at
+          // forslaget er feil kan snu det ved aa gaa motsatt vei.
+          ...(() => {
+            const grupper = this.state.dubletter || [];
+            const sikre = grupper.filter(g => g.sikker).length;
+            const merke = (sikker) => ({
+              display: 'inline-block', padding: '2px 10px', borderRadius: 'var(--radius-pill)',
+              fontSize: '11px', fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+              textTransform: 'uppercase', whiteSpace: 'nowrap',
+              background: sikker ? 'rgba(196,90,58,.14)' : 'var(--clay-100)',
+              color: sikker ? 'var(--terracotta-600)' : 'var(--text-muted)',
+            });
+            return {
+              dubHar: grupper.length > 0,
+              dubTall: grupper.length === 1 ? '1 gruppe funnet'
+                : grupper.length + ' grupper funnet'
+                  + (sikre === grupper.length ? '' : ' · ' + sikre + ' sikre'),
+              dubForklaring: 'Den som beholdes får alt som hang på den andre — bookinger, '
+                + 'betalinger, timer og kursbevis. Raden som slås inn slettes ikke; den '
+                + 'anonymiseres, så regnskapet beholder det som må stå der.',
+              dubGrupper: grupper.map(g => ({
+                tittel: (g.medlemmer[0] || {}).navn || '',
+                grunn: g.grunn,
+                merke: g.sikker ? 'Samme person' : 'Sjekk først',
+                merkeStil: merke(g.sikker),
+                rader: g.medlemmer.map((m, i) => ({
+                  navn: m.navn + (m.erAdmin ? ' — administrator' : ''),
+                  kontakt: [m.epost, m.telefon].filter(Boolean).join(' · ') || 'Ingen kontaktopplysninger',
+                  historikk: [
+                    m.bookinger ? m.bookinger + (m.bookinger === 1 ? ' påmelding' : ' påmeldinger') : '',
+                    m.betalinger ? m.betalinger + (m.betalinger === 1 ? ' betaling' : ' betalinger') : '',
+                    m.avtaler ? m.avtaler + (m.avtaler === 1 ? ' avtale' : ' avtaler') : '',
+                    m.timer ? m.timer + (m.timer === 1 ? ' innstempling' : ' innstemplinger') : '',
+                  ].filter(Boolean).join(' · ') || 'Ingen historikk',
+                  erBeholdt: i === 0,
+                  // En administrator slaas ikke bort. Endepunktet nekter
+                  // uansett; knappen staar ikke der, saa ingen prover.
+                  kanSlaas: i > 0 && !m.erAdmin,
+                  beholdStil: merke(false),
+                  stil: {
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    gap: 'var(--space-3)', flexWrap: 'wrap',
+                    padding: 'var(--space-3) var(--space-4)',
+                    borderRadius: 'var(--radius-md)',
+                    background: i === 0 ? 'var(--clay-100)' : 'transparent',
+                    border: '1px solid var(--border-subtle)',
+                  },
+                  slaaSammen: () => {
+                    if (!window.confirm('Slå «' + m.navn + '» inn i «'
+                        + ((g.medlemmer[0] || {}).navn || '') + '»?\n\n'
+                        + 'Alt som hører til flyttes over. Raden slettes ikke, den anonymiseres.')) return;
+                    this.dublettKall((g.medlemmer[0] || {}).id, m.id);
+                  },
+                })),
+              })),
+            };
+          })(),
           // ── Soknader om frys ────────────────────────────────────────
           //
           // Ligger her fordi det er her verkstedet jobber med medlemmene.

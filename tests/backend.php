@@ -1649,6 +1649,64 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Dubletter i medlemslista ─────────────────────────────────────────────
+//
+// Samme person ligger flere ganger: booket som gjest med e-posten, meldte
+// seg inn med telefonen, logget inn med Vipps en tredje gang. Da staar
+// timene paa én rad og kursbevisene paa en annen. «Slettes for haand under
+// Medlemmer» sto det i de aapne punktene — men aa slette den ene er aa miste
+// historikken hennes, ikke aa rydde.
+$dubFil = file_get_contents(dirname(__DIR__) . '/api/admin/dubletter.php');
+// E-post og telefon er sikre funn; navn alene er et forslag. To personer kan
+// hete det samme, men de deler ikke innboks.
+sjekk('navn alene er et forslag, ikke et funn',
+    str_contains($dubFil, "\$sikker = (in_array('epost', \$slag, true) || in_array('telefon', \$slag, true))"));
+// Et nummer mange deler er en plassholder, ikke ett menneske.
+sjekk('et nummer mange deler regnes ikke som sikkert',
+    str_contains($dubFil, '$mange = 4;')
+    && str_contains($dubFil, "Deler e-post eller telefon med mange andre rader"));
+// Femten tabeller peker paa members. Lista bygges av basen, ikke skrevet av
+// for haand — den som legger til en tabell neste gang skal slippe aa huske
+// denne fila.
+sjekk('tabellene som peker paa medlemmet finnes av basen',
+    str_contains($dubFil, "AND column_name IN ('member_id', 'registrert_av')"));
+// Alt eller ingenting. Foerste forsoek flyttet innstemplingene og falt saa
+// paa en unik noekkel: bookingene sto paa den nye raden mens den gamle
+// fortsatt var et aktivt medlem.
+sjekk('sammenslaaingen er alt eller ingenting',
+    str_contains($dubFil, 'DB::iTransaksjon(static function () use ($behold, $fjern, $a, $b): array {'));
+// «vipps_sub», «brukernavn» og «recurring_agreement_id» er unike i members.
+// Kopieres de over foer den gamle raden er toemt, kolliderer de med seg selv.
+sjekk('den gamle raden toemmes for verdiene flyttes',
+    strpos($dubFil, "'anonymisert_at'  => gmdate")
+    < strpos($dubFil, "if (\$fyll !== []) {\n    DB::oppdater('members', \$fyll"));
+// Ingenting slettes. To tabeller har en unik noekkel som inkluderer
+// medlemmet, og der blir raden staaende framfor aa bli slettet.
+sjekk('raden anonymiseres, den slettes ikke',
+    str_contains($dubFil, "'navn'            => 'Slått sammen',")
+    && !str_contains($dubFil, 'DELETE FROM members'));
+sjekk('det som ikke kan flyttes blir staaende, ikke slettet',
+    str_contains($dubFil, 'UPDATE IGNORE `{$t}` SET `{$k}`')
+    && str_contains($dubFil, "kunne ikke flyttes fordi den samme "));
+// En administrator slaas ikke bort ved et uhell.
+sjekk('en administrator kan ikke slaas bort',
+    str_contains($dubFil, "if (\$b['rolle'] === 'admin') {")
+    && str_contains($dubFil, 'Du kan ikke slå sammen din egen konto inn i en annen.'));
+// Panelet staar bare naar noe er funnet, som frys-panelet ved siden av.
+sjekk('panelet staar bare naar noe er funnet',
+    str_contains($sida, 'dubHar: grupper.length > 0,')
+    && str_contains($sida, '<sc-if value="{{ dubHar }}"'));
+// Knappen staar ikke paa raden som foreslaas beholdt, og ikke paa en admin.
+sjekk('knappen staar bare der den kan brukes',
+    str_contains($sida, 'kanSlaas: i > 0 && !m.erAdmin,'));
+// Sammenslaaing er ikke noe man gjor ved et uhell.
+sjekk('sammenslaaingen spor forst',
+    str_contains($sida, "if (!window.confirm('Slå «' + m.navn + '» inn i «'"));
+// Lista maa hentes paa nytt: den ene raden finnes ikke lenger.
+sjekk('listene hentes paa nytt etter en sammenslaaing',
+    str_contains($sida, 'dubletter: null, adminMedlemmer: null,')
+    && str_contains($sida, 'this.hentDubletter();'));
+
 // ── Kommentarer som ikke lenger stemte ───────────────────────────────────
 //
 // Fire kommentarer sa at noe ikke var koblet opp, med koden som kobler det

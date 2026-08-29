@@ -5361,7 +5361,7 @@ window.__resources = {
                   <div data-dato="{{ d.iso }}" style="{{ d.stil }}">
                     <div style="{{ d.tallStil }}">{{ d.tall }}</div>
                     <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="0">
-                      <button type="button" data-evt="{{ h.id }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>
+                      <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>
                     </sc-for>
                     <sc-if value="{{ d.harMer }}" hint-placeholder-val="{{ false }}">
                       <button type="button" onClick="{{ d.velgDag }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: left;">{{ d.mer }}</button>
@@ -5393,7 +5393,7 @@ window.__resources = {
               <sc-for list="{{ klUkeDager }}" as="d" hint-placeholder-count="7">
                 <div data-dato="{{ d.iso }}" data-akse="1" style="{{ d.kolStil }}">
                   <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="1">
-                    <button type="button" data-evt="{{ h.id }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
+                    <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
                       <span style="display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.tid }}</span>
                       <span style="display: block; overflow: hidden; text-overflow: ellipsis;">{{ h.tittel }}</span>
                       <sc-if value="{{ h.harMeta }}" hint-placeholder-val="{{ false }}">
@@ -5444,7 +5444,7 @@ window.__resources = {
               <sc-for list="{{ klBoardKolonner }}" as="k" hint-placeholder-count="3">
                 <div data-kol="{{ k.navn }}" style="{{ klKolonneStil }}">
                   <sc-for list="{{ k.hendelser }}" as="h" hint-placeholder-count="2">
-                    <button type="button" data-evt="{{ h.id }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
+                    <button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
                       <span style="display: block; font-weight: 700;">{{ h.tid }}</span>
                       <span style="display: block; font-weight: 600;">{{ h.tittel }}</span>
                       <span style="display: block; opacity: .75;">{{ h.detalj }}</span>
@@ -5746,6 +5746,53 @@ window.__resources = {
                 Avlys denne økten
               </label>
             </div>
+            <sc-if value="{{ kdMulig }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-bottom: var(--space-5);">
+                <sc-if value="{{ kdLukket }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="plus" on-click="{{ kdApne }}" hint-size="auto,36px">Legg til deltaker</x-import>
+                    <span style="font: var(--type-body-sm); color: var(--text-muted);">{{ kdLedig }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ kdApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5);">
+                    <div style="display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-4);">
+                      <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Legg til deltaker</span>
+                      <span style="font: var(--type-body-sm); color: var(--text-muted);">{{ kdNaar }}</span>
+                      <button type="button" onClick="{{ kdLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 20px; line-height: 1; color: var(--text-muted); padding: 0 2px;">×</button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4);">
+                      <sc-for list="{{ kdFelt }}" as="f" hint-placeholder-count="7">
+                        <div style="{{ f.boksStil }}">
+                          <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">{{ f.etikett }}</label>
+                          <sc-if value="{{ f.erTekst }}" hint-placeholder-val="{{ true }}">
+                            <input value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="{{ f.hint }}" style="{{ kdFeltStil }}">
+                          </sc-if>
+                          <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
+                            <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ kdValgStil }}">
+                              <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="6">
+                                <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                              </sc-for>
+                            </select>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <p style="margin: var(--space-4) 0 0; font: var(--type-body-sm); color: var(--text-body);">{{ kdForklaring }}</p>
+                    <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-4);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kdLagre }}" hint-size="auto,38px">{{ kdKnapp }}</x-import>
+                      <sc-if value="{{ kdKanVarsle }}" hint-placeholder-val="{{ false }}">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading);">
+                          <input type="checkbox" checked="{{ kdVarsle }}" onChange="{{ vekslKdVarsle }}" style="width: 17px; height: 17px; accent-color: var(--lissom-brown); cursor: pointer;">
+                          Send bekreftelse på e-post
+                        </label>
+                      </sc-if>
+                      <span style="margin-left: auto; font: var(--type-body-sm); color: var(--text-muted);">{{ kdLedig }}</span>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
             <sc-if value="{{ klRKanKurs }}" hint-placeholder-val="{{ true }}">
               <div style="margin-bottom: var(--space-5);">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
@@ -16191,6 +16238,21 @@ class Component extends DCLogic {
     return ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];
   }
 
+  /**
+   * De samme maatene, pluss vippskravet.
+   *
+   * «Vippskrav» er ikke en maate aa bokfore paa — det er en handling: kravet
+   * sendes til mobilnummeret, og plassen staar som reservert til det er
+   * godtatt. Derfor staar det bare der kravet faktisk kan sendes, og ikke i
+   * skjemaene som bare noterer at noe alt ER gjort opp. Lista er avledet av
+   * den over, saa de to ikke kan gli fra hverandre.
+   */
+  static get BETALT_MAATER_MED_KRAV() {
+    const m = Component.BETALT_MAATER.slice();
+    m.splice(m.indexOf('Vipps i verkstedet') + 1, 0, 'Vippskrav');
+    return m;
+  }
+
   static get BANNER_STANDARD() {
     return {
       tittel: 'Gi et gavekort',
@@ -23102,7 +23164,7 @@ class Component extends DCLogic {
         tall: String(d) + (stengtDag ? ' · Stengt' : ''),
         stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
         tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: iso === idagIso ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
-        hendelser: evts.slice(0, mndMax).map(e => ({ tekst: (e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel, id: e.id, stil: pill(e, false), velg: velg(e), meny: meny(e), ned: ev => this.klDragStart(e, ev) })),
+        hendelser: evts.slice(0, mndMax).map(e => ({ tekst: (e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel, id: e.id, domId: 'kalevt-' + e.id, stil: pill(e, false), velg: velg(e), meny: meny(e), ned: ev => this.klDragStart(e, ev) })),
         harMer: evts.length > mndMax, mer: '+ ' + (evts.length - mndMax) + ' til',
         velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
       });
@@ -23154,7 +23216,7 @@ class Component extends DCLogic {
             tid: p.e.tid + (p.e.slutt ? '–' + p.e.slutt : ''),
             tittel: p.e.tittel,
             detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
-            id: p.e.id,
+            id: p.e.id, domId: 'kalevt-' + p.e.id, velg: velg(p.e),
             ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
             inn: ev => {
               const r = ev.currentTarget.getBoundingClientRect();
@@ -23248,7 +23310,7 @@ class Component extends DCLogic {
         hendelser: plas.map(p => {
           const f = farge(p.e);
           return {
-            id: p.e.id,
+            id: p.e.id, domId: 'kalevt-' + p.e.id, velg: velg(p.e),
             tid: p.e.tid, tittel: p.e.tittel,
             ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
             meny: meny(p.e),
@@ -23745,6 +23807,123 @@ class Component extends DCLogic {
             return {
               klRedVises: !!redEvt,
               klRFeltStil: felt,
+              // ── Legg til deltaker, rett paa okta ──────────────────────
+              //
+              // Ikke alle melder seg paa nett. Noen ringer, noen staar i
+              // doera — og da staar eieren alt inne paa denne okta. Da skal
+              // deltakeren kunne legges inn her, ikke tre skjermbilder unna.
+              //
+              // Dette er ingen ny paameldingsvei. Det er det samme kallet
+              // som skjemaet under Kurs bruker (api/admin/pamelding.php,
+              // «legg-til»), saa plassen teller i kapasiteten og kommer paa
+              // deltakerlista og i beskjedene som alle andre.
+              //
+              // «Vippskrav» er den eneste maaten som sender noe: kravet
+              // dukker opp i Vipps-appen til nummeret, og plassen staar som
+              // reservert til det er godtatt. De ovrige bokforer bare at noe
+              // alt ER gjort opp.
+              ...(() => {
+                const u = this.state.kdUtkast || {};
+                const maater = Component.BETALT_MAATER_MED_KRAV;
+                const maate = maater.indexOf(u.maate) >= 0 ? u.maate : maater[0];
+                const krav = maate === 'Vippskrav';
+                const sett = (n, v) => this.setState(st => ({ kdUtkast: Object.assign({}, st.kdUtkast, { [n]: v }) }));
+                const tekst = (n, etikett, hint, bred) => ({
+                  erTekst: true, erValg: false, etikett: etikett, hint: hint || '',
+                  verdi: u[n] || '', endre: e => sett(n, e.target.value),
+                  boksStil: bred ? { gridColumn: '1 / -1' } : {},
+                });
+                // Ledige plasser regnes av det kalenderen alt viser, saa
+                // tallet her og belegget i kortet aldri spriker.
+                const ledige = redEvt && redEvt.kap ? Math.max(0, redEvt.kap - (redEvt.pameldt || 0)) : null;
+                // En paamelding hoerer til en oekt i basen. Verkstedstider og
+                // ledige timer som ingen har booket har ingen — da skal
+                // panelet ikke staa der og se ut som en knapp som virker.
+                const kanMelde = !!(redEvt && redEvt.oktId
+                  && this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]));
+                const d = redEvt ? new Date(redEvt.dato + 'T12:00:00') : null;
+                return {
+                  kdMulig: kanMelde,
+                  kdApen: kanMelde && !!this.state.kdApen,
+                  kdLukket: kanMelde && !this.state.kdApen,
+                  kdApne: () => this.setState({ kdApen: true }),
+                  kdLukk: () => this.setState({ kdApen: false, kdUtkast: {}, kdVarsle: false }),
+                  kdNaar: d ? (uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · ' + redEvt.tid) : '',
+                  kdFeltStil: felt,
+                  kdValgStil: Object.assign({}, felt, { cursor: 'pointer' }),
+                  kdFelt: [
+                    // «Navn» alene sto alt over, om okta. Feltet maa si hvem sitt.
+                    tekst('navn', 'Deltakerens navn', 'Fornavn Etternavn', true),
+                    tekst('epost', 'E-post', 'Kan stå tomt'),
+                    // Nummeret er ikke pynt naar kravet skal sendes: da er
+                    // det adressen kravet gaar til.
+                    tekst('tlf', krav ? 'Mobil (kravet går hit)' : 'Telefon', krav ? '4xx xx xxx' : 'Kan stå tomt'),
+                    tekst('antall', 'Antall plasser', '1'),
+                    {
+                      erTekst: false, erValg: true, etikett: 'Betaling', verdi: maate,
+                      valg: maater.map(m => ({ verdi: m, navn: m })),
+                      endre: e => sett('maate', e.target.value), boksStil: {},
+                    },
+                    tekst('belop', 'Beløp i kroner', krav ? 'Må fylles ut' : 'Tomt = kursets pris'),
+                    tekst('notat', 'Internt notat', 'Vises ikke for deltakeren', true),
+                  ],
+                  kdForklaring: krav
+                    ? 'Kravet sendes til mobilnummeret over. Plassen står som reservert til det er godtatt — den blir betalt av seg selv når pengene kommer.'
+                    : (maate === 'Betaler ved oppmøte'
+                        ? 'Plassen står som reservert. Den settes til betalt fra deltakerlista når pengene er gjort opp.'
+                        : (maate === 'Gratis'
+                            ? 'Ingen sum føres på plassen.'
+                            : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes kursets ordinære pris.')),
+                  // «Legg til» alene sto alt i verktoylinja over kalenderen. To knapper
+                  // med samme ord, én skjerm fra hverandre, er én for mye.
+                  kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren',
+                  // Uten adresse er det ingenting aa sende, og da skal ikke
+                  // haken staa der og se ut som et valg.
+                  kdKanVarsle: (u.epost || '').trim() !== '',
+                  kdVarsle: !!this.state.kdVarsle,
+                  vekslKdVarsle: () => this.setState(st => ({ kdVarsle: !st.kdVarsle })),
+                  kdLedig: ledige === null ? '' : (ledige === 0
+                    ? 'Datoen er full — en til blir overbooking.'
+                    : (ledige === 1 ? '1 ledig plass' : ledige + ' ledige plasser')),
+                  kdLagre: () => {
+                    if (!redEvt || !redEvt.oktId) return;
+                    const navn = (u.navn || '').trim();
+                    if (navn === '') {
+                      this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Deltakeren må ha et navn.' });
+                      return;
+                    }
+                    // De to tingene et krav ikke kan sendes uten. Serveren
+                    // sier det samme — men den som staar med kunden foran seg
+                    // skal faa vite det for kallet gaar.
+                    if (krav && (u.tlf || '').trim() === '') {
+                      this.setState({ kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Et vippskrav må ha et mobilnummer å gå til.' });
+                      return;
+                    }
+                    if (krav && !(parseInt(u.belop || '', 10) > 0)) {
+                      this.setState({ kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Et vippskrav må ha et beløp over null.' });
+                      return;
+                    }
+                    this.pameldingKall({
+                      handling: 'legg-til',
+                      oktId: Number(redEvt.oktId),
+                      navn: navn,
+                      epost: (u.epost || '').trim(),
+                      telefon: (u.tlf || '').trim(),
+                      antall: Number(u.antall) || 1,
+                      betaltMaate: maate,
+                      belop: (u.belop || '').trim(),
+                      notat: (u.notat || '').trim(),
+                      varsle: this.state.kdVarsle && (u.epost || '').trim() !== '' ? 'ja' : 'nei',
+                    }).then(ok => {
+                      if (!ok) return;
+                      this.setState({ kdUtkast: {}, kdVarsle: false, kdApen: false });
+                      // Kalenderen hentes paa nytt, saa belegget paa okta
+                      // stemmer med det som nettopp ble lagt inn.
+                      this.klFrisk();
+                    });
+                  },
+                };
+              })(),
               klRAvlystVal: !!this.state.klRAvlyst,
               toggleKlRAvlyst: () => this.setState(s => ({ klRAvlyst: !s.klRAvlyst })),
               klRPublisertVal: this.state.klRPublisert !== false,
@@ -24218,7 +24397,7 @@ class Component extends DCLogic {
   klApneEnkel(evt) {
     const base = (evt.tittel || '').split(' · ')[0];
     const k = this.kursData().find(x => x.navn === base) || {};
-    this.setState({ klMeny: null, klValgtId: null, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!evt.avlyst, klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '',
+    this.setState({ klMeny: null, klValgtId: null, kdApen: false, kdUtkast: {}, kdVarsle: false, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!evt.avlyst, klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '',
       // Verdiene ruta ble aapnet med.
       //
       // «Lagre» skal sende det som er endret, og ingenting annet. Uten dette
@@ -24511,11 +24690,19 @@ class Component extends DCLogic {
       this.setState({ klNyDrag: null });
       if (!d || !d.moved) return;
       // Maalet er en okt, ikke et tidspunkt: brikka baerer nummeret sitt i
-      // «data-evt».
+      // «id», som «kalevt-<nummer>».
+      //
+      // Det sto i «data-evt» for. Et «data-»-attributt med en binding paa
+      // den samme knappen som en klikkhandler far dc-runtime til aa skrive
+      // ut handleren som ren tekst — «onclick="h.velg"» — i stedet for aa
+      // binde funksjonen. Da kastet hvert eneste trykk paa en hendelse
+      // «h is not defined», og menyen aapnet seg aldri, i alle fire
+      // visningene. «id» og «title» gaar bra ved siden av en handler;
+      // «data-» gjor det ikke. Provd begge veier for aa vaere sikker.
       const el = document.elementsFromPoint(mv.clientX, mv.clientY)
-        .find(x => x.getAttribute && x.getAttribute('data-evt'));
+        .find(x => x && x.id && String(x.id).indexOf('kalevt-') === 0);
       if (!el) return;
-      const malId = el.getAttribute('data-evt');
+      const malId = String(el.id).slice(7);
       if (malId === p.srcId) return;
       this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });
     };

@@ -2370,6 +2370,109 @@ sjekk('kursholderne i kalenderen kommer fra registeret',
     && !str_contains($sida, "['Monica', 'Joakim', 'Ekstern'].map(")
     && !str_contains($sida, "holder = 'Monica';"));
 
+// ── Legg til deltaker rett paa okta, med vippskrav ─────────────────────
+//
+// Panelet ligger i oktredigereren i kalenderen. Det er ingen ny
+// paameldingsvei: samme endepunkt, samme booking, samme deltakerliste.
+// «Vippskrav» er den eneste maaten som sender noe.
+$pamFil = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+$sida2  = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('vippskrav er en godkjent betalingsmaate',
+    str_contains($pamFil, "'Vippskrav'") && str_contains($pamFil, 'const MAATER'));
+sjekk('et krav uten mobilnummer avvises',
+    str_contains($pamFil, 'Et vippskrav må ha et mobilnummer'));
+sjekk('et krav paa null kroner avvises',
+    str_contains($pamFil, 'Et vippskrav må ha et beløp over null'));
+sjekk('plassen staar som reservert til kravet er godtatt',
+    str_contains($pamFil, "in_array(\$maate, ['Betaler ved oppmøte', 'Vippskrav'], true)"));
+sjekk('kravet gaar som push, ikke som en nettleserbetaling',
+    str_contains($pamFil, 'Vipps::opprettBetaling(') && str_contains($pamFil, "\$telefon,\n            true"));
+sjekk('betalingen knyttes til bookingen begge veier',
+    str_contains($pamFil, "DB::harKolonne('payments', 'booking_id') ? \$bookingId : null")
+    && str_contains($pamFil, "DB::oppdater('bookings', ['payment_id' => \$betalingId]"));
+
+// ── Ryddingen etter et krav som ikke gikk gjennom ──────────────────────
+//
+// «bookings.payment_id» peker paa «payments». Slettes betalingen forst,
+// avviser basen det med en fremmednoekkelfeil — og da sto vi igjen med en
+// reservert plass, en betaling ingen hadde bedt om, og en 500-feil i stedet
+// for en forklaring. Den feilen var ekte; dette er vakten mot at den kommer
+// tilbake.
+$bPos = strpos($pamFil, "DELETE FROM bookings WHERE id = :b");
+$pPos = strpos($pamFil, "DELETE FROM payments WHERE id = :p");
+sjekk('ryddingen sletter bookingen for betalingen',
+    $bPos !== false && $pPos !== false && $bPos < $pPos);
+sjekk('en rydding som selv feiler sier fra at plassen ble staaende',
+    str_contains($pamFil, 'plassen ble stående'));
+
+// Og at basen faktisk oppforer seg slik regelen sier.
+$fkOkt = DB::verdi("SELECT cs.id FROM course_sessions cs
+                     JOIN courses c ON c.id = cs.course_id
+                    WHERE cs.status <> 'avlyst' ORDER BY cs.id LIMIT 1");
+if ($fkOkt !== null) {
+    $fkBet = (int) DB::settInn('payments', [
+        'vipps_reference' => 'FK-TEST-' . bin2hex(random_bytes(4)),
+        'type' => 'epayment', 'formal' => 'booking',
+        'belop_ore' => 45000, 'status' => 'opprettet',
+        'idempotency_key' => Vipps::uuid(),
+    ]);
+    $fkKurs = (int) DB::verdi('SELECT course_id FROM course_sessions WHERE id = :i', ['i' => $fkOkt]);
+    $fkBook = (int) DB::settInn('bookings', [
+        'course_id' => $fkKurs, 'course_session_id' => (int) $fkOkt,
+        'gjest_navn' => 'FK Testesen', 'antall' => 1, 'belop_ore' => 45000,
+        'status' => 'reservert', 'betalt_maate' => 'Vippskrav', 'payment_id' => $fkBet,
+    ]);
+
+    $stoppet = false;
+    try {
+        DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $fkBet]);
+    } catch (Throwable $e) {
+        $stoppet = true;
+    }
+    sjekk('basen nekter aa slette betalingen forst', $stoppet);
+
+    DB::kjor('DELETE FROM bookings WHERE id = :b', ['b' => $fkBook]);
+    DB::kjor('DELETE FROM payments WHERE id = :p', ['p' => $fkBet]);
+    sjekk('… og slipper den naar bookingen er ute forst',
+        DB::en('SELECT id FROM payments WHERE id = :p', ['p' => $fkBet]) === null);
+}
+
+// ── Panelet i oktredigereren ───────────────────────────────────────────
+sjekk('panelet staar bare der noen kan meldes paa',
+    str_contains($sida2, 'kdMulig: kanMelde')
+    && str_contains($sida2, 'const kanMelde = !!(redEvt && redEvt.oktId'));
+sjekk('panelet bruker det samme endepunktet som resten',
+    str_contains($sida2, "handling: 'legg-til',\n                      oktId: Number(redEvt.oktId),"));
+sjekk('vippskravet staar bare der kravet kan sendes',
+    str_contains($sida2, 'static get BETALT_MAATER_MED_KRAV()')
+    && !str_contains($sida2,
+        "return ['Kontant', 'Vipps i verkstedet', 'Vippskrav', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"));
+sjekk('knappen sier hva den gjor naar det er et krav',
+    str_contains($sida2, "kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren'"));
+// To felter som het «Navn», og to knapper som het «Legg til», sto i samme
+// bilde. Begge er dopt om, og begge navnene skal holde seg unike.
+sjekk('deltakerfeltet heter noe annet enn oktas eget navnefelt',
+    str_contains($sida2, "tekst('navn', 'Deltakerens navn'"));
+sjekk('utkastet toemmes naar en annen okt aapnes',
+    str_contains($sida2, 'kdApen: false, kdUtkast: {}, kdVarsle: false'));
+sjekk('kalenderen hentes paa nytt saa belegget stemmer',
+    str_contains($sida2, "this.setState({ kdUtkast: {}, kdVarsle: false, kdApen: false });"));
+
+// ── Klikk paa en hendelse i kalenderen ─────────────────────────────────
+//
+// «data-evt» paa den samme knappen som en bundet handler fikk motoren til aa
+// skrive ut onclick som teksten «h.velg». Hvert klikk endte i «h is not
+// defined», og ingen av de fire visningene aapnet noe. Id-en gjor det samme
+// for dra-og-slipp, uten aa velte handleren.
+sjekk('hendelsene i kalenderen har en id, ikke et data-felt',
+    str_contains($sida2, 'id="{{ h.domId }}"') && !str_contains($sida2, 'data-evt="{{ h.id }}"'));
+sjekk('dra-og-slipp finner hendelsen paa id-en',
+    str_contains($sida2, "indexOf('kalevt-') === 0"));
+// Uke og dag hadde bare onMouseDown. Et klikk uten dra traff ingenting.
+sjekk('et klikk aapner okta i alle visningene',
+    substr_count($sida2, 'id="{{ h.domId }}" onClick="{{ h.velg }}"') === 3);
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

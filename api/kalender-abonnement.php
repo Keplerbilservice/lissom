@@ -45,6 +45,24 @@ $utc = new DateTimeZone('UTC');
 // feeden virker som for.
 $harEndret = DB::harKolonne('course_sessions', 'updated_at');
 
+// Ledige tider er ikke avtaler.
+//
+// Paint on Pots og drop-in legges ut automatisk paa hver eneste aapningstid
+// (migrasjon 076). Det er tilbud — «her kan noen komme» — ikke noe som skjer.
+// Feeden tok med hver av dem, og telefonen til eieren fylte seg med tomme
+// oppforinger: 25 Paint on Pots og 17 drop-in i basen her, ingen med
+// paameldte. Da druknet de ekte kursene, og kalenderen ble ubrukelig som det
+// den er til: aa se hva som faktisk skjer.
+//
+// Er noen paameldt, staar oekta der — da er den en avtale. Vanlige kurs staar
+// uansett: en kursdato som ligger ute er noe verkstedet skal vaere klar til,
+// ogsaa foer den foerste melder seg paa.
+$utenLedige = DB::harKolonne('course_sessions', 'fra_apningstid')
+    ? "AND (cs.fra_apningstid = 0
+           OR (SELECT COALESCE(SUM(b2.antall), 0) FROM bookings b2
+                WHERE b2.course_session_id = cs.id AND b2.status = 'betalt') > 0)"
+    : '';
+
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status,
             " . ($harEndret ? 'cs.updated_at,' : 'NULL AS updated_at,') . "
@@ -56,6 +74,7 @@ $okter = DB::alle(
        JOIN courses c ON c.id = cs.course_id
       WHERE cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 DAY)
         AND cs.start_tid < DATE_ADD(UTC_TIMESTAMP(), INTERVAL 400 DAY)
+        {$utenLedige}
    ORDER BY cs.start_tid"
 );
 

@@ -14269,7 +14269,20 @@ class Component extends DCLogic {
 
   medServerdata(k) {
     const tittel = k.title || k.tittel || '';
-    const kat = (this.state.katalog || []).find(x => x.tittel === tittel);
+    // Kurset finnes paa id naar det kommer fra katalogen, og bare paa tittel
+    // naar det kommer fra designlista i koden.
+    //
+    // Her sto bare tittelen. To kurs med det samme navnet fikk da begge det
+    // foerste treffet sin adresse, og det andre kurset ble uaapnelig: lenka
+    // sto i sitemap, svarte 200 med riktig tittel, og viste «siden finnes
+    // ikke». Det skjedde paa den ekte siden 29. august — to «Lag din egen
+    // bolle», begge med en oekt 3. september klokka 17.
+    //
+    // Dubletten er ryddet i migrasjon 091, men den skal ikke kunne lage
+    // saaret paa nytt. Har kortet et katalognummer, er det det som gjelder.
+    const katalog = this.state.katalog || [];
+    const kat = (k.katId ? katalog.find(x => x.id === k.katId) : null)
+             || katalog.find(x => x.tittel === tittel);
 
     // Paa den ekte siden er katalogen fasiten. Finner vi ikke kurset der,
     // skal det ikke staa noe — designlista har datoer og plasstall som var

@@ -1656,6 +1656,56 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Ledige tider er ikke avtaler ─────────────────────────────────────────
+//
+// Paint on Pots og drop-in legges ut automatisk paa hver eneste aapningstid
+// (migrasjon 076). Det er tilbud — «her kan noen komme» — ikke noe som skjer.
+// Kalenderabonnementet tok med hver av dem, og telefonen til eieren fylte seg
+// med tomme oppforinger: 25 Paint on Pots og 17 drop-in i basen her, ingen med
+// paameldte. Da druknet de ekte kursene.
+$icsFil = file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
+sjekk('tomme aapningstider staar ikke i kalenderabonnementet',
+    str_contains($icsFil, 'cs.fra_apningstid = 0')
+    && str_contains($icsFil, 'WHERE b2.course_session_id = cs.id'));
+// Er noen paameldt, er oekta en avtale og skal staa der.
+sjekk('en booket aapningstid kommer med likevel',
+    str_contains($icsFil, "AND b2.status = 'betalt') > 0)"));
+// Vanlige kurs staar uansett: en kursdato som ligger ute er noe verkstedet
+// skal vaere klar til, ogsaa foer den foerste melder seg paa.
+sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
+    str_contains($icsFil, '$utenLedige = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')'));
+
+// ── To kurs med samme navn ───────────────────────────────────────────────
+//
+// Paa den ekte siden laa «Lag din egen bolle» to ganger, begge med en oekt
+// 3. september klokka 17. Kalenderen ute viste den derfor dobbelt — det var
+// dette eieren meldte fra om, og som jeg foerst trodde var tellefeilen i
+// admin-kalenderen. Tellefeilen fantes og er rettet; dette var noe annet.
+//
+// Verre: kortet slo kurset opp paa TITTEL i katalogen og tok foerste treff.
+// Begge fikk da det foerste kursets adresse, og det andre ble uaapnelig —
+// lenka laa i sitemap, svarte 200 med riktig tittel, og viste «siden finnes
+// ikke». Har kortet et katalognummer, er det det som gjelder naa.
+sjekk('kurskortet finner kurset paa nummer, ikke paa navn',
+    str_contains($sida, 'const kat = (k.katId ? katalog.find(x => x.id === k.katId) : null)')
+    && str_contains($sida, '|| katalog.find(x => x.tittel === tittel);'));
+// Dubletten selv ryddes av migrasjon 091 — men bare naar den er tom.
+$m91 = file_get_contents(dirname(__DIR__) . '/db/migrations/091_ett_bollekurs.sql');
+sjekk('migrasjon 091 tar bare ned et kurs uten paameldte og venteliste',
+    str_contains($m91, "WHERE b.course_id = @id AND b.status <> 'avbestilt'")
+    && str_contains($m91, 'SELECT COUNT(*) FROM waitlist w WHERE w.course_id = @id')
+    && str_contains($m91, 'IF(@id IS NOT NULL AND @henger = 0,'));
+// Kurset slettes ikke, og ingen oekt avlyses: «kladd» tar det av nettsiden og
+// ut av sitemap, og ett trykk setter det tilbake.
+sjekk('kurset settes til kladd, det slettes ikke',
+    str_contains($m91, "UPDATE courses SET status = ''kladd'' WHERE id = @id")
+    && !str_contains($m91, 'DELETE FROM courses'));
+// Sitemap tar bare med publiserte kurs, saa et kladd forsvinner derfra av seg
+// selv.
+sjekk('sitemap tar bare med publiserte kurs',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/sitemap.php'),
+                 "WHERE c.status = 'publisert'"));
+
 // ── Oppsigelse: én regel, uansett hvem som sier opp ──────────────────────
 //
 // Eieren, 29. august: «settes til den siste dagen i maaneden man sier opp,

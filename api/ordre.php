@@ -174,7 +174,7 @@ if ($aBetale < Vipps::MINSTE_BELOP_ORE) {
         'gavekort'   => Booking::kroner($gavekortOre),
         'aBetale'    => Booking::kroner(0),
         'ferdig'     => true,
-        'beskjed'    => 'Gavekortet dekket hele bestillingen. Kvitteringen kommer på e-post.',
+        'beskjed'    => 'Gavekortet dekket hele bestillingen.',
     ]);
 }
 

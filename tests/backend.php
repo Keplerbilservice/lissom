@@ -2209,10 +2209,14 @@ foreach (['Kursadministrasjon', 'Meld noen på', 'Intern side'] as $vekk) {
         !str_contains($sida, "kort('" . $vekk . "',"));
 }
 sjekk('programlista er ute av Oversikt', !str_contains($sida, '{{ ovProgramValg }}'));
-// Kalenderabonnementet laa inne i det samme kortet. Det er det eneste stedet
-// adressen til telefonen finnes, saa det staar igjen.
-sjekk('… men kalenderabonnementet staar igjen',
-    str_contains($sida, 'Programmet på telefonen') && str_contains($sida, '{{ kalKnapp }}'));
+// Kortet «Programmet paa telefonen» skulle ogsaa bort (eieren, 29. august).
+// Abonnementet fantes bare der, saa det er flyttet til Kalender-skjermen —
+// fjernet fra Oversikt, men ikke borte.
+sjekk('kortet «Programmet paa telefonen» er ute av Oversikt',
+    !str_contains($sida, 'Programmet på telefonen'));
+sjekk('… og kalenderabonnementet staar paa Kalender i stedet',
+    str_contains($sida, '{{ kalKnapp }}')
+    && strpos($sida, '{{ kalKnapp }}') < strpos($sida, 'data-screen-label="Admin – oversikt"'));
 // Kortet skal staa der ogsaa naar ingen skylder — et kort som bare finnes
 // noen dager er ikke et kort man ser etter.
 sjekk('«Ikke betalt» staar alltid, med en tom tilstand',

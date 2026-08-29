@@ -2447,7 +2447,7 @@ window.__resources = {
               <sc-if value="{{ erBetalt }}" hint-placeholder-val="{{ true }}">
                 <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
                 <div style="display: flex; gap: 10px; align-items: center; font-size: var(--text-sm); color: var(--text-muted);">
-                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--sage-500);"></span>Du betaler trygt med Vipps. Kvittering kommer på e-post.
+                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--sage-500);"></span>Du betaler trygt med Vipps.
                 </div>
               </sc-if>
             </div>
@@ -3237,7 +3237,7 @@ window.__resources = {
               </div>
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--sage-600);">Betalt</div>
               <h3 style="margin: var(--space-3) 0 var(--space-4); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">Plassen er din</h3>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Nybegynner dreiekurs, onsdag 19. august kl. 18:00. Kvittering er sendt til ingrid@epost.no.</p>
+              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Nybegynner dreiekurs, onsdag 19. august kl. 18:00.</p>
               <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">
                 <div style="display: flex; justify-content: space-between;"><span>Betalt med</span><span style="color: var(--text-heading);">Vipps</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Referanse</span><span style="color: var(--text-heading);">LIS-10482</span></div>
@@ -3420,7 +3420,7 @@ window.__resources = {
                 <div style="height: var(--space-4);"></div>
               </sc-if>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
-              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">Du betaler med {{ valgtBetaling }}. Alle priser er inkl. mva der mva gjelder. Kvittering sendes på e-post.</p>
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">Du betaler med {{ valgtBetaling }}. Alle priser er inkl. mva der mva gjelder.</p>
               <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Alt er dreid for hånd, så farge og form varierer litt fra bildet. Hentetid i butikken: to uker.</p>
             </div>
@@ -4104,7 +4104,7 @@ window.__resources = {
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-2); flex-wrap: wrap;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kjøpshistorikk</div>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Kvittering på e-post</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted);">Kvittering i Vipps</span>
                 </div>
                 <div style="display: flex; flex-direction: column;">
                   <sc-for list="{{ kjopshistorikk }}" as="h" hint-placeholder-count="2">
@@ -5234,7 +5234,23 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
             <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
           </div>
+          <!-- Abonnementet paa kalenderen. Laa paa Oversikt i et eget kort;
+               eieren ville ha kortet bort derfra. Programmet hoerer hjemme
+               her, saa lenken staar her — ikke som et kort, men som én linje
+               ved siden av overskriften. -->
+          <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
         </div>
+        <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+            <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
+            <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
+              <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
+            </div>
+            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
+          </div>
+        </sc-if>
 
         <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
           <div class="lx-kaltopp" style="display: flex; align-items: center; gap: var(--space-2);">
@@ -8222,36 +8238,11 @@ window.__resources = {
              finne: det du gjorde oftest laa mellom det du gjorde sjelden.
              Kortene er de ni tingene verkstedet faktisk begynner med. Hele
              kortet er klikkbart, og tallet paa det avgjor om du maa dit. -->
-        <!-- Programmet staar for seg selv i en staaende spalte, og
-             kortene ved siden av. Foer laa det i full bredde over
-             kortene og tok halve skjermen paa noe som er en liste med
-             fire linjer. Paa smal skjerm legger lx-split dem under
-             hverandre av seg selv. -->
-        <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: var(--space-5); align-items: start; margin-bottom: var(--space-10);">
-          <div style="min-width: 0;">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100);">
-              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Programmet på telefonen</span>
-            </div>
-
-            <!-- Kalenderabonnement. Telefonen henter programmet selv, saa
-                 kursene ikke skrives inn to steder. -->
-            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6);">
-              <button type="button" onClick="{{ kalVeksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kalKnapp }}</button>
-              <sc-if value="{{ kalApent }}" hint-placeholder-val="{{ false }}">
-                <div style="margin-top: var(--space-4);">
-                  <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ kalForklaring }}</p>
-                  <input value="{{ kalAdresse }}" onChange="{{ kalIngenting }}" readonly="readonly" onClick="{{ kalMerk }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: 12px/1.5 ui-monospace, monospace; background: var(--clay-50); color: var(--text-heading);">
-                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ kalKopier }}" hint-size="auto,38px">{{ kalKopiKnapp }}</x-import>
-                    <button type="button" onClick="{{ kalNyNokkel }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted);">Lag ny adresse</button>
-                  </div>
-                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kalAdvarsel }}</p>
-                </div>
-              </sc-if>
-            </div>
-          </div>
-          </div>
+        <!-- Abonnementet paa kalenderen laa her, i en egen spalte ved siden
+             av kortene. Eieren 29. august: kortet skal bort. Adressen til
+             feeden staar under Kalender, der programmet ellers hoerer
+             hjemme; her tok den plass fra det man kom for. -->
+        <div style="margin-bottom: var(--space-10);">
           <div style="min-width: 0;">
           <!-- Kortene kan dras dit du vil ha dem. Rekkefolgen lagres, saa den
                staar til neste gang ogsaa. Selve dragingen ligger i et lite
@@ -19468,7 +19459,7 @@ class Component extends DCLogic {
     const tekst = {
       ok: erDisk
         ? 'Betaling er gjennomført!'
-        : 'Betalingen er gjennomført — kvittering kommer på e-post',
+        : 'Betalingen er gjennomført',
       avbrutt: 'Betalingen ble avbrutt. Plassen er ikke reservert.',
       venter: 'Vi venter på svar fra Vipps. Du får kvittering så snart betalingen er bekreftet.',
       ukjent: 'Fant ikke betalingen. Ta kontakt hvis beløpet er trukket.',
@@ -19478,7 +19469,7 @@ class Component extends DCLogic {
       // i Vipps, og en linje til om det er en linje for mye.
       ok: erDisk
         ? ''
-        : 'Kvitteringen sendes til e-postadressen din. Plassen din er registrert.',
+        : 'Plassen din er registrert.',
       avbrutt: 'Ingen penger er trukket. Du kan prøve igjen når du vil.',
       venter: 'Du trenger ikke gjøre noe. Vi gir beskjed så snart Vipps svarer.',
       ukjent: 'Ta kontakt på post@lissom.no, så finner vi ut av det.',
@@ -27716,7 +27707,7 @@ class Component extends DCLogic {
             { navn: 'Betalt', verdi: k.betaltMed || 'Vipps' },
             // Sto som «Sendt paa e-post» uansett. Naa staar det som faktisk
             // skjedde med kvitteringen.
-            { navn: 'Kvittering', verdi: k.kvittering || 'Sendt på e-post' },
+            { navn: 'Kvittering', verdi: k.kvittering || 'Ligger i Vipps' },
           ].concat(k.refundert ? [{ navn: 'Refundert', verdi: k.refundert }] : []), 'Lukk')();
           clearTimeout(this._histTimer);
           this._histTimer = setTimeout(() => {
@@ -32258,7 +32249,7 @@ class Component extends DCLogic {
         const hent = (l, fallback) => il['Butikk/' + seksjon + '/' + l] ?? fallback;
         return [
           { tittel: hent('Punkt 1', 'Hent på Teie'), tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy. Vi holder av varen i to uker.' },
-          { tittel: hent('Punkt 2', 'Betaling med Vipps'), tekst: 'Du betaler i kassen på nett. Kvittering kommer på e-post.' },
+          { tittel: hent('Punkt 2', 'Betaling med Vipps'), tekst: 'Du betaler i kassen på nett med Vipps.' },
           { tittel: hent('Punkt 3', 'Hvert stykke er unikt'), tekst: 'Alt er dreid for hånd, så farge og form varierer litt fra bildet.' },
         ];
       })(),
@@ -33186,7 +33177,7 @@ class Component extends DCLogic {
         { nr: '1', h: 'Du velger Vipps', p: 'Nettsiden oppretter en betaling gjennom Vipps sitt ePayment API og sender deg videre.' },
         { nr: '2', h: 'Du godkjenner i appen', p: 'Vipps åpner på telefonen. På desktop får du en QR-kode å skanne.' },
         { nr: '3', h: 'Vi får svar', p: 'Vipps melder tilbake om betalingen gikk gjennom, og plassen din bekreftes med en gang.' },
-        { nr: '4', h: 'Kvittering', p: 'Du får kvittering på e-post, og kjøpet legger seg under Min side.' },
+        { nr: '4', h: 'Kvittering', p: 'Kvitteringen ligger i Vipps, og kjøpet legger seg under Min side.' },
       ],
       vippsSamtykke: [
         'Beløpet trekkes den 1. i hver måned.',

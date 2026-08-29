@@ -2553,6 +2553,35 @@ sjekk('dag to kan ikke dras',
 sjekk('spennet naar over et maanedsskifte',
     str_contains($kalFil3, "\$dagStart(Foresporsel::tekst('fra'), -7)"));
 
+// ── Flerdagerskurset paa telefonen ─────────────────────────────────────
+//
+// Feeden sendte start og slutt raatt, saa et kurs onsdag og torsdag ble én
+// hendelse fra onsdag 17:00 til torsdag 20:00 — 27 timer i strekk. Naa er det
+// én hendelse per kursdag.
+$icsFil = file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
+sjekk('feeden henter samlingene', str_contains($icsFil, 'Samlinger::forOkter(array_map('));
+sjekk('feeden lager én hendelse per kursdag',
+    str_contains($icsFil, 'foreach ($moter as $mt) {')
+    && str_contains($icsFil, "'UID:' . \$mt['uid'] . '@lissom.no'"));
+// Den forste dagen beholder den gamle id-en. Ellers blir 27-timersblokka
+// liggende igjen paa telefonen ved sida av de nye.
+sjekk('den forste dagen beholder id-en telefonen alt kjenner',
+    str_contains($icsFil, "'okt-' . (int) \$o['id'] . (\$i === 0 ? '' : '-s' . (int) \$sa['nummer'])"));
+sjekk('tittelen sier hvilken dag av kurset det er',
+    str_contains($icsFil, "'merke' => ' · ' . ((int) \$sa['nummer']) . ' av ' . \$antSaml,"));
+// Et vanlig endagskurs skal se ut noeyaktig som for.
+sjekk('et kurs uten samlinger er fortsatt ett moete',
+    str_contains($icsFil, "if (\$moter === []) {"));
+sjekk('en samling uten sluttid faar den samme reserven som en okt',
+    str_contains($icsFil, "\$mStart->modify('+3 hours')"));
+// Samlingene ligger i sin egen tabell, saa okta rorte seg ikke naar de ble
+// rettet — og SEQUENCE er det telefonen leser for aa se at noe er endret.
+$samlFil = file_get_contents(dirname(__DIR__) . '/app/lib/samlinger.php');
+sjekk('okta merkes som endret naar samlingene rettes',
+    str_contains($samlFil, "UPDATE course_sessions SET updated_at = UTC_TIMESTAMP() WHERE id = :s"));
+sjekk('… og taaler at kolonnen mangler',
+    str_contains($samlFil, "DB::harKolonne('course_sessions', 'updated_at')"));
+
 // ── Klikk paa en hendelse i kalenderen ─────────────────────────────────
 //
 // «data-evt» paa den samme knappen som en bundet handler fikk motoren til aa

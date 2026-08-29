@@ -37,7 +37,9 @@ if ($rett === '' || $gitt === '' || !hash_equals($rett, $gitt)) {
     Svar::feil('Fant ikke siden.', 404);
 }
 
-$utc = new DateTimeZone('UTC');
+$utc  = new DateTimeZone('UTC');
+// Samlingene er lagret som dato og klokkeslett slik verkstedet ser dem.
+$oslo = new DateTimeZone('Europe/Oslo');
 
 // Det som ligger foran oss, og litt bak — en kalender uten forrige uke er
 // vanskelig aa kjenne seg igjen i.
@@ -77,6 +79,15 @@ $okter = DB::alle(
         {$utenLedige}
    ORDER BY cs.start_tid"
 );
+
+// ── Kurs som gaar over flere dager ──────────────────────────────────────
+//
+// Dagene ligger i «okt_samlinger» med hver sin dato og klokkeslett. Feeden
+// sendte start og slutt raatt, saa et kurs onsdag og torsdag ble én hendelse
+// fra onsdag 17:00 til torsdag 20:00 — 27 timer i strekk paa telefonen, i
+// stedet for to kvelder. Eieren, 29. august: den skal deles.
+$samlingKart = Samlinger::forOkter(array_map(
+    static fn(array $o): int => (int) $o['id'], $okter));
 
 /** Tekst slik iCalendar vil ha den: komma, semikolon og linjeskift roemmes. */
 $tekst = static function (string $s): string {
@@ -187,19 +198,62 @@ foreach ($okter as $o) {
         }
     }
 
+    // ── Én hendelse per kursdag ──────────────────────────────────────────
+    //
+    // Har okta samlinger, er det de som er dagene: hver med sin dato og sitt
+    // klokkeslett. Ellers er okta ett moete, som for.
+    //
+    // Den forste dagen beholder den gamle id-en «okt-<id>». Da rettes
+    // hendelsen telefonen alt har, framfor at den blir liggende igjen som en
+    // 27 timers blokk ved siden av de nye.
+    $samlinger = $samlingKart[(int) $o['id']] ?? [];
+    $moter = [];
+    if (count($samlinger) > 1) {
+        $antSaml = count($samlinger);
+        foreach ($samlinger as $i => $sa) {
+            $dag = (string) $sa['dato'];
+            $fra = $sa['fra'] !== '' ? (string) $sa['fra'] : $start->setTimezone($oslo)->format('H:i');
+            try {
+                $mStart = new DateTimeImmutable($dag . ' ' . $fra, $oslo);
+            } catch (Throwable) {
+                continue;   // en dato vi ikke kan lese er ingen avtale
+            }
+            $mSlutt = $sa['til'] !== ''
+                ? new DateTimeImmutable($dag . ' ' . (string) $sa['til'], $oslo)
+                : $mStart->modify('+3 hours');
+            if ($mSlutt <= $mStart) {
+                $mSlutt = $mStart->modify('+3 hours');
+            }
+            $moter[] = [
+                'uid'   => 'okt-' . (int) $o['id'] . ($i === 0 ? '' : '-s' . (int) $sa['nummer']),
+                'start' => $mStart->setTimezone($utc),
+                'slutt' => $mSlutt->setTimezone($utc),
+                // «1 av 2» i tittelen: uten det staar det samme kursnavnet to
+                // dager paa rad, og det ser ut som kurset gaar to ganger.
+                'merke' => ' · ' . ((int) $sa['nummer']) . ' av ' . $antSaml,
+                'om'    => ($sa['overskrift'] !== '' ? $sa['overskrift'] . "\n" : '') . $om,
+            ];
+        }
+    }
+    if ($moter === []) {
+        $moter[] = ['uid' => 'okt-' . (int) $o['id'], 'start' => $start,
+                    'slutt' => $slutt, 'merke' => '', 'om' => $om];
+    }
+
+    foreach ($moter as $mt) {
     $linjer[] = 'BEGIN:VEVENT';
-    // Fast id per okt, slik at en endring oppdaterer hendelsen framfor aa
+    // Fast id per kursdag, slik at en endring oppdaterer hendelsen framfor aa
     // legge til en ny ved siden av den gamle.
-    $linjer[] = 'UID:okt-' . (int) $o['id'] . '@lissom.no';
+    $linjer[] = 'UID:' . $mt['uid'] . '@lissom.no';
     $linjer[] = 'DTSTAMP:' . $naa;
     $linjer[] = 'SEQUENCE:' . $sekvens;
     if ($endret !== null) {
         $linjer[] = 'LAST-MODIFIED:' . $endret->format('Ymd\THis\Z');
     }
-    $linjer[] = 'DTSTART:' . $start->format('Ymd\THis\Z');
-    $linjer[] = 'DTEND:' . $slutt->format('Ymd\THis\Z');
-    $linjer[] = 'SUMMARY:' . $tekst((string) $o['tittel']);
-    $linjer[] = 'DESCRIPTION:' . $tekst($om);
+    $linjer[] = 'DTSTART:' . $mt['start']->format('Ymd\THis\Z');
+    $linjer[] = 'DTEND:' . $mt['slutt']->format('Ymd\THis\Z');
+    $linjer[] = 'SUMMARY:' . $tekst((string) $o['tittel'] . $mt['merke']);
+    $linjer[] = 'DESCRIPTION:' . $tekst($mt['om']);
     $linjer[] = 'LOCATION:' . $tekst($sted);
     // Avlyste datoer sendes med, merket avlyst. Uten dem ville de blitt
     // staaende igjen paa telefonen for alltid — feeden sier bare hva som
@@ -220,6 +274,7 @@ foreach ($okter as $o) {
     $linjer[] = 'END:VALARM';
 
     $linjer[] = 'END:VEVENT';
+    }
 }
 
 $linjer[] = 'END:VCALENDAR';

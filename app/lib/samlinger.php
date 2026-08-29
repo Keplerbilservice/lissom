@@ -113,6 +113,24 @@ final class Samlinger
                 'tekst'      => trim((string) ($s['tekst'] ?? '')) ?: null,
             ]);
         }
+
+        // Okta merkes som endret.
+        //
+        // Samlingene ligger i sin egen tabell, saa «course_sessions
+        // .updated_at» rorte seg ikke naar de ble rettet. Kalenderfeeden
+        // leser den for SEQUENCE, og telefonen bruker SEQUENCE til aa avgjore
+        // om en hendelse den alt har er endret. Uten dette kunne en samling
+        // som ble flyttet bli staaende paa telefonen slik den var.
+        //
+        // Tida settes rett: «ON UPDATE CURRENT_TIMESTAMP» slaar ikke inn naar
+        // ingen verdi faktisk endrer seg, saa aa skrive raden til seg selv
+        // ville ikke gjort noe. Kolonnen kom med migrasjon 059, og feeden
+        // taaler at den mangler — det gjor dette ogsaa.
+        if (DB::harKolonne('course_sessions', 'updated_at')) {
+            DB::kjor('UPDATE course_sessions SET updated_at = UTC_TIMESTAMP() WHERE id = :s',
+                     ['s' => $oktId]);
+        }
+
         return $nummer;
     }
 

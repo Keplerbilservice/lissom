@@ -1464,6 +1464,43 @@ sjekk('notatet lagres bare naar personen faktisk har en konto',
 sjekk('deltakerraden aapner personen ogsaa uten konto',
     str_contains($sida, 'this.apnePerson(p.medlemId, p.bookingId)'));
 
+// ── Kalenderen ──────────────────────────────────────────────────────────
+//
+// Fase 5: kalenderen fra designverktoyet, paa ekte data. Der kjorte den paa
+// en oppdiktet ukeplan med Kari Nordmann og Silje Bratt; her kommer
+// hendelsene fra basen. Endepunktet er et LESEENDEPUNKT — alt som skal
+// endres gaar til kurs.php, pamelding.php og venteliste.php, saa reglene
+// deres gjelder ogsaa naar kalenderen kobles i fase 6.
+$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('kalenderen er et leseendepunkt', str_contains($kalFil, "Foresporsel::krevMetode('GET')"));
+sjekk('kalenderen krever admin', str_contains($kalFil, 'krev_admin()'));
+sjekk('deltakerne hentes i ett kall, ikke ett per okt',
+    str_contains($kalFil, 'WHERE b.course_session_id IN ({$inn})'));
+sjekk('avbestilte staar ikke i kalenderen',
+    str_contains($kalFil, "AND b.status <> 'avbestilt'"));
+sjekk('navnet kan klikkes ogsaa for dem uten konto',
+    str_contains($kalFil, "'gjest'     => \$b['member_id'] === null"));
+sjekk('stengte dager leses av apningstider, ikke av en ny tabell',
+    str_contains($kalFil, 'FROM apningstider'));
+sjekk('innsjekk leses av check_ins, ikke av den tomme checkins',
+    str_contains($kalFil, 'FROM check_ins') && !str_contains($kalFil, 'FROM checkins'));
+
+$sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kalenderen henter fra basen, ikke fra en generator',
+    str_contains($sida, "fetch('/api/admin/kalender.php?fra=") && !str_contains($sida, 'klGen(y, m) {'));
+sjekk('fase 5 skriver ikke — laget med lokale endringer tegnes ikke',
+    str_contains($sida, 'if (!this.klSkriver) return evts;'));
+sjekk('knappene som endrer noe sier fra at de ikke er koblet',
+    substr_count($sida, 'this.klIkkeEnda(') >= 10);
+sjekk('beskjedene i kalenderen er ekte henvendelser, ikke oppdiktede',
+    str_contains($sida, "klBeskjeder: (this.state.adminForesporsler || [])"));
+sjekk('kursholderne i kalenderen kommer fra registeret',
+    str_contains($sida, 'klHoldere()')
+    // Navnene sto i tre lister og to standardverdier. Kommentaren som
+    // forklarer hvorfor de er borte, naevner dem — den skal ikke telle.
+    && !str_contains($sida, "['Monica', 'Joakim', 'Ekstern'].map(")
+    && !str_contains($sida, "holder = 'Monica';"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

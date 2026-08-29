@@ -5095,6 +5095,850 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- Kalenderen.
+       Alt som skjer, samlet: kurs, events, Paint on Pots, drop-in og
+       medlemmene som er innom. Fire visninger — dag, uke, maaned og liste.
+
+       Tegnet i designverktoyet, og loftet hit. Der kjorte den paa en
+       oppdiktet ukeplan; her kommer hendelsene fra api/admin/kalender.php,
+       som setter dem sammen av oektene, paameldingene, ventelistene og
+       innstemplingene. Feltnavnene er de samme, saa det er bare datakilden
+       som er byttet.
+
+       Fase 5 leser. Knappene som endrer noe sier fra om at de ikke er
+       koblet enda — de gaar til kurs.php, pamelding.php og venteliste.php i
+       fase 6, saa reglene deres gjelder ogsaa herfra. -->
+  <sc-if value="{{ erAdminKalender }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – kalender" style="{{ adminGridStil }}">
+      <aside style="{{ adminAsideStil }}">
+        <img src="assets/logo-lockup-yellow.svg" alt="lissom" style="height: 54px; align-self: flex-start;">
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavKalender }}" as="n" hint-placeholder-count="9">
+            <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
+          </sc-for>
+        </nav>
+      </aside>
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">Kalender</h1>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <button type="button" onClick="{{ klForrige }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">‹</button>
+            <button type="button" onClick="{{ klIdag }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; padding: 7px 14px; white-space: nowrap;">I dag</button>
+            <button type="button" onClick="{{ klNesteSteg }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; color: var(--lissom-brown); font-size: 18px; padding: 6px 14px; line-height: 1;">›</button>
+            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-left: var(--space-3); white-space: nowrap;">{{ klTittel }}</span>
+            <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: var(--text-sm); color: var(--text-muted); margin-left: var(--space-2); white-space: nowrap;">· {{ klDagSammendrag }}</span>
+            </sc-if>
+            <sc-if value="{{ klErStengt }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-50); background: var(--terracotta-500); border-radius: var(--radius-pill); padding: 3px 12px; margin-left: var(--space-2); font-weight: 700;">Stengt</span>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <div style="display: flex; gap: 6px;">
+            <sc-for list="{{ klVisninger }}" as="v" hint-placeholder-count="4">
+              <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+            </sc-for>
+          </div>
+          <button type="button" onClick="{{ klStemple }}" style="{{ klStempleStil }}">
+            <span style="{{ klStemplePrikk }}"></span>
+            {{ klStempleTekst }}
+          </button>
+          <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ klStengVeksle }}" style="appearance: none; border: 1.5px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 8px 18px; font: var(--type-body-sm); font-weight: 700; color: var(--text-muted); white-space: nowrap;">{{ klStengTekst }}</button>
+          </sc-if>
+          <div style="position: relative; margin-left: auto; flex: 0 1 240px; min-width: 170px;">
+            <input value="{{ klSok }}" onChange="{{ settKlSok }}" placeholder="Søk person eller kurs …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 8px 16px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+            <sc-if value="{{ klSokVises }}" hint-placeholder-val="{{ false }}">
+              <div style="position: absolute; top: calc(100% + 6px); right: 0; width: min(360px, 84vw); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); z-index: 55; overflow: hidden;">
+                <sc-for list="{{ klSokTreff }}" as="t" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ t.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; display: block; width: 100%; box-sizing: border-box; text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ t.tittel }}</span>
+                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ klSokTom }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 10px 14px; font-size: var(--text-sm); color: var(--text-muted);">Ingen treff i denne perioden.</div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="{{ klSideGridStil }}">
+
+        <div style="{{ klToppKortStil }}">
+          <div style="{{ klBoksBStil }}">
+            <div style="{{ klBoksHodeStil }}">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Beskjeder</span>
+              <button type="button" onClick="{{ klGaBeskjeder }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font-size: var(--text-xs); font-weight: 700; white-space: nowrap;">Åpne →</button>
+            </div>
+            <div style="{{ klBoksIndreStil }}">
+            <sc-for list="{{ klBeskjeder }}" as="b" hint-placeholder-count="3">
+              <button type="button" onClick="{{ b.apne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; gap: 8px; padding: 8px var(--space-5); border-top: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
+                <span style="{{ b.prikkStil }}"></span>
+                <span style="min-width: 0; flex: 1;">
+                  <span style="display: flex; justify-content: space-between; gap: var(--space-2); align-items: baseline;">
+                    <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap;">{{ b.fra }}</span>
+                    <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">{{ b.tid }}</span>
+                  </span>
+                  <span style="display: block; font-size: 13px; color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ b.tekst }}</span>
+                </span>
+              </button>
+            </sc-for>
+            </div>
+          </div>
+          <div style="{{ klBoksNStil }}">
+            <div style="{{ klBoksEtikettStil }}">Notater til meg selv</div>
+            <textarea value="{{ klNotat }}" onChange="{{ settKlNotat }}" rows="3" placeholder="Skriv et notat …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: 14px; padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+          </div>
+          <div style="{{ klBoksNStil }}">
+            <div style="{{ klBoksEtikettStil }}">Påminnelser</div>
+            <div style="{{ klBoksPIndreStil }}">
+            <sc-for list="{{ klPaminListe }}" as="p" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: 8px; padding: 3px 0;">
+                <input type="checkbox" checked="{{ p.gjort }}" onChange="{{ p.veksl }}" style="width: 16px; height: 16px; accent-color: var(--lissom-brown); cursor: pointer; flex: 0 0 auto;">
+                <span style="{{ p.tekstStil }}">{{ p.tekst }}</span>
+                <button type="button" onClick="{{ p.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 4px; font-size: 14px; line-height: 1; color: var(--text-muted);">×</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ klPaminTom }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-2);">Ingen påminnelser.</div>
+            </sc-if>
+            <div style="display: flex; gap: 6px; margin-top: var(--space-2);">
+              <input value="{{ klPaminNy }}" onChange="{{ settKlPaminNy }}" onKeyDown="{{ klPaminEnter }}" placeholder="Ny påminnelse …" style="box-sizing: border-box; flex: 1; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-pill); padding: 7px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <button type="button" onClick="{{ klPaminLeggTilKlikk }}" style="appearance: none; border: 1.5px solid var(--lissom-brown); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown);">Legg til</button>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <aside style="{{ klAsideStil }}">
+          <div style="display: flex; flex-direction: column; justify-content: flex-end; gap: 3px; padding: var(--space-2) 2px 2px; box-sizing: border-box;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3);">
+              <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Alle kurs</span>
+              <span style="font-size: 13px; color: var(--text-muted); white-space: nowrap;">{{ klSideAntall }}</span>
+            </div>
+            <div style="font-size: var(--text-xs); color: var(--text-muted);">Dra et kurs inn på en dato for å sette det opp.</div>
+          </div>
+          <sc-for list="{{ klSideKurs }}" as="k" hint-placeholder-count="5">
+            <div onMouseDown="{{ k.ned }}" style="{{ k.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2);">
+                <span style="font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text-heading); min-width: 0;">{{ k.navn }}</span>
+                <span style="font-size: 13px; font-weight: 700; color: var(--text-heading); white-space: nowrap;">{{ k.pris }}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
+                <span style="font-size: 13px; color: var(--text-muted);">{{ k.type }}</span>
+                <sc-if value="{{ k.ikkePub }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); border: 1px solid var(--terracotta-500); border-radius: var(--radius-pill); padding: 1px 8px;">Ikke publisert</span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,44px">Nytt kurs</x-import>
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 6px 2px 0;">
+            <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Venteliste</span>
+          </div>
+          <sc-for list="{{ klVlSide }}" as="v" hint-placeholder-count="3">
+            <div onMouseDown="{{ v.ned }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-500); border-radius: var(--radius-md); padding: 12px 14px; cursor: grab; user-select: none;" style-hover="box-shadow: var(--shadow-md);">
+              <div style="font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text-heading);">{{ v.navn }}</div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2); margin-top: 3px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--text-body); min-width: 0;">{{ v.kurs }}</span>
+                <span style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">{{ v.under }}</span>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ klVlSideTom }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Ingen på venteliste.</div>
+          </sc-if>
+          <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Dra en person inn på en økt for å gi plass.</div>
+          <div style="height: var(--space-2);"></div>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ klRapApne }}" hint-size="auto,44px">Dagsrapport</x-import>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="shopping-cart" on-click="{{ klKasse }}" hint-size="auto,44px">Kasse</x-import>
+          <div style="height: var(--space-4);"></div>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="smartphone" on-click="{{ klIcsApne }}" hint-size="auto,44px">Synk med mobilen</x-import>
+        </aside>
+
+        <div style="{{ klHovedStil }}">
+
+        <sc-if value="{{ klErManed }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="display: grid; grid-template-columns: repeat(7, 1fr);">
+              <sc-for list="{{ klUkedager }}" as="u" hint-placeholder-count="7">
+                <div style="padding: var(--space-3) var(--space-3); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u }}</div>
+              </sc-for>
+            </div>
+            <sc-for list="{{ klUker }}" as="uke" hint-placeholder-count="5">
+              <div style="display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--border-subtle);">
+                <sc-for list="{{ uke.dager }}" as="d" hint-placeholder-count="7">
+                  <div data-dato="{{ d.iso }}" style="{{ d.stil }}">
+                    <div style="{{ d.tallStil }}">{{ d.tall }}</div>
+                    <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="0">
+                      <button type="button" onClick="{{ h.velg }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ d.harMer }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ d.velgDag }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: left;">{{ d.mer }}</button>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ klErUke }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="{{ klUkeHodeStil }}">
+              <div style="border-right: 1px solid var(--border-subtle);"></div>
+              <sc-for list="{{ klUkeDager }}" as="d" hint-placeholder-count="7">
+                <button type="button" onClick="{{ d.velgDag }}" style="{{ d.hodeStil }}">
+                  <span style="{{ d.navnStil }}">{{ d.navn }}</span>
+                  <span style="{{ d.antallStil }}">{{ d.antall }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <div style="{{ klUkeKroppStil }}">
+              <div style="{{ klUkeGutterStil }}">
+                <sc-for list="{{ klUkeTimer }}" as="t" hint-placeholder-count="10">
+                  <span style="{{ t.stil }}">{{ t.navn }}</span>
+                </sc-for>
+              </div>
+              <sc-for list="{{ klUkeDager }}" as="d" hint-placeholder-count="7">
+                <div data-dato="{{ d.iso }}" data-akse="1" style="{{ d.kolStil }}">
+                  <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="1">
+                    <button type="button" data-evt="{{ h.id }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
+                      <span style="display: block; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ h.tid }}</span>
+                      <span style="display: block; overflow: hidden; text-overflow: ellipsis;">{{ h.tittel }}</span>
+                      <sc-if value="{{ h.harMeta }}" hint-placeholder-val="{{ false }}">
+                        <span style="display: flex; align-items: center; gap: 7px; margin-top: 2px; opacity: .9;">
+                          <sc-if value="{{ h.harAvatarer }}" hint-placeholder-val="{{ false }}">
+                            <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>{{ h.antallTekst }}</span>
+                          </sc-if>
+                          <sc-if value="{{ h.harMerknad }}" hint-placeholder-val="{{ false }}">
+                            <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>{{ h.merknadAntall }}</span>
+                          </sc-if>
+                        </span>
+                      </sc-if>
+                    </button>
+                  </sc-for>
+                  <div style="{{ d.naStil }}"></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="{{ klBoardHodeStil }}">
+              <div style="border-right: 1px solid var(--border-subtle);"></div>
+              <sc-for list="{{ klBoardKolonner }}" as="k" hint-placeholder-count="3">
+                <div style="padding: var(--space-4) var(--space-5); border-right: 1px solid var(--border-subtle); min-width: 0;">
+                  <button type="button" onClick="{{ k.apne }}" style="{{ k.navnStil }}">{{ k.navn }}</button>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px;">{{ k.under }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="{{ klBoardKroppStil }}">
+              <div style="{{ klGutterStil }}">
+                <sc-for list="{{ klBoardTimer }}" as="t" hint-placeholder-count="15">
+                  <span style="{{ t.stil }}">{{ t.navn }}</span>
+                </sc-for>
+              </div>
+              <sc-for list="{{ klBoardKolonner }}" as="k" hint-placeholder-count="3">
+                <div data-kol="{{ k.navn }}" style="{{ klKolonneStil }}">
+                  <sc-for list="{{ k.hendelser }}" as="h" hint-placeholder-count="2">
+                    <button type="button" data-evt="{{ h.id }}" onMouseDown="{{ h.ned }}" onMouseEnter="{{ h.inn }}" onMouseLeave="{{ h.ut }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">
+                      <span style="display: block; font-weight: 700;">{{ h.tid }}</span>
+                      <span style="display: block; font-weight: 600;">{{ h.tittel }}</span>
+                      <span style="display: block; opacity: .75;">{{ h.detalj }}</span>
+                      <sc-if value="{{ h.harAvatarer }}" hint-placeholder-val="{{ false }}">
+                        <span style="display: flex; align-items: center; gap: 3px; margin-top: 5px; flex-wrap: wrap;">
+                          <sc-for list="{{ h.avatarer }}" as="av" hint-placeholder-count="0">
+                            <span title="{{ av.tittel }}" style="{{ av.stil }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg></span>
+                          </sc-for>
+                          <sc-if value="{{ h.harFlere }}" hint-placeholder-val="{{ false }}">
+                            <span style="margin-left: 4px; font-size: 10px; font-weight: 700; opacity: .8;">{{ h.flereTekst }}</span>
+                          </sc-if>
+                        </span>
+                      </sc-if>
+                      <sc-if value="{{ h.harNye }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ h.nyeStil }}">{{ h.nyeTekst }}</span>
+                      </sc-if>
+                      <sc-if value="{{ h.harMerknad }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ h.merknadStil }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>{{ h.merknadTekst }}</span>
+                      </sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <div style="{{ klNaStil }}"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ klErListe }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: var(--space-5);">
+            <sc-for list="{{ klListe }}" as="g" hint-placeholder-count="5">
+              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+                <div style="padding: var(--space-3) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ g.dagTittel }}</div>
+                <sc-for list="{{ g.hendelser }}" as="h" hint-placeholder-count="2">
+                  <button type="button" onClick="{{ h.velg }}" onContextMenu="{{ h.meny }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                    <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 110px; flex: 0 0 auto;">{{ h.tid }}</span>
+                    <span style="{{ h.prikkStil }}"></span>
+                    <span style="flex: 1; min-width: 0;">
+                      <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading); text-decoration: {{ h.strek }};">{{ h.tittel }}</span>
+                      <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ h.detalj }}</span>
+                    </span>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-5); padding: var(--space-4) var(--space-5); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+          <sc-for list="{{ klLegende }}" as="l" hint-placeholder-count="6">
+            <span style="display: inline-flex; align-items: center; gap: 7px; font-size: var(--text-xs); font-weight: 600; color: var(--text-body);">
+              <span style="{{ l.prikkStil }}"></span>
+              {{ l.navn }}
+            </span>
+          </sc-for>
+          <span style="margin-left: auto; font-size: var(--text-xs); color: var(--text-muted);">Klikk åpner kurset · Høyreklikk for meny · Dra kortet for å flytte · Klikk på navnet for kursholderen</span>
+        </div>
+      </main>
+
+      <sc-if value="{{ klNyDragVises }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ klNyDragStil }}">{{ klNyDragNavn }}</div>
+      </sc-if>
+
+      <sc-if value="{{ klAngreVises }}" hint-placeholder-val="{{ false }}">
+        <div style="position: fixed; left: 50%; transform: translateX(-50%); bottom: 28px; z-index: 90; display: flex; align-items: center; gap: var(--space-4); background: var(--lissom-brown); color: var(--clay-50); border-radius: var(--radius-pill); padding: 10px 12px 10px 22px; box-shadow: var(--shadow-lg);">
+          <span style="font: var(--type-body-sm); font-weight: 600; white-space: nowrap;">{{ klAngreTekst }}</span>
+          <button type="button" onClick="{{ klAngreGjor }}" style="appearance: none; border: 1.5px solid var(--clay-50); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 5px 16px; font: var(--type-body-sm); font-weight: 700; color: var(--clay-50); white-space: nowrap;">Angre</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klKonfliktVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klKonfliktAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 70; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(460px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Overlapp</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">{{ klKonfliktHolder }} er opptatt</h2>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted); white-space: nowrap;">Du flytter</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ klKonfliktNy }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted); white-space: nowrap;">Krasjer med</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ klKonfliktMot }}</span></div>
+            </div>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body);">Øktene overlapper for samme kursholder. Vil du flytte likevel?</p>
+            <div style="display: flex; gap: var(--space-3);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klKonfliktBekreft }}" hint-size="auto,44px">Flytt likevel</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klKonfliktAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klVlBVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klVlBAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 70; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Tildel plass</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Er du sikker?</h2>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">Deltaker</span><span style="font-weight: 700; color: var(--text-heading);">{{ klVlBNavn }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">Kurs</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ klVlBKurs }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">Tidspunkt</span><span style="font-weight: 600; color: var(--text-heading); text-align: right;">{{ klVlBTid }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">Belegg</span><span style="font-weight: 600; color: var(--text-heading);">{{ klVlBBelegg }}</span></div>
+            </div>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body);">Deltakeren får beskjed på SMS og e-post, og fjernes fra ventelisten.</p>
+            <div style="display: flex; gap: var(--space-3);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klVlBBekreft }}" hint-size="auto,44px">Ja, tildel og send beskjed</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klVlBAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klBVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klBAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 70; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(480px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Sett opp kurset</div>
+            <h2 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl);">{{ klBTittel }}</h2>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body);">Stemmer tiden? Juster om nødvendig, og velg om kurset skal gjentas.</p>
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
+                <input type="date" value="{{ klBDato }}" onChange="{{ settKlBDato }}" style="{{ klRFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
+                <input type="time" value="{{ klBFra }}" onChange="{{ settKlBFra }}" style="{{ klRFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
+                <input type="time" value="{{ klBTil }}" onChange="{{ settKlBTil }}" style="{{ klRFeltStil }}">
+              </div>
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kursholder</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <sc-for list="{{ klBHolderValg }}" as="t" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <sc-for list="{{ klBGjentaValg }}" as="t" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                </sc-for>
+                <sc-if value="{{ klBErGjenta }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ klBAntall }}" onChange="{{ settKlBAntall }}" style="width: 56px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <span style="font-size: var(--text-sm); color: var(--text-muted);">ganger</span>
+                </sc-if>
+              </div>
+            </div>
+            <div style="display: flex; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klBBekreft }}" hint-size="auto,44px">Bekreft og legg inn</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klBAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klRedVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klRAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Rediger økten</span>
+              <button type="button" onClick="{{ klRAvbryt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn</label>
+            <input value="{{ klRNavn }}" onChange="{{ settKlRNavn }}" style="box-sizing: border-box; width: 100%; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-5);">
+            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
+                <input type="date" value="{{ klRDato }}" onChange="{{ settKlRDato }}" style="{{ klRFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
+                <input type="time" value="{{ klRFra }}" onChange="{{ settKlRFra }}" style="{{ klRFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
+                <input type="time" value="{{ klRTil }}" onChange="{{ settKlRTil }}" style="{{ klRFeltStil }}">
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Antall plasser</label>
+                <input value="{{ klRPlasser }}" onChange="{{ settKlRPlasser }}" style="{{ klRFeltStil }}">
+              </div>
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Pris (kr)</label>
+                <input value="{{ klRPris }}" onChange="{{ settKlRPris }}" style="{{ klRFeltStil }}">
+              </div>
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kursholder</label>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <sc-for list="{{ klRHolderValg }}" as="t" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="margin-bottom: var(--space-4);">
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Planlagte datoer</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                <sc-for list="{{ klRDatoer }}" as="d" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">
+                    {{ d.tekst }}
+                    <span onClick="{{ d.slett }}" title="Slett dato" style="display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: rgba(46,16,2,.12); font-size: 12px; line-height: 1;">×</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ klRHarFlere }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ klRVisAlleKlikk }}" style="appearance: none; border: 1.5px dashed var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown);">{{ klRVisAlleTekst }}</button>
+                </sc-if>
+                <sc-if value="{{ klRNySkjult }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ klRNyToggle }}" style="appearance: none; border: 1.5px dashed var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown);">+ Ny dato</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{ klRNyVis }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; padding: 10px 12px; margin-top: var(--space-2); border-radius: var(--radius-md); background: var(--clay-100);">
+                  <input type="date" value="{{ klRNyDato }}" onChange="{{ settKlRNyDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="time" value="{{ klRNyFra }}" onChange="{{ settKlRNyFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="time" value="{{ klRNyTil }}" onChange="{{ settKlRNyTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klRNyLagre }}" hint-size="auto,36px">Legg til</x-import>
+                </div>
+              </sc-if>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Publisert på nettsiden" checked="{{ klRPublisertVal }}" on-change="{{ toggleKlRPublisert }}" hint-size="auto,28px"></x-import>
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">
+                <input type="checkbox" checked="{{ klRAvlystVal }}" onChange="{{ toggleKlRAvlyst }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Avlys denne økten
+              </label>
+            </div>
+            <sc-if value="{{ klRKanKurs }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-bottom: var(--space-5);">
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Beskrivelse (vises på nettsiden)</label>
+                <textarea value="{{ klRBeskrivelse }}" onChange="{{ settKlRBeskrivelse }}" rows="3" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+              </div>
+            </sc-if>
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klRLagre }}" hint-size="auto,44px">Lagre</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klRAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+              <div style="margin-left: auto; display: flex; gap: var(--space-4);">
+                <button type="button" onClick="{{ klRDeltakere }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Deltakere</button>
+                <sc-if value="{{ klRKanKurs }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ klRFull }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Full redigering →</button>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klHarValgt }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3);">
+              <span style="{{ klValgt.badgeStil }}">{{ klValgt.typeNavn }}</span>
+              <sc-if value="{{ klValgt.erAvlyst }}" hint-placeholder-val="{{ false }}">
+                <span style="display: inline-flex; align-items: center; border-radius: var(--radius-pill); padding: 3px 12px; font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; background: var(--terracotta-500); color: var(--clay-50);">Avlyst</span>
+              </sc-if>
+              <button type="button" onClick="{{ klLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+            <h2 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl);">{{ klValgt.tittel }}</h2>
+            <div style="font-size: var(--text-sm); color: var(--text-body); margin-bottom: var(--space-5);">{{ klValgt.datoTekst }} · {{ klValgt.tid }} · Kursholder: {{ klValgt.holder }}</div>
+
+            <sc-if value="{{ klValgt.harKap }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-bottom: var(--space-6);">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                  <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Belegg</span>
+                  <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ klValgt.kapTekst }}</span>
+                </div>
+                <div style="height: 8px; border-radius: 4px; background: var(--clay-100); overflow: hidden;">
+                  <div style="{{ klValgt.beleggStil }}"></div>
+                </div>
+              </div>
+
+              <div style="margin-bottom: var(--space-6);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Kursholder</div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ klHolderValg }}" as="t" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ t.velg }}" style="{{ t.stil }}">{{ t.navn }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-4);">
+                <div style="padding: var(--space-3) var(--space-4); background: var(--clay-100); display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Deltakere</span>
+                  <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">Åpne Påmeldte →</button>
+                </div>
+                <sc-for list="{{ klValgt.deltakere }}" as="p" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
+                    <span style="display: inline-flex; align-items: center; gap: 8px; min-width: 0;">
+                      <span style="font-size: var(--text-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-decoration-color: var(--clay-300); text-underline-offset: 3px;">{{ p.navn }}</span>
+                      <sc-if value="{{ p.ny }}" hint-placeholder-val="{{ false }}">
+                        <span style="background: var(--sage-500); color: var(--clay-50); border-radius: var(--radius-pill); padding: 1px 8px; font-size: 10px; font-weight: 700;">Ny</span>
+                      </sc-if>
+                    </span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.status }}</span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{ klValgt.ingenDeltakere }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: var(--space-4); font-size: var(--text-sm); color: var(--text-muted); border-top: 1px solid var(--border-subtle);">Ingen påmeldte ennå.</div>
+                </sc-if>
+                <div style="border-top: 1px solid var(--border-subtle); background: var(--clay-50); padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: 8px;">
+                  <span style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Legg til deltaker</span>
+                  <div style="display: flex; gap: 8px;">
+                    <input value="{{ klNyDNavn }}" onChange="{{ settKlNyDNavn }}" placeholder="Navn" style="box-sizing: border-box; flex: 1.3; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                    <input value="{{ klNyDTlf }}" onChange="{{ settKlNyDTlf }}" placeholder="Telefon" style="box-sizing: border-box; flex: 1; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <sc-for list="{{ klNyDBetValg }}" as="b" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ b.velg }}" style="{{ b.stil }}">{{ b.navn }}</button>
+                    </sc-for>
+                    <button type="button" onClick="{{ klNyDLeggTil }}" style="appearance: none; border: 1.5px solid var(--lissom-brown); background: var(--lissom-brown); cursor: pointer; border-radius: var(--radius-pill); padding: 6px 16px; font: var(--type-body-sm); font-weight: 700; color: var(--clay-50); margin-left: auto; white-space: nowrap;">Legg til</button>
+                  </div>
+                </div>
+              </div>
+
+              <sc-if value="{{ klValgt.harVenteliste }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-4);">
+                  <div style="padding: var(--space-3) var(--space-4); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);">
+                    <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
+                    <button type="button" onClick="{{ klTildelNesteValgt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Tildel plass til førstemann →</button>
+                  </div>
+                  <sc-for list="{{ klValgt.venteliste }}" as="v" hint-placeholder-count="2">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle);">
+                      <span style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ v.pos }} {{ v.navn }}</span>
+                      <sc-if value="{{ v.erVarslet }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size: var(--text-xs); font-weight: 700; color: var(--sage-500);">Varslet ✓</span>
+                      </sc-if>
+                      <sc-if value="{{ v.ikkeVarslet }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" onClick="{{ v.tilby }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); border-radius: var(--radius-pill); padding: 4px 14px; font: var(--type-body-sm); font-weight: 700;">Tilby plass</button>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ klFlyttVises }}" hint-placeholder-val="{{ false }}">
+              <div style="border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Flytt til ny dato</div>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <input type="date" value="{{ klFlyttDato }}" onChange="{{ settKlFlyttDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="time" value="{{ klFlyttTid }}" onChange="{{ settKlFlyttTid }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klFlyttLagre }}" hint-size="auto,36px">Lagre ny dato</x-import>
+                </div>
+                <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">Deltakerne varsles om endringen på e-post og SMS.</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ klBekreftAvlysVises }}" hint-placeholder-val="{{ false }}">
+              <div style="border: 2px solid var(--terracotta-500); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-4);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: var(--space-3);">Avlyse denne økten? Deltakerne varsles på e-post og SMS, og betalte plasser refunderes etter vilkårene.</div>
+                <div style="display: flex; gap: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klAvlysBekreft }}" hint-size="auto,36px">Ja, avlys og varsle</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ klAvlysAngre }}" hint-size="auto,36px">Angre</x-import>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ klValgt.kanEndres }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); padding-top: var(--space-5);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="pencil" on-click="{{ klRedigerValgt }}" hint-size="auto,36px">Rediger kurset</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="calendar" on-click="{{ klVisFlytt }}" hint-size="auto,36px">Flytt dato</x-import>
+                <sc-if value="{{ klValgt.ikkeAvlyst }}" hint-placeholder-val="{{ true }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="x" on-click="{{ klAvlysStart }}" hint-size="auto,36px">Avlys økten</x-import>
+                </sc-if>
+                <sc-if value="{{ klValgt.erAvlyst }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ klGjenopprett }}" hint-size="auto,36px">Gjenopprett økten</x-import>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klMenyVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klMenyLukk }}" onContextMenu="{{ klMenyHindre }}" style="position: fixed; inset: 0; z-index: 79;"></div>
+        <div style="{{ klMenyStil }}">
+          <div style="padding: 8px 12px 6px; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border-subtle); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ klMenyTittel }}</div>
+          <sc-for list="{{ klMenyValg }}" as="v" hint-placeholder-count="4">
+            <button type="button" onClick="{{ v.gjor }}" style="{{ v.stil }}" style-hover="background: var(--clay-100);">{{ v.navn }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klHoverVises }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ klHover.stil }}">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <span style="{{ klHover.badgeStil }}">{{ klHover.typeNavn }}</span>
+            <sc-if value="{{ klHover.erAvlyst }}" hint-placeholder-val="{{ false }}">
+              <span style="display: inline-flex; align-items: center; border-radius: var(--radius-pill); padding: 2px 10px; font-size: 11px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; background: var(--terracotta-500); color: var(--clay-50);">Avlyst</span>
+            </sc-if>
+          </div>
+          <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading); margin-bottom: 2px;">{{ klHover.tittel }}</div>
+          <div style="font-size: var(--text-sm); color: var(--text-body);">{{ klHover.dato }}</div>
+          <div style="font-size: var(--text-sm); color: var(--text-body);">{{ klHover.holder }}</div>
+          <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-top: 4px;">{{ klHover.kap }}</div>
+          <sc-if value="{{ klHover.harDeltakere }}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: 10px; padding-top: 8px;">
+              <sc-for list="{{ klHover.deltakere }}" as="p" hint-placeholder-count="3">
+                <div style="display: flex; justify-content: space-between; gap: 8px; padding: 2px 0;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--text-heading);">{{ p.navn }}</span>
+                  <span style="font-size: 12px; color: var(--text-muted);">{{ p.status }}</span>
+                </div>
+              </sc-for>
+              <div style="font-size: 12px; color: var(--text-muted);">{{ klHover.flere }}</div>
+            </div>
+          </sc-if>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">Klikk for å åpne · høyreklikk for hurtigmeny</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klBeskjedVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klBeskjedLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 65; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(480px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Beskjed</span>
+              <button type="button" onClick="{{ klBeskjedLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+            <h2 style="margin: 0 0 var(--space-1); font-size: var(--text-2xl);">{{ klBeskjedValgt.fra }}</h2>
+            <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-4);">{{ klBeskjedValgt.rolle }} · {{ klBeskjedValgt.tid }}</div>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-base); color: var(--text-heading); line-height: 1.55; margin-bottom: var(--space-5);">{{ klBeskjedValgt.tekst }}</div>
+            <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Svar {{ klBeskjedValgt.fra }}</div>
+            <div style="display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-3);">
+              <input value="{{ klBSvar }}" onChange="{{ settKlBSvar }}" placeholder="Skriv svaret her" style="box-sizing: border-box; flex: 1; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ klBSvarSend }}" hint-size="auto,36px">Send</x-import>
+            </div>
+            <sc-if value="{{ klBSvarSendtVis }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--text-heading); margin-bottom: var(--space-3);">{{ klBSvarSendtTekst }}</div>
+            </sc-if>
+            <button type="button" onClick="{{ klGaBeskjeder }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Åpne alle beskjeder →</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klDeltakerVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klDeltakerLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 65; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(480px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Deltaker</span>
+              <button type="button" onClick="{{ klDeltakerLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+            <h2 style="margin: 0 0 var(--space-1); font-size: var(--text-2xl);">{{ klDeltaker.navn }}</h2>
+            <div style="font-size: var(--text-sm); color: var(--text-body); margin-bottom: var(--space-5);">{{ klDeltaker.okt }} · {{ klDeltaker.tid }}</div>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5); display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">Status</span><span style="font-weight: 700; color: var(--text-heading);">{{ klDeltaker.status }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">E-post</span><span style="font-weight: 600; color: var(--text-heading);">{{ klDeltaker.epost }}</span></div>
+              <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">Telefon</span><span style="font-weight: 600; color: var(--text-heading);">{{ klDeltaker.tlf }}</span></div>
+            </div>
+            <sc-if value="{{ klDeltakerHarMerknad }}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 8px; background: var(--terracotta-500); color: var(--clay-50); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); font-weight: 700; margin-bottom: var(--space-5);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>Merknad fra booking: {{ klDeltaker.merknad }}</div>
+            </sc-if>
+            <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Send en beskjed til {{ klDeltaker.navn }}</div>
+            <div style="display: flex; gap: var(--space-3); align-items: center;">
+              <input value="{{ klDBeskjed }}" onChange="{{ settKlDBeskjed }}" placeholder="Skriv beskjeden her" style="box-sizing: border-box; flex: 1; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ klDSend }}" hint-size="auto,36px">Send</x-import>
+            </div>
+            <sc-if value="{{ klDSendt }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-3); background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--text-heading);">{{ klDSendtTekst }}</div>
+            </sc-if>
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
+              <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Se full påmelding i Påmeldte →</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klHolderVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klHolderLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(520px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursholder</span>
+              <button type="button" onClick="{{ klHolderLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+            <h2 style="margin: 0 0 var(--space-1); font-size: var(--text-2xl);">{{ klHolderProfil.navn }}</h2>
+            <div style="font-size: var(--text-sm); color: var(--text-body); margin-bottom: var(--space-5);">{{ klHolderProfil.rolle }} · {{ klHolderProfil.timer }}</div>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5);">
+              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Holder kursene</div>
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ klHolderProfil.kurs }}</div>
+            </div>
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-5);">
+              <div style="padding: var(--space-3) var(--space-4); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Økter i dag</div>
+              <sc-for list="{{ klHolderOkter }}" as="h" hint-placeholder-count="2">
+                <button type="button" onClick="{{ h.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-4); padding: 10px var(--space-4); border-top: 1px solid var(--border-subtle);">
+                  <span style="{{ h.prikkStil }}"></span>
+                  <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); width: 96px; flex: 0 0 auto;">{{ h.tid }}</span>
+                  <span style="flex: 1; min-width: 0;">
+                    <span style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ h.tittel }}</span>
+                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ h.detalj }}</span>
+                  </span>
+                </button>
+              </sc-for>
+              <sc-if value="{{ klHolderOkterTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-4); font-size: var(--text-sm); color: var(--text-muted); border-top: 1px solid var(--border-subtle);">Ingen økter denne dagen.</div>
+              </sc-if>
+            </div>
+            <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Send en beskjed til {{ klHolderProfil.navn }}</div>
+            <div style="display: flex; gap: var(--space-3); align-items: center;">
+              <input value="{{ klHBeskjed }}" onChange="{{ settKlHBeskjed }}" placeholder="Skriv beskjeden her" style="box-sizing: border-box; flex: 1; min-width: 0; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ klHSend }}" hint-size="auto,36px">Send</x-import>
+            </div>
+            <sc-if value="{{ klHSendt }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-3); background: var(--sage-100, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--text-heading);">{{ klHSendtTekst }}</div>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klRapVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klRapLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dagsrapport</span>
+              <button type="button" onClick="{{ klRapLukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            </div>
+            <h2 style="margin: 0 0 var(--space-5); font-size: var(--text-2xl);">{{ klRapTittel }}</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-5);">
+              <sc-for list="{{ klRapSum }}" as="s" hint-placeholder-count="4">
+                <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">
+                  <div style="font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ s.navn }}</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading); margin-top: 2px;">{{ s.verdi }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); overflow: hidden; margin-bottom: var(--space-5);">
+              <sc-for list="{{ klRapRader }}" as="r" hint-placeholder-count="4">
+                <div style="display: flex; align-items: center; gap: var(--space-4); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle);">
+                  <span style="{{ r.prikkStil }}"></span>
+                  <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); width: 96px; flex: 0 0 auto;">{{ r.tid }}</span>
+                  <span style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ r.tittel }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ r.holder }} · {{ r.status }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ klRapTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Ingenting planlagt denne dagen.</div>
+              </sc-if>
+            </div>
+            <div style="display: flex; gap: var(--space-3);">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="printer" on-click="{{ klSkrivUt }}" hint-size="auto,44px">Skriv ut</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klRapLukk }}" hint-size="auto,44px">Lukk</x-import>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klKasseVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klKasseLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kasse</div>
+            <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">Åpner kassen</h2>
+            <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Kassen er bygget i hovedprosjektet og kobles på her. Knappen skal åpne kassevisningen direkte fra kalenderen.</p>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klKasseLukk }}" hint-size="auto,44px">Lukk</x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ klIcsVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klIcsLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(520px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kalenderabonnement</div>
+            <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">Synk med kalenderen på mobilen</h2>
+            <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Abonner, så dukker alt opp på iPhone og oppdateres automatisk når noe endres her.</p>
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kalenderen — kurs, events og drop-in</label>
+            <input readOnly="{{ true }}" value="{{ klIcsUrl }}" onFocus="{{ klIcsMarker }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-4);">
+            <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Påminnelser og notater — vises i Påminnelser-appen</label>
+            <input readOnly="{{ true }}" value="{{ klIcsPaminUrl }}" onFocus="{{ klIcsMarker }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-5);">
+            <div style="display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-body); margin-bottom: var(--space-6);">
+              <span>1. Åpne Innstillinger → Kalender → Kontoer på iPhone.</span>
+              <span>2. Velg «Legg til konto» → «Annet» → «Legg til abonnementskalender».</span>
+              <span>3. Lim inn adressen over, og trykk Neste.</span>
+            </div>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klIcsLukk }}" hint-size="auto,44px">Lukk</x-import>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminVenteliste }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – venteliste" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -21057,6 +21901,9 @@ class Component extends DCLogic {
     return [
       ['Oversikt',  'adminoversikt'],
       ['Deltakere', 'adminomrdeltakere'],
+      // Kalenderen: alt som skjer, samlet. Eget punkt saa den er ett trykk
+      // unna — det er skjermen man staar i naar man planlegger dagen.
+      ['Kalender',  'adminkalender'],
       ['Medlemmer', 'adminomrmedlemmer'],
       ['Kurs og medlemskap', 'adminomrkurs'],
       // Oppskriftene laa under Medlemmer, men de er verkstedets egne —
@@ -21179,6 +22026,7 @@ class Component extends DCLogic {
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
       case 'adminvideokurs':     return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Videokurs');
+      case 'adminkalender':      return p('Kalender');
       case 'adminventeliste':    return p('Oversikt');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
@@ -21375,6 +22223,996 @@ class Component extends DCLogic {
         borderTop: '1px solid rgba(244,235,222,.18)',
       },
     };
+  }
+
+  /**
+   * Fase 5: kalenderen leser, den skriver ikke.
+   *
+   * Knappene staar der de skal staa — det er de som blir koblet i fase 6 —
+   * men de skal ikke late som om de virker. En endring som ser ut til aa
+   * skje og ikke lagres, er verre enn en knapp som sier fra.
+   */
+  /**
+   * Kursholderne, slik de faktisk staar i registeret.
+   *
+   * Her sto ['Monica', 'Joakim', 'Ekstern'] skrevet inn seks steder i
+   * designfila. Det stemte den dagen den ble tegnet, og ville sluttet aa
+   * stemme den dagen noen sluttet eller begynte — uten at noen skjonte
+   * hvorfor navnet ikke sto der.
+   */
+  klHoldere() {
+    const fra = (this.state.kalHoldere || []).map(h => h.navn)
+      .concat((this.state.adminKursholdere || []).filter(h => h.aktiv).map(h => h.navn));
+    const ut = [];
+    fra.forEach(n => { if (n && ut.indexOf(n) < 0) ut.push(n); });
+    return ut;
+  }
+
+  /** Skriver kalenderen enda? Fase 6 setter denne til true. */
+  get klSkriver() { return false; }
+
+  klIkkeEnda(hva) {
+    this.setState({
+      kvittering: 'Ikke koblet ennå',
+      kvitteringDetalj: (hva || 'Dette') + ' gjøres fra kursoppsettet og Påmeldte inntil videre.',
+    });
+  }
+
+  klTypeInfo() {
+    return {
+      kurs: { navn: 'Kurs', bg: 'var(--lissom-yellow)', fg: 'var(--lissom-brown)' },
+      event: { navn: 'Event', bg: 'var(--terracotta-500)', fg: 'var(--clay-50)' },
+      pop: { navn: 'Paint on Pots', bg: 'var(--slip-500)', fg: 'var(--clay-50)' },
+      dropin: { navn: 'Drop-in', bg: 'var(--sage-500)', fg: 'var(--clay-50)' },
+      brenning: { navn: 'Brenning', bg: 'var(--lissom-brown)', fg: 'var(--clay-50)' },
+      verksted: { navn: 'Verksted', bg: 'var(--clay-200)', fg: 'var(--text-heading)' },
+      vakt: { navn: 'Vakt', bg: 'var(--surface-card)', fg: 'var(--lissom-brown)', kant: '1.5px solid var(--lissom-brown)' },
+    };
+  }
+
+  klHolderInfo() {
+    return {
+      Monica: { bg: 'var(--lissom-yellow)', fg: 'var(--lissom-brown)' },
+      Joakim: { bg: 'var(--terracotta-500)', fg: 'var(--clay-50)' },
+      Ekstern: { bg: 'var(--sage-500)', fg: 'var(--clay-50)' },
+    };
+  }
+
+  /**
+   * Henter en maaned, én gang.
+   *
+   * Her sto «klGen» — en generator som diktet opp en ukeplan med Kari
+   * Nordmann og Ola Hansen. Den var riktig i en prototype, men den visste
+   * ingenting om verkstedet.
+   *
+   * Naa kommer hendelsene fra api/admin/kalender.php, som setter dem sammen
+   * av oektene, paameldingene, ventelistene og innstemplingene. Feltnavnene
+   * er de samme som generatoren laget, saa alt under staar urort.
+   *
+   * Én maaned om gangen, og bare én gang: kalenderen ber om maaneden foer og
+   * etter ogsaa, fordi uka i kanten hoerer til begge.
+   */
+  klHent(y, m) {
+    const d = new Date(y, m, 1);
+    const nokkel = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    const hentet = this.state.kalHentet || {};
+    if (hentet[nokkel] || !this.erPublisert()) return;
+
+    // Merkes med det samme, saa to tegninger av samme skjerm ikke ber om
+    // den samme maaneden to ganger.
+    this.setState(st => ({ kalHentet: Object.assign({}, st.kalHentet, { [nokkel]: true }) }));
+
+    const iso = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0')
+                      + '-' + String(dt.getDate()).padStart(2, '0');
+    const fra = new Date(y, m, 1);
+    const til = new Date(y, m + 1, 1);
+
+    fetch('/api/admin/kalender.php?fra=' + iso(fra) + '&til=' + iso(til),
+          { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d2 => {
+        if (!d2) return;
+        this.setState(st => ({
+          kalHendelser: Object.assign({}, st.kalHendelser, { [nokkel]: d2.hendelser || [] }),
+          kalStengte: Object.assign({}, st.kalStengte, d2.stengte || {}),
+          kalHoldere: d2.kursholdere || st.kalHoldere || [],
+        }));
+      })
+      .catch(() => {
+        // Feilet den, skal den kunne proves igjen — ellers staar maaneden
+        // tom for alltid uten at noen vet hvorfor.
+        this.setState(st => {
+          const h = Object.assign({}, st.kalHentet);
+          delete h[nokkel];
+          return { kalHentet: h };
+        });
+      });
+  }
+
+  /**
+   * Alle hendelser rundt en maaned, med det som er endret lokalt lagt paa.
+   *
+   * Maaneden foer og etter er med fordi uka i kanten hoerer til begge. Laget
+   * over — flyttinger, avlysninger, tildelte plasser — staar igjen fra
+   * prototypen og er tomt saa lenge kalenderen bare leser. Naar den skal
+   * skrive, er det her det optimistiske svaret legges paa mens serveren
+   * bekrefter.
+   */
+  klAlle(y, m) {
+    let evts = [];
+    for (let k = -1; k <= 1; k++) {
+      const dd = new Date(y, m + k, 1);
+      const nokkel = dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0');
+      this.klHent(dd.getFullYear(), dd.getMonth());
+      evts = evts.concat((this.state.kalHendelser || {})[nokkel] || []);
+    }
+    // Fase 5: bare det som staar i basen tegnes. Lagene under blir staaende
+    // i koden fordi de er det optimistiske svaret fase 6 skal bruke — men de
+    // skal ikke vises for endringen faktisk lagres et sted.
+    if (!this.klSkriver) return evts;
+
+    const slett = this.state.klSlettede || {};
+    evts = evts.concat(this.state.klEkstra || []).filter(e => !slett[e.id]);
+    const endr = this.state.klEndringer || {}, avl = this.state.klAvlyst || {}, hold = this.state.klHolder || {}, tild = this.state.klTildelt || {};
+    const sett = this.state.klSett || {};
+    return evts.map(e => {
+      const e2 = Object.assign({}, e, endr[e.id] || {}, { avlyst: !!avl[e.id] || !!e.avlyst, holder: hold[e.id] || e.holder, nye: sett[e.id] ? 0 : (e.nye || 0) });
+      const t = tild[e.id] || [];
+      const bort = (this.state.klVlBort || {})[e.id] || [];
+      if (t.length) {
+        e2.deltakere = (e.deltakere || []).concat(t.map(n => ({ navn: n, status: 'Tildelt fra venteliste' })));
+        e2.pameldt = (e.pameldt || 0) + t.length;
+      }
+      if (t.length || bort.length) e2.venteliste = (e.venteliste || []).filter(v => t.indexOf(v.navn) < 0 && bort.indexOf(v.navn) < 0);
+      const man = (this.state.klManuelle || {})[e.id] || [];
+      if (man.length) {
+        e2.deltakere = (e2.deltakere || []).concat(man);
+        e2.pameldt = (e2.pameldt || 0) + man.length;
+      }
+      return e2;
+    });
+  }
+
+  klVals() {
+    const side = this.state.side;
+    const idag = new Date(); idag.setHours(12, 0, 0, 0);
+    const isoAv = dt => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+    const idagIso = isoAv(idag);
+    const anker = this.state.klAnker ? new Date(this.state.klAnker + 'T12:00:00') : idag;
+    const y = anker.getFullYear(), m = anker.getMonth();
+    const mndNavn = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember'];
+    const dagNavn = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+    const uked = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'];
+    let visning = this.state.klVisning || 'dag';
+    if (this.erSmal() && (visning === 'maned' || visning === 'dag')) visning = 'liste';
+    const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
+    const modus = this.state.klFarge || 'type';
+    const info = this.klTypeInfo(), hInfo = this.klHolderInfo();
+    const alle = this.klAlle(y, m).filter(e => !(e.holder && skjulH[e.holder]));
+    const farge = e => (modus === 'holder' && e.holder ? (hInfo[e.holder] || info.verksted) : info[e.type]);
+    const pill = (e, blokk) => {
+      const f = farge(e);
+      return Object.assign({
+        appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%', boxSizing: 'border-box',
+        border: f.kant || 'none', borderRadius: '6px', padding: blokk ? '8px 10px' : '2px 7px',
+        background: f.bg, color: f.fg, fontFamily: 'var(--font-ui, inherit)', fontSize: blokk ? '12px' : '11px', fontWeight: 600, lineHeight: 1.35,
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: blokk ? 'normal' : 'nowrap',
+        opacity: e.avlyst ? .45 : 1, textDecoration: e.avlyst ? 'line-through' : 'none',
+      }, varsel(e), puls(e));
+    };
+    const prikk = e => ({ width: '10px', height: '10px', borderRadius: '3px', flex: '0 0 auto', background: farge(e).kant ? 'transparent' : farge(e).bg, border: farge(e).kant || 'none', opacity: e.avlyst ? .45 : 1 });
+    const visDetaljer = e => () => this.setState(s => ({ klValgtId: e.id, klFlyttVis: false, klBekreftAvlys: false, klMeny: null, klSett: Object.assign({}, s.klSett, { [e.id]: true }) }));
+    const velg = e => () => this.klApneEnkel(e);
+    const meny = e => ev => { ev.preventDefault(); this.setState({ klMeny: { id: e.id, x: ev.clientX, y: ev.clientY } }); };
+    const dragState = this.state.klDrag;
+    const dagEvts = iso => alle.filter(e => e.dato === iso).sort((a, b) => a.tid.localeCompare(b.tid));
+    const belegg = e => (e.kap ? e.pameldt + ' av ' + e.kap : '');
+    const erFull = e => !!e.kap && e.pameldt >= e.kap;
+    const dagerTil = e => Math.round((new Date(e.dato + 'T12:00:00') - idag) / 86400000);
+    const erTomSnart = e => !!e.kap && e.pameldt === 0 && !e.avlyst && dagerTil(e) >= 0 && dagerTil(e) <= 3;
+    const varsel = e => (erFull(e) ? { border: '2px solid var(--terracotta-600)' } : {});
+    const puls = e => (erTomSnart(e) ? { animation: 'klPuls 1.6s ease-in-out infinite' } : {});
+    const detalj = e => [e.holder, belegg(e), e.nye ? '+' + e.nye + (e.nye === 1 ? ' ny' : ' nye') : '', erFull(e) ? 'Fullt' : '', erTomSnart(e) ? 'Ingen påmeldte' : '', e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · ');
+    const chipStil = (aktiv, f) => ({
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '5px 13px', font: 'var(--type-body-sm)', fontWeight: 600,
+      border: aktiv ? '1.5px solid transparent' : '1.5px solid var(--border-subtle)',
+      background: aktiv ? (f ? f.bg : 'var(--lissom-brown)') : 'transparent',
+      color: aktiv ? (f ? f.fg : 'var(--clay-50)') : 'var(--text-muted)',
+    });
+    const offset = (new Date(y, m, 1).getDay() + 6) % 7;
+    const dim = new Date(y, m + 1, 0).getDate();
+    const ukerAntall = Math.ceil((offset + dim) / 7);
+    const mndCelleH = Math.max(104, Math.floor(((typeof window !== 'undefined' ? window.innerHeight : 900) - 380) / ukerAntall));
+    const mndMax = Math.max(3, Math.floor((mndCelleH - 32) / 19));
+    const tomCelle = () => ({ iso: '', tall: '', stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: 'var(--clay-100)' }, tallStil: {}, hendelser: [], harMer: false, mer: '', velgDag: () => {} });
+    const celler = [];
+    for (let i = 0; i < offset; i++) celler.push(tomCelle());
+    for (let d = 1; d <= dim; d++) {
+      const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const evts = dagEvts(iso);
+      const stengtDag = !!(this.state.klStengt || {})[iso];
+      celler.push({
+        iso,
+        tall: String(d) + (stengtDag ? ' · Stengt' : ''),
+        stil: { minHeight: mndCelleH + 'px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: stengtDag ? 'var(--clay-200)' : (iso === idagIso ? 'var(--clay-100)' : 'var(--surface-card)'), display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, opacity: stengtDag ? .75 : 1 },
+        tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: iso === idagIso ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
+        hendelser: evts.slice(0, mndMax).map(e => ({ tekst: (e.type === 'verksted' ? '' : e.tid + ' ') + e.tittel, stil: pill(e, false), velg: velg(e), meny: meny(e) })),
+        harMer: evts.length > mndMax, mer: '+ ' + (evts.length - mndMax) + ' til',
+        velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
+      });
+    }
+    while (celler.length % 7) celler.push(tomCelle());
+    const uker = []; for (let i = 0; i < celler.length; i += 7) uker.push({ dager: celler.slice(i, i + 7) });
+    const ukeStart = new Date(anker); ukeStart.setDate(anker.getDate() - ((anker.getDay() + 6) % 7));
+    const ukeSlutt = new Date(ukeStart); ukeSlutt.setDate(ukeStart.getDate() + 6);
+    const dagIso = isoAv(anker);
+    const radAv = e => ({ tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: detalj(e), prikkStil: prikk(e), strek: e.avlyst ? 'line-through' : 'none', velg: velg(e), meny: meny(e) });
+    const minAv = t => { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); };
+    const dagensAlle = dagEvts(dagIso);
+    const rekkevidde = dagensAlle.filter(e => e.type !== 'vakt');
+    let bStart = 600, bSluttMin = 1200;
+    if (rekkevidde.length) {
+      const forsteMin = Math.min.apply(null, rekkevidde.map(e => minAv(e.tid)));
+      const sisteMin = Math.max.apply(null, rekkevidde.map(e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60)));
+      bStart = Math.min(600, Math.floor(forsteMin / 60) * 60);
+      bSluttMin = Math.max(1200, Math.min(24 * 60, Math.ceil(sisteMin / 60) * 60));
+    }
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
+    const pxTime = Math.max(40, Math.min(110, Math.floor((vh - 350) / ((bSluttMin - bStart) / 60))));
+    this._klRange = { start: bStart, slutt: bSluttMin, px: pxTime };
+    const bHoyde = (bSluttMin - bStart) / 60 * pxTime;
+    const alleKolonner = this.klHoldere().concat(['Verkstedet']).map(kn => {
+      const evs = dagensAlle.filter(e => (kn === 'Verkstedet' ? !e.holder || e.type === 'verksted' : (e.holder === kn && e.type !== 'verksted')));
+      const vakt = evs.find(e => e.type === 'vakt');
+      const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
+      const laneEnd = [];
+      const plassert = kort.map(e => {
+        const s = minAv(e.tid), sl = e.slutt ? minAv(e.slutt) : s + 60;
+        let lane = laneEnd.findIndex(t => t <= s);
+        if (lane === -1) { lane = laneEnd.length; laneEnd.push(sl); } else laneEnd[lane] = sl;
+        return { e, s, sl, lane };
+      });
+      const nLanes = Math.max(1, laneEnd.length);
+      return {
+        navn: kn,
+        harNoe: evs.length > 0,
+        erPerson: kn !== 'Verkstedet',
+        apne: kn !== 'Verkstedet' ? () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }) : () => {},
+        navnStil: kn !== 'Verkstedet'
+          ? { appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--lissom-brown)', textDecoration: 'underline', textDecorationColor: 'var(--clay-300)', textUnderlineOffset: '3px' }
+          : { appearance: 'none', border: 'none', background: 'transparent', cursor: 'default', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--text-heading)' },
+        under: [kort.length ? kort.length + (kort.length === 1 ? ' økt' : ' økter') : 'Ingenting planlagt', vakt ? 'Vakt ' + vakt.tid + '–' + vakt.slutt : ''].filter(Boolean).join(' · '),
+        hendelser: plassert.map(p => {
+          const f = farge(p.e);
+          return {
+            tid: p.e.tid + (p.e.slutt ? '–' + p.e.slutt : ''),
+            tittel: p.e.tittel,
+            detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
+            id: p.e.id,
+            ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
+            inn: ev => {
+              const r = ev.currentTarget.getBoundingClientRect();
+              this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top } });
+            },
+            ut: () => this.setState({ klHover: null }),
+            meny: meny(p.e),
+            avatarer: (p.e.deltakere || []).slice(0, 6).map(dl => ({
+              tittel: dl.navn,
+              stil: { width: '18px', height: '18px', borderRadius: '50%', flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clay-50)', color: 'var(--lissom-brown)', border: '1.5px solid ' + (f.kant ? 'var(--lissom-brown)' : 'rgba(46,16,2,.25)'), boxSizing: 'border-box' },
+            })),
+            harAvatarer: (p.e.deltakere || []).length > 0,
+            harFlere: (p.e.deltakere || []).length > 6,
+            flereTekst: '+' + Math.max(0, (p.e.deltakere || []).length - 6),
+            harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
+            merknadStil: { display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px', background: 'var(--terracotta-500)', color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '1px 8px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em' },
+            merknadTekst: (() => { const n = (p.e.deltakere || []).filter(dl => dl.merknad).length; return n + (n === 1 ? ' merknad' : ' merknader'); })(),
+            harNye: !!p.e.nye,
+            nyeTekst: '+' + p.e.nye + (p.e.nye === 1 ? ' ny' : ' nye'),
+            nyeStil: { position: 'absolute', top: '4px', right: '4px', background: 'var(--sage-500)', color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '1px 8px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em' },
+            stil: Object.assign({
+              position: 'absolute',
+              top: (Math.max(0, p.s - bStart) / 60 * pxTime) + 'px',
+              height: Math.max(34, (Math.min(p.sl, bSluttMin) - Math.max(p.s, bStart)) / 60 * pxTime - 4) + 'px',
+              left: 'calc(' + (p.lane * (100 / nLanes)) + '% + 5px)',
+              width: 'calc(' + (100 / nLanes) + '% - 10px)',
+              boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left',
+              border: f.kant || 'none', borderLeft: '3px solid rgba(46,16,2,.28)', borderRadius: '8px', padding: '6px 9px',
+              background: f.bg, color: f.fg, fontSize: '12px', lineHeight: 1.35, overflow: 'hidden',
+              boxShadow: 'var(--shadow-sm)', zIndex: 2, userSelect: 'none',
+              opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none',
+            }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', boxShadow: 'var(--shadow-lg)', cursor: 'grabbing' } : {}),
+          };
+        }),
+      };
+    });
+    const aktiveKolonner = alleKolonner.filter(k => k.harNoe);
+    const kolonner = aktiveKolonner.length ? aktiveKolonner : alleKolonner;
+    const naNu = new Date();
+    const naM = naNu.getHours() * 60 + naNu.getMinutes();
+    const ukeIsos = uked.map((n, i) => { const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i); return isoAv(d); });
+    const ukeAlle = ukeIsos.reduce((acc, iso) => acc.concat(dagEvts(iso).filter(e => e.type !== 'vakt')), []);
+    let wStart = 600, wSlutt = 1200;
+    if (ukeAlle.length) {
+      const f1 = Math.min.apply(null, ukeAlle.map(e => minAv(e.tid)));
+      const s2 = Math.max.apply(null, ukeAlle.map(e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60)));
+      wStart = Math.min(600, Math.floor(f1 / 60) * 60);
+      wSlutt = Math.max(1200, Math.min(24 * 60, Math.ceil(s2 / 60) * 60));
+    }
+    const pxUke = Math.max(36, Math.min(96, Math.floor((vh - 360) / ((wSlutt - wStart) / 60))));
+    if (visning === 'uke') this._klRange = { start: wStart, slutt: wSlutt, px: pxUke };
+    const wHoyde = (wSlutt - wStart) / 60 * pxUke;
+    const ukeDager = uked.map((n, i) => {
+      const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i);
+      const iso = ukeIsos[i];
+      const evs = dagEvts(iso).filter(e => e.type !== 'vakt');
+      const laneEnd = [];
+      const plas = evs.slice().sort((a, b) => minAv(a.tid) - minAv(b.tid)).map(e => {
+        const s = minAv(e.tid), sl = e.slutt ? minAv(e.slutt) : s + 60;
+        let lane = laneEnd.findIndex(t => t <= s);
+        if (lane === -1) { lane = laneEnd.length; laneEnd.push(sl); } else laneEnd[lane] = sl;
+        return { e, s, sl, lane };
+      });
+      const nL = Math.max(1, laneEnd.length);
+      const erIdag = iso === idagIso;
+      const stengtU = !!(this.state.klStengt || {})[iso];
+      return {
+        iso,
+        navn: n + ' ' + d.getDate() + '.',
+        antall: stengtU ? 'Stengt' : (evs.length ? evs.length + (evs.length === 1 ? ' økt' : ' økter') : '–'),
+        velgDag: () => this.setState({ klAnker: iso, klVisning: 'dag' }),
+        hodeStil: { appearance: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '10px 10px', borderRight: '1px solid var(--border-subtle)', background: erIdag ? 'var(--lissom-yellow)' : 'transparent', minWidth: 0 },
+        navnStil: { display: 'block', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px', color: erIdag ? 'var(--lissom-brown)' : 'var(--text-heading)' },
+        antallStil: { display: 'block', fontSize: '11px', color: erIdag ? 'var(--brown-500, var(--lissom-brown))' : 'var(--text-muted)' },
+        kolStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)', background: stengtU ? 'var(--clay-200)' : (d.getDay() === 0 || d.getDay() === 6 ? 'var(--clay-50)' : 'var(--surface-card)'), backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxUke - 1) + 'px, var(--clay-100) ' + (pxUke - 1) + 'px, var(--clay-100) ' + pxUke + 'px)' },
+        naStil: erIdag && naM >= wStart && naM <= wSlutt ? { position: 'absolute', left: 0, right: 0, top: ((naM - wStart) / 60 * pxUke) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
+        hendelser: plas.map(p => {
+          const f = farge(p.e);
+          return {
+            id: p.e.id,
+            tid: p.e.tid, tittel: p.e.tittel,
+            ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
+            meny: meny(p.e),
+            inn: ev => {
+              const r = ev.currentTarget.getBoundingClientRect();
+              this.setState({ klHover: { id: p.e.id, over: true, x: Math.max(10, Math.min(window.innerWidth - 340, r.left + r.width / 2 - 160)), y: r.top } });
+            },
+            ut: () => this.setState({ klHover: null }),
+            harAvatarer: (p.e.deltakere || []).length > 0,
+            antallTekst: String((p.e.deltakere || []).length),
+            harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
+            merknadAntall: String((p.e.deltakere || []).filter(dl => dl.merknad).length),
+            harMeta: (p.e.deltakere || []).length > 0 || (p.e.deltakere || []).some(dl => dl.merknad),
+            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: 'calc(' + (p.lane * (100 / nL)) + '% + 3px)', width: 'calc(' + (100 / nL) + '% - 6px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: 2, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
+          };
+        }),
+      };
+    });
+    const ukeTimer = [];
+    for (let h = wStart / 60; h < wSlutt / 60; h++) ukeTimer.push({ navn: String(h).padStart(2, '0') + ':00', stil: { position: 'absolute', top: ((h - wStart / 60) * pxUke - 1) + 'px', right: '6px', fontSize: '10px', color: 'var(--text-muted)' } });
+    const liste = [];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(anker); d.setDate(anker.getDate() + i); const iso = isoAv(d);
+      const evts = dagEvts(iso);
+      if (evts.length) liste.push({ dagTittel: dagNavn[d.getDay()] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()], hendelser: evts.map(radAv) });
+    }
+    const valgt = alle.find(e => e.id === this.state.klValgtId);
+    const vd = valgt ? new Date(valgt.dato + 'T12:00:00') : null;
+    const varslet = this.state.klVarslet || {};
+    const pct = valgt && valgt.kap ? Math.min(100, Math.round(valgt.pameldt / valgt.kap * 100)) : 0;
+    const steg = { maned: null, uke: 7, dag: 1, liste: 14 };
+    const flytt = retn => () => {
+      if (visning === 'maned') { this.setState({ klAnker: isoAv(new Date(y, m + retn, 1)) }); }
+      else { const d = new Date(anker); d.setDate(d.getDate() + retn * steg[visning]); this.setState({ klAnker: isoAv(d) }); }
+    };
+    const tittel = visning === 'maned' ? mndNavn[m].charAt(0).toUpperCase() + mndNavn[m].slice(1) + ' ' + y
+      : visning === 'uke' ? (() => { const t = new Date(ukeStart); t.setHours(12, 0, 0, 0); t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7)); const j1 = new Date(t.getFullYear(), 0, 4); const ukeNr = 1 + Math.round(((t - j1) / 86400000 - 3 + ((j1.getDay() + 6) % 7)) / 7); return 'Uke ' + ukeNr + ' · ' + ukeStart.getDate() + '. ' + mndNavn[ukeStart.getMonth()] + ' – ' + ukeSlutt.getDate() + '. ' + mndNavn[ukeSlutt.getMonth()]; })()
+      : visning === 'dag' ? dagNavn[anker.getDay()] + ' ' + anker.getDate() + '. ' + mndNavn[m] + ' ' + y
+      : 'Fra ' + anker.getDate() + '. ' + mndNavn[m];
+    const kommende = alle.filter(e => e.dato >= idagIso && e.type !== 'verksted' && !e.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).slice(0, 4);
+    return {
+      erAdminKalender: side === 'adminkalender',
+      ikkeKFokus: !(this.state.kFokus && this.state.kRed),
+      kFokusVis: !!(this.state.kFokus && this.state.kRed),
+      kTilbakeKalender: () => this.setState({ kRed: false, kFokus: false, side: 'adminkalender' }),
+      adminNavKalender: this.adminMeny('Kalender'),
+      klGaKalender: this.go('adminkalender'),
+      klGaPameldte: this.go('adminpameldte'),
+      klKommende: kommende.map(e => {
+        const d = new Date(e.dato + 'T12:00:00');
+        return { tid: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '.', hva: e.tittel, detalj: e.tid + (e.slutt ? '–' + e.slutt : '') + (detalj(e) ? ' · ' + detalj(e) : ''), velg: () => { this.setState({ side: 'adminkalender', klValgtId: e.id }); window.scrollTo(0, 0); } };
+      }),
+      klTittel: tittel, klForrige: flytt(-1), klNesteSteg: flytt(1),
+      klIdag: () => this.setState({ klAnker: idagIso }),
+      klSok: this.state.klSok || '',
+      settKlSok: e => this.setState({ klSok: e.target.value }),
+      ...(() => {
+        const q = (this.state.klSok || '').trim().toLowerCase();
+        if (!q) return { klSokVises: false, klSokTreff: [], klSokTom: false };
+        const treff = alle.filter(e => !e.avlyst && (e.tittel.toLowerCase().indexOf(q) >= 0 || (e.holder || '').toLowerCase().indexOf(q) >= 0 || (e.deltakere || []).some(p => p.navn.toLowerCase().indexOf(q) >= 0)))
+          .sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).slice(0, 8)
+          .map(e => {
+            const d2 = new Date(e.dato + 'T12:00:00');
+            const dl = (e.deltakere || []).find(p => p.navn.toLowerCase().indexOf(q) >= 0);
+            return { tittel: e.tittel, under: uked[(d2.getDay() + 6) % 7] + ' ' + d2.getDate() + '. ' + mndNavn[d2.getMonth()] + ' · ' + e.tid + (dl ? ' · ' + dl.navn : ''), velg: () => this.setState({ klAnker: e.dato, klVisning: 'dag', klValgtId: e.id, klSok: '' }) };
+          });
+        return { klSokVises: true, klSokTreff: treff, klSokTom: treff.length === 0 };
+      })(),
+      klErStengt: !!(this.state.klStengt || {})[dagIso],
+      klStengTekst: (this.state.klStengt || {})[dagIso] ? 'Åpne dagen' : 'Steng dagen',
+      klStengVeksle: () => this.klIkkeEnda('Å stenge dagen'),
+      klDagSammendrag: (() => { const k2 = dagensAlle.filter(e => e.type !== 'verksted' && e.type !== 'vakt' && e.type !== 'brenning' && !e.avlyst); if (!k2.length) return 'Ingen økter denne dagen'; const med = k2.filter(e => e.kap); const vl = k2.reduce((s2, e) => s2 + ((e.venteliste || []).length), 0); return [k2.length + (k2.length === 1 ? ' økt' : ' økter'), med.length ? med.reduce((s2, e) => s2 + e.pameldt, 0) + ' av ' + med.reduce((s2, e) => s2 + e.kap, 0) + ' plasser' : '', vl ? vl + ' på venteliste' : ''].filter(Boolean).join(' · '); })(),
+      klAngreVises: !!this.state.klAngre,
+      klAngreTekst: (this.state.klAngre || {}).tekst || '',
+      klAngreGjor: () => this.klAngreUtfor(),
+      klKonfliktVises: !!this.state.klKonflikt,
+      klKonfliktHolder: (this.state.klKonflikt || {}).holder || '',
+      klKonfliktNy: this.state.klKonflikt ? this.state.klKonflikt.flytting.tekst : '',
+      klKonfliktMot: this.state.klKonflikt ? this.state.klKonflikt.motTittel + ' · ' + this.state.klKonflikt.motTid : '',
+      klKonfliktBekreft: () => this.klBrukFlytt(this.state.klKonflikt.flytting),
+      klKonfliktAvbryt: () => this.setState({ klKonflikt: null }),
+      klVisninger: [['dag', 'Dag'], ['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']].map(v => ({
+        navn: v[1], velg: () => this.setState({ klVisning: v[0] }),
+        stil: { appearance: 'none', cursor: 'pointer', border: '1.5px solid var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 20px', fontFamily: 'inherit', fontSize: '17px', fontWeight: visning === v[0] ? 700 : 500, background: visning === v[0] ? 'var(--lissom-yellow)' : 'var(--surface-card)', color: visning === v[0] ? 'var(--lissom-brown)' : 'var(--text-muted)' },
+      })),
+      klErManed: visning === 'maned', klErUke: visning === 'uke', klErDag: visning === 'dag', klErListe: visning === 'liste',
+      klUkedager: uked, klUker: uker, klUkeDager: ukeDager,
+      klUkeTimer: ukeTimer,
+      klUkeHodeStil: { display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--clay-100)' },
+      klUkeKroppStil: { display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden' },
+      klUkeGutterStil: { position: 'relative', height: wHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
+      klListe: liste,
+      klBoardKolonner: kolonner,
+      klBoardTimer: (() => { const t = []; for (let h = bStart / 60; h < bSluttMin / 60; h++) t.push({ navn: String(h).padStart(2, '0') + ':00', stil: { position: 'absolute', top: ((h - bStart / 60) * pxTime - 1) + 'px', right: '8px', fontSize: '11px', color: 'var(--text-muted)' } }); return t; })(),
+      klBoardHodeStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', borderBottom: '1px solid var(--border-subtle)', background: 'var(--clay-100)' },
+      klBoardKroppStil: { display: 'grid', gridTemplateColumns: '56px repeat(' + kolonner.length + ', 1fr)', position: 'relative', background: 'var(--surface-card)', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', overflow: 'hidden' },
+      klGutterStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)' },
+      klKolonneStil: { position: 'relative', height: bHoyde + 'px', borderRight: '1px solid var(--border-subtle)', backgroundImage: 'repeating-linear-gradient(to bottom, transparent 0, transparent ' + (pxTime - 1) + 'px, var(--clay-100) ' + (pxTime - 1) + 'px, var(--clay-100) ' + pxTime + 'px)' },
+      klNaStil: dagIso === idagIso && naM >= bStart && naM <= bSluttMin ? { position: 'absolute', left: '56px', right: 0, top: ((naM - bStart) / 60 * pxTime) + 'px', height: '2px', background: 'var(--terracotta-500)', zIndex: 4, pointerEvents: 'none' } : { display: 'none' },
+      klLegende: Object.keys(info).map(t => ({ navn: info[t].navn, prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: info[t].kant ? 'transparent' : info[t].bg, border: info[t].kant || 'none' } })).concat([
+        { navn: 'Fullt', prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: 'transparent', border: '2px solid var(--terracotta-600)' } },
+        { navn: 'Ingen påmeldte, under 3 dager til', prikkStil: { width: '12px', height: '12px', borderRadius: '4px', flex: '0 0 auto', background: 'var(--clay-200)', animation: 'klPuls 1.6s ease-in-out infinite' } },
+        { navn: 'Nye påmeldinger siden sist', prikkStil: { width: '12px', height: '12px', borderRadius: '50%', flex: '0 0 auto', background: 'var(--sage-500)' } },
+      ]),
+      ...(() => {
+        const menyState = this.state.klMeny;
+        const menyEvt = menyState ? alle.find(e => e.id === menyState.id) : null;
+        const knappStil = { appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '9px 12px', borderRadius: '7px', font: 'var(--type-body-sm)', fontWeight: 600, color: 'var(--text-heading)' };
+        // Kursholderprofilen.
+        //
+        // Her sto rolle, kurs og timetall skrevet inn i koden for Monica og
+        // Joakim. Naa kommer de fra registeret naar det er hentet; er det
+        // ikke det, staar navnet og dagens okter — og feltene tomme framfor
+        // fylt med noe vi har funnet paa.
+        const hNavn = this.state.klHolderVis;
+        const hReg = hNavn
+          ? (this.state.adminKursholdere || []).find(h => h.navn === hNavn)
+          : null;
+        const hProfil = hNavn
+          ? {
+              rolle: (hReg && hReg.rolle) || '',
+              kurs:  (hReg && hReg.kurs) || '',
+              timer: (hReg && hReg.timerMnd) ? hReg.timerMnd + ' t denne måneden' : '',
+            }
+          : null;
+        return {
+          klMenyVises: !!menyEvt,
+          klMenyLukk: () => this.setState({ klMeny: null }),
+          klMenyHindre: e => { e.preventDefault(); this.setState({ klMeny: null }); },
+          klMenyStil: menyEvt ? { position: 'fixed', left: Math.min(menyState.x, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 250) + 'px', top: Math.min(menyState.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 230) + 'px', zIndex: 80, background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', padding: '6px', minWidth: '218px', display: 'flex', flexDirection: 'column' } : { display: 'none' },
+          klMenyTittel: menyEvt ? menyEvt.tittel : '',
+          klMenyValg: menyEvt ? [
+            { navn: 'Rediger økten', gjor: () => this.klApneEnkel(menyEvt) },
+            { navn: 'Full redigering av kurset', gjor: () => this.klApneKurs(menyEvt) },
+            { navn: 'Deltakere og venteliste', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klFlyttVis: false, klBekreftAvlys: false }) },
+            { navn: 'Flytt dato…', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klFlyttVis: true, klFlyttDato: menyEvt.dato, klFlyttTid: menyEvt.tid, klBekreftAvlys: false }) },
+            { navn: 'Dupliser til neste uke', gjor: () => {
+              const d2 = new Date(menyEvt.dato + 'T12:00:00'); d2.setDate(d2.getDate() + 7);
+              const iso2 = d2.getFullYear() + '-' + String(d2.getMonth() + 1).padStart(2, '0') + '-' + String(d2.getDate()).padStart(2, '0');
+              const ny = { id: 'ny|' + iso2 + '|' + menyEvt.tid + '|' + menyEvt.tittel + '|dup', dato: iso2, tid: menyEvt.tid, slutt: menyEvt.slutt, tittel: menyEvt.tittel, type: menyEvt.type, holder: menyEvt.holder, kap: menyEvt.kap, pameldt: 0, deltakere: [], venteliste: [], nye: 0 };
+              this.setState(s => ({ klEkstra: (s.klEkstra || []).concat([ny]), klMeny: null, kvittering: menyEvt.tittel + ' er satt opp ' + dagNavn[d2.getDay()] + ' ' + d2.getDate() + '. ' + mndNavn[d2.getMonth()] + ' kl. ' + menyEvt.tid }));
+            } },
+            ...(menyEvt.venteliste && menyEvt.venteliste.length ? [{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn, gjor: () => this.setState(s => ({ klMeny: null, klTildelt: Object.assign({}, s.klTildelt, { [menyEvt.id]: ((s.klTildelt || {})[menyEvt.id] || []).concat([menyEvt.venteliste[0].navn]) }) })) }] : []),
+            menyEvt.avlyst
+              ? { navn: 'Gjenopprett økten', gjor: () => this.setState(s => ({ klMeny: null, klAvlyst: Object.assign({}, s.klAvlyst, { [menyEvt.id]: false }) })) }
+              : { navn: 'Avlys økten…', gjor: () => this.setState({ klMeny: null, klValgtId: menyEvt.id, klBekreftAvlys: true, klFlyttVis: false }) },
+          ].map(v => ({ navn: v.navn, gjor: v.gjor, stil: knappStil })) : [],
+          klSideGridStil: this.erSmal() ? { display: 'block' } : { display: 'grid', gridTemplateColumns: (visning === 'dag' ? '476px' : '272px') + ' minmax(0, 1fr)', gap: 'var(--space-5)', alignItems: 'start' },
+          klBoksBStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '22px', overflow: 'hidden', padding: 'var(--space-2) 0' },
+          klBoksHodeStil: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-3)', padding: 'var(--space-3) var(--space-5) var(--space-2)' },
+          klBoksIndreStil: {},
+          klBoksNStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '22px', padding: 'var(--space-4) var(--space-5)' },
+          klBoksEtikettStil: { fontSize: '12px', letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 'var(--space-3)' },
+          klBoksPIndreStil: {},
+          klToppKortStil: this.erSmal()
+            ? { display: 'grid', gap: 'var(--space-4)', marginBottom: 'var(--space-4)' }
+            : { gridColumn: '1 / -1', gridRow: '1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' },
+          klAsideStil: this.erSmal()
+            ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }
+            : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '2' },
+          klHovedStil: this.erSmal()
+            ? { minWidth: 0 }
+            : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-17px' : visning === 'uke' ? '17px' : 0 },
+          klSideAntall: this.kursData().length + ' kurs',
+          klSideKurs: this.kursData().map(k => ({
+            navn: k.navn,
+            type: k.type,
+            pris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim() + ' kr',
+            ikkePub: k.publisert === false,
+            kortStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '4px', borderLeftStyle: 'solid', borderLeftColor: k.type === 'Event' ? (k.navn === 'Paint on Pots' ? 'var(--slip-500)' : 'var(--terracotta-500)') : 'var(--lissom-yellow)', borderRadius: 'var(--radius-md)', padding: '12px 14px', cursor: 'grab', userSelect: 'none', opacity: k.publisert === false ? .6 : 1 },
+            ned: e => this.klNyDragStart(k, e),
+          })),
+          // Beskjedene i toppen.
+          //
+          // Her sto tre oppdiktede meldinger fra designverktoyet — «Silje
+          // Bratt: kan jeg bytte fra torsdag til mandag?». De ville sett ekte
+          // ut i admin, og eieren ville lett etter en samtale som ikke fantes.
+          //
+          // Naa er det henvendelsene som faktisk er kommet inn og ikke er
+          // besvart. Samme kilde som kortet «Ubesvarte meldinger» paa
+          // Oversikt — to steder skal ikke telle hver sin sannhet.
+          klBeskjeder: (this.state.adminForesporsler || [])
+            .filter(f => f.status === 'Ubesvart')
+            .slice(0, 5)
+            .map(f => ({
+              fra: f.navn || 'Ukjent',
+              rolle: f.hva || 'Henvendelse',
+              tekst: f.tekst || '',
+              tid: f.tid || '',
+              ulest: true,
+            }))
+          .map((b, i) => ({ ...b, ulest: b.ulest && !(this.state.klBLest || {})[i], prikkStil: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', marginTop: '6px', background: b.ulest && !(this.state.klBLest || {})[i] ? 'var(--terracotta-500)' : 'transparent' }, apne: () => this.setState(s => ({ klBeskjedVis: { fra: b.fra, rolle: b.rolle, tekst: b.tekst, tid: b.tid }, klBSvar: '', klBSvarSendt: false, klBLest: Object.assign({}, s.klBLest, { [i]: true }) })) })),
+          klGaBeskjeder: this.go('adminbeskjeder'),
+          ...(() => {
+            const bv = this.state.klBeskjedVis;
+            return {
+              klBeskjedVises: !!bv,
+              klBeskjedValgt: bv || { fra: '', rolle: '', tekst: '', tid: '' },
+              klBeskjedLukk: () => this.setState({ klBeskjedVis: null }),
+              klBSvar: this.state.klBSvar || '',
+              settKlBSvar: e => this.setState({ klBSvar: e.target.value, klBSvarSendt: false }),
+              // Svaret sendes ikke herfra enda. «Aapne alle beskjeder →»
+              // gaar til skjermen som faktisk sender.
+              klBSvarSend: () => this.klIkkeEnda('Å svare herfra'),
+              klBSvarSendtVis: !!this.state.klBSvarSendt,
+              klBSvarSendtTekst: bv ? 'Svaret er sendt til ' + bv.fra + '.' : '',
+            };
+          })(),
+          klVlSide: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).reduce((acc, e) => acc.concat(e.venteliste.map(v => {
+            const d = new Date(e.dato + 'T12:00:00');
+            return { navn: v.navn, kurs: e.tittel, under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · #' + v.posisjon, ned: ev => this.klVlDragStart({ navn: v.navn, srcId: e.id }, ev) };
+          })), []).slice(0, 8),
+          klVlSideTom: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).length === 0,
+          ...(() => {
+            const vb = this.state.klVlBekreft;
+            const malEvt = vb ? alle.find(e => e.id === vb.malId) : null;
+            const md = malEvt ? new Date(malEvt.dato + 'T12:00:00') : null;
+            return {
+              klVlBVises: !!vb,
+              klVlBNavn: vb ? vb.navn : '',
+              klVlBKurs: malEvt ? malEvt.tittel : '',
+              klVlBTid: malEvt ? dagNavn[md.getDay()] + ' ' + md.getDate() + '. ' + mndNavn[md.getMonth()] + ' · ' + malEvt.tid + (malEvt.slutt ? '–' + malEvt.slutt : '') : '',
+              klVlBBelegg: malEvt && malEvt.kap ? malEvt.pameldt + ' av ' + malEvt.kap + ' plasser er tatt' : '',
+              klVlBAvbryt: () => this.setState({ klVlBekreft: null }),
+              klVlBBekreft: () => this.klIkkeEnda('Å tildele en plass'),
+            };
+          })(),
+          klNyDragVises: !!this.state.klNyDrag,
+          klNyDragNavn: this.state.klNyDrag ? this.state.klNyDrag.navn : '',
+          klNyDragStil: this.state.klNyDrag ? { position: 'fixed', left: (this.state.klNyDrag.x + 12) + 'px', top: (this.state.klNyDrag.y + 8) + 'px', zIndex: 90, pointerEvents: 'none', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, boxShadow: 'var(--shadow-lg)' } : { display: 'none' },
+          ...(() => {
+            const b = this.state.klBekreft;
+            return {
+              klBVises: !!b,
+              klBTittel: b ? b.kursNavn : '',
+              klBDato: this.state.klBDato || '',
+              settKlBDato: e => this.setState({ klBDato: e.target.value }),
+              klBFra: this.state.klBFra || '',
+              settKlBFra: e => this.setState({ klBFra: e.target.value }),
+              klBTil: this.state.klBTil || '',
+              settKlBTil: e => this.setState({ klBTil: e.target.value }),
+              klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n }), stil: chipStil(this.state.klBHolder === n, null) })),
+              klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
+              klBErGjenta: (this.state.klBGjenta || 'Én gang') !== 'Én gang',
+              klBAntall: this.state.klBAntall || '4',
+              settKlBAntall: e => this.setState({ klBAntall: e.target.value }),
+              klBAvbryt: () => this.setState({ klBekreft: null }),
+              klBBekreft: () => this.klIkkeEnda('Å sette opp et kurs på en dato'),
+            };
+          })(),
+          klRedigerValgt: () => valgt && this.klApneEnkel(valgt),
+          klTildelNesteValgt: () => this.klIkkeEnda('Å tildele en plass'),
+          ...(() => {
+            const redEvt = this.state.klRedId ? alle.find(e => e.id === this.state.klRedId) : null;
+            const felt = { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', background: 'var(--clay-50)', color: 'var(--text-heading)' };
+            const rBase = redEvt ? (redEvt.tittel || '').split(' · ')[0] : '';
+            const rSerie = redEvt ? alle.filter(e => (e.tittel || '').split(' · ')[0] === rBase && e.dato >= idagIso).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)) : [];
+            const rVisAlle = !!this.state.klRVisAlle;
+            return {
+              klRedVises: !!redEvt,
+              klRFeltStil: felt,
+              klRAvlystVal: !!this.state.klRAvlyst,
+              toggleKlRAvlyst: () => this.setState(s => ({ klRAvlyst: !s.klRAvlyst })),
+              klRPublisertVal: this.state.klRPublisert !== false,
+              toggleKlRPublisert: () => this.setState(s => ({ klRPublisert: s.klRPublisert === false })),
+              klRDatoer: (rVisAlle ? rSerie : rSerie.slice(0, 3)).map(e => {
+                const d = new Date(e.dato + 'T12:00:00');
+                const denne = e.id === redEvt.id;
+                return {
+                  tekst: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · ' + e.tid,
+                  stil: { display: 'inline-flex', alignItems: 'center', gap: '7px', appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 6px 6px 14px', font: 'var(--type-body-sm)', fontWeight: denne ? 700 : 600, border: denne ? '1.5px solid var(--lissom-brown)' : '1.5px solid var(--border-subtle)', background: denne ? 'var(--lissom-yellow)' : 'var(--surface-card)', color: denne ? 'var(--lissom-brown)' : 'var(--text-heading)', textDecoration: e.avlyst ? 'line-through' : 'none', opacity: e.avlyst ? .55 : 1 },
+                  velg: () => this.klApneEnkel(e),
+                  slett: ev => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.setState(s => Object.assign({ klSlettede: Object.assign({}, s.klSlettede, { [e.id]: true }) }, e.id === redEvt.id ? { klRedId: null } : {})); },
+                };
+              }),
+              klRHarFlere: rSerie.length > 3 && !rVisAlle,
+              klRVisAlleTekst: 'Vis alle ' + rSerie.length + ' datoer',
+              klRVisAlleKlikk: () => this.setState({ klRVisAlle: true }),
+              klRNyVis: !!this.state.klRNyVis,
+              klRNySkjult: !this.state.klRNyVis,
+              klRNyToggle: () => this.setState(s => ({ klRNyVis: !s.klRNyVis })),
+              klRNyDato: this.state.klRNyDato || '',
+              settKlRNyDato: e => this.setState({ klRNyDato: e.target.value }),
+              klRNyFra: this.state.klRNyFra || '',
+              settKlRNyFra: e => this.setState({ klRNyFra: e.target.value }),
+              klRNyTil: this.state.klRNyTil || '',
+              settKlRNyTil: e => this.setState({ klRNyTil: e.target.value }),
+              klRNyLagre: () => this.klIkkeEnda('Å legge til en dato'),
+              klRKanKurs: redEvt ? this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]) : false,
+              klRNavn: this.state.klRNavn || '',
+              settKlRNavn: e => this.setState({ klRNavn: e.target.value }),
+              klRDato: this.state.klRDato || '',
+              settKlRDato: e => this.setState({ klRDato: e.target.value }),
+              klRFra: this.state.klRFra || '',
+              settKlRFra: e => this.setState({ klRFra: e.target.value }),
+              klRTil: this.state.klRTil || '',
+              settKlRTil: e => this.setState({ klRTil: e.target.value }),
+              klRPlasser: this.state.klRPlasser || '',
+              settKlRPlasser: e => this.setState({ klRPlasser: e.target.value }),
+              klRPris: this.state.klRPris || '',
+              settKlRPris: e => this.setState({ klRPris: e.target.value }),
+              klRBeskrivelse: this.state.klRBeskrivelse || '',
+              settKlRBeskrivelse: e => this.setState({ klRBeskrivelse: e.target.value }),
+              klRHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klRHolder: n }), stil: chipStil(this.state.klRHolder === n, null) })),
+              klRAvbryt: () => this.setState({ klRedId: null }),
+              klRFull: () => redEvt && this.klApneKurs(redEvt),
+              klRDeltakere: () => redEvt && this.setState({ klRedId: null, klValgtId: redEvt.id, klFlyttVis: false, klBekreftAvlys: false }),
+              klRLagre: () => this.klIkkeEnda('Redigering av økten'),
+            };
+          })(),
+          ...(() => {
+            const dv = this.state.klDeltakerVis;
+            const dEpost = dv ? dv.navn.toLowerCase().replace(/ /g, '.').replace(/[^a-z.]/g, '') + '@epost.no' : '';
+            return {
+              klDeltakerVises: !!dv,
+              klDeltakerHarMerknad: !!(dv && dv.merknad),
+              klDeltaker: dv ? { navn: dv.navn, status: dv.status, merknad: dv.merknad || '', okt: dv.okt, tid: dv.tid, epost: dEpost, tlf: '+47 9' + String((dv.navn.length * 731) % 10000000).padStart(7, '0').replace(/(\d{2})(\d{2})(\d{3})/, '$1 $2 $3') } : { navn: '', status: '', okt: '', tid: '', epost: '', tlf: '' },
+              klDeltakerLukk: () => this.setState({ klDeltakerVis: null }),
+              klDBeskjed: this.state.klDBeskjed || '',
+              settKlDBeskjed: e => this.setState({ klDBeskjed: e.target.value }),
+              klDSend: () => { if ((this.state.klDBeskjed || '').trim() && dv) this.setState({ klDSendtTil: dv.navn, klDBeskjed: '' }); },
+              klDSendt: !!dv && this.state.klDSendtTil === dv.navn,
+              klDSendtTekst: dv ? 'Beskjeden er sendt til ' + dv.navn + ' på SMS og e-post.' : '',
+            };
+          })(),
+          klHolderVises: !!hProfil,
+          klHolderLukk: () => this.setState({ klHolderVis: null }),
+          klHolderProfil: hProfil ? { navn: hNavn, rolle: hProfil.rolle, timer: hProfil.timer, kurs: hProfil.kurs } : { navn: '', rolle: '', timer: '', kurs: '' },
+          klHolderOkter: hProfil ? dagensAlle.filter(e => e.holder === hNavn && e.type !== 'verksted' && e.type !== 'vakt').map(e => ({ tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: belegg(e) ? belegg(e) + ' plasser' : '', prikkStil: prikk(e), velg: () => { this.setState({ klHolderVis: null }); this.klApneKurs(e); } })) : [],
+          klHolderOkterTom: hProfil ? dagensAlle.filter(e => e.holder === hNavn && e.type !== 'verksted' && e.type !== 'vakt').length === 0 : true,
+          klHBeskjed: this.state.klHBeskjed || '',
+          settKlHBeskjed: e => this.setState({ klHBeskjed: e.target.value }),
+          klHSend: () => { if ((this.state.klHBeskjed || '').trim()) this.setState({ klHSendtTil: hNavn, klHBeskjed: '' }); },
+          klHSendt: !!hNavn && this.state.klHSendtTil === hNavn,
+          klHSendtTekst: 'Beskjeden er sendt til ' + hNavn + ' på SMS og e-post.',
+        };
+      })(),
+      klHarValgt: !!valgt,
+      klNyDNavn: this.state.klNyDNavn || '',
+      klNyDTlf: this.state.klNyDTlf || '',
+      settKlNyDNavn: e => this.setState({ klNyDNavn: e.target.value }),
+      settKlNyDTlf: e => this.setState({ klNyDTlf: e.target.value }),
+      klNyDBetValg: ['Vipps', 'Kontant'].map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Vipps') === bn) })),
+      klNyDLeggTil: () => this.klIkkeEnda('Å legge til en deltaker'),
+      klValgt: valgt ? {
+        tittel: valgt.tittel,
+        typeNavn: info[valgt.type].navn,
+        badgeStil: { display: 'inline-flex', alignItems: 'center', borderRadius: 'var(--radius-pill)', padding: '3px 12px', fontSize: '12px', fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', background: info[valgt.type].bg, color: info[valgt.type].fg, border: info[valgt.type].kant || 'none' },
+        datoTekst: dagNavn[vd.getDay()] + ' ' + vd.getDate() + '. ' + mndNavn[vd.getMonth()] + ' ' + vd.getFullYear(),
+        tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : ''),
+        holder: valgt.holder || 'Ikke tildelt',
+        harKap: !!valgt.kap,
+        kapTekst: valgt.pameldt + ' av ' + valgt.kap + ' plasser',
+        beleggStil: { width: pct + '%', height: '8px', borderRadius: '4px', background: pct >= 100 ? 'var(--terracotta-500)' : 'var(--sage-500)' },
+        deltakere: valgt.deltakere.map(p => ({ navn: p.navn, status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status, ny: !!p.ny, velg: () => this.setState({ klDeltakerVis: { navn: p.navn, status: p.status, merknad: p.merknad || '', okt: valgt.tittel, tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : '') + ' · ' + valgt.dato }, klDBeskjed: '', klDSendtTil: null }) })),
+        ingenDeltakere: !!valgt.kap && valgt.deltakere.length === 0,
+        harVenteliste: valgt.venteliste.length > 0,
+        venteliste: valgt.venteliste.map(v => ({ navn: v.navn, pos: '#' + v.posisjon, erVarslet: !!varslet[valgt.id + v.navn], ikkeVarslet: !varslet[valgt.id + v.navn], tilby: () => this.setState(s => ({ klVarslet: Object.assign({}, s.klVarslet, { [valgt.id + v.navn]: true }) })) })),
+        erAvlyst: !!valgt.avlyst, ikkeAvlyst: !valgt.avlyst,
+        kanEndres: valgt.type !== 'verksted',
+      } : { kanEndres: false },
+      ...(() => {
+        const hv = this.state.klHover;
+        const he = hv ? alle.find(e => e.id === hv.id) : null;
+        if (!he) return { klHoverVises: false, klHover: { deltakere: [], venteliste: [] } };
+        const hd = new Date(he.dato + 'T12:00:00');
+        return {
+          klHoverVises: true,
+          klHover: {
+            stil: { position: 'fixed', left: hv.x + 'px', top: hv.y + 'px', transform: 'translateY(calc(-100% - 10px))', zIndex: 70, width: '320px', background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderRadius: '14px', boxShadow: 'var(--shadow-lg)', padding: 'var(--space-5)', pointerEvents: 'none', boxSizing: 'border-box' },
+            typeNavn: info[he.type].navn,
+            badgeStil: { display: 'inline-flex', alignItems: 'center', borderRadius: 'var(--radius-pill)', padding: '2px 10px', fontSize: '11px', fontWeight: 700, letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', background: info[he.type].bg, color: info[he.type].fg, border: info[he.type].kant || 'none' },
+            tittel: he.tittel,
+            dato: dagNavn[hd.getDay()] + ' ' + hd.getDate() + '. ' + mndNavn[hd.getMonth()] + ' · ' + he.tid + (he.slutt ? '–' + he.slutt : ''),
+            holder: he.holder ? 'Kursholder: ' + he.holder : '',
+            kap: he.kap ? he.pameldt + ' av ' + he.kap + ' plasser' + (he.venteliste.length ? ' · ' + he.venteliste.length + ' på venteliste' : '') : '',
+            erAvlyst: !!he.avlyst,
+            deltakere: (he.deltakere || []).slice(0, 5).map(dl => ({ navn: dl.navn, status: dl.merknad ? '⚠ ' + dl.merknad : dl.status })),
+            harDeltakere: (he.deltakere || []).length > 0,
+            flere: (he.deltakere || []).length > 5 ? '+ ' + ((he.deltakere || []).length - 5) + ' til' : '',
+          },
+        };
+      })(),
+      klLukk: () => this.setState({ klValgtId: null, klFlyttVis: false, klBekreftAvlys: false }),
+      klStopp: e => e.stopPropagation(),
+      klHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => valgt && this.setState(s => ({ klHolder: Object.assign({}, s.klHolder, { [valgt.id]: n }) })), stil: chipStil(!!valgt && valgt.holder === n, null) })),
+      klFlyttVises: !!this.state.klFlyttVis,
+      klVisFlytt: () => this.setState(s => ({ klFlyttVis: !s.klFlyttVis, klBekreftAvlys: false, klFlyttDato: valgt ? valgt.dato : '', klFlyttTid: valgt ? valgt.tid : '' })),
+      klFlyttDato: this.state.klFlyttDato || '',
+      settKlFlyttDato: e => this.setState({ klFlyttDato: e.target.value }),
+      klFlyttTid: this.state.klFlyttTid || '',
+      settKlFlyttTid: e => this.setState({ klFlyttTid: e.target.value }),
+      klFlyttLagre: () => this.klIkkeEnda('Flytting av en dato'),
+      klBekreftAvlysVises: !!this.state.klBekreftAvlys,
+      klAvlysStart: () => this.setState({ klBekreftAvlys: true, klFlyttVis: false }),
+      klAvlysAngre: () => this.setState({ klBekreftAvlys: false }),
+      klAvlysBekreft: () => this.klIkkeEnda('Avlysing'),
+      klGjenopprett: () => this.klIkkeEnda('Å gjenopprette en økt'),
+      klRapVises: !!this.state.klRapVis,
+      klRapApne: () => this.setState({ klRapVis: true }),
+      klRapLukk: () => this.setState({ klRapVis: false }),
+      klRapTittel: dagNavn[anker.getDay()] + ' ' + anker.getDate() + '. ' + mndNavn[m] + ' ' + y,
+      klRapRader: dagensAlle.map(e => ({
+        tid: e.tid + (e.slutt ? '–' + e.slutt : ''),
+        tittel: e.tittel,
+        holder: e.holder || '—',
+        status: e.avlyst ? 'Avlyst' : (e.kap ? e.pameldt + ' av ' + e.kap + ' påmeldt' : (e.type === 'vakt' ? 'Vakt' : 'Verksted')),
+        prikkStil: prikk(e),
+      })),
+      klRapTom: dagensAlle.length === 0,
+      klRapSum: (() => {
+        const okter = dagensAlle.filter(e => e.kap && !e.avlyst);
+        const pam = okter.reduce((a, e) => a + e.pameldt, 0);
+        const kap = okter.reduce((a, e) => a + e.kap, 0);
+        return [
+          { navn: 'Økter', verdi: String(okter.length) },
+          { navn: 'Påmeldte', verdi: String(pam) },
+          { navn: 'Ledige plasser', verdi: String(Math.max(0, kap - pam)) },
+          { navn: 'Avlyst', verdi: String(dagensAlle.filter(e => e.avlyst).length) },
+        ];
+      })(),
+      klSkrivUt: () => window.print(),
+      klNotat: this.state.klNotat ?? (() => { try { return localStorage.getItem('lissomKlNotat') || ''; } catch (e) { return ''; } })(),
+      settKlNotat: e => { const v = e.target.value; try { localStorage.setItem('lissomKlNotat', v); } catch (x) {} this.setState({ klNotat: v }); },
+      klPaminListe: this.klPaminData().map((p, i) => ({
+        tekst: p.tekst,
+        gjort: !!p.gjort,
+        tekstStil: { flex: 1, minWidth: 0, fontSize: 'var(--text-sm)', fontWeight: 600, color: p.gjort ? 'var(--text-muted)' : 'var(--text-heading)', textDecoration: p.gjort ? 'line-through' : 'none' },
+        veksl: () => this.klPaminSett(this.klPaminData().map((x, j) => (j === i ? Object.assign({}, x, { gjort: !x.gjort }) : x))),
+        slett: () => this.klPaminSett(this.klPaminData().filter((x, j) => j !== i)),
+      })),
+      klPaminTom: this.klPaminData().length === 0,
+      klPaminNy: this.state.klPaminNy || '',
+      settKlPaminNy: e => this.setState({ klPaminNy: e.target.value }),
+      klPaminEnter: e => { if (e.key === 'Enter' && (this.state.klPaminNy || '').trim()) this.klPaminLeggTil(); },
+      klPaminLeggTilKlikk: () => { if ((this.state.klPaminNy || '').trim()) this.klPaminLeggTil(); },
+      klInneVal: !!this.state.klInne,
+      klUteVal: !this.state.klInne,
+      klStempleTekst: this.state.klInne ? 'Stemple ut' : 'Stemple inn',
+      klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '8px 18px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap' },
+      klStempleStatus: this.state.klInne ? 'Innstemplet ' + (this.state.klInneTid || '') : 'Ikke innstemplet',
+      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.state.klInne ? 'var(--sage-500)' : 'var(--clay-300)' },
+      klStemple: () => this.klIkkeEnda('Inn- og utstempling'),
+      klIcsVises: !!this.state.klIcsVis,
+      klIcsApne: () => this.setState({ klIcsVis: true }),
+      klIcsLukk: () => this.setState({ klIcsVis: false }),
+      klIcsMarker: e => e.target.select(),
+      klIcsUrl: 'webcal://lissom.no/api/kalender.ics?nokkel=•••',
+      klIcsPaminUrl: 'webcal://lissom.no/api/paminnelser.ics?nokkel=•••',
+      klKasse: () => this.setState({ klKasseVis: true }),
+      klKasseVises: !!this.state.klKasseVis,
+      klKasseLukk: () => this.setState({ klKasseVis: false }),
+    };
+  }
+
+  klApneEnkel(evt) {
+    const base = (evt.tittel || '').split(' · ')[0];
+    const k = this.kursData().find(x => x.navn === base) || {};
+    this.setState({ klMeny: null, klValgtId: null, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!(this.state.klAvlyst || {})[evt.id], klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '' });
+  }
+
+  klApneKurs(evt) {
+    const base = (evt.tittel || '').split(' · ')[0];
+    const liste = this.kursData();
+    const i = liste.findIndex(k => k.navn === base);
+    if (i < 0) { this.setState({ klValgtId: evt.id, klFlyttVis: false, klBekreftAvlys: false, klMeny: null }); return; }
+    const k = liste[i];
+    this.setState({ side: 'admin', klMeny: null, klValgtId: null, kFokus: true, kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: (k.pris || '').replace(/[^\d ]/g, '').trim(), kPlasser: ((k.pameldte || '').split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) });
+    window.scrollTo(0, 0);
+  }
+
+  klBrukFlytt(f) {
+    this.setState(st => {
+      const gml = (st.klEndringer || {})[f.id];
+      const angre = { tekst: f.tekst, id: f.id, hadEndr: !!gml, prevEndr: gml, hadHold: !!(st.klHolder && Object.prototype.hasOwnProperty.call(st.klHolder, f.id)), prevHold: (st.klHolder || {})[f.id] };
+      const endr = Object.assign({}, st.klEndringer, { [f.id]: Object.assign({}, gml, { dato: f.dato, tid: f.tid, slutt: f.slutt }) });
+      const hold = f.kol ? Object.assign({}, st.klHolder, { [f.id]: f.kol }) : st.klHolder;
+      return { klEndringer: endr, klHolder: hold, klDrag: null, klKonflikt: null, klAngre: angre };
+    });
+    clearTimeout(this._klAngreTimer);
+    this._klAngreTimer = setTimeout(() => this.setState(s => (s.klAngre ? { klAngre: null } : {})), 6000);
+  }
+
+  klAngreUtfor() {
+    const a = this.state.klAngre; if (!a) return;
+    clearTimeout(this._klAngreTimer);
+    this.setState(st => {
+      const endr = Object.assign({}, st.klEndringer); if (a.hadEndr) endr[a.id] = a.prevEndr; else delete endr[a.id];
+      const hold = Object.assign({}, st.klHolder); if (a.hadHold) hold[a.id] = a.prevHold; else delete hold[a.id];
+      return { klEndringer: endr, klHolder: hold, klAngre: null };
+    });
+  }
+
+  klDragStart(evt, e) {
+    // Fase 5: kalenderen leser, den skriver ikke.
+    //
+    // Dra-og-slipp flytter en dato, gir bort en plass eller setter opp et
+    // kurs — tre ting som maa gaa gjennom kurs.php, pamelding.php og
+    // venteliste.php med reglene sine. De kobles i fase 6. Til da skal
+    // ingenting kunne dras, framfor at det ser ut til aa virke og ikke
+    // lagres.
+    return;
+  }
+
+  klNyDragStart(kurs, e) {
+    // Fase 5: kalenderen leser, den skriver ikke.
+    //
+    // Dra-og-slipp flytter en dato, gir bort en plass eller setter opp et
+    // kurs — tre ting som maa gaa gjennom kurs.php, pamelding.php og
+    // venteliste.php med reglene sine. De kobles i fase 6. Til da skal
+    // ingenting kunne dras, framfor at det ser ut til aa virke og ikke
+    // lagres.
+    return;
+  }
+
+  klVlDragStart(p, e) {
+    // Fase 5: kalenderen leser, den skriver ikke.
+    //
+    // Dra-og-slipp flytter en dato, gir bort en plass eller setter opp et
+    // kurs — tre ting som maa gaa gjennom kurs.php, pamelding.php og
+    // venteliste.php med reglene sine. De kobles i fase 6. Til da skal
+    // ingenting kunne dras, framfor at det ser ut til aa virke og ikke
+    // lagres.
+    return;
+  }
+
+  klPaminData() {
+    if (this.state.klPamin) return this.state.klPamin;
+    try { return JSON.parse(localStorage.getItem('lissomKlPamin') || '[]'); } catch (e) { return []; }
+  }
+
+  klPaminLeggTil() {
+    this.klPaminSett(this.klPaminData().concat([{ tekst: (this.state.klPaminNy || '').trim(), gjort: false }]));
+    this.setState({ klPaminNy: '' });
+  }
+
+  klPaminSett(l) {
+    try { localStorage.setItem('lissomKlPamin', JSON.stringify(l)); } catch (e) {}
+    this.setState({ klPamin: l });
+  }
+
+  klFmt(mn) { return String(Math.floor(mn / 60)).padStart(2, '0') + ':' + String(mn % 60).padStart(2, '0'); }
+  klNyDragStart(kurs, e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    this._klNy = { kurs, moved: false };
+    const move = mv => {
+      const d = this._klNy; if (!d) return;
+      d.moved = true;
+      this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY } });
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._klNy; this._klNy = null;
+      if (!d || !d.moved) { this.setState({ klNyDrag: null }); return; }
+      const els = document.elementsFromPoint(mv.clientX, mv.clientY);
+      const kolEl = els.find(el => el.getAttribute && el.getAttribute('data-kol'));
+      const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));
+      const o = (kurs.okter && kurs.okter[0]) || {};
+      const dur = o.fra && o.til ? this.klMin(o.til) - this.klMin(o.fra) : 180;
+      let dato = null, fra = o.fra || '17:00', til = o.til || this.klFmt(this.klMin(o.fra || '17:00') + dur), holder = this.klHoldere()[0] || '';
+      if (kolEl) {
+        const r = kolEl.getBoundingClientRect();
+        const omr = this._klRange || { start: 420, slutt: 1320, px: 52 };
+        let mn = omr.start + Math.round(((mv.clientY - r.top) / (omr.px || 52) * 60) / 30) * 30;
+        mn = Math.max(omr.start, Math.min(omr.slutt - 60, mn));
+        fra = this.klFmt(mn); til = this.klFmt(Math.min(1320, mn + dur));
+        const kn = kolEl.getAttribute('data-kol');
+        if (kn && kn !== 'Verkstedet') holder = kn;
+        const a = new Date();
+        dato = this.state.klAnker || (a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') + '-' + String(a.getDate()).padStart(2, '0'));
+      } else if (datoEl && datoEl.getAttribute('data-dato')) {
+        dato = datoEl.getAttribute('data-dato');
+        if (datoEl.getAttribute('data-akse')) {
+          const r2 = datoEl.getBoundingClientRect();
+          const omr2 = this._klRange || { start: 420, slutt: 1320, px: 52 };
+          let mn2 = omr2.start + Math.round(((mv.clientY - r2.top) / (omr2.px || 52) * 60) / 30) * 30;
+          mn2 = Math.max(omr2.start, Math.min(omr2.slutt - 60, mn2));
+          fra = this.klFmt(mn2); til = this.klFmt(Math.min(24 * 60, mn2 + dur));
+        }
+      }
+      if (!dato) { this.setState({ klNyDrag: null }); return; }
+      this.setState({
+        klNyDrag: null,
+        klBekreft: { kursNavn: kurs.navn, type: kurs.type === 'Event' ? (kurs.navn === 'Paint on Pots' ? 'pop' : 'event') : 'kurs', kap: parseInt(((kurs.pameldte || '').split('/')[1] || '8'), 10) || 8 },
+        klBDato: dato, klBFra: fra, klBTil: til, klBHolder: holder, klBGjenta: 'Én gang', klBAntall: '4',
+      });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
+  }
+
+  klMin(t) { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
+  klFmt(mn) { return String(Math.floor(mn / 60)).padStart(2, '0') + ':' + String(mn % 60).padStart(2, '0'); }
+  klNyDragStart(kurs, e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    this._klNy = { kurs, moved: false };
+    const move = mv => {
+      const d = this._klNy; if (!d) return;
+      d.moved = true;
+      this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY } });
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._klNy; this._klNy = null;
+      if (!d || !d.moved) { this.setState({ klNyDrag: null }); return; }
+      const els = document.elementsFromPoint(mv.clientX, mv.clientY);
+      const kolEl = els.find(el => el.getAttribute && el.getAttribute('data-kol'));
+      const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));
+      const o = (kurs.okter && kurs.okter[0]) || {};
+      const dur = o.fra && o.til ? this.klMin(o.til) - this.klMin(o.fra) : 180;
+      let dato = null, fra = o.fra || '17:00', til = o.til || this.klFmt(this.klMin(o.fra || '17:00') + dur), holder = this.klHoldere()[0] || '';
+      if (kolEl) {
+        const r = kolEl.getBoundingClientRect();
+        const omr = this._klRange || { start: 420, slutt: 1320, px: 52 };
+        let mn = omr.start + Math.round(((mv.clientY - r.top) / (omr.px || 52) * 60) / 30) * 30;
+        mn = Math.max(omr.start, Math.min(omr.slutt - 60, mn));
+        fra = this.klFmt(mn); til = this.klFmt(Math.min(1320, mn + dur));
+        const kn = kolEl.getAttribute('data-kol');
+        if (kn && kn !== 'Verkstedet') holder = kn;
+        const a = new Date();
+        dato = this.state.klAnker || (a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') + '-' + String(a.getDate()).padStart(2, '0'));
+      } else if (datoEl && datoEl.getAttribute('data-dato')) {
+        dato = datoEl.getAttribute('data-dato');
+        if (datoEl.getAttribute('data-akse')) {
+          const r2 = datoEl.getBoundingClientRect();
+          const omr2 = this._klRange || { start: 420, slutt: 1320, px: 52 };
+          let mn2 = omr2.start + Math.round(((mv.clientY - r2.top) / (omr2.px || 52) * 60) / 30) * 30;
+          mn2 = Math.max(omr2.start, Math.min(omr2.slutt - 60, mn2));
+          fra = this.klFmt(mn2); til = this.klFmt(Math.min(24 * 60, mn2 + dur));
+        }
+      }
+      if (!dato) { this.setState({ klNyDrag: null }); return; }
+      this.setState({
+        klNyDrag: null,
+        klBekreft: { kursNavn: kurs.navn, type: kurs.type === 'Event' ? (kurs.navn === 'Paint on Pots' ? 'pop' : 'event') : 'kurs', kap: parseInt(((kurs.pameldte || '').split('/')[1] || '8'), 10) || 8 },
+        klBDato: dato, klBFra: fra, klBTil: til, klBHolder: holder, klBGjenta: 'Én gang', klBAntall: '4',
+      });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
+  }
+
+  klikkbar(liste, spec) {
+    return liste.map(x => Object.assign({}, x, { velg: this.apne.apply(this, spec(x)) }));
   }
 
   adminMeny() {
@@ -28912,6 +30750,14 @@ class Component extends DCLogic {
           }),
         };
       })(),
+      // ── Kalenderen ────────────────────────────────────────────────────
+      //
+      // Alle verdiene den trenger, i ett sted. «klVals» er loftet fra
+      // designverktoyet uendret — den leser de samme feltnavnene som for,
+      // bare fra basen i stedet for fra en generator.
+      erAdminKalender: side === 'adminkalender',
+      adminNavKalender: this.adminMeny(),
+      ...(side === 'adminkalender' ? this.klVals() : {}),
       erAdminVenteliste: side === 'adminventeliste',
       adminNavVenteliste: this.adminMeny(),
       erAdminKursholdere: side === 'adminkursholdere',

@@ -31,6 +31,13 @@ const mal = s.slice(s.indexOf('<x-dc>'), s.indexOf('<script type="text/x-dc"'));
 const UNNTAK = [
   { treff: /type="file"/, grunn: 'filvelger — styres av onChange alene' },
   {
+    // Et laast felt SKAL ikke ha onChange. Det staar der for aa kunne leses
+    // og kopieres — kalenderadressen til mobilen, for eksempel — og et
+    // «settX» ville vaert en binding til noe som aldri skjer.
+    treff: /readOnly="\{\{ true \}\}"/,
+    grunn: 'laast felt — staar der for aa leses og kopieres, ikke skrives i',
+  },
+  {
     treff: /Jeg godtar vilkårene for medlemskap/,
     grunn: 'staar paa skjermen «Vipps-flyt», som ingenting lenker til. Eneste '
          + 'vei inn er aa skrive /betaling manuelt. Skjermen viser hvordan '

@@ -1434,6 +1434,36 @@ sjekk('adminlista staar i den rekkefolgen kveldene kommer',
 sjekk('kvelden hen venter paa foreslaas foerst naar plassen gis',
     str_contains($vlAdm, "'ventet' => \$venterPaa !== null"));
 
+// ── Deltakerruta, ogsaa for gjester ──────────────────────────────────────
+//
+// Ruta ble bygget av medlemsregisteret, og bare av det. En kursdeltaker uten
+// konto — de fleste av dem — hadde ingen rute aa aapne: navnet i lista var
+// dodt, og verkstedet kom ikke inn til historikken, kursbeviset eller
+// notatet. Naa kan den ogsaa aapnes av en paamelding.
+$medFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('personruta kan aapnes av en paamelding, ikke bare av en konto',
+    str_contains($medFil, "Foresporsel::heltall('booking') > 0"));
+sjekk('en paamelding med konto aapner kontoen, ikke en gjest',
+    str_contains($medFil, "if (\$b['member_id'] !== null)"));
+sjekk('en gjest uten e-post og telefon faar likevel sin egen paamelding',
+    str_contains($medFil, "\$gjester = ' OR b.id = :bid'"));
+sjekk('ruta sier fra naar personen ikke har konto',
+    str_contains($medFil, "'gjest'      => \$erGjest"));
+sjekk('betalingene hentes paa paameldingene',
+    str_contains($medFil, 'WHERE p.booking_id IN'));
+sjekk('ventelistene hentes paa e-post og telefon',
+    str_contains($medFil, "w.status IN ('venter','varslet')"));
+sjekk('endringsloggen leses ut av audit_log',
+    str_contains($medFil, 'FROM audit_log a'));
+
+// Notatet ligger paa medlemsraden. En gjest har ingen, og da skal skjermen
+// ikke prove aa lagre paa en konto som ikke finnes.
+$sida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('notatet lagres bare naar personen faktisk har en konto',
+    str_contains($sida, "const id = this.state.personMedlemId;"));
+sjekk('deltakerraden aapner personen ogsaa uten konto',
+    str_contains($sida, 'this.apnePerson(p.medlemId, p.bookingId)'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

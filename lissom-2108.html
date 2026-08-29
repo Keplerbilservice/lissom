@@ -8528,6 +8528,56 @@ window.__resources = {
               </div>
             </sc-for>
 
+            <!-- Betalingene, paa tvers av paameldingene.
+                 Statusen sto paa hver rad fra for, men ikke hvem som
+                 registrerte den, naar, eller hvor mye — og det er nettopp det
+                 man blir ringt om. -->
+            <sc-if value="{{ personHarBetalinger }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Betalinger</div>
+                <sc-for list="{{ personBetalinger }}" as="b" hint-placeholder-count="2">
+                  <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); padding: 4px 0;">
+                    <span style="{{ b.stil }}">{{ b.belop }}</span>
+                    <span style="flex: 1 1 180px; min-width: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ b.linje }}</span>
+                    <sc-if value="{{ b.harKommentar }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: var(--text-xs); color: var(--text-body);">{{ b.kommentar }}</span>
+                    </sc-if>
+                    <sc-if value="{{ b.annullert }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Annullert</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Ventelistene hen staar paa. «Staar jeg fortsatt paa lista?»
+                 er et vanlig sporsmaal, og svaret laa ingen steder her. -->
+            <sc-if value="{{ personHarVenteliste }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Står på venteliste</div>
+                <sc-for list="{{ personVenteliste }}" as="w" hint-placeholder-count="1">
+                  <div style="padding: 4px 0;">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ w.kurs }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ w.linje }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Hva som er gjort med hen. «revider()» har skrevet dette hele
+                 tiden — hvem, naar og hva — men ingen skjerm leste det. -->
+            <sc-if value="{{ personHarLogg }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Endringslogg</div>
+                <sc-for list="{{ personLogg }}" as="l" hint-placeholder-count="3">
+                  <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); padding: 3px 0;">
+                    <span style="font-size: var(--text-sm); color: var(--text-heading);">{{ l.hva }}</span>
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.linje }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
             <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                  innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                  etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -9112,6 +9162,48 @@ window.__resources = {
                   </sc-if>
                 </div>
               </sc-for>
+
+              <sc-if value="{{ personHarBetalinger }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Betalinger</div>
+                  <sc-for list="{{ personBetalinger }}" as="b" hint-placeholder-count="2">
+                    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); padding: 4px 0;">
+                      <span style="{{ b.stil }}">{{ b.belop }}</span>
+                      <span style="flex: 1 1 180px; min-width: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ b.linje }}</span>
+                      <sc-if value="{{ b.harKommentar }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size: var(--text-xs); color: var(--text-body);">{{ b.kommentar }}</span>
+                      </sc-if>
+                      <sc-if value="{{ b.annullert }}" hint-placeholder-val="{{ false }}">
+                        <span style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Annullert</span>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ personHarVenteliste }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Står på venteliste</div>
+                  <sc-for list="{{ personVenteliste }}" as="w" hint-placeholder-count="1">
+                    <div style="padding: 4px 0;">
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ w.kurs }}</div>
+                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ w.linje }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ personHarLogg }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Endringslogg</div>
+                  <sc-for list="{{ personLogg }}" as="l" hint-placeholder-count="3">
+                    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3); padding: 3px 0;">
+                      <span style="font-size: var(--text-sm); color: var(--text-heading);">{{ l.hva }}</span>
+                      <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.linje }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
 
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
@@ -18616,14 +18708,14 @@ class Component extends DCLogic {
    * ikke hente selv.
    */
   knyttPamelding(bookingId) {
-    const id = this.state.personFor;
+    const id = this.state.personMedlemId;
     if (!id || !bookingId) return;
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     if (!window.confirm('Knytte denne påmeldingen til kontoen?\n\n'
         + 'Da ser personen kurset og kursbeviset på Min side.')) return;
 
     this.medlemKall({ handling: 'knytt', medlemId: id, bookingId: bookingId }, true)
-      .then(ok => { if (ok) this.apnePerson(id); });
+      .then(ok => { if (ok) this.apnePerson(id, 0); });
   }
 
   /**
@@ -18637,7 +18729,9 @@ class Component extends DCLogic {
    * Det er internt. Det staar ikke paa Min side.
    */
   lagrePersonInfo() {
-    const id = this.state.personFor;
+    // Notatet ligger paa medlemsraden. En gjest har ingen, og da er det
+    // ingenting aa lagre — skjermen skjuler feltet, dette er sikringen bak.
+    const id = this.state.personMedlemId;
     if (!id) return;
     if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
     if (this._personInfoLagrer) return;
@@ -18658,7 +18752,7 @@ class Component extends DCLogic {
         });
         // Hentes paa nytt saa feltet viser det som faktisk staar i basen —
         // ikke det vi tror vi sendte.
-        if (ok) { this.setState({ personNotat: null }); this.apnePerson(id); }
+        if (ok) { this.setState({ personNotat: null }); this.apnePerson(id, 0); }
       })
       .catch(() => {
         this._personInfoLagrer = false;
@@ -18700,7 +18794,9 @@ class Component extends DCLogic {
    * Rettes det ett sted, skal begge vise det samme med en gang.
    */
   etterBevisendring() {
-    if (this.state.personFor) this.apnePerson(this.state.personFor);
+    if (this.state.personFor) {
+      this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+    }
     if (this.state.bevisListe) { this._bevisHentes = false; this.setState({ bevisListe: null }); this.hentBevis(); }
   }
 
@@ -21734,20 +21830,42 @@ class Component extends DCLogic {
    * Verkstedet skal kunne svare den som ringer og lurer paa kursbeviset sitt
    * uten aa lete gjennom kurs etter kurs.
    */
-  apnePerson(id) {
-    if (!id) return;
-    this.setState({ personFor: id, personData: null, personNotat: null });
+  /**
+   * Aapner personruta.
+   *
+   * Ruta ble bygget av medlemsregisteret, og bare av det. En kursdeltaker
+   * uten konto — de fleste av dem — hadde dermed ingen rute aa aapne: navnet
+   * i deltakerlista var dodt, og verkstedet kom ikke inn til historikken,
+   * kursbeviset eller notatet.
+   *
+   * Naa kan den ogsaa aapnes av en paamelding. Serveren finner ut hvem det er
+   * av bookingen, og slaar opp resten paa e-post og telefon.
+   */
+  apnePerson(id, bookingId) {
+    const spor = id > 0 ? 'person=' + encodeURIComponent(id)
+               : (bookingId > 0 ? 'booking=' + encodeURIComponent(bookingId) : '');
+    if (!spor) return;
+    // Noekkelen ruta huskes paa. En gjest har ingen konto-id, saa bookingen
+    // er det vi har — den er like entydig.
+    const noekkel = id > 0 ? 'm' + id : 'b' + bookingId;
+    this.setState({
+      personFor: noekkel, personData: null, personNotat: null,
+      // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
+      // gjenkjennes paa; disse to er det handlingene trenger.
+      personMedlemId: id > 0 ? id : 0,
+      personBookingId: bookingId > 0 ? bookingId : 0,
+    });
     // Ruta staar over lista. Aapnet du en person langt nede, skjedde alt
     // utenfor skjermen — og da saa det ut som om ingenting hadde skjedd.
     this.rullTilPersonruta();
     if (!this.erPublisert()) return;
-    fetch('/api/admin/medlemmer.php?person=' + encodeURIComponent(id), { credentials: 'same-origin', cache: 'no-store' })
+    fetch('/api/admin/medlemmer.php?' + spor, { credentials: 'same-origin', cache: 'no-store' })
       .then(r => (r.ok ? r.json() : null))
       .then(d => {
         // Svaret kan komme etter at ruta er lukket eller en annen er aapnet.
-        this.setState(st => (st.personFor === id ? { personData: d || { historikk: [] } } : {}));
+        this.setState(st => (st.personFor === noekkel ? { personData: d || { historikk: [] } } : {}));
       })
-      .catch(() => this.setState(st => (st.personFor === id ? { personData: { historikk: [] } } : {})));
+      .catch(() => this.setState(st => (st.personFor === noekkel ? { personData: { historikk: [] } } : {})));
   }
 
   /**
@@ -21810,8 +21928,13 @@ class Component extends DCLogic {
         medlemId: kontoFor(d), navn: d.navn || '(uten navn)',
         epost: d.epost || '', tlf: d.tlf || '', antall: 0, sisteKurs: '',
         bevis: '', bevisKurs: '', bevisId: 0, bevisNavn: '', bevisSperret: false,
+        // Én paamelding som peker paa personen. Den er noekkelen inn til
+        // personruta for dem uten konto — «bevisId» duger ikke, den settes
+        // bare naar kurset faktisk kan gi et bevis.
+        bookingId: 0,
       };
       f.antall += 1;
+      if (!f.bookingId && d.id) f.bookingId = d.id;
       // Kursbeviset paa selve raden. Laa bare inne i personruta, saa for aa
       // se det matte man foerst aapne personen og lete i historikken.
       if (!f.bevis && d.kursbevis) { f.bevis = d.kursbevis; f.bevisKurs = d.kurs || ''; }
@@ -24757,6 +24880,48 @@ class Component extends DCLogic {
           personNotatKnapp: this._personInfoLagrer ? 'Lagrer …' : 'Lagre info',
           lagrePersonNotat: () => this.lagrePersonInfo(),
           personBeskjed: () => this.beskjedTilPerson(p),
+          // Uten konto finnes ingen Min side aa vise, ingen medlemskap aa
+          // endre, og notatet hoerer til paameldingen. Skjermen maa vite det
+          // — ellers tilbyr den ting som ikke finnes.
+          personErGjest: !!p.gjest,
+          personHarKonto: !p.gjest && (p.id || 0) > 0,
+          personGjestMerke: p.gjest ? 'Ingen konto' : '',
+
+          // Betalingene, paa tvers av paameldingene. Statusen sto paa hver
+          // rad fra for, men ikke hvem som registrerte den, naar, eller hvor
+          // mye — og det er dette man blir ringt om.
+          personBetalinger: ((d || {}).betalinger || []).map(x => ({
+            belop: x.belop,
+            linje: x.maate + (x.av ? ' · ' + x.av : '') + ' · ' + x.naar
+                 + (x.kurs ? ' · ' + x.kurs : ''),
+            kommentar: x.kommentar || '',
+            harKommentar: !!x.kommentar,
+            annullert: !!x.annullert,
+            stil: {
+              fontFamily: 'var(--font-display)', fontWeight: 700,
+              fontSize: 'var(--text-sm)', whiteSpace: 'nowrap',
+              color: x.annullert ? 'var(--text-muted)' : 'var(--text-heading)',
+              textDecoration: x.annullert ? 'line-through' : 'none',
+            },
+          })),
+          personHarBetalinger: (((d || {}).betalinger) || []).length > 0,
+
+          // Ventelistene hen staar paa. «Staar jeg fortsatt paa lista?» er et
+          // vanlig sporsmaal, og svaret laa ingen steder her.
+          personVenteliste: ((d || {}).ventelister || []).map(w => ({
+            kurs: w.kurs,
+            linje: w.naar + ' · nr. ' + w.posisjon + ' · ' + w.status.toLowerCase()
+                 + ' siden ' + w.siden,
+          })),
+          personHarVenteliste: (((d || {}).ventelister) || []).length > 0,
+
+          // Endringsloggen. «revider()» har skrevet den hele tiden; det
+          // manglet bare et sted aa vise den.
+          personLogg: ((d || {}).logg || []).map(l => ({
+            hva: l.hva,
+            linje: l.naar + (l.av ? ' · ' + l.av : ''),
+          })),
+          personHarLogg: (((d || {}).logg) || []).length > 0,
           personHistorikk: h.map(x => ({
             id: x.id,
             tittel: x.tittel,
@@ -25590,6 +25755,9 @@ class Component extends DCLogic {
             // gjettes paa.
             harKonto: p.medlemId > 0,
             utenKonto: !(p.medlemId > 0),
+            // Raden kan aapnes uansett naa: har hen konto, aapnes den; ellers
+            // aapnes paameldingen. Pekeren skal si det.
+            kanApnes: p.medlemId > 0 || p.bookingId > 0,
             // Retting rett paa raden.
             //
             // Beviset kunne bare rettes inne i personruta, og den bygges av
@@ -25612,8 +25780,10 @@ class Component extends DCLogic {
             // kursdeltaker ikke kunne aapnes i det hele tatt: kursbeviset
             // kunne rettes fra medlemslista og ikke herfra, enda det er
             // noeyaktig samme rad.
-            velg: () => this.apnePerson(p.medlemId),
-            seMinSide: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apnePerson(p.medlemId); },
+            // Ogsaa gjester. Har hen ingen konto, aapnes ruta av den siste
+            // paameldingen — den sier hvem det er like entydig.
+            velg: () => this.apnePerson(p.medlemId, p.bookingId),
+            seMinSide: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.apnePerson(p.medlemId, p.bookingId); },
             radStil: {
               display: 'flex', flexWrap: 'wrap', alignItems: 'center',
               gap: 'var(--space-4)', rowGap: 'var(--space-3)',
@@ -25621,7 +25791,7 @@ class Component extends DCLogic {
               borderTop: '1px solid var(--border-subtle)',
               // Pekeren staar bare der raden faktisk gjor noe. En gjest uten
               // konto har ingen rute aa aapne.
-              cursor: p.medlemId > 0 ? 'pointer' : 'default',
+              cursor: (p.medlemId > 0 || p.bookingId > 0) ? 'pointer' : 'default',
             },
             meldInn: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({
               miApen: true, miMedlemId: p.medlemId || 0,
@@ -25792,7 +25962,7 @@ class Component extends DCLogic {
               + 'Dette kan ikke angres.')) return;
           this.medlemKall({ handling: 'slett', medlemId: m.id });
         },
-        velg: () => this.apnePerson(m.id),
+        velg: () => this.apnePerson(m.id, 0),
         detaljer: this.apne(m.navn, m.epost, [
           { navn: 'Hvem er dette', verdi: m.gruppe },
           { navn: 'Abonnement', verdi: m.abonnement },
@@ -28818,7 +28988,7 @@ class Component extends DCLogic {
             sePerson: () => {
               if (!b.medlemId) return;
               this.gaaAdmin('adminkursdeltakere', {});
-              this.apnePerson(b.medlemId);
+              this.apnePerson(b.medlemId, b.id || 0);
             },
           })),
         };
@@ -29599,6 +29769,9 @@ class Component extends DCLogic {
                   : 'Plassen blir ledig igjen og tilbys førstemann på ventelista. Betalingen må refunderes i Vipps.'))) return;
           this.pameldingKall({ handling: 'fjern', id: p.id });
         },
+        // Navnet aapner personen — ogsaa naar hen ikke har konto.
+        apnePerson: (e) => { if (e && e.stopPropagation) e.stopPropagation();
+          this.apnePerson(p.medlemId || 0, p.id); },
         velg: () => this.setState({
           detalj: {
             tittel: p.navn,

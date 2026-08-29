@@ -306,11 +306,57 @@ Foresporsel::krevMetode('GET');
 // Verkstedet kunne se paameldinger per kurs, men ikke alt én person har
 // gjort — og dermed heller ikke hva som faktisk staar paa Min side hos den
 // som ringer og lurer paa kursbeviset sitt.
-if (Foresporsel::heltall('person') > 0) {
+if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
     $pid = Foresporsel::heltall('person');
-    $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status, notat FROM members WHERE id = :i', ['i' => $pid]);
-    if ($m === null) {
-        Svar::feil('Fant ikke personen.', 404);
+    $bid = Foresporsel::heltall('booking');
+
+    // ── Hvem ruta gjelder ──────────────────────────────────────────────
+    //
+    // Ruta ble bygget av «members», og bare av den. En kursdeltaker uten
+    // konto — de fleste av dem — hadde dermed ingen rute aa aapne: navnet i
+    // deltakerlista var dodt, og verkstedet kom ikke inn til historikken,
+    // kursbeviset eller notatet.
+    //
+    // Naa kan ruta ogsaa aapnes av en paamelding. Da er det bookingen som
+    // sier hvem det er, og alt annet slaas opp paa e-post og telefon — de
+    // samme feltene deltakerlista gjenkjenner folk paa fra for.
+    $erGjest = false;
+    if ($pid > 0) {
+        $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status, notat FROM members WHERE id = :i', ['i' => $pid]);
+        if ($m === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+    } else {
+        $b = DB::en(
+            'SELECT b.id, b.member_id, b.gjest_navn, b.gjest_epost, b.gjest_telefon, b.internt_notat
+               FROM bookings b WHERE b.id = :i',
+            ['i' => $bid]
+        );
+        if ($b === null) {
+            Svar::feil('Fant ikke påmeldingen.', 404);
+        }
+        // Har paameldingen en konto paa seg, er det den vi aapner — da er det
+        // den samme personen, og hen skal ikke staa to steder.
+        if ($b['member_id'] !== null) {
+            $pid = (int) $b['member_id'];
+            $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status, notat FROM members WHERE id = :i', ['i' => $pid]);
+        }
+        if ($pid <= 0 || $m === null) {
+            $erGjest = true;
+            $pid = 0;
+            $m = [
+                'id' => 0,
+                'navn' => (string) $b['gjest_navn'],
+                'epost' => (string) ($b['gjest_epost'] ?? ''),
+                'telefon' => (string) ($b['gjest_telefon'] ?? ''),
+                'rolle' => 'gjest',
+                'medlemskap_type' => null,
+                'status' => 'ingen',
+                // Gjesten har ingen medlemsrad aa notere paa. Notatet fra
+                // paameldingen staar i stedet — det er det som finnes.
+                'notat' => (string) ($b['internt_notat'] ?? ''),
+            ];
+        }
     }
 
     // Rettelsene paa kursbeviset kom med migrasjon 045.
@@ -339,6 +385,13 @@ if (Foresporsel::heltall('person') > 0) {
         ? ''
         : ' OR (b.member_id IS NULL AND (' . implode(' OR ', $ogsaa) . '))';
 
+    // En gjest har ingen konto. Da er e-posten og telefonen alt vi har — og
+    // finnes ingen av delene, er det bare den ene paameldingen vi vet om.
+    if ($erGjest && $ogsaa === []) {
+        $gjester = ' OR b.id = :bid';
+        $param['bid'] = $bid;
+    }
+
     $rader = DB::alle(
         "SELECT b.id, b.member_id, b.antall, b.status, b.belop_ore, b.created_at, {$bevisFelt}
                 c.tittel, c.type, cs.start_tid, p.vipps_reference
@@ -353,6 +406,93 @@ if (Foresporsel::heltall('person') > 0) {
 
     $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
 
+    // ── Betalingene, paa tvers av paameldingene ────────────────────────
+    //
+    // Statusen sto paa hver rad i historikken, men ikke hvem som registrerte
+    // den, naar, eller hvor mye. Etter fase 1 finnes det, og da hoerer det
+    // hjemme her: det er dette man blir ringt om.
+    $bookingIder = array_map(static fn(array $b): int => (int) $b['id'], $rader);
+    $betalinger = [];
+    if ($bookingIder !== [] && DB::harKolonne('payments', 'booking_id')) {
+        $inn = implode(',', $bookingIder);
+        $betalinger = DB::alle(
+            "SELECT p.id, p.booking_id, p.type, p.belop_ore, p.status, p.maate,
+                    p.kommentar, p.annullert_at, p.created_at, c.tittel,
+                    r.navn AS registrert_navn
+               FROM payments p
+          LEFT JOIN bookings b ON b.id = p.booking_id
+          LEFT JOIN courses c ON c.id = b.course_id
+          LEFT JOIN members r ON r.id = p.registrert_av
+              WHERE p.booking_id IN ({$inn})
+           ORDER BY p.id DESC"
+        );
+    }
+
+    // ── Ventelistene hen staar paa ─────────────────────────────────────
+    //
+    // «Staar jeg fortsatt paa lista?» er et vanlig sporsmaal, og svaret laa
+    // ingen steder i personruta.
+    $ventelister = [];
+    if ($epost !== '' || $tlf !== '') {
+        $vHvor = [];
+        $vParam = [];
+        if ($epost !== '') { $vHvor[] = 'w.epost = :e';   $vParam['e'] = $epost; }
+        if ($tlf !== '')   { $vHvor[] = 'w.telefon = :t'; $vParam['t'] = $tlf; }
+        $ventelister = DB::alle(
+            "SELECT w.id, w.posisjon, w.status, w.created_at, c.tittel, cs.start_tid
+               FROM waitlist w
+               JOIN courses c ON c.id = w.course_id
+          LEFT JOIN course_sessions cs ON cs.id = w.course_session_id
+              WHERE w.status IN ('venter','varslet') AND (" . implode(' OR ', $vHvor) . ")
+           ORDER BY cs.start_tid IS NULL, cs.start_tid",
+            $vParam
+        );
+    }
+
+    // ── Hva som er gjort med hen ───────────────────────────────────────
+    //
+    // «revider()» har skrevet flittig til audit_log hele tiden — hvem, naar,
+    // og detaljene som JSON — men ingen skjerm har lest det. Endringsloggen
+    // fantes altsaa, den manglet bare et sted aa vises.
+    $logg = [];
+    $loggHvor = [];
+    $loggParam = [];
+    if ($pid > 0) {
+        $loggHvor[] = "(a.objekt_type = 'member' AND a.objekt_id = :p)";
+        $loggParam['p'] = $pid;
+    }
+    if ($bookingIder !== []) {
+        $loggHvor[] = "(a.objekt_type = 'booking' AND a.objekt_id IN (" . implode(',', $bookingIder) . '))';
+    }
+    if ($loggHvor !== []) {
+        $logg = DB::alle(
+            'SELECT a.handling, a.detaljer, a.created_at, m.navn AS av
+               FROM audit_log a
+          LEFT JOIN members m ON m.id = a.member_id
+              WHERE ' . implode(' OR ', $loggHvor) . '
+           ORDER BY a.id DESC LIMIT 40',
+            $loggParam
+        );
+    }
+
+    /** Handlingene skrevet slik et menneske sier dem. */
+    $loggTekst = static function (string $h): string {
+        return match ($h) {
+            'pamelding_lagt_inn'    => 'Lagt inn for hånd',
+            'pamelding_fjernet'     => 'Avbestilt',
+            'pamelding_flyttet'     => 'Flyttet til en annen dato',
+            'pamelding_status'      => 'Status endret',
+            'betaling_registrert'   => 'Betaling registrert',
+            'betaling_annullert'    => 'Betaling annullert',
+            'kursbevis_endret'      => 'Kursbevis rettet',
+            'venteliste_gitt_plass' => 'Fikk plass fra ventelista',
+            'medlem_meldt_inn'      => 'Meldt inn som medlem',
+            'medlem_avsluttet'      => 'Medlemskapet avsluttet',
+            'medlem_notat'          => 'Notat endret',
+            default                 => ucfirst(str_replace('_', ' ', $h)),
+        };
+    };
+
     Svar::json([
         'person' => [
             'id'         => (int) $m['id'],
@@ -361,6 +501,10 @@ if (Foresporsel::heltall('person') > 0) {
             'telefon'    => $m['telefon'] ?: '',
             'medlemskap' => $m['medlemskap_type'] ?: 'Ingen',
             'status'     => $m['status'],
+            // Uten konto er det ingen Min side aa vise, ingen medlemskap aa
+            // endre, og notatet hoerer til paameldingen. Skjermen maa vite
+            // det — ellers tilbyr den ting som ikke finnes.
+            'gjest'      => $erGjest,
             // Det verkstedet selv har notert. Internt, og bare her.
             'notat'      => (string) ($m['notat'] ?? ''),
         ],
@@ -400,6 +544,35 @@ if (Foresporsel::heltall('person') > 0) {
                 'losRad'    => $b['member_id'] === null,
             ];
         }, $rader),
+
+        // Betalingene, med hvem som registrerte dem og naar.
+        'betalinger' => array_map(static fn(array $p): array => [
+            'belop'     => Booking::kroner((int) $p['belop_ore']),
+            'kurs'      => (string) ($p['tittel'] ?? ''),
+            'maate'     => (string) $p['type'] === 'manuell'
+                             ? ((string) ($p['maate'] ?? '') ?: 'Ukjent') : 'Vipps',
+            'av'        => (string) ($p['registrert_navn'] ?? ''),
+            'naar'      => Booking::norskDato((string) $p['created_at']),
+            'kommentar' => (string) ($p['kommentar'] ?? ''),
+            'annullert' => $p['annullert_at'] !== null,
+        ], $betalinger),
+
+        // Ventelistene hen staar paa, med kvelden det gjelder.
+        'ventelister' => array_map(static fn(array $w): array => [
+            'kurs'     => (string) $w['tittel'],
+            'naar'     => $w['start_tid'] !== null
+                            ? Booking::norskDato((string) $w['start_tid']) : 'Hele kurset',
+            'posisjon' => (int) $w['posisjon'],
+            'status'   => (string) $w['status'] === 'varslet' ? 'Varslet' : 'Venter',
+            'siden'    => Booking::norskDato((string) $w['created_at']),
+        ], $ventelister),
+
+        // Endringsloggen. Sto skrevet hele tiden, men ble aldri lest.
+        'logg' => array_map(static fn(array $a): array => [
+            'hva'  => $loggTekst((string) $a['handling']),
+            'av'   => (string) ($a['av'] ?? ''),
+            'naar' => Booking::norskDato((string) $a['created_at']),
+        ], $logg),
     ]);
 }
 

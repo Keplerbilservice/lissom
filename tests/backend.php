@@ -1649,6 +1649,42 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Fase 7: menyen ───────────────────────────────────────────────────────
+//
+// «Deltakere» og «Kurs og medlemskap» sto som to punkter og delte allerede to
+// faner: «Paameldte» og «Kurs» sto begge steder. To faner med samme navn gikk
+// til hver sin liste — «Kurs» var malene det ene stedet og de aapne kursene
+// det andre. Naa er de ett omraade.
+sjekk('kurs og deltakere er ett menypunkt',
+    str_contains($sida, "['Kurs og deltakere', 'adminomrkurs'],")
+    && !str_contains($sida, "['Deltakere', 'adminomrdeltakere'],")
+    && !str_contains($sida, "['Kurs og medlemskap', 'adminomrkurs'],"));
+// Ingen adresse doer av en opprydding. /admin/deltakere er delt og bokmerket.
+sjekk('begge adressene lander paa den samme skjermen',
+    str_contains($sida, "case 'adminomrdeltakere':  return p('Kurs og deltakere', '', '');")
+    && str_contains($sida, "side === 'adminomrkurs' || side === 'adminomrdeltakere'"));
+// Kalenderen gjor det meste av det daglige etter fase 6, og skal ikke ligge
+// midt i lista.
+sjekk('kalenderen staar som punkt nummer to',
+    str_contains($sida, "['Oversikt',  'adminoversikt'],\n      // Kalenderen staar som nummer to."));
+// Oppskriftene er verkstedets egne, og «Verkstedet» er stedet fase 8 lander.
+sjekk('oppskriftene staar under «Verkstedet»',
+    str_contains($sida, "['Verkstedet', 'adminoppskrifter'],")
+    && str_contains($sida, "case 'adminoppskrifter':   return p('Verkstedet');"));
+// Ventelista var bare aa naa fra et kort paa Oversikt.
+sjekk('ventelista har faatt sin plass i fanerekka',
+    str_contains($sida, "['Venteliste',    'adminventeliste'],")
+    && str_contains($sida, "case 'adminventeliste':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Venteliste');"));
+// En fane som forer til en skjerm uten fanerad er en blindvei.
+sjekk('ventelisteskjermen har fanerekka, saa den ikke blir en blindvei',
+    substr_count($sida, '{{ harOmrFaner }}') === 15);
+// Veien inn til dagen. Kalenderen sto som ett menypunkt blant elleve, og den
+// som aapnet Oversikt om morgenen fikk ingen vei dit.
+sjekk('«Kursadministrasjon» staar oeverst paa Oversikt',
+    str_contains($sida, "kort('Kursadministrasjon',")
+    && str_contains($sida, "if (i === -1 && k.navn === 'Kursadministrasjon') return -1;")
+    && str_contains($sida, "const ROR = ['Kursadministrasjon',"));
+
 // ── «Rediger okten» paa telefon ──────────────────────────────────────────
 //
 // «Lagre» laa nederst i ruta, og ruta ruller. Paa en telefon med tastaturet

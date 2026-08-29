@@ -6171,6 +6171,19 @@ window.__resources = {
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">De som står og venter på plass. Du kan varsle om at det er ledig, eller gi plassen til én bestemt person.</p>
         </div>
 
+        <!-- Fanerekka for omraadet.
+             Ventelista var bare aa naa fra et kort paa Oversikt, og hadde
+             ingen vei videre. Naa staar den som fane under «Kurs og
+             deltakere» — og da maa raden staa her ogsaa, ellers er skjermen
+             en blindvei man bare kommer seg ut av gjennom menyen. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
         <div id="ov-venteliste" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px; scroll-margin-top: 90px;">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Venteliste</span>
@@ -22093,16 +22106,21 @@ class Component extends DCLogic {
   static get ADMIN_MENY() {
     return [
       ['Oversikt',  'adminoversikt'],
-      ['Deltakere', 'adminomrdeltakere'],
-      // Kalenderen: alt som skjer, samlet. Eget punkt saa den er ett trykk
-      // unna — det er skjermen man staar i naar man planlegger dagen.
+      // Kalenderen staar som nummer to. Den er skjermen man staar i naar man
+      // planlegger dagen, og etter fase 6 gjores det meste av det daglige
+      // derfra — da skal den ikke ligge midt i lista.
       ['Kalender',  'adminkalender'],
+      // Kursene og dem som gaar paa dem er det samme arbeidet: hva verkstedet
+      // tilbyr, og hvem som kommer. De sto som to punkter og delte allerede
+      // to faner — «Paameldte» og «Kurs» sto begge steder — og det var det
+      // tydeligste tegnet paa at de hoerte sammen. Ett punkt naa.
+      ['Kurs og deltakere', 'adminomrkurs'],
       ['Medlemmer', 'adminomrmedlemmer'],
-      ['Kurs og medlemskap', 'adminomrkurs'],
       // Oppskriftene laa under Medlemmer, men de er verkstedets egne —
       // glasurene og leiretypene som staar paa veggen. De hoerer ikke til
-      // én gruppe mennesker, og skal ikke ligge inne hos dem.
-      ['Oppskrifter', 'adminoppskrifter'],
+      // én gruppe mennesker. «Verkstedet» er det stedet de egentlig er, og
+      // det er hit vaktene og brenningene kommer.
+      ['Verkstedet', 'adminoppskrifter'],
       ['Økonomi',   'adminokonomi', { okonomiFor: '' }],
       // Butikken laa bare under Nettsiden, som en fane ved siden av «Innhold».
       // Den er et sted i seg selv — varer, priser, bilder og lager — og var
@@ -22129,17 +22147,6 @@ class Component extends DCLogic {
    */
   static get ADMIN_FANER() {
     return {
-      'Deltakere': [
-        ['← Deltakere',  'adminomrdeltakere'],
-        ['Alle deltakere', 'adminkursdeltakere'],
-        ['Påmeldte',     'adminpameldte'],
-        ['Kurs',         'admin',            { kursFane: 'apne' }],
-        ['Beskjeder',    'adminbeskjeder',   { motValg: 'Deltakere på et kurs' }],
-        ['Betalinger',   'adminokonomi',     { okonomiFor: 'deltakere' }],
-        // «Nyttig info» sto her ogsaa. Det er medlemsstoff — dorkode,
-        // ordensregler og verkstedinfo — og hoerer til Medlemmer, ikke til
-        // dem som gaar paa kurs. Fjernet 24. august paa bestilling.
-      ],
       'Medlemmer': [
         ['← Medlemmer',  'adminomrmedlemmer'],
         ['Alle medlemmer', 'adminmedlem'],
@@ -22149,19 +22156,33 @@ class Component extends DCLogic {
         ['Betalinger',   'adminokonomi',     { okonomiFor: 'medlemmer' }],
         ['Nyttig info',  'adminnyttig',      { nyttigFor: 'medlemmer' }],
       ],
-      // Kursene og medlemskapene er det samme arbeidet: hva verkstedet
-      // tilbyr, og hva det koster. Samlingene for medlemmene staar ikke her
-      // — de hoerer hjemme hos medlemmene, og bare der.
-      'Kurs og medlemskap': [
-        ['← Kurs og medlemskap', 'adminomrkurs'],
+      // Kursene, medlemskapene og dem som gaar paa kursene: det samme
+      // arbeidet. Hva verkstedet tilbyr, hva det koster, og hvem som kommer.
+      //
+      // Foer sto dette som to omraader, «Deltakere» og «Kurs og medlemskap»,
+      // med «Paameldte» og «Kurs» i begge. To faner med samme navn gikk til
+      // hver sin liste — «Kurs» var malene det ene stedet og de aapne kursene
+      // det andre. Naa staar de sammen, med navn som sier hva de er.
+      //
+      // Samlingene for medlemmene staar ikke her — de hoerer hjemme hos
+      // medlemmene, og bare der.
+      'Kurs og deltakere': [
+        ['← Kurs og deltakere', 'adminomrkurs'],
         // «Kurs» er malene: ett kurs per rad, uten datoer og kalender.
         // Skal du rette en pris, en tekst eller et navn, er det her.
         // «Alle kurs» er det samme med datoene og uka ved siden av.
         ['Kurs',          'admin',            { kursFane: 'maler' }],
         ['Alle kurs',     'admin',            { kursFane: 'alle' }],
+        ['Åpne kurs',     'admin',            { kursFane: 'apne' }],
+        ['Alle deltakere', 'adminkursdeltakere'],
+        ['Påmeldte',      'adminpameldte'],
+        // Ventelista var bare aa naa fra et kort paa Oversikt. Den hoerer til
+        // her, sammen med resten av det som gjelder dem som vil paa kurs.
+        ['Venteliste',    'adminventeliste'],
         ['Medlemskap',    'adminmedlemskap'],
         ['Drop-in',       'admindropin'],
-        ['Påmeldte',      'adminpameldte'],
+        ['Beskjeder',     'adminbeskjeder',   { motValg: 'Deltakere på et kurs' }],
+        ['Betalinger',    'adminokonomi',     { okonomiFor: 'deltakere' }],
       ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
@@ -22210,26 +22231,29 @@ class Component extends DCLogic {
 
     switch (st.side) {
       case 'adminoversikt':      return p('Oversikt');
-      case 'admindropin':        return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Drop-in');
+      case 'admindropin':        return p('Kurs og deltakere', 'Kurs og deltakere', 'Drop-in');
       case 'adminbrukere':       return p('Brukere');
-      case 'adminomrdeltakere':  return p('Deltakere', '', '');
-      case 'adminomrkurs':       return p('Kurs og medlemskap', '', '');
-      case 'adminmedlemskap':    return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Medlemskap');
+      // Begge adressene lever videre og lander paa den samme skjermen:
+      // /admin/deltakere er delt og bokmerket, og en adresse som doer er en
+      // daarlig maate aa rydde paa.
+      case 'adminomrdeltakere':  return p('Kurs og deltakere', '', '');
+      case 'adminomrkurs':       return p('Kurs og deltakere', '', '');
+      case 'adminmedlemskap':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Medlemskap');
       case 'adminnyreg':         return p('Oversikt');
       case 'adminuttak':         return p('Oversikt');
       case 'adminferdigbrent':   return p('Oversikt');
-      case 'adminvideokurs':     return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Videokurs');
+      case 'adminvideokurs':     return p('Kurs og deltakere', 'Kurs og deltakere', 'Videokurs');
       case 'adminkalender':      return p('Kalender');
-      case 'adminventeliste':    return p('Oversikt');
+      case 'adminventeliste':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Venteliste');
       case 'adminkursholdere':   return p('Oversikt');
       case 'adminnyepameldinger': return p('Oversikt');
       case 'adminmedlemssoknader': return p('Oversikt');
       case 'adminubesvarte':     return p('Oversikt');
       case 'adminomrmedlemmer':  return p('Medlemmer', '', '');
-      case 'adminkursdeltakere': return p('Deltakere', 'Deltakere', 'Alle deltakere');
-      case 'adminpameldte':      return p('Deltakere', 'Deltakere', 'Påmeldte');
+      case 'adminkursdeltakere': return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle deltakere');
+      case 'adminpameldte':      return p('Kurs og deltakere', 'Kurs og deltakere', 'Påmeldte');
       case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Alle medlemmer');
-      case 'adminoppskrifter':   return p('Oppskrifter');
+      case 'adminoppskrifter':   return p('Verkstedet');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
       case 'adminreferanser':    return p('Nettsiden', 'Nettsiden', 'Referansekunder');
       case 'adminkursvelger':    return p('Oversikt');
@@ -22241,21 +22265,21 @@ class Component extends DCLogic {
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
       case 'admin':
-        if (st.kursFane === 'apne')    return p('Deltakere', 'Deltakere', 'Kurs');
+        if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
-        if (st.kursFane === 'maler')   return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Kurs');
-        return p('Kurs og medlemskap', 'Kurs og medlemskap', 'Alle kurs');
+        if (st.kursFane === 'maler')   return p('Kurs og deltakere', 'Kurs og deltakere', 'Kurs');
+        return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle kurs');
       case 'adminbeskjeder':
         return (st.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
-          ? p('Deltakere', 'Deltakere', 'Beskjeder')
+          ? p('Kurs og deltakere', 'Kurs og deltakere', 'Beskjeder')
           : p('Medlemmer', 'Medlemmer', 'Beskjeder');
       case 'adminokonomi':
-        if (st.okonomiFor === 'deltakere') return p('Deltakere', 'Deltakere', 'Betalinger');
+        if (st.okonomiFor === 'deltakere') return p('Kurs og deltakere', 'Kurs og deltakere', 'Betalinger');
         if (st.okonomiFor === 'medlemmer') return p('Medlemmer', 'Medlemmer', 'Betalinger');
         return p('Økonomi');
       case 'adminnyttig':
         return st.nyttigFor === 'deltakere'
-          ? p('Deltakere', 'Deltakere', 'Nyttig info')
+          ? p('Kurs og deltakere', 'Kurs og deltakere', 'Nyttig info')
           : p('Medlemmer', 'Medlemmer', 'Nyttig info');
       case 'adminbutikk':
         // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
@@ -27481,10 +27505,12 @@ class Component extends DCLogic {
       // avgjor om du skal dit i det hele tatt: staar det ingen ubetalte,
       // trenger du ikke aapne betalingene for aa finne det ut.
       ...(() => {
-        const erDeltakere = side === 'adminomrdeltakere';
+        // «Kurs og deltakere» er ett sted naa. Begge adressene lever videre —
+        // /admin/deltakere er delt og bokmerket — og lander paa den samme
+        // skjermen.
         const erMedlemmer = side === 'adminomrmedlemmer';
-        const erKurs = side === 'adminomrkurs';
-        if (!erDeltakere && !erMedlemmer && !erKurs) {
+        const erKurs = side === 'adminomrkurs' || side === 'adminomrdeltakere';
+        if (!erMedlemmer && !erKurs) {
           return { erAdminOmraade: false, omrKort: [], omrHurtig: [] };
         }
 
@@ -27578,9 +27604,9 @@ class Component extends DCLogic {
           return {
             erAdminOmraade: true,
             adminNavOmraade: this.adminMeny(),
-            omrTittel: 'Kurs og medlemskap',
-            omrUnder: 'Alt verkstedet selger: kursene med datoene sine, og '
-              + 'medlemskapene med pris, timer og teksten kunden leser.',
+            omrTittel: 'Kurs og deltakere',
+            omrUnder: 'Alt verkstedet tilbyr, og alle som kommer: kursene med '
+              + 'datoene sine, medlemskapene, og hvem som er meldt på hva.',
             omrHurtig: [
               // Samme knapp som paa Oversikt. Aa legge en dato paa et kurs som
               // finnes er det som gjores oftest her, og det maatte gjores fra
@@ -27589,6 +27615,7 @@ class Component extends DCLogic {
               { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', nyttKurs) },
               { navn: 'Nytt medlemskap', velg: () => this.gaaAdmin('adminmedlemskap', nyttMedlemskap) },
               { navn: 'Legg til deltaker', velg: () => this.gaaAdmin('adminpameldte', { mpApen: true }) },
+              { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
             ],
             omrKort: [
               // Teller og aapner det kortet heter: kurs som har en dato
@@ -27614,9 +27641,31 @@ class Component extends DCLogic {
                    okter.length, 'admin', { kursFane: 'alle' }, 'Se datoene'),
                    'Legg ut en ny dato',
                    () => this.apneNyKursdato()),
-              kort('Kursdeltakere',
-                   'De som går på kurs: hvem de er, hva de har meldt seg på, og hva de har betalt.',
-                   (this.state.adminDeltakere || []).length, 'adminomrdeltakere', {}, 'Se deltakerne'),
+              // Kortene fra det gamle deltakeromraadet. «Kursdeltakere» sto
+              // her og pekte paa den skjermen som naa er den samme — et kort
+              // som aapner seg selv.
+              kort('Deltakere',
+                   'Alle som har vært på kurs, med historikk og kursbevis — og hva de selv ser på Min side.',
+                   this.kursdeltakerRader().length, 'adminkursdeltakere', {}, 'Se deltakerne'),
+              kort('Åpne kurs',
+                   'Kursene som er åpne for alle: datoer, priser og ledige plasser.',
+                   this.kursData().filter(k => (k.tema || '') !== 'Kun for medlemmer'
+                     && k.type !== 'Kun for medlemmer' && k.type !== 'Kun medlemmer').length,
+                   'admin', { kursFane: 'apne' }, 'Se kursene'),
+              kort('Beskjeder',
+                   'Send beskjed til alle påmeldte på én dato, eller til én person.',
+                   null, 'adminbeskjeder', { motValg: 'Deltakere på et kurs' }, 'Skriv beskjed'),
+              (() => {
+                const ubet = (this.state.adminDeltakere || []).filter(x => x.status !== 'Betalt').length;
+                return kort('Betalinger', 'Det som er betalt for kurs og drop-in.',
+                   ubet || null, 'adminokonomi', { okonomiFor: 'deltakere' },
+                   ubet ? 'Se de ubetalte' : 'Se betalingene', true);
+              })(),
+              // Min side slik en kursdeltaker ser den. Aapner den ekte
+              // skjermen med rollen satt.
+              kort('Hva kursdeltakere ser',
+                   'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
+                   null, 'minside', { fhRolle: 'deltaker', fhFra: 'adminomrkurs' }, 'Se siden'),
               kort('Drop-in',
                    'Åpningstidene for drop-in: legg ut en ny tid, endre den eller ta den bort.',
                    null, 'admindropin', {}, 'Se tidene'),
@@ -27630,64 +27679,6 @@ class Component extends DCLogic {
               kort('Videokurs',
                    'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.',
                    null, 'adminvideokurs', {}, 'Se hva som mangler'),
-            ],
-          };
-        }
-
-        if (erDeltakere) {
-          const deltakere = this.kursdeltakerRader();
-          const pameldte = this.state.adminDeltakere || [];
-          const ubetalte = pameldte.filter(x => x.status !== 'Betalt').length;
-          return {
-            erAdminOmraade: true,
-            adminNavOmraade: this.adminMeny(),
-            omrTittel: 'Kursdeltakere',
-            omrUnder: 'Alt som gjelder dem som går på kurs hos dere: hvem de er, hva de '
-              + 'har meldt seg på, hva de har betalt, og hva de har fått beskjed om.',
-            omrHurtig: [
-              { navn: 'Legg til deltaker', velg: () => this.gaaAdmin('adminpameldte', { mpApen: true }) },
-              { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
-              { navn: 'Nytt kurs', velg: () => this.gaaAdmin('admin', {
-                  kursFane: 'apne', kRed: true, kSteg: 1, kIndeks: -1,
-                  kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
-                  kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
-            kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
-            kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
-            kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
-            kGjenstandIKassa: false,
-            kPasserNivaa: '', kPasserHvem: '', kMetode: '', kVarighet: '',
-                  kGjentak: 'Ingen', kAntall: '',
-                  kGradient: 'Ingen', kStyrke: 40, kSekunder: '5', kFade: true,
-                  kDatoer: [{ dato: '', fra: '', til: '' }],
-                }) },
-            ],
-            omrKort: [
-              kort('Deltakere',
-                   'Alle som har vært på kurs, med historikk og kursbevis — og hva de selv ser på Min side.',
-                   deltakere.length, 'adminkursdeltakere', {}, 'Se deltakerne'),
-              kort('Påmeldte',
-                   ubetalte ? 'Hvem som kommer framover. ' + ubetalte + (ubetalte === 1 ? ' har' : ' har') + ' ikke gjort opp ennå.'
-                            : 'Hvem som kommer framover, og hva de har betalt.',
-                   pameldte.length, 'adminpameldte', {}, 'Se påmeldingene'),
-              kort('Kurs',
-                   'Kursene som er åpne for alle: datoer, priser og ledige plasser.',
-                   kursData.filter(k => !intern(k)).length, 'admin', { kursFane: 'apne' }, 'Se kursene'),
-              kort('Beskjeder',
-                   'Send beskjed til alle påmeldte på én dato, eller til én person.',
-                   null, 'adminbeskjeder', { motValg: 'Deltakere på et kurs' }, 'Skriv beskjed'),
-              kort('Betalinger',
-                   'Det som er betalt for kurs og drop-in.',
-                   ubetalte || null, 'adminokonomi', { okonomiFor: 'deltakere' },
-                   ubetalte ? 'Se de ubetalte' : 'Se betalingene', true),
-              // Min side slik en kursdeltaker ser den. Kortet sto under Kurs
-              // og medlemskap; det hoerer til her, hos dem det gjelder.
-              // Aapner den ekte skjermen med rollen satt.
-              kort('Hva kursdeltakere ser',
-                   'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
-                   null, 'minside', { fhRolle: 'deltaker', fhFra: 'adminomrdeltakere' }, 'Se siden'),
-              // «Nyttig info» sto her ogsaa. Det er medlemsstoff — dorkode,
-              // ordensregler og verkstedinfo — og hoerer til Medlemmer.
-              // Fjernet 24. august paa bestilling.
             ],
           };
         }
@@ -28418,6 +28409,14 @@ class Component extends DCLogic {
         // gaar dit.
 
         const ubetalte = deltakere.filter(x => x.status !== 'Betalt').length;
+        // Oekter i dag, til kortet som aapner kalenderen. Samme kilde som
+        // programmet rett over — to steder skal ikke telle hver sin sannhet.
+        const oktIdag = (() => {
+          const n = new Date();
+          const iso = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0')
+                    + '-' + String(n.getDate()).padStart(2, '0');
+          return (this.state.adminOkter || []).filter(o => String(o.dato || '').slice(0, 10) === iso).length;
+        })();
         // Kursdatoer som er gjennomfoert og ikke meldt fra om ennaa.
         const venterMelding = (this.state.ferdigbrentAdmin || []).filter(o => !o.meldt).length;
         // Tallene bak de tre nye kortene. Panelene laa paa Oversikt og hadde
@@ -28464,6 +28463,23 @@ class Component extends DCLogic {
             // Fjernet 26. august paa bestilling. Alle tre naas fortsatt fra
             // menyen til venstre: Kurs og medlemskap, og Nettsiden.
             const alle = [
+            // Veien inn til dagen.
+            //
+            // Kalenderen gjor naa det meste av det daglige — datoene,
+            // deltakerne, ventelista, beskjedene, kursholdertimene og selve
+            // kursene. Men den sto som ett menypunkt blant elleve, og den som
+            // aapnet Oversikt om morgenen fikk ingen vei dit.
+            //
+            // Kortet teller det som faktisk skjer i dag, saa det sier noe
+            // ogsaa foer man trykker.
+            kort('Kursadministrasjon',
+                 oktIdag
+                   ? (oktIdag === 1 ? 'Én økt i dag. Datoer, påmeldte, venteliste og beskjeder — alt på ett sted.'
+                                    : oktIdag + ' økter i dag. Datoer, påmeldte, venteliste og beskjeder — alt på ett sted.')
+                   : 'Datoer, påmeldte, venteliste, beskjeder og kursene selv — alt på ett sted.',
+                 oktIdag || null, 'Åpne kalenderen',
+                 () => this.gaaAdmin('adminkalender', {})),
+
             // Ventelista staar bare naar noen faktisk venter. Et kort som
             // alltid staar der og sier «ingen», er ett kort mer aa lese
             // forbi hver dag.
@@ -28624,6 +28640,11 @@ class Component extends DCLogic {
             if (egen.length) {
               const nr = (k) => {
                 const i = egen.indexOf(k.navn);
+                // «Kursadministrasjon» er veien inn til dagen, og skal ikke
+                // legge seg bakerst slik nye kort ellers gjor. Har verkstedet
+                // dratt det et annet sted, gjelder det de gjorde — det er
+                // bare den forste gangen det staar oeverst av seg selv.
+                if (i === -1 && k.navn === 'Kursadministrasjon') return -1;
                 return i === -1 ? egen.length + alle.indexOf(k) : i;
               };
               return alle.slice().sort((x, y) => nr(x) - nr(y));
@@ -28635,7 +28656,8 @@ class Component extends DCLogic {
             // gjores i dag foerst, oppslagsverkene etterpaa.
             if ((this.state.vw || 1400) >= 980) return alle;
 
-            const ROR = ['Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
+            const ROR = ['Kursadministrasjon',
+                         'Venteliste', 'Ubesvarte meldinger', 'Medlemskapsforespørsler',
                          'Klar til henting', 'Kurs går tomme for datoer',
                          'Nye påmeldinger', 'Planlagte kurs',
                          'Butikk', 'Kasse', 'Meld noen på', 'Intern side', 'Beskjeder'];
@@ -29019,9 +29041,12 @@ class Component extends DCLogic {
           kursFaneInterne: fane === 'interne',
           kursFaneApen: fane !== 'interne' && fane !== 'maler',
           kursListeTittel: NAVN[fane] || NAVN.alle,
+          // Overskriften sa «Kurs og medlemskap» — navnet paa omraadet slik det
+          // het for fase 7. Skjermen viser kursene med datoene sine; det er
+          // det den heter.
           kursSkjermTittel: fane === 'interne' ? 'Kurs for medlemmer'
             : fane === 'maler' ? 'Kurs'
-            : (fane === 'apne' ? 'Kurs og datoer' : 'Kurs og medlemskap'),
+            : (fane === 'apne' ? 'Kurs og datoer' : 'Alle kurs'),
           kursSkjermEyebrow: fane === 'interne' ? 'Medlemmer'
             : (fane === 'apne' ? 'Kursdeltakere' : 'Administrasjon'),
           // Malfanen er kursene, ikke datoene. Kalenderen og datolista

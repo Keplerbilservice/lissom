@@ -1649,6 +1649,50 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Fase 8: verkstedet ───────────────────────────────────────────────────
+//
+// Notatet og paaminnelsene i kalenderen sto i «localStorage» — i nettleseren
+// paa den maskinen de ble skrevet paa. Skrev eieren en paaminnelse paa
+// telefonen, fantes den ikke paa PC-en, og toemte hun nettleserdataene var den
+// borte. Det var ikke til aa se paa skjermen, og det er nettopp derfor det var
+// farlig: hun skrev noe hun trodde var lagret.
+foreach (['verksted_notater', 'verksted_paaminnelser', 'vakter', 'brenninger'] as $t) {
+    sjekk('tabellen «' . $t . '» finnes', DB::harTabell($t));
+}
+sjekk('notatet og paaminnelsene ligger ikke lenger i nettleseren',
+    !str_contains($sida, "localStorage.getItem('lissomKlNotat') || ''; } catch")
+    && !str_contains($sida, "localStorage.setItem('lissomKlPamin'"));
+// Det som alt sto i nettleseren maa flyttes inn, ellers ville notatet
+// forsvunnet i det oyeblikket feltet begynte aa lese fra serveren.
+sjekk('det som sto i nettleseren flyttes inn i basen én gang',
+    str_contains($sida, 'vstFlyttFraNettleseren(d) {')
+    && str_contains($sida, "localStorage.removeItem('lissomKlNotat')"));
+// Notatet er personlig. Uten «member_id» i betingelsen kunne en admin slettet
+// en annens paaminnelse ved aa gjette nummeret.
+$vstFil = file_get_contents(dirname(__DIR__) . '/api/admin/verkstedet.php');
+sjekk('paaminnelsene er personlige, ogsaa naar de slettes',
+    str_contains($vstFil, 'DELETE FROM verksted_paaminnelser WHERE id = :i AND member_id = :m'));
+// En brenning gaar ofte over natta.
+sjekk('en brenning kan gaa over natta',
+    str_contains($vstFil, "\$sDato = Foresporsel::tekst('sluttDato') ?: \$dato;"));
+sjekk('brenningens slag er et valg, ikke fritekst',
+    str_contains($vstFil, "const BRENNSLAG = ['raabrann', 'glasurbrann', 'annet'];"));
+// Kalenderen har hatt farger for vakt og brenning siden den ble hentet inn.
+sjekk('vaktene og brenningene staar i kalenderen',
+    str_contains($kalFil, "'type'   => 'vakt',") && str_contains($kalFil, "'type'      => 'brenning',")
+    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $vakter, $brenninger)'));
+// Uten tabellene skal endepunktet svare, ikke doe.
+sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
+    str_contains($kalFil, "DB::harTabell('vakter')") && str_contains($kalFil, "DB::harTabell('brenninger')"));
+// Verkstedet er blitt et sted med tre faner.
+sjekk('verkstedet har oppskrifter, vakter og brenning',
+    str_contains($sida, "['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],")
+    && str_contains($sida, "['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],"));
+// Lista viser hele aaret. En liste som bare viser to uker ser tom ut for den
+// som satte opp en vakt i november.
+sjekk('listene viser hele aaret framover, ikke bare to uker',
+    str_contains($sida, "const om = new Date(naa.getFullYear() + 1, naa.getMonth(), naa.getDate());"));
+
 // ── Fase 7: menyen ───────────────────────────────────────────────────────
 //
 // «Deltakere» og «Kurs og medlemskap» sto som to punkter og delte allerede to
@@ -1670,7 +1714,8 @@ sjekk('kalenderen staar som punkt nummer to',
 // Oppskriftene er verkstedets egne, og «Verkstedet» er stedet fase 8 lander.
 sjekk('oppskriftene staar under «Verkstedet»',
     str_contains($sida, "['Verkstedet', 'adminoppskrifter'],")
-    && str_contains($sida, "case 'adminoppskrifter':   return p('Verkstedet');"));
+    // Fase 8 ga stedet tre faner, saa menypunktet peker paa et omraade naa.
+    && str_contains($sida, "case 'adminoppskrifter':\n        return p('Verkstedet', 'Verkstedet',"));
 // Ventelista var bare aa naa fra et kort paa Oversikt.
 sjekk('ventelista har faatt sin plass i fanerekka',
     str_contains($sida, "['Venteliste',    'adminventeliste'],")

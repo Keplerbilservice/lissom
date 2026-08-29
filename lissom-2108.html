@@ -5261,6 +5261,15 @@ window.__resources = {
           <div style="{{ klBoksNStil }}">
             <div style="{{ klBoksEtikettStil }}">Notater til meg selv</div>
             <textarea value="{{ klNotat }}" onChange="{{ settKlNotat }}" rows="3" placeholder="Skriv et notat …" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: 14px; padding: 9px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+            <!-- Knappen kommer forst naar noe er endret. Notatet ligger i
+                 basen naa, ikke i nettleseren — og da maa det staa naar det
+                 faktisk er lagret. -->
+            <sc-if value="{{ klNotatEndret }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; align-items: center; gap: var(--space-3); margin-top: 8px;">
+                <button type="button" onClick="{{ klNotatUt }}" style="appearance: none; border: none; background: var(--lissom-brown); cursor: pointer; border-radius: var(--radius-pill); padding: 6px 16px; font: var(--type-body-sm); font-weight: 700; color: var(--clay-50); white-space: nowrap;">Lagre notatet</button>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">Ikke lagret ennå</span>
+              </div>
+            </sc-if>
           </div>
           <div style="{{ klBoksNStil }}">
             <div style="{{ klBoksEtikettStil }}">Påminnelser</div>
@@ -11263,9 +11272,12 @@ window.__resources = {
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-8);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
-            <h1 style="margin: 0; font-size: var(--text-4xl);">Oppskrifter</h1>
+            <h1 style="margin: 0; font-size: var(--text-4xl);">{{ vstTittel }}</h1>
+            <p style="margin: var(--space-2) 0 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ vstUnder }}</p>
           </div>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyOppskrift }}" hint-size="auto,44px">Ny oppskrift</x-import>
+          <sc-if value="{{ vstErOppskrifter }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ aNyOppskrift }}" hint-size="auto,44px">Ny oppskrift</x-import>
+          </sc-if>
         </div>
 
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
@@ -11278,6 +11290,7 @@ window.__resources = {
           </div>
         </sc-if>
 
+        <sc-if value="{{ vstErOppskrifter }}" hint-placeholder-val="{{ true }}">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start;">
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
             <sc-if value="{{ redigerer }}" hint-placeholder-val="{{ false }}">
@@ -11381,6 +11394,60 @@ window.__resources = {
           </div>
           </sc-if>
         </div>
+        </sc-if>
+
+        <!-- Vaktene og brenningene.
+             Kalenderen har hatt farger for begge siden den ble hentet inn,
+             men ingen av delene fantes i basen for migrasjon 088. En ovn som
+             er opptatt til fredag er noe man maa vite naar man setter opp et
+             kurs. Begge tegnes i kalenderen med det samme de er lagret. -->
+        <sc-if value="{{ vstErListe }}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start; max-width: 1100px;">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ vstSkjemaTittel }}</div>
+              <sc-for list="{{ vstFelt }}" as="f" hint-placeholder-count="5">
+                <div style="margin-bottom: var(--space-4);">
+                  <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ f.etikett }}</label>
+                  <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
+                    <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.stil }}">
+                      <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="3">
+                        <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                      </sc-for>
+                    </select>
+                  </sc-if>
+                  <sc-if value="{{ f.erFelt }}" hint-placeholder-val="{{ true }}">
+                    <input type="{{ f.type }}" value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="{{ f.hint }}" style="{{ f.stil }}">
+                  </sc-if>
+                </div>
+              </sc-for>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ vstLagre }}" hint-size="auto,44px">{{ vstLagreTekst }}</x-import>
+                <sc-if value="{{ vstRedigerer }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ vstAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+                </sc-if>
+              </div>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ vstListeTittel }}</div>
+              <sc-if value="{{ vstListeTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">{{ vstTomTekst }}</div>
+              </sc-if>
+              <sc-for list="{{ vstListe }}" as="r" hint-placeholder-count="3">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+                  <div style="min-width: 0;">
+                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ r.tittel }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.under }}</div>
+                  </div>
+                  <div style="display: flex; gap: var(--space-3);">
+                    <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
+                    <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--terracotta-600); font: var(--type-body-sm); font-weight: 700;">Ta bort</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
       </main>
     </div>
   </sc-if>
@@ -22184,6 +22251,14 @@ class Component extends DCLogic {
         ['Beskjeder',     'adminbeskjeder',   { motValg: 'Deltakere på et kurs' }],
         ['Betalinger',    'adminokonomi',     { okonomiFor: 'deltakere' }],
       ],
+      // Verkstedet: det som hoerer til huset, ikke til én gruppe mennesker.
+      // Oppskriftene sto her alene; vaktene og brenningene kom med
+      // migrasjon 088.
+      'Verkstedet': [
+        ['Oppskrifter',   'adminoppskrifter', { vstFane: 'oppskrifter' }],
+        ['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],
+        ['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],
+      ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
         ['Referansekunder', 'adminreferanser'],
@@ -22253,7 +22328,10 @@ class Component extends DCLogic {
       case 'adminkursdeltakere': return p('Kurs og deltakere', 'Kurs og deltakere', 'Alle deltakere');
       case 'adminpameldte':      return p('Kurs og deltakere', 'Kurs og deltakere', 'Påmeldte');
       case 'adminmedlem':        return p('Medlemmer', 'Medlemmer', 'Alle medlemmer');
-      case 'adminoppskrifter':   return p('Verkstedet');
+      case 'adminoppskrifter':
+        return p('Verkstedet', 'Verkstedet',
+          st.vstFane === 'vakter' ? 'Vakter'
+          : st.vstFane === 'brenning' ? 'Brenning' : 'Oppskrifter');
       case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
       case 'adminreferanser':    return p('Nettsiden', 'Nettsiden', 'Referansekunder');
       case 'adminkursvelger':    return p('Oversikt');
@@ -22479,6 +22557,106 @@ class Component extends DCLogic {
     const alle = (this.state.adminKursholdere || []).concat(this.state.kalHoldere || []);
     const std = alle.find(h => h && h.standard && h.aktiv !== false && h.aktiv !== 0);
     return std ? std.navn : '';
+  }
+
+  /**
+   * Notatene, paaminnelsene, vaktene og brenningene.
+   *
+   * Notatet og paaminnelsene laa i «localStorage» — i nettleseren paa den
+   * maskinen de ble skrevet paa. Skrev eieren en paaminnelse paa telefonen,
+   * fantes den ikke paa PC-en, og toemte hun nettleserdataene var den borte.
+   * Det var ikke til aa se paa skjermen, og det er nettopp derfor det var
+   * farlig: hun skrev noe hun trodde var lagret.
+   *
+   * Hentes én gang per skjerm. Vaktene og brenningene tegnes av kalenderen
+   * selv, gjennom api/admin/kalender.php — dette kallet er for listene og
+   * skjemaene i verkstedsruta.
+   */
+  vstHent() {
+    if (!this.erPublisert() || this._vstHentes) return;
+    this._vstHentes = true;
+    // Hele aaret framover. Kalenderen tegner vaktene og brenningene selv, en
+    // maaned om gangen — dette kallet er listene, og en liste som bare viser
+    // to uker ser tom ut for den som satte opp en vakt i november.
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+                     + '-' + String(d.getDate()).padStart(2, '0');
+    const naa = new Date();
+    const om = new Date(naa.getFullYear() + 1, naa.getMonth(), naa.getDate());
+    fetch('/api/admin/verkstedet.php?fra=' + iso(naa) + '&til=' + iso(om),
+          { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        if (!d) return;
+        this.setState({ vst: d });
+        this.vstFlyttFraNettleseren(d);
+      })
+      .catch(() => { this._vstHentes = false; });
+  }
+
+  /**
+   * Det som allerede sto i nettleseren, flyttes inn i basen én gang.
+   *
+   * Uten dette ville notatet eieren hadde skrevet forsvunnet i det oeyeblikket
+   * feltet begynte aa lese fra serveren — hun ville sett en tom rute og trodd
+   * at noe rok. Flyttingen skjer bare naar basen er tom for hennes del, og
+   * noekkelen fjernes etterpaa saa den ikke kan skje to ganger.
+   */
+  vstFlyttFraNettleseren(d) {
+    let gammeltNotat = '', gamlePamin = [];
+    try {
+      gammeltNotat = localStorage.getItem('lissomKlNotat') || '';
+      gamlePamin = JSON.parse(localStorage.getItem('lissomKlPamin') || '[]');
+    } catch (e) { return; }
+    if (!gammeltNotat && !(gamlePamin || []).length) return;
+
+    const kall = (kropp) => fetch('/api/admin/verkstedet.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kropp),
+    });
+    const gjort = [];
+    if (gammeltNotat && !(d.notat || '').trim()) {
+      gjort.push(kall({ handling: 'notat', tekst: gammeltNotat }));
+    }
+    if ((gamlePamin || []).length && !(d.paaminnelser || []).length) {
+      gamlePamin.forEach(x => {
+        const t = (x && x.tekst || '').trim();
+        if (t) gjort.push(kall({ handling: 'paaminnelse', tekst: t }));
+      });
+    }
+    if (!gjort.length) {
+      // Basen hadde alt noe. Da er det den som gjelder, og noekkelen kan gaa.
+      try { localStorage.removeItem('lissomKlNotat'); localStorage.removeItem('lissomKlPamin'); } catch (e) {}
+      return;
+    }
+    Promise.all(gjort).then(() => {
+      try { localStorage.removeItem('lissomKlNotat'); localStorage.removeItem('lissomKlPamin'); } catch (e) {}
+      this._vstHentes = false;
+      this.vstHent();
+      this.setState({ kvittering: 'Notatene er flyttet',
+                      kvitteringDetalj: 'Det du hadde skrevet lå bare i denne nettleseren. Nå ligger det i basen, og følger deg mellom telefon og PC.' });
+    });
+  }
+
+  /** En endring i verkstedsruta. Henter alt paa nytt etterpaa. */
+  vstKall(kropp) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    return fetch('/api/admin/verkstedet.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+      .then(({ ok, d }) => {
+        if (d && (d.beskjed || d.feil)) {
+          this.setState({ kvittering: ok ? 'Lagret' : 'Ble ikke lagret',
+                          kvitteringDetalj: d.beskjed || d.feil });
+        }
+        if (ok) { this._vstHentes = false; this.vstHent(); this.klFrisk(); }
+        return ok;
+      })
+      .catch(() => {
+        this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+        return false;
+      });
   }
 
   /** Skriver kalenderen enda? Fase 6 setter denne til true. */
@@ -22747,6 +22925,9 @@ class Component extends DCLogic {
 
   klVals() {
     const side = this.state.side;
+    // Notatene, paaminnelsene og verkstedsdataene. Hentes én gang naar
+    // kalenderen tegnes; «vstHent» passer selv paa at det ikke blir to kall.
+    this.vstHent();
     const idag = new Date(); idag.setHours(12, 0, 0, 0);
     const isoAv = dt => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
     const idagIso = isoAv(idag);
@@ -23852,20 +24033,33 @@ class Component extends DCLogic {
         ];
       })(),
       klSkrivUt: () => window.print(),
-      klNotat: this.state.klNotat ?? (() => { try { return localStorage.getItem('lissomKlNotat') || ''; } catch (e) { return ''; } })(),
-      settKlNotat: e => { const v = e.target.value; try { localStorage.setItem('lissomKlNotat', v); } catch (x) {} this.setState({ klNotat: v }); },
-      klPaminListe: this.klPaminData().map((p, i) => ({
-        tekst: p.tekst,
-        gjort: !!p.gjort,
-        tekstStil: { flex: 1, minWidth: 0, fontSize: 'var(--text-sm)', fontWeight: 600, color: p.gjort ? 'var(--text-muted)' : 'var(--text-heading)', textDecoration: p.gjort ? 'line-through' : 'none' },
-        veksl: () => this.klPaminSett(this.klPaminData().map((x, j) => (j === i ? Object.assign({}, x, { gjort: !x.gjort }) : x))),
-        slett: () => this.klPaminSett(this.klPaminData().filter((x, j) => j !== i)),
+      // Notatet og paaminnelsene ligger i basen fra migrasjon 088. Foer laa de
+      // i «localStorage» — i nettleseren paa den maskinen de ble skrevet paa.
+      //
+      // Notatet lagres naar feltet forlates, ikke paa hvert tastetrykk: en
+      // skriveoekt skal ikke bli tjue kall.
+      klNotat: this.state.klNotat ?? ((this.state.vst || {}).notat || ''),
+      settKlNotat: e => this.setState({ klNotat: e.target.value }),
+      klNotatEndret: this.state.klNotat !== undefined
+        && this.state.klNotat !== ((this.state.vst || {}).notat || ''),
+      klNotatUt: () => {
+        const v = this.state.klNotat;
+        if (v === undefined || v === ((this.state.vst || {}).notat || '')) return;
+        this.vstKall({ handling: 'notat', tekst: v })
+          .then(ok => { if (ok) this.setState({ klNotat: undefined }); });
+      },
+      klPaminListe: ((this.state.vst || {}).paaminnelser || []).map(pm => ({
+        tekst: pm.tekst + (pm.frist ? ' · ' + pm.frist : ''),
+        gjort: !!pm.gjort,
+        tekstStil: { flex: 1, minWidth: 0, fontSize: 'var(--text-sm)', fontWeight: 600, color: pm.gjort ? 'var(--text-muted)' : 'var(--text-heading)', textDecoration: pm.gjort ? 'line-through' : 'none' },
+        veksl: () => this.vstKall({ handling: 'paaminnelseGjort', id: pm.id, gjort: pm.gjort ? 'nei' : 'ja' }),
+        slett: () => this.vstKall({ handling: 'paaminnelseVekk', id: pm.id }),
       })),
-      klPaminTom: this.klPaminData().length === 0,
+      klPaminTom: ((this.state.vst || {}).paaminnelser || []).length === 0,
       klPaminNy: this.state.klPaminNy || '',
       settKlPaminNy: e => this.setState({ klPaminNy: e.target.value }),
-      klPaminEnter: e => { if (e.key === 'Enter' && (this.state.klPaminNy || '').trim()) this.klPaminLeggTil(); },
-      klPaminLeggTilKlikk: () => { if ((this.state.klPaminNy || '').trim()) this.klPaminLeggTil(); },
+      klPaminEnter: e => { if (e.key === 'Enter') this.klPaminLeggTil(); },
+      klPaminLeggTilKlikk: () => this.klPaminLeggTil(),
       // Statusen sto i en egen «klInne» som ingenting satte: knappen viste
       // «Stemple inn» ogsaa naar man var innstemplet. Naa er det den samme
       // kilden som knappen i sidemenyen og paa Min side.
@@ -24202,19 +24396,11 @@ class Component extends DCLogic {
     window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
   }
 
-  klPaminData() {
-    if (this.state.klPamin) return this.state.klPamin;
-    try { return JSON.parse(localStorage.getItem('lissomKlPamin') || '[]'); } catch (e) { return []; }
-  }
-
   klPaminLeggTil() {
-    this.klPaminSett(this.klPaminData().concat([{ tekst: (this.state.klPaminNy || '').trim(), gjort: false }]));
-    this.setState({ klPaminNy: '' });
-  }
-
-  klPaminSett(l) {
-    try { localStorage.setItem('lissomKlPamin', JSON.stringify(l)); } catch (e) {}
-    this.setState({ klPamin: l });
+    const t = (this.state.klPaminNy || '').trim();
+    if (!t) return;
+    this.vstKall({ handling: 'paaminnelse', tekst: t })
+      .then(ok => { if (ok) this.setState({ klPaminNy: '' }); });
   }
 
   // Klokkeslett og minutter, begge veier. «17:30» er 1050 minutter etter
@@ -33406,6 +33592,109 @@ class Component extends DCLogic {
       adminNavDropin: this.adminMeny(),
       adminNavOppskrifter: this.adminMeny(),
       erAdminOppskrifter: side === 'adminoppskrifter',
+      // ── Verkstedet: vaktene og brenningene ────────────────────────────
+      //
+      // Kalenderen har hatt farger for begge siden den ble hentet inn, men
+      // ingen av delene fantes i basen for migrasjon 088. Ett skjema og én
+      // liste, samme form for begge — de er den samme slags ting: noe som
+      // opptar verkstedet mellom to klokkeslett.
+      ...(() => {
+        if (side !== 'adminoppskrifter') return {};
+        this.vstHent();
+        const fane = this.state.vstFane || 'oppskrifter';
+        const erVakt = fane === 'vakter', erBrenn = fane === 'brenning';
+        const d = this.state.vst || {};
+        const u = this.state.vstUtkast || {};
+        const sett = (n, v) => this.setState(st => ({
+          vstUtkast: Object.assign({}, st.vstUtkast, { [n]: v }) }));
+        const feltStil = { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', background: 'var(--clay-50)', color: 'var(--text-heading)' };
+        const felt = (n, etikett, type, hint) => ({
+          etikett, type: type || 'text', hint: hint || '',
+          erFelt: true, erValg: false, valg: [],
+          verdi: u[n] === undefined ? '' : String(u[n]),
+          endre: e => sett(n, e.target.value), stil: feltStil,
+        });
+        const valg = (n, etikett, liste) => ({
+          etikett, type: 'text', hint: '', erFelt: false, erValg: true,
+          valg: liste.map(v => ({ verdi: String(v[0]), navn: v[1] })),
+          verdi: u[n] === undefined ? String((liste[0] || [''])[0]) : String(u[n]),
+          endre: e => sett(n, e.target.value), stil: feltStil,
+        });
+        // Datoen og klokkeslettene staar i egne felter, som i kursoppsettet.
+        // Ett fritekstfelt for «2026-09-02 17:00» er en feilkilde uten grunn.
+        const vaktFelt = [
+          valg('kursholderId', 'Hvem har vakta',
+               (d.kursholdere || []).map(h => [h.id, h.navn])),
+          felt('dato', 'Dato', 'date'),
+          felt('fra', 'Fra', 'time'),
+          felt('til', 'Til', 'time'),
+          felt('notat', 'Notat', 'text', 'Valgfritt'),
+        ];
+        const brennFelt = [
+          valg('slag', 'Hva slags brenning', [['raabrann', 'Råbrann'],
+               ['glasurbrann', 'Glasurbrann'], ['annet', 'Annet']]),
+          felt('ovn', 'Ovn', 'text', 'Valgfritt — når dere har flere'),
+          felt('dato', 'Settes på', 'date'),
+          felt('fra', 'Fra', 'time'),
+          // En brenning gaar ofte over natta. Staar sluttdatoen tom, regnes
+          // den som samme dag.
+          felt('sluttDato', 'Ute igjen (dato)', 'date'),
+          felt('til', 'Ute igjen (klokka)', 'time'),
+          felt('notat', 'Notat', 'text', 'Valgfritt'),
+        ];
+        const SLAG = { raabrann: 'Råbrann', glasurbrann: 'Glasurbrann', annet: 'Brenning' };
+        const rader = erVakt
+          ? (d.vakter || []).map(v => ({
+              tittel: (v.holder || 'Uten navn') + ' · ' + v.dato,
+              under: v.fra + '–' + v.til + (v.notat ? ' · ' + v.notat : ''),
+              rediger: () => this.setState({ vstUtkast: {
+                id: v.id, kursholderId: v.holderId, dato: v.dato,
+                fra: v.fra, til: v.til, notat: v.notat } }),
+              slett: () => { if (window.confirm('Ta bort vakta til ' + (v.holder || 'denne') + ' ' + v.dato + '?'))
+                this.vstKall({ handling: 'vaktVekk', id: v.id }); },
+            }))
+          : (d.brenninger || []).map(br => ({
+              tittel: (SLAG[br.slag] || 'Brenning') + (br.ovn ? ' · ' + br.ovn : ''),
+              under: br.dato + ' ' + br.fra + ' – '
+                     + (br.sluttDato !== br.dato ? br.sluttDato + ' ' : '') + br.til
+                     + (br.notat ? ' · ' + br.notat : ''),
+              rediger: () => this.setState({ vstUtkast: {
+                id: br.id, slag: br.slag, ovn: br.ovn, dato: br.dato, fra: br.fra,
+                sluttDato: br.sluttDato, til: br.til, notat: br.notat } }),
+              slett: () => { if (window.confirm('Ta bort denne brenningen?'))
+                this.vstKall({ handling: 'brenningVekk', id: br.id }); },
+            }));
+        return {
+          vstErOppskrifter: fane === 'oppskrifter',
+          vstErListe: erVakt || erBrenn,
+          vstTittel: erVakt ? 'Vakter' : erBrenn ? 'Brenning' : 'Oppskrifter',
+          vstUnder: erVakt
+            ? 'Hvem som er i verkstedet når. Vaktene står i kalenderen sammen med kursene.'
+            : erBrenn
+              ? 'Når ovnen er opptatt. Står i kalenderen, så ingen setter opp et kurs oppå en brenning.'
+              : 'Glasurene og leiretypene verkstedet bruker, med råvarene og notatene.',
+          vstSkjemaTittel: u.id ? (erVakt ? 'Rediger vakta' : 'Rediger brenningen')
+                                : (erVakt ? 'Ny vakt' : 'Ny brenning'),
+          vstFelt: erVakt ? vaktFelt : brennFelt,
+          vstRedigerer: !!u.id,
+          vstAvbryt: () => this.setState({ vstUtkast: {} }),
+          vstLagreTekst: u.id ? 'Lagre endringen' : (erVakt ? 'Legg til vakta' : 'Legg til brenningen'),
+          vstLagre: () => {
+            const kropp = Object.assign({ handling: erVakt ? 'vakt' : 'brenning' }, u);
+            if (!kropp.slag && erBrenn) kropp.slag = 'raabrann';
+            if (!kropp.kursholderId && erVakt) {
+              kropp.kursholderId = ((d.kursholdere || [])[0] || {}).id || 0;
+            }
+            this.vstKall(kropp).then(ok => { if (ok) this.setState({ vstUtkast: {} }); });
+          },
+          vstListeTittel: erVakt ? 'Vaktene framover' : 'Brenningene framover',
+          vstListe: rader,
+          vstListeTom: rader.length === 0,
+          vstTomTekst: erVakt
+            ? 'Ingen vakter er satt opp. De du legger inn her står i kalenderen.'
+            : 'Ingen brenninger er lagt inn. De du legger inn her står i kalenderen.',
+        };
+      })(),
       harOppskrifter: this.oppskriftData().length > 0,
       ingenOppskrifter: this.oppskriftData().length === 0,
       oppskrifter: this.oppskriftData().map((o, i) => Object.assign({}, o, {

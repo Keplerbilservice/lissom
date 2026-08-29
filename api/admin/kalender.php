@@ -27,8 +27,7 @@
  *     venteliste: [{ navn, posisjon, varslet }],
  *     nye, avlyst, stengt }
  *
- * «type» er kurs | event | pop | dropin | verksted. «vakt» og «brenning»
- * finnes ikke i basen enda og kommer i en senere fase.
+ * «type» er kurs | event | pop | dropin | verksted | vakt | brenning.
  */
 
 declare(strict_types=1);
@@ -162,6 +161,70 @@ foreach (DB::alle(
     ];
 }
 
+// ── Vaktene og brenningene ──────────────────────────────────────────────
+//
+// Kalenderen har hatt farger for begge siden den ble hentet inn, men ingen av
+// delene fantes i basen for migrasjon 088. En ovn som er opptatt til fredag er
+// noe man maa vite naar man setter opp et kurs.
+$vakter = [];
+if (DB::harTabell('vakter')) {
+    foreach (DB::alle(
+        'SELECT v.id, v.start_tid, v.slutt_tid, v.notat, k.navn
+           FROM vakter v
+      LEFT JOIN kursholdere k ON k.id = v.kursholder_id
+          WHERE v.start_tid >= :fra AND v.start_tid < :til
+       ORDER BY v.start_tid',
+        ['fra' => $fra, 'til' => $til]
+    ) as $v) {
+        $vakter[] = [
+            'id'     => 'vakt-' . (int) $v['id'],
+            'vaktId' => (int) $v['id'],
+            'dato'   => $iOslo((string) $v['start_tid'], 'Y-m-d'),
+            'tid'    => $iOslo((string) $v['start_tid'], 'H:i'),
+            'slutt'  => $iOslo((string) $v['slutt_tid'], 'H:i'),
+            'tittel' => 'Vakt' . ($v['navn'] !== null ? ' · ' . $v['navn'] : ''),
+            'type'   => 'vakt',
+            'holder' => (string) ($v['navn'] ?? ''),
+            'kursId' => 0, 'kap' => 0, 'pameldt' => 0, 'oktId' => 0,
+            'deltakere' => [], 'venteliste' => [], 'nye' => 0,
+            'avlyst' => false, 'intern' => false,
+            'merknad' => (string) ($v['notat'] ?? ''),
+        ];
+    }
+}
+
+$brenninger = [];
+if (DB::harTabell('brenninger')) {
+    $slagNavn = ['raabrann' => 'Råbrann', 'glasurbrann' => 'Glasurbrann', 'annet' => 'Brenning'];
+    foreach (DB::alle(
+        'SELECT * FROM brenninger WHERE start_tid >= :fra AND start_tid < :til
+      ORDER BY start_tid',
+        ['fra' => $fra, 'til' => $til]
+    ) as $br) {
+        $samme = $iOslo((string) $br['start_tid'], 'Y-m-d')
+               === $iOslo((string) $br['slutt_tid'], 'Y-m-d');
+        $brenninger[] = [
+            'id'        => 'brenning-' . (int) $br['id'],
+            'brennId'   => (int) $br['id'],
+            'dato'      => $iOslo((string) $br['start_tid'], 'Y-m-d'),
+            'tid'       => $iOslo((string) $br['start_tid'], 'H:i'),
+            // Gaar den over natta, sier sluttida hvilken dag den er ute —
+            // ellers ville «18:00–09:00» sett ut som en feil.
+            'slutt'     => $samme
+                ? $iOslo((string) $br['slutt_tid'], 'H:i')
+                : $iOslo((string) $br['slutt_tid'], 'H:i') . ' ' . $iOslo((string) $br['slutt_tid'], 'j.n.'),
+            'tittel'    => ($slagNavn[(string) $br['slag']] ?? 'Brenning')
+                           . ((string) ($br['ovn'] ?? '') !== '' ? ' · ' . $br['ovn'] : ''),
+            'type'      => 'brenning',
+            'holder'    => '',
+            'kursId' => 0, 'kap' => 0, 'pameldt' => 0, 'oktId' => 0,
+            'deltakere' => [], 'venteliste' => [], 'nye' => 0,
+            'avlyst' => false, 'intern' => false,
+            'merknad'   => (string) ($br['notat'] ?? ''),
+        ];
+    }
+}
+
 // ── Stengte dager ───────────────────────────────────────────────────────
 //
 // «apningstider» er den manuelle overstyringen fra for: en rad for dagen
@@ -276,7 +339,7 @@ foreach ($okter as $o) {
 }
 
 Svar::json([
-    'hendelser' => array_merge($hendelser, $verksted),
+    'hendelser' => array_merge($hendelser, $verksted, $vakter, $brenninger),
     'stengte'   => $stengt,
     // Kursholderne, saa kolonnene i dagsvisningen kan settes opp uten et
     // kall til. «standard» er den som vanligvis holder kursene — den staar

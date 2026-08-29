@@ -1675,6 +1675,21 @@ sjekk('en booket aapningstid kommer med likevel',
 sjekk('vanlige kursdatoer staar ogsaa naar de er tomme',
     str_contains($icsFil, '$utenLedige = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')'));
 
+// ── Den gamle bolleadressen sendes videre ────────────────────────────────
+//
+// «kurs-boller» er adressen Google har indeksert og den som er delt. Uten et
+// 301 ville den vaert en blindvei: 200, riktig tittel i toppen, og «siden
+// finnes ikke» under — samme fella som /kurs/lag-din-egen-bolle sto i for
+// migrasjon 091 og 092.
+$ht = file_get_contents(dirname(__DIR__) . '/.htaccess');
+sjekk('den gamle bolleadressen gaar videre med 301',
+    str_contains($ht, 'RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]'));
+// Regelen maa staa over den som sender alt annet til side.php, ellers ville
+// «/kurs/kurs-boller» blitt servert som en vanlig side.
+sjekk('omdirigeringen staar for oppsamlingsregelen',
+    strpos($ht, 'RewriteRule ^kurs/kurs-boller/?$')
+    < strpos($ht, 'RewriteRule ^ /side.php [L]'));
+
 // ── Adressen foelger navnet ──────────────────────────────────────────────
 //
 // Kurset het «Kurs boller» og fikk navnet «Lag din egen bolle» i 087.

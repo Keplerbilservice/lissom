@@ -198,6 +198,21 @@ RewriteRule ^lissom-2108(-uten-admin)?\.html$ / [R=301,L]
 # forsida, paa sin egen adresse. Ingen skal komme dit direkte.
 RewriteRule ^forside-topp\.html$ / [R=301,L]
 
+# Bollekurset byttet adresse 29. august.
+#
+# Kurset het «Kurs boller» og fikk navnet «Lag din egen bolle» i migrasjon
+# 087. Adressen sto igjen som «kurs-boller» — gamle lenker skulle virke — men
+# en adresse som ikke stemmer med navnet er stoy for baade folk og soek.
+# Migrasjon 092 flyttet den.
+#
+# «kurs-boller» er adressen Google har indeksert og den som er delt. Uten
+# denne regelen ville den vaert en blindvei: 200, riktig tittel i toppen, og
+# «siden finnes ikke» under. Med 301 folger rangeringen med til den nye.
+#
+# Den staar her, over regelen som sender alt annet til nettsiden, fordi
+# «/kurs/kurs-boller» ellers ville blitt servert som en vanlig side.
+RewriteRule ^kurs/kurs-boller/?$ /kurs/lag-din-egen-bolle [R=301,L]
+
 # Ekte adresser: lissom.no/kurs, /medlemskap, /om-oss ...
 #
 # Nettsiden er én fil som bytter skjerm i nettleseren. Uten dette hadde alle

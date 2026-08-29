@@ -1308,28 +1308,36 @@ sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
     $kursId = DB::settInn('courses', [
         'slug' => 'testholder', 'tittel' => 'Testkurs kursholder',
         'pris_ore' => 50000, 'kapasitet' => 6, 'status' => 'kladd',
-        'standard_kursholder_id' => $a,
     ]);
 
-    // Datoen arver standarden. Uten arven maatte man velge den samme
-    // personen paa hver eneste dato.
+    // Verkstedets standard: bare én om gangen. Settes en ny, tas den
+    // forrige av — ellers ville to staatt som standard og forslaget blitt
+    // tilfeldig.
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => $a]);
+    DB::iTransaksjon(static function () use ($b): void {
+        DB::kjor('UPDATE kursholdere SET standard = 0 WHERE standard = 1');
+        DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => $b]);
+    });
+    sjekk('bare én kursholder er standard om gangen',
+        (int) DB::verdi('SELECT COUNT(*) FROM kursholdere WHERE standard = 1') === 1
+        && (int) DB::verdi('SELECT id FROM kursholdere WHERE standard = 1') === $b);
+
     $okt1 = DB::settInn('course_sessions', [
         'course_id' => $kursId,
         'start_tid' => gmdate('Y-m-d H:i:s', time() + 86400),
-        'kursholder_id' => DB::verdi('SELECT standard_kursholder_id FROM courses WHERE id = :i', ['i' => $kursId]),
+        'kursholder_id' => $b,
     ]);
-    sjekk('en ny dato arver kursets standardkursholder',
-        (int) DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $okt1]) === $a);
 
-    // Men den kan settes til noen andre: den som holder kurset i september er
+    // Kursholderen hoerer til datoen: den som holder kurset i september er
     // ikke noedvendigvis den samme som i oktober.
-    DB::oppdater('course_sessions', ['kursholder_id' => $b], ['id' => $okt1]);
-    sjekk('kursholderen kan byttes paa én dato uten aa roere kurset',
-        (int) DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $okt1]) === $b
-        && (int) DB::verdi('SELECT standard_kursholder_id FROM courses WHERE id = :i', ['i' => $kursId]) === $a);
+    DB::oppdater('course_sessions', ['kursholder_id' => $a], ['id' => $okt1]);
+    sjekk('kursholderen settes paa den enkelte datoen',
+        (int) DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $okt1]) === $a);
 
     // Slutter noen, skal ikke datoene deres forsvinne. Okta blir staaende
     // uten kursholder — den gikk.
+    DB::oppdater('course_sessions', ['kursholder_id' => $b], ['id' => $okt1]);
     DB::kjor('DELETE FROM kursholdere WHERE id = :i', ['i' => $b]);
     sjekk('sletter man en kursholder, staar datoen igjen uten kursholder',
         DB::en('SELECT id FROM course_sessions WHERE id = :i', ['i' => $okt1]) !== null
@@ -1345,8 +1353,13 @@ sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
 $kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('kurs.php slaar opp kursholderen for den lagres',
     str_contains($kursFil, "Svar::feil('Fant ikke kursholderen.')"));
-sjekk('en ny dato arver standarden i endepunktet ogsaa',
-    str_contains($kursFil, 'SELECT standard_kursholder_id FROM courses WHERE id = :i'));
+sjekk('en ny dato foreslaar verkstedets standard',
+    str_contains($kursFil, "SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1"));
+$khFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursholdere.php');
+sjekk('standarden byttes i én transaksjon, saa bare én staar igjen',
+    str_contains($khFil, "UPDATE kursholdere SET standard = 0 WHERE standard = 1"));
+sjekk('en som har sluttet kan ikke vaere standard',
+    str_contains($khFil, "En som har sluttet kan ikke være standard."));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -44,8 +44,9 @@ if (Foresporsel::metode() === 'GET') {
     }
 
     // Navnene, slaatt opp én gang. Uten dette ble det ett oppslag per dato.
+    $stdKol  = DB::harKolonne('kursholdere', 'standard') ? ', standard' : ', 0 AS standard';
     $holdere = DB::harTabell('kursholdere')
-        ? DB::alle('SELECT id, navn, rolle, aktiv FROM kursholdere ORDER BY aktiv DESC, navn')
+        ? DB::alle('SELECT id, navn, rolle, aktiv' . $stdKol . ' FROM kursholdere ORDER BY aktiv DESC, navn')
         : [];
     $holderNavn = [];
     foreach ($holdere as $h) {
@@ -105,10 +106,6 @@ if (Foresporsel::metode() === 'GET') {
             'datoerFramover' => $datoerFramover[(int) $k['id']] ?? 0,
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
-            // Hvem som vanligvis holder kurset. Foreslaas naar en ny dato
-            // settes opp — da slipper man aa velge det samme hver gang.
-            'standardKursholderId' => isset($k['standard_kursholder_id']) && $k['standard_kursholder_id'] !== null
-                ? (int) $k['standard_kursholder_id'] : 0,
             'bekreftelse'=> $k['bekreftelse_tekst'],
             // Seksjonene fra kursoppsettet (migrasjon 065). Tomme naar
             // migrasjonen ikke er kjort — da staar feltene tomme i skjemaet
@@ -181,6 +178,8 @@ if (Foresporsel::metode() === 'GET') {
         'navn'  => (string) $h['navn'],
         'rolle' => (string) ($h['rolle'] ?? ''),
         'aktiv' => (bool) $h['aktiv'],
+        // Den som foreslaas paa nye datoer. Bare én er det.
+        'standard' => (bool) ($h['standard'] ?? 0),
     ], $holdere),
     ]);
 }
@@ -270,11 +269,6 @@ switch ($handling) {
         }
         if ($har('om')) {
             $data['beskrivelse'] = Foresporsel::tekst('om') ?: null;
-        }
-        // Hvem som vanligvis holder kurset. Bare naar feltet faktisk er med:
-        // et skjema som ikke kjenner det, skal ikke toemme det.
-        if ($har('standardKursholderId') && DB::harKolonne('courses', 'standard_kursholder_id')) {
-            $data['standard_kursholder_id'] = $holderId('standardKursholderId');
         }
         // Navnet paa kursbeviset. Tomt betyr Monica, som staar i malen.
         if ($har('instruktor')) {
@@ -415,13 +409,13 @@ switch ($handling) {
             'slutt_tid' => $slutt,
             'kapasitet' => Foresporsel::heltall('kapasitet') ?: null,
         ];
-        // Kursholderen: den som ble valgt, ellers kursets standard. Uten
-        // arven maatte man velge den samme personen paa hver eneste dato.
+        // Kursholderen: den som ble valgt, ellers verkstedets standard.
+        // Uten den maatte man valgt den samme personen paa hver eneste dato.
         if (DB::harKolonne('course_sessions', 'kursholder_id')) {
             $nyOkt['kursholder_id'] = array_key_exists('kursholderId', Foresporsel::kropp())
                 ? $holderId('kursholderId')
-                : (DB::harKolonne('courses', 'standard_kursholder_id')
-                    ? DB::verdi('SELECT standard_kursholder_id FROM courses WHERE id = :i', ['i' => $kursId])
+                : (DB::harKolonne('kursholdere', 'standard')
+                    ? DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1 LIMIT 1')
                     : null);
         }
 

@@ -7,6 +7,7 @@
  *   POST handling=slett      { id }        settes som sluttet, slettes ikke
  *   POST handling=timer      { id, dato, timer, hva, notat? }
  *   POST handling=slettTime  { timeId }
+ *   POST handling=standard   { id }        hen foreslaas paa nye kursdatoer
  *
  * Skjermen viste tre faste navn med timetall ingen hadde foert, og knappene
  * aapnet dialoger som lukket seg igjen. Det fantes ingen tabell bak.
@@ -63,6 +64,8 @@ if (Foresporsel::metode() === 'GET') {
             'kurs'      => (string) ($h['kurs'] ?? ''),
             'timesats'  => $h['timesats_ore'] === null ? '' : (string) ((int) $h['timesats_ore'] / 100),
             'vises'     => (bool) $h['vises_paa_nett'],
+            // Den som foreslaas naar en ny kursdato settes opp. Bare én.
+            'standard'  => (bool) ($h['standard'] ?? 0),
             'timerMnd'  => rtrim(rtrim(number_format((float) $h['timer_mnd'], 1, ',', ''), '0'), ','),
         ], $holdere),
         'maaned' => $mnd($maanedStart),
@@ -165,6 +168,32 @@ if ($handling === 'slettTime') {
     DB::kjor('DELETE FROM kursholder_timer WHERE id = :i', ['i' => $timeId]);
     revider('kursholder_time_slettet', 'kursholder_timer', $timeId);
     Svar::ok(['beskjed' => 'Føringen er fjernet.']);
+}
+
+// ── Hvem som foreslaas paa nye datoer ────────────────────────────────────
+//
+// Eieren: «Monica er default». Ikke én standard per kurs — én for verkstedet.
+// Bare én om gangen: settes noen, tas den forrige av.
+if ($handling === 'standard') {
+    if (!DB::harKolonne('kursholdere', 'standard')) {
+        Svar::feil('Dette krever en oppdatering av databasen. Kjør vedlikeholdet fra menyen nederst til venstre.', 503);
+    }
+    $id = Foresporsel::heltall('id');
+    $h  = DB::en('SELECT id, navn, aktiv FROM kursholdere WHERE id = :i', ['i' => $id]);
+    if ($h === null) {
+        Svar::feil('Fant ikke kursholderen.', 404);
+    }
+    if ((int) $h['aktiv'] !== 1) {
+        Svar::feil('En som har sluttet kan ikke være standard.');
+    }
+
+    DB::iTransaksjon(static function () use ($id): void {
+        DB::kjor('UPDATE kursholdere SET standard = 0 WHERE standard = 1');
+        DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => $id]);
+    });
+
+    revider('kursholder_standard', 'kursholder', $id, ['navn' => $h['navn']]);
+    Svar::ok(['beskjed' => $h['navn'] . ' foreslås nå når du setter opp en ny kursdato.']);
 }
 
 Svar::feil('Ukjent handling.');

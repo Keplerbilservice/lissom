@@ -19,12 +19,20 @@ require __DIR__ . '/../_boot.php';
 krev_admin();
 
 if (Foresporsel::metode() === 'GET') {
+    // Ventelista hoerer til datoen, ikke bare til kurset.
+    //
+    // Kolonnen har vaert lagret siden ventelista kom, men ingen leste den:
+    // lista sto sortert paa kursnavn, og den som ventet paa 12. september sto
+    // blandet med den som ventet paa 3. oktober. Naa staar de i den
+    // rekkefolgen kveldene kommer, med kurset til slutt for de radene som er
+    // fra for datoen ble lagret.
     $rader = DB::alle(
-        "SELECT w.*, c.tittel, c.slug
+        "SELECT w.*, c.tittel, c.slug, cs.start_tid
            FROM waitlist w
            JOIN courses c ON c.id = w.course_id
+      LEFT JOIN course_sessions cs ON cs.id = w.course_session_id
           WHERE w.status IN ('venter','varslet')
-          ORDER BY c.tittel, w.posisjon"
+       ORDER BY cs.start_tid IS NULL, cs.start_tid, c.tittel, w.posisjon"
     );
 
     /**
@@ -38,7 +46,7 @@ if (Foresporsel::metode() === 'GET') {
      * Bare datoer det faktisk er plass paa. En liste med fulle kvelder er en
      * knapp som sier nei.
      */
-    $datoer = static function (int $kursId): array {
+    $datoer = static function (int $kursId, ?int $venterPaa): array {
         $ut = [];
         $rader = DB::alle(
             "SELECT cs.id, cs.start_tid, cs.course_id, c.tittel
@@ -68,16 +76,20 @@ if (Foresporsel::metode() === 'GET') {
                 // Er datoen paa kurset hen faktisk venter paa? Da hoerer den
                 // hjemme foerst i lista.
                 'eget'   => (int) $o['course_id'] === $kursId,
+                // Og er det noeyaktig den kvelden hen staar og venter paa,
+                // hoerer den aller foerst. Det er den hen har sagt ja til.
+                'ventet' => $venterPaa !== null && (int) $o['id'] === $venterPaa,
             ];
         }
-        // Hennes eget kurs foerst, resten etter dato. Rekkefolgen er en
-        // anbefaling, ikke en sperre — alt som har plass staar der.
-        usort($ut, static fn($a, $b) => ($b['eget'] <=> $a['eget']));
+        // Kvelden hen venter paa foerst, saa resten av kurset, saa alt annet
+        // som har plass. Rekkefolgen er en anbefaling, ikke en sperre.
+        usort($ut, static fn($a, $b) => ($b['ventet'] <=> $a['ventet']) ?: ($b['eget'] <=> $a['eget']));
         return $ut;
     };
 
     Svar::json(['venteliste' => array_map(static function ($w) use ($datoer) {
-        $valg = $datoer((int) $w['course_id']);
+        $venterPaa = $w['course_session_id'] !== null ? (int) $w['course_session_id'] : null;
+        $valg = $datoer((int) $w['course_id'], $venterPaa);
         return [
             'id'       => (int) $w['id'],
             'navn'     => $w['navn'],
@@ -85,6 +97,12 @@ if (Foresporsel::metode() === 'GET') {
             'telefon'  => $w['telefon'],
             'kurs'     => $w['tittel'],
             'kursId'   => (int) $w['course_id'],
+            // Kvelden hen staar og venter paa. Tom naar raden er fra for
+            // datoen ble lagret — da gjelder den hele kurset.
+            'oktId'    => $venterPaa ?? 0,
+            'naar'     => $w['start_tid'] !== null
+                            ? Booking::norskDato((string) $w['start_tid']) : '',
+            'gjelderKurset' => $venterPaa === null,
             'posisjon' => (int) $w['posisjon'],
             'status'   => $w['status'] === 'varslet' ? 'Varslet' : 'Venter',
             'varslet'  => $w['varslet_at'] ? Booking::norskDato((string) $w['varslet_at']) : null,

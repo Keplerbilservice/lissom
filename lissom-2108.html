@@ -5155,7 +5155,7 @@ window.__resources = {
             <div onClick="{{ v.velg }}" style="{{ v.radStil }}">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; cursor: pointer;">
                 <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
+                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }} · {{ v.kurs }}</div>
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.linje }}</div>
                 </div>
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ v.status }}</span>
@@ -30750,7 +30750,14 @@ class Component extends DCLogic {
             const apen = this.state.vlApen === v.id;
             return {
             navn: v.navn,
-            linje: v.kurs + ' · nr. ' + v.posisjon + ' · siden ' + v.siden,
+            // Hvilken kveld hen venter paa. Sto det bare kursnavnet, sto den
+            // som ventet paa 9. september blandet med den som ventet paa 16.,
+            // og «nr. 2» sa ingenting om hvilken av dem.
+            //
+            // Rader fra for datoen ble lagret gjelder hele kurset, og da skal
+            // det staa — ikke en dato vi har gjettet oss til.
+            linje: (v.naar || 'Hele kurset') + ' · nr. ' + v.posisjon + ' · siden ' + v.siden,
+            kurs: v.kurs,
             status: v.status,
             apen: apen,
             radStil: {
@@ -30762,7 +30769,7 @@ class Component extends DCLogic {
               vlApen: st.vlApen === v.id ? null : v.id,
               // Nytt navn i boksen, ny melding. Ellers staar teksten du
               // skrev til forrige person igjen naar du aapner neste.
-              vlEmne: 'Ledig plass på ' + v.kurs,
+              vlEmne: 'Ledig plass på ' + v.kurs + (v.naar ? ' ' + v.naar : ''),
               vlMelding: '',
             })),
             epost: v.epost || '',

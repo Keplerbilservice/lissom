@@ -1361,6 +1361,79 @@ sjekk('standarden byttes i én transaksjon, saa bare én staar igjen',
 sjekk('en som har sluttet kan ikke vaere standard',
     str_contains($khFil, "En som har sluttet kan ikke være standard."));
 
+// ── Ventelista hoerer til datoen ─────────────────────────────────────────
+//
+// «waitlist.course_session_id» har vaert lagret siden ventelista kom, men
+// ingen leste den: koen, posisjonen og dublettsjekken gikk alle paa kurset.
+// Da sto den som ventet paa 9. september i samme ko som den som ventet paa
+// 16., og «plass nummer 2» sa ingenting om hvilken kveld.
+(static function () use (&$ok, &$feil): void {
+    DB::kjor("DELETE FROM waitlist WHERE epost LIKE 'vl-%@example.com'");
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug = 'testvl')");
+    DB::kjor("DELETE FROM courses WHERE slug = 'testvl'");
+
+    $kursId = DB::settInn('courses', [
+        'slug' => 'testvl', 'tittel' => 'Testkurs venteliste',
+        'pris_ore' => 50000, 'kapasitet' => 2, 'status' => 'publisert',
+    ]);
+    $a = DB::settInn('course_sessions', ['course_id' => $kursId, 'start_tid' => gmdate('Y-m-d H:i:s', time() + 86400)]);
+    $b = DB::settInn('course_sessions', ['course_id' => $kursId, 'start_tid' => gmdate('Y-m-d H:i:s', time() + 172800)]);
+
+    // Samme regel som endepunktet: posisjonen telles i den koen raden hoerer
+    // til. Her regnes den ut slik biblioteket ville gjort det.
+    $neste = static function (int $kurs, ?int $okt): int {
+        return 1 + (int) DB::verdi(
+            "SELECT COUNT(*) FROM waitlist
+              WHERE course_id = :k AND status IN ('venter','varslet')
+                AND " . ($okt !== null ? 'course_session_id = :o' : 'course_session_id IS NULL'),
+            ['k' => $kurs] + ($okt !== null ? ['o' => $okt] : [])
+        );
+    };
+
+    $sett = static function (int $kurs, ?int $okt, string $navn) use ($neste): int {
+        return DB::settInn('waitlist', [
+            'course_id' => $kurs, 'course_session_id' => $okt,
+            'navn' => $navn, 'epost' => 'vl-' . mb_strtolower($navn) . '@example.com',
+            'posisjon' => $neste($kurs, $okt),
+        ]);
+    };
+
+    $sett($kursId, $a, 'Ein');
+    $sett($kursId, $a, 'Tvo');
+    $tre = $sett($kursId, $b, 'Tre');
+
+    sjekk('posisjonen telles per dato, ikke per kurs',
+        (int) DB::verdi('SELECT posisjon FROM waitlist WHERE id = :i', ['i' => $tre]) === 1,
+        'forste paa sin egen dato skal vaere nr. 1');
+
+    // Den samme personen kan staa paa lista til to ulike kvelder — det er to
+    // ulike koer.
+    $fire = $sett($kursId, $b, 'Ein');
+    sjekk('samme person kan staa paa lista til to ulike datoer',
+        (int) DB::verdi('SELECT posisjon FROM waitlist WHERE id = :i', ['i' => $fire]) === 2);
+
+    // Rader fra for datoen ble lagret gjelder hele kurset, og skal ikke
+    // blandes inn i en dato-ko.
+    $gammel = $sett($kursId, null, 'Gammel');
+    sjekk('en rad uten dato teller for seg',
+        (int) DB::verdi('SELECT posisjon FROM waitlist WHERE id = :i', ['i' => $gammel]) === 1);
+
+    DB::kjor('DELETE FROM waitlist WHERE course_id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
+})();
+
+$vlFil  = file_get_contents(dirname(__DIR__) . '/api/venteliste.php');
+$vlAdm  = file_get_contents(dirname(__DIR__) . '/api/admin/venteliste.php');
+sjekk('ventelista lagrer bare en dato som hoerer til kurset',
+    str_contains($vlFil, 'SELECT id FROM course_sessions WHERE id = :o AND course_id = :k'));
+sjekk('dublettsjekken gaar paa datoen naar den er kjent',
+    str_contains($vlFil, "course_session_id = :o' : 'course_session_id IS NULL"));
+sjekk('adminlista staar i den rekkefolgen kveldene kommer',
+    str_contains($vlAdm, 'ORDER BY cs.start_tid IS NULL, cs.start_tid'));
+sjekk('kvelden hen venter paa foreslaas foerst naar plassen gis',
+    str_contains($vlAdm, "'ventet' => \$venterPaa !== null"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

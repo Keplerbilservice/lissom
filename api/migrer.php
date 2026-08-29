@@ -90,9 +90,12 @@ if (Foresporsel::tekst('kjor') !== 'ja') {
     Svar::json([
         'kjort'   => $kjort,
         'mangler' => array_map('basename', $mangler),
+        // «&» naar noekkelen alt staar i adressen, «?» naar den ikke gjor
+        // det. Sto det «&» uansett, ble adressen ugyldig for en innlogget
+        // admin som bare skrev endepunktet — og da skjedde ingenting.
         'hvordan' => $mangler === []
             ? 'Databasen er oppdatert. Ingenting å gjøre.'
-            : 'Legg til &kjor=ja i adressen for å kjøre dem.',
+            : 'Legg til ' . ($oppgitt !== '' ? '&' : '?') . 'kjor=ja i adressen for å kjøre dem.',
     ]);
 }
 

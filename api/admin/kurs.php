@@ -720,6 +720,40 @@ switch ($handling) {
                 : 'Datoen er avlyst.',
         ]);
 
+    // Avlysingen angres.
+    //
+    // «avlys» satte status og hadde ingen vei tilbake: ble feil dato avlyst,
+    // maatte den settes opp paa nytt, og de paameldte fulgte ikke med. Raden
+    // er den samme — det er bare statusen som gaar tilbake til «planlagt».
+    //
+    // De som fikk beskjed om at datoen var avlyst faar ingen ny av seg selv.
+    // Det sies her, framfor aa bli oppdaget den kvelden ingen moeter opp.
+    case 'gjenopprett':
+        $oktId = Foresporsel::heltall('oktId');
+        $okt = DB::en('SELECT id, status FROM course_sessions WHERE id = :o', ['o' => $oktId]);
+        if ($okt === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+        if ((string) $okt['status'] !== 'avlyst') {
+            Svar::feil('Denne datoen er ikke avlyst.');
+        }
+
+        DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => $oktId]);
+        revider('dato_gjenopprettet', 'course_session', $oktId, []);
+
+        $paa = (int) DB::verdi(
+            "SELECT COALESCE(SUM(antall), 0) FROM bookings
+              WHERE course_session_id = :o AND status IN ('betalt','reservert')",
+            ['o' => $oktId]
+        );
+        Svar::ok([
+            'beskjed' => $paa === 0
+                ? 'Datoen går som planlagt igjen.'
+                : 'Datoen går som planlagt igjen. ' . $paa
+                  . ($paa === 1 ? ' påmeldt får' : ' påmeldte får')
+                  . ' ikke beskjed automatisk — send den under Påmeldte.',
+        ]);
+
     // ------------------------------------------- alt som gjelder én dato
     //
     // Pris, informasjon og samlingene i et flerdagerskurs. Alt tre hoerer til

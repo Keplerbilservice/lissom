@@ -22354,13 +22354,6 @@ class Component extends DCLogic {
   /** Skriver kalenderen enda? Fase 6 setter denne til true. */
   get klSkriver() { return false; }
 
-  klIkkeEnda(hva) {
-    this.setState({
-      kvittering: 'Ikke koblet ennå',
-      kvitteringDetalj: (hva || 'Dette') + ' gjøres fra kursoppsettet og Påmeldte inntil videre.',
-    });
-  }
-
   /**
    * En endring fra kalenderen.
    *
@@ -22407,6 +22400,79 @@ class Component extends DCLogic {
   }
 
   /**
+   * Flere endringer etter hverandre, som én handling.
+   *
+   * «Lagre» i redigeringsruta kan endre pris, plasser, klokkeslett og
+   * avlysing paa én gang, og de hoerer til hver sine endepunkter. De sendes
+   * i rekkefolge og stopper ved den forste som feiler — halve endringer er
+   * verre enn ingen, og da skal det staa hva som gikk galt.
+   *
+   * @param {Array<{sti: string, kropp: object}>} kall
+   */
+  klKallFlere(kall) {
+    if (!this.erPublisert()) return Promise.resolve(false);
+    if (this._klLagrer) return Promise.resolve(false);
+    this._klLagrer = true;
+
+    const neste = (i, sisteBeskjed) => {
+      if (i >= kall.length) {
+        this._klLagrer = false;
+        this.setState({ kvittering: 'Lagret', kvitteringDetalj: sisteBeskjed || '' });
+        this.klFrisk();
+        this._adminHentes = false;
+        this.hentAdmin();
+        return true;
+      }
+      return fetch(kall[i].sti, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(kall[i].kropp),
+      })
+        .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d })))
+        .then(({ ok, d }) => {
+          if (!ok) {
+            this._klLagrer = false;
+            this.setState({ kvittering: 'Ble ikke lagret',
+                            kvitteringDetalj: (d && d.feil) || '' });
+            this.klFrisk();
+            return false;
+          }
+          return neste(i + 1, (d && d.beskjed) || sisteBeskjed);
+        });
+    };
+
+    return Promise.resolve(neste(0, '')).catch(() => {
+      this._klLagrer = false;
+      this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      return false;
+    });
+  }
+
+  /**
+   * Dagene verkstedet staar som stengt, slik de staar i basen.
+   *
+   * Her sto «klStengt» — et lokalt lag fra designfila som ingenting fylte.
+   * Kalenderen hentet stengte dager fra api/admin/kalender.php og la dem i
+   * «kalStengte», men tegnet aldri av dem: en stengt dag saa aapen ut i
+   * kalenderen, og knappen sa «Steng dagen» paa en dag som alt var stengt.
+   */
+  klStengte() { return this.state.kalStengte || {}; }
+
+  /** Kursnummeret bak et kursnavn. Null naar navnet ikke finnes. */
+  klKursId(navn) {
+    const k = (this.state.adminKursRaa || []).find(x => x.tittel === navn);
+    return k ? k.id : null;
+  }
+
+  /** Kursholdernummeret bak et navn. Tom streng betyr «ikke tildelt». */
+  klHolderId(navn) {
+    if (!navn) return 0;
+    const alle = (this.state.adminKursholdere || []).concat(this.state.kalHoldere || []);
+    const h = alle.find(x => x && x.navn === navn);
+    return h ? h.id : 0;
+  }
+
+  /**
    * Glemmer maanedene som er hentet, saa kalenderen tegnes av basen paa nytt.
    *
    * Grovt med vilje: en flytting kan treffe to maaneder, en avlysing kan
@@ -22414,7 +22480,7 @@ class Component extends DCLogic {
    * billigere enn en skjerm som viser noe annet enn det som staar.
    */
   klFrisk() {
-    this.setState({ kalHentet: {}, kalHendelser: {} });
+    this.setState({ kalHentet: {}, kalHendelser: {}, kalStengte: {} });
   }
 
   klTypeInfo() {
@@ -22610,7 +22676,7 @@ class Component extends DCLogic {
     for (let d = 1; d <= dim; d++) {
       const iso = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
       const evts = dagEvts(iso);
-      const stengtDag = !!(this.state.klStengt || {})[iso];
+      const stengtDag = !!this.klStengte()[iso];
       celler.push({
         iso,
         tall: String(d) + (stengtDag ? ' · Stengt' : ''),
@@ -22748,7 +22814,7 @@ class Component extends DCLogic {
       });
       const nL = Math.max(1, laneEnd.length);
       const erIdag = iso === idagIso;
-      const stengtU = !!(this.state.klStengt || {})[iso];
+      const stengtU = !!this.klStengte()[iso];
       return {
         iso,
         navn: n + ' ' + d.getDate() + '.',
@@ -22831,9 +22897,24 @@ class Component extends DCLogic {
           });
         return { klSokVises: true, klSokTreff: treff, klSokTom: treff.length === 0 };
       })(),
-      klErStengt: !!(this.state.klStengt || {})[dagIso],
-      klStengTekst: (this.state.klStengt || {})[dagIso] ? 'Åpne dagen' : 'Steng dagen',
-      klStengVeksle: () => this.klIkkeEnda('Å stenge dagen'),
+      klErStengt: !!this.klStengte()[dagIso],
+      klStengTekst: this.klStengte()[dagIso] !== undefined ? 'Åpne dagen' : 'Steng dagen',
+      // Raden i «apningstider» er overstyringen: finnes den, gjelder den,
+      // ellers regnes aapningstida av kursene som gaar. Foer kunne den bare
+      // lages i basen.
+      klStengVeksle: () => {
+        const stengtNa = this.klStengte()[dagIso] !== undefined;
+        if (stengtNa) {
+          this.klKall('/api/admin/apningstider.php', { handling: 'aapne', dato: dagIso });
+          return;
+        }
+        const grunn = window.prompt('Hvorfor er verkstedet stengt ' + dagIso + '?\n\n'
+          + 'Teksten vises i åpningstidene på nettsiden. La den stå tom hvis '
+          + 'du ikke vil si noe.', '');
+        if (grunn === null) return;
+        this.klKall('/api/admin/apningstider.php',
+          { handling: 'steng', dato: dagIso, merknad: grunn });
+      },
       klDagSammendrag: (() => { const k2 = dagensAlle.filter(e => e.type !== 'verksted' && e.type !== 'vakt' && e.type !== 'brenning' && !e.avlyst); if (!k2.length) return 'Ingen økter denne dagen'; const med = k2.filter(e => e.kap); const vl = k2.reduce((s2, e) => s2 + ((e.venteliste || []).length), 0); return [k2.length + (k2.length === 1 ? ' økt' : ' økter'), med.length ? med.reduce((s2, e) => s2 + e.pameldt, 0) + ' av ' + med.reduce((s2, e) => s2 + e.kap, 0) + ' plasser' : '', vl ? vl + ' på venteliste' : ''].filter(Boolean).join(' · '); })(),
       klAngreVises: !!this.state.klAngre,
       klAngreTekst: (this.state.klAngre || {}).tekst || '',
@@ -22971,13 +23052,14 @@ class Component extends DCLogic {
             .filter(f => f.status === 'Ubesvart')
             .slice(0, 5)
             .map(f => ({
+              id: f.id || 0,
               fra: f.navn || 'Ukjent',
               rolle: f.hva || 'Henvendelse',
               tekst: f.tekst || '',
               tid: f.tid || '',
               ulest: true,
             }))
-          .map((b, i) => ({ ...b, ulest: b.ulest && !(this.state.klBLest || {})[i], prikkStil: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', marginTop: '6px', background: b.ulest && !(this.state.klBLest || {})[i] ? 'var(--terracotta-500)' : 'transparent' }, apne: () => this.setState(s => ({ klBeskjedVis: { fra: b.fra, rolle: b.rolle, tekst: b.tekst, tid: b.tid }, klBSvar: '', klBSvarSendt: false, klBLest: Object.assign({}, s.klBLest, { [i]: true }) })) })),
+          .map((b, i) => ({ ...b, ulest: b.ulest && !(this.state.klBLest || {})[i], prikkStil: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', marginTop: '6px', background: b.ulest && !(this.state.klBLest || {})[i] ? 'var(--terracotta-500)' : 'transparent' }, apne: () => this.setState(s => ({ klBeskjedVis: { id: b.id, fra: b.fra, rolle: b.rolle, tekst: b.tekst, tid: b.tid }, klBSvar: '', klBSvarSendt: false, klBLest: Object.assign({}, s.klBLest, { [i]: true }) })) })),
           klGaBeskjeder: this.go('adminbeskjeder'),
           ...(() => {
             const bv = this.state.klBeskjedVis;
@@ -22987,16 +23069,26 @@ class Component extends DCLogic {
               klBeskjedLukk: () => this.setState({ klBeskjedVis: null }),
               klBSvar: this.state.klBSvar || '',
               settKlBSvar: e => this.setState({ klBSvar: e.target.value, klBSvarSendt: false }),
-              // Svaret sendes ikke herfra enda. «Aapne alle beskjeder →»
-              // gaar til skjermen som faktisk sender.
-              klBSvarSend: () => this.klIkkeEnda('Å svare herfra'),
+              // Svaret gaar til det samme endepunktet som Beskjeder-skjermen
+              // bruker: henvendelsen faar svaret, og merkes som besvart.
+              klBSvarSend: () => {
+                const tekst = (this.state.klBSvar || '').trim();
+                if (!tekst || !bv) return;
+                if (!bv.id) {
+                  this.setState({ kvittering: 'Ble ikke sendt',
+                                  kvitteringDetalj: 'Denne henvendelsen mangler nummer. Svar den under Beskjeder.' });
+                  return;
+                }
+                this.klKall('/api/admin/foresporsler.php', { handling: 'svar', id: bv.id, tekst: tekst })
+                  .then(ok => { if (ok) this.setState({ klBSvarSendt: true, klBSvar: '' }); });
+              },
               klBSvarSendtVis: !!this.state.klBSvarSendt,
               klBSvarSendtTekst: bv ? 'Svaret er sendt til ' + bv.fra + '.' : '',
             };
           })(),
           klVlSide: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).reduce((acc, e) => acc.concat(e.venteliste.map(v => {
             const d = new Date(e.dato + 'T12:00:00');
-            return { navn: v.navn, kurs: e.tittel, under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · #' + v.posisjon, ned: ev => this.klVlDragStart({ navn: v.navn, srcId: e.id }, ev) };
+            return { navn: v.navn, kurs: e.tittel, under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · #' + v.posisjon, ned: ev => this.klVlDragStart({ id: v.id, navn: v.navn, srcId: e.id }, ev) };
           })), []).slice(0, 8),
           klVlSideTom: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).length === 0,
           ...(() => {
@@ -23010,7 +23102,15 @@ class Component extends DCLogic {
               klVlBTid: malEvt ? dagNavn[md.getDay()] + ' ' + md.getDate() + '. ' + mndNavn[md.getMonth()] + ' · ' + malEvt.tid + (malEvt.slutt ? '–' + malEvt.slutt : '') : '',
               klVlBBelegg: malEvt && malEvt.kap ? malEvt.pameldt + ' av ' + malEvt.kap + ' plasser er tatt' : '',
               klVlBAvbryt: () => this.setState({ klVlBekreft: null }),
-              klVlBBekreft: () => this.klIkkeEnda('Å tildele en plass'),
+              // Plassen gis av venteliste.php, som ogsaa sjekker at det
+              // faktisk er en ledig stol. Uten den sjekken kunne to fra lista
+              // faatt den samme, og det oppdages foerst den kvelden.
+              klVlBBekreft: () => {
+                if (!vb || !vb.id || !malEvt) return;
+                this.klKall('/api/admin/venteliste.php',
+                  { handling: 'gi-plass', id: vb.id, oktId: malEvt.oktId })
+                  .then(ok => { if (ok) this.setState({ klVlBekreft: null }); });
+              },
             };
           })(),
           klNyDragVises: !!this.state.klNyDrag,
@@ -23033,11 +23133,66 @@ class Component extends DCLogic {
               klBAntall: this.state.klBAntall || '4',
               settKlBAntall: e => this.setState({ klBAntall: e.target.value }),
               klBAvbryt: () => this.setState({ klBekreft: null }),
-              klBBekreft: () => this.klIkkeEnda('Å sette opp et kurs på en dato'),
+              // Kurset settes opp paa datoen gjennom kurs.php. Gjentas det,
+              // gaar det som en serie — da fyller cron paa framover, saa
+              // kurset ikke gaar tomt for datoer og forsvinner fra nettsida.
+              klBBekreft: () => {
+                if (!b) return;
+                const kursId = this.klKursId(b.kursNavn);
+                if (!kursId) {
+                  this.setState({ kvittering: 'Ble ikke lagret',
+                                  kvitteringDetalj: 'Fant ikke «' + b.kursNavn + '» i kurslista.' });
+                  return;
+                }
+                const d = (this.state.klBDato || '').trim();
+                const fra = (this.state.klBFra || '').trim();
+                const til = (this.state.klBTil || '').trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !/^\d{2}:\d{2}$/.test(fra)) {
+                  this.setState({ kvittering: 'Ble ikke lagret',
+                                  kvitteringDetalj: 'Velg dato og starttid.' });
+                  return;
+                }
+                const gjenta = this.state.klBGjenta || 'Én gang';
+                if (gjenta === 'Én gang') {
+                  this.klKall('/api/admin/kurs.php', {
+                    handling: 'nydato', kursId: kursId,
+                    start: d + ' ' + fra, slutt: til ? d + ' ' + til : '',
+                    kursholderId: this.klHolderId(this.state.klBHolder),
+                  }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
+                  return;
+                }
+                // En serie trenger bade start og slutt: regelen sier «torsdager
+                // 17:00–20:00», ikke bare naar den begynner.
+                if (!/^\d{2}:\d{2}$/.test(til)) {
+                  this.setState({ kvittering: 'Ble ikke lagret',
+                                  kvitteringDetalj: 'Et kurs som gjentas trenger også en sluttid.' });
+                  return;
+                }
+                // Ukedagen etter ISO: mandag er 1, sondag er 7. JavaScript
+                // teller fra sondag, og de to blandes lett sammen.
+                const isoDag = ((new Date(d + 'T12:00:00').getDay() + 6) % 7) + 1;
+                this.klKall('/api/admin/kurs.php', {
+                  handling: 'serie', kursId: kursId,
+                  monster: gjenta === 'Annenhver uke' ? 'annenhver' : 'ukentlig',
+                  ukedag: isoDag, fra: fra, til: til,
+                  antall: Math.max(1, Math.min(52, parseInt(this.state.klBAntall || '4', 10) || 4)),
+                  startDato: d,
+                }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
+              },
             };
           })(),
           klRedigerValgt: () => valgt && this.klApneEnkel(valgt),
-          klTildelNesteValgt: () => this.klIkkeEnda('Å tildele en plass'),
+          // Den foerste i koen paa den valgte okta.
+          klTildelNesteValgt: () => {
+            const forst = valgt && (valgt.venteliste || [])[0];
+            if (!forst || !forst.id) {
+              this.setState({ kvittering: 'Ingen å tildele',
+                              kvitteringDetalj: 'Det står ingen på venteliste på denne datoen.' });
+              return;
+            }
+            this.klKall('/api/admin/venteliste.php',
+              { handling: 'gi-plass', id: forst.id, oktId: valgt.oktId });
+          },
           ...(() => {
             const redEvt = this.state.klRedId ? alle.find(e => e.id === this.state.klRedId) : null;
             const felt = { boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)', background: 'var(--clay-50)', color: 'var(--text-heading)' };
@@ -23073,7 +23228,26 @@ class Component extends DCLogic {
               settKlRNyFra: e => this.setState({ klRNyFra: e.target.value }),
               klRNyTil: this.state.klRNyTil || '',
               settKlRNyTil: e => this.setState({ klRNyTil: e.target.value }),
-              klRNyLagre: () => this.klIkkeEnda('Å legge til en dato'),
+              // Datoen legges paa det samme kurset. Nummeret foelger med fra
+              // kalenderen — to kurs kan hete nesten det samme, og et navn er
+              // ikke en identitet.
+              klRNyLagre: () => {
+                if (!redEvt || !redEvt.kursId) return;
+                const d = (this.state.klRNyDato || '').trim();
+                const fra = (this.state.klRNyFra || '').trim();
+                const til = (this.state.klRNyTil || '').trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !/^\d{2}:\d{2}$/.test(fra)) {
+                  this.setState({ kvittering: 'Ble ikke lagret',
+                                  kvitteringDetalj: 'Velg dato og starttid.' });
+                  return;
+                }
+                this.klKall('/api/admin/kurs.php', {
+                  handling: 'nydato', kursId: redEvt.kursId,
+                  start: d + ' ' + fra, slutt: til ? d + ' ' + til : '',
+                }).then(ok => {
+                  if (ok) this.setState({ klRNyDato: '', klRNyFra: '', klRNyTil: '', klRNyVis: false });
+                });
+              },
               klRKanKurs: redEvt ? this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]) : false,
               klRNavn: this.state.klRNavn || '',
               settKlRNavn: e => this.setState({ klRNavn: e.target.value }),
@@ -23093,7 +23267,69 @@ class Component extends DCLogic {
               klRAvbryt: () => this.setState({ klRedId: null }),
               klRFull: () => redEvt && this.klApneKurs(redEvt),
               klRDeltakere: () => redEvt && this.setState({ klRedId: null, klValgtId: redEvt.id, klFlyttVis: false, klBekreftAvlys: false }),
-              klRLagre: () => this.klIkkeEnda('Redigering av økten'),
+              // «Lagre» kan endre pris, informasjon, kursholder, plasser,
+              // klokkeslett og avlysing paa én gang. De hoerer til hver sine
+              // endepunkter, saa de sendes i rekkefolge — og bare det som
+              // faktisk er endret. Sendes alt hver gang, staar det en
+              // «dato_plasser» i loggen selv om ingen roerte plassene.
+              klRLagre: () => {
+                if (!redEvt || !redEvt.oktId) return;
+                const kall = [];
+
+                // Pris, informasjon og kursholder hoerer til datoen.
+                // Sammenlignet med verdiene ruta ble aapnet med. Ellers ville
+                // et trykk paa Lagre skrevet alt paa nytt hver gang.
+                const fra0 = this.state.klRAapnet || {};
+                const datoFelt = { handling: 'dato', oktId: redEvt.oktId };
+                let harDatoFelt = false;
+                if ((this.state.klRPris || '') !== (fra0.pris || '')) {
+                  datoFelt.pris = this.state.klRPris || ''; harDatoFelt = true;
+                }
+                if ((this.state.klRBeskrivelse || '') !== (fra0.info || '')) {
+                  datoFelt.info = this.state.klRBeskrivelse || ''; harDatoFelt = true;
+                }
+                if ((this.state.klRHolder || '') !== (fra0.holder || '')) {
+                  datoFelt.kursholderId = this.klHolderId(this.state.klRHolder);
+                  harDatoFelt = true;
+                }
+                if (harDatoFelt) kall.push({ sti: '/api/admin/kurs.php', kropp: datoFelt });
+
+                // Plassene. Tomt betyr «foelg kurset», og det er en gyldig
+                // verdi — derfor sammenlignes den ogsaa, framfor aa hoppes over.
+                const plasser = (this.state.klRPlasser || '').trim();
+                if (plasser !== (fra0.plasser || '')) {
+                  kall.push({ sti: '/api/admin/kurs.php',
+                              kropp: { handling: 'plasser', oktId: redEvt.oktId, kapasitet: plasser } });
+                }
+
+                // Dato og klokkeslett.
+                const d = (this.state.klRDato || '').trim();
+                const fra = (this.state.klRFra || '').trim();
+                const til = (this.state.klRTil || '').trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(d) && /^\d{2}:\d{2}$/.test(fra)
+                    && (d !== fra0.dato || fra !== fra0.fra || til !== (fra0.til || ''))) {
+                  kall.push({ sti: '/api/admin/kurs.php', kropp: {
+                    handling: 'endredato', oktId: redEvt.oktId,
+                    start: d + ' ' + fra, slutt: til ? d + ' ' + til : '',
+                  } });
+                }
+
+                // Avlysing er en egen handling, ikke et felt: den teller opp
+                // hvem som har betalt og maa refunderes.
+                const skalAvlyses = !!this.state.klRAvlyst;
+                if (skalAvlyses !== !!fra0.avlyst) {
+                  kall.push({ sti: '/api/admin/kurs.php', kropp: {
+                    handling: skalAvlyses ? 'avlys' : 'gjenopprett', oktId: redEvt.oktId,
+                  } });
+                }
+
+                if (kall.length === 0) {
+                  this.setState({ kvittering: 'Ingenting å lagre',
+                                  kvitteringDetalj: 'Du har ikke endret noe på denne datoen.' });
+                  return;
+                }
+                this.klKallFlere(kall).then(ok => { if (ok) this.setState({ klRedId: null }); });
+              },
             };
           })(),
           ...(() => {
@@ -23168,7 +23404,23 @@ class Component extends DCLogic {
       settKlNyDNavn: e => this.setState({ klNyDNavn: e.target.value }),
       settKlNyDTlf: e => this.setState({ klNyDTlf: e.target.value }),
       klNyDBetValg: ['Vipps', 'Kontant'].map(bn => ({ navn: bn, velg: () => this.setState({ klNyDBet: bn }), stil: chipStil((this.state.klNyDBet || 'Vipps') === bn) })),
-      klNyDLeggTil: () => this.klIkkeEnda('Å legge til en deltaker'),
+      // Samme endepunkt som «Legg til deltaker» under Paameldte: en manuell
+      // paamelding er en helt vanlig booking, og skal telle i kapasiteten og
+      // komme med paa deltakerlista som alle andre.
+      klNyDLeggTil: () => {
+        if (!valgt || !valgt.oktId) return;
+        const navn = (this.state.klNyDNavn || '').trim();
+        if (!navn) {
+          this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv navnet.' });
+          return;
+        }
+        this.klKall('/api/admin/pamelding.php', {
+          handling: 'legg-til', oktId: valgt.oktId, navn: navn,
+          telefon: (this.state.klNyDTlf || '').trim(), antall: 1,
+          betaltMaate: (this.state.klNyDBet || 'Vipps') === 'Vipps'
+            ? 'Vipps i verkstedet' : 'Kontant',
+        }).then(ok => { if (ok) this.setState({ klNyDNavn: '', klNyDTlf: '' }); });
+      },
       klValgt: valgt ? {
         tittel: valgt.tittel,
         typeNavn: info[valgt.type].navn,
@@ -23217,12 +23469,41 @@ class Component extends DCLogic {
       settKlFlyttDato: e => this.setState({ klFlyttDato: e.target.value }),
       klFlyttTid: this.state.klFlyttTid || '',
       settKlFlyttTid: e => this.setState({ klFlyttTid: e.target.value }),
-      klFlyttLagre: () => this.klIkkeEnda('Flytting av en dato'),
+      // Flyttingen gaar til kurs.php, som ogsaa teller hvor mange som staar
+      // paa lista og sier fra om at de ikke faar beskjed av seg selv.
+      klFlyttLagre: () => {
+        if (!valgt || !valgt.oktId) return;
+        const d = (this.state.klFlyttDato || '').trim();
+        const t = (this.state.klFlyttTid || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !/^\d{2}:\d{2}$/.test(t)) {
+          this.setState({ kvittering: 'Ble ikke lagret',
+                          kvitteringDetalj: 'Velg både dato og klokkeslett.' });
+          return;
+        }
+        // Lengden foelger med: sto okta 17:00–20:00, skal den fortsatt vare
+        // tre timer naar den flyttes.
+        const lengde = valgt.slutt
+          ? Math.max(0, this.klMin(valgt.slutt) - this.klMin(valgt.tid)) : 0;
+        this.klKall('/api/admin/kurs.php', {
+          handling: 'endredato', oktId: valgt.oktId,
+          start: d + ' ' + t,
+          slutt: lengde ? d + ' ' + this.klFmt(this.klMin(t) + lengde) : '',
+        }).then(ok => { if (ok) this.setState({ klFlyttVis: false }); });
+      },
       klBekreftAvlysVises: !!this.state.klBekreftAvlys,
       klAvlysStart: () => this.setState({ klBekreftAvlys: true, klFlyttVis: false }),
       klAvlysAngre: () => this.setState({ klBekreftAvlys: false }),
-      klAvlysBekreft: () => this.klIkkeEnda('Avlysing'),
-      klGjenopprett: () => this.klIkkeEnda('Å gjenopprette en økt'),
+      // Avlysingen sier hvor mange som har betalt og maa refunderes.
+      klAvlysBekreft: () => {
+        if (!valgt || !valgt.oktId) return;
+        this.klKall('/api/admin/kurs.php', { handling: 'avlys', oktId: valgt.oktId })
+          .then(ok => { if (ok) this.setState({ klBekreftAvlys: false }); });
+      },
+      // Og angres. Raden er den samme — det er statusen som gaar tilbake.
+      klGjenopprett: () => {
+        if (!valgt || !valgt.oktId) return;
+        this.klKall('/api/admin/kurs.php', { handling: 'gjenopprett', oktId: valgt.oktId });
+      },
       klRapVises: !!this.state.klRapVis,
       klRapApne: () => this.setState({ klRapVis: true }),
       klRapLukk: () => this.setState({ klRapVis: false }),
@@ -23261,13 +23542,24 @@ class Component extends DCLogic {
       settKlPaminNy: e => this.setState({ klPaminNy: e.target.value }),
       klPaminEnter: e => { if (e.key === 'Enter' && (this.state.klPaminNy || '').trim()) this.klPaminLeggTil(); },
       klPaminLeggTilKlikk: () => { if ((this.state.klPaminNy || '').trim()) this.klPaminLeggTil(); },
-      klInneVal: !!this.state.klInne,
-      klUteVal: !this.state.klInne,
-      klStempleTekst: this.state.klInne ? 'Stemple ut' : 'Stemple inn',
+      // Statusen sto i en egen «klInne» som ingenting satte: knappen viste
+      // «Stemple inn» ogsaa naar man var innstemplet. Naa er det den samme
+      // kilden som knappen i sidemenyen og paa Min side.
+      klInneVal: this.erInne(),
+      klUteVal: !this.erInne(),
+      klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',
       klStempleStil: { appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '8px 18px', font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap' },
-      klStempleStatus: this.state.klInne ? 'Innstemplet ' + (this.state.klInneTid || '') : 'Ikke innstemplet',
-      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.state.klInne ? 'var(--sage-500)' : 'var(--clay-300)' },
-      klStemple: () => this.klIkkeEnda('Inn- og utstempling'),
+      klStempleStatus: this.erInne()
+        ? 'Innstemplet ' + (((this.state.stempling || {}).siden) || '') : 'Ikke innstemplet',
+      klStemplePrikk: { width: '9px', height: '9px', borderRadius: '50%', flex: '0 0 auto', background: this.erInne() ? 'var(--sage-500)' : 'var(--clay-300)' },
+      klStemple: () => {
+        this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true);
+        // Aapningstida regnes av innstemplingene ogsaa, saa den hentes paa
+        // nytt — ellers viser bunnteksten paa nettsida det gamle.
+        this._apningHentes = false;
+        this.setState({ apningsdager: null });
+        this.klFrisk();
+      },
       klIcsVises: !!this.state.klIcsVis,
       klIcsApne: () => this.setState({ klIcsVis: true }),
       klIcsLukk: () => this.setState({ klIcsVis: false }),
@@ -23283,7 +23575,22 @@ class Component extends DCLogic {
   klApneEnkel(evt) {
     const base = (evt.tittel || '').split(' · ')[0];
     const k = this.kursData().find(x => x.navn === base) || {};
-    this.setState({ klMeny: null, klValgtId: null, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!(this.state.klAvlyst || {})[evt.id], klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '' });
+    this.setState({ klMeny: null, klValgtId: null, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!evt.avlyst, klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '',
+      // Verdiene ruta ble aapnet med.
+      //
+      // «Lagre» skal sende det som er endret, og ingenting annet. Uten dette
+      // ble prisen sendt hver gang — og prisen i feltet er kursets, ikke
+      // datoens. Et trykk paa Lagre ville dermed laast datoen til dagens
+      // pris, saa en senere prisendring paa kurset ikke gjaldt den. Ingen
+      // ba om det, og ingen ville sett det.
+      klRAapnet: {
+        pris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(),
+        info: k.beskrivelse || '',
+        holder: evt.holder || '',
+        plasser: evt.kap ? String(evt.kap) : '',
+        dato: evt.dato, fra: evt.tid, til: evt.slutt || '',
+        avlyst: !!evt.avlyst,
+      } });
   }
 
   klApneKurs(evt) {
@@ -23319,35 +23626,27 @@ class Component extends DCLogic {
   }
 
   klDragStart(evt, e) {
-    // Fase 5: kalenderen leser, den skriver ikke.
+    // Aa dra en okt til et nytt tidspunkt er ikke koblet.
     //
-    // Dra-og-slipp flytter en dato, gir bort en plass eller setter opp et
-    // kurs — tre ting som maa gaa gjennom kurs.php, pamelding.php og
-    // venteliste.php med reglene sine. De kobles i fase 6. Til da skal
-    // ingenting kunne dras, framfor at det ser ut til aa virke og ikke
-    // lagres.
-    return;
-  }
-
-  klNyDragStart(kurs, e) {
-    // Fase 5: kalenderen leser, den skriver ikke.
+    // Selve flyttingen er det: hoyreklikk paa okta og velg «Flytt dato…»,
+    // eller aapne den og bruk «Flytt dato». Begge gaar til kurs.php, som
+    // teller hvor mange som staar paa lista og sier fra om at de ikke faar
+    // beskjed av seg selv.
     //
-    // Dra-og-slipp flytter en dato, gir bort en plass eller setter opp et
-    // kurs — tre ting som maa gaa gjennom kurs.php, pamelding.php og
-    // venteliste.php med reglene sine. De kobles i fase 6. Til da skal
-    // ingenting kunne dras, framfor at det ser ut til aa virke og ikke
-    // lagres.
+    // Draingen krever i tillegg en konfliktsjekk mot kursholderens andre
+    // okter og en angremulighet som gjelder det som faktisk er lagret. Den
+    // staar for tur. Til da skal ingenting kunne dras, framfor at det ser ut
+    // til aa virke og ikke lagres.
     return;
   }
 
   klVlDragStart(p, e) {
-    // Fase 5: kalenderen leser, den skriver ikke.
+    // Aa dra en fra ventelista inn paa en okt er ikke koblet.
     //
-    // Dra-og-slipp flytter en dato, gir bort en plass eller setter opp et
-    // kurs — tre ting som maa gaa gjennom kurs.php, pamelding.php og
-    // venteliste.php med reglene sine. De kobles i fase 6. Til da skal
-    // ingenting kunne dras, framfor at det ser ut til aa virke og ikke
-    // lagres.
+    // Selve tildelingen er det: aapne okta og bruk «Tildel neste», eller gaa
+    // til Venteliste. Begge gaar til venteliste.php, som sjekker at det
+    // faktisk finnes en ledig stol foer plassen gis — uten den sjekken kunne
+    // to fra lista faatt den samme, og det oppdages foerst den kvelden.
     return;
   }
 
@@ -23366,57 +23665,17 @@ class Component extends DCLogic {
     this.setState({ klPamin: l });
   }
 
-  klFmt(mn) { return String(Math.floor(mn / 60)).padStart(2, '0') + ':' + String(mn % 60).padStart(2, '0'); }
-  klNyDragStart(kurs, e) {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    this._klNy = { kurs, moved: false };
-    const move = mv => {
-      const d = this._klNy; if (!d) return;
-      d.moved = true;
-      this.setState({ klNyDrag: { navn: kurs.navn, x: mv.clientX, y: mv.clientY } });
-    };
-    const opp = mv => {
-      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
-      const d = this._klNy; this._klNy = null;
-      if (!d || !d.moved) { this.setState({ klNyDrag: null }); return; }
-      const els = document.elementsFromPoint(mv.clientX, mv.clientY);
-      const kolEl = els.find(el => el.getAttribute && el.getAttribute('data-kol'));
-      const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));
-      const o = (kurs.okter && kurs.okter[0]) || {};
-      const dur = o.fra && o.til ? this.klMin(o.til) - this.klMin(o.fra) : 180;
-      let dato = null, fra = o.fra || '17:00', til = o.til || this.klFmt(this.klMin(o.fra || '17:00') + dur), holder = this.klHoldere()[0] || '';
-      if (kolEl) {
-        const r = kolEl.getBoundingClientRect();
-        const omr = this._klRange || { start: 420, slutt: 1320, px: 52 };
-        let mn = omr.start + Math.round(((mv.clientY - r.top) / (omr.px || 52) * 60) / 30) * 30;
-        mn = Math.max(omr.start, Math.min(omr.slutt - 60, mn));
-        fra = this.klFmt(mn); til = this.klFmt(Math.min(1320, mn + dur));
-        const kn = kolEl.getAttribute('data-kol');
-        if (kn && kn !== 'Verkstedet') holder = kn;
-        const a = new Date();
-        dato = this.state.klAnker || (a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2, '0') + '-' + String(a.getDate()).padStart(2, '0'));
-      } else if (datoEl && datoEl.getAttribute('data-dato')) {
-        dato = datoEl.getAttribute('data-dato');
-        if (datoEl.getAttribute('data-akse')) {
-          const r2 = datoEl.getBoundingClientRect();
-          const omr2 = this._klRange || { start: 420, slutt: 1320, px: 52 };
-          let mn2 = omr2.start + Math.round(((mv.clientY - r2.top) / (omr2.px || 52) * 60) / 30) * 30;
-          mn2 = Math.max(omr2.start, Math.min(omr2.slutt - 60, mn2));
-          fra = this.klFmt(mn2); til = this.klFmt(Math.min(24 * 60, mn2 + dur));
-        }
-      }
-      if (!dato) { this.setState({ klNyDrag: null }); return; }
-      this.setState({
-        klNyDrag: null,
-        klBekreft: { kursNavn: kurs.navn, type: kurs.type === 'Event' ? (kurs.navn === 'Paint on Pots' ? 'pop' : 'event') : 'kurs', kap: parseInt(((kurs.pameldte || '').split('/')[1] || '8'), 10) || 8 },
-        klBDato: dato, klBFra: fra, klBTil: til, klBHolder: holder, klBGjenta: 'Én gang', klBAntall: '4',
-      });
-    };
-    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
+  // Klokkeslett og minutter, begge veier. «17:30» er 1050 minutter etter
+  // midnatt, og det er slik brikkene plasseres i dag- og ukevisningen.
+  //
+  // «klMin» manglet: den ble borte da kalenderen ble hentet inn, mens koden
+  // som bruker den ble med. Dra-og-slipp av et kurs fra kurslista regnet
+  // lengden paa okta med den, og stoppet paa en metode som ikke fantes.
+  klMin(t) {
+    const m = /^(\d{1,2}):(\d{2})$/.exec(String(t || '').trim());
+    return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : 0;
   }
 
-  klMin(t) { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); }
   klFmt(mn) { return String(Math.floor(mn / 60)).padStart(2, '0') + ':' + String(mn % 60).padStart(2, '0'); }
   klNyDragStart(kurs, e) {
     if (e.button !== 0) return;

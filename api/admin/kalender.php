@@ -69,7 +69,7 @@ $holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
 $holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id' : '';
 
 $okter = DB::alle(
-    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status,
+    "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
             c.tittel, c.type, c.tema {$holderKol}
        FROM course_sessions cs
@@ -110,7 +110,7 @@ $venter = [];
 if ($oktIder !== []) {
     $inn = implode(',', $oktIder);
     foreach (DB::alle(
-        "SELECT w.course_session_id, w.navn, w.posisjon, w.status
+        "SELECT w.id, w.course_session_id, w.navn, w.posisjon, w.status
            FROM waitlist w
           WHERE w.course_session_id IN ({$inn})
             AND w.status IN ('venter','varslet')
@@ -150,6 +150,7 @@ foreach (DB::alle(
                       ? ' medlem innsjekket' : ' medlemmer innsjekket'),
         'type'   => 'verksted',
         'holder' => '',
+        'kursId' => 0,
         'kap'    => 0,
         'pameldt'=> 0,
         'deltakere' => [],
@@ -238,6 +239,10 @@ foreach ($okter as $o) {
     $ko = [];
     foreach ($venter[$id] ?? [] as $w) {
         $ko[] = [
+            // Nummeret paa raden i koen. Uten det kan kalenderen vise hvem
+            // som staar der, men ikke gi noen plassen: venteliste.php maa
+            // vite hvilken rad det gjelder.
+            'id'       => (int) $w['id'],
             'navn'     => (string) $w['navn'],
             'posisjon' => (int) $w['posisjon'],
             'varslet'  => (string) $w['status'] === 'varslet',
@@ -247,6 +252,10 @@ foreach ($okter as $o) {
     $hendelser[] = [
         'id'     => (string) $id,
         'oktId'  => $id,
+        // Kurset datoen hoerer til. Kalenderen trenger det for aa legge en ny
+        // dato paa det samme kurset uten aa gaa veien om navnet — to kurs kan
+        // hete nesten det samme, og et navn er ikke en identitet.
+        'kursId' => (int) $o['course_id'],
         'dato'   => $iOslo((string) $o['start_tid'], 'Y-m-d'),
         'tid'    => $iOslo((string) $o['start_tid'], 'H:i'),
         'slutt'  => $o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : '',

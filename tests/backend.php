@@ -1551,8 +1551,68 @@ sjekk('kalenderen henter fra basen, ikke fra en generator',
     str_contains($sida, "fetch('/api/admin/kalender.php?fra=") && !str_contains($sida, 'klGen(y, m) {'));
 sjekk('fase 5 skriver ikke — laget med lokale endringer tegnes ikke',
     str_contains($sida, 'if (!this.klSkriver) return evts;'));
-sjekk('knappene som endrer noe sier fra at de ikke er koblet',
-    substr_count($sida, 'this.klIkkeEnda(') >= 10);
+// Fase 6: alle tolv er koblet, og hjelperen som sa «ikke koblet ennaa» er
+// borte. Staar den igjen, er det fordi noe fortsatt ikke virker.
+sjekk('ingen knapp i kalenderen sier lenger «ikke koblet ennaa»',
+    !str_contains($sida, 'klIkkeEnda'));
+// Kalenderen skriver aldri selv. Den sender til endepunktene som finnes, saa
+// det er ett sted som vet hva som skjer naar en dato med fem paameldte
+// flyttes — og henter maaneden paa nytt etterpaa.
+foreach ([
+    'stenger dagen'        => "handling: 'aapne', dato: dagIso",
+    'svarer en henvendelse'=> "handling: 'svar', id: bv.id",
+    'gir en plass'         => "handling: 'gi-plass', id: vb.id",
+    'setter opp et kurs'   => "handling: 'nydato', kursId: kursId",
+    'legger til en dato'   => "handling: 'nydato', kursId: redEvt.kursId",
+    'flytter en dato'      => "handling: 'endredato', oktId: valgt.oktId",
+    'avlyser'              => "handling: 'avlys', oktId: valgt.oktId",
+    'gjenoppretter'        => "handling: 'gjenopprett', oktId: valgt.oktId",
+    'legger til deltaker'  => "handling: 'legg-til', oktId: valgt.oktId",
+] as $hva => $bit) {
+    sjekk('kalenderen ' . $hva . ' gjennom endepunktet som finnes',
+        str_contains($sida, $bit));
+}
+// Stemplingen sto i en egen «klInne» som ingenting satte: knappen viste
+// «Stemple inn» ogsaa naar man var innstemplet.
+// «Lagre» i redigeringsruta sender bare det som er endret. Prisen i feltet er
+// kursets, ikke datoens: sendes den hver gang, laases datoen til dagens pris,
+// og en senere prisendring paa kurset gjelder ikke den. Ingen ba om det.
+sjekk('redigeringsruta lagrer bare det som er endret',
+    str_contains($sida, 'klRAapnet: {')
+    && str_contains($sida, "const fra0 = this.state.klRAapnet || {};")
+    && str_contains($sida, "if ((this.state.klRPris || '') !== (fra0.pris || '')) {"));
+// Stengte dager kom fra basen, men ble aldri tegnet: kalenderen leste et
+// lokalt lag ingenting fylte. En stengt dag saa aapen ut, og knappen sa
+// «Steng dagen» paa en dag som alt var stengt.
+sjekk('stengte dager leses av det serveren sier',
+    str_contains($sida, 'klStengte() { return this.state.kalStengte || {}; }')
+    && !str_contains($sida, 'this.state.klStengt'));
+// «klMin» ble borte da kalenderen ble hentet inn, mens koden som bruker den
+// ble med: dra-og-slipp av et kurs stoppet paa en metode som ikke fantes.
+sjekk('klMin finnes, saa dra-og-slipp av et kurs ikke stopper',
+    str_contains($sida, 'klMin(t) {'));
+
+sjekk('stemplingen i kalenderen leser den samme kilden som resten',
+    str_contains($sida, "klStempleTekst: this.erInne() ? 'Stemple ut' : 'Stemple inn',")
+    && !str_contains($sida, 'klInneTid'));
+// En avlyst dato kunne ikke settes tilbake. Da matte den settes opp paa nytt,
+// og de paameldte fulgte ikke med.
+$kursFil6 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+$apnFil6  = file_get_contents(dirname(__DIR__) . '/api/admin/apningstider.php');
+sjekk('en avlyst dato kan gjenopprettes',
+    str_contains($kursFil6, "case 'gjenopprett':")
+    && str_contains($kursFil6, "DB::oppdater('course_sessions', ['status' => 'planlagt'], ['id' => \$oktId]);"));
+// Raden i «apningstider» er overstyringen. Den kunne bare lages i basen.
+sjekk('en dag kan stenges og aapnes fra kalenderen',
+    str_contains($apnFil6, "case 'steng':") && str_contains($apnFil6, "case 'aapne':"));
+// «Aapne» sletter raden. En rad med stengt = 0 og uten tider ville fortsatt
+// vaert en overstyring — «aapent, men vi vet ikke naar».
+sjekk('aapning fjerner overstyringen framfor aa sette stengt = 0',
+    str_contains($apnFil6, 'DELETE FROM apningstider WHERE id = :i'));
+// Kursene avlyses ikke av at dagen stenges — men eieren skal se at de staar
+// der, saa hun kan ta stilling til dem.
+sjekk('stenging sier fra om kursene som gaar den dagen',
+    str_contains($apnFil6, "'kurs'    => \$kurs,"));
 sjekk('beskjedene i kalenderen er ekte henvendelser, ikke oppdiktede',
     str_contains($sida, "klBeskjeder: (this.state.adminForesporsler || [])"));
 // ── Kurskalenderen paa nettsiden, paa telefon ────────────────────────────

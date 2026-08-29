@@ -5643,12 +5643,26 @@ window.__resources = {
       <sc-if value="{{ klRedVises }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ klRAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
           <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(560px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
-            <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
-              <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Rediger økten</span>
-              <button type="button" onClick="{{ klRAvbryt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+            <!-- Lagrelinja staar klistret oeverst.
+                 «Lagre» laa nederst i ruta, og ruta ruller: paa en telefon med
+                 tastaturet oppe var knappen langt under skjermkanten, og
+                 eieren fant den ikke. Naa foelger den med, og kommer fram med
+                 det samme noe er endret. -->
+            <div style="position: sticky; top: calc(var(--space-8) * -1); z-index: 2; background: var(--surface-card); padding-top: var(--space-1); margin: 0 0 var(--space-4);">
+              <div style="display: flex; align-items: center; gap: var(--space-3);">
+                <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Rediger økten</span>
+                <button type="button" onClick="{{ klRAvbryt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; margin-left: auto; font-size: 22px; line-height: 1; color: var(--text-muted); padding: 4px;">×</button>
+              </div>
+              <sc-if value="{{ klREndret }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3); background: var(--lissom-yellow); border-radius: var(--radius-md); padding: 9px 12px;">
+                  <span style="flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">{{ klREndretTekst }}</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="check" on-click="{{ klRLagre }}" hint-size="auto,36px">Lagre</x-import>
+                </div>
+              </sc-if>
             </div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn</label>
-            <input value="{{ klRNavn }}" onChange="{{ settKlRNavn }}" style="box-sizing: border-box; width: 100%; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); background: var(--clay-50); color: var(--text-heading); margin-bottom: var(--space-5);">
+            <input value="{{ klRNavn }}" onChange="{{ settKlRNavn }}" style="box-sizing: border-box; width: 100%; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); background: var(--clay-50); color: var(--text-heading);">
+            <div style="font-size: var(--text-xs); color: var(--text-muted); margin: 5px 0 var(--space-5);">{{ klRNavnHint }}</div>
             <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
@@ -23466,6 +23480,21 @@ class Component extends DCLogic {
               klRAvbryt: () => this.setState({ klRedId: null }),
               klRFull: () => redEvt && this.klApneKurs(redEvt),
               klRDeltakere: () => redEvt && this.setState({ klRedId: null, klValgtId: redEvt.id, klFlyttVis: false, klBekreftAvlys: false }),
+              // Hva som er endret, i klartekst. Linja oeverst kommer forst
+              // naar det faktisk er noe aa lagre.
+              klREndret: !!redEvt && this.klRedEndringer(redEvt).length > 0,
+              klREndretTekst: (() => {
+                const e2 = redEvt ? this.klRedEndringer(redEvt) : [];
+                return e2.length === 1 ? 'Du har endret ' + e2[0].hva
+                     : 'Du har endret ' + e2.length + ' ting';
+              })(),
+              // Navnet hoerer til kurset, ikke til datoen: «course_sessions»
+              // har ingen tittel, den peker paa kurset. Feltet sto her og
+              // kunne skrives i, men ingenting sendte det noe sted — det var
+              // doedt. Naa endrer det kurset, og teksten sier hva det betyr.
+              klRNavnHint: redEvt && redEvt.kursId
+                ? 'Navnet hører til kurset. Endrer du det, endres det på alle datoene og på nettsiden.'
+                : 'Navnet hører til kurset.',
               // «Lagre» kan endre pris, informasjon, kursholder, plasser,
               // klokkeslett og avlysing paa én gang. De hoerer til hver sine
               // endepunkter, saa de sendes i rekkefolge — og bare det som
@@ -23473,61 +23502,14 @@ class Component extends DCLogic {
               // «dato_plasser» i loggen selv om ingen roerte plassene.
               klRLagre: () => {
                 if (!redEvt || !redEvt.oktId) return;
-                const kall = [];
-
-                // Pris, informasjon og kursholder hoerer til datoen.
-                // Sammenlignet med verdiene ruta ble aapnet med. Ellers ville
-                // et trykk paa Lagre skrevet alt paa nytt hver gang.
-                const fra0 = this.state.klRAapnet || {};
-                const datoFelt = { handling: 'dato', oktId: redEvt.oktId };
-                let harDatoFelt = false;
-                if ((this.state.klRPris || '') !== (fra0.pris || '')) {
-                  datoFelt.pris = this.state.klRPris || ''; harDatoFelt = true;
-                }
-                if ((this.state.klRBeskrivelse || '') !== (fra0.info || '')) {
-                  datoFelt.info = this.state.klRBeskrivelse || ''; harDatoFelt = true;
-                }
-                if ((this.state.klRHolder || '') !== (fra0.holder || '')) {
-                  datoFelt.kursholderId = this.klHolderId(this.state.klRHolder);
-                  harDatoFelt = true;
-                }
-                if (harDatoFelt) kall.push({ sti: '/api/admin/kurs.php', kropp: datoFelt });
-
-                // Plassene. Tomt betyr «foelg kurset», og det er en gyldig
-                // verdi — derfor sammenlignes den ogsaa, framfor aa hoppes over.
-                const plasser = (this.state.klRPlasser || '').trim();
-                if (plasser !== (fra0.plasser || '')) {
-                  kall.push({ sti: '/api/admin/kurs.php',
-                              kropp: { handling: 'plasser', oktId: redEvt.oktId, kapasitet: plasser } });
-                }
-
-                // Dato og klokkeslett.
-                const d = (this.state.klRDato || '').trim();
-                const fra = (this.state.klRFra || '').trim();
-                const til = (this.state.klRTil || '').trim();
-                if (/^\d{4}-\d{2}-\d{2}$/.test(d) && /^\d{2}:\d{2}$/.test(fra)
-                    && (d !== fra0.dato || fra !== fra0.fra || til !== (fra0.til || ''))) {
-                  kall.push({ sti: '/api/admin/kurs.php', kropp: {
-                    handling: 'endredato', oktId: redEvt.oktId,
-                    start: d + ' ' + fra, slutt: til ? d + ' ' + til : '',
-                  } });
-                }
-
-                // Avlysing er en egen handling, ikke et felt: den teller opp
-                // hvem som har betalt og maa refunderes.
-                const skalAvlyses = !!this.state.klRAvlyst;
-                if (skalAvlyses !== !!fra0.avlyst) {
-                  kall.push({ sti: '/api/admin/kurs.php', kropp: {
-                    handling: skalAvlyses ? 'avlys' : 'gjenopprett', oktId: redEvt.oktId,
-                  } });
-                }
-
-                if (kall.length === 0) {
+                const endr = this.klRedEndringer(redEvt);
+                if (endr.length === 0) {
                   this.setState({ kvittering: 'Ingenting å lagre',
                                   kvitteringDetalj: 'Du har ikke endret noe på denne datoen.' });
                   return;
                 }
-                this.klKallFlere(kall).then(ok => { if (ok) this.setState({ klRedId: null }); });
+                this.klKallFlere(endr.map(e2 => e2.kall))
+                  .then(ok => { if (ok) this.setState({ klRedId: null }); });
               },
             };
           })(),
@@ -23902,6 +23884,7 @@ class Component extends DCLogic {
       // pris, saa en senere prisendring paa kurset ikke gjaldt den. Ingen
       // ba om det, og ingen ville sett det.
       klRAapnet: {
+        navn: base,
         pris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(),
         info: k.beskrivelse || '',
         holder: evt.holder || '',
@@ -23950,6 +23933,71 @@ class Component extends DCLogic {
       : { x: 320, y: 90 };
     this.setState({ klKursRedId: raa.id, klKursRedPos: r,
                     klKursStart: start, klKursVerdier: Object.assign({}, start) });
+  }
+
+  /**
+   * Hva som er endret i «Rediger okten», og hva som maa sendes for hver ting.
+   *
+   * Ett sted, saa linja som sier «Du har endret to ting» og selve lagringen
+   * aldri kan vaere uenige. Sammenlignet med verdiene ruta ble aapnet med:
+   * sendes alt hver gang, staar det en «dato_plasser» i loggen selv om ingen
+   * roerte plassene — og prisen i feltet er kursets, ikke datoens, saa et
+   * trykk paa Lagre ville laast datoen til dagens pris.
+   *
+   * @return {Array<{hva: string, kall: {sti: string, kropp: object}}>}
+   */
+  klRedEndringer(redEvt) {
+    const st = this.state, fra0 = st.klRAapnet || {}, ut = [];
+    const K = '/api/admin/kurs.php';
+
+    // Navnet hoerer til kurset, ikke til datoen. Endres det, endres kurset —
+    // og da foelger alle datoene og nettsida med.
+    const navn = (st.klRNavn || '').trim();
+    if (navn && navn !== (fra0.navn || '') && redEvt.kursId) {
+      const raa = (st.adminKursRaa || []).find(x => x.id === redEvt.kursId) || {};
+      ut.push({ hva: 'navnet på kurset', kall: { sti: K, kropp: {
+        handling: 'lagre', id: redEvt.kursId, tittel: navn,
+        // Statusen skrives ubetinget i kurs.php. Uten den ville kurset falt
+        // til kladd og forsvunnet fra nettsida.
+        status: raa.status || 'publisert',
+      } } });
+    }
+
+    // Pris, informasjon og kursholder hoerer til datoen.
+    const datoFelt = { handling: 'dato', oktId: redEvt.oktId };
+    const rort = [];
+    if ((st.klRPris || '') !== (fra0.pris || '')) { datoFelt.pris = st.klRPris || ''; rort.push('prisen'); }
+    if ((st.klRBeskrivelse || '') !== (fra0.info || '')) { datoFelt.info = st.klRBeskrivelse || ''; rort.push('beskrivelsen'); }
+    if ((st.klRHolder || '') !== (fra0.holder || '')) {
+      datoFelt.kursholderId = this.klHolderId(st.klRHolder); rort.push('kursholderen');
+    }
+    if (rort.length) ut.push({ hva: rort.join(' og '), kall: { sti: K, kropp: datoFelt } });
+
+    // Plassene. Tomt betyr «foelg kurset», og det er en gyldig verdi —
+    // derfor sammenlignes den ogsaa, framfor aa hoppes over.
+    const plasser = (st.klRPlasser || '').trim();
+    if (plasser !== (fra0.plasser || '')) {
+      ut.push({ hva: 'antall plasser', kall: { sti: K, kropp: {
+        handling: 'plasser', oktId: redEvt.oktId, kapasitet: plasser } } });
+    }
+
+    const d = (st.klRDato || '').trim(), fra = (st.klRFra || '').trim(), til = (st.klRTil || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d) && /^\d{2}:\d{2}$/.test(fra)
+        && (d !== fra0.dato || fra !== fra0.fra || til !== (fra0.til || ''))) {
+      ut.push({ hva: 'dato eller klokkeslett', kall: { sti: K, kropp: {
+        handling: 'endredato', oktId: redEvt.oktId,
+        start: d + ' ' + fra, slutt: til ? d + ' ' + til : '' } } });
+    }
+
+    // Avlysing er en egen handling, ikke et felt: den teller opp hvem som har
+    // betalt og maa refunderes.
+    const skalAvlyses = !!st.klRAvlyst;
+    if (skalAvlyses !== !!fra0.avlyst) {
+      ut.push({ hva: skalAvlyses ? 'at økten avlyses' : 'at økten går likevel',
+                kall: { sti: K, kropp: {
+                  handling: skalAvlyses ? 'avlys' : 'gjenopprett', oktId: redEvt.oktId } } });
+    }
+    return ut;
   }
 
   klApneKurs(evt) {

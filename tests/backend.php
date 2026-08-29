@@ -1579,8 +1579,8 @@ foreach ([
 // og en senere prisendring paa kurset gjelder ikke den. Ingen ba om det.
 sjekk('redigeringsruta lagrer bare det som er endret',
     str_contains($sida, 'klRAapnet: {')
-    && str_contains($sida, "const fra0 = this.state.klRAapnet || {};")
-    && str_contains($sida, "if ((this.state.klRPris || '') !== (fra0.pris || '')) {"));
+    && str_contains($sida, "const st = this.state, fra0 = st.klRAapnet || {}, ut = [];")
+    && str_contains($sida, "if ((st.klRPris || '') !== (fra0.pris || '')) {"));
 // Stengte dager kom fra basen, men ble aldri tegnet: kalenderen leste et
 // lokalt lag ingenting fylte. En stengt dag saa aapen ut, og knappen sa
 // «Steng dagen» paa en dag som alt var stengt.
@@ -1648,6 +1648,25 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 // neste i koen har alt faatt e-posten. Slippet aapner bekreftelsen.
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
+
+// ── «Rediger okten» paa telefon ──────────────────────────────────────────
+//
+// «Lagre» laa nederst i ruta, og ruta ruller. Paa en telefon med tastaturet
+// oppe var knappen langt under skjermkanten — eieren fant den ikke, og trodde
+// det ikke fantes noen lagreknapp.
+sjekk('lagrelinja i «Rediger okten» staar klistret oeverst',
+    str_contains($sida, 'position: sticky; top: calc(var(--space-8) * -1); z-index: 2;')
+    && str_contains($sida, '{{ klREndretTekst }}'));
+// Navnefeltet sto der og kunne skrives i, men ingenting sendte det noe sted.
+// «course_sessions» har ingen tittel — den peker paa kurset.
+sjekk('navnefeltet i okta endrer kurset, og sier fra om det',
+    str_contains($sida, "hva: 'navnet på kurset'")
+    && str_contains($sida, 'Navnet hører til kurset. Endrer du det, endres det på alle datoene'));
+// Ett sted som vet hva som er endret, saa linja og lagringen aldri kan vaere
+// uenige om hva som skjer naar du trykker.
+sjekk('linja og lagringen leser den samme lista',
+    str_contains($sida, 'klRedEndringer(redEvt) {')
+    && str_contains($sida, 'this.klKallFlere(endr.map(e2 => e2.kall))'));
 
 // ── Kurset redigeres der kortet staar ────────────────────────────────────
 //

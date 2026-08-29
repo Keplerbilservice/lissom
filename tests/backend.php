@@ -2652,6 +2652,26 @@ sjekk('… og naar koden lukkes', str_contains($sida2, 'utQrLukk: () => { this.u
 sjekk('uttakKall gir svaret tilbake uten aa velte de andre',
     str_contains($sida2, 'return ok ? d : false;'));
 
+// ── Nedtrekkene paa iPhone ─────────────────────────────────────────────
+//
+// Motoren pakker {{ }} i et <span class="sc-interp">. Chrome faller tilbake
+// paa option.text og viser navnet; Safari paa iPhone leser innholdet slik det
+// staar, finner et element framfor tekst, og viser en blank linje. Eieren
+// 29. august: nedtrekket «Betaling» var tomt med en hake i.
+//
+// «label» er det standarden peker paa naar et valg skal ha en annen etikett
+// enn innholdet, og den vises naar den finnes. Innholdet blir staaende, saa
+// option.text virker som for.
+preg_match_all('/<option value="\{\{ [^}]+ \}\}"([^>]*)>/', $sida2, $treff);
+$utenLabel = array_values(array_filter(
+    $treff[1] ?? [],
+    static fn(string $rest): bool => !str_contains($rest, 'label="{{')
+));
+sjekk('hvert valg i et nedtrekk har en etikett Safari kan lese',
+    $utenLabel === [], count($utenLabel) . ' uten label');
+sjekk('… og det gjelder alle nedtrekkene', count($treff[1] ?? []) >= 29,
+    count($treff[1] ?? []) . ' valg');
+
 // ── Fast QR til disken ─────────────────────────────────────────────────
 //
 // Vipps sin egen faste kode vil ha en landingsside med Hurtigkasse — Vipps

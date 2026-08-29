@@ -5598,7 +5598,7 @@ window.__resources = {
                 <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
                   <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.feltStil }}">
                     <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="3">
-                      <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                      <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                     </sc-for>
                   </select>
                 </sc-if>
@@ -5818,7 +5818,7 @@ window.__resources = {
                           <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
                             <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ kdValgStil }}">
                               <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="6">
-                                <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                               </sc-for>
                             </select>
                           </sc-if>
@@ -6114,7 +6114,7 @@ window.__resources = {
                     <select value="{{ klDFlyttTil }}" onChange="{{ settKlDFlyttTil }}" style="{{ klDFlyttStil }}">
                       <option value="">Flytt til en annen dato …</option>
                       <sc-for list="{{ klDFlyttValg }}" as="o" hint-placeholder-count="3">
-                        <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                        <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
                       </sc-for>
                     </select>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klDFlyttUtfor }}" hint-size="auto,36px">Flytt</x-import>
@@ -6483,7 +6483,7 @@ window.__resources = {
                 <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hvem</label>
                 <select value="{{ khTimeHvem }}" onChange="{{ settKhTimeHvem }}" style="{{ khFeltStil }}">
                   <sc-for list="{{ khValg }}" as="v" hint-placeholder-count="3">
-                    <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                    <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                   </sc-for>
                 </select>
               </div>
@@ -6931,7 +6931,7 @@ window.__resources = {
                 <label style="{{ nrEtikett }}">Medlemskap</label>
                 <select value="{{ nrPlan }}" onChange="{{ settNrPlan }}" style="{{ nrValgStil }}">
                   <sc-for list="{{ nrPlaner }}" as="p" hint-placeholder-count="4">
-                    <option value="{{ p.verdi }}">{{ p.navn }}</option>
+                    <option value="{{ p.verdi }}" label="{{ p.navn }}">{{ p.navn }}</option>
                   </sc-for>
                 </select>
                 <sc-if value="{{ nrIngenPlaner }}" hint-placeholder-val="{{ false }}">
@@ -6946,7 +6946,7 @@ window.__resources = {
                 <label style="{{ nrEtikett }}">{{ nrOktEtikett }}</label>
                 <select value="{{ nrOkt }}" onChange="{{ settNrOkt }}" style="{{ nrValgStil }}">
                   <sc-for list="{{ nrOkter }}" as="o" hint-placeholder-count="6">
-                    <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                    <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
                   </sc-for>
                 </select>
                 <sc-if value="{{ nrIngenOkter }}" hint-placeholder-val="{{ false }}">
@@ -6962,7 +6962,7 @@ window.__resources = {
                     <label style="{{ nrEtikett }}">Betalt med</label>
                     <select value="{{ nrMaate }}" onChange="{{ settNrMaate }}" style="{{ nrValgStil }}">
                       <sc-for list="{{ nrMaater }}" as="m" hint-placeholder-count="5">
-                        <option value="{{ m }}">{{ m }}</option>
+                        <option value="{{ m }}" label="{{ m }}">{{ m }}</option>
                       </sc-for>
                     </select>
                   </div>
@@ -8005,7 +8005,7 @@ window.__resources = {
                         <label style="{{ mpEtikett }}">Betalt med</label>
                         <select value="{{ mpMaate }}" onChange="{{ settMpMaate }}" style="{{ mpValgStil }}">
                           <sc-for list="{{ mpMaater }}" as="m" hint-placeholder-count="4">
-                            <option value="{{ m }}">{{ m }}</option>
+                            <option value="{{ m }}" label="{{ m }}">{{ m }}</option>
                           </sc-for>
                         </select>
                       </div>
@@ -8072,7 +8072,7 @@ window.__resources = {
                           <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kursholder</label>
                           <select value="{{ oktHolder }}" onChange="{{ settOktHolder }}" style="{{ oktFeltStil }}">
                             <sc-for list="{{ kursholderValg }}" as="h" hint-placeholder-count="3">
-                              <option value="{{ h.verdi }}">{{ h.navn }}</option>
+                              <option value="{{ h.verdi }}" label="{{ h.navn }}">{{ h.navn }}</option>
                             </sc-for>
                           </select>
                         </div>
@@ -8363,7 +8363,7 @@ window.__resources = {
                   <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ skFeltStil }}">
                   <select value="{{ r.gjelder }}" onChange="{{ r.settGjelder }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
                     <sc-for list="{{ grGjelderValg }}" as="g" hint-placeholder-count="5">
-                      <option value="{{ g.verdi }}">{{ g.navn }}</option>
+                      <option value="{{ g.verdi }}" label="{{ g.navn }}">{{ g.navn }}</option>
                     </sc-for>
                   </select>
                   <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
@@ -8409,7 +8409,7 @@ window.__resources = {
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
                 <select value="{{ bnLenke }}" onChange="{{ settBnLenke }}" style="{{ bnValgStil }}">
                   <sc-for list="{{ bnMaal }}" as="m" hint-placeholder-count="8">
-                    <option value="{{ m.nokkel }}">{{ m.navn }}</option>
+                    <option value="{{ m.nokkel }}" label="{{ m.navn }}">{{ m.navn }}</option>
                   </sc-for>
                 </select>
               </div>
@@ -8572,7 +8572,7 @@ window.__resources = {
                         <label for="{{ q.typeId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Svartype</label>
                         <select id="{{ q.typeId }}" value="{{ q.rType }}" onChange="{{ q.settType }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                           <sc-for list="{{ kvaTyper }}" as="t" hint-placeholder-count="6">
-                            <option value="{{ t.verdi }}">{{ t.navn }}</option>
+                            <option value="{{ t.verdi }}" label="{{ t.navn }}">{{ t.navn }}</option>
                           </sc-for>
                         </select>
                       </div>
@@ -8580,7 +8580,7 @@ window.__resources = {
                         <label for="{{ q.narId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Vis bare når</label>
                         <select id="{{ q.narId }}" value="{{ q.rNarId }}" onChange="{{ q.settNarId }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                           <sc-for list="{{ q.narValg }}" as="n" hint-placeholder-count="3">
-                            <option value="{{ n.verdi }}">{{ n.navn }}</option>
+                            <option value="{{ n.verdi }}" label="{{ n.navn }}">{{ n.navn }}</option>
                           </sc-for>
                         </select>
                       </div>
@@ -8631,7 +8631,7 @@ window.__resources = {
                             <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Anbefaler</label>
                             <select value="{{ sv.mal }}" onChange="{{ sv.settMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                               <sc-for list="{{ kvaMaal }}" as="m" hint-placeholder-count="6">
-                                <option value="{{ m.verdi }}">{{ m.navn }}</option>
+                                <option value="{{ m.verdi }}" label="{{ m.navn }}">{{ m.navn }}</option>
                               </sc-for>
                             </select>
                           </div>
@@ -8953,7 +8953,7 @@ window.__resources = {
               <input type="password" value="{{ vaPassord }}" onChange="{{ settVa.smtp_passord }}" placeholder="{{ vaPassordHint }}" aria-label="Passord" style="{{ vaFeltStil }}">
               <select value="{{ vaSikkerhet }}" onChange="{{ settVa.smtp_sikkerhet }}" aria-label="Kryptering" style="{{ vaFeltStil }}">
                 <sc-for list="{{ vaSikkerhetValg }}" as="v" hint-placeholder-count="3">
-                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                 </sc-for>
               </select>
               <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4);">
@@ -9240,7 +9240,7 @@ window.__resources = {
                   <label style="{{ mpEtikett }}">Kurs</label>
                   <select value="{{ mpKurs }}" onChange="{{ settMpKurs }}" style="{{ mpValgStil }}">
                     <sc-for list="{{ mpKursvalg }}" as="k" hint-placeholder-count="6">
-                      <option value="{{ k.verdi }}">{{ k.navn }}</option>
+                      <option value="{{ k.verdi }}" label="{{ k.navn }}">{{ k.navn }}</option>
                     </sc-for>
                   </select>
                 </div>
@@ -9248,7 +9248,7 @@ window.__resources = {
                   <label style="{{ mpEtikett }}">Dato</label>
                   <select value="{{ mpOkt }}" onChange="{{ settMpOkt }}" style="{{ mpValgStil }}">
                     <sc-for list="{{ mpOkter }}" as="o" hint-placeholder-count="6">
-                      <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                      <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
                     </sc-for>
                   </select>
                 </div>
@@ -9281,7 +9281,7 @@ window.__resources = {
                   <label style="{{ mpEtikett }}">Betalt med</label>
                   <select value="{{ mpMaate }}" onChange="{{ settMpMaate }}" style="{{ mpValgStil }}">
                     <sc-for list="{{ mpMaater }}" as="m" hint-placeholder-count="5">
-                      <option value="{{ m }}">{{ m }}</option>
+                      <option value="{{ m }}" label="{{ m }}">{{ m }}</option>
                     </sc-for>
                   </select>
                 </div>
@@ -9423,7 +9423,7 @@ window.__resources = {
                           <label style="{{ mpEtikett }}">Hvordan kom pengene inn</label>
                           <select value="{{ betMaate }}" onChange="{{ settBetMaate }}" style="{{ mpValgStil }}">
                             <sc-for list="{{ betMaater }}" as="m" hint-placeholder-count="5">
-                              <option value="{{ m.verdi }}">{{ m.navn }}</option>
+                              <option value="{{ m.verdi }}" label="{{ m.navn }}">{{ m.navn }}</option>
                             </sc-for>
                           </select>
                         </div>
@@ -9453,7 +9453,7 @@ window.__resources = {
                     <label style="{{ mpEtikett }}">Flytt {{ p.navn }} til</label>
                     <select value="{{ flyttOkt }}" onChange="{{ settFlyttOkt }}" style="{{ mpValgStil }}">
                       <sc-for list="{{ flyttOkter }}" as="o" hint-placeholder-count="6">
-                        <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                        <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
                       </sc-for>
                     </select>
                   </div>
@@ -9673,7 +9673,7 @@ window.__resources = {
                   <label style="{{ miEtikett }}">Medlemskap</label>
                   <select value="{{ miType }}" onChange="{{ settMiType }}" style="{{ miFeltStil }}">
                     <sc-for list="{{ miTyper }}" as="t" hint-placeholder-count="3">
-                      <option value="{{ t }}">{{ t }}</option>
+                      <option value="{{ t }}" label="{{ t }}">{{ t }}</option>
                     </sc-for>
                   </select>
                 </div>
@@ -10262,7 +10262,7 @@ window.__resources = {
                   <label style="{{ miEtikett }}">Medlemskap</label>
                   <select value="{{ miType }}" onChange="{{ settMiType }}" style="{{ miFeltStil }}">
                     <sc-for list="{{ miTyper }}" as="t" hint-placeholder-count="3">
-                      <option value="{{ t }}">{{ t }}</option>
+                      <option value="{{ t }}" label="{{ t }}">{{ t }}</option>
                     </sc-for>
                   </select>
                 </div>
@@ -10561,7 +10561,7 @@ window.__resources = {
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
                     <select value="{{ nbOkt }}" onChange="{{ settNbOkt }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
                       <sc-for list="{{ nbOkter }}" as="o" hint-placeholder-count="5">
-                        <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                        <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
                       </sc-for>
                     </select>
                   </div>
@@ -10883,7 +10883,7 @@ window.__resources = {
                 <div style="{{ d.radStil }}">
                   <select value="{{ d.dag }}" onChange="{{ d.settDag }}" style="{{ d.dagStil }}">
                     <sc-for list="{{ dager }}" as="dag" hint-placeholder-count="7">
-                      <option value="{{ dag }}">{{ dag }}</option>
+                      <option value="{{ dag }}" label="{{ dag }}">{{ dag }}</option>
                     </sc-for>
                   </select>
                   <input type="time" value="{{ d.fra }}" onChange="{{ d.settFra }}" style="{{ d.feltStil }}">
@@ -11345,7 +11345,7 @@ window.__resources = {
                   <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
                   <select value="{{ nbOkt }}" onChange="{{ settNbOkt }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
                     <sc-for list="{{ nbOkter }}" as="o" hint-placeholder-count="5">
-                      <option value="{{ o.verdi }}">{{ o.navn }}</option>
+                      <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
                     </sc-for>
                   </select>
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alle påmeldte på datoen får beskjeden — også de som ikke er medlemmer.</p>
@@ -11615,7 +11615,7 @@ window.__resources = {
                   <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
                     <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.stil }}">
                       <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="3">
-                        <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                        <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                       </sc-for>
                     </select>
                   </sc-if>
@@ -12358,7 +12358,7 @@ window.__resources = {
                               <label for="{{ ab.etterId }}" style="{{ abLitenEtikett }}">Står etter</label>
                               <select id="{{ ab.etterId }}" value="{{ ab.etter }}" onChange="{{ ab.settEtter }}" style="{{ abFeltStil }}">
                                 <sc-for list="{{ ab.etterValg }}" as="v" hint-placeholder-count="3">
-                                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                                 </sc-for>
                               </select>
                             </div>
@@ -12366,7 +12366,7 @@ window.__resources = {
                               <label for="{{ ab.plassId }}" style="{{ abLitenEtikett }}">Plassering</label>
                               <select id="{{ ab.plassId }}" value="{{ ab.plassering }}" onChange="{{ ab.settPlassering }}" style="{{ abFeltStil }}">
                                 <sc-for list="{{ ab.plassValg }}" as="v" hint-placeholder-count="4">
-                                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                                 </sc-for>
                               </select>
                             </div>
@@ -12374,7 +12374,7 @@ window.__resources = {
                               <label for="{{ ab.storrId }}" style="{{ abLitenEtikett }}">Størrelse</label>
                               <select id="{{ ab.storrId }}" value="{{ ab.storrelse }}" onChange="{{ ab.settStorrelse }}" style="{{ abFeltStil }}">
                                 <sc-for list="{{ ab.storrValg }}" as="v" hint-placeholder-count="3">
-                                  <option value="{{ v.verdi }}">{{ v.navn }}</option>
+                                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
                                 </sc-for>
                               </select>
                             </div>

@@ -35,6 +35,22 @@ if (Foresporsel::metode() === 'GET') {
     // begynte aa lage datoene sine av aapningstidene teller den fort et par
     // hundre datoer. Da ble det over 250 sporringer for aa tegne én skjerm.
     $ekstra   = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
+    // Kursholderen paa den enkelte datoen (migrasjon 085). Kolonnen kan
+    // mangle om vedlikeholdet ikke er kjort — da staar feltet tomt i skjemaet
+    // og alt annet virker som for.
+    $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
+    if ($harHolder) {
+        $ekstra .= ', kursholder_id';
+    }
+
+    // Navnene, slaatt opp én gang. Uten dette ble det ett oppslag per dato.
+    $holdere = DB::harTabell('kursholdere')
+        ? DB::alle('SELECT id, navn, rolle, aktiv FROM kursholdere ORDER BY aktiv DESC, navn')
+        : [];
+    $holderNavn = [];
+    foreach ($holdere as $h) {
+        $holderNavn[(int) $h['id']] = (string) $h['navn'];
+    }
     $kursIder = array_map(static fn(array $k): int => (int) $k['id'], $kurs);
 
     $okterPerKurs = [];
@@ -64,7 +80,7 @@ if (Foresporsel::metode() === 'GET') {
     $samlingKart = Samlinger::forOkter($oktIder);
 
     Svar::json(['kurs' => array_map(static function ($k) use (
-        $okterPerKurs, $datoerFramover, $ledigeKart, $samlingKart
+        $okterPerKurs, $datoerFramover, $ledigeKart, $samlingKart, $holderNavn
     ) {
         $okter = $okterPerKurs[(int) $k['id']] ?? [];
         return [
@@ -89,6 +105,10 @@ if (Foresporsel::metode() === 'GET') {
             'datoerFramover' => $datoerFramover[(int) $k['id']] ?? 0,
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
+            // Hvem som vanligvis holder kurset. Foreslaas naar en ny dato
+            // settes opp — da slipper man aa velge det samme hver gang.
+            'standardKursholderId' => isset($k['standard_kursholder_id']) && $k['standard_kursholder_id'] !== null
+                ? (int) $k['standard_kursholder_id'] : 0,
             'bekreftelse'=> $k['bekreftelse_tekst'],
             // Seksjonene fra kursoppsettet (migrasjon 065). Tomme naar
             // migrasjonen ikke er kjort — da staar feltene tomme i skjemaet
@@ -140,6 +160,13 @@ if (Foresporsel::metode() === 'GET') {
                 'pris'      => isset($o['pris_ore']) && $o['pris_ore'] !== null
                                  ? (int) $o['pris_ore'] / 100 : null,
                 'info'      => (string) ($o['info'] ?? ''),
+                // Kursholderen for akkurat denne gangen. Den som holder
+                // dreiekurset i september er ikke noedvendigvis den samme
+                // som i oktober, og det er datoen folk moeter opp paa.
+                'kursholderId' => isset($o['kursholder_id']) && $o['kursholder_id'] !== null
+                    ? (int) $o['kursholder_id'] : 0,
+                'kursholder'   => isset($o['kursholder_id']) && $o['kursholder_id'] !== null
+                    ? ($holderNavn[(int) $o['kursholder_id']] ?? '') : '',
                 // Samlingene, for et kurs som gaar over flere dager.
                 'samlinger' => $samlingKart[(int) $o['id']] ?? [],
             ], $okter),
@@ -148,6 +175,13 @@ if (Foresporsel::metode() === 'GET') {
     // Standardteksten nye kurs fylles ut med. Ligger i innstillinger, saa
     // eieren kan endre den uten en ny utlegging av nettsiden.
     'bekreftelseStandard' => (string) Config::hent('kurs_bekreftelse', ''),
+    // Kursholderne, saa datoene kan tildeles uten et oppslag til.
+    'kursholdere' => array_map(static fn($h) => [
+        'id'    => (int) $h['id'],
+        'navn'  => (string) $h['navn'],
+        'rolle' => (string) ($h['rolle'] ?? ''),
+        'aktiv' => (bool) $h['aktiv'],
+    ], $holdere),
     ]);
 }
 
@@ -155,6 +189,25 @@ Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling', 'lagre');
+
+/**
+ * Kursholderen som ble valgt, eller null.
+ *
+ * Tomt felt og «0» betyr ikke tildelt. En id som ikke finnes avvises framfor
+ * aa lagres — da ville datoen pekt paa en kursholder som ikke er der, og
+ * navnet blitt borte uten at noen skjonte hvorfor.
+ */
+$holderId = static function (string $felt): ?int {
+    $id = Foresporsel::heltall($felt);
+    if ($id <= 0) {
+        return null;
+    }
+    if (!DB::harTabell('kursholdere')
+        || DB::en('SELECT id FROM kursholdere WHERE id = :i', ['i' => $id]) === null) {
+        Svar::feil('Fant ikke kursholderen.');
+    }
+    return $id;
+};
 
 /** «2026-09-02 17:30» i norsk tid → «2026-09-02 15:30:00» UTC for lagring. */
 $tilUtc = static function (string $norsk): ?string {
@@ -217,6 +270,11 @@ switch ($handling) {
         }
         if ($har('om')) {
             $data['beskrivelse'] = Foresporsel::tekst('om') ?: null;
+        }
+        // Hvem som vanligvis holder kurset. Bare naar feltet faktisk er med:
+        // et skjema som ikke kjenner det, skal ikke toemme det.
+        if ($har('standardKursholderId') && DB::harKolonne('courses', 'standard_kursholder_id')) {
+            $data['standard_kursholder_id'] = $holderId('standardKursholderId');
         }
         // Navnet paa kursbeviset. Tomt betyr Monica, som staar i malen.
         if ($har('instruktor')) {
@@ -351,12 +409,23 @@ switch ($handling) {
             Svar::feil('Skriv datoen som 2026-09-02 17:30.');
         }
 
-        $oktId = DB::settInn('course_sessions', [
+        $nyOkt = [
             'course_id' => $kursId,
             'start_tid' => $start,
             'slutt_tid' => $slutt,
             'kapasitet' => Foresporsel::heltall('kapasitet') ?: null,
-        ]);
+        ];
+        // Kursholderen: den som ble valgt, ellers kursets standard. Uten
+        // arven maatte man velge den samme personen paa hver eneste dato.
+        if (DB::harKolonne('course_sessions', 'kursholder_id')) {
+            $nyOkt['kursholder_id'] = array_key_exists('kursholderId', Foresporsel::kropp())
+                ? $holderId('kursholderId')
+                : (DB::harKolonne('courses', 'standard_kursholder_id')
+                    ? DB::verdi('SELECT standard_kursholder_id FROM courses WHERE id = :i', ['i' => $kursId])
+                    : null);
+        }
+
+        $oktId = DB::settInn('course_sessions', $nyOkt);
         revider('dato_lagt_til', 'course_session', $oktId, ['kurs' => $kursId, 'start' => $start]);
         Svar::ok(['oktId' => $oktId, 'naar' => Booking::norskDato($start)]);
 
@@ -683,6 +752,11 @@ switch ($handling) {
         }
         if (array_key_exists('info', $kropp)) {
             $endring['info'] = trim(mb_substr((string) $kropp['info'], 0, 4000)) ?: null;
+        }
+        // Kursholderen for denne gangen. Tomt valg betyr «ikke tildelt», og
+        // det er en gyldig tilstand — ikke alt har en kursholder.
+        if (array_key_exists('kursholderId', $kropp) && DB::harKolonne('course_sessions', 'kursholder_id')) {
+            $endring['kursholder_id'] = $holderId('kursholderId');
         }
         if ($endring !== []) {
             DB::oppdater('course_sessions', $endring, ['id' => $oktId]);

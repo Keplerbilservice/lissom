@@ -1287,6 +1287,67 @@ sjekk('kursbetaling.php bruker reglene i Booking, ikke sine egne',
 sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
     str_contains($betFil, "'MANUELL-' . Vipps::nyReferanse"));
 
+// ── Kursholder paa den enkelte datoen ────────────────────────────────────
+//
+// Registeret over kursholdere fantes, men var ikke koblet til noe: ingen fil
+// utenom tabell-lista i api/status.php nevnte det. Naa hoerer kursholderen til
+// datoen, og kurset har en standard som foreslaas.
+(static function () use (&$ok, &$feil): void {
+    if (!DB::harKolonne('course_sessions', 'kursholder_id')) {
+        sjekk('kursholder per okt krever migrasjon 085', false, 'kolonnen mangler');
+        return;
+    }
+
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug = 'testholder')");
+    DB::kjor("DELETE FROM courses WHERE slug = 'testholder'");
+    DB::kjor("DELETE FROM kursholdere WHERE navn IN ('Testholder A', 'Testholder B')");
+
+    $a = DB::settInn('kursholdere', ['navn' => 'Testholder A', 'rolle' => 'keramiker', 'aktiv' => 1]);
+    $b = DB::settInn('kursholdere', ['navn' => 'Testholder B', 'rolle' => 'vikar', 'aktiv' => 1]);
+
+    $kursId = DB::settInn('courses', [
+        'slug' => 'testholder', 'tittel' => 'Testkurs kursholder',
+        'pris_ore' => 50000, 'kapasitet' => 6, 'status' => 'kladd',
+        'standard_kursholder_id' => $a,
+    ]);
+
+    // Datoen arver standarden. Uten arven maatte man velge den samme
+    // personen paa hver eneste dato.
+    $okt1 = DB::settInn('course_sessions', [
+        'course_id' => $kursId,
+        'start_tid' => gmdate('Y-m-d H:i:s', time() + 86400),
+        'kursholder_id' => DB::verdi('SELECT standard_kursholder_id FROM courses WHERE id = :i', ['i' => $kursId]),
+    ]);
+    sjekk('en ny dato arver kursets standardkursholder',
+        (int) DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $okt1]) === $a);
+
+    // Men den kan settes til noen andre: den som holder kurset i september er
+    // ikke noedvendigvis den samme som i oktober.
+    DB::oppdater('course_sessions', ['kursholder_id' => $b], ['id' => $okt1]);
+    sjekk('kursholderen kan byttes paa én dato uten aa roere kurset',
+        (int) DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $okt1]) === $b
+        && (int) DB::verdi('SELECT standard_kursholder_id FROM courses WHERE id = :i', ['i' => $kursId]) === $a);
+
+    // Slutter noen, skal ikke datoene deres forsvinne. Okta blir staaende
+    // uten kursholder — den gikk.
+    DB::kjor('DELETE FROM kursholdere WHERE id = :i', ['i' => $b]);
+    sjekk('sletter man en kursholder, staar datoen igjen uten kursholder',
+        DB::en('SELECT id FROM course_sessions WHERE id = :i', ['i' => $okt1]) !== null
+        && DB::verdi('SELECT kursholder_id FROM course_sessions WHERE id = :i', ['i' => $okt1]) === null);
+
+    DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM kursholdere WHERE id = :i', ['i' => $a]);
+})();
+
+// Endepunktet skal avvise en kursholder som ikke finnes — ellers ville datoen
+// pekt paa noe som ikke er der, og navnet blitt borte uten forklaring.
+$kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+sjekk('kurs.php slaar opp kursholderen for den lagres',
+    str_contains($kursFil, "Svar::feil('Fant ikke kursholderen.')"));
+sjekk('en ny dato arver standarden i endepunktet ogsaa',
+    str_contains($kursFil, 'SELECT standard_kursholder_id FROM courses WHERE id = :i'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

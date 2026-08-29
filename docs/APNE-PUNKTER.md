@@ -7,8 +7,8 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 27. august 2026, kveld — etter runden med kassa,
-mobilmenyen og kursfeltene.
+Sist gjennomgått: 29. august 2026 — etter fase 6 til 9, kursholderen på
+kurset, beskjedkortet i kalenderen og varselkortene.
 
 ---
 
@@ -19,7 +19,7 @@ mobilmenyen og kursfeltene.
 Plasstallet regnes nå ut av kurset, og «Maks 8 deltakere» sto i seks ulike
 tekster som ikke fulgte med når plassene ble endret. Se «Ferdig» nederst.
 
-### 1b. Resten av punktlista kan fortsatt ikke redigeres
+### 1b. ~~Resten av punktlista kan fortsatt ikke redigeres~~ — gjort 27. august
 
 Plasslinja er løst, men de andre punktene — «Leire, verktøy, glasur og
 brenning er inkludert», «Du tar med deg to til tre boller hjem» — ligger
@@ -129,9 +129,43 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ---
 
+## Gjort 28.–29. august
+
+Kalenderen skriver nå (fase 6): tolv knapper som bare lukket seg er koblet,
+kursholderkonflikt sjekkes, sju daglige oppgaver gjøres derfra, og økter
+flyttes med dra-og-slipp — med en angreknapp som virker begge veier.
+Kurskortene i kalenderen er klikkbare og redigerbare, og endringene slår
+gjennom på alle planlagte datoer.
+
+Menyen er ryddet (fase 7): elleve punkter ned til ti, «Deltakere» og «Kurs og
+medlemskap» slått sammen til «Kurs og deltakere», Kalender opp som nummer to,
+og Oppskrifter er blitt «Verkstedet».
+
+Verkstedet (fase 8) har fått notater, påminnelser og brenninger i basen.
+Notatet lå i `localStorage` — skrev eieren det på telefonen, fantes det ikke
+på PC-en, og tømte hun nettleserdataene var det borte. Det ble flyttet inn én
+gang, ikke kopiert.
+
+Kursholderen velges på kurset. Tre trinn, én vei: datoens valg står over
+kursets, kursets over verkstedets standard. Tomt betyr Monica, ikke «ingen».
+
+Oppryddingen (fase 9) tok bestillingsboksen på Min side som aldri kunne åpne
+seg, statusen «Flyttet» som aldri kunne settes, et internkjøp som aldri nådde
+serveren, to attrapp-dialoger og seks props uten binding. De 61 adressene går
+alle et sted, og alle 2 403 bindingene i skjermbildene har en verdi bak seg.
+
+Beskjedkortet i kalenderen sier fra når køen er tom, viser to lesbare linjer
+av meldingen, og «Åpne» går til de ubesvarte når det er noe ubesvart.
+
+Varselkortene: to køer ingen sto vakt over har fått kort på Oversikt —
+medlemsvarer som venter på godkjenning, og søknader om frys. Kassekortet
+viser dagens salg.
+
+---
+
 ## Må gjøres av Lissom
 
-### 7b. Migrasjon 052–078 må kjøres
+### 7b. Migrasjon 052–090 må kjøres
 
 **Dette er det ene som står igjen før alt som er bygget virker.** Kjøres fra
 menyen nederst til venstre i admin: «Kjør N oppdateringer». Rekka er
@@ -168,6 +202,21 @@ tidene, og markeringen holder dem utenfor åpningstidsregnestykket.
 å slette hvis noen har meldt seg på.
 078 setter motkontoene — Vipps 1510, Kontant 1900, Faktura 1920 — og
 gavekortkontoen 2905. Bare der feltet står tomt.
+079–086 gir drop-in etter åpningstid, anmeldelse etter kurs, fast trekk eller
+selv, binding og oppsigelse, spørsmålene som egen seksjon, manuell betaling
+som ekte betaling, kursholder per økt og en standard kursholder.
+087 døper «Kurs boller» om til «Lag din egen bolle», i katalogen og på alle
+datoene. Adressen står urørt, så gamle lenker virker.
+088 gir Verkstedet: notatene og påminnelsene ut av nettleseren og inn i basen,
+og brenningene som står i kalenderen.
+089 legger kursholderen på selve kurset — datoene arver den — og fjerner
+vakttabellen fra 088 igjen. «Det er ingen andre vakter utenom kursholdere.»
+090 fjerner `checkins` og `hour_usage`, som ingen kode leser. **Bare der de er
+tomme.** Har de rader hos deg, blir de stående, og de vises fortsatt under
+«ubrukte» i api/status.php — da er det historikk noen må se på først.
+
+**Kjørt 29. august.** Lissom kjørte vedlikeholdet; hele rekka til og med 090
+er ute.
 
 Under Admin → Oversikt → Vedlikehold. Uten dem finnes ikke `deltaker_bilder`,
 `internt_notat` og `hentet_at`, og «Ferdig glassert» sier fra at den mangler
@@ -291,6 +340,31 @@ kan kunden vente like lenge på kvitteringen.
 
 Vipps ba 26. august om å se hvor og hvordan kunden sier opp medlemskapet.
 Det står i salgsvilkårene, begge steder, og er publisert.
+
+### 11b. Jeg kan nå se lissom.no selv — men ikke Vipps
+
+Fra 29. august står `lissom.no` og `*.lissom.no` i domenelista til
+skymiljøet. Det betyr at jeg kan hente den ekte siden, kontrollere at en
+utlegging faktisk landet, og kjøre nettlesertester mot den — ikke bare mot
+testserveren her. Det er brukt hver gang siden.
+
+To grenser står igjen:
+
+**Admin krever innlogging**, og passordet skal ikke i en chat. Alt jeg
+kontrollerer live er derfor det utloggede: sidene, API-ene som er åpne, og at
+en utlegging har landet. Admin testes fortsatt mot en kopi av basen her.
+
+**`apitest.vipps.no` står ikke i lista.** Skal jeg kunne prøve en handel mot
+Vipps' testmiljø herfra, må den legges til på samme sted — skyikonet over
+meldingsfeltet på claude.ai/code, tannhjulet på `lissom`, Allowed domains.
+Uten den svarer proxyen 403, og testene faller tilbake på stubben. De
+passerer, men de rører ikke Vipps.
+
+**Nettleseren gaar en omvei.** Chromium kommer ikke gjennom proxyen — den
+aapner tunnelen, men ClientHello-en blir avvist, og det gjelder alle verter,
+ikke bare lissom.no. Node henter sidene over TLS med full sertifikatsjekk og
+serverer dem til nettleseren lokalt. Ingenting er slaatt av; det er bare
+ClientHello-en som byttes ut.
 
 ### 12. Video på kurs
 

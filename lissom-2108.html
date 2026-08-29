@@ -25529,10 +25529,10 @@ class Component extends DCLogic {
       padding: 'var(--space-5) var(--space-6)', marginBottom: 'var(--space-6)',
       fontSize: 'var(--text-base)', color: 'var(--text-body)',
     });
-    // Timeforbruket er ikke koblet opp. Innstempling finnes ikke i basen, saa
-    // ingen vet hvor mange timer noen har brukt. Tallet «11,5» sto som fast
-    // verdi og ble vist til hvert eneste medlem — den er null paa den ekte
-    // siden, og seksjonen skjules helt (se harTimer lenger ned).
+    // Designverdien for timeforbruket. Tallet «11,5» ble en gang vist til
+    // hvert eneste medlem; naa staar den bare i forhaandsvisningen. De ekte
+    // timene kommer fra innstemplingene i basen — se blokka som leser
+    // «state.stempling» lenger ned.
     const fastBrukt = this.erPublisert() ? 0 : 11.5;
     let t;
     if (plan.timer == null) {
@@ -26647,9 +26647,6 @@ class Component extends DCLogic {
       visInternbutikk: this.medlemsvisning() && this.bryterPaa('internbutikk')
         && (!this.erPublisert() || (this.state.butikkvareListe || []).some(v => v.kunMedlemmer)),
       visMinSalg: this.bryterPaa('medlemssalg'),
-      // Interne samlinger finnes ikke i basen ennaa. Paa den ekte siden viser
-      // vi derfor ingen — bedre enn tre oppdiktede kvelder et medlem kan
-      // forsoke aa melde seg paa.
       // Interne samlinger: vanlige kurs merket «Kun for medlemmer». De laa
       // som tre faste oppforinger her, og var tomme paa den ekte siden.
       medlemskurs: this.medBildeCss(
@@ -31490,9 +31487,9 @@ class Component extends DCLogic {
           timerBrukt: st.timer.brukt,
         };
       })(),
-      // Timeteljinga finnes ikke ennaa. Framfor aa vise «du har 30 av 30
-      // timer igjen» — som er like usant som 11,5 — skjules kortet helt paa
-      // den ekte siden.
+      // Kortet skjules naar serveren ikke har svart ennaa: «du har 30 av 30
+      // timer igjen» er like usant som 11,5. Har den svart, er tallene
+      // medlemmets egne.
       ...(() => {
         const st = this.state.stempling;
         // Uten svar fra serveren viser vi ingen timer paa den ekte siden —
@@ -31739,10 +31736,6 @@ class Component extends DCLogic {
       })(),
       dorkode: this.dorkodeNaa() || (this.erPublisert() ? 'Ikke satt' : '4 7 1 2'),
       internWifi: this.internInfo().wifi || '',
-      // «I verkstedet naa» krever innstempling, og den er ikke koblet opp.
-      // Paa den ekte nettsiden staar lista derfor tom framfor aa vise
-      // oppdiktede folk — et medlem som logger inn skal ikke tro at det er
-      // tre andre i verkstedet naar det ikke er noen.
       // Hvem som er i verkstedet naa, fra innstemplingene. Initialene bygges
       // av navnet — serveren sender bare navn og klokkeslett.
       inne: (this.state.stempling

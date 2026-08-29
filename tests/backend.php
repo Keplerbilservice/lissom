@@ -1649,6 +1649,30 @@ sjekk('angringen bruker samme regel for sluttida som flyttingen',
 sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
     str_contains($sida, 'this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });'));
 
+// ── Kommentarer som ikke lenger stemte ───────────────────────────────────
+//
+// Fire kommentarer sa at noe ikke var koblet opp, med koden som kobler det
+// rett under. Den forste setningen stemte da den ble skrevet og ble staaende
+// da funksjonen kom. En kommentar som lyver er verre enn ingen kommentar:
+// den lurte meg selv 29. august til aa tro at timeforbruket paa Min side ikke
+// virket, og jeg holdt paa aa bygge det om igjen.
+sjekk('ingen kommentar paastaar at innstemplingen mangler',
+    !str_contains($sida, 'Innstempling finnes ikke i basen')
+    && !str_contains($sida, 'Timeteljinga finnes ikke ennaa')
+    && !str_contains($sida, '«I verkstedet naa» krever innstempling, og den er ikke koblet opp'));
+sjekk('ingen kommentar paastaar at interne samlinger mangler',
+    !str_contains($sida, 'Interne samlinger finnes ikke i basen ennaa'));
+// Og det de sa var ubygget, virker: timene kommer fra api/stempling.php.
+sjekk('timene paa Min side kommer fra innstemplingene',
+    str_contains($sida, "timerIgjen: fri ? '∞' : String(st.timer.igjen).replace('.', ',')")
+    && str_contains($sida, 'timerBrukt: st.timer.brukt,'));
+sjekk('endepunktet regner ut timene',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                 'Stempling::minutterDenneManeden($id)'));
+// Lista over hvem som er i verkstedet leses ogsaa derfra.
+sjekk('«i verkstedet naa» leses av innstemplingene',
+    str_contains($sida, 'this.state.stempling.inne.liste.map('));
+
 // ── Varselkort: to koer ingen sto vakt over ──────────────────────────────
 //
 // Et medlem som legger en gjenstand ut for salg venter paa aa bli godkjent,

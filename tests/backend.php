@@ -2441,7 +2441,13 @@ if ($fkOkt !== null) {
 // ── Panelet i oktredigereren ───────────────────────────────────────────
 sjekk('panelet staar bare der noen kan meldes paa',
     str_contains($sida2, 'kdMulig: kanMelde')
-    && str_contains($sida2, 'const kanMelde = !!(redEvt && redEvt.oktId'));
+    && str_contains($sida2, 'const kanMelde = !!(redEvt && redEvt.oktId);'));
+// Alle typer likt. Sto det et oppslag i kurslista her, forsvant panelet fra
+// alle oktene samtidig naar kalenderen ble aapnet direkte — lista lastes av
+// et annet kall.
+sjekk('panelet henger ikke paa en liste som lastes et annet sted',
+    !str_contains($sida2, 'kanMelde = !!(redEvt && redEvt.oktId\n')
+    && !preg_match('/const kanMelde[^;]*kursData\(\)/', $sida2));
 sjekk('panelet bruker det samme endepunktet som resten',
     str_contains($sida2, "handling: 'legg-til',\n                      oktId: Number(redEvt.oktId),"));
 sjekk('vippskravet staar bare der kravet kan sendes',

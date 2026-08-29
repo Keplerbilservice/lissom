@@ -23836,11 +23836,18 @@ class Component extends DCLogic {
                 // Ledige plasser regnes av det kalenderen alt viser, saa
                 // tallet her og belegget i kortet aldri spriker.
                 const ledige = redEvt && redEvt.kap ? Math.max(0, redEvt.kap - (redEvt.pameldt || 0)) : null;
-                // En paamelding hoerer til en oekt i basen. Verkstedstider og
-                // ledige timer som ingen har booket har ingen — da skal
+                // En paamelding hoerer til en oekt i basen. Verkstedstider,
+                // brenninger og innstemplingsmerker har ingen — da skal
                 // panelet ikke staa der og se ut som en knapp som virker.
-                const kanMelde = !!(redEvt && redEvt.oktId
-                  && this.kursData().some(x => x.navn === (redEvt.tittel || '').split(' · ')[0]));
+                //
+                // «oktId» er det eneste som trengs, og det eneste som alltid
+                // stemmer: kalenderen setter den bare paa rader som kommer fra
+                // «course_sessions». Det gjelder alle typer likt — kurs, event,
+                // Paint on Pots og drop-in. Foer sto det ogsaa et oppslag i
+                // kurslista her, men den lastes av et annet kall: aapnet du
+                // kalenderen direkte, var lista tom, og panelet forsvant fra
+                // alle oktene samtidig. Okta vet selv hva den er.
+                const kanMelde = !!(redEvt && redEvt.oktId);
                 const d = redEvt ? new Date(redEvt.dato + 'T12:00:00') : null;
                 return {
                   kdMulig: kanMelde,

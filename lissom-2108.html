@@ -5252,10 +5252,18 @@ window.__resources = {
                     <span style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); white-space: nowrap;">{{ b.fra }}</span>
                     <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">{{ b.tid }}</span>
                   </span>
-                  <span style="display: block; font-size: 13px; color: var(--text-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ b.tekst }}</span>
+                  <span style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; font-size: 13px; line-height: 1.4; color: var(--text-body);">{{ b.tekst }}</span>
                 </span>
               </button>
             </sc-for>
+            <!-- Et kort uten rader og uten tekst ser ikke tomt ut, det ser
+                 oedelagt ut: eieren saa «Beskjeder / Aapne →» og ingenting
+                 under, og kunne ikke vite om koen var tom eller om lista
+                 hadde sluttet aa laste. Sostrekortet «Paaminnelser» har hatt
+                 den linja hele tida. -->
+            <sc-if value="{{ klBeskjederTom }}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 8px var(--space-5) var(--space-4); border-top: 1px solid var(--border-subtle); font-size: 13px; color: var(--text-muted);">Ingen ubesvarte beskjeder.</div>
+            </sc-if>
             </div>
           </div>
           <div style="{{ klBoksNStil }}">
@@ -23500,7 +23508,16 @@ class Component extends DCLogic {
               ulest: true,
             }))
           .map((b, i) => ({ ...b, ulest: b.ulest && !(this.state.klBLest || {})[i], prikkStil: { width: '8px', height: '8px', borderRadius: '50%', flex: '0 0 auto', marginTop: '6px', background: b.ulest && !(this.state.klBLest || {})[i] ? 'var(--terracotta-500)' : 'transparent' }, apne: () => this.setState(s => ({ klBeskjedVis: { id: b.id, fra: b.fra, rolle: b.rolle, tekst: b.tekst, tid: b.tid }, klBSvar: '', klBSvarSendt: false, klBLest: Object.assign({}, s.klBLest, { [i]: true }) })) })),
-          klGaBeskjeder: this.go('adminbeskjeder'),
+          klBeskjederTom: (this.state.adminForesporsler || [])
+            .filter(f => f.status === 'Ubesvart').length === 0,
+          // «Aapne» gikk til Beskjeder — skjermen der man skriver ut til en
+          // gruppe. Kortet viser henvendelser som venter paa svar, saa den
+          // som trykker vil til dem. Samme regel som kortet paa Oversikt:
+          // er det noe ubesvart, gaar den dit; ellers til Beskjeder.
+          klGaBeskjeder: this.go(
+            (this.state.adminForesporsler || [])
+              .filter(f => f.status === 'Ubesvart').length > 0
+              ? 'adminubesvarte' : 'adminbeskjeder'),
           ...(() => {
             const bv = this.state.klBeskjedVis;
             return {

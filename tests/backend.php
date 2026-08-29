@@ -1695,6 +1695,25 @@ sjekk('verkstedet har oppskrifter, vakter og brenning',
 sjekk('listene viser hele aaret framover, ikke bare to uker',
     str_contains($sida, "const om = new Date(naa.getFullYear() + 1, naa.getMonth(), naa.getDate());"));
 
+// ── Beskjedkortet i kalenderen ───────────────────────────────────────────
+//
+// Kortet sto med overskrifta og «Aapne →» og ingenting under. Det ser ikke
+// tomt ut, det ser oedelagt ut: eieren kunne ikke vite om ingen hadde skrevet,
+// eller om lista hadde sluttet aa laste. Sosterkortet «Paaminnelser» har hatt
+// den linja hele tida.
+sjekk('beskjedkortet sier fra naar koen er tom',
+    str_contains($sida, 'klBeskjederTom: (this.state.adminForesporsler || [])')
+    && str_contains($sida, 'Ingen ubesvarte beskjeder.'));
+// Forhaandsvisningen var én linje med «nowrap», saa paa telefon sto det tre
+// ord og en ellipse. Da maatte man aapne hver melding for aa se hva den gjaldt.
+sjekk('forhaandsvisningen viser to linjer av meldingen',
+    str_contains($sida, '-webkit-line-clamp: 2; line-clamp: 2;')
+    && !str_contains($sida, 'text-overflow: ellipsis; white-space: nowrap;">{{ b.tekst }}'));
+// «Aapne» gikk til Beskjeder — skjermen der man skriver ut til en gruppe.
+// Kortet viser henvendelser som venter paa svar, og det er dit man vil.
+sjekk('«Aapne» gaar til de ubesvarte naar det er noe ubesvart',
+    str_contains($sida, "? 'adminubesvarte' : 'adminbeskjeder'),"));
+
 // ── Kursholderen paa kurset, og vaktene ut ───────────────────────────────
 //
 // Vakttabellen kom og gikk. Eieren: «det er ingen andre vakter utenom

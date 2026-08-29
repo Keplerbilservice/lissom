@@ -2463,10 +2463,24 @@ sjekk('panelet henger ikke paa en liste som lastes et annet sted',
     && !preg_match('/const kanMelde[^;]*kursData\(\)/', $sida2));
 sjekk('panelet bruker det samme endepunktet som resten',
     str_contains($sida2, "handling: 'legg-til',\n                      oktId: Number(redEvt.oktId),"));
-sjekk('vippskravet staar bare der kravet kan sendes',
-    str_contains($sida2, 'static get BETALT_MAATER_MED_KRAV()')
-    && !str_contains($sida2,
-        "return ['Kontant', 'Vipps i verkstedet', 'Vippskrav', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"));
+// Lista hadde vokst til seks. Eieren, 29. august: «folk kan betale kontant,
+// med vipps eller gavekort. Og noen faar gratis.»
+sjekk('valget paa okta er kortet ned til det som brukes',
+    str_contains($sida2, "return ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];"));
+// De gamle maatene staar igjen i BETALT_MAATER, saa paameldinger som alt er
+// lagt inn med «Faktura» beholder maaten sin.
+sjekk('de gamle maatene finnes fortsatt for det som er lagt inn',
+    str_contains($sida2, "return ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];"));
+// Et gavekort er penger som alt er betalt inn. Trekkes det ikke fra kortet,
+// kan det brukes om igjen, og gavekortgjelda blir aldri nedskrevet.
+sjekk('gavekortet finnes for plassen legges inn',
+    str_contains($pamFil, 'Booking::finnGavekort(Foresporsel::tekst(\'kode\'))'));
+sjekk('… og saldoen maa daekke plassen',
+    str_contains($pamFil, "if (\$kort['saldo_ore'] < \$belop) {"));
+sjekk('… og beloepet trekkes fra kortet',
+    str_contains($pamFil, 'Booking::trekkGavekort($betalingId);'));
+sjekk('… uten at det telles som penger inn',
+    str_contains($pamFil, "'belop_ore'       => 0,\n        'gavekort_id'     => \$kort['id'],"));
 sjekk('knappen sier hva den gjor naar det er et krav',
     str_contains($sida2, "kdKnapp: krav ? 'Send vippskrav' : 'Legg inn deltakeren'"));
 // To felter som het «Navn», og to knapper som het «Legg til», sto i samme

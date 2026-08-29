@@ -29,8 +29,11 @@ $admin = krev_admin();
 // «Vippskrav» er den eneste som sender noe. De andre bokforer at noe alt ER
 // gjort opp — kravet ber om pengene, og plassen staar som reservert til de er
 // inne. Samme vei som en betaling fra nettsida: webhooken gjor den ferdig.
-const MAATER = ['Kontant', 'Vipps i verkstedet', 'Vippskrav', 'Faktura',
-                'Betaler ved oppmøte', 'Gratis'];
+// «Vipps» kom i tillegg til «Vipps i verkstedet» da valget paa okta ble kortet
+// ned til fire. Begge staar: gamle paameldinger beholder maaten sin, og
+// dagsoppgjoret foerer dem samme sted uansett.
+const MAATER = ['Kontant', 'Vipps', 'Vipps i verkstedet', 'Vippskrav', 'Gavekort',
+                'Faktura', 'Betaler ved oppmøte', 'Gratis'];
 
 $handling = Foresporsel::tekst('handling', 'legg-til');
 $id       = Foresporsel::heltall('id');
@@ -257,6 +260,30 @@ if ($belop < 0 || $belop > 10000000) {
 $status = in_array($maate, ['Betaler ved oppmøte', 'Vippskrav'], true)
     ? 'reservert' : 'betalt';
 
+// ── Gavekortet ───────────────────────────────────────────────────────
+//
+// Et gavekort er ikke en maate aa notere paa — det er penger som alt er
+// betalt inn, og som skal trekkes fra kortet. Gjor vi ikke det, staar kortet
+// med full saldo og kan brukes om igjen, og gavekortgjelda blir aldri
+// nedskrevet.
+//
+// Kortet finnes for plassen legges inn. Er koden ukjent, utgaatt eller har
+// for lite igjen, skjer ingenting — det er verre aa ha en plass som ser
+// betalt ut enn en som ikke ble lagt inn.
+$kort = null;
+if ($maate === 'Gavekort') {
+    $kort = Booking::finnGavekort(Foresporsel::tekst('kode'));
+    if ($kort === null) {
+        Svar::feil('Fant ikke gavekortet. Sjekk koden — den kan være brukt opp '
+                 . 'eller gått ut på dato.');
+    }
+    if ($kort['saldo_ore'] < $belop) {
+        Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                 . ' igjen, og plassen koster ' . Booking::kroner($belop)
+                 . '. Ta resten på en annen måte.');
+    }
+}
+
 // Et krav maa ha et nummer aa gaa til, og et beloep aa be om.
 if ($maate === 'Vippskrav') {
     if ($telefon === '') {
@@ -297,6 +324,30 @@ $bookingId = DB::iTransaksjon(static function () use ($okt, $oktId, $navn, $epos
         'reservert_til'     => null,
     ]);
 });
+
+// ── Trekket fra gavekortet ───────────────────────────────────────────
+//
+// Beloepet henges paa en betalingsrad slik en nettbetaling gjor, saa
+// Booking::trekkGavekort() kan gjore jobben sin — den samme som ved et kjop
+// paa nettsida, med det samme sporet i «gift_card_uses». Raden er «manuell»
+// og null kroner i penger: det kom ingen penger inn i dag, kortet ble brukt.
+if ($maate === 'Gavekort' && $kort !== null) {
+    $betalingId = DB::settInn('payments', [
+        'vipps_reference' => 'GAVE-' . strtoupper(bin2hex(random_bytes(4))),
+        'type'            => 'manuell',
+        'formal'          => 'booking',
+        'belop_ore'       => 0,
+        'gavekort_id'     => $kort['id'],
+        'gavekort_ore'    => $belop,
+        'status'          => 'betalt',
+        'booking_id'      => DB::harKolonne('payments', 'booking_id') ? $bookingId : null,
+        'idempotency_key' => Vipps::uuid(),
+    ]);
+    DB::oppdater('bookings', ['payment_id' => $betalingId], ['id' => $bookingId]);
+    Booking::trekkGavekort($betalingId);
+    revider('gavekort_brukt', 'booking', $bookingId,
+            ['kort' => $kort['id'], 'belop' => $belop]);
+}
 
 // ── Vippskravet ──────────────────────────────────────────────────────
 //
@@ -393,6 +444,10 @@ Svar::ok([
                 . ($kravSendt
                     ? ' Vippskrav på ' . Booking::kroner($belop) . ' er sendt til ' . $telefon
                       . '. Plassen står som reservert til kravet er godtatt.'
+                    : '')
+                . ($kort !== null
+                    ? ' Betalt med gavekort ' . $kort['kode'] . '. Igjen på kortet: '
+                      . Booking::kroner(max(0, $kort['saldo_ore'] - $belop)) . '.'
                     : '')
                 . ($varslet ? ' Bekreftelse er sendt.' : '')
                 . $advarsel,

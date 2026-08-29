@@ -16346,18 +16346,18 @@ class Component extends DCLogic {
   }
 
   /**
-   * De samme maatene, pluss vippskravet.
+   * Maatene som faktisk brukes paa en okt.
    *
-   * «Vippskrav» er ikke en maate aa bokfore paa — det er en handling: kravet
-   * sendes til mobilnummeret, og plassen staar som reservert til det er
-   * godtatt. Derfor staar det bare der kravet faktisk kan sendes, og ikke i
-   * skjemaene som bare noterer at noe alt ER gjort opp. Lista er avledet av
-   * den over, saa de to ikke kan gli fra hverandre.
+   * Lista over hadde vokst til fem, og med vippskravet seks. Eieren, 29.
+   * august: «folk kan betale kontant, med vipps eller gavekort. Og noen faar
+   * gratis.» Fire.
+   *
+   * «Faktura» og «Betaler ved oppmoete» staar fortsatt i BETALT_MAATER, saa
+   * gamle paameldinger med de maatene blir liggende som de er — det er bare
+   * valget som er kortet ned.
    */
-  static get BETALT_MAATER_MED_KRAV() {
-    const m = Component.BETALT_MAATER.slice();
-    m.splice(m.indexOf('Vipps i verkstedet') + 1, 0, 'Vippskrav');
-    return m;
+  static get MAATER_OKT() {
+    return ['Kontant', 'Vipps', 'Gavekort', 'Gratis'];
   }
 
   static get BANNER_STANDARD() {
@@ -24123,9 +24123,10 @@ class Component extends DCLogic {
               // alt ER gjort opp.
               ...(() => {
                 const u = this.state.kdUtkast || {};
-                const maater = Component.BETALT_MAATER_MED_KRAV;
+                const maater = Component.MAATER_OKT;
                 const maate = maater.indexOf(u.maate) >= 0 ? u.maate : maater[0];
                 const krav = maate === 'Vippskrav';
+                const gave = maate === 'Gavekort';
                 const sett = (n, v) => this.setState(st => ({ kdUtkast: Object.assign({}, st.kdUtkast, { [n]: v }) }));
                 const tekst = (n, etikett, hint, bred) => ({
                   erTekst: true, erValg: false, etikett: etikett, hint: hint || '',
@@ -24183,12 +24184,15 @@ class Component extends DCLogic {
                       boksStil: { gridColumn: '1 / -1' },
                     },
                     tekst('belop', 'Beløp i kroner', krav ? 'Må fylles ut' : 'Tomt = prisen på datoen'),
+                    // Koden staar bare der den trengs. Et gavekort uten kode
+                    // er ingen betaling — det er en paastand.
+                    ...(gave ? [tekst('kode', 'Gavekortkode', 'F.eks. LIS-ABCD-1234')] : []),
                     tekst('notat', 'Internt notat', 'Vises ikke for deltakeren', true),
                   ],
                   kdForklaring: krav
                     ? 'Kravet sendes til mobilnummeret over. Plassen står som reservert til det er godtatt — den blir betalt av seg selv når pengene kommer.'
-                    : (maate === 'Betaler ved oppmøte'
-                        ? 'Plassen står som reservert. Den settes til betalt fra deltakerlista når pengene er gjort opp.'
+                    : (gave
+                        ? 'Beløpet trekkes fra gavekortet. Har kortet for lite igjen, sier vi fra og ingenting blir lagt inn.'
                         : (maate === 'Gratis'
                             ? 'Ingen sum føres på plassen.'
                             : 'Føres som gjort opp med det samme. Står beløpet tomt, brukes prisen på denne datoen.')),
@@ -24221,6 +24225,10 @@ class Component extends DCLogic {
                       this.setState({ kvittering: 'Ble ikke sendt', kvitteringDetalj: 'Et vippskrav må ha et beløp over null.' });
                       return;
                     }
+                    if (gave && (u.kode || '').trim() === '') {
+                      this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
+                      return;
+                    }
                     this.pameldingKall({
                       handling: 'legg-til',
                       oktId: Number(redEvt.oktId),
@@ -24231,6 +24239,7 @@ class Component extends DCLogic {
                       betaltMaate: maate,
                       belop: (u.belop || '').trim(),
                       notat: (u.notat || '').trim(),
+                      kode: (u.kode || '').trim(),
                       varsle: this.state.kdVarsle && (u.epost || '').trim() !== '' ? 'ja' : 'nei',
                     }).then(ok => {
                       if (!ok) return;

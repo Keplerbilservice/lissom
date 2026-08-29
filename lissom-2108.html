@@ -19492,14 +19492,26 @@ class Component extends DCLogic {
     if (!m) return;
     history.replaceState(null, '', window.location.pathname + window.location.search);
     if (m[1] === 'ok') this.maalKjop(hash);
+    // Hva ble betalt?
+    //
+    // «slag» foelger med tilbake fra api/betaling-retur.php. Et disksalg —
+    // QR-en i kassa, eller den faste koden ved disken — har ingen e-post aa
+    // sende til, og det skal den ikke ha: kvitteringen ligger i Vipps.
+    // Eieren gjennomforte en betaling 29. august og fikk lovet en e-post som
+    // aldri kom. Da er det loftet som er feil, ikke e-posten som mangler.
+    const erDisk = /[?&#]slag=ordre\b/.test(hash);
     const tekst = {
-      ok: 'Betalingen er gjennomført — kvittering kommer på e-post',
+      ok: erDisk
+        ? 'Betalingen er gjennomført'
+        : 'Betalingen er gjennomført — kvittering kommer på e-post',
       avbrutt: 'Betalingen ble avbrutt. Plassen er ikke reservert.',
       venter: 'Vi venter på svar fra Vipps. Du får kvittering så snart betalingen er bekreftet.',
       ukjent: 'Fant ikke betalingen. Ta kontakt hvis beløpet er trukket.',
     }[m[1]] || '';
     const detalj = {
-      ok: 'Kvitteringen sendes til e-postadressen din. Plassen din er registrert.',
+      ok: erDisk
+        ? 'Kvitteringen ligger i Vipps-appen din.'
+        : 'Kvitteringen sendes til e-postadressen din. Plassen din er registrert.',
       avbrutt: 'Ingen penger er trukket. Du kan prøve igjen når du vil.',
       venter: 'Du trenger ikke gjøre noe. Vi gir beskjed så snart Vipps svarer.',
       ukjent: 'Ta kontakt på post@lissom.no, så finner vi ut av det.',

@@ -423,7 +423,14 @@ ikke bare lissom.no. Node henter sidene over TLS med full sertifikatsjekk og
 serverer dem til nettleseren lokalt. Ingenting er slaatt av; det er bare
 ClientHello-en som byttes ut.
 
-### 11c. Vippskrav: salgsenheten mangler tillatelse hos Vipps
+### 11c. ~~Vippskrav: salgsenheten mangler tillatelse hos Vipps~~ — lagt bort 29. august
+
+Eieren: «jeg gir beskjed om jeg ønsker denne funksjonen. Så stryk det fra
+listen din.» Punktet er lukket. Alt som trengs er at Vipps skrur på
+`PUSH_MESSAGE` for salgsenheten; koden er ferdig og virker den dagen det
+skjer.
+
+### 11d. Gammelt punkt (beholdt for historikken)
 
 29. august, kveld. «Send Vipps-krav» i kassa svarer:
 
@@ -443,6 +450,12 @@ nummer, ikke en nøkkel.
 Alt annet står klart: kravet lages, betalingsraden knyttes til bookingen eller
 ordren begge veier, og webhooken setter den til betalt når pengene kommer. Den
 dagen tillatelsen er på plass, virker knappen uten at noe endres.
+
+**Prøvd med en ekte betaling 29. august.** Eieren gjennomførte et kjøp med
+QR-en. Den virket. Han fikk lovet en kvittering på e-post som aldri kom — for
+et disksalg finnes ingen e-postadresse å sende til, og kvitteringen ligger i
+Vipps. Eieren: «ingen epost sendes med kvittering nødvendig». Teksten sier nå
+at kvitteringen ligger i Vipps-appen; ingen e-post bygges.
 
 **Bygget 29. august, kveld: Vipps-QR i kassa.** «Vis Vipps-QR» lager en helt
 vanlig Vipps-betaling — den veien som virker — og viser adressen som en kode

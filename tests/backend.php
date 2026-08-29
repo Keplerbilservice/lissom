@@ -1656,7 +1656,7 @@ sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
 // telefonen, fantes den ikke paa PC-en, og toemte hun nettleserdataene var den
 // borte. Det var ikke til aa se paa skjermen, og det er nettopp derfor det var
 // farlig: hun skrev noe hun trodde var lagret.
-foreach (['verksted_notater', 'verksted_paaminnelser', 'vakter', 'brenninger'] as $t) {
+foreach (['verksted_notater', 'verksted_paaminnelser', 'brenninger'] as $t) {
     sjekk('tabellen «' . $t . '» finnes', DB::harTabell($t));
 }
 sjekk('notatet og paaminnelsene ligger ikke lenger i nettleseren',
@@ -1677,13 +1677,15 @@ sjekk('en brenning kan gaa over natta',
     str_contains($vstFil, "\$sDato = Foresporsel::tekst('sluttDato') ?: \$dato;"));
 sjekk('brenningens slag er et valg, ikke fritekst',
     str_contains($vstFil, "const BRENNSLAG = ['raabrann', 'glasurbrann', 'annet'];"));
-// Kalenderen har hatt farger for vakt og brenning siden den ble hentet inn.
-sjekk('vaktene og brenningene staar i kalenderen',
-    str_contains($kalFil, "'type'   => 'vakt',") && str_contains($kalFil, "'type'      => 'brenning',")
-    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $vakter, $brenninger)'));
-// Uten tabellene skal endepunktet svare, ikke doe.
+// Brenningene staar i kalenderen. Vaktene gjor det ikke: hver vakt er en
+// kursdato som alt ligger der, saa en egen vaktbrikke ville dublert raden.
+sjekk('brenningene staar i kalenderen, vaktene ikke',
+    str_contains($kalFil, "'type'      => 'brenning',")
+    && !str_contains($kalFil, "'type'   => 'vakt',")
+    && str_contains($kalFil, 'array_merge($hendelser, $verksted, $brenninger)'));
+// Uten tabellen skal endepunktet svare, ikke doe.
 sjekk('kalenderen taaler at migrasjon 088 ikke er kjort',
-    str_contains($kalFil, "DB::harTabell('vakter')") && str_contains($kalFil, "DB::harTabell('brenninger')"));
+    str_contains($kalFil, "DB::harTabell('brenninger')"));
 // Verkstedet er blitt et sted med tre faner.
 sjekk('verkstedet har oppskrifter, vakter og brenning',
     str_contains($sida, "['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],")
@@ -1692,6 +1694,51 @@ sjekk('verkstedet har oppskrifter, vakter og brenning',
 // som satte opp en vakt i november.
 sjekk('listene viser hele aaret framover, ikke bare to uker',
     str_contains($sida, "const om = new Date(naa.getFullYear() + 1, naa.getMonth(), naa.getDate());"));
+
+// ── Kursholderen paa kurset, og vaktene ut ───────────────────────────────
+//
+// Vakttabellen kom og gikk. Eieren: «det er ingen andre vakter utenom
+// kursholdere» — den som er i verkstedet, er der fordi hun holder et kurs.
+// En vakttabell ved siden av kursdatoene ville vaert to steder aa vedlikeholde
+// det samme, og de to ville sklidd fra hverandre.
+sjekk('vakttabellen er borte', !DB::harTabell('vakter'));
+sjekk('verkstedet tar ikke lenger imot vakter',
+    !str_contains($vstFil, "case 'vakt':") && !str_contains($vstFil, "case 'vaktVekk':"));
+// Lista leses av kursdatoene i stedet, saa den ikke kan si noe annet enn
+// kalenderen.
+sjekk('vaktlista leses av de planlagte kursene',
+    str_contains($vstFil, 'COALESCE(kh.navn, kk.navn, std.navn) AS navn')
+    && str_contains($vstFil, 'LEFT JOIN kursholdere kk ON kk.id = c.kursholder_id')
+    && str_contains($vstFil, "AND cs.status <> 'avlyst'"));
+// En liste uten skjema maa ha en vei videre, ellers er den en blindvei: man
+// ser hvem som staar der, uten aa kunne endre det.
+sjekk('vaktfana har ingen felter, men en vei til aa legge ut en dato',
+    str_contains($sida, 'vstHarSkjema: erBrenn,')
+    && str_contains($sida, 'vstFelt: erVakt ? [] : brennFelt,')
+    && str_contains($sida, 'vstNyDato: () => this.apneNyKursdato(),'));
+
+// Kursholderen har hoert til den enkelte datoen siden 085. Uten et valg paa
+// kurset matte man satt den samme personen paa hver eneste dato.
+sjekk('kurset har en kursholder', DB::harKolonne('courses', 'kursholder_id'));
+sjekk('kurset mister ikke kursholderen naar noen slutter',
+    (int) DB::verdi(
+        'SELECT COUNT(*) FROM information_schema.referential_constraints
+          WHERE constraint_schema = DATABASE() AND constraint_name = :n
+            AND delete_rule = :r',
+        ['n' => 'fk_kurs_holder', 'r' => 'SET NULL']) === 1);
+$kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+sjekk('kursholderen kan lagres paa kurset',
+    str_contains($kursFil, "if (\$har('kursholderId') && DB::harKolonne('courses', 'kursholder_id')) {")
+    && str_contains($kursFil, "\$data['kursholder_id'] = \$holderId('kursholderId');"));
+// Tre trinn, én vei: datoens valg staar over kursets, kursets over standarden.
+// Tomt paa kurset betyr ikke «ingen» — det betyr Monica.
+sjekk('en ny dato arver kursets kursholder, ellers verkstedets standard',
+    str_contains($kursFil, "? \$holderId('kursholderId')
+                : (\$paaKurset !== null ? (int) \$paaKurset
+                    : (\$standard !== null ? (int) \$standard : null));"));
+sjekk('kursholderen er et valg i kursoppsettet',
+    str_contains($sida, "felt('kursholderId', 'Kursholder', 'valg',")
+    && str_contains($sida, "[['0', 'Verkstedets standard']].concat("));
 
 // ── Fase 7: menyen ───────────────────────────────────────────────────────
 //

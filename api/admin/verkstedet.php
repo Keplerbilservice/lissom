@@ -7,8 +7,6 @@
  *   POST handling=paaminnelse  { tekst, frist? }
  *   POST handling=paaminnelseGjort { id, gjort }
  *   POST handling=paaminnelseVekk  { id }
- *   POST handling=vakt         { id?, kursholderId, dato, fra, til, notat? }
- *   POST handling=vaktVekk     { id }
  *   POST handling=brenning     { id?, slag, ovn?, dato, fra, sluttDato?, til, notat? }
  *   POST handling=brenningVekk { id }
  *
@@ -21,14 +19,17 @@
  * skjermen, og det er nettopp derfor det maatte rettes: hun skrev noe hun
  * trodde var lagret.
  *
- * Vaktene og brenningene er nye. Kalenderen har hatt farger for begge siden
- * den ble hentet inn, men ingen av delene fantes.
+ * Brenningene er nye. Kalenderen har hatt en farge for dem siden den ble
+ * hentet inn, men de fantes ikke i basen.
+ *
+ * Vaktlista foeres ikke — den leses av kursene. Den som er i verkstedet, er
+ * der fordi hun holder et kurs.
  *
  * ── Personlig og felles ───────────────────────────────────────────────
  *
  * Notatet og paaminnelsene hoerer til den som skrev dem — «Notater til meg
- * selv». Vaktene og brenningene er verkstedets: de gjelder alle, og staar i
- * kalenderen for alle.
+ * selv». Brenningene er verkstedets: de gjelder alle, og staar i kalenderen
+ * for alle.
  */
 
 declare(strict_types=1);
@@ -82,21 +83,34 @@ if (Foresporsel::metode() === 'GET') {
               WHERE member_id = :m ORDER BY gjort, frist IS NULL, frist, id',
             ['m' => $megId]
         )),
+        // Vaktlista er ikke en liste noen foerer. Den er kursene.
+        //
+        // Her sto en egen «vakter»-tabell en kort stund. Eieren: «det er ingen
+        // andre vakter utenom kursholdere» — og «den maa i saa fall hente
+        // vaktlisten ut fra planlagte kurs». Det er akkurat det den gjor naa:
+        // hvem som staar paa hvilken okt, naar. Én kilde, ingen liste som kan
+        // komme i utakt med kalenderen.
         'vakter' => array_map(static fn(array $v): array => [
-            'id'       => (int) $v['id'],
-            'holderId' => (int) $v['kursholder_id'],
-            'holder'   => (string) ($v['navn'] ?? ''),
-            'dato'     => $iOslo((string) $v['start_tid'], 'Y-m-d'),
-            'fra'      => $iOslo((string) $v['start_tid'], 'H:i'),
-            'til'      => $iOslo((string) $v['slutt_tid'], 'H:i'),
-            'notat'    => (string) ($v['notat'] ?? ''),
-        ], DB::alle(
-            'SELECT v.*, k.navn FROM vakter v
-        LEFT JOIN kursholdere k ON k.id = v.kursholder_id
-             WHERE v.start_tid >= :f AND v.start_tid < :t
-          ORDER BY v.start_tid',
+            'oktId'  => (int) $v['id'],
+            'holder' => (string) ($v['navn'] ?? ''),
+            'kurs'   => (string) $v['tittel'],
+            'dato'   => $iOslo((string) $v['start_tid'], 'Y-m-d'),
+            'fra'    => $iOslo((string) $v['start_tid'], 'H:i'),
+            'til'    => $v['slutt_tid'] === null ? ''
+                        : $iOslo((string) $v['slutt_tid'], 'H:i'),
+        ], DB::harKolonne('course_sessions', 'kursholder_id') ? DB::alle(
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel,
+                    COALESCE(kh.navn, kk.navn, std.navn) AS navn
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+          LEFT JOIN kursholdere kh ON kh.id = cs.kursholder_id
+          LEFT JOIN kursholdere kk ON kk.id = c.kursholder_id
+          LEFT JOIN kursholdere std ON std.standard = 1 AND std.aktiv = 1
+              WHERE cs.start_tid >= :f AND cs.start_tid < :t
+                AND cs.status <> 'avlyst'
+           ORDER BY cs.start_tid",
             ['f' => $fra, 't' => $til]
-        )),
+        ) : []),
         'brenninger' => array_map(static fn(array $b): array => [
             'id'        => (int) $b['id'],
             'slag'      => (string) $b['slag'],
@@ -176,39 +190,6 @@ switch (Foresporsel::tekst('handling')) {
         DB::kjor('DELETE FROM verksted_paaminnelser WHERE id = :i AND member_id = :m',
                  ['i' => $id, 'm' => $megId]);
         Svar::ok(['beskjed' => 'Påminnelsen er borte.']);
-
-    // ------------------------------------------------------------- vakter
-    case 'vakt':
-        $holder = Foresporsel::heltall('kursholderId');
-        if (DB::en('SELECT id FROM kursholdere WHERE id = :i AND aktiv = 1', ['i' => $holder]) === null) {
-            Svar::feil('Velg hvem som har vakta.');
-        }
-        $dato  = Foresporsel::tekst('dato');
-        $start = $tilUtc($dato, Foresporsel::tekst('fra'));
-        $slutt = $tilUtc($dato, Foresporsel::tekst('til'));
-        if ($start === null || $slutt === null) {
-            Svar::feil('Skriv dato som 2026-09-02 og klokkeslett som 10:00.');
-        }
-        if ($slutt <= $start) {
-            Svar::feil('Vakta må slutte etter at den begynner.');
-        }
-
-        $id = Foresporsel::heltall('id');
-        $felter = ['kursholder_id' => $holder, 'start_tid' => $start, 'slutt_tid' => $slutt,
-                   'notat' => mb_substr(trim(Foresporsel::tekst('notat')), 0, 300) ?: null];
-        if ($id > 0) {
-            DB::oppdater('vakter', $felter, ['id' => $id]);
-        } else {
-            $id = DB::settInn('vakter', $felter);
-        }
-        revider('vakt_lagret', 'vakt', $id, ['start' => $start]);
-        Svar::ok(['id' => $id, 'beskjed' => 'Vakta er lagret.']);
-
-    case 'vaktVekk':
-        $id = Foresporsel::heltall('id');
-        DB::kjor('DELETE FROM vakter WHERE id = :i', ['i' => $id]);
-        revider('vakt_slettet', 'vakt', $id);
-        Svar::ok(['beskjed' => 'Vakta er tatt bort.']);
 
     // --------------------------------------------------------- brenninger
     case 'brenning':

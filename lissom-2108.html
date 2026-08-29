@@ -11403,6 +11403,18 @@ window.__resources = {
              kurs. Begge tegnes i kalenderen med det samme de er lagret. -->
         <sc-if value="{{ vstErListe }}" hint-placeholder-val="{{ false }}">
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-6); align-items: start; max-width: 1100px;">
+            <!-- Vaktene har ingen skjema. Den som er i verkstedet, er der
+                 fordi hun holder et kurs — saa en vakt settes opp ved aa
+                 legge ut en kursdato, ikke ved aa foere en liste ved siden
+                 av kalenderen som kan komme i utakt med den. -->
+            <sc-if value="{{ vstErVakter }}" hint-placeholder-val="{{ false }}">
+              <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Slik settes en vakt opp</div>
+                <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Lista til høyre er kursene som ligger framover, med den som holder dem. Den føres ikke for hånd — legger du ut en kursdato, står den her. Hvem som holder kurset velges på kurset, og kan overstyres på den enkelte datoen i kalenderen.</p>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ vstNyDato }}" hint-size="auto,44px">Ny kursdato</x-import>
+              </div>
+            </sc-if>
+            <sc-if value="{{ vstHarSkjema }}" hint-placeholder-val="{{ true }}">
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ vstSkjemaTittel }}</div>
               <sc-for list="{{ vstFelt }}" as="f" hint-placeholder-count="5">
@@ -11427,6 +11439,7 @@ window.__resources = {
                 </sc-if>
               </div>
             </div>
+            </sc-if>
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
               <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ vstListeTittel }}</div>
@@ -11440,8 +11453,10 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.under }}</div>
                   </div>
                   <div style="display: flex; gap: var(--space-3);">
-                    <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
-                    <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--terracotta-600); font: var(--type-body-sm); font-weight: 700;">Ta bort</button>
+                    <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">{{ vstRadKnapp }}</button>
+                    <sc-if value="{{ vstKanSlette }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; color: var(--terracotta-600); font: var(--type-body-sm); font-weight: 700;">Ta bort</button>
+                    </sc-if>
                   </div>
                 </div>
               </sc-for>
@@ -23394,6 +23409,13 @@ class Component extends DCLogic {
               felt('pris', 'Pris i kroner', 'tekst'),
               felt('kapasitet', 'Plasser', 'tekst'),
               felt('status', 'Status', 'valg', [['publisert', 'Publisert'], ['kladd', 'Kladd'], ['avlyst', 'Avlyst']]),
+              // Hvem som holder kurset. Tomt betyr verkstedets standard —
+              // ikke «ingen». Datoene arver valget naar de settes opp, og en
+              // enkelt kveld kan fortsatt overstyres i kalenderen.
+              felt('kursholderId', 'Kursholder', 'valg',
+                   [['0', 'Verkstedets standard']].concat(
+                     ((this.state.adminKursholdere || []).filter(h => h.aktiv)
+                       .map(h => [String(h.id), h.navn])))),
               felt('visUtenDato', 'Vis på nettsiden uten datoer', 'hake'),
               felt('sms', 'SMS-påminnelse', 'hake'),
               felt('gjenstandIKassa', 'Gjenstanden betales i verkstedet', 'hake'),
@@ -24135,6 +24157,7 @@ class Component extends DCLogic {
       status: raa.status || 'kladd',
       visUtenDato: jaNei(raa.visUtenDato), sms: jaNei(raa.sms !== false),
       gjenstandIKassa: jaNei(raa.gjenstandIKassa),
+      kursholderId: String(raa.kursholderId || 0),
       nivaaIntern: raa.nivaaIntern || 'nybegynner', nivaaTekst: raa.nivaaTekst || '',
       varighetTekst: raa.varighetTekst || '', instruktor: raa.instruktor || '',
       kortBeskrivelse: raa.kortBeskrivelse || '', om: raa.om || '',
@@ -33622,14 +33645,6 @@ class Component extends DCLogic {
         });
         // Datoen og klokkeslettene staar i egne felter, som i kursoppsettet.
         // Ett fritekstfelt for «2026-09-02 17:00» er en feilkilde uten grunn.
-        const vaktFelt = [
-          valg('kursholderId', 'Hvem har vakta',
-               (d.kursholdere || []).map(h => [h.id, h.navn])),
-          felt('dato', 'Dato', 'date'),
-          felt('fra', 'Fra', 'time'),
-          felt('til', 'Til', 'time'),
-          felt('notat', 'Notat', 'text', 'Valgfritt'),
-        ];
         const brennFelt = [
           valg('slag', 'Hva slags brenning', [['raabrann', 'Råbrann'],
                ['glasurbrann', 'Glasurbrann'], ['annet', 'Annet']]),
@@ -33643,15 +33658,26 @@ class Component extends DCLogic {
           felt('notat', 'Notat', 'text', 'Valgfritt'),
         ];
         const SLAG = { raabrann: 'Råbrann', glasurbrann: 'Glasurbrann', annet: 'Brenning' };
+        // Vaktlista foeres ikke — den er kursene.
+        //
+        // Eieren: «det er ingen andre vakter utenom kursholdere», og «den maa
+        // i saa fall hente vaktlisten ut fra planlagte kurs». Og da: «paa
+        // vaktene maa man i saa fall legge til kurs, ikke dato og tid».
+        // Altsaa ingen liste aa foere, og ingen «ny vakt» — en vakt settes
+        // opp ved aa legge ut en kursdato.
+        const uked = ['Søn', 'Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør'];
+        const norsk = (iso) => {
+          const dd = new Date(iso + 'T12:00:00');
+          return uked[dd.getDay()] + ' ' + dd.getDate() + '. '
+               + ['jan', 'feb', 'mars', 'april', 'mai', 'juni', 'juli', 'aug',
+                  'sep', 'okt', 'nov', 'des'][dd.getMonth()];
+        };
         const rader = erVakt
           ? (d.vakter || []).map(v => ({
-              tittel: (v.holder || 'Uten navn') + ' · ' + v.dato,
-              under: v.fra + '–' + v.til + (v.notat ? ' · ' + v.notat : ''),
-              rediger: () => this.setState({ vstUtkast: {
-                id: v.id, kursholderId: v.holderId, dato: v.dato,
-                fra: v.fra, til: v.til, notat: v.notat } }),
-              slett: () => { if (window.confirm('Ta bort vakta til ' + (v.holder || 'denne') + ' ' + v.dato + '?'))
-                this.vstKall({ handling: 'vaktVekk', id: v.id }); },
+              tittel: (v.holder || 'Ikke tildelt') + ' · ' + norsk(v.dato),
+              under: v.fra + (v.til ? '–' + v.til : '') + ' · ' + v.kurs,
+              rediger: () => this.gaaAdmin('adminkalender', { klAnker: v.dato, klVisning: 'dag' }),
+              slett: () => {},
             }))
           : (d.brenninger || []).map(br => ({
               tittel: (SLAG[br.slag] || 'Brenning') + (br.ovn ? ' · ' + br.ovn : ''),
@@ -33667,32 +33693,38 @@ class Component extends DCLogic {
         return {
           vstErOppskrifter: fane === 'oppskrifter',
           vstErListe: erVakt || erBrenn,
+          // Vaktene har ingen skjema: de leses av kursene.
+          vstHarSkjema: erBrenn,
+          vstErVakter: erVakt,
           vstTittel: erVakt ? 'Vakter' : erBrenn ? 'Brenning' : 'Oppskrifter',
           vstUnder: erVakt
-            ? 'Hvem som er i verkstedet når. Vaktene står i kalenderen sammen med kursene.'
+            ? 'Hvem som er i verkstedet når — lest av kursene som ligger framover.'
             : erBrenn
               ? 'Når ovnen er opptatt. Står i kalenderen, så ingen setter opp et kurs oppå en brenning.'
               : 'Glasurene og leiretypene verkstedet bruker, med råvarene og notatene.',
-          vstSkjemaTittel: u.id ? (erVakt ? 'Rediger vakta' : 'Rediger brenningen')
-                                : (erVakt ? 'Ny vakt' : 'Ny brenning'),
-          vstFelt: erVakt ? vaktFelt : brennFelt,
+          // Skjemaet er brenningens alene. Vaktene har ikke noe aa fylle ut:
+          // en vakt settes opp ved aa legge ut en kursdato.
+          vstSkjemaTittel: u.id ? 'Rediger brenningen' : 'Ny brenning',
+          vstFelt: erVakt ? [] : brennFelt,
           vstRedigerer: !!u.id,
           vstAvbryt: () => this.setState({ vstUtkast: {} }),
-          vstLagreTekst: u.id ? 'Lagre endringen' : (erVakt ? 'Legg til vakta' : 'Legg til brenningen'),
+          vstLagreTekst: u.id ? 'Lagre endringen' : 'Legg til brenningen',
           vstLagre: () => {
-            const kropp = Object.assign({ handling: erVakt ? 'vakt' : 'brenning' }, u);
-            if (!kropp.slag && erBrenn) kropp.slag = 'raabrann';
-            if (!kropp.kursholderId && erVakt) {
-              kropp.kursholderId = ((d.kursholdere || [])[0] || {}).id || 0;
-            }
+            const kropp = Object.assign({ handling: 'brenning' }, u);
+            if (!kropp.slag) kropp.slag = 'raabrann';
             this.vstKall(kropp).then(ok => { if (ok) this.setState({ vstUtkast: {} }); });
           },
-          vstListeTittel: erVakt ? 'Vaktene framover' : 'Brenningene framover',
+          vstListeTittel: erVakt ? 'Kursene framover, med den som holder dem' : 'Brenningene framover',
           vstListe: rader,
           vstListeTom: rader.length === 0,
           vstTomTekst: erVakt
-            ? 'Ingen vakter er satt opp. De du legger inn her står i kalenderen.'
+            ? 'Ingen kursdatoer framover. Legg ut en dato, så står den her.'
             : 'Ingen brenninger er lagt inn. De du legger inn her står i kalenderen.',
+          // Aa sette opp en vakt er aa legge ut en kursdato. Knappen aapner
+          // den samme veiviseren som ellers.
+          vstNyDato: () => this.apneNyKursdato(),
+          vstRadKnapp: erVakt ? 'Se dagen' : 'Rediger',
+          vstKanSlette: erBrenn,
         };
       })(),
       harOppskrifter: this.oppskriftData().length > 0,

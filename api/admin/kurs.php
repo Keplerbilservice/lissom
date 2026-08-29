@@ -106,6 +106,10 @@ if (Foresporsel::metode() === 'GET') {
             'datoerFramover' => $datoerFramover[(int) $k['id']] ?? 0,
             'om'         => $k['beskrivelse'],
             'instruktor' => $k['instruktor'],
+            // Hvem som holder kurset. Datoene arver den; tomt betyr
+            // verkstedets standard.
+            'kursholderId' => isset($k['kursholder_id']) && $k['kursholder_id'] !== null
+                                ? (int) $k['kursholder_id'] : 0,
             'bekreftelse'=> $k['bekreftelse_tekst'],
             // Seksjonene fra kursoppsettet (migrasjon 065). Tomme naar
             // migrasjonen ikke er kjort — da staar feltene tomme i skjemaet
@@ -327,6 +331,12 @@ switch ($handling) {
         if ($har('om')) {
             $data['beskrivelse'] = Foresporsel::tekst('om') ?: null;
         }
+        // Hvem som holder dette kurset. Tomt betyr verkstedets standard —
+        // ikke «ingen». Datoene arver den naar de settes opp, og en enkelt
+        // dato kan fortsatt overstyres.
+        if ($har('kursholderId') && DB::harKolonne('courses', 'kursholder_id')) {
+            $data['kursholder_id'] = $holderId('kursholderId');
+        }
         // Navnet paa kursbeviset. Tomt betyr Monica, som staar i malen.
         if ($har('instruktor')) {
             $data['instruktor'] = mb_substr(Foresporsel::tekst('instruktor'), 0, 191) ?: null;
@@ -488,14 +498,22 @@ switch ($handling) {
             'slutt_tid' => $slutt,
             'kapasitet' => Foresporsel::heltall('kapasitet') ?: null,
         ];
-        // Kursholderen: den som ble valgt, ellers verkstedets standard.
-        // Uten den maatte man valgt den samme personen paa hver eneste dato.
+        // Kursholderen, i tre trinn — og de gaar én vei:
+        //   1. Er det valgt en paa datoen, er det hen. Alltid.
+        //   2. Ellers: den som staar paa kurset.
+        //   3. Ellers: verkstedets standard — Monica.
+        // Uten dette maatte man valgt den samme personen paa hver eneste dato.
         if (DB::harKolonne('course_sessions', 'kursholder_id')) {
+            $paaKurset = DB::harKolonne('courses', 'kursholder_id')
+                ? DB::verdi('SELECT kursholder_id FROM courses WHERE id = :i', ['i' => $kursId])
+                : null;
+            $standard = DB::harKolonne('kursholdere', 'standard')
+                ? DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1 LIMIT 1')
+                : null;
             $nyOkt['kursholder_id'] = array_key_exists('kursholderId', Foresporsel::kropp())
                 ? $holderId('kursholderId')
-                : (DB::harKolonne('kursholdere', 'standard')
-                    ? DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1 LIMIT 1')
-                    : null);
+                : ($paaKurset !== null ? (int) $paaKurset
+                    : ($standard !== null ? (int) $standard : null));
         }
 
         // Samme person kan ikke staa paa to kurs som gaar samtidig.

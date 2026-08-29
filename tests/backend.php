@@ -1601,6 +1601,12 @@ sjekk('beskjed til en kursholder sendes faktisk',
 sjekk('kalenderen skriver gjennom endepunktene som finnes',
     str_contains($sida, 'klKall(sti, kropp) {') && str_contains($sida, 'klFrisk() {'));
 
+// Listevisningen sto som firkantede striper med en hairline mellom, mens
+// resten av kalenderen — brikkene i dag og uke, kortene i kurslista — har
+// runde hjorner. Eieren ba om samme stil hele veien.
+sjekk('hver okt i listevisningen er sitt eget kort med runde hjorner',
+    str_contains($sida, 'border-radius: var(--radius-md); cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5);'));
+
 // ── Kalenderskjermen paa telefon ─────────────────────────────────────────
 //
 // Skjermen kom fra designfila og hadde sin egen sidemeny: feil sti til logoen,

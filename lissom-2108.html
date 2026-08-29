@@ -5459,10 +5459,15 @@ window.__resources = {
         <sc-if value="{{ klErListe }}" hint-placeholder-val="{{ false }}">
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
             <sc-for list="{{ klListe }}" as="g" hint-placeholder-count="5">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-                <div style="padding: var(--space-3) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ g.dagTittel }}</div>
+              <!-- Hver okt er sitt eget kort med runde hjorner, som brikkene
+                   i dag- og ukevisningen og kortene i kurslista. For laa de
+                   som firkantede striper med en hairline mellom, og
+                   listevisningen sto som den eneste med skarpe kanter. -->
+              <div style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3) var(--space-3);">
+                <div style="padding: var(--space-2) var(--space-4) var(--space-2); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ g.dagTittel }}</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
                 <sc-for list="{{ g.hendelser }}" as="h" hint-placeholder-count="2">
-                  <button type="button" onClick="{{ h.velg }}" onContextMenu="{{ h.meny }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                  <button type="button" onClick="{{ h.velg }}" onContextMenu="{{ h.meny }}" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5);">
                     <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 110px; flex: 0 0 auto;">{{ h.tid }}</span>
                     <span style="{{ h.prikkStil }}"></span>
                     <span style="flex: 1; min-width: 0;">
@@ -5471,6 +5476,7 @@ window.__resources = {
                     </span>
                   </button>
                 </sc-for>
+                </div>
               </div>
             </sc-for>
           </div>

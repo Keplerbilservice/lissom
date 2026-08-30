@@ -132,6 +132,52 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+### Ressursene i verkstedet, delt av alle (migrasjon 103)
+
+Eieren: «må ta plasser fra de samme ressursene. Altså om det er kurs eller
+andre medlemmer, vi må tenke at alle disse har tilgang til de samme 8
+dreieskivene», «1 dreieskive = 1 ressurs = 1 plass, 1 kursplass = 1 ressurs =
+1 plass», og «kurs / medlemsbooking / drop-in må alle hente fra tilgjengelige
+ressurser».
+
+**Slik det var:** hver dato hadde sitt eget plasstall, og ledige plasser ble
+regnet bare mot den ene datoen. Gikk det et dreiekurs 17–20 med åtte påmeldte,
+viste drop-in kl. 18 fortsatt åtte ledige — verkstedet kunne selge seksten
+plasser på åtte skiver.
+
+**Slik det er:** hvert kurs peker på en ressurs. Alt som skjer samtidig og
+peker på den samme, deler taket. Målt i basen:
+
+| | Drop-in 17:00–18:30 | Date Night 18:00–21:00 |
+| --- | --- | --- |
+| Ingen booket | 8 ledige | 8 ledige |
+| Seks booket på Date Night | 2 ledige | 2 ledige |
+
+Date Night står med tolv plasser i basen og viser åtte — den kan ikke selge
+flere skiver enn verkstedet har.
+
+**Hvem bruker hva.** Spurt: dreiekursene og Date Night bruker skivene. Resten
+sitter ved bordene — håndbygging, Sip & Clay, Paint on Pots. Tolv bordplasser,
+som kursene alt sto med. Drop-in tar en skive; det er nettopp den som skal
+miste plasser når skivene er opptatt.
+
+**Innstemplede medlemmer trekkes fra**, men bare på det som går akkurat nå —
+en booking om tre dager kan ikke vite hvem som møter opp. De regnes mot
+skivene. *Et medlem som håndbygger ved bordet blir talt feil.* Den feilen tar
+heller en plass for mye enn å selge en skive som står opptatt. Si fra om det
+skal endres.
+
+**Ressursene ligger i en tabell**, ikke i koden: «må kunne endre, slette og
+legge til for å møte endringer i verkstedet». Kortet «Ressurser» står på
+Oversikt med summen, og skjermen bak lar deg legge til, endre, slå av og
+slette. En ressurs kurs peker på kan ikke slettes — den sier hvilke kurs som
+bruker den, og du flytter dem først. Det var eierens eget valg da han ble
+spurt.
+
+**Kursoppsettet** har fått «Hva bruker kurset?» i seksjon 04, rett under
+plasstallet. Plasstallet sier hvor mange kurset tar imot; ressursen sier hva
+de tar av.
+
 ### Drop-in står for seg (migrasjon 102)
 
 Eieren: «1. det kan bookes hele døgnet 2. det skal ikke følge kurs eller

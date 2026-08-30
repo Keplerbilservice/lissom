@@ -138,6 +138,9 @@ if (Foresporsel::metode() === 'GET') {
             // «Gjenstanden betales i verkstedet» (migrasjon 074). Paint on
             // Pots: plassen bookes, gjenstanden slaas inn i kassa.
             'gjenstandIKassa' => (bool) ($k['gjenstand_i_kassa'] ?? 0),
+            // Hva kurset legger beslag paa i verkstedet (migrasjon 103).
+            // Null betyr ingen delt grense — da gjelder bare plasstallet.
+            'ressursId'       => (int) ($k['ressurs_id'] ?? 0),
             'mal'             => Kursmal::forKurs($k),
             // Varigheten regnet av oektene, slik kunden faktisk ser den.
             'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [
@@ -334,6 +337,16 @@ switch ($handling) {
         $har = static fn(string $n): bool => array_key_exists($n, $kropp);
 
         $data = ['tittel' => $tittel];
+        // Ressursen kurset deler med alt annet som gaar samtidig. 0 er en
+        // gyldig verdi og betyr «ingen delt grense»; en id som ikke finnes
+        // avvises, ellers ville kurset staatt uten tak uten aa si fra.
+        if ($har('ressursId')) {
+            $rid = Foresporsel::heltall('ressursId');
+            if ($rid > 0 && DB::en('SELECT id FROM ressurser WHERE id = :i', ['i' => $rid]) === null) {
+                Svar::feil('Fant ikke ressursen.');
+            }
+            $data['ressurs_id'] = $rid > 0 ? $rid : null;
+        }
         if ($har('type')) {
             $data['type'] = in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
                 ? Foresporsel::tekst('type') : 'kurs';

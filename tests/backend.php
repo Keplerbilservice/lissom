@@ -3667,6 +3667,86 @@ sjekk('… med klokkeslettene fra basen, ikke skrevet inn',
     str_contains($sida2, "mdiTider: fra && til ? 'Hver dag ' + fra + '–' + til")
     && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'fastFra' => substr((string) (\$k['fast_fra'] ?? ''), 0, 5),"));
 
+// ── Ressursene deles av alle ───────────────────────────────────────────
+//
+// Eieren, 30. august: «maa ta plasser fra de samme ressursene. Altsaa om det
+// er kurs eller andre medlemmer, vi maa tenke at alle disse har tilgang til
+// de samme 8 dreieskivene», «1 dreieskive = 1 ressurs = 1 plass», og «kurs /
+// medlembooking / drop-in maa alle hente fra tilgjengelige ressurser».
+if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
+    $skive = DB::en("SELECT id, antall FROM ressurser WHERE navn = 'Dreieskive'");
+    sjekk('dreieskivene staar i basen, ikke i koden', $skive !== null && (int) $skive['antall'] > 0);
+    sjekk('… og dreiekursene, Date Night og drop-in peker paa dem',
+        (int) DB::verdi('SELECT COUNT(*) FROM courses WHERE ressurs_id = :i', ['i' => (int) $skive['id']]) >= 3);
+
+    // Selve regnestykket: to ting som gaar samtidig og deler ressursen, skal
+    // ikke kunne selge den samme skiva to ganger.
+    $par = DB::en(
+        'SELECT a.id aid, b.id bid
+           FROM course_sessions a
+           JOIN courses ca ON ca.id = a.course_id
+           JOIN course_sessions b ON b.id <> a.id AND b.status = \'planlagt\'
+           JOIN courses cb ON cb.id = b.course_id AND cb.ressurs_id = ca.ressurs_id
+          WHERE a.status = \'planlagt\' AND ca.ressurs_id = :r
+            AND a.start_tid > UTC_TIMESTAMP()
+            AND b.start_tid < COALESCE(a.slutt_tid, a.start_tid + INTERVAL 3 HOUR)
+            AND a.start_tid < COALESCE(b.slutt_tid, b.start_tid + INTERVAL 3 HOUR)
+          LIMIT 1',
+        ['r' => (int) $skive['id']]
+    );
+    if ($par !== null) {
+        $tak = (int) $skive['antall'];
+        $for = Booking::ledigePlasserFlere([(int) $par['aid'], (int) $par['bid']]);
+        sjekk('ingen oekt viser flere ledige enn ressursen har',
+            $for[(int) $par['aid']] <= $tak, 'sto med ' . $for[(int) $par['aid']] . ' av ' . $tak);
+
+        $kurs = (int) DB::verdi('SELECT course_id FROM course_sessions WHERE id = :s',
+                                ['s' => (int) $par['bid']]);
+        DB::kjor(
+            "INSERT INTO bookings (course_id, course_session_id, gjest_navn, gjest_epost,
+                                   antall, belop_ore, status)
+             VALUES (:c, :s, 'Ressursproeve', 'proeve@lissom.test', 6, 0, 'betalt')",
+            ['c' => $kurs, 's' => (int) $par['bid']]
+        );
+        $etter = Booking::ledigePlasserFlere([(int) $par['aid'], (int) $par['bid']]);
+        // Maalt mot det som sto for, ikke mot taket: testdataene har alt
+        // bookinger paa noen av oektene, og proven skal si noe om
+        // *endringen* — at seks plasser paa den ene faktisk forsvinner fra
+        // den andre.
+        sjekk('… og seks booket paa den ene tar seks fra den andre',
+            $etter[(int) $par['aid']] === max(0, $for[(int) $par['aid']] - 6),
+            'gikk fra ' . $for[(int) $par['aid']] . ' til ' . $etter[(int) $par['aid']]);
+        // Kurset kan ikke ta imot flere enn ressursen har, uansett hva
+        // plasstallet paa kurset sier. Date Night staar med tolv plasser og
+        // aatte skiver.
+        sjekk('… ingen oekt kan selge flere plasser enn ressursen har',
+            max($etter) <= $tak, 'flest: ' . max($etter));
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Ressursproeve'");
+    }
+}
+$ress = file_get_contents(__DIR__ . '/../api/admin/ressurser.php');
+// Eieren, spurt om hva som skal skje: «nekt, og si hvilke kurs». Ellers
+// forsvant taket stille, og verkstedet kunne solgt seksten plasser paa aatte
+// skiver uten at noe sa fra.
+sjekk('en ressurs kurs bruker kan ikke slettes',
+    str_contains($ress, "' brukes av ' . count(\$bruker) . ' kurs: '")
+    && str_contains($ress, 'Flytt dem til en annen ressurs først'));
+sjekk('… men den kan slaas av, og koblingene staar',
+    str_contains($ress, "case 'veksle':"));
+// Null plasser er ikke en ressurs, det er en stengt dor.
+sjekk('… og antallet maa vaere et tall det gaar an aa dele',
+    str_contains($ress, '$antall < 1 || $antall > 999'));
+sjekk('kortet «Ressurser» staar paa Oversikt',
+    str_contains($sida2, "return kort('Ressurser',"));
+sjekk('kurset velger ressurs i oppsettet',
+    str_contains($sida2, 'kRessursValg:')
+    && str_contains($sida2, "ressursId: this.state.kRessursId || 0,"));
+// En id som ikke finnes avvises: ellers ville kurset staatt uten tak uten
+// aa si fra.
+sjekk('… og en ukjent ressurs avvises ved lagring',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
+                 "Svar::feil('Fant ikke ressursen.');"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

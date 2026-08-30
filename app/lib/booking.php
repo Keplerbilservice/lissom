@@ -20,6 +20,103 @@ final class Booking
      * Reserverte plasser teller med — ellers kunne to personer betalt for den
      * siste plassen samtidig.
      */
+    /**
+     * Hvor mange av hver ressurs verkstedet har.
+     *
+     * Eieren, 30. august: «vi maa tenke at alle disse har tilgang til de
+     * samme 8 dreieskivene», og «1 dreieskive = 1 ressurs = 1 plass, 1
+     * kursplass = 1 ressurs = 1 plass».
+     *
+     * Tallene staar i en tabell og ikke i koden: «maa kunne endre, slette og
+     * legge til for aa mote endringer i verkstedet». De endres under
+     * Verkstedet → Ressurser.
+     *
+     * En ressurs som er satt inaktiv teller ikke — da er det bare kursets
+     * eget plasstall som gjelder, som for.
+     *
+     * Taaler at migrasjon 103 ikke er kjoert: da er det ingen tak, og
+     * regnestykket er som for.
+     *
+     * @return array<int, int> ressursId => antall
+     */
+    public static function verkstedTak(): array
+    {
+        if (self::$tak !== null) {
+            return self::$tak;
+        }
+        self::$tak = [];
+        try {
+            foreach (DB::alle('SELECT id, antall FROM ressurser WHERE aktiv = 1') as $r) {
+                if ((int) $r['antall'] > 0) {
+                    self::$tak[(int) $r['id']] = (int) $r['antall'];
+                }
+            }
+        } catch (Throwable $e) {
+            self::$tak = [];
+        }
+        return self::$tak;
+    }
+
+    /** Leses paa nytt naar noen har endret tallene. */
+    public static function glemTak(): void
+    {
+        self::$tak = null;
+    }
+
+    /** @var array<int, int>|null */
+    private static ?array $tak = null;
+
+    /**
+     * Ressursen innstemplede medlemmer teller mot.
+     *
+     * Et medlem som stempler inn sier ikke hva det skal gjore. Eieren ville
+     * likevel ha dem trukket fra, og da maa de telle et sted. De teller mot
+     * dreieskivene: det er den knappe ressursen, og en plass for mye holdt av
+     * er bedre enn en skive solgt to ganger.
+     *
+     * Slaas opp paa navn, ikke paa id: en ressurs kan vaere slettet og laget
+     * paa nytt. Finnes den ikke, teller de ingen steder.
+     */
+    private static function skiveRessurs(): int
+    {
+        if (self::$skive !== null) {
+            return self::$skive;
+        }
+        try {
+            self::$skive = (int) (DB::verdi(
+                "SELECT id FROM ressurser WHERE navn = 'Dreieskive' AND aktiv = 1"
+            ) ?? 0);
+        } catch (Throwable $e) {
+            self::$skive = 0;
+        }
+        return self::$skive;
+    }
+
+    /** @var int|null */
+    private static ?int $skive = null;
+
+    /**
+     * Hvor mange medlemmer som staar innstemplet naa.
+     *
+     * Ett oppslag per foresporsel: ledigePlasserFlere kalles med hele
+     * katalogen om gangen, og tallet er det samme for alle oektene.
+     */
+    private static function inneNaa(): int
+    {
+        if (self::$inne !== null) {
+            return self::$inne;
+        }
+        try {
+            self::$inne = (int) DB::verdi('SELECT COUNT(*) FROM check_ins WHERE ut_tid IS NULL');
+        } catch (Throwable $e) {
+            self::$inne = 0;
+        }
+        return self::$inne;
+    }
+
+    /** @var int|null */
+    private static ?int $inne = null;
+
     public static function ledigePlasser(int $oktId, bool $medLaas = false): int
     {
         // Med $medLaas laases okta for resten av transaksjonen. Uten den leser
@@ -72,24 +169,82 @@ final class Booking
         // castet med intval over, saa de kan staa i SQL-en.
         $inn = implode(',', $ider);
 
+        // Aktiv booking: betalt, eller reservert og ikke gaatt ut paa tid.
+        // Staar to steder i spoerringa under — paa oekta selv og paa alle de
+        // andre som deler ressursen — og maa vaere den samme begge steder.
+        $aktiv = "(b.status = 'betalt'
+                   OR (b.status = 'reservert'
+                       AND (b.reservert_til IS NULL
+                            OR b.reservert_til > UTC_TIMESTAMP())))";
+        $aktiv2 = str_replace('b.', 'b2.', $aktiv);
+
+        // Slutt-tida naar den mangler.
+        //
+        // En oekt uten sluttid har ingen lengde, og da ville den ikke
+        // overlappe noe som helst — et kurs uten sluttid ville stille frigitt
+        // alle skivene. Tre timer er en kveld i verkstedet, og en gjetning
+        // som holder plassen er bedre enn en null som gir den bort.
+        $slutt  = 'COALESCE(cs.slutt_tid,  cs.start_tid  + INTERVAL 3 HOUR)';
+        $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
+
+        $tak = self::verkstedTak();
+        $inneNa = self::inneNaa();
+        $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+
         $ut = [];
         foreach (DB::alle(
-            "SELECT cs.id,
+            "SELECT cs.id, cs.start_tid, {$slutt} AS slutt_reell, c.ressurs_id,
                     GREATEST(0,
                         COALESCE(cs.kapasitet, c.kapasitet)
                         - COALESCE(cs.manuelt_opptatt, 0)
                         - COALESCE((SELECT SUM(b.antall) FROM bookings b
                                      WHERE b.course_session_id = cs.id
-                                       AND (b.status = 'betalt'
-                                            OR (b.status = 'reservert'
-                                                AND (b.reservert_til IS NULL
-                                                     OR b.reservert_til > UTC_TIMESTAMP())))), 0)
-                    ) AS ledige
+                                       AND {$aktiv}), 0)
+                    ) AS ledige,
+                    -- Alt som legger beslag paa den samme ressursen samtidig.
+                    -- Aatte skiver er aatte skiver enten de sitter paa et
+                    -- dreiekurs, en Date Night eller en drop-in.
+                    COALESCE((
+                        SELECT SUM(COALESCE(cs2.manuelt_opptatt, 0)
+                             + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                          WHERE b2.course_session_id = cs2.id
+                                            AND {$aktiv2}), 0))
+                          FROM course_sessions cs2
+                          JOIN courses c2 ON c2.id = cs2.course_id
+                         WHERE cs2.status = 'planlagt'
+                           AND c2.ressurs_id = c.ressurs_id
+                           AND cs2.start_tid < {$slutt}
+                           AND cs.start_tid  < {$slutt2}
+                    ), 0) AS brukt_ressurs
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt' AND cs.id IN ({$inn})"
         ) as $r) {
-            $ut[(int) $r['id']] = (int) $r['ledige'];
+            // Uten ressurs — eller med en som er satt inaktiv — gjelder bare
+            // kursets eget plasstall, slik det gjorde for 30. august.
+            $ressurs = $r['ressurs_id'] === null ? 0 : (int) $r['ressurs_id'];
+            if (!isset($tak[$ressurs])) {
+                $ut[(int) $r['id']] = (int) $r['ledige'];
+                continue;
+            }
+            $igjen = $tak[$ressurs] - (int) $r['brukt_ressurs'];
+
+            // Medlemmer booker ikke — de stempler inn naar de kommer. De
+            // teller derfor bare paa en oekt som gaar akkurat naa; en booking
+            // om tre dager kan ikke vite hvem som moeter opp.
+            //
+            // De regnes mot skivene. Et medlem som haandbygger ved bordet
+            // blir talt feil, men den feilen tar heller en plass for mye enn
+            // aa selge en skive som staar opptatt.
+            if ($inneNa > 0 && $ressurs === self::skiveRessurs()) {
+                $start = new DateTimeImmutable((string) $r['start_tid'], new DateTimeZone('UTC'));
+                $slu   = new DateTimeImmutable((string) $r['slutt_reell'], new DateTimeZone('UTC'));
+                if ($start <= $naa && $slu > $naa) {
+                    $igjen -= $inneNa;
+                }
+            }
+
+            $ut[(int) $r['id']] = max(0, min((int) $r['ledige'], $igjen));
         }
 
         // En okt som ikke er «planlagt» — avlyst, eller som ikke finnes — har

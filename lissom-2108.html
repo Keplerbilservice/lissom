@@ -7558,6 +7558,26 @@ window.__resources = {
                     <label for="k-plasser" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Antall plasser</label>
                     <input id="k-plasser" value="{{ kPlasser }}" onChange="{{ settKPlasser }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   </div>
+
+                  <!-- Hvilken ressurs kurset legger beslag paa.
+                       Eieren, 30. august: «maa ta plasser fra de samme
+                       ressursene. Altsaa om det er kurs eller andre
+                       medlemmer, vi maa tenke at alle disse har tilgang til
+                       de samme 8 dreieskivene».
+
+                       Plasstallet over sier hvor mange kurset tar imot.
+                       Dette sier hva de tar av. Et dreiekurs paa aatte og en
+                       drop-in samtidig kan ikke selge seksten skiver naar
+                       verkstedet har aatte. -->
+                  <div style="margin-top: var(--space-5);">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva bruker kurset?</div>
+                    <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">{{ kRessursHjelp }}</p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <sc-for list="{{ kRessursValg }}" as="r" hint-placeholder-count="3">
+                        <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
@@ -9373,6 +9393,100 @@ window.__resources = {
 
        Ingen egen ferietabell: «apningstider» med «stengt = 1» er det
        samme, og fantes fra for. Se app/lib/ferie.php. -->
+  <sc-if value="{{ erAdminRessurser }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – ressurser" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavRessurser }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </aside>
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Ressurser</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 64ch; text-wrap: pretty;">Én plass er én ressurs. Åtte dreieskiver er åtte plasser, uansett om de sitter på et dreiekurs, en Date Night eller en drop-in. Alt som skjer samtidig og bruker det samme, deler taket — kurs, medlemsbooking og drop-in.</p>
+        </div>
+
+        <!-- Ny eller endret ressurs. Ett skjema for begge: en rad man
+             trykker «Endre» paa fyller det ut, ellers staar det tomt. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 720px; margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ reSkjemaTittel }}</div>
+          <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-end;">
+            <div style="flex: 1 1 200px; min-width: 0;">
+              <label for="re-navn" style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Navn</label>
+              <input id="re-navn" value="{{ reNavn }}" onChange="{{ settReNavn }}" placeholder="F.eks. Dreieskive" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+            </div>
+            <div style="flex: 0 0 110px;">
+              <label for="re-antall" style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Antall</label>
+              <input id="re-antall" value="{{ reAntall }}" onChange="{{ settReAntall }}" placeholder="8" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+            </div>
+            <div style="flex: 1 1 240px; min-width: 0;">
+              <label for="re-merknad" style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Merknad</label>
+              <input id="re-merknad" value="{{ reMerknad }}" onChange="{{ settReMerknad }}" placeholder="Hvem som deler dem" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+            </div>
+          </div>
+          <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; row-gap: var(--space-4); margin-top: var(--space-5);">
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ reLagre }}" hint-size="auto,44px">{{ reLagreTekst }}</x-import>
+            <sc-if value="{{ reRedigerer }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ reAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 720px;">
+          <sc-for list="{{ reListe }}" as="r" hint-placeholder-count="2">
+            <div style="{{ r.radStil }}">
+              <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font: var(--type-body); font-weight: 700; color: var(--text-heading);">{{ r.navn }}</span>
+                <span style="font: var(--type-body-sm); color: var(--text-heading);">{{ r.antallTekst }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.brukt }}</span>
+              </div>
+              <sc-if value="{{ r.harMerknad }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ r.merknad }}</p>
+              </sc-if>
+              <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-4);">
+                <button type="button" onClick="{{ r.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Endre</button>
+                <button type="button" onClick="{{ r.veksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ r.vekselTekst }}</button>
+                <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ reTomt }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; padding: var(--space-8); font: var(--type-body-sm); color: var(--text-muted); text-align: center;">Ingen ressurser er satt opp. Uten dem gjelder bare plasstallet på hvert enkelt kurs, og to ting som går samtidig vet ikke om hverandre.</p>
+          </sc-if>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminFerie }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – ferie" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -16126,6 +16240,7 @@ class Component extends DCLogic {
       // med dato og pris; her staar hva kurset faktisk er.
       { sti: '/kursene-vare',  side: 'kursoversikt' },
       { sti: '/admin/ferie',        side: 'adminferie' },
+      { sti: '/admin/ressurser',    side: 'adminressurser' },
       { sti: '/admin/feilmeldinger', side: 'adminfeil' },
       { sti: '/nyttig-info',   side: 'nyttig' },
       // Spoersmaal og svar. Sto som en seksjon paa Om oss, og hadde derfor
@@ -20653,6 +20768,111 @@ class Component extends DCLogic {
     };
   }
 
+  /** Henter ressursene. Kalles naar skjermen aapnes. */
+  hentRessurser() {
+    if (!this.erPublisert() || this._ressHentes) return;
+    this._ressHentes = true;
+    fetch('/api/admin/ressurser.php', { credentials: 'same-origin' })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._ressHentes = false;
+        this.setState({ ressurser: ok && d && d.ressurser ? d.ressurser : [] });
+      })
+      .catch(() => { this._ressHentes = false; });
+  }
+
+  ressursKall(kropp) {
+    if (!this.erPublisert()) { this.setState({ kvittering: 'Krever den ekte siden' }); return; }
+    if (this._ressLagrer) return;
+    this._ressLagrer = true;
+    fetch('/api/admin/ressurser.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        this._ressLagrer = false;
+        const ny = {
+          kvittering: ok ? (kropp.handling === 'slett' ? 'Slettet' : 'Lagret') : 'Gikk ikke',
+          kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
+        };
+        // Serveren svarer med hele lista, saa skjermen viser det som naa
+        // staar uten en runde til.
+        if (ok && d && d.ressurser) ny.ressurser = d.ressurser;
+        // Skjemaet toemmes bare naar det gikk bra. Gikk det ikke, staar det
+        // man skrev igjen — ellers maatte alt skrives paa nytt.
+        if (ok && kropp.handling === 'lagre') {
+          Object.assign(ny, { reId: 0, reNavn: '', reAntall: '', reMerknad: '' });
+        }
+        this.setState(ny);
+        // Ledige plasser regnes av ressursene. Endrer de seg, endrer
+        // kurslista seg — og da skal den hentes paa nytt.
+        if (ok) this.hentKatalog();
+      })
+      .catch(() => {
+        this._ressLagrer = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
+  /**
+   * Ressursskjermen.
+   *
+   * Eieren, 30. august: «1 dreieskive = 1 ressurs = 1 plass, 1 kursplass = 1
+   * ressurs = 1 plass», og «maa kunne endre, slette og legge til for aa mote
+   * endringer i verkstedet».
+   *
+   * Ett skjema for baade ny og endret: reId sier hvilken. Sto de hver for
+   * seg, ville to skjemaer kunne si hver sin ting om det samme.
+   */
+  ressursVals() {
+    const liste = this.state.ressurser || [];
+    const redigerer = (this.state.reId || 0) > 0;
+    return {
+      reListe: liste.map(r => ({
+        navn: r.navn,
+        antallTekst: r.antall + (r.antall === 1 ? ' plass' : ' plasser'),
+        brukt: (r.aktiv ? '' : 'Teller ikke · ')
+          + (r.kurs === 0 ? 'Ingen kurs bruker den'
+             : r.kurs + (r.kurs === 1 ? ' kurs bruker den' : ' kurs bruker den')),
+        harMerknad: String(r.merknad || '').trim() !== '',
+        merknad: r.merknad || '',
+        radStil: {
+          padding: 'var(--space-5) var(--space-6)',
+          borderBottom: '1px solid var(--border-subtle)',
+          opacity: r.aktiv ? 1 : 0.55,
+        },
+        endre: () => this.setState({ reId: r.id, reNavn: r.navn,
+                                     reAntall: String(r.antall), reMerknad: r.merknad || '' }),
+        vekselTekst: r.aktiv ? 'Slå av' : 'Slå på',
+        veksle: () => this.ressursKall({ handling: 'veksle', id: r.id }),
+        slett: () => {
+          if (!window.confirm('Slette «' + r.navn + '»?')) return;
+          this.ressursKall({ handling: 'slett', id: r.id });
+        },
+      })),
+      reTomt: liste.length === 0,
+      reRedigerer: redigerer,
+      reSkjemaTittel: redigerer ? 'Endre ressurs' : 'Ny ressurs',
+      reLagreTekst: redigerer ? 'Lagre endringene' : 'Legg til',
+      reNavn: this.state.reNavn ?? '',
+      settReNavn: e => this.setState({ reNavn: e.target.value }),
+      reAntall: this.state.reAntall ?? '',
+      settReAntall: e => this.setState({ reAntall: e.target.value.replace(/[^\d]/g, '') }),
+      reMerknad: this.state.reMerknad ?? '',
+      settReMerknad: e => this.setState({ reMerknad: e.target.value }),
+      reAvbryt: () => this.setState({ reId: 0, reNavn: '', reAntall: '', reMerknad: '' }),
+      reLagre: () => this.ressursKall({
+        handling: 'lagre',
+        id: this.state.reId || 0,
+        navn: (this.state.reNavn || '').trim(),
+        antall: parseInt(this.state.reAntall, 10) || 0,
+        merknad: (this.state.reMerknad || '').trim(),
+      }),
+    };
+  }
+
   /**
    * Ferieskjermen: hvilke dager verkstedet holder stengt.
    *
@@ -21879,6 +22099,9 @@ class Component extends DCLogic {
       passerNivaa: this.state.kPasserNivaa || '', passerHvem: this.state.kPasserHvem || '',
       metode: this.metodeAvKategori(this.state.kKategori, this.state.kTema, this.state.kMetode),
       varighet: this.state.kVarighet || '',
+      // Hva kurset legger beslag paa i verkstedet (migrasjon 103). 0 betyr
+      // ingen delt grense — da gjelder bare plasstallet paa kurset selv.
+      ressursId: this.state.kRessursId || 0,
       // Nivaa, varighet og faktaboksen (migrasjon 072).
       nivaaIntern: this.state.kNivaaIntern || 'nybegynner',
       nivaaTekst: this.state.kNivaaTekst || '',
@@ -23130,6 +23353,8 @@ class Component extends DCLogic {
       // Kategorien staar paa den raa raden. Uten denne mistet kurset
       // kategorien sin i det du rettet prisen.
       kKategori: this.kategoriFor(raa.tema || k.tema || '', k.type),
+      // Ressursen kurset deler med alt annet som gaar samtidig.
+      kRessursId: raa.ressursId || 0,
       kUtenDato: !!raa.visUtenDato,
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
@@ -24097,6 +24322,9 @@ class Component extends DCLogic {
         ['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],
         // Ferie hoerer til huset, som vaktene og brenningene.
         ['Ferie',         'adminferie'],
+        // Dreieskivene og bordplassene. Ett sted, fordi alt som gaar
+        // samtidig deler dem — se Booking::ledigePlasserFlere.
+        ['Ressurser',     'adminressurser'],
       ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
@@ -24185,6 +24413,7 @@ class Component extends DCLogic {
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'adminfeil':          return p('Nettsiden', 'Nettsiden', 'Feilmeldinger');
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
+      case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
@@ -27549,6 +27778,13 @@ class Component extends DCLogic {
     if (this.erAdminSkjerm(side) && !this.state.ferieData) {
       this.hentFerie();
     }
+    // Ressursene. Hentes paa alle adminskjermer: kortet paa Oversikt viser
+    // tallene, kursoppsettet lar deg velge mellom dem, og skjermen deres
+    // redigerer dem. Ett lite kall, og uten det sto brikkene i veiviseren og
+    // sa «ingen ressurser er satt opp» paa et verksted som har dem.
+    if (this.erAdminSkjerm(side) && !this.state.ressurser) {
+      this.hentRessurser();
+    }
     // Soknadene om frys, paa medlemsskjermen i admin.
     if (side === 'adminmedlem' && !this.state.frysAdmin) {
       this.hentFrysAdmin();
@@ -29052,6 +29288,7 @@ class Component extends DCLogic {
           kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
@@ -30123,6 +30360,7 @@ class Component extends DCLogic {
             kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
@@ -30256,6 +30494,7 @@ class Component extends DCLogic {
                 kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
@@ -31213,6 +31452,29 @@ class Component extends DCLogic {
                  'Hvem som holder kursene, og timene deres.',
                  null, 'Se kursholderne',
                  () => this.gaaAdmin('adminkursholdere', {})),
+
+            // Ressursene i verkstedet.
+            //
+            // Eieren, 30. august: «dette maa vi ha et eget kort paa i
+            // oversikten, som heter ressurser. 1 dreieskive = 1 ressurs = 1
+            // plass, 1 kursplass = 1 ressurs = 1 plass».
+            //
+            // Tallet er summen av plassene: det er hva verkstedet kan ta imot
+            // samtidig, og det er tallet alle bookinger regnes mot.
+            (() => {
+              const r = (this.state.ressurser || []).filter(x => x.aktiv);
+              const sum = r.reduce((n, x) => n + (x.antall || 0), 0);
+              return kort('Ressurser',
+                r.length
+                  // Navnet staar som det staar. «6 malebordr» kom av et
+                  // forsok paa aa boye det, og norsk flertall er ikke en
+                  // bokstav man legger til.
+                  ? r.map(x => x.navn + ' ' + x.antall).join(' · ')
+                    + '. Alt som går samtidig og bruker det samme, deler taket.'
+                  : 'Ingen ressurser satt opp. Da gjelder bare plasstallet på hvert enkelt kurs.',
+                sum || null, 'Se ressursene',
+                () => this.gaaAdmin('adminressurser', {}));
+            })(),
 
             // Kursvelgeren laa som en fane under Nettsiden, mellom
             // referansekunder og SEO. Den er et verktoy man gaar inn i og
@@ -33538,8 +33800,9 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kRessursId: 0,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
+            kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
             kLagerDu: '', kMedHjem: '', kFerdigTid: '', kTillegg: '', kVarighetTekst: '',
             kGjenstandIKassa: false,
@@ -33742,6 +34005,47 @@ class Component extends DCLogic {
           kStdFerdigHarHent: ferdig.harHent, kStdFerdigHent: ferdig.hent,
           kStdFerdigHarLagre: ferdig.harLagre, kStdFerdigLagre: ferdig.lagre,
           kStdFerdigLagreTekst: ferdig.lagreTekst,
+        };
+      })(),
+
+      // ── Hvilken ressurs kurset bruker ────────────────────────────────
+      //
+      // Eieren, 30. august: «vi maa tenke at alle disse har tilgang til de
+      // samme 8 dreieskivene». Plasstallet sier hvor mange kurset tar imot;
+      // dette sier hva de tar av.
+      //
+      // Lista kommer fra basen — eieren kan legge til og slette ressurser
+      // under Verkstedet → Ressurser, og da skal valgene her folge med.
+      // «Ingen» staar sist: et kurs som ikke legger beslag paa noe delt,
+      // gaar bare paa sitt eget plasstall.
+      ...(() => {
+        const alle = (this.state.ressurser || []).filter(r => r.aktiv);
+        const naa = this.state.kRessursId ?? 0;
+        const brikke = (id, navn) => {
+          const paa = Number(naa) === Number(id);
+          return {
+            navn,
+            velg: () => this.setState({ kRessursId: id }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+              padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+              border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          };
+        };
+        const valgt = alle.find(r => Number(r.id) === Number(naa));
+        return {
+          kRessursValg: alle.map(r => brikke(r.id, r.navn + ' · ' + r.antall))
+            .concat([brikke(0, 'Ingen')]),
+          kRessursHjelp: alle.length === 0
+            ? 'Ingen ressurser er satt opp ennå. Sett dem opp under Verkstedet → Ressurser.'
+            : (valgt
+                ? 'Kurset deler ' + valgt.antall + ' × ' + valgt.navn
+                  + ' med alt annet som går samtidig — kurs, medlemsbooking og drop-in.'
+                : 'Kurset har ingen delt grense. Da gjelder bare plasstallet over, '
+                  + 'og to ting som går samtidig vet ikke om hverandre.'),
         };
       })(),
 
@@ -38989,6 +39293,9 @@ class Component extends DCLogic {
       erAdminFerie: side === 'adminferie',
       adminNavFerie: this.adminMeny(),
       ...(side === 'adminferie' ? this.ferieVals() : {}),
+      erAdminRessurser: side === 'adminressurser',
+      adminNavRessurser: this.adminMeny(),
+      ...(side === 'adminressurser' ? this.ressursVals() : {}),
       erAdminFeil: side === 'adminfeil',
       adminNavFeil: this.adminMeny(),
       ...(side === 'adminfeil' ? this.feilAdminVals() : {}),

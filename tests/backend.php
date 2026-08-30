@@ -3000,6 +3000,39 @@ sjekk('innmeldingen tar imot bade fast trekk og «ordner selv»',
     str_contains(file_get_contents(__DIR__ . '/../api/bli-medlem.php'),
                  "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
 
+// ── Frakt og adresse ───────────────────────────────────────────────────
+//
+// Kassa viste «Inkludert frakt kr. 89,-» og la belopet til i totalen paa
+// skjermen. Det gikk aldri til serveren: api/ordre.php regnet summen av
+// varene alene, og valget «Send som pakke» fulgte ikke med i det hele tatt.
+// Bestilte noen med sending, betalte verkstedet portoen selv — og ingen fikk
+// vite hvor pakken skulle.
+$ordre = file_get_contents(__DIR__ . '/../api/ordre.php');
+sjekk('serveren legger frakten paa summen',
+    str_contains($ordre, "\$levering = Foresporsel::tekst('levering') === 'pakke' ? 'pakke' : 'hent';")
+    && str_contains($ordre, '$sum += $fraktOre;'));
+sjekk('… og henter prisen fra basen, ikke fra nettleseren',
+    str_contains($ordre, "SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']"));
+sjekk('… og krever adresse naar det skal sendes',
+    str_contains($ordre, 'Vi trenger gateadressen pakken skal til.')
+    && str_contains($ordre, 'Postnummeret skal ha fire siffer.'));
+sjekk('… og frakten staar som en egen linje paa ordren',
+    str_contains($ordre, "'tittel'     => 'Frakt — sendt som pakke',"));
+sjekk('kassa sender leveringen med bestillingen',
+    str_contains($sida2, "levering: this.erPakke() ? 'pakke' : 'hent',")
+    && str_contains($sida2, "adresse: (this.state.levAdresse || '').trim(),"));
+sjekk('… og adressefeltene staar bare naar det skal sendes',
+    str_contains($sida2, '{{ levPakke }}') && str_contains($sida2, 'label="Gateadresse"'));
+// Tallet 89 sto skrevet inn fire steder. Naa staar det ett sted, i basen.
+sjekk('fraktprisen staar ingen steder i koden',
+    !str_contains($sida2, 'Send som pakke (kr. 89,-)'));
+sjekk('… men kan endres i admin',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/produkter.php'), "if (\$handling === 'frakt') {"));
+// Gavekortfeltet tok like mye plass som leveringen. De fleste har ikke et.
+sjekk('gavekortfeltet er en lenke til man trenger det',
+    str_contains($sida2, 'Har du gavekort eller rabattkode?')
+    && str_contains($sida2, '{{ gkSkjult }}'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

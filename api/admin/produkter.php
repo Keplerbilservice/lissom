@@ -61,7 +61,11 @@ if (Foresporsel::metode() === 'GET') {
         'lager'        => $v['lager'] === null ? null : (int) $v['lager'],
         'kunMedlemmer' => (bool) $v['kun_medlemmer'],
         'status'       => $v['status'],
-    ], $varer)]);
+    ], $varer),
+    // Frakten. Sto som «kr. 89,-» skrevet inn i nettleseren, og kunne ikke
+    // endres uten aa endre koden. Naa staar den i basen.
+    'fraktOre' => (int) (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0),
+    ]);
 }
 
 Foresporsel::krevMetode('POST');
@@ -69,6 +73,27 @@ Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling', 'lagre');
 $id = Foresporsel::heltall('id');
+
+// ------------------------------------------------------------------ frakt
+//
+// Hva det koster aa sende en pakke. Ett tall, ett sted — kassa henter det
+// fra api/butikk.php, og api/ordre.php legger det paa summen naar kunden
+// velger sending. Ingen av dem tar imot et beloep fra nettleseren.
+if ($handling === 'frakt') {
+    $kr = (int) preg_replace('/\D+/', '', Foresporsel::tekst('frakt'));
+    if ($kr < 0 || $kr > 5000) {
+        Svar::feil('Frakten må være mellom 0 og 5 000 kroner.');
+    }
+    DB::kjor(
+        'INSERT INTO innstillinger (nokkel, verdi, endret_av) VALUES (:n, :v, :a)
+         ON DUPLICATE KEY UPDATE verdi = :v2, endret_av = :a2',
+        ['n' => 'frakt_ore', 'v' => (string) ($kr * 100), 'a' => (int) (Sesjon::medlem()['id'] ?? 0) ?: null,
+         'v2' => (string) ($kr * 100), 'a2' => (int) (Sesjon::medlem()['id'] ?? 0) ?: null]
+    );
+    Config::glemBasen();
+    revider('frakt_lagret', 'innstilling', null, ['kroner' => $kr]);
+    Svar::ok(['beskjed' => 'Frakten er satt til kr. ' . $kr . ',-.', 'fraktOre' => $kr * 100]);
+}
 
 // ------------------------------------------------------------------ bildet
 //

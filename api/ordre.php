@@ -75,6 +75,44 @@ if ($sum <= 0) {
     Svar::feil('Bestillingen har ingen sum.');
 }
 
+// --- Levering ------------------------------------------------------------
+//
+// Kassa viste «Inkludert frakt kr. 89,-» og la belopet til i totalen paa
+// skjermen. Det gikk aldri hit: kroppen bar bare varelinjene, og summen ble
+// regnet av varene alene. Bestilte noen med sending, betalte verkstedet
+// portoen selv — og adressen kom ingen steder.
+//
+// Prisen hentes fra basen, ikke fra nettleseren. Det er den samme regelen
+// som ellers i api/ordre.php: kunden kan si *hva* hun vil ha, aldri hva det
+// koster. Se api/betal.php for det ene stedet der det motsatte gjelder, og
+// hvorfor.
+$levering = Foresporsel::tekst('levering') === 'pakke' ? 'pakke' : 'hent';
+$fraktOre = 0;
+$adresse = $postnr = $poststed = null;
+
+if ($levering === 'pakke') {
+    $fraktOre = (int) (DB::harTabell('innstillinger')
+        ? (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0)
+        : 0);
+
+    $adresse  = mb_substr(trim(Foresporsel::tekst('adresse')), 0, 191);
+    $postnr   = preg_replace('/\D+/', '', Foresporsel::tekst('postnr')) ?? '';
+    $poststed = mb_substr(trim(Foresporsel::tekst('poststed')), 0, 100);
+
+    // En pakke uten adresse er ingen pakke. Bedre aa stoppe her enn aa ta
+    // imot pengene og ikke vite hvor varene skal.
+    if ($adresse === '') {
+        Svar::feil('Vi trenger gateadressen pakken skal til.');
+    }
+    if (strlen($postnr) !== 4) {
+        Svar::feil('Postnummeret skal ha fire siffer.');
+    }
+    if ($poststed === '') {
+        Svar::feil('Vi trenger poststedet.');
+    }
+    $sum += $fraktOre;
+}
+
 // --- Gavekort ------------------------------------------------------------
 //
 // Feltet i kassa var ikke koblet til noe, og saldoen ble aldri trukket ned.
@@ -112,7 +150,14 @@ if (DB::harKolonne('orders', 'gave')) {
     ];
 }
 
-$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt): array {
+// Leveringsfeltene kom med migrasjon 095. Er den ikke kjort, skal en
+// bestilling fortsatt gaa gjennom — bare uten dem, som for.
+$leveringsfelt = DB::harKolonne('orders', 'levering')
+    ? ['levering' => $levering, 'frakt_ore' => $fraktOre,
+       'adresse' => $adresse ?: null, 'postnr' => $postnr ?: null, 'poststed' => $poststed ?: null]
+    : [];
+
+$opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt, $leveringsfelt, $fraktOre): array {
     $betalingsfelt = [
         'vipps_reference' => $referanse,
         'type'            => 'epayment',
@@ -141,7 +186,20 @@ $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $g
         'sum_ore'       => $sum,
         'status'        => 'ny',
         'payment_id'    => $paymentId,
-    ] + $gavefelt);
+    ] + $gavefelt + $leveringsfelt);
+
+    // Frakten som en egen linje. Da stemmer linjene med summen paa ordren,
+    // og kvitteringen viser hva portoen kostet framfor aa gjemme den i
+    // varene. product_id er null — frakt er ingen vare i butikken.
+    if ($fraktOre > 0) {
+        DB::settInn('order_lines', [
+            'order_id'   => $ordreId,
+            'product_id' => null,
+            'tittel'     => 'Frakt — sendt som pakke',
+            'antall'     => 1,
+            'pris_ore'   => $fraktOre,
+        ]);
+    }
 
     foreach ($rader as $r) {
         DB::settInn('order_lines', [

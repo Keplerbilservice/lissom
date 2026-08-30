@@ -16,6 +16,13 @@ Foresporsel::krevMetode('GET');
 $medlem = Sesjon::medlem();
 $hvor = $medlem === null ? 'kun_medlemmer = 0' : '1';
 
+// Frakten. Sto som «kr. 89,-» fire steder i nettleseren og kom aldri hit;
+// naa staar tallet i basen, og kassa henter det derfra. Da kan ikke skjermen
+// og betalingen si hver sin ting.
+$fraktOre = (int) (DB::harTabell('innstillinger')
+    ? (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0)
+    : 0);
+
 $varer = DB::alle(
     "SELECT id, tittel, beskrivelse, bilde, kategori, pris_ore, lager, kun_medlemmer
        FROM products
@@ -38,4 +45,8 @@ Svar::json(['varer' => array_map(static fn($v) => [
     'prisOre'      => (int) $v['pris_ore'],
     'utsolgt'      => $v['lager'] !== null && (int) $v['lager'] <= 0,
     'kunMedlemmer' => (bool) $v['kun_medlemmer'],
-], $varer), 'fokus' => Bilder::fokus()]);
+], $varer),
+    'fokus'    => Bilder::fokus(),
+    'fraktOre' => $fraktOre,
+    'frakt'    => Booking::kroner($fraktOre),
+]);

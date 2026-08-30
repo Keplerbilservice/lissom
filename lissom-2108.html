@@ -3388,13 +3388,41 @@ window.__resources = {
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Tag" selected="{{ t.valgt }}" on-click="{{ t.velg }}" hint-size="auto,32px">{{ t.navn }}</x-import>
                       </sc-for>
                     </div>
+                    <!-- Adressen.
+                         Valget «Send som pakke» fantes, men ingen ble spurt
+                         om hvor pakken skulle — og valget gikk aldri til
+                         serveren i det hele tatt. Feltene staar her, og
+                         kreves ogsaa av api/ordre.php: det hjelper ikke aa
+                         spoerre om noe man ikke kontrollerer. -->
+                    <sc-if value="{{ levPakke }}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4);">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gateadresse" placeholder="Nordre Løkkevei 15" value="{{ levAdresse }}" on-change="{{ settLevAdresse }}" hint-size="100%,66px"></x-import>
+                        <div style="display: grid; grid-template-columns: 108px 1fr; gap: var(--space-3);">
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Postnr." placeholder="3120" value="{{ levPostnr }}" on-change="{{ settLevPostnr }}" hint-size="100%,66px"></x-import>
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Poststed" placeholder="Nøtterøy" value="{{ levPoststed }}" on-change="{{ settLevPoststed }}" hint-size="100%,66px"></x-import>
+                        </div>
+                      </div>
+                    </sc-if>
                   </div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode" placeholder="Skriv koden" value="{{ gkKode }}" on-change="{{ settGkKode }}" hint-size="100%,66px"></x-import>
-                  <!-- Svaret kommer mens man skriver. «Fant ikke gavekortet»
-                       skal staa for man bestiller, ikke etterpaa. -->
-                  <sc-if value="{{ gkBeskjed }}" hint-placeholder-val="{{ false }}">
-                    <p style="{{ gkStil }}">{{ gkBeskjed }}</p>
-                  </sc-if>
+                  <div>
+                    <!-- Gavekortet sto som et fullt felt ved siden av
+                         leveringen, like stort som den. De aller fleste har
+                         ikke et gavekort, og feltet ba likevel om
+                         oppmerksomhet paa hver eneste bestilling. Naa er det
+                         en linje man trykker paa — og den staar aapen av seg
+                         selv om det alt er skrevet en kode i den. -->
+                    <sc-if value="{{ gkSkjult }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ gkVis }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Har du gavekort eller rabattkode?</button>
+                    </sc-if>
+                    <sc-if value="{{ gkApen }}" hint-placeholder-val="{{ true }}">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode" placeholder="Skriv koden" value="{{ gkKode }}" on-change="{{ settGkKode }}" hint-size="100%,66px"></x-import>
+                      <!-- Svaret kommer mens man skriver. «Fant ikke gavekortet»
+                           skal staa for man bestiller, ikke etterpaa. -->
+                      <sc-if value="{{ gkBeskjed }}" hint-placeholder-val="{{ false }}">
+                        <p style="{{ gkStil }}">{{ gkBeskjed }}</p>
+                      </sc-if>
+                    </sc-if>
+                  </div>
                 </div>
               </div>
 
@@ -16106,6 +16134,25 @@ class Component extends DCLogic {
   }
 
   /**
+   * Frakten, i kroner.
+   *
+   * Tallet sto skrevet inn som «89» fire steder her inne, og gikk aldri til
+   * serveren: kassa la det til paa skjermen, mens api/ordre.php regnet
+   * summen av varene alene. Bestilte noen med sending, betalte verkstedet
+   * portoen selv. Naa staar tallet i basen, kommer med api/butikk.php, og
+   * legges paa av serveren — her brukes det bare til aa vise det samme.
+   */
+  fraktKr() {
+    const ore = this.state.fraktOre;
+    return typeof ore === 'number' ? Math.round(ore / 100) : 140;
+  }
+
+  /** Skal bestillingen sendes? */
+  erPakke() {
+    return (this.state.levering || 'hent') === 'pakke';
+  }
+
+  /**
    * Om Min side skal vises som medlemsside eller som deltakerside.
    *
    * Skillet fantes fra for, men det var skrevet ut fem steder med samme
@@ -17497,6 +17544,10 @@ class Component extends DCLogic {
       .then(d => {
         if (!d || !d.varer) return;
         const ny = { butikkvareListe: d.varer };
+        // Frakten. Sto som «kr. 89,-» skrevet inn fire steder her inne, og
+        // gikk aldri til serveren — kassa la den til paa skjermen, og
+        // betalingen visste ingenting om den. Naa er tallet serverens.
+        if (typeof d.fraktOre === 'number') ny.fraktOre = d.fraktOre;
         if (d.fokus) ny.bildeFokus = Object.assign({}, this.state.bildeFokus, d.fokus);
         this.setState(ny, () => {
           // Kom noen rett inn paa /butikk/<id> for lista var lastet, staar
@@ -18045,6 +18096,13 @@ class Component extends DCLogic {
         telefon: (this.state.kaTelefon || '').trim(),
         gave: !!this.state.gaveinnpakning,
         hilsen: (this.state.kaHilsen || '').trim(),
+        // Leveringen. Fulgte ikke med i det hele tatt: kassa viste frakt paa
+        // skjermen, og serveren visste hverken at det var en pakke eller hvor
+        // den skulle. Beloepet legges paa av serveren, ikke herfra.
+        levering: this.erPakke() ? 'pakke' : 'hent',
+        adresse: (this.state.levAdresse || '').trim(),
+        postnr: (this.state.levPostnr || '').trim(),
+        poststed: (this.state.levPoststed || '').trim(),
       }),
     })
       .then(r => r.json())
@@ -28330,9 +28388,9 @@ class Component extends DCLogic {
       stoppKlikk: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       kurvTom: Object.keys(this.state.kurv || {}).length === 0,
       kurvSum: (Object.keys(this.state.kurv || {}).reduce((n, navn) => n + this.prisAv(navn) * this.state.kurv[navn], 0)
-        + ((this.state.levValg === 'Send som pakke (kr. 89,-)' && Object.keys(this.state.kurv || {}).length > 0) ? 89 : 0)
+        + ((this.erPakke() && Object.keys(this.state.kurv || {}).length > 0) ? this.fraktKr() : 0)
       ).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
-      kurvFraktLinje: this.state.levValg === 'Send som pakke (kr. 89,-)' ? 'Inkludert frakt kr. 89,-' : '',
+      kurvFraktLinje: this.erPakke() ? 'Inkludert frakt kr. ' + this.fraktKr() + ',-' : '',
       betalKurv: () => {
         const k = this.state.kurv || {};
         const linjer = Object.keys(k).map(navn => ({
@@ -28500,9 +28558,30 @@ class Component extends DCLogic {
           bAntPlus: () => this.setState({ bAntallN: Math.min(maks, n + 1) }),
         };
       })(),
-      levValg: ['Hent i butikken på Teie', 'Send som pakke (kr. 89,-)'].map(navn => ({
-        navn, valgt: (this.state.levValg || 'Hent i butikken på Teie') === navn, velg: () => this.setState({ levValg: navn }),
+      // Levering. Prisen kommer fra basen, ikke fra en tekst her inne.
+      levValg: [
+        { navn: 'Hent i butikken på Teie', verdi: 'hent' },
+        { navn: 'Send som pakke (kr. ' + this.fraktKr() + ',-)', verdi: 'pakke' },
+      ].map(v => ({
+        navn: v.navn,
+        valgt: (this.state.levering || 'hent') === v.verdi,
+        velg: () => this.setState({ levering: v.verdi, kaFeil: null }),
       })),
+      // Adressen. Vises bare naar pakken skal sendes — og da kreves den, her
+      // og paa serveren. En pakke uten adresse er ingen pakke.
+      levPakke: this.erPakke(),
+      levAdresse: this.state.levAdresse || '',
+      settLevAdresse: e => this.setState({ levAdresse: e.target.value }),
+      levPostnr: this.state.levPostnr || '',
+      settLevPostnr: e => this.setState({ levPostnr: e.target.value.replace(/\D+/g, '').slice(0, 4) }),
+      levPoststed: this.state.levPoststed || '',
+      settLevPoststed: e => this.setState({ levPoststed: e.target.value }),
+      // Gavekortet sto som et fullt felt ved siden av leveringen og tok like
+      // mye plass som den. De aller fleste har ikke et gavekort. Eieren 30.
+      // august: mer diskret. Naa er det en linje man trykker paa.
+      gkSkjult: !this.state.gkApen && !(this.state.gkKode || '').trim(),
+      gkApen: !!this.state.gkApen || !!(this.state.gkKode || '').trim(),
+      gkVis: () => this.setState({ gkApen: true }),
       // ------------------------------------------------------------ ny beskjed
       //
       // Skjemaet var tegnet, men ikke koblet til noe: verken felt eller
@@ -34264,7 +34343,10 @@ class Component extends DCLogic {
         { navn: 'Frakt', sum: 'kr. 0,-' },
         { navn: 'Herav mva.', sum: 'kr. 474,-' },
       ],
-      levering: ['Hent i butikken på Teie', 'Send som pakke (kr. 89,-)'],
+      // «levering» sto her som to ferdige tekster fra designet, med prisen
+      // skrevet inn. Ingen mal bandt seg til den — kassa bruker «levValg»,
+      // som henter prisen fra basen. Fjernet, saa tallet ikke staar to
+      // steder og kan bli uenig med seg selv.
       sporsmal: (() => {
         const il = this.state.innholdLagret || {};
         // Blokknummeret slaas opp paa navnet, ikke skrives inn. Da folger

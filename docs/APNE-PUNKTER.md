@@ -155,17 +155,26 @@ under Beskjeder → E-post- og SMS-maler, med `{navn}`, `{ordre}` og `{belop}`.
 Teksten i skjemaet sier nå dette rett ut. Selve koblingen er ikke laget —
 eieren må si om han vil ha den.
 
-### Dobbelt i kursoppsettet, ikke rørt
+### Dobbelt i kursoppsettet — ryddet
 
-- **«Praktisk informasjon» (10) og «Godt å vite» (08)** er to fritekstfelt som
-  begge blir egne avsnitt på kurssiden. Eksempelteksten var «møt opp ti
-  minutter før, bruk klær som tåler leire» i det ene og «ta med forkle» i det
-  andre — det er det samme slaget opplysning.
-- **Faktaboksen «Med hjem» leser `lagerDu`**, mens avsnittet «Dette får du med
-  hjem» leser `medHjem`. To felt for én ting, og `lagerDu` har ikke lenger et
-  felt i oppsettet.
-- **«Bekreftelse» (12)** overlapper i innhold med «Praktisk informasjon» (10),
-  i tillegg til at den ikke vises noe sted.
+Eieren: «en praktisk informasjon og en dette får du med hjem, rydd resten».
+Tre par sa det samme, og av hvert par står ett igjen.
+
+- **«Godt å vite» er borte.** Den og «Praktisk informasjon» var to fritekstfelt
+  som begge ble egne avsnitt på kurssiden, rett etter hverandre.
+  Eksempelteksten var «møt opp ti minutter før, bruk klær som tåler leire» i
+  det ene og «ta med forkle» i det andre.
+- **«Dette lager du» er borte fra kurssiden.** Feltet forsvant fra oppsettet
+  tidligere samme kveld; avsnittet sto igjen rett over «Dette får du med hjem»
+  og sa det samme. Faktaboksen «Med hjem» leste `lagerDu` og leser nå
+  `medHjem` — ellers ville boksen blitt stående på en tekst ingen kunne rette.
+- **«Bekreftelse» er borte.** Den overlappet «Praktisk informasjon» i innhold,
+  og kolonnen ble aldri lest. Seksjon 12 heter nå «Påminnelse» og har bare
+  SMS-haken igjen, med en linje som sier hvor e-postteksten faktisk settes opp.
+
+Kurssiden gikk fra sju avsnitt til fem. Feltene er borte fra skjemaet, ikke
+fra kursene: `tillegg`, `lager_du` og `bekreftelse_tekst` sendes fortsatt
+videre urørt ved lagring, så ingenting går tapt om noe skal fram igjen.
 
 **«Neste» mistet deg.** Steg 1 i kursoppsettet er tolv seksjoner langt; steg
 2 og 3 er korte. Trykte du «Neste» nederst i steg 1, sto rullingen stille

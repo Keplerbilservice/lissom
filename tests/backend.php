@@ -3449,8 +3449,8 @@ sjekk('… og «Neste» og «Tilbake» bruker det',
 // praktisk informasjon — dette vil jeg kunne redigere default tekst, enkelt
 // rett i feltene og faa opp lagre». Standarden foelger kategorien.
 $kmal = file_get_contents(__DIR__ . '/../app/lib/kursmal.php');
-sjekk('de fire feltene har en standardtekst per kategori',
-    str_contains($kmal, "public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid', 'tillegg'];")
+sjekk('de tre feltene har en standardtekst per kategori',
+    str_contains($kmal, "public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid'];")
     && str_contains($kmal, 'public static function standardtekster(): array'));
 // Standarden ligger oeverst paa malen: har eieren skrevet en, er det hennes
 // som gjelder, ikke den vi skrev i koden.
@@ -3483,8 +3483,8 @@ sjekk('lagre-lenka staar bare naar teksten er endret',
 sjekk('… og lagringa lukker ikke kursoppsettet',
     str_contains($sida2, "this.kursKall({ handling: 'standardtekst', kategori: kategori, felt: felt, tekst: naa }, true);")
     && str_contains($sida2, 'if (!behold) ny.kRed = false;'));
-sjekk('alle fire feltene har raden',
-    substr_count($sida2, 'Hent standardteksten</button>') === 5);
+sjekk('alle tre feltene har raden',
+    substr_count($sida2, 'Hent standardteksten</button>') === 3);
 
 // ── Hvor hvert felt vises ──────────────────────────────────────────────
 //
@@ -3495,9 +3495,31 @@ sjekk('hver seksjon sier hvor teksten havner',
 // Seksjon 12 lovte at teksten gikk ut i kvitteringen. Kolonnen
 // bekreftelse_tekst skrives fra kursoppsettet og leses ingen steder — mailen
 // som gaar er malen «ordrebekreftelse» med {navn}, {ordre} og {belop}.
-sjekk('… og seksjon 12 lover ikke lenger en e-post den ikke sender',
+// ── Ett felt per ting ──────────────────────────────────────────────────
+//
+// Eieren, 30. august: «en praktisk informasjon og en dette faar du med hjem,
+// rydd resten». Tre par sa det samme: «Godt aa vite» og «Praktisk
+// informasjon», «Dette lager du» og «Dette faar du med hjem», og
+// «Bekreftelse» som overlappet den forste og dessuten ikke ble lest noe sted.
+sjekk('«Godt aa vite» og «Bekreftelse» har ingen felt lenger',
+    !str_contains($sida2, 'id="k-tillegg"') && !str_contains($sida2, 'settKTillegg')
+    && !str_contains($sida2, 'id="k-bekreftelse"') && !str_contains($sida2, 'settKBekreftelse'));
+sjekk('… og kurssiden har fem avsnitt, ikke sju',
+    !str_contains($sida2, "['Dette lager du', k.lagerDu],")
+    && !str_contains($sida2, "['Godt å vite', k.tillegg],")
+    && str_contains($sida2, "['Dette får du med hjem', k.medHjem],"));
+// Faktaboksen leste «Dette lager du» mens avsnittet under leste «Dette faar
+// du med hjem». Det forste feltet finnes ikke lenger i oppsettet.
+sjekk('… og faktaboksens «Med hjem» leser det feltet som staar igjen',
+    str_contains($sida2, "{ merke: 'Med hjem', verdi: kort(k.medHjem) },"));
+// Feltene er borte fra skjemaet, ikke fra kursene.
+sjekk('… men teksten som staar lagret sendes fortsatt videre urort',
+    str_contains($sida2, "bekreftelse: this.state.kBekreftelse || '',")
+    && str_contains($sida2, "tillegg: this.state.kTillegg || '',"));
+sjekk('seksjon 12 lover ikke lenger en e-post den ikke sender',
     !str_contains($sida2, 'Teksten de får på skjermen etter kjøp og i e-postkvitteringen.')
-    && str_contains($sida2, 'Vises ingen steder ennå. E-posten deltakerne får settes opp under Beskjeder'));
+    && str_contains($sida2, '12 · Påminnelse')
+    && str_contains($sida2, 'settes opp under Beskjeder → E-post- og SMS-maler'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -164,8 +164,13 @@ final class Kursmal
      * verkstedet fra kursoppsettet, og de skal kunne endres uten en ny
      * utlegging. Resten av malene staar i koden fordi de er lange
      * salgstekster som ble skrevet én gang.
+     *
+     * «tillegg» — «Godt aa vite» — sto her og ble tatt ut samme kveld: feltet
+     * var det samme slaget opplysning som «Praktisk informasjon», og eieren
+     * ba om ett av dem. En standardtekst til et felt som ikke finnes er bare
+     * en ting til aa lure paa.
      */
-    public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid', 'tillegg'];
+    public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid'];
 
     /** Kategoriene en standardtekst kan settes for. */
     public const KATEGORIER = ['Dreiing', 'Håndbygging', 'Events', 'Kun medlemmer', 'Drop-in'];

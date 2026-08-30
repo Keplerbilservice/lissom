@@ -7649,22 +7649,17 @@ window.__resources = {
                       </div>
                     </div>
 
-                    <div>
-                      <label for="k-tillegg" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Godt å vite</label>
-                      <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Alt annet som hører til dette kurset og ikke passer i feltene over. Kan stå tomt.</p>
-                      <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt — rett under «Praktisk informasjon», som er nabofeltet i innhold.</p>
-                      <textarea id="k-tillegg" value="{{ kTillegg }}" onChange="{{ settKTillegg }}" rows="2" placeholder="{{ kStdTilleggPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
-                      <!-- Standardteksten for kategorien, redigerbar rett her. -->
-                      <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
-                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdTilleggHjelp }}</span>
-                        <sc-if value="{{ kStdTilleggHarHent }}" hint-placeholder-val="{{ true }}">
-                          <button type="button" onClick="{{ kStdTilleggHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
-                        </sc-if>
-                        <sc-if value="{{ kStdTilleggHarLagre }}" hint-placeholder-val="{{ false }}">
-                          <button type="button" onClick="{{ kStdTilleggLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdTilleggLagreTekst }}</button>
-                        </sc-if>
-                      </div>
-                    </div>
+                    <!-- «Godt aa vite» sto her: et fritekstfelt som ble et
+                         eget avsnitt paa kurssiden, rett ved siden av
+                         «Praktisk informasjon» som er nettopp det samme
+                         slaget opplysning. Eksempelteksten var «ta med forkle»
+                         i det ene og «moet opp ti minutter foer, bruk klaer
+                         som taaler leire» i det andre.
+
+                         Eieren, 30. august: «en praktisk informasjon og en
+                         dette faar du med hjem, rydd resten». Feltet er borte
+                         og seksjon 10 er den ene. Teksten som staar lagret
+                         sendes videre urort — se tillegg i lagringa. -->
 
                   </div>
                 </div>
@@ -7712,25 +7707,21 @@ window.__resources = {
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
-                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">12 · Bekreftelse og påminnelse</div>
-                  <!-- Sto som «teksten de faar paa skjermen etter kjop og i
-                       e-postkvitteringen». Det stemmer ikke: kolonnen
-                       bekreftelse_tekst skrives her og leses ingen steder.
-                       Kvitteringen som gaar ut er malen «ordrebekreftelse»
-                       under Beskjeder, med {navn}, {ordre} og {belop}.
-                       Eieren, 30. august: «er det info som vises deltakerne
-                       paa epost, saa faa det tydelig frem». Da skal det staa
-                       hva som faktisk skjer. -->
-                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Tenkt som en hilsen til dem som melder seg på dette kurset.</p>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises ingen steder ennå. E-posten deltakerne får settes opp under Beskjeder → E-post- og SMS-maler. Si fra om du vil at denne teksten skal legges inn i den.</p>
-                  <textarea id="k-bekreftelse" value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
-                  <!-- Standardteksten fylles ut paa nye kurs. Her endrer du den
-                       for alle nye, eller henter den tilbake om du har slettet
-                       for mye paa dette kurset. -->
-                  <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-4);">
-                    <button type="button" onClick="{{ kHentStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
-                    <button type="button" onClick="{{ kLagreStandard }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk denne som standard</button>
-                  </div>
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">12 · Påminnelse</div>
+                  <!-- Her sto ogsaa «Bekreftelse»: et fritekstfelt med teksten
+                       deltakeren skulle faa etter kjop. Eksempelet var «moet
+                       opp 10 minutter foer, bruk klaer som taaler leire» — det
+                       samme som «Praktisk informasjon» i seksjon 10. Og verre:
+                       kolonnen bekreftelse_tekst ble skrevet herfra og lest
+                       ingen steder i hele kodebasen. Kvitteringen som gaar ut
+                       er malen «ordrebekreftelse» under Beskjeder, med {navn},
+                       {ordre} og {belop}.
+
+                       Eieren, 30. august: «en praktisk informasjon og en dette
+                       faar du med hjem, rydd resten». Feltet er borte; seksjon
+                       10 er den ene. Teksten som staar lagret sendes videre
+                       urort — se bekreftelse i lagringa. -->
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Teksten deltakerne får på e-post og SMS settes opp under Beskjeder → E-post- og SMS-maler, og er den samme for alle kurs.</p>
                   <label style="{{ kSmsEtikettStil }}">
                     <input type="checkbox" checked="{{ kSms }}" disabled="{{ kSmsLaast }}" onChange="{{ toggleKSms }}" style="{{ kSmsBoksStil }}">
                     Send SMS-påminnelse til deltakerne 24 timer før — {{ smsMerke }}
@@ -29759,13 +29750,18 @@ class Component extends DCLogic {
         const passer = liste(k.passerNivaa).concat(liste(k.passerHvem))
           .concat(liste(k.metode)).concat(liste(k.varighet));
         return {
+          // Sju avsnitt ble fem. «Dette lager du» sto rett over «Dette faar
+          // du med hjem» og sa det samme; «Godt aa vite» sto rett under
+          // «Praktisk informasjon» og sa det samme. Eieren, 30. august: «en
+          // praktisk informasjon og en dette faar du med hjem, rydd resten».
+          //
+          // Feltene er borte fra kursoppsettet ogsaa. Teksten som staar
+          // lagret paa kursene blir liggende, den vises bare ikke lenger.
           bSeksjoner: [
             ['Dette lærer du', k.laererTekst || k.laerer],
-            ['Dette lager du', k.lagerDu],
             ['Dette får du med hjem', k.medHjem],
             ['Når er den ferdig', k.ferdigTid],
             ['Praktisk informasjon', k.praktisk],
-            ['Godt å vite', k.tillegg],
             ['Allergener og kommentarer', k.allergener],
           ].filter(([, t]) => String(t || '').trim() !== '')
            .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
@@ -33488,7 +33484,8 @@ class Component extends DCLogic {
       kPris: this.state.kPris ?? '', settKPris: (e) => this.setState({ kPris: e.target.value }),
       kPlasser: this.state.kPlasser ?? '8', settKPlasser: (e) => this.setState({ kPlasser: e.target.value }),
       kBeskrivelse: this.state.kBeskrivelse ?? '', settKBeskrivelse: (e) => this.setState({ kBeskrivelse: e.target.value }),
-      kBekreftelse: this.state.kBekreftelse ?? '', settKBekreftelse: (e) => this.setState({ kBekreftelse: e.target.value }),
+      // «Bekreftelse» har ikke lenger felt — se seksjon 12. Verdien ligger
+      // igjen i state og gaar med i lagringa urort.
 
       // ── Seksjonene fra kursoppsettet (migrasjon 065) ──────────────────
       //
@@ -33560,8 +33557,9 @@ class Component extends DCLogic {
           kFerdigTidMal: kort(mal.ferdigTid || 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.', 160),
           kFerdigTidAnbefalt: () => this.setState({ kFerdigTid: '' }),
 
-          kTillegg: st.kTillegg ?? '',
-          settKTillegg: e => this.setState({ kTillegg: e.target.value }),
+          // «Godt aa vite» har ikke lenger felt — se seksjon 08. Verdien
+          // ligger igjen i state og gaar med i lagringa, saa teksten som
+          // staar paa kurs fra foer blir staaende.
 
           kGjenstandIKassa: !!st.kGjenstandIKassa,
           toggleKGjenstand: () => this.setState(x => ({ kGjenstandIKassa: !x.kGjenstandIKassa })),
@@ -33615,7 +33613,6 @@ class Component extends DCLogic {
           punkter: 'Leire, glasur og brenning er inkludert.\nIngen forkunnskaper nødvendig.',
           praktisk: 'F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget.',
           ferdigTid: 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.',
-          tillegg: 'F.eks. Ta med forkle om du har. Vi har også ekstra.',
         };
         const lag = (felt, sti) => {
           const naa = String(this.state[sti] || '').trim();
@@ -33646,7 +33643,6 @@ class Component extends DCLogic {
         const punkter = lag('punkter', 'kPunkter');
         const praktisk = lag('praktisk', 'kPraktisk');
         const ferdig = lag('ferdigTid', 'kFerdigTid');
-        const tillegg = lag('tillegg', 'kTillegg');
         return {
           kStdPunkterPlass: punkter.plass, kStdPunkterHjelp: punkter.hjelp,
           kStdPunkterHarHent: punkter.harHent, kStdPunkterHent: punkter.hent,
@@ -33660,10 +33656,6 @@ class Component extends DCLogic {
           kStdFerdigHarHent: ferdig.harHent, kStdFerdigHent: ferdig.hent,
           kStdFerdigHarLagre: ferdig.harLagre, kStdFerdigLagre: ferdig.lagre,
           kStdFerdigLagreTekst: ferdig.lagreTekst,
-          kStdTilleggPlass: tillegg.plass, kStdTilleggHjelp: tillegg.hjelp,
-          kStdTilleggHarHent: tillegg.harHent, kStdTilleggHent: tillegg.hent,
-          kStdTilleggHarLagre: tillegg.harLagre, kStdTilleggLagre: tillegg.lagre,
-          kStdTilleggLagreTekst: tillegg.lagreTekst,
         };
       })(),
 
@@ -33768,15 +33760,9 @@ class Component extends DCLogic {
       })(),
       // Standardteksten. Sto feltet tomt for hvert nytt kurs, ble den
       // praktiske informasjonen enten skrevet paa nytt eller droppet.
-      kHentStandard: () => this.setState({ kBekreftelse: this.state.bekreftelseStandard || '' }),
-      kLagreStandard: () => {
-        const t = (this.state.kBekreftelse || '').trim();
-        if (!window.confirm(t
-              ? 'Bruke denne teksten som standard for nye kurs?'
-              : 'Tømme standardteksten? Nye kurs starter da med et tomt felt.')) return;
-        this.kursKall({ handling: 'bekreftelseStandard', tekst: t });
-        this.setState({ bekreftelseStandard: t });
-      },
+      // «Hent standardteksten» og «Bruk denne som standard» hoerte til
+      // bekreftelsesfeltet. Standardteksten for de fire feltene som staar
+      // igjen settes rett i feltet — se kStd-verdiene lenger nede.
       // AI-forslag paa beskrivelsen. Forslaget havner i feltet, ikke ute paa
       // nettsida — teksten baerer verkstedets navn, og da skal et menneske ha
       // lest den for den staar der.
@@ -37659,7 +37645,11 @@ class Component extends DCLogic {
           // hele setningen staar under «Dette lærer du». Foerste setning av
           // den lange teksten brakk boksen i fem linjer.
           { merke: 'Du lærer', verdi: k.laererKort || kort(k.laererTekst) },
-          { merke: 'Med hjem', verdi: kort(k.lagerDu) },
+          // Sto som kort(k.lagerDu): faktaboksen leste «Dette lager du»
+          // mens avsnittet under leste «Dette faar du med hjem». To felt for
+          // én ting, og det forste har ikke lenger et felt i kursoppsettet —
+          // da hadde boksen blitt staaende paa en tekst ingen kunne rette.
+          { merke: 'Med hjem', verdi: kort(k.medHjem) },
         ].filter(f => f.verdi !== '');
       })(),
       bOppsummering: (() => {

@@ -2954,6 +2954,14 @@ sjekk('… regnet av solgte plasser, ikke av antall datoer',
 sjekk('de tre pillene i bunnteksten er like store',
     substr_count($sida2, 'flex: 1 1 0; min-width: 0; min-height: 42px; text-align: center; line-height: 1.25;') === 3
     && str_contains($sida2, 'display: flex; align-items: stretch; gap: var(--space-3); flex: 1 1 auto; max-width: 460px;'));
+// … og teksten paa én linje, ogsaa paa telefon. Maalt: pillene trenger
+// 117, 103 og 87 px paa én linje mot en rad paa 326. Tre like paa 117 blir
+// 375 — 49 for mye. De 49 er hentet i mindre skrift, mindre luft mellom
+// versalene og strammere innvendig, bare paa smal skjerm.
+sjekk('… med teksten paa én linje',
+    substr_count($sida2, 'class="lx-bunnpille"') === 3
+    && str_contains($sida2, 'white-space: nowrap !important;')
+    && str_contains($sida2, '.lx-bunnpiller { gap: 8px !important; width: 100%; }'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

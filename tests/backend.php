@@ -2963,6 +2963,14 @@ sjekk('… med teksten paa én linje',
     && str_contains($sida2, 'white-space: nowrap !important;')
     && str_contains($sida2, '.lx-bunnpiller { gap: 8px !important; width: 100%; }'));
 
+// Snarveiene under «Ogsaa ofte» paa Oversikt. Paa telefon sto «Ny
+// kursdato» paa samme linje som overskriften og de tre andre under, hver
+// i sin bredde. Eieren 30. august: like store, paa linjer under.
+sjekk('snarveiene under «Ogsaa ofte» er like store paa telefon',
+    str_contains($sida2, 'class="lx-ofte"')
+    && str_contains($sida2, '.lx-ofte > span { flex: 1 1 100% !important;')
+    && str_contains($sida2, '.lx-ofte button {'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

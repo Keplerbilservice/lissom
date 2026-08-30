@@ -1250,6 +1250,19 @@ window.__resources = {
        Her er de 49 pikslene hentet: mindre skrift, mindre luft mellom
        versalene, strammere innvendig og mindre mellomrom. Paa PC er det
        plass fra for, og der roeres ingenting. */
+    /* Snarveiene under «Ogsaa ofte» paa Oversikt.
+       Paa telefon sto «Ny kursdato» paa samme linje som overskriften og
+       de tre andre under, hver i sin bredde — fire ulike piller i en
+       trapp. Eieren vil ha dem like store, paa linjer under overskriften.
+       Knappene er selve flex-elementene (x-import-wrapperen er
+       «display: contents»), saa de styres direkte. */
+    .lx-ofte { gap: 10px !important; }
+    .lx-ofte > span { flex: 1 1 100% !important; margin-right: 0 !important; margin-bottom: 2px; }
+    .lx-ofte button {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      justify-content: center !important;
+    }
     .lx-bunnpiller { gap: 8px !important; width: 100%; }
     .lx-bunnpille {
       font-size: 11px !important;

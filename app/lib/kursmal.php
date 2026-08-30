@@ -280,7 +280,15 @@ final class Kursmal
         $tema  = trim((string) ($kurs['tema'] ?? ''));
 
         // Temaene som staar for det samme.
-        $samme = ['Date Night' => 'Events', 'Sip & Clay' => 'Events', 'Workshop' => 'Plateteknikk'];
+        //
+        // «Haandbygging» er navnet fra 30. august paa det malen kaller
+        // «Plateteknikk». Migrasjon 099 skrev om radene i basen, men malen
+        // her heter fortsatt det gamle — og uten denne linja falt alle
+        // haandbyggingskursene paa reservemalen «*». Den mangler
+        // «beskrivelse», saa et kurs uten egen tekst sto uten
+        // kursbeskrivelse i det hele tatt.
+        $samme = ['Date Night' => 'Events', 'Sip & Clay' => 'Events',
+                  'Workshop' => 'Plateteknikk', 'Håndbygging' => 'Plateteknikk'];
         $tema  = $samme[$tema] ?? $tema;
 
         // Uten tema: les det av navnet.

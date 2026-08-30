@@ -3533,6 +3533,26 @@ sjekk('seksjon 12 lover ikke lenger en e-post den ikke sender',
     && str_contains($sida2, '12 · Påminnelse')
     && str_contains($sida2, 'settes opp under Beskjeder → E-post- og SMS-maler'));
 
+// ── «Store fat kurs» er haandbygging ───────────────────────────────────
+//
+// Kurset sto med temaet «Kurs» i basen — ingen ekte kategori — og kortet
+// gjettet «Dreiing» av kurstypen. Eieren: «store fat er haandbygging».
+$m101 = file_get_contents(__DIR__ . '/../db/migrations/101_store_fat_er_handbygging.sql');
+sjekk('«Store fat kurs» faar temaet Haandbygging',
+    str_contains($m101, "SET tema = 'Håndbygging'")
+    && str_contains($m101, "WHERE tittel = 'Store fat kurs'"));
+// Samme vakt som migrasjon 099: har noen alt gitt kurset en kategori, er det
+// den som gjelder.
+sjekk('… bare naar det ikke alt har en kategori',
+    str_contains($m101, "AND (tema IS NULL OR tema = '' OR tema = 'Kurs')"));
+// Foelgefeil av migrasjon 099: malene heter fortsatt «Plateteknikk», mens
+// radene ble skrevet om til «Haandbygging». Uten en kobling falt hvert
+// haandbyggingskurs paa reservemalen «*», som ikke har «beskrivelse».
+sjekk('haandbyggingskurs finner malen sin',
+    str_contains($kmal, "'Håndbygging' => 'Plateteknikk'"));
+sjekk('… og faar en beskrivelse, ikke reservemalen',
+    trim((string) (Kursmal::forKurs(['tema' => 'Håndbygging', 'tittel' => 'Nytt kurs'])['beskrivelse'] ?? '')) !== '');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

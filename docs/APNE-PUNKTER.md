@@ -132,6 +132,23 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**«Store fat kurs» er håndbygging (migrasjon 101).** Kurset sto med temaet
+«Kurs» i basen — altså ingen ekte kategori — og kortet gjettet «Dreiing» av
+kurstypen. Eieren: «store fat er håndbygging». Nå står temaet, og ingen
+trenger å gjette.
+
+**Følgefeil av migrasjon 099, funnet samtidig.** Malene i `Kursmal` heter
+fortsatt «Plateteknikk», mens 099 skrev radene om til «Håndbygging». Uten en
+kobling mellom de to falt hvert håndbyggingskurs på reservemalen `*`, og den
+har ingen `beskrivelse`. Et håndbyggingskurs uten egen tekst ville stått helt
+uten kursbeskrivelse på nettsiden. `'Håndbygging' => 'Plateteknikk'` er lagt
+inn i oppslaget.
+
+**Verdt å vite:** migrasjoner må kjøres fra ⚙ Vedlikehold, ikke fra en
+kommandolinje uten `--default-character-set=utf8mb4`. Gjør man det siste, blir
+«Håndbygging» til «HÃ¥ndbygging» i basen. `api/migrer.php` kjører over PDO med
+utf8mb4 og har ikke problemet.
+
 **Kategorien på kortet og plassen i lista leste hver sin regel.** «Store fat
 kurs» står med temaet «Kurs» i basen — altså ingen ekte kategori. Kortet
 faller tilbake på kurstypen og skrev «Dreiing»; sorteringa gjorde ikke det, og

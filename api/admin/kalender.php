@@ -69,7 +69,10 @@ $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
 $holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
 $autoKol   = ($harAuto ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
            . ($harDropinTid ? ', cs.fra_dropin_tid' : ', NULL AS fra_dropin_tid');
-$holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id' : '';
+// «aktiv = 1»: en kursholder som har sluttet skal ikke staa paa hendelsene
+// i kalenderen heller. Da faller navnet bort, og oekta viser seg som det den
+// er — uten tildelt holder — framfor aa vise en som ikke er her lenger.
+$holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AND h.aktiv = 1' : '';
 
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,

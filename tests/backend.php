@@ -3036,6 +3036,35 @@ sjekk('gavekortfeltet er en lenke til man trenger det',
     str_contains($sida2, 'Har du gavekort eller rabattkode?')
     && str_contains($sida2, '{{ gkSkjult }}'));
 
+// ── Kursholderne ───────────────────────────────────────────────────────
+//
+// Migrasjon 093 flyttet kursene over paa Monica, men ingen ble merket som
+// verkstedets standard. Da falt vaktlista tilbake paa «Ikke tildelt» paa
+// hver eneste rad. Eieren 30. august: «alle kurs og vakter skal vaere
+// default Monica».
+$m096 = file_get_contents(__DIR__ . '/../db/migrations/096_monica_er_standard.sql');
+sjekk('Monica settes som standard kursholder',
+    str_contains($m096, "SET standard = 1") && str_contains($m096, "navn = 'Monica'"));
+sjekk('… men bare naar hun finnes én gang og ingen andre er standard',
+    str_contains($m096, "AND aktiv = 1") && str_contains($m096, 'AS antall FROM kursholdere'));
+sjekk('… og en som har sluttet kan ikke bli staaende som standard',
+    str_contains($m096, 'SET standard = 0 WHERE standard = 1 AND aktiv = 0'));
+
+// «Selv om jeg har flere kursholdere, skal de aldri vises dersom de ikke er
+// aktivert.» Uten «aktiv = 1» paa oppslaget sto navnet til en som hadde
+// sluttet igjen paa hver dato hen var satt opp paa — og COALESCE gikk aldri
+// videre til standarden, fordi navnet var der.
+$vst = file_get_contents(__DIR__ . '/../api/admin/verkstedet.php');
+sjekk('vaktlista henter bare navn fra aktive kursholdere',
+    str_contains($vst, 'LEFT JOIN kursholdere kh ON kh.id = cs.kursholder_id AND kh.aktiv = 1')
+    && str_contains($vst, 'LEFT JOIN kursholdere kk ON kk.id = c.kursholder_id AND kk.aktiv = 1'));
+sjekk('… og kalenderen gjor det samme',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/kalender.php'),
+                 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AND h.aktiv = 1'));
+// Overskriften sier «kursene framover». Lista viste en uke bakover.
+sjekk('vaktlista starter i dag, ikke sist uke',
+    str_contains($vst, "\$fra = \$dag(Foresporsel::tekst('fra'), 0);"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -66,7 +66,12 @@ if (Foresporsel::metode() === 'GET') {
         return $d->modify(($skift >= 0 ? '+' : '') . $skift . ' days')
                  ->setTimezone($utc)->format('Y-m-d H:i:s');
     };
-    $fra = $dag(Foresporsel::tekst('fra'), -7);
+    // Fra i dag, ikke fra sist uke. Overskriften sier «kursene framover, med
+    // den som holder dem», og lista viste datoer som hadde vaert — eieren
+    // meldte den samme feilen paa datolista under Kurs 30. august. Brenningene
+    // under bruker det samme vinduet; en brenning som er ferdig er heller
+    // ikke noe som staar framfor deg.
+    $fra = $dag(Foresporsel::tekst('fra'), 0);
     $til = $dag(Foresporsel::tekst('til'), 8);
 
     Svar::json([
@@ -103,8 +108,14 @@ if (Foresporsel::metode() === 'GET') {
                     COALESCE(kh.navn, kk.navn, std.navn) AS navn
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
-          LEFT JOIN kursholdere kh ON kh.id = cs.kursholder_id
-          LEFT JOIN kursholdere kk ON kk.id = c.kursholder_id
+          -- «aktiv = 1» paa begge: en kursholder som har sluttet skal aldri
+          -- staa som den som holder en vakt. Eieren 30. august: «selv om jeg
+          -- har flere kursholdere, skal de aldri vises dersom de ikke er
+          -- aktivert». Uten dette sto navnet hens igjen paa hver dato hen var
+          -- satt opp paa, ogsaa lenge etterpaa — og COALESCE gikk aldri
+          -- videre til standarden, fordi navnet var der.
+          LEFT JOIN kursholdere kh ON kh.id = cs.kursholder_id AND kh.aktiv = 1
+          LEFT JOIN kursholdere kk ON kk.id = c.kursholder_id AND kk.aktiv = 1
           LEFT JOIN kursholdere std ON std.standard = 1 AND std.aktiv = 1
               WHERE cs.start_tid >= :f AND cs.start_tid < :t
                 AND cs.status <> 'avlyst'

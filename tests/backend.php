@@ -2595,7 +2595,7 @@ sjekk('dag to sier hvilken dag av kurset det er',
 sjekk('dag to baerer de samme paameldte som startdagen',
     str_contains($kalFil3, '$hendelser[count($hendelser) - 1]'));
 sjekk('kalenderen viser hvilken dag av kurset det er',
-    str_contains($sida2, "const detalj = e => [e.samling || '', e.holder"));
+    str_contains($sida2, "const detalj = e => [e.samling || '', e.publisert === false ? 'Ikke publisert' : '', e.holder"));
 sjekk('maanedsbrikka faar den korte formen',
     str_contains($sida2, "(e.samlingKort ? ' · ' + e.samlingKort : '')"));
 // Redigereren ville vist startdagen og latt deg flytte hele kurset fra en dag
@@ -3120,6 +3120,59 @@ sjekk('… og pillen staar under innstemplinga',
 // Paameldte forsvinner ikke av seg selv — eieren maa faa vite om dem.
 sjekk('skjermen sier fra naar noen alt har booket',
     str_contains($sida2, 'de forsvinner ikke av seg selv, så gi beskjed.'));
+
+// ── Planlagte kurs, som listevisningen i kalenderen ────────────────────
+//
+// Sju spalter ved siden av hverandre er 55 piksler per dag paa en telefon.
+// Eieren, 30. august: «finn en mer oversiktlig loesning for planlagte kurs,
+// samme som kallender visningen er best», og etterpaa: «jeg vil at denne skal
+// se lik ut og vises likt som kalenderen».
+$pameldteFil = file_get_contents(__DIR__ . '/../api/admin/pameldte.php');
+sjekk('rutenettet paa sju spalter er borte',
+    !str_contains($sida2, 'class="lx-week"'));
+sjekk('planlagte kurs staar dag for dag nedover',
+    str_contains($sida2, '{{ d.dagTittel }}')
+    && str_contains($sida2, '<sc-for list="{{ d.poster }}" as="p"'));
+sjekk('… med klokkeslett, prikk og detaljlinje som i kalenderen',
+    str_contains($sida2, '{{ p.tid }}')
+    && str_contains($sida2, '{{ p.prikkStil }}')
+    && str_contains($sida2, '{{ p.detalj }}'));
+sjekk('prikken henter fargene fra kalenderen selv',
+    str_contains($sida2, 'const info = this.klTypeInfo();'));
+sjekk('dager uten noe hopper lista over',
+    str_contains($sida2, 'if (!poster.length) continue;'));
+// Aapningstida klippes i plasser paa halvannen time. Uten sammenslaaingen sto
+// den samme drop-inen i seks like linjer, slik den gjorde i kalenderen for.
+sjekk('planlagte kurs samler tidene som foelger en regel',
+    str_contains($pameldteFil, "'auto'      => (int) (\$o['fra_apningstid'] ?? 0) === 1")
+    && str_contains($sida2, "if (o.auto) { (perKurs[o.tittel] = perKurs[o.tittel] || []).push(o); }"));
+sjekk('… og den samlede linja kan aapnes',
+    str_contains($sida2, "utvidet[o.gruppeId] ? 'Skjul' : 'Vis tidene'"));
+
+// ── Datoer paa et kurs som ikke er publisert ───────────────────────────
+//
+// Eieren, 30. august: «fortsatt feil i visning, lag din egen bolle, du maa
+// sjekke globalt». To linjer som ser helt like ut er ikke like naar bare den
+// ene kan bookes: den andre hoerer til et kurs som ligger som utkast.
+sjekk('kalenderen vet om kurset er publisert',
+    str_contains($kalFil3, "c.status AS kurs_status")
+    && str_contains($kalFil3, "'publisert' => (string) (\$o['kurs_status'] ?? 'publisert') === 'publisert',"));
+sjekk('planlagte kurs vet det samme',
+    str_contains($pameldteFil, "'publisert' => (string) (\$o['kurs_status'] ?? 'publisert') === 'publisert',"));
+sjekk('… og begge listene sier fra paa linja',
+    str_contains($sida2, "e.publisert === false ? 'Ikke publisert' : ''")
+    && str_contains($sida2, "o.publisert === false ? 'Ikke publisert' : ''"));
+
+// ── E-post naar en deltaker legges inn fra kalenderen ──────────────────
+//
+// Eieren, 30. august: «naar jeg legger til deltakere saa vil jeg ogsaa ha med
+// epost». De to fyldige skjemaene hadde feltet; hurtigfeltet i kalenderen
+// hadde det ikke, og deltakeren sto uten adresse.
+sjekk('hurtigfeltet i kalenderen har e-post',
+    str_contains($sida2, '{{ klNyDEpost }}')
+    && str_contains($sida2, 'settKlNyDEpost: e => this.setState({ klNyDEpost: e.target.value }),'));
+sjekk('… og adressen foelger med kallet',
+    str_contains($sida2, "epost: (this.state.klNyDEpost || '').trim(),"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

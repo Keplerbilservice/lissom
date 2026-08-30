@@ -101,8 +101,18 @@ if ($oktId <= 0) {
             ->format($format);
     };
 
+    // Om okta er laget av en regel, og om kurset den hoerer til er ute paa
+    // nettsida. Begge to trengs for aa vise «Planlagte kurs» slik kalenderen
+    // viser det samme: de automatiske tidene samles til én linje, og en dato
+    // paa et kurs som ikke er publisert sier fra om at den ikke er ute.
+    $autoKol = (DB::harKolonne('course_sessions', 'fra_apningstid')
+                    ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
+             . (DB::harKolonne('course_sessions', 'fra_dropin_tid')
+                    ? ', cs.fra_dropin_tid' : ', NULL AS fra_dropin_tid');
+
     $okter = DB::alle(
         "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.type, c.tema,
+                c.status AS kurs_status{$autoKol},
                 COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
                 (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
                   WHERE b.course_session_id = cs.id AND b.status = 'betalt') AS betalt,
@@ -216,6 +226,13 @@ if ($oktId <= 0) {
         'dato'      => $iOslo((string) $o['start_tid'], 'Y-m-d'),
         'fra'       => $iOslo((string) $o['start_tid'], 'H:i'),
         'til'       => $o['slutt_tid'] === null ? '' : $iOslo((string) $o['slutt_tid'], 'H:i'),
+        // Laget av en regel — aapningstida eller ukereglene under Drop-in.
+        // De gir mange like rader paa samme dag, og samles til én linje.
+        'auto'      => (int) ($o['fra_apningstid'] ?? 0) === 1
+                    || ($o['fra_dropin_tid'] ?? null) !== null,
+        // Er kurset ute paa nettsida? To datoer som ser like ut, der den ene
+        // hoerer til et kurs som ligger som utkast, er ikke to like datoer.
+        'publisert' => (string) ($o['kurs_status'] ?? 'publisert') === 'publisert',
     ], $okter),
     ]);
 }

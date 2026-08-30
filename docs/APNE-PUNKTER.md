@@ -132,6 +132,28 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Planlagte kurs står som listen i kalenderen.** Skjermen «Kurs og deltakere»
+hadde uka i sju spalter ved siden av hverandre. På en telefon er det 55 piksler
+per dag, og eieren så to og en halv dag om gangen med titlene klippet på
+midten. Nå er det den samme lista som listevisningen i kalenderen: dag for dag
+nedover, klokkeslettet først, en farget prikk for hva slags økt det er, og
+belegget under tittelen. Dager uten noe hoppes over, og tidene som følger
+åpningstida samles til én linje («6 tider · Vis tidene») slik kalenderen alt
+gjorde. Begge listene ble samtidig strammet inn på telefon — klokkeslettet tok
+110 piksler det ikke trengte, og de gikk til titlene.
+
+**«Ikke publisert» på datoen.** Eieren så «Lag din egen bolle» to ganger samme
+kveld, med samme klokkeslett og samme belegg. Den ene datoen hører til et kurs
+som ligger som utkast: den finnes ikke ute på nettsiden, og ingen kan booke
+den. Admin viste de to helt likt. Nå står det på linja, både i kalenderen og
+under Planlagte kurs. Er det to like linjer og bare den ene er merket, er det
+et dobbelt kurs — det andre kan slettes eller publiseres.
+
+**E-post når en deltaker legges inn fra kalenderen.** De to fyldige skjemaene
+hadde feltet fra før. Hurtigfeltet under en valgt økt hadde bare navn og
+telefon, så deltakeren ble stående uten adresse — ingen bekreftelse, ingen
+beskjed når noe endrer seg.
+
 **Markedsføringen bygget om.** Bare innlegg til sosiale medier hadde en
 forhåndsvisning; en artikkel og et nyhetsbrev viste rå tekst og ingen bilde,
 selv om bildet fulgte med hele veien i basen og helt ut på nettsiden. Alle tre

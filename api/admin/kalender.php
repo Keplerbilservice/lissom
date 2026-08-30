@@ -77,7 +77,7 @@ $holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AN
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
-            c.tittel, c.type, c.tema {$autoKol}{$holderKol}
+            c.tittel, c.type, c.tema, c.status AS kurs_status {$autoKol}{$holderKol}
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
        {$holderBli}
@@ -340,6 +340,13 @@ foreach ($okter as $o) {
         // ikke forsvinne fordi kalenderen byttes — men det er ikke en egen
         // brikketype, bare en merking paa en event.
         'intern' => (string) ($o['tema'] ?? '') === 'Kun for medlemmer',
+        // Om kurset datoen hoerer til er ute paa nettsida.
+        //
+        // Kalenderen viser alle oektene, ogsaa de som hoerer til et kurs som
+        // ligger som utkast — og den viste dem helt likt. Sto det samme
+        // kurset to ganger paa samme dag, var det ingenting som sa hvilken
+        // av dem folk faktisk kunne booke. Naa sier linja fra.
+        'publisert' => (string) ($o['kurs_status'] ?? 'publisert') === 'publisert',
     ];
 
     // ── Dag to og tre ───────────────────────────────────────────────────

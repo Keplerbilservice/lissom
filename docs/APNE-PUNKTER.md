@@ -132,6 +132,23 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Kategorien på kortet og plassen i lista leste hver sin regel.** «Store fat
+kurs» står med temaet «Kurs» i basen — altså ingen ekte kategori. Kortet
+faller tilbake på kurstypen og skrev «Dreiing»; sorteringa gjorde ikke det, og
+la kurset nederst, under Drop-in. Jeg trodde først det var en gammel utgave i
+telefonen hans. Det var det ikke: `kursRang()` kalte `kategoriFor()` med tom
+type, og fikk et annet svar enn kortet rett ved siden av.
+
+Nå er det én funksjon, `kategoriVist()`, som begge leser. Den tar temaet
+først, så kurstypen, og til slutt navnet — Paint on Pots sto med tema NULL og
+kjennes på det det heter, og det fikk med på kjøpet at kortet nå sier «Events»
+der det før sa «Uten kategori».
+
+**Migrasjonene 094–100 er kjørt.** Eieren: «ingen migrasjon å se». Verifisert
+mot lissom.no/api/kurs.php: kursene står med `tema = 'Håndbygging'` i basen,
+som er nettopp det migrasjon 099 gjør. Raden «⚙ Vedlikehold» nederst i menyen
+sier «Alt er oppdatert» når det ikke er noe å kjøre.
+
 **Standardtekst per kategori, redigerbar rett i feltet.** «Alt som er
 inkludert», «Praktisk informasjon», «Når er den ferdig» og «Godt å vite» har
 nå en standardtekst som verkstedet setter selv. Den følger kategorien —

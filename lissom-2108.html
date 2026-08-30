@@ -15510,7 +15510,7 @@ class Component extends DCLogic {
     // Dreiing er det folk kommer for: det er dreieskiva de har sett for seg,
     // og da skal de staa oeverst framfor aa ligge mellom haandbygging og
     // events i den rekkefolgen serveren tilfeldigvis sendte dem.
-    return this.sorterKurs(ut, k => ({ tema: k.tema || k.level, navn: k.title }));
+    return this.sorterKurs(ut, k => ({ tema: k.tema || k.level, navn: k.title, type: k.type }));
   }
 
   /** Setter undertemaer paa hele lista, uten aa roere resten. */
@@ -17478,7 +17478,7 @@ class Component extends DCLogic {
   ndKursnavn() {
     // Samme rekkefolge som overalt: dreiing, haandbygging, events.
     const fra = this.sorterKurs(this.kursData().filter(k => k.navn),
-                                k => ({ tema: k.tema, navn: k.navn }))
+                                k => ({ tema: k.tema, navn: k.navn, type: k.type }))
       .map(k => k.navn);
     if (fra.length) return fra;
     return this.erPublisert() ? []
@@ -23756,11 +23756,32 @@ class Component extends DCLogic {
    */
   static KURSRANG = ['Dreiing', 'Håndbygging', 'Events'];
 
+  /**
+   * Kategorien slik den staar paa kortet.
+   *
+   * Én kilde for baade teksten og rekkefolgen. Sto de hver for seg, kunne de
+   * si to forskjellige ting — og det gjorde de: «Store fat kurs» staar med
+   * temaet «Kurs» i basen, sa «Dreiing» paa seg selv fordi kortet faller
+   * tilbake paa typen, og havnet likevel under Drop-in fordi sorteringa ikke
+   * gjorde det.
+   *
+   * Uten tema er det bare navnet som kan si noe. Paint on Pots sto med tema
+   * NULL og kjennes paa det det heter.
+   *
+   * Tomt svar betyr «uten kategori»: bakerst i lista, og det ordet paa
+   * kortet.
+   */
+  kategoriVist(tema, tittel, type) {
+    const t = String(tema || '').trim();
+    if (t === '') {
+      return String(tittel || '').toLowerCase().indexOf('paint on pots') === 0 ? 'Events' : '';
+    }
+    return this.kategoriFor(t, String(type || '')) || t;
+  }
+
   /** Hvor i rekka et kurs hoerer hjemme. Ukjent kategori havner bakerst. */
-  kursRang(tema, tittel) {
-    const kat = this.kategoriFor(String(tema || ''), '')
-      || (String(tittel || '').toLowerCase().indexOf('paint on pots') === 0 ? 'Events' : '');
-    const i = Component.KURSRANG.indexOf(kat);
+  kursRang(tema, tittel, type) {
+    const i = Component.KURSRANG.indexOf(this.kategoriVist(tema, tittel, type));
     return i === -1 ? Component.KURSRANG.length : i;
   }
 
@@ -23773,7 +23794,7 @@ class Component extends DCLogic {
   sorterKurs(liste, hent) {
     return (liste || []).slice().sort((a, b) => {
       const x = hent(a), y = hent(b);
-      const r = this.kursRang(x.tema, x.navn) - this.kursRang(y.tema, y.navn);
+      const r = this.kursRang(x.tema, x.navn, x.type) - this.kursRang(y.tema, y.navn, y.type);
       if (r !== 0) return r;
       return String(x.navn || '').localeCompare(String(y.navn || ''), 'nb');
     });
@@ -23885,7 +23906,7 @@ class Component extends DCLogic {
       // Dreiing, haandbygging, events — den samme rekkefolgen som ute.
       return this.sorterKurs(
         this.kursData().map((k, i) => ({ k, i, n: 0 })).filter(({ k }) => k.status !== 'avlyst'),
-        (r) => ({ tema: r.k.tema, navn: r.k.navn }));
+        (r) => ({ tema: r.k.tema, navn: r.k.navn, type: r.k.type }));
     }
     return this.kursData()
       .map((k, i) => ({ k, i, n: nesteGang(k) }))
@@ -32693,7 +32714,7 @@ class Component extends DCLogic {
           // paa typen naar temaet er tomt, og da sto et kurs uten kategori
           // som «Dreiing» — den forste kategorien med type «Kurs». I en base
           // over grunninnstillingene skal tomt staa som tomt.
-          under: [(k.tema ? (this.kategoriFor(k.tema, k.type) || k.tema) : '') || 'Uten kategori',
+          under: [this.kategoriVist(k.tema, k.navn, k.type) || 'Uten kategori',
                   k.pris,
                   plasser ? plasser.trim() + ' plasser' : '',
                   k.status && k.status !== 'publisert' ? 'Ikke publisert' : '']
@@ -35702,7 +35723,7 @@ class Component extends DCLogic {
         // saa uten dette sto kursene i den rekkefolgen de tilfeldigvis gaar.
         const kursnavn = this.sorterKurs(
           okter.filter((o, i) => okter.findIndex(x => x.tittel === o.tittel) === i),
-          o => ({ tema: o.tema, navn: o.tittel })).map(o => o.tittel);
+          o => ({ tema: o.tema, navn: o.tittel, type: o.type })).map(o => o.tittel);
         const valgtKurs = fraOkt ? fraOkt.tittel
           : (kursnavn.indexOf(this.state.mpKurs || '') >= 0 ? this.state.mpKurs : (kursnavn[0] || ''));
         const kursOkter = okter.filter(o => o.tittel === valgtKurs);

@@ -3386,6 +3386,18 @@ sjekk('… og metoden foelger kategorien i stedet',
 sjekk('rekkefolgen staar ett sted',
     str_contains($sida2, "static KURSRANG = ['Dreiing', 'Håndbygging', 'Events'];")
     && str_contains($sida2, 'sorterKurs(liste, hent) {'));
+// Teksten paa kortet og plassen i lista leste hver sin regel. «Store fat
+// kurs» staar med temaet «Kurs» i basen: kortet falt tilbake paa typen og sa
+// «Dreiing», sorteringa gjorde det ikke og la kurset under Drop-in. Naa er
+// det én funksjon, og de kan ikke si to forskjellige ting.
+sjekk('kategorien paa kortet og plassen i lista er samme regel',
+    str_contains($sida2, 'kategoriVist(tema, tittel, type) {')
+    && str_contains($sida2, 'Component.KURSRANG.indexOf(this.kategoriVist(tema, tittel, type))')
+    && str_contains($sida2, "under: [this.kategoriVist(k.tema, k.navn, k.type) || 'Uten kategori',"));
+sjekk('… og typen foelger med i sorteringa',
+    str_contains($sida2, 'this.kursRang(x.tema, x.navn, x.type) - this.kursRang(y.tema, y.navn, y.type)')
+    && substr_count($sida2, 'type: k.type') + substr_count($sida2, 'type: r.k.type')
+       + substr_count($sida2, 'type: o.type') >= 4);
 sjekk('… og brukes ute, i basen, i nedtrekket og ved paamelding',
     substr_count($sida2, 'this.sorterKurs(') >= 4);
 

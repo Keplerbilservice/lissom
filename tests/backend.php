@@ -2947,6 +2947,14 @@ sjekk('… regnet av solgte plasser, ikke av antall datoer',
     str_contains(file_get_contents(__DIR__ . '/../api/admin/oversikt.php'),
                  "COALESCE(SUM(b.antall), 0) AS plasser"));
 
+// De tre pillene nederst i bunnteksten skal vaere like store (eieren,
+// 30. august). Lik bredde av «flex: 1 1 0», lik hoyde av «stretch» paa
+// raden — ellers staar de to andre igjen som halve naar «Meld inn feil»
+// brekker til to linjer paa telefon.
+sjekk('de tre pillene i bunnteksten er like store',
+    substr_count($sida2, 'flex: 1 1 0; min-width: 0; min-height: 42px; text-align: center; line-height: 1.25;') === 3
+    && str_contains($sida2, 'display: flex; align-items: stretch; gap: var(--space-3); flex: 1 1 auto; max-width: 460px;'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

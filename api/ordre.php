@@ -88,6 +88,7 @@ if ($sum <= 0) {
 // hvorfor.
 $levering = Foresporsel::tekst('levering') === 'pakke' ? 'pakke' : 'hent';
 $fraktOre = 0;
+$mottaker = null;
 $adresse = $postnr = $poststed = null;
 
 if ($levering === 'pakke') {
@@ -95,12 +96,22 @@ if ($levering === 'pakke') {
         ? (DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => 'frakt_ore']) ?? 0)
         : 0);
 
+    $mottaker = mb_substr(trim(Foresporsel::tekst('mottaker')), 0, 191);
     $adresse  = mb_substr(trim(Foresporsel::tekst('adresse')), 0, 191);
     $postnr   = preg_replace('/\D+/', '', Foresporsel::tekst('postnr')) ?? '';
     $poststed = mb_substr(trim(Foresporsel::tekst('poststed')), 0, 100);
 
     // En pakke uten adresse er ingen pakke. Bedre aa stoppe her enn aa ta
     // imot pengene og ikke vite hvor varene skal.
+    //
+    // Navnet ogsaa: en adresse uten mottaker er ikke noe Posten kan levere
+    // paa. Kunden kan skrive et annet navn enn sitt eget — butikken har
+    // gaveinnpakning, og da er det gaven som skal fram, ikke kjoperen.
+    // Staar mottakeren tom, er det kjoeperen som skal ha pakken. Navnet hens
+    // er alt krevd lenger oppe, saa her kan det ikke bli staaende tomt.
+    if ($mottaker === '') {
+        $mottaker = $navn;
+    }
     if ($adresse === '') {
         Svar::feil('Vi trenger gateadressen pakken skal til.');
     }
@@ -156,6 +167,10 @@ $leveringsfelt = DB::harKolonne('orders', 'levering')
     ? ['levering' => $levering, 'frakt_ore' => $fraktOre,
        'adresse' => $adresse ?: null, 'postnr' => $postnr ?: null, 'poststed' => $poststed ?: null]
     : [];
+// Mottakeren kom med migrasjon 098. Uten den lagres resten som for.
+if (DB::harKolonne('orders', 'mottaker')) {
+    $leveringsfelt['mottaker'] = ($mottaker ?? '') !== '' ? $mottaker : null;
+}
 
 $opprettet = DB::iTransaksjon(static function () use ($rader, $sum, $aBetale, $gavekortId, $gavekortOre, $navn, $epost, $telefon, $medlem, $referanse, $ordrenr, $gavefelt, $leveringsfelt, $fraktOre): array {
     $betalingsfelt = [

@@ -2982,6 +2982,24 @@ sjekk('… og serveren regner den ut av den rimeligste varen',
     str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'prisFraOre'      => \$fra,")
     && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'SELECT MIN(pris_ore) FROM products'));
 
+// «Velg» paa medlemskapssiden gikk til bookingskjermen, som alltid opprettet
+// en avtale i Vipps — uten valget mellom fast trekk og aa ordne selv
+// (migrasjon 081), og med en knapp som krevde innlogging etter at hele
+// skjemaet var fylt ut. Innmeldingen paa Min side har alt dette fra for.
+sjekk('«Velg» paa medlemskap foerer til innmeldingen',
+    str_contains($sida2, 'const meldInn = () => {')
+    && str_contains($sida2, 'kjop: meldInn,'));
+sjekk('… og valget overlever innloggingen',
+    str_contains($sida2, "sessionStorage.setItem('lissom_medlemsplan', o.navn)")
+    && str_contains($sida2, "sessionStorage.getItem('lissom_medlemsplan')"));
+sjekk('… og skjemaet har et anker aa rulle til',
+    str_contains($sida2, 'id="bli-medlem"')
+    && str_contains($sida2, "document.getElementById('bli-medlem')"));
+// Begge betalingsveiene finnes paa serveren, ikke bare paa skjermen.
+sjekk('innmeldingen tar imot bade fast trekk og «ordner selv»',
+    str_contains(file_get_contents(__DIR__ . '/../api/bli-medlem.php'),
+                 "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

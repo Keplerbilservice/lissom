@@ -3647,7 +3647,7 @@ window.__resources = {
           </sc-if>
 
           <sc-if value="{{ visBliMedlem }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
+            <div id="bli-medlem" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-8);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Medlemskap</div>
               <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">{{ bmTittel }}</h2>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ bmTekst }}</p>
@@ -20142,6 +20142,17 @@ class Component extends DCLogic {
       history.replaceState(null, '', window.location.pathname + rest + window.location.hash);
     }
 
+    // Medlemskapet man valgte for innloggingen. Lagt igjen av «Velg» paa
+    // medlemskapssiden, og hentet fram her — ellers staar man foran
+    // innmeldingen uten aa vite hvilket medlemskap man kom for.
+    try {
+      const plan = sessionStorage.getItem('lissom_medlemsplan');
+      if (plan) {
+        sessionStorage.removeItem('lissom_medlemsplan');
+        this.setState({ bmType: plan });
+      }
+    } catch (_) { /* privat modus */ }
+
     this.vaktNyUtgave();
     // Feilvakta forst av alt som kan feile: en feil under oppstarten er
     // den vi minst faar vite om paa annet vis.
@@ -26780,6 +26791,34 @@ class Component extends DCLogic {
         this.setState({ side: 'booking', fra: 'medlemskap', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
         window.scrollTo(0, 0);
       };
+
+      // «Velg» — veien inn i medlemskapet.
+      //
+      // Den gikk til bookingskjermen, som er en daarligere kopi av
+      // innmeldingen: den opprettet alltid en avtale i Vipps, uten valget
+      // mellom fast trekk og aa ordne selv som eieren ba om (migrasjon 081),
+      // og knappen krevde innlogging etter at hele skjemaet var fylt ut.
+      //
+      // Innmeldingen paa Min side har alt dette fra for — valget, vilkaarene
+      // og begge betalingsveiene, helt ut til kvitteringen. Da skal det vaere
+      // én vei inn, ikke to som maa holdes i synk.
+      const meldInn = () => {
+        // Valget maa overleve innloggingen: Vipps sender deg ut av sida og
+        // tilbake igjen, og alt som ligger i minnet er borte naar du kommer.
+        try { sessionStorage.setItem('lissom_medlemsplan', o.navn); } catch (_) { /* privat modus */ }
+        this.setState({
+          side: this.state.innlogget ? 'minside' : 'login',
+          bmType: o.navn,
+          bmFeil: null,
+        });
+        window.scrollTo(0, 0);
+        // Min side er lang. Uten dette havner man oeverst, og skjemaet man
+        // ble sendt til staar et sted lenger nede.
+        setTimeout(() => {
+          const el = document.getElementById('bli-medlem');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+      };
       return Object.assign({
         kortStil: {
           background: m ? 'var(--lissom-brown)' : 'var(--surface-card)',
@@ -26796,7 +26835,8 @@ class Component extends DCLogic {
         prikkFarge: m ? 'var(--lissom-yellow)' : 'var(--terracotta-500)',
         knapp: m ? 'primary' : 'secondary',
         bilde: o.bilde || FOTO + 'handbygging.jpg',
-        kjop: visMer,
+        // Knappen melder deg inn; et klikk paa kortet viser hva det er.
+        kjop: meldInn,
         kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },
       }, o, { passer, punkter });
     };

@@ -252,8 +252,18 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
             $dagerRad[(string) $d['dato']] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
         }
     }
+    // Kurs med sitt eget vindu foelger ikke aapningstidene i det hele tatt —
+    // det er hele poenget med dem. Drop-in staar 08-22 hver dag, ni plasser,
+    // uavhengig av om det gaar et kurs. De maales for seg lenger nede.
+    $medVindu = array_column(
+        DB::alle("SELECT id FROM courses WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL"),
+        'id'
+    );
     foreach (DB::alle('SELECT course_id, start_tid, slutt_tid FROM course_sessions
                         WHERE fra_apningstid = 1') as $r) {
+        if (in_array((int) $r['course_id'], array_map('intval', $medVindu), true)) {
+            continue;
+        }
         $a = new DateTimeImmutable((string) $r['start_tid'], $utc2);
         $b2 = new DateTimeImmutable((string) $r['slutt_tid'], $utc2);
         if ($b2->getTimestamp() - $a->getTimestamp() > Apent::PLASS_MINUTTER * 60) {
@@ -280,6 +290,43 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         max($perDag ?: [0]) <= Apent::PLASSER_PER_DAG,
         'flest paa en dag: ' . max($perDag ?: [0]));
     sjekk('ingen plass ligger utenfor aapningstida', $iHull === 0, $iHull . ' utenfor');
+
+    // ── Kurs med sitt eget vindu ────────────────────────────────────────
+    //
+    // Eieren, 30. august, om drop-in: «det skal ikke foelge kurs eller
+    // aapningstider» og «det skal kunne bookes tid mellom kl 08:00 og
+    // 22:00». Sto drop-in paa aapningstidene, var den bare bookbar de dagene
+    // det tilfeldigvis gikk et kurs — for det er kursene som lager
+    // aapningstida.
+    if ($medVindu !== []) {
+        $vindu = DB::en("SELECT id, fast_fra, fast_til FROM courses
+                          WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL LIMIT 1");
+        $fraKl = substr((string) $vindu['fast_fra'], 0, 5);
+        $tilKl = substr((string) $vindu['fast_til'], 0, 5);
+        $dagerMedPlass = [];
+        $utenfor = 0;
+        foreach (DB::alle('SELECT start_tid, slutt_tid FROM course_sessions
+                            WHERE course_id = :c AND fra_apningstid = 1',
+                          ['c' => (int) $vindu['id']]) as $r) {
+            $a2 = (new DateTimeImmutable((string) $r['start_tid'], $utc2))->setTimezone($oslo2);
+            $b3 = (new DateTimeImmutable((string) $r['slutt_tid'], $utc2))->setTimezone($oslo2);
+            $dagerMedPlass[$a2->format('Y-m-d')] = ($dagerMedPlass[$a2->format('Y-m-d')] ?? 0) + 1;
+            if ($a2->format('H:i') < $fraKl || $b3->format('H:i') > $tilKl) {
+                $utenfor++;
+            }
+        }
+        sjekk('kurs med eget vindu ligger inne i vinduet, ikke i aapningstida',
+            $utenfor === 0, $utenfor . ' utenfor ' . $fraKl . '-' . $tilKl);
+        // Dagen i dag har faerre plasser: de som alt er passert lages ikke.
+        // Derfor maales dagene framover.
+        $framover = array_slice($dagerMedPlass, 1);
+        sjekk('… og staar hver dag framover, ikke bare de dagene det gaar kurs',
+            count($framover) >= Apent::DAGER_FRAM - 1,
+            count($framover) . ' dager av ' . Apent::DAGER_FRAM);
+        sjekk('… med like mange plasser hver dag',
+            $framover === [] || count(array_unique($framover)) === 1,
+            'ulike: ' . implode(', ', array_unique($framover)));
+    }
 
     // Flere kurs samme dag: timene mellom dem er ogsaa bookbare.
     //
@@ -381,12 +428,28 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
             $dubletter === [],
             count($egne) . ' egne tider' . ($dubletter ? ' — dublett ' . $dubletter[0] : ''));
 
-        // Og de egne tidene staar urort. De definerer fortsatt naar det er
-        // aapent, og skal ikke ryddes bort av utleggingen.
+        // Og en tid fra ukereglene staar urort. Migrasjon 102 satte reglene
+        // inaktive da drop-in fikk sitt eget vindu, saa det ligger ingen
+        // igjen i testdataene — men utleggingen skal fortsatt aldri roere en
+        // oekt den ikke har laget selv. Vi setter inn én og ser at den staar.
+        // Et minutt som ikke ligger paa rutenettet: plassene begynner hele
+        // og halve timer, og (course_id, start_tid) er unik — traff vi en
+        // plass som alt sto der, ble raden aldri satt inn og proven sa
+        // ingenting.
+        $enTid = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
+            ->modify('+3 days')->setTime(9, 17);
+        DB::kjor(
+            "INSERT IGNORE INTO course_sessions
+                (course_id, start_tid, slutt_tid, kapasitet, status, fra_dropin_tid)
+             VALUES (:c, :s, :e, 4, 'planlagt', 999999)",
+            ['c' => $dId, 's' => $enTid->format('Y-m-d H:i:s'),
+             'e' => $enTid->modify('+2 hours')->format('Y-m-d H:i:s')]
+        );
+        Apent::leggUtPaaApneTider();
         sjekk('drop-in-tidene fra ukereglene roeres ikke',
             (int) DB::verdi('SELECT COUNT(*) FROM course_sessions
-                              WHERE course_id = :c AND fra_dropin_tid IS NOT NULL
-                                AND start_tid > UTC_TIMESTAMP()', ['c' => $dId]) > 0);
+                              WHERE course_id = :c AND fra_dropin_tid = 999999', ['c' => $dId]) === 1);
+        DB::kjor('DELETE FROM course_sessions WHERE fra_dropin_tid = 999999');
     }
 
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
@@ -3552,6 +3615,57 @@ sjekk('haandbyggingskurs finner malen sin',
     str_contains($kmal, "'Håndbygging' => 'Plateteknikk'"));
 sjekk('… og faar en beskrivelse, ikke reservemalen',
     trim((string) (Kursmal::forKurs(['tema' => 'Håndbygging', 'tittel' => 'Nytt kurs'])['beskrivelse'] ?? '')) !== '');
+
+// ── Drop-in staar for seg ──────────────────────────────────────────────
+//
+// Eieren, 30. august:
+//   «1. det kan bookes hele doegnet
+//    2. det skal ikke foelge kurs eller aapningstider
+//    3. det skal derfor ikke vises paa kursoversikten, men skal hoere hjemme
+//       under medlemskap»
+// og, presisert: «det skal kunne bookes tid mellom kl 08:00 og 22:00».
+$m102 = file_get_contents(__DIR__ . '/../db/migrations/102_dropin_eget_vindu.sql');
+sjekk('drop-in staar 08-22 hver dag',
+    str_contains($m102, "fast_fra = '08:00:00'")
+    && str_contains($m102, "fast_til = '22:00:00'")
+    && str_contains($m102, "WHERE type = 'dropin' OR tema = 'Drop-in'"));
+// To generatorer paa det samme kurset ville lagt plasser oppi hverandre.
+sjekk('… og ukereglene staar stille saa lenge vinduet gjelder',
+    str_contains($m102, 'UPDATE dropin_tider SET aktiv = 0'));
+// En oekt noen har booket blir staaende. Plassen er deres.
+sjekk('… men en booket regelplass ryddes ikke bort',
+    str_contains($m102, "AND b.status <> 'avbestilt')"));
+$apent = file_get_contents(__DIR__ . '/../app/lib/apent.php');
+sjekk('kurs med eget vindu spor ikke aapningstidene',
+    str_contains($apent, '$mineVinduer = $egetVindu ?? $vinduer;')
+    && str_contains($apent, 'public const PLASSER_TAK'));
+$adropin = file_get_contents(__DIR__ . '/../api/admin/dropin.php');
+sjekk('vinduet kan endres fra admin',
+    str_contains($adropin, "case 'lagreVindu':")
+    && str_contains($adropin, "'fastFra'   => substr((string) (\$kurs['fast_fra'] ?? ''), 0, 5),"));
+// Et vindu kortere enn én plass gir ingen plasser i det hele tatt, og da ser
+// det ut som om noe er i stykker.
+sjekk('… med vakt mot tull',
+    str_contains($adropin, "preg_match('/^([01]\\d|2[0-3]):[0-5]\\d$/', \$t)")
+    && str_contains($adropin, '$minutter < Apent::PLASS_MINUTTER'));
+sjekk('… og ukereglene legges ikke ut oppi vinduet',
+    str_contains($adropin, "if ((\$kurs['fast_fra'] ?? null) !== null && (\$kurs['fast_til'] ?? null) !== null) {"));
+sjekk('drop-in er ute av kursoversikten',
+    str_contains($sida2, "if (f !== 'Drop-in') {")
+    && str_contains($sida2, "liste = (liste || []).filter(k => (k.tema || k.level) !== 'Drop-in'"));
+sjekk('… og ute av toppmenyen',
+    str_contains($sida2, "const lenker = ['Forside', 'Kurs', 'Events', 'Medlemskap', 'Butikk', 'Om oss',"));
+// Ruta staar igjen selv om knappen er borte: en delt lenke til /drop-in skal
+// fortsatt fore et sted.
+sjekk('… men /drop-in virker fortsatt',
+    str_contains($sida2, "'Drop-in': ['kurs', 'Drop-in'],"));
+sjekk('drop-in staar paa medlemskapssida',
+    str_contains($sida2, 'mdiTittel:') && str_contains($sida2, '>Book drop-in</x-import>'));
+// Klokkeslettene kommer fra kurset, ikke fra en tekst i malen. Ellers ville
+// sida lovt tider som ikke fantes.
+sjekk('… med klokkeslettene fra basen, ikke skrevet inn',
+    str_contains($sida2, "mdiTider: fra && til ? 'Hver dag ' + fra + '–' + til")
+    && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'fastFra' => substr((string) (\$k['fast_fra'] ?? ''), 0, 5),"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

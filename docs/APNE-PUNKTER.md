@@ -132,6 +132,48 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+### Drop-in står for seg (migrasjon 102)
+
+Eieren: «1. det kan bookes hele døgnet 2. det skal ikke følge kurs eller
+åpningstider 3. det skal derfor ikke vises på kursoversikten, men skal høre
+hjemme under medlemskap», presisert til «det skal kunne bookes tid mellom kl
+08:00 og 22:00».
+
+**Slik det var:** drop-in sto med `folger_apningstid = 1`, og plassene ble
+klippet ut av åpningstidene — som igjen regnes av kursene som går den dagen.
+Gikk det ikke noe kurs, var det ingen åpningstid, og da fantes det ingen
+drop-in å booke. Verkstedet var altså bare åpent for drop-in de dagene det
+gikk et kurs, som er den motsatte logikken av hva drop-in er.
+
+**Slik det er:** to klokkeslett på kurset selv (`fast_fra`, `fast_til`). Står
+de, gjelder de hver dag, uavhengig av kurs, åpningstider og innstempling.
+Målt: ni plasser om dagen, 08:00–09:30 til 20:00–21:30, femten dager fram.
+Den siste plassen begynner 20:00 og varer til 21:30 — halvannen time får ikke
+plass mellom 21:30 og 22:00.
+
+Paint on Pots står fortsatt på åpningstidene; den har ikke noe fast vindu.
+
+**Ett sted å bestemme fra.** Drop-in hadde fra før ukeregler i `dropin_tider`
+som lager sine egne økter. Med det faste vinduet ville de to generatorene lagt
+plasser oppi hverandre. Reglene settes inaktive og øktene deres ryddes bort —
+bortsett fra dem noen har booket. Radene blir stående, så ingenting er tapt om
+vinduet skal bort igjen.
+
+**Vinduet kan endres fra admin**, under Kurs og deltakere → Drop-in: to
+klokkeslett og «Lagre vinduet». Tømmer du begge, faller drop-in tilbake på
+åpningstidene. Vakter: begge må være `tt:mm`, fra før til, og minst én plass
+(90 minutter).
+
+**Ute:** drop-in er borte fra kursoversikten — den sto ute av «Kursene», men
+«Vis alle» ga hele lista uendret, og der sto den mellom dreiekursene.
+Menypunktet «Drop-in» er borte fra toppen; inngangen står nå på
+medlemskapssiden, med klokkeslettene hentet fra basen så siden ikke kan love
+tider som ikke finnes. Ruta `/drop-in` står igjen, så delte lenker virker.
+
+**Ikke gjort:** drop-in er fortsatt åpen for alle som har gått kurs hos Lissom
+eller kommer med et medlem — den er ikke gjort til et rent medlemsgode. Spør
+eieren om det var meningen.
+
 **«Store fat kurs» er håndbygging (migrasjon 101).** Kurset sto med temaet
 «Kurs» i basen — altså ingen ekte kategori — og kortet gjettet «Dreiing» av
 kurstypen. Eieren: «store fat er håndbygging». Nå står temaet, og ingen

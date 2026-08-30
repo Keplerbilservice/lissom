@@ -123,6 +123,11 @@ if (Foresporsel::metode() === 'GET') {
         'regel' => (string) (DB::verdi('SELECT verdi FROM content_blocks WHERE nokkel = :n', ['n' => DROPIN_REGEL]) ?? ''),
         'pris'      => (int) $kurs['pris_ore'] / 100,
         'kapasitet' => (int) $kurs['kapasitet'],
+        // Det faste vinduet: drop-in staar hver dag mellom disse to
+        // klokkeslettene, uavhengig av kurs og aapningstider. Se migrasjon
+        // 102 og Apent::leggUtPaaApneTider().
+        'fastFra'   => substr((string) ($kurs['fast_fra'] ?? ''), 0, 5),
+        'fastTil'   => substr((string) ($kurs['fast_til'] ?? ''), 0, 5),
         'okter'     => (int) DB::verdi(
             "SELECT COUNT(*) FROM course_sessions
               WHERE course_id = :c AND status = 'planlagt' AND start_tid > UTC_TIMESTAMP()",
@@ -227,12 +232,71 @@ switch (Foresporsel::tekst('handling')) {
         revider('dropin_regel_lagret', 'course', (int) $kurs['id'], ['pris' => $pris]);
         Svar::ok(['beskjed' => 'Reglene og prisen er lagret.']);
 
+    // ------------------------------------------------------- fast vindu
+    //
+    // Eieren, 30. august: «det skal ikke foelge kurs eller aapningstider»,
+    // «det skal kunne bookes tid mellom kl 08:00 og 22:00». To klokkeslett,
+    // og saa staar drop-in der hver dag.
+    //
+    // Tomme felt slaar vinduet av. Da faller drop-in tilbake paa
+    // aapningstidene, slik den sto for 30. august.
+    case 'lagreVindu':
+        $fra = trim(Foresporsel::tekst('fra'));
+        $til = trim(Foresporsel::tekst('til'));
+        $gyldig = static fn(string $t): bool => (bool) preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $t);
+
+        if ($fra === '' && $til === '') {
+            DB::oppdater('courses', ['fast_fra' => null, 'fast_til' => null], ['id' => $kurs['id']]);
+            Apent::leggUtPaaApneTider();
+            revider('dropin_vindu_av', 'course', (int) $kurs['id'], []);
+            Svar::ok(['beskjed' => 'Det faste vinduet er slått av. Drop-in følger åpningstidene igjen.']);
+        }
+        if (!$gyldig($fra) || !$gyldig($til)) {
+            Svar::feil('Skriv begge klokkeslettene som tt:mm, for eksempel 08:00 og 22:00.');
+        }
+        if ($fra >= $til) {
+            Svar::feil('Fra-tida må være før til-tida.');
+        }
+        // Kortere enn én plass gir ingen plasser i det hele tatt, og da ser
+        // det ut som om noe er i stykker.
+        $minutter = (((int) substr($til, 0, 2) * 60) + (int) substr($til, 3, 2))
+                  - (((int) substr($fra, 0, 2) * 60) + (int) substr($fra, 3, 2));
+        if ($minutter < Apent::PLASS_MINUTTER) {
+            Svar::feil('Vinduet må være minst ' . Apent::PLASS_MINUTTER . ' minutter — én plass.');
+        }
+
+        DB::oppdater('courses', [
+            'fast_fra' => $fra . ':00',
+            'fast_til' => $til . ':00',
+            'folger_apningstid' => 1,
+        ], ['id' => $kurs['id']]);
+        $r = Apent::leggUtPaaApneTider();
+        revider('dropin_vindu_lagret', 'course', (int) $kurs['id'], ['fra' => $fra, 'til' => $til]);
+        Svar::ok([
+            'fastFra' => $fra,
+            'fastTil' => $til,
+            'beskjed' => 'Drop-in står nå ' . $fra . '–' . $til . ' hver dag. '
+                . $r['laget'] . ' plasser lagt ut.',
+        ]);
+
     // -------------------------------------------------------- lag ut okter
     //
     // Lager bookbare okter av aapningstidene, framover i tid. Okter som alt
     // er laget av en aapningstid og ikke har paameldte ryddes forst, saa
     // endrede tider slaar gjennom. Okter lagt inn for haand rores ikke.
     case 'lagUtOkter':
+        // Staar det faste vinduet, er det den som gjelder. To generatorer paa
+        // det samme kurset ville lagt plasser oppi hverandre — en tre timers
+        // regelplass midt i rekka av halvannen time, med hvert sitt
+        // plasstall.
+        if (($kurs['fast_fra'] ?? null) !== null && ($kurs['fast_til'] ?? null) !== null) {
+            $r = Apent::leggUtPaaApneTider();
+            Svar::ok([
+                'beskjed' => 'Drop-in står ' . substr((string) $kurs['fast_fra'], 0, 5) . '–'
+                    . substr((string) $kurs['fast_til'], 0, 5) . ' hver dag. '
+                    . $r['laget'] . ' plasser lagt ut, ' . $r['fjernet'] . ' ryddet bort.',
+            ]);
+        }
         $uker = max(1, min(26, Foresporsel::heltall('uker', 8)));
         $tider = DB::alle('SELECT * FROM dropin_tider WHERE aktiv = 1 ORDER BY ukedag, fra');
         if ($tider === []) {

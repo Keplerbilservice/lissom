@@ -2542,6 +2542,33 @@ window.__resources = {
         
       </section>
 
+      <!-- Drop-in.
+           Eieren, 30. august: «det skal derfor ikke vises paa
+           kursoversikten, men skal hoere hjemme under medlemskap». Drop-in
+           er ikke et kurs — det er aa komme innom og jobbe med sitt eget,
+           og det hoerer sammen med aa vaere medlem. Menypunktet er borte fra
+           toppen; dette er inngangen. -->
+      <section style="padding: 0 var(--space-8) var(--space-16);">
+        <div style="max-width: 1100px; margin: 0 auto; background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-10);">
+          <div style="display: flex; gap: var(--space-8); flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="flex: 1 1 320px; min-width: 0;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Drop-in</div>
+              <h2 style="font: var(--type-h3); color: var(--text-heading); margin: 0 0 var(--space-4);">{{ mdiTittel }}</h2>
+              <p style="margin: 0 0 var(--space-4); font: var(--type-body); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">{{ mdiTekst }}</p>
+              <div style="display: flex; gap: var(--space-6); flex-wrap: wrap; font: var(--type-body-sm); color: var(--text-heading); font-weight: 600;">
+                <span>{{ mdiTider }}</span>
+                <span>{{ mdiVarighet }}</span>
+                <span>{{ mdiPris }}</span>
+              </div>
+            </div>
+            <div style="flex: 0 0 auto; display: flex; gap: var(--space-4); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ mdiBook }}" hint-size="auto,48px">Book drop-in</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ mdiLesMer }}" hint-size="auto,48px">Les mer</x-import>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-cols2" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-10); align-items: start;">
           <div>
@@ -11350,6 +11377,30 @@ window.__resources = {
 
           <div style="display: flex; flex-direction: column; gap: var(--space-6);">
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
+              <!-- Det faste vinduet.
+                   Eieren, 30. august: «det skal ikke foelge kurs eller
+                   aapningstider» og «det skal kunne bookes tid mellom kl
+                   08:00 og 22:00». Sto drop-in paa aapningstidene, var den
+                   bare bookbar de dagene det tilfeldigvis gikk et kurs — for
+                   det er kursene som lager aapningstida.
+
+                   Staar disse to, gjelder de hver dag, og ukereglene under
+                   staar stille. Toemmer du dem, faller drop-in tilbake paa
+                   aapningstidene som for. -->
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Drop-in er åpent</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">{{ dVinduHjelp }}</p>
+              <div style="display: flex; gap: var(--space-4); align-items: flex-end; flex-wrap: wrap; margin-bottom: var(--space-4);">
+                <div>
+                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Fra</label>
+                  <input type="time" value="{{ dVinduFra }}" onChange="{{ settDVinduFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                </div>
+                <div>
+                  <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Til</label>
+                  <input type="time" value="{{ dVinduTil }}" onChange="{{ settDVinduTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ dLagreVindu }}" hint-size="auto,40px">Lagre vinduet</x-import>
+              </div>
+              <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Åpningstider for drop-in</div>
               <sc-for list="{{ dropinTider }}" as="d" hint-placeholder-count="7">
                 <div style="{{ d.radStil }}">
@@ -15466,6 +15517,18 @@ class Component extends DCLogic {
    * kurs kunne telle i knappen og mangle i lista.
    */
   kursIKategori(liste, f) {
+    // Drop-in hoerer ikke hjemme i kursoversikten i det hele tatt.
+    //
+    // Eieren, 30. august: «det skal derfor ikke vises paa kursoversikten,
+    // men skal hoere hjemme under medlemskap». Den sto ute av «Kursene», men
+    // «Vis alle» ga hele lista uendret — og der sto den, mellom dreiekursene.
+    //
+    // Vakta staar oeverst, saa den gjelder alle valgene. Unntaket er
+    // drop-in-visningen selv, som ber om nettopp det kurset.
+    if (f !== 'Drop-in') {
+      liste = (liste || []).filter(k => (k.tema || k.level) !== 'Drop-in'
+        && (k.title || k.navn || '') !== 'Drop-in i verkstedet');
+    }
     if (!f || f === 'Alle' || f === 'Vis alle') return liste;
     // Det kurssida staar med naar man kommer inn: kursene, ikke
     // arrangementene.
@@ -21637,7 +21700,9 @@ class Component extends DCLogic {
         });
         if (ok) {
           this._dropinHentes = false;
-          this.setState({ dropinOppsett: null });
+          // Utkastet i feltene toemmes, ellers ville de skygget for det
+          // serveren nettopp lagret og vist det gamle videre.
+          this.setState({ dropinOppsett: null, dVinduFra: null, dVinduTil: null });
           this.hentDropin();
           this.hentKatalog();
         }
@@ -36947,6 +37012,42 @@ class Component extends DCLogic {
           plasser: parseInt(String(r.plasser).replace(/[^\d]/g, ''), 10) || 0,
         });
       },
+      // ── Det faste vinduet ─────────────────────────────────────────────
+      //
+      // Eieren, 30. august: «det skal ikke foelge kurs eller aapningstider»
+      // og «det skal kunne bookes tid mellom kl 08:00 og 22:00».
+      //
+      // Verdien staar i state naar noen har skrevet i feltet, ellers kommer
+      // den fra serveren. Uten det ville feltet hoppet tilbake til det
+      // lagrede hvert tastetrykk.
+      ...(() => {
+        const o = this.state.dropinOppsett || {};
+        const fra = this.state.dVinduFra ?? String(o.fastFra || '');
+        const til = this.state.dVinduTil ?? String(o.fastTil || '');
+        const lagret = String(o.fastFra || '') && String(o.fastTil || '');
+        return {
+          dVinduFra: fra,
+          dVinduTil: til,
+          dVinduHjelp: lagret
+            ? 'Drop-in står ' + o.fastFra + '–' + o.fastTil + ' hver dag, uavhengig av '
+              + 'kurs og åpningstider. Ukereglene under står stille så lenge dette gjelder. '
+              + 'Tømmer du begge feltene, følger drop-in åpningstidene igjen.'
+            : 'Skriv to klokkeslett, så står drop-in åpent mellom dem hver dag — uavhengig '
+              + 'av kurs og åpningstider. Står de tomme, lages datoene av åpningstidene, '
+              + 'og da er drop-in bare bookbar de dagene det går et kurs.',
+          settDVinduFra: e => this.setState({ dVinduFra: e.target.value }),
+          settDVinduTil: e => this.setState({ dVinduTil: e.target.value }),
+          dLagreVindu: () => {
+            const f = String(fra || '').trim(), t = String(til || '').trim();
+            if (f === '' && t === '') {
+              if (!window.confirm('Slå av det faste vinduet? Drop-in følger da åpningstidene '
+                    + 'igjen, og er bare bookbar de dagene det går et kurs.')) return;
+            }
+            this.dropinKall({ handling: 'lagreVindu', fra: f, til: t });
+          },
+        };
+      })(),
+
       dropinOkterTekst: this.state.dropinOppsett
         ? (this.state.dropinOppsett.okter
             ? this.state.dropinOppsett.okter + ' drop-in-tider ligger ute framover.'
@@ -39551,6 +39652,37 @@ class Component extends DCLogic {
       vippsVenter: this.state.vippsSteg === 'venter',
       vippsGodkjent: this.state.vippsSteg === 'godkjent',
       vippsApen: !!this.state.vippsSteg,
+      // ── Drop-in paa medlemskapssida ──────────────────────────────────
+      //
+      // Eieren, 30. august: «det skal derfor ikke vises paa kursoversikten,
+      // men skal hoere hjemme under medlemskap». Menypunktet er borte fra
+      // toppen og kurset er ute av kurslista; dette er inngangen.
+      //
+      // Klokkeslettene kommer fra kurset, ikke fra en tekst her. Endrer noen
+      // vinduet under Kurs og deltakere → Drop-in, folger denne linja med —
+      // ellers ville sida lovt tider som ikke fantes.
+      ...(() => {
+        // Fra katalogen, ikke fra _kursListe: den siste bygges naar kurslista
+        // tegnes, og paa medlemskapssida er den enten gammel eller
+        // designreserven. Katalogen hentes ved oppstart og er den samme
+        // uansett hvilken side man staar paa.
+        const k = (this.state.katalog || []).find(x => (x.tema || '') === 'Drop-in'
+          || x.tittel === 'Drop-in i verkstedet') || {};
+        const fra = String(k.fastFra || '');
+        const til = String(k.fastTil || '');
+        return {
+          mdiTittel: 'Kom innom og jobb med ditt eget',
+          mdiTekst: 'Drop-in er verkstedet uten kurs: du tar med det du holder på med, '
+            + 'og bruker tida som du vil. Leire, verktøy, glasur og brenning er inkludert. '
+            + 'Du må ha gått kurs hos oss før, eller komme sammen med et medlem.',
+          mdiTider: fra && til ? 'Hver dag ' + fra + '–' + til : 'Når verkstedet er åpent',
+          mdiVarighet: k.plassVarighet ? 'Du har plassen i ' + k.plassVarighet : 'Halvannen time',
+          mdiPris: k.pris || 'kr. 490,-',
+          mdiBook: () => this.bookDropinNaa(),
+          mdiLesMer: () => this.goDropinNaa(),
+        };
+      })(),
+
       navLinks: (() => {
         const DS = window.LissomDesignSystem_8402ac || {};
         const antall = Object.keys(this.state.kurv || {}).reduce((n, x) => n + this.state.kurv[x], 0);
@@ -39559,7 +39691,13 @@ class Component extends DCLogic {
               React.createElement(DS.Icon, { name: 'shopping-cart', size: 36 }),
               antall ? React.createElement('span', { key: 'n' + antall, style: { background: 'var(--lissom-brown)', color: 'var(--clay-50)', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '16px', display: 'inline-block', animation: 'lissomPuls .45s var(--ease-clay, ease)' } }, antall) : null) }
           : 'Handlekurv';
-        const lenker = ['Forside', 'Kurs', 'Events', 'Drop-in', 'Medlemskap', 'Butikk', 'Om oss',
+        // «Drop-in» sto her, mellom Events og Medlemskap. Eieren, 30.
+        // august: «det skal derfor ikke vises paa kursoversikten, men skal
+        // hoere hjemme under medlemskap». Drop-in er ikke et kurs — det er
+        // aa komme innom og jobbe selv, og det hoerer sammen med aa vaere
+        // medlem. Inngangen staar naa paa medlemskapssida, og ruta
+        // «Drop-in» staar igjen i goNav saa en delt lenke fortsatt virker.
+        const lenker = ['Forside', 'Kurs', 'Events', 'Medlemskap', 'Butikk', 'Om oss',
           { value: 'Kurskalender', label: 'Kalender' }];
 
         // Paa mobil er hamburgermenyen eneste vei inn til Min side — paa

@@ -35,6 +35,8 @@ $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kas
 // «Datoene lages av aapningstidene» — Paint on Pots og drop-in. Kom med
 // migrasjon 079. Foer laa den inni gjenstand_i_kassa, som gjorde to jobber.
 $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
+// Det faste vinduet — «hver dag 08–22». Kom med migrasjon 102.
+$vinduFelt = DB::harKolonne('courses', 'fast_fra') ? ', fast_fra, fast_til' : '';
 
 // ── Billigste gjenstanden i butikken ────────────────────────────────────
 //
@@ -54,7 +56,7 @@ $gjenstandFra = DB::harKolonne('courses', 'gjenstand_i_kassa')
     : 0;
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -190,6 +192,12 @@ foreach ($kurs as $k) {
                 'folgerApningstid' => true,
                 'plassMinutter'    => $min,
                 'plassVarighet'    => $ord[$min] ?? ($min . ' minutter'),
+                // Det faste vinduet, naar kurset har et. Nettsida skriver
+                // «hver dag 08–22» av dette — den skal ikke ha to
+                // klokkeslett skrevet inn for haand som kan bli uenige med
+                // plassene som faktisk ligger ute.
+                'fastFra' => substr((string) ($k['fast_fra'] ?? ''), 0, 5),
+                'fastTil' => substr((string) ($k['fast_til'] ?? ''), 0, 5),
             ];
         })(),
         // Antall plasser kurset har. Nettsida skrev det som fast tekst —

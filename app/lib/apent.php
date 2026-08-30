@@ -58,6 +58,15 @@ final class Apent
     public const PLASSER_PER_DAG = 8;
 
     /**
+     * Vakten for et kurs med sitt eget vindu.
+     *
+     * Der er det vinduet som bestemmer — 08 til 22 med halvannen time per
+     * plass blir ni. Dette tallet er bare der saa en feil i et klokkeslett
+     * ikke kan lage tusen rader i basen.
+     */
+    public const PLASSER_TAK = 24;
+
+    /**
      * Dagene med aapningstid, og hvilke oekter tallene er regnet av.
      *
      * @return array{dager: list<array<string,mixed>>, kilder: array<string, list<array<string,mixed>>>}
@@ -347,8 +356,12 @@ final class Apent
             return ['laget' => 0, 'fjernet' => 0];
         }
 
+        // Kurs med sitt eget vindu staar hver dag mellom to klokkeslett,
+        // uavhengig av kurs og aapningstider. Se «Drop-in foelger sitt eget
+        // vindu» lenger nede, og migrasjon 102.
+        $fast = DB::harKolonne('courses', 'fast_fra') && DB::harKolonne('courses', 'fast_til');
         $kurs = DB::alle(
-            "SELECT id, kapasitet FROM courses
+            'SELECT id, kapasitet' . ($fast ? ', fast_fra, fast_til' : '') . " FROM courses
               WHERE {$felt} = 1 AND status = 'publisert'"
         );
         if ($kurs === []) {
@@ -430,6 +443,38 @@ final class Apent
         foreach ($kurs as $k) {
             $kursId = (int) $k['id'];
 
+            // ── Kursets eget vindu ─────────────────────────────────────────
+            //
+            // Eieren, 30. august, om drop-in: «det skal ikke foelge kurs
+            // eller aapningstider» og «det skal kunne bookes tid mellom kl
+            // 08:00 og 22:00».
+            //
+            // Sto drop-in paa aapningstidene, var den bare bookbar de dagene
+            // det tilfeldigvis gikk et kurs — for det er kursene som lager
+            // aapningstida. Det er den motsatte logikken av hva drop-in er.
+            //
+            // Med to klokkeslett paa kurset staar det hver dag, DAGER_FRAM
+            // dager fram, uten aa spoerre noen. Innstemplinga teller ikke:
+            // vinduet er avgjort paa forhaand.
+            $egetVindu = null;
+            if (($k['fast_fra'] ?? null) !== null && ($k['fast_til'] ?? null) !== null) {
+                $fra = substr((string) $k['fast_fra'], 0, 5);
+                $til = substr((string) $k['fast_til'], 0, 5);
+                if ($fra < $til) {
+                    $egetVindu = [];
+                    for ($d = 0; $d <= self::DAGER_FRAM; $d++) {
+                        $dag = $naa->modify('+' . $d . ' days')->format('Y-m-d');
+                        $egetVindu[$dag] = [['fra' => $fra, 'til' => $til]];
+                    }
+                }
+            }
+            $mineVinduer = $egetVindu ?? $vinduer;
+            // Taket paa plasser per dag er satt for aapningstidene, der
+            // vinduet aldri blir lengre enn en arbeidsdag. Et eget vindu paa
+            // fjorten timer er lengre enn det, og da skal vinduet bestemme —
+            // ikke et tall som var ment som en vakt.
+            $takPerDag = $egetVindu === null ? self::PLASSER_PER_DAG : self::PLASSER_TAK;
+
             // Kursets egne oekter, lagt inn for haand eller av ukereglene.
             // De gaar foran: det lages ingen plass oppi en tid kurset alt
             // staar med.
@@ -458,10 +503,10 @@ final class Apent
             // over den lengste dagen verkstedet har, saa det er aapningstida
             // som bestemmer, ikke tallet.
             $skalLages = [];
-            foreach ($vinduer as $dato => $perioder) {
+            foreach ($mineVinduer as $dato => $perioder) {
                 $paaDagen = 0;
                 foreach ($perioder as $v) {
-                    if ($paaDagen >= self::PLASSER_PER_DAG) {
+                    if ($paaDagen >= $takPerDag) {
                         break;
                     }
                     $start = new DateTimeImmutable($dato . ' ' . $v['fra'], $oslo);
@@ -471,7 +516,7 @@ final class Apent
                     if ($start <= $naa) {
                         $start = $nesteKvarter($naa);
                     }
-                    while ($start < $slutt && $paaDagen < self::PLASSER_PER_DAG) {
+                    while ($start < $slutt && $paaDagen < $takPerDag) {
                         $til = $start->modify('+' . self::PLASS_MINUTTER . ' minutes');
                         // Hele lengden, eller ingenting.
                         //

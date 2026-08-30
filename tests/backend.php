@@ -2966,10 +2966,13 @@ sjekk('… med teksten paa én linje',
 // Snarveiene under «Ofte brukt» paa Oversikt. Paa telefon sto «Ny
 // kursdato» paa samme linje som overskriften og de tre andre under, hver
 // i sin bredde. Eieren 30. august: like store, paa linjer under.
-sjekk('snarveiene under «Ofte brukt» er like store paa telefon',
-    str_contains($sida2, 'class="lx-ofte"')
-    && str_contains($sida2, '.lx-ofte > span { flex: 1 1 100% !important;')
-    && str_contains($sida2, '.lx-ofte button {'));
+// Eieren 30. august: «naar jeg ber om det som jeg gjorde paa forsiden saa
+// mener jeg saa klart over alt». Regelen gjelder begge de gule radene —
+// «Ofte brukt» paa Oversikt og «Hurtig» paa omraadeskjermene.
+sjekk('snarveiene i de gule radene er like store paa telefon',
+    substr_count($sida2, 'class="lx-hurtig"') === 2
+    && str_contains($sida2, '.lx-hurtig > span { flex: 1 1 100% !important;')
+    && str_contains($sida2, '.lx-hurtig button {'));
 
 // Paint on Pots og andre der gjenstanden velges i verkstedet sto helt uten
 // pris paa kortet — og et kort uten pris ser ut som et kort der noe mangler.

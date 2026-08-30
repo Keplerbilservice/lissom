@@ -8063,7 +8063,7 @@ window.__resources = {
               <div onClick="{{ k.velg }}" style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); row-gap: var(--space-3); padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
                 <div style="flex: 1 1 200px; min-width: 0;">
                   <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ k.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.type }} · {{ k.pris }} · {{ k.gjentas }}</div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ k.under }}</div>
                 </div>
                 <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 150px; min-width: 120px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
@@ -29923,8 +29923,8 @@ class Component extends DCLogic {
               // hadde ingen inngang. «Opprett kurs» laget et nytt, men viste
               // ikke dem som fantes.
               medMer(kort('Kurs',
-                   'Alle kursene i katalogen — navn, pris, tekst og bilder. Trykk et kurs for å redigere det.',
-                   kursData.length, 'admin', { kursFane: 'alle', datoerFor: '', kRed: false }, 'Se kursene'),
+                   'Basen over kurstypene: kategori, pris, plasser og om kurset ligger ute. Trykk et kurs for å endre grunninnstillingene.',
+                   kursData.length, 'admin', { kursFane: 'maler', datoerFor: '', kRed: false }, 'Se kursene'),
                    'Lag et nytt kurs',
                    () => this.gaaAdmin('admin', nyttKurs)),
               // Teller og aapner det kortet heter: kurs som har en dato
@@ -32504,14 +32504,59 @@ class Component extends DCLogic {
       ingenKursTreff: this.kursSokte().length === 0 && (this.state.kursSok || '').trim() !== '',
       ingenKursTreffTekst: 'Ingen kurs heter noe med «' + (this.state.kursSok || '').trim() + '».',
       adminKursAntall: this.kursSokte().length,
-      adminKurs: this.kursSokte().map(({ k, i }) => Object.assign({}, k, {
+      // ── Basen over kurstypene ────────────────────────────────────────
+      //
+      // Eieren, 30. august: «en base over alle type kurs», «jeg vil bare se
+      // disse grunninnstillingene for kurs». Skjermen fantes — «Kursene
+      // vaare», ett kurs per rad uten datoer — men raden sa «Kurs · kr. 1
+      // 490,- · 12 datoer», altsaa typen og hvor mange ganger det gaar. Det
+      // er datoene, ikke innstillingene.
+      //
+      // I basen staar det som skiller kursene fra hverandre: kategorien de
+      // havner i ute, prisen, hvor mange plasser det er satt av, og om det
+      // ligger ute i det hele tatt. Datoene staar for seg til hoyre.
+      adminKurs: this.kursSokte().map(({ k, i }) => Object.assign({}, k, (() => {
+        // Linja under navnet. Utenfor basen staar den som for: typen, prisen
+        // og hvor mange datoer kurset har.
+        if ((this.state.kursFane || 'alle') !== 'maler') {
+          return { under: [k.type, k.pris, k.gjentas].filter(Boolean).join(' · ') };
+        }
+        const idag = new Date(new Date().toDateString()).getTime();
+        const framover = (k.okter || []).filter(o => {
+          if (!o.dato) return false;
+          const d = new Date(o.dato + 'T' + (o.til || o.fra || '23:59'));
+          return !isNaN(d) && d.getTime() >= idag;
+        }).length;
+        const plasser = String(k.pameldte || '').split('/')[1];
+        return {
+          // Bare temaet avgjor kategorien her. kategoriFor() faller tilbake
+          // paa typen naar temaet er tomt, og da sto et kurs uten kategori
+          // som «Dreiing» — den forste kategorien med type «Kurs». I en base
+          // over grunninnstillingene skal tomt staa som tomt.
+          under: [(k.tema ? (this.kategoriFor(k.tema, k.type) || k.tema) : '') || 'Uten kategori',
+                  k.pris,
+                  plasser ? plasser.trim() + ' plasser' : '',
+                  k.status && k.status !== 'publisert' ? 'Ikke publisert' : '']
+                 .filter(Boolean).join(' · '),
+          neste: framover === 0 ? 'Ingen datoer framover'
+               : framover === 1 ? '1 dato framover' : framover + ' datoer framover',
+        };
+      })(), {
         // Ett trykk paa raden viser datoene til kurset, oeverst paa skjermen.
         //
         // Foer aapnet raden skjemaet med tolv seksjoner. Skulle du bare
         // slette en dato, matte du gjennom hele oppsettet foerst, og datoene
         // sto i en liste med alle datoene i basen lenger nede. «Rediger»
         // aapner fortsatt skjemaet — det er to forskjellige aerend.
+        // I basen aapner raden kursoppsettet: der er datolista skjult, saa
+        // «vis datoene til dette kurset» ville ikke fort noe sted.
         velg: () => {
+          if ((this.state.kursFane || 'alle') === 'maler') {
+            this.setState({ datoerFor: '' });
+            this.apneKursRed(k, i);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
           this.setState({ datoerFor: k.navn, kRed: false, oktRediger: null });
           window.scrollTo({ top: 0, behavior: 'smooth' });
         },

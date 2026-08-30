@@ -3326,9 +3326,20 @@ sjekk('migrasjonen flytter de gamle temaene',
     && str_contains($m099, "WHERE tittel = 'Lag din egen bolle'"));
 // Eieren, 30. august: «jeg savner et kort som heter kurs. Som viser hvilke
 // kurs som ligger i databasen, slik at jeg enkelt kan redigere de.»
-sjekk('«Kurs og deltakere» har et kort for katalogen',
+// Eieren, 30. august: «en base over alle type kurs», «jeg vil bare se disse
+// grunninnstillingene for kurs». Skjermen fantes — «Kursene vaare» — men uten
+// inngang fra omraadet, og raden sa hvor mange datoer kurset har framfor hva
+// kurset er.
+sjekk('«Kurs og deltakere» har et kort inn til basen',
     str_contains($sida2, "medMer(kort('Kurs',")
+    && str_contains($sida2, "kursData.length, 'admin', { kursFane: 'maler', datoerFor: '', kRed: false }, 'Se kursene')")
     && str_contains($sida2, "'Lag et nytt kurs',"));
+sjekk('… og raden i basen viser grunninnstillingene',
+    str_contains($sida2, "plasser ? plasser.trim() + ' plasser' : '',")
+    && str_contains($sida2, "k.status && k.status !== 'publisert' ? 'Ikke publisert' : ''"));
+// Datolista er skjult i basen, saa «vis datoene» ville ikke fort noe sted.
+sjekk('… og et trykk paa raden aapner kursoppsettet',
+    str_contains($sida2, "if ((this.state.kursFane || 'alle') === 'maler') {\n            this.setState({ datoerFor: '' });\n            this.apneKursRed(k, i);"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

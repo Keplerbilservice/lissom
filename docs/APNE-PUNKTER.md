@@ -132,6 +132,24 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Kategoriene ryddet: Håndbygging og Events.** Ute sto seks piller — Dreiing,
+Plateteknikk, Workshop, Sip & Clay, Date Night og Paint on pots. Tre av dem er
+det samme slaget kveld, og to av dem er det samme håndverket under hvert sitt
+navn. Nå er det tre: **Dreiing**, **Håndbygging** og **Events**.
+
+Events er en gruppering i visningen — de tre arrangementene beholder temaet
+sitt, så Paint on Pots fortsatt kjennes igjen på sitt eget, og hvert av dem kan
+fortsatt velges for seg i admin. Håndbygging er et nytt navn på et tema som
+fantes, så radene følger med (migrasjon 099): Workshop og Plateteknikk blir
+Håndbygging, og «Lag din egen bolle» flyttes dit fra det generiske «Kurs».
+«Håndbygging» kan velges når et kurs legges ut.
+
+**Et kort som heter «Kurs».** Under Kurs og deltakere handlet kortene om
+datoene — «Planlagte kurs» er de som har noe framfor seg, «Datoer som ligger
+ute» er datoene selv. Selve kursene, med navn, pris, tekst og bilder, hadde
+ingen inngang. Nå står katalogen som eget kort, med «Lag et nytt kurs» nederst
+(kortet «Opprett kurs» er borte — det gjorde bare halve jobben).
+
 **Refunder-knapp under Økonomi.** Avbestiller kunden selv fra Min side, går
 refusjonen av seg selv etter vilkårene. Alt annet — en avlyst dato, en kunde
 som ringer — sto uten vei: skjermen sa «må refunderes manuelt under Økonomi»,

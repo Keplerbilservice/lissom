@@ -92,8 +92,13 @@ $boller = DB::en("SELECT tema, slug, tittel FROM courses
                    WHERE slug IN ('lag-din-egen-bolle', 'kurs-boller')
                      AND status = 'publisert' LIMIT 1");
 sjekk('bollekurset finnes og er publisert', $boller !== null);
-sjekk('bollekurset har tema Plateteknikk',
-    $boller !== null && $boller['tema'] === 'Plateteknikk', (string) ($boller['tema'] ?? ''));
+// Temaet het «Plateteknikk» til 30. august. Da ble kategoriene ryddet:
+// plateteknikk og workshop er det samme haandverket, og heter naa
+// «Haandbygging» — se migrasjon 099. Begge godtas, saa testen virker enten
+// migrasjonen er kjort eller ikke.
+sjekk('bollekurset staar under Håndbygging',
+    $boller !== null && in_array((string) $boller['tema'], ['Håndbygging', 'Plateteknikk'], true),
+    (string) ($boller['tema'] ?? ''));
 sjekk('bollekurset heter «Lag din egen bolle»',
     $boller !== null && $boller['tittel'] === 'Lag din egen bolle', (string) ($boller['tittel'] ?? ''));
 // Den gamle adressen er delt i e-poster og indeksert av Google. Er den
@@ -3294,6 +3299,36 @@ sjekk('kundelogoen ligger rett paa bakgrunnen',
 // Ruta i admin skal vise det samme som forsida gjor.
 sjekk('… og forhaandsvisningen i admin viser det samme',
     str_contains($sida2, "backgroundColor: 'transparent',"));
+
+// ── Haandbygging og Events ─────────────────────────────────────────────
+//
+// Eieren, 30. august: «sip&clay, datenights og en paint on pots skal ligge
+// under en ny pille som heter events», «lag din egen bolle, og workshop, skal
+// ligge under pillen med det nye navnet haandbygging», og «jeg vil ha
+// mulighet aa velge haandbygging naar jeg legger ut nye kurs».
+sjekk('pillene ute er Dreiing, Haandbygging og Events',
+    str_contains($sida2, "const ute = ['Dreiing', 'Håndbygging', 'Events'];"));
+sjekk('… og de tre arrangementene havner under Events',
+    str_contains($sida2, "'Sip & Clay': 'Events', 'Date Night': 'Events',")
+    && str_contains($sida2, "'Paint on pots': 'Events', 'Paint on Pots': 'Events',"));
+sjekk('… og workshop og plateteknikk under Haandbygging',
+    str_contains($sida2, "'Workshop': 'Håndbygging', 'Plateteknikk': 'Håndbygging',"));
+// Kategorien maa kunne velges der kurs faktisk legges ut — hurtigskjemaet.
+sjekk('Haandbygging kan velges naar et kurs legges ut',
+    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Drop-in']")
+    && str_contains($sida2, "'Håndbygging':   { type: 'Kurs',          tema: 'Håndbygging' , plasser: 12 },"));
+sjekk('… og lagres som tema «Håndbygging»',
+    str_contains($sida2, "'Håndbygging': 'Håndbygging', 'Workshop': 'Håndbygging',"));
+// Gamle rader skal foelge med, ellers faller et kurs ut av sin egen kategori.
+$m099 = file_get_contents(__DIR__ . '/../db/migrations/099_handbygging_og_events.sql');
+sjekk('migrasjonen flytter de gamle temaene',
+    str_contains($m099, "WHERE tema IN ('Workshop', 'Plateteknikk')")
+    && str_contains($m099, "WHERE tittel = 'Lag din egen bolle'"));
+// Eieren, 30. august: «jeg savner et kort som heter kurs. Som viser hvilke
+// kurs som ligger i databasen, slik at jeg enkelt kan redigere de.»
+sjekk('«Kurs og deltakere» har et kort for katalogen',
+    str_contains($sida2, "medMer(kort('Kurs',")
+    && str_contains($sida2, "'Lag et nytt kurs',"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

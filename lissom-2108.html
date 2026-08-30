@@ -14888,8 +14888,22 @@ class Component extends DCLogic {
         // Sip & Clay og Date Night hoerer under Events, og workshop er et
         // kurs. Uten dette ville et kurs lagret med temaet «Sip & Clay» falt
         // utenfor alle filtrene og bare vaert synlig under «Alle».
-        const KATEGORI = { 'Sip & Clay': 'Events', 'Date Night': 'Events', 'Workshop': 'Kurs' };
-        const tema = KATEGORI[k.tema] || k.tema || 'Kurs';
+        // Eieren, 30. august: «sip&clay, datenights og en paint on pots skal
+        // ligge under en ny pille som heter events», og «lag din egen bolle,
+        // og workshop, skal ligge under pillen med det nye navnet
+        // haandbygging». Kortet bærer kategorien; merkene under gjor at det
+        // enkelte arrangementet fortsatt kan velges for seg i admin.
+        const KATEGORI = {
+          'Sip & Clay': 'Events', 'Date Night': 'Events',
+          'Paint on pots': 'Events', 'Paint on Pots': 'Events',
+          'Workshop': 'Håndbygging', 'Plateteknikk': 'Håndbygging',
+        };
+        // Paint on Pots kjennes ogsaa paa navnet. Temaet kan staa tomt paa et
+        // kurs som ble lagt inn for kategoriene fantes, og da skal det
+        // likevel havne under Events framfor aa bli liggende uten pille.
+        const tema = KATEGORI[k.tema]
+          || (String(k.tittel || '').toLowerCase().indexOf('paint on pots') === 0 ? 'Events' : '')
+          || k.tema || 'Kurs';
         return {
           slug: k.slug || '',
           katId: k.id,
@@ -15463,7 +15477,7 @@ class Component extends DCLogic {
   // det er der de hoerer hjemme. Men de skal ogsaa kunne velges hver for seg
   // i knapperaden, og da maa de baere merket sitt videre.
   undertemaer(tittel, tema) {
-    const merker = ['Workshop', 'Sip & Clay', 'Date Night', 'Paint on Pots'];
+    const merker = ['Sip & Clay', 'Date Night', 'Paint on Pots'];
     const t = String(tittel || '').toLowerCase();
     const ut = [];
 
@@ -21762,10 +21776,10 @@ class Component extends DCLogic {
     if (this._kursLagres) return;
     this._kursLagres = true;
 
-    const TYPE = { 'Kurs': 'kurs', 'Event': 'event', 'Workshop': 'workshop', 'Sip & Clay': 'event', 'Drop-in': 'dropin', 'Kun medlemmer': 'event' };
+    const TYPE = { 'Kurs': 'kurs', 'Håndbygging': 'kurs', 'Event': 'event', 'Workshop': 'workshop', 'Sip & Clay': 'event', 'Drop-in': 'dropin', 'Kun medlemmer': 'event' };
     // «Kun medlemmer» manglet her, saa en medlemssamling ble lagret som et
     // vanlig kurs — og dukket opp i den offentlige kurslista.
-    const TEMA = { 'Sip & Clay': 'Sip & Clay', 'Workshop': 'Workshop', 'Drop-in': 'Drop-in', 'Event': 'Events', 'Kun medlemmer': 'Kun for medlemmer' };
+    const TEMA = { 'Sip & Clay': 'Sip & Clay', 'Håndbygging': 'Håndbygging', 'Workshop': 'Håndbygging', 'Drop-in': 'Drop-in', 'Event': 'Events', 'Kun medlemmer': 'Kun for medlemmer' };
     const eksisterende = (this.state.adminKursRaa || []).find(k => k.tittel === rad.navn);
 
     fetch('/api/admin/kurs.php', {
@@ -23577,11 +23591,24 @@ class Component extends DCLogic {
    * legge et nytt kurs i en kategori kundene faktisk kan filtrere paa.
    */
   kursKategorier(medInterne) {
-    const ute = ['Dreiing', 'Plateteknikk', 'Workshop',
-                 'Sip & Clay', 'Date Night', 'Paint on pots'];
+    // Tre piller ute, ikke seks.
+    //
+    // Her sto Dreiing, Plateteknikk, Workshop, Sip & Clay, Date Night og
+    // Paint on pots ved siden av hverandre — seks knapper der tre av dem er
+    // det samme slaget kveld. Eieren, 30. august: de tre arrangementene under
+    // «Events», og workshop sammen med «Lag din egen bolle» under
+    // «Haandbygging».
+    const ute = ['Dreiing', 'Håndbygging', 'Events'];
+
+    // I admin kan man i tillegg sette det enkelte arrangementet. Kortet
+    // havner uansett under Events ute — se KATEGORI i kursKort() — men
+    // temaet styrer teksten og malene, og Paint on Pots kjennes paa sitt.
+    //
     // «Kun medlemmer» og «Drop-in» staar med i admin, men ikke i filterrada
     // ute: de er ikke kategorier kundene skal kunne bla seg inn i.
-    return medInterne ? ute.concat(['Kun medlemmer', 'Drop-in']) : ute;
+    return medInterne
+      ? ute.concat(['Sip & Clay', 'Date Night', 'Paint on pots', 'Kun medlemmer', 'Drop-in'])
+      : ute;
   }
 
   /**
@@ -23597,8 +23624,11 @@ class Component extends DCLogic {
    */
   static KATEGORI_BETYR = {
     'Dreiing':       { type: 'Kurs',          tema: 'Dreiing' , plasser: 8 },
-    'Plateteknikk':  { type: 'Kurs',          tema: 'Plateteknikk' , plasser: 12 },
-    'Workshop':      { type: 'Workshop',      tema: 'Workshop' , plasser: 12 },
+    // «Haandbygging» avloser «Plateteknikk» og «Workshop»: det er det samme
+    // haandverket, og tre navn for én ting hjelper ingen. Gamle kurs foelger
+    // med — se KATEGORI_ELDRE under og migrasjon 099.
+    'Håndbygging':   { type: 'Kurs',          tema: 'Håndbygging' , plasser: 12 },
+    'Events':        { type: 'Event',         tema: 'Events' , plasser: 12 },
     'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' , plasser: 12 },
     'Date Night':    { type: 'Event',         tema: 'Date Night' , plasser: 12 },
     'Paint on pots': { type: 'Event',         tema: 'Paint on pots' , plasser: 12 },
@@ -23606,11 +23636,25 @@ class Component extends DCLogic {
     'Drop-in':       { type: 'Drop-in',       tema: 'Drop-in' , plasser: 8 },
   };
 
+  /**
+   * Temaer som ikke lenger er egne kategorier.
+   *
+   * Et kurs lagret som «Workshop» eller «Plateteknikk» skal fortsatt vite
+   * hvor det hoerer hjemme, ogsaa for migrasjon 099 er kjort — og ogsaa
+   * etterpaa, om noe ligger igjen.
+   */
+  static KATEGORI_ELDRE = {
+    'Workshop': 'Håndbygging',
+    'Plateteknikk': 'Håndbygging',
+    'Event': 'Events',
+  };
+
   /** Kategorien et lagret kurs staar i, utledet av temaet det har. */
   kategoriFor(tema, type) {
     const B = Component.KATEGORI_BETYR;
     const treff = Object.keys(B).find(k => B[k].tema === tema);
     if (treff) return treff;
+    if (Component.KATEGORI_ELDRE[tema]) return Component.KATEGORI_ELDRE[tema];
     // Kurs lagret for kategoriene fantes. «Kurs» og «Events» var temaer da.
     return Object.keys(B).find(k => B[k].type === type) || '';
   }
@@ -27933,8 +27977,8 @@ class Component extends DCLogic {
         padding: 0, textAlign: 'left', font: 'var(--type-body)', fontSize: 'calc(var(--text-base) * 1.5)', color: 'var(--clay-200)',
         transition: 'transform .18s var(--ease-clay, ease), color .18s ease',
       },
-      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Plateteknikk': 'Kurs i plateteknikk', 'Workshop': 'Workshops', 'Sip & Clay': 'Sip & Clay', 'Date Night': 'Date Night', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
-      erKursFilter: ['Alle', 'Kursene', 'Kurs', 'Dreiing', 'Plateteknikk', 'Workshop'].indexOf(this.state.kursFilter || 'Kursene') >= 0,
+      kursTittel: { 'Kurs': 'Våre kurs', 'Events': 'Date Night, Paint on Pots og Sip & Clay', 'Drop-in': 'Drop-in i verkstedet', 'Dreiing': 'Kurs i dreiing', 'Håndbygging': 'Håndbygging', 'Sip & Clay': 'Sip & Clay', 'Date Night': 'Date Night', 'Paint on pots': 'Paint on Pots' }[this.state.kursFilter] || 'Finn en dato som passer',
+      erKursFilter: ['Alle', 'Kursene', 'Kurs', 'Dreiing', 'Håndbygging'].indexOf(this.state.kursFilter || 'Kursene') >= 0,
       medlemFordeler: [
         'Tilgang til verksted og utstyr',
         'Mulighet til å jobbe med egne prosjekter',
@@ -28316,7 +28360,9 @@ class Component extends DCLogic {
           // Rada med kategorier hoerer til kurssida. Events og drop-in er
           // hver sin side, naadd fra menyen, og der er det ingenting aa
           // filtrere paa.
-          visKursFiltre: ['Events', 'Drop-in'].indexOf(this.state.kursFilter) === -1,
+          // «Events» er en pille i rada naa, ikke en egen side. Da skal rada
+          // staa — ellers forsvinner veien tilbake til de andre kursene.
+          visKursFiltre: ['Drop-in'].indexOf(this.state.kursFilter) === -1,
           kursNullstill: () => this.setState({ kursTid: null, kursFilter: 'Vis alle' }),
           kursFiltre: KATEGORIER
             // «Vis alle» staar alltid. Den valgte staar ogsaa, selv naar den
@@ -28580,7 +28626,7 @@ class Component extends DCLogic {
         const alt = [
           { navn: 'Nybegynner dreiekurs', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
           { navn: 'Kurs boller', type: 'Kurs', side: 'kurs', filter: 'Dreiing' },
-          { navn: 'Store fat kurs', type: 'Kurs', side: 'kurs', filter: 'Plateteknikk' },
+          { navn: 'Store fat kurs', type: 'Kurs', side: 'kurs', filter: 'Håndbygging' },
           { navn: 'Paint on Pots', type: 'Event', side: 'kurs', filter: 'Paint on pots' },
           { navn: 'Date Night', type: 'Event', side: 'kurs', filter: 'Events' },
           { navn: 'Drop-in i verkstedet', type: 'Drop-in', side: 'kurs', filter: 'Drop-in' },
@@ -29864,6 +29910,23 @@ class Component extends DCLogic {
               { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Deltakere på et kurs' }) },
             ],
             omrKort: [
+              // ── Katalogen ────────────────────────────────────────────
+              //
+              // Eieren, 30. august: «under kurs og deltakere savner jeg et
+              // kort som heter kurs. Som viser hvilke kurs som ligger i
+              // databasen, slik at jeg enkelt kan redigere de. Ogsaa lage et
+              // nytt kurs.»
+              //
+              // Kortene her handlet om datoene: «Planlagte kurs» er de som
+              // har noe framfor seg, «Datoer som ligger ute» er datoene
+              // selv. Selve kursene — navnet, prisen, teksten og bildene —
+              // hadde ingen inngang. «Opprett kurs» laget et nytt, men viste
+              // ikke dem som fantes.
+              medMer(kort('Kurs',
+                   'Alle kursene i katalogen — navn, pris, tekst og bilder. Trykk et kurs for å redigere det.',
+                   kursData.length, 'admin', { kursFane: 'alle', datoerFor: '', kRed: false }, 'Se kursene'),
+                   'Lag et nytt kurs',
+                   () => this.gaaAdmin('admin', nyttKurs)),
               // Teller og aapner det kortet heter: kurs som har en dato
               // framfor seg. Sto med kurs.length og aapnet hele katalogen.
               kort('Planlagte kurs',
@@ -29871,9 +29934,6 @@ class Component extends DCLogic {
                      ? 'Kursene som har datoer framover, med datoene folk melder seg på.'
                      : 'Ingen kurs har datoer framover ennå.',
                    planlagteKurs, 'admin', { kursFane: 'planlagte' }, 'Se kursene'),
-              kort('Opprett kurs',
-                   'Navn, pris, plasser og datoer i tre steg. Det ligger ute med det samme.',
-                   null, 'admin', nyttKurs, 'Lag et kurs'),
               // «Nytt medlemskap» sto som eget hovedkort her. Det er samme
               // sted som «Medlemskap» forer til, og det er der det hoerer
               // hjemme — nederst i kortet, ikke ved siden av det.
@@ -31533,7 +31593,7 @@ class Component extends DCLogic {
       smsForklaring: this.smsAktivert()
         ? 'SMS sendes fra Lissom.'
         : 'SMS er ikke aktivert. Meldingene går på e-post og Min side. Skal SMS også gå ut, må vi koble på en SMS-leverandør først.',
-      adminTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'],
+      adminTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Drop-in'],
       synlighet: ['Åpent for alle', 'Kun for medlemmer', 'Kun for inviterte'],
       adminGjentak: ['Hver tirsdag', 'Hver uke', 'Annenhver uke', 'Første i måneden', 'Egendefinert'],
       // Tre innganger til den samme lista: alt, det som er aapent for
@@ -33147,7 +33207,10 @@ class Component extends DCLogic {
         velg: () => this.setState({ nkHolder: t }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkHolder || 'Monica') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkHolder || 'Monica') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkHolder || 'Monica') ? 'var(--clay-50)' : 'var(--text-heading)' },
       })),
-      nkTyper: ['Kurs', 'Event', 'Workshop', 'Sip & Clay', 'Drop-in'].map(t => ({
+      // «Workshop» heter «Haandbygging» naa, som pilla ute. Eieren, 30.
+      // august: «jeg vil ha mulighet aa velge haandbygging naar jeg legger ut
+      // nye kurs» — og det er dette skjemaet han legger dem ut fra.
+      nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Drop-in'].map(t => ({
         navn: t,
         velg: () => this.setState({ nkType: t }),
         stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkType || 'Kurs') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkType || 'Kurs') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkType || 'Kurs') ? 'var(--clay-50)' : 'var(--text-heading)' },

@@ -132,6 +132,13 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Planlagte kurs har uke, måned og liste.** De samme tre visningene som
+kalenderen, på de samme øktene: uka med alle sju dagene (også de tomme),
+månedsrutenettet som ruller sidelengs på telefon, og lista fjorten dager
+nedover. Et trykk på en dato åpner nå *kurset* — datolista legger seg øverst
+med alle datoene og «Legg til deltaker» på hver av dem. Før sendte den deg til
+Påmeldte-skjermen med et filter på, altså en annen skjerm og ikke kurset.
+
 **Planlagte kurs står som listen i kalenderen.** Skjermen «Kurs og deltakere»
 hadde uka i sju spalter ved siden av hverandre. På en telefon er det 55 piksler
 per dag, og eieren så to og en halv dag om gangen med titlene klippet på

@@ -2360,8 +2360,9 @@ sjekk('kalenderen har sin egen adresse, saa den taaler en omlasting',
 // Manedsrutenettet er sju spalter. Paa en telefon falt sondagen utenfor
 // kanten med «overflow: hidden» — nu ruller rammen sidelengs i stedet.
 sjekk('de brede visningene ruller sidelengs paa telefon',
-    // Maaned, uke og dag. Alle tre er flere spalter enn en telefon er bred.
-    substr_count($sida, 'class="lx-kalbred"') === 3
+    // Maaned, uke og dag i kalenderen — og maaneden under Planlagte kurs.
+    // Alle fire er flere spalter enn en telefon er bred.
+    substr_count($sida, 'class="lx-kalbred"') === 4
     && str_contains($sida, '.lx-kalbred { overflow-x: auto !important;'));
 // Og velger hun Maned eller Dag paa telefon, skal hun faa det. Lista er
 // standardvisningen der, ikke den eneste.
@@ -3140,7 +3141,19 @@ sjekk('… med klokkeslett, prikk og detaljlinje som i kalenderen',
 sjekk('prikken henter fargene fra kalenderen selv',
     str_contains($sida2, 'const info = this.klTypeInfo();'));
 sjekk('dager uten noe hopper lista over',
-    str_contains($sida2, 'if (!poster.length) continue;'));
+    str_contains($sida2, 'if (!poster.length && !taMedTomme) return null;')
+    && str_contains($sida2, 'if (kort) dager.push(kort);'));
+// Eieren, 30. august: «jeg vil og ha uke og maanedsvisning».
+sjekk('planlagte kurs har uke, maaned og liste',
+    str_contains($sida2, "admVisValg: [['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']]")
+    && str_contains($sida2, '{{ admErMnd }}') && str_contains($sida2, '{{ admErAgenda }}'));
+sjekk('… og ukevisningen viser ogsaa de tomme dagene',
+    str_contains($sida2, 'dager.push(dagKort(d, true));')
+    && str_contains($sida2, '{{ d.erTom }}'));
+// Eieren, 30. august: «naar jeg trykker paa planlagte kurs saa kommer jeg
+// ikke til kurset». Raden sendte deg til Paameldte-skjermen med et filter paa.
+sjekk('et trykk paa en dato aapner kurset',
+    str_contains($sida2, "this.setState({ datoerFor: o.tittel, kRed: false, oktRediger: null });"));
 // Aapningstida klippes i plasser paa halvannen time. Uten sammenslaaingen sto
 // den samme drop-inen i seks like linjer, slik den gjorde i kalenderen for.
 sjekk('planlagte kurs samler tidene som foelger en regel',

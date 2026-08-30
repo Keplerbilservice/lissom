@@ -7924,35 +7924,81 @@ window.__resources = {
                 <div style="font-size: var(--text-lg); color: var(--text-muted); margin-top: 2px;">{{ admUkeMaaned }}</div>
               </div>
               <div style="display: flex; gap: var(--space-2);">
-                <button type="button" onClick="{{ admUkeForrige }}" aria-label="Fjorten dager tilbake" style="{{ admUkePilStil }}">‹</button>
-                <button type="button" onClick="{{ admUkeNeste }}" aria-label="Fjorten dager fram" style="{{ admUkePilStil }}">›</button>
+                <button type="button" onClick="{{ admUkeForrige }}" aria-label="Tilbake" style="{{ admUkePilStil }}">‹</button>
+                <button type="button" onClick="{{ admUkeNeste }}" aria-label="Fram" style="{{ admUkePilStil }}">›</button>
                 <button type="button" onClick="{{ admUkeNaa }}" style="{{ admUkeNaaStil }}">I dag</button>
               </div>
               <span style="font-size: var(--text-sm); color: var(--text-muted); margin-left: auto;">{{ admUkeAntall }}</span>
             </div>
-            <!-- Én dag om gangen nedover, med samme kort, samme prikk og
-                 samme linjer som listevisningen i kalenderen. -->
-            <div style="display: flex; flex-direction: column; gap: var(--space-5);">
-              <sc-for list="{{ admUke }}" as="d" hint-placeholder-count="4">
-                <div class="lx-agendadag" style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3) var(--space-3);">
-                  <div style="padding: var(--space-2) var(--space-4) var(--space-2); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ d.dagTittel }}</div>
-                  <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <sc-for list="{{ d.poster }}" as="p" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ p.velg }}" title="{{ p.tittelHel }}" class="lx-agenda" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5);">
-                        <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 110px; flex: 0 0 auto;">{{ p.tid }}</span>
-                        <span style="{{ p.prikkStil }}"></span>
-                        <span style="flex: 1; min-width: 0;">
-                          <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.tittel }}</span>
-                          <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
-                        </span>
-                      </button>
-                    </sc-for>
-                  </div>
-                </div>
+            <!-- Uke, maaned og liste — de samme tre visningene som
+                 kalenderen har, paa de samme oektene. -->
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4);">
+              <sc-for list="{{ admVisValg }}" as="v" hint-placeholder-count="3">
+                <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
               </sc-for>
             </div>
-            <sc-if value="{{ admUkeTom }}" hint-placeholder-val="{{ false }}">
-              <p style="margin: 0; padding: var(--space-6); text-align: center; font-size: var(--text-sm); color: var(--text-muted); background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">Ingenting planlagt disse to ukene.</p>
+
+            <!-- Én dag om gangen nedover, med samme kort, samme prikk og
+                 samme linjer som listevisningen i kalenderen. Uke og liste
+                 deler den; forskjellen er hvilke dager som staar der. -->
+            <sc-if value="{{ admErAgenda }}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: var(--space-5);">
+                <sc-for list="{{ admUke }}" as="d" hint-placeholder-count="4">
+                  <div class="lx-agendadag" style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-2) var(--space-3) var(--space-3);">
+                    <div style="padding: var(--space-2) var(--space-4) var(--space-2); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ d.dagTittel }}</div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                      <sc-for list="{{ d.poster }}" as="p" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ p.velg }}" title="{{ p.tittelHel }}" class="lx-agenda" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-md); cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; align-items: center; gap: var(--space-5); padding: var(--space-4) var(--space-5);">
+                          <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-base); color: var(--text-heading); width: 110px; flex: 0 0 auto;">{{ p.tid }}</span>
+                          <span style="{{ p.prikkStil }}"></span>
+                          <span style="flex: 1; min-width: 0;">
+                            <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ p.tittel }}</span>
+                            <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ p.detalj }}</span>
+                          </span>
+                        </button>
+                      </sc-for>
+                    </div>
+                    <!-- I ukevisningen staar ogsaa de tomme dagene. En uke
+                         med hull i er en opplysning; en uke der dagene bare
+                         mangler, ser ut som en feil. -->
+                    <sc-if value="{{ d.erTom }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: 0; padding: var(--space-2) var(--space-4) var(--space-3); font-size: var(--text-xs); color: var(--text-muted); font-style: italic;">Ingenting</p>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ admUkeTom }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0; padding: var(--space-6); text-align: center; font-size: var(--text-sm); color: var(--text-muted); background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">Ingenting planlagt disse to ukene.</p>
+              </sc-if>
+            </sc-if>
+
+            <!-- Maaneden. Sju spalter er sju spalter ogsaa her, men en maaned
+                 kan ikke vises paa annen maate. Rutenettet ruller derfor
+                 sidelengs i sin egen ramme paa telefon, slik kalenderens
+                 maaned gjor — resten av sida staar stille. -->
+            <sc-if value="{{ admErMnd }}" hint-placeholder-val="{{ false }}">
+              <div class="lx-kalbred" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr);">
+                  <sc-for list="{{ admUkedager }}" as="u" hint-placeholder-count="7">
+                    <div style="padding: var(--space-3); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u }}</div>
+                  </sc-for>
+                </div>
+                <sc-for list="{{ admUker }}" as="uke" hint-placeholder-count="5">
+                  <div style="display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--border-subtle);">
+                    <sc-for list="{{ uke.dager }}" as="d" hint-placeholder-count="7">
+                      <div style="{{ d.stil }}">
+                        <div style="{{ d.tallStil }}">{{ d.tall }}</div>
+                        <sc-for list="{{ d.hendelser }}" as="h" hint-placeholder-count="0">
+                          <button type="button" onClick="{{ h.velg }}" title="{{ h.tittelHel }}" style="{{ h.stil }}">{{ h.tekst }}</button>
+                        </sc-for>
+                        <sc-if value="{{ d.harMer }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ d.velgDag }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 4px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-align: left;">{{ d.mer }}</button>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
             </sc-if>
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ admUkeHjelp }}</p>
 
@@ -31231,28 +31277,37 @@ class Component extends DCLogic {
         const iOslo = (d) => new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
         const iDag = iOslo(new Date()); iDag.setHours(0, 0, 0, 0);
 
-        // ── Fjorten dager, som listevisningen i kalenderen ──────────────
+        // ── Liste, uke og maaned — som i kalenderen ──────────────────────
         //
         // Her sto sju spalter ved siden av hverandre, én per ukedag. Paa en
         // telefon er 390 piksler delt paa sju 55 piksler per dag, og eieren
         // saa to og en halv dag om gangen med kurstitler klippet paa midten.
         //
-        // Eieren, 30. august: «samme som kalendervisningen er best», og
-        // etterpaa: «jeg vil at denne skal se lik ut og vises likt som
-        // kalenderen». Det er den samme lista: en dag om gangen nedover, med
-        // klokkeslettet forst, en farget prikk for hva slags okt det er, og
-        // belegget under tittelen. Dager uten noe hopper vi over — det er
-        // dem som fyller skjermen uten aa si noe.
+        // Eieren, 30. august: «samme som kallendervisningen er best», og
+        // etterpaa «jeg vil og ha uke og maanedsvisning». Det er de samme tre
+        // visningene som kalenderen har, paa de samme dataene:
         //
-        // Forskyvningen telles i fjorten dager om gangen, som «Liste» i
-        // kalenderen gjor.
-        const skift = this.state.admUkeSkift || 0;
-        const start = new Date(iDag);
-        start.setDate(start.getDate() + skift * 14);
+        //   Liste   fjorten dager nedover, tomme dager hoppes over
+        //   Uke     de sju dagene i uka, ogsaa de tomme
+        //   Maaned  rutenettet, med brikker i hver dag
+        //
+        // Ankeret er én dato for alle tre. Piltastene flytter fjorten dager,
+        // sju dager eller en maaned — det som svarer til det du ser paa.
+        const vis = this.state.admVis || 'liste';
+        const anker = this.state.admAnker
+          ? new Date(this.state.admAnker + 'T12:00:00')
+          : new Date(iDag);
+        anker.setHours(0, 0, 0, 0);
 
         const nokkel = (d) => d.getFullYear() + '-'
           + String(d.getMonth() + 1).padStart(2, '0') + '-'
           + String(d.getDate()).padStart(2, '0');
+        const isoUke = (d) => {
+          const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+          t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+          const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+          return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
+        };
 
         // Samme utvalg som datolista under: staar du under Medlemmer → Kurs,
         // skal lista vise samlingene deres, ikke alt.
@@ -31261,9 +31316,8 @@ class Component extends DCLogic {
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1);
 
-        // Fargen paa prikken er kalenderens egen, hentet fra det samme
-        // stedet — to lister over de samme oektene skal ikke ha hver sin
-        // fargeskala.
+        // Fargene er kalenderens egne, hentet fra det samme stedet — to
+        // lister over de samme oektene skal ikke ha hver sin fargeskala.
         const info = this.klTypeInfo();
         const slaget = (o) => {
           const tema = (o.tema || '').toLowerCase();
@@ -31273,8 +31327,9 @@ class Component extends DCLogic {
           if ((o.type || '') === 'event' || tema === 'events') return 'event';
           return 'kurs';
         };
+        const fargen = (o) => info[slaget(o)] || info.kurs;
         const prikk = (o) => {
-          const f = info[slaget(o)] || info.kurs;
+          const f = fargen(o);
           return {
             width: '10px', height: '10px', borderRadius: '3px', flex: '0 0 auto',
             background: f.kant ? 'transparent' : f.bg, border: f.kant || 'none',
@@ -31334,57 +31389,163 @@ class Component extends DCLogic {
           });
           return ut.sort((a, b) => String(a.fra || '').localeCompare(String(b.fra || '')));
         };
+        const paaDagen = (d) => samle(alle.filter(o => o.dato === nokkel(d)));
 
-        let antall = 0;
-        const dager = [];
-        for (let i = 0; i < 14; i++) {
-          const d = new Date(start);
-          d.setDate(start.getDate() + i);
-          const poster = samle(alle.filter(o => o.dato === nokkel(d)));
-          if (!poster.length) continue;
-          antall += poster.filter(o => !o.gruppe).length
-                  + poster.filter(o => o.gruppe).reduce((n, o) => n + o.antallTider, 0);
+        // ── Trykk paa en dato ────────────────────────────────────────────
+        //
+        // Eieren, 30. august: «naar jeg trykker paa planlagte kurs saa kommer
+        // jeg ikke til kurset». Raden sendte deg til Paameldte-skjermen med
+        // et filter paa — en annen skjerm, og ikke kurset.
+        //
+        // Naa aapner den kurset der du staar: datolista legger seg oeverst
+        // med alle datoene til kurset, «Legg til deltaker» paa hver av dem,
+        // og «Rediger» videre inn i oppsettet. Det er den samme veien som et
+        // trykk i kurslista under tar.
+        const apneKurset = (o) => () => {
+          this.setState({ datoerFor: o.tittel, kRed: false, oktRediger: null });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
-          dager.push({
+        // Linja under tittelen. Den samme opplysningen som i kalenderen:
+        // hvor mange plasser som er tatt, og hva som er galt med datoen.
+        const detaljen = (o) => {
+          const pameldt = (o.betalt || 0) + (o.reservert || 0);
+          const full = (o.ledige || 0) <= 0;
+          return o.gruppe
+            ? [o.antallTider + ' tider',
+               o.publisert === false ? 'Ikke publisert' : '',
+               pameldt ? pameldt + (pameldt === 1 ? ' påmeldt' : ' påmeldte') : 'Ingen påmeldte',
+               utvidet[o.gruppeId] ? 'Skjul' : 'Vis tidene'].filter(Boolean).join(' · ')
+            : [o.publisert === false ? 'Ikke publisert' : '',
+               o.kapasitet ? pameldt + ' av ' + o.kapasitet : '',
+               full ? 'Fullbooket' : '',
+               (o.tema || '') === 'Kun for medlemmer' ? 'Kun for medlemmer' : '']
+              .filter(Boolean).join(' · ');
+        };
+        const heleTeksten = (o) => o.tittel + ' · ' + o.naar + ' · '
+          + ((o.ledige || 0) <= 0 ? 'Fullbooket' : o.ledige + ' ledige')
+          + (o.publisert === false ? ' · Ikke publisert' : '');
+        const raden = (o) => ({
+          tid: (o.fra || '') + (o.til ? '–' + o.til : ''),
+          tittel: o.tittel,
+          detalj: detaljen(o),
+          prikkStil: prikk(o),
+          tittelHel: heleTeksten(o),
+          // En samlet linje aapner tidene sine; en enkelt dato aapner kurset.
+          velg: o.gruppe ? vekslUtvid(o.gruppeId) : apneKurset(o),
+        });
+
+        // ── Dagene, slik de staar i liste og uke ─────────────────────────
+        const dagKort = (d, taMedTomme) => {
+          const poster = paaDagen(d);
+          if (!poster.length && !taMedTomme) return null;
+          return {
             dagTittel: DAG_LANG[d.getDay()] + ' ' + d.getDate() + '. ' + MND[d.getMonth()],
-            poster: poster.map(o => {
-              const pameldt = (o.betalt || 0) + (o.reservert || 0);
-              const full = (o.ledige || 0) <= 0;
-              const intern = (o.tema || '') === 'Kun for medlemmer';
-              const tid = (o.fra || '') + (o.til ? '–' + o.til : '');
-              const detalj = o.gruppe
-                ? [o.antallTider + ' tider',
-                   o.publisert === false ? 'Ikke publisert' : '',
-                   pameldt ? pameldt + (pameldt === 1 ? ' påmeldt' : ' påmeldte') : 'Ingen påmeldte',
-                   utvidet[o.gruppeId] ? 'Skjul' : 'Vis tidene'].filter(Boolean).join(' · ')
-                : [o.publisert === false ? 'Ikke publisert' : '',
-                   o.kapasitet ? pameldt + ' av ' + o.kapasitet : '',
-                   full ? 'Fullbooket' : '',
-                   intern ? 'Kun for medlemmer' : ''].filter(Boolean).join(' · ');
+            erTom: poster.length === 0,
+            poster: poster.map(raden),
+          };
+        };
+
+        let dager = [];
+        const ukeStart = new Date(anker);
+        ukeStart.setDate(anker.getDate() - ((anker.getDay() + 6) % 7));
+        if (vis === 'uke') {
+          for (let i = 0; i < 7; i++) {
+            const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i);
+            dager.push(dagKort(d, true));
+          }
+        } else if (vis === 'liste') {
+          for (let i = 0; i < 14; i++) {
+            const d = new Date(anker); d.setDate(anker.getDate() + i);
+            const kort = dagKort(d, false);
+            if (kort) dager.push(kort);
+          }
+        }
+
+        // ── Maanedsrutenettet ───────────────────────────────────────────
+        //
+        // Sju spalter er sju spalter ogsaa her, men en maaned kan ikke vises
+        // paa annen maate. Derfor ruller rutenettet sidelengs i sin egen
+        // ramme (lx-kalbred) paa telefon, slik kalenderens maaned gjor —
+        // resten av sida staar stille.
+        const mndAar = anker.getFullYear(), mndNr = anker.getMonth();
+        const forskyv = (new Date(mndAar, mndNr, 1).getDay() + 6) % 7;
+        const dagerIMnd = new Date(mndAar, mndNr + 1, 0).getDate();
+        const MAX_BRIKKER = 4;
+        const tomRute = () => ({
+          iso: '', tall: '', hendelser: [], harMer: false, mer: '', velgDag: () => {},
+          stil: { minHeight: '104px', padding: '6px', borderRight: '1px solid var(--border-subtle)', background: 'var(--clay-100)' },
+          tallStil: {},
+        });
+        const ruter = [];
+        for (let i = 0; i < forskyv; i++) ruter.push(tomRute());
+        for (let dd = 1; dd <= dagerIMnd; dd++) {
+          const d = new Date(mndAar, mndNr, dd);
+          const iso = nokkel(d);
+          const poster = paaDagen(d);
+          const erIDag = iso === nokkel(iDag);
+          ruter.push({
+            iso: iso,
+            tall: String(dd),
+            stil: { minHeight: '104px', padding: '6px', borderRight: '1px solid var(--border-subtle)',
+                    background: erIDag ? 'var(--clay-100)' : 'var(--surface-card)',
+                    display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 },
+            tallStil: { fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '13px',
+                        color: erIDag ? 'var(--terracotta-600)' : 'var(--text-heading)', padding: '2px 4px' },
+            hendelser: poster.slice(0, MAX_BRIKKER).map(o => {
+              const f = fargen(o);
               return {
-                tid: tid,
-                tittel: o.tittel,
-                detalj: detalj,
-                prikkStil: prikk(o),
-                // Hele opplysningen naar musa staar over.
-                tittelHel: o.tittel + ' · ' + o.naar + ' · '
-                  + (full ? 'Fullbooket' : o.ledige + ' ledige'),
-                // En samlet linje aapner tidene sine; en enkelt dato aapner
-                // de paameldte. Gruppa er ingen okt, saa den har ingenting
-                // aa aapne paa Paameldte.
-                velg: o.gruppe ? vekslUtvid(o.gruppeId) : () => {
-                  this.setState({ side: 'adminpameldte', pameldtOkt: o.oktId, pameldtFilter: 'Alle' });
-                  window.scrollTo(0, 0);
+                tekst: (o.fra || '') + ' ' + o.tittel,
+                tittelHel: heleTeksten(o),
+                velg: o.gruppe ? vekslUtvid(o.gruppeId) : apneKurset(o),
+                stil: {
+                  appearance: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
+                  boxSizing: 'border-box', border: f.kant || 'none', borderRadius: '6px',
+                  padding: '2px 7px', background: f.bg, color: f.fg,
+                  fontFamily: 'var(--font-ui, inherit)', fontSize: '11px', fontWeight: 600,
+                  lineHeight: 1.35, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 },
               };
             }),
+            harMer: poster.length > MAX_BRIKKER,
+            mer: '+ ' + (poster.length - MAX_BRIKKER) + ' til',
+            // «+ 3 til» tar deg til den dagen i uke­visningen, der det er
+            // plass til alle sammen.
+            velgDag: () => this.setState({ admAnker: iso, admVis: 'uke' }),
           });
         }
+        while (ruter.length % 7) ruter.push(tomRute());
+        const uker = [];
+        for (let i = 0; i < ruter.length; i += 7) uker.push({ dager: ruter.slice(i, i + 7) });
 
-        const sisteDag = new Date(start); sisteDag.setDate(start.getDate() + 13);
-        const maaned = start.getMonth() === sisteDag.getMonth()
-          ? MND[start.getMonth()] + ' ' + start.getFullYear()
-          : MND[start.getMonth()] + '–' + MND[sisteDag.getMonth()] + ' ' + sisteDag.getFullYear();
+        let antall = 0;
+        if (vis === 'maned') {
+          antall = alle.filter(o => String(o.dato || '').slice(0, 7)
+            === mndAar + '-' + String(mndNr + 1).padStart(2, '0')).length;
+        } else {
+          const fraIso = nokkel(vis === 'uke' ? ukeStart : anker);
+          const til = new Date(vis === 'uke' ? ukeStart : anker);
+          til.setDate(til.getDate() + (vis === 'uke' ? 6 : 13));
+          const tilIso = nokkel(til);
+          antall = alle.filter(o => o.dato >= fraIso && o.dato <= tilIso).length;
+        }
+
+        const sisteDag = new Date(anker); sisteDag.setDate(anker.getDate() + 13);
+        const ukeSlutt = new Date(ukeStart); ukeSlutt.setDate(ukeStart.getDate() + 6);
+        const spennet = (a, b) => a.getMonth() === b.getMonth()
+          ? MND[a.getMonth()] + ' ' + a.getFullYear()
+          : MND[a.getMonth()] + '–' + MND[b.getMonth()] + ' ' + b.getFullYear();
+        const stor = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+        const flytt = (retning) => () => {
+          if (vis === 'maned') {
+            this.setState({ admAnker: nokkel(new Date(mndAar, mndNr + retning, 1)) });
+            return;
+          }
+          const d = new Date(anker);
+          d.setDate(d.getDate() + retning * (vis === 'uke' ? 7 : 14));
+          this.setState({ admAnker: nokkel(d) });
+        };
 
         const pil = {
           appearance: 'none', cursor: 'pointer', width: 36, height: 36,
@@ -31395,24 +31556,51 @@ class Component extends DCLogic {
 
         return {
           admUke: dager,
-          admUkeTom: dager.length === 0,
-          admUkeTittel: 'Fra ' + start.getDate() + '. ' + MND[start.getMonth()],
-          admUkeMaaned: maaned.charAt(0).toUpperCase() + maaned.slice(1),
-          admUkeAntall: antall === 0 ? 'Ingen datoer disse to ukene'
-                      : antall === 1 ? '1 dato disse to ukene' : antall + ' datoer disse to ukene',
-          admUkeForrige: () => this.setState({ admUkeSkift: skift - 1 }),
-          admUkeNeste: () => this.setState({ admUkeSkift: skift + 1 }),
-          admUkeNaa: () => this.setState({ admUkeSkift: 0 }),
+          admUker: uker,
+          admUkedager: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn'],
+          admErAgenda: vis !== 'maned',
+          admErMnd: vis === 'maned',
+          admUkeTom: vis === 'liste' && dager.length === 0,
+          // Brikkene over lista. De samme ordene som i kalenderen, og de
+          // staar i samme rekkefolge der.
+          admVisValg: [['uke', 'Uke'], ['maned', 'Måned'], ['liste', 'Liste']].map(v => ({
+            navn: v[1],
+            velg: () => this.setState({ admVis: v[0] }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+              padding: '5px 13px', font: 'var(--type-body-sm)', fontWeight: 600,
+              border: vis === v[0] ? '1.5px solid transparent' : '1.5px solid var(--border-subtle)',
+              background: vis === v[0] ? 'var(--lissom-brown)' : 'transparent',
+              color: vis === v[0] ? 'var(--clay-50)' : 'var(--text-muted)',
+              whiteSpace: 'nowrap',
+            },
+          })),
+          admUkeTittel: vis === 'maned'
+            ? stor(MND[mndNr]) + ' ' + mndAar
+            : (vis === 'uke'
+                ? 'Uke ' + isoUke(ukeStart)
+                : 'Fra ' + anker.getDate() + '. ' + MND[anker.getMonth()]),
+          admUkeMaaned: vis === 'maned'
+            ? ''
+            : (vis === 'uke'
+                ? ukeStart.getDate() + '. ' + MND[ukeStart.getMonth()] + ' – '
+                  + ukeSlutt.getDate() + '. ' + MND[ukeSlutt.getMonth()]
+                : stor(spennet(anker, sisteDag))),
+          admUkeAntall: antall === 0 ? 'Ingen datoer'
+                      : antall === 1 ? '1 dato' : antall + ' datoer',
+          admUkeForrige: flytt(-1),
+          admUkeNeste: flytt(1),
+          admUkeNaa: () => this.setState({ admAnker: nokkel(iDag) }),
           admUkePilStil: pil,
           admUkeNaaStil: {
             appearance: 'none', cursor: 'pointer', height: 36, padding: '0 14px',
             borderRadius: 999, border: '1px solid var(--border-subtle)',
-            background: skift === 0 ? 'var(--lissom-brown)' : 'var(--surface-card)',
-            color: skift === 0 ? 'var(--clay-50)' : 'var(--text-heading)',
+            background: nokkel(anker) === nokkel(iDag) ? 'var(--lissom-brown)' : 'var(--surface-card)',
+            color: nokkel(anker) === nokkel(iDag) ? 'var(--clay-50)' : 'var(--text-heading)',
             font: 'var(--type-body-sm)', fontWeight: 600,
           },
           admUkeHjelp: 'Fargen på prikken sier hva slags økt det er. Trykk en '
-            + 'dato for å se de påmeldte og legge til en deltaker.',
+            + 'dato for å åpne kurset, med datoene og «Legg til deltaker».',
 
           // ── Aapningstida i dag, og hva den er regnet av ────────────────
           //

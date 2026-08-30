@@ -130,6 +130,47 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ---
 
+## Gjort 30. august
+
+**Markedsføringen bygget om.** Bare innlegg til sosiale medier hadde en
+forhåndsvisning; en artikkel og et nyhetsbrev viste rå tekst og ingen bilde,
+selv om bildet fulgte med hele veien i basen og helt ut på nettsiden. Alle tre
+tegnes nå slik de faktisk blir. «Publiser nå» står i selve utkastet og
+godkjenner og legger ut i ett kall. Tre feil lå bak: sperren i `aiKall` stoppet
+også «godkjenn» og «publiser» med en begrunnelse som ikke stemte;
+`articles.tittel` er UNIQUE, så to utkast om det samme ga hele SQLSTATE-feilen
+på skjermen og ingen publisering; og emneknaggene sto som «##keramikk» når
+AI-en tok med tegnet selv.
+
+**Meld inn feil.** To lag: automatisk fangst av unntak, ubehandlede løfter og
+API-kall som svarer 500 — alltid på, usynlig — og en knapp der et menneske kan
+skrive fra seg det maskinen ikke ser. Knappen står i bunnteksten, nederst på
+Min side og i adminmenyen, bak en dato eieren setter selv («Slå på i en uke»).
+Rapportene ligger under Nettsiden → Feilmeldinger med «Kopier alt».
+
+Vakta fant en feil første gang den kjørte: to `<img>` i kassa sto med
+`src="{{ utQrBilde }}"` i stedet for `data-src`. Nettleseren ba om selve
+krøllparentesene som filadresse ved hver eneste sidelasting, hos alle.
+
+**Datolista.** «Neste åtte uker» viste datoer som hadde vært.
+`api/admin/pameldte.php` sender med de siste tretti dagene — deltakerlista
+trenger dem — men datolista filtrerte bare oppover. Grensen manglet i den
+andre enden.
+
+**Oversikt.** Kortet «Programmet på telefonen» er borte; abonnementet står nå
+på Kalender-skjermen. Kortet «Kurs går tomme for datoer» er fjernet. Nytt kort:
+statistikk med de mest populære kursene, regnet av plasser solgt siste tolv
+måneder. Snarveiene heter «Ofte brukt» og er like store på telefon.
+
+**Kvitteringen på e-post.** Alle steder som lovet en e-postkvittering som aldri
+kommer er strøket — bookingsiden, kassen, «slik virker det», vilkårene og
+svaret når et gavekort dekker hele kjøpet. Kvitteringen ligger i Vipps.
+
+**De tre pillene i bunnteksten** er like store, med teksten på én linje. Målt
+på 360, 375, 390, 430 og 1440 piksler.
+
+---
+
 ## Gjort 29. august, kveld
 
 **«Legg til deltaker» på den planlagte økta.** Navn, e-post, telefon, antall,
@@ -208,6 +249,13 @@ viser dagens salg.
 ---
 
 ## Må gjøres av Lissom
+
+### 7d. Migrasjon 094 må kjøres — ny 30. august
+
+094 lager tabellen feilrapportene havner i. Til den er kjørt, samler
+«Meld inn feil» ingenting — den sier ikke fra som en feil, den bare står
+tom. Etterpå: Nettsiden → Feilmeldinger → «Slå på i en uke», ellers vises
+knappen ingen andre steder enn i adminmenyen.
 
 ### 7c. Migrasjon 091–093 må kjøres — nye 29. august, kveld
 

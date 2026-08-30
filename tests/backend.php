@@ -3412,8 +3412,13 @@ sjekk('knapperada i kursoppsettet bryter',
 // «Om kurset», «Dette lager du» ved siden av «Dette faar du med hjem».
 sjekk('varighetsbrikkene er borte fra kursoppsettet',
     !str_contains($sida2, "['Varighet', 'kVarighet',"));
-sjekk('… og varigheten regnes fortsatt av tidene paa datoene',
-    str_contains($sida2, "kVarighetRegnet: raa.varighetVist || 'Regnes av tidene på datoene',"));
+// «Fjern varighet og bruk tidene paa datoen»: ogsaa tekstfeltet, som
+// overstyrte klokka naar det sto noe i det.
+sjekk('… og varighetsfeltet ogsaa',
+    !str_contains($sida2, 'id="k-varighet"') && !str_contains($sida2, 'settKVarighetTekst'));
+sjekk('… varigheten regnes av tidene paa datoene, alltid',
+    !str_contains(file_get_contents(__DIR__ . '/../app/lib/kursmal.php'),
+                  "\$egen = trim((string) (\$kurs['varighet_tekst'] ?? ''));"));
 sjekk('«Kort beskrivelse» og «Dette lager du» har ingen felt lenger',
     !str_contains($sida2, 'id="k-kortom"') && !str_contains($sida2, 'id="k-lagerdu"')
     && !str_contains($sida2, 'settKKortBeskrivelse') && !str_contains($sida2, 'settKLagerDu'));
@@ -3425,6 +3430,18 @@ sjekk('… men teksten som staar lagret sendes videre urort',
 sjekk('Kursveilederen vekter ikke lenger paa varighet',
     str_contains($sida2, "const onsket = { nivaa: [], hvem: [], metode: [] };")
     && !str_contains($sida2, "['Varighet', 'varighet', MERKER.varighet"));
+
+// ── «Neste» mister deg ikke ───────────────────────────────────────────
+//
+// Steg 1 er tolv seksjoner langt, steg 2 og 3 er korte. Trykte du «Neste»
+// nederst i steg 1, sto rullingen stille mens kortet krympet under foettene
+// paa deg — og du sto midt i kurslista under. Eieren: «naar jeg trykker paa
+// neste saa kommer jeg hit, hva i helvete».
+sjekk('kursoppsettet har et feste aa rulle til',
+    str_contains($sida2, 'id="kursoppsett"'));
+sjekk('… og «Neste» og «Tilbake» bruker det',
+    str_contains($sida2, 'rullTilKursoppsettet() {')
+    && substr_count($sida2, 'this.rullTilKursoppsettet();') === 2);
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

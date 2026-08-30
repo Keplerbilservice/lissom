@@ -7438,7 +7438,9 @@ window.__resources = {
         </sc-if>
 
         <sc-if value="{{ kRed }}" hint-placeholder-val="{{ false }}">
-          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6);">
+          <!-- id-en er der for at «Neste» og «Tilbake» skal finne toppen av
+               kortet igjen. Se kNesteSteg. -->
+          <div id="kursoppsett" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); margin-bottom: var(--space-6);">
             <!-- Veien tilbake til lista.
                  Skjemaet er langt, og eneste vei ut sto nederst, etter tolv
                  seksjoner. Aapnet du et kurs for aa se paa noe, matte du
@@ -7602,15 +7604,13 @@ window.__resources = {
                       </div>
                     </div>
 
-                    <div>
-                      <label for="k-varighet" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Varighet</label>
-                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Regnes av start- og sluttida på datoene. Endrer du tidene, følger varigheten med av seg selv. Skriv noe her bare hvis den skal si noe annet.</p>
-                      <input id="k-varighet" value="{{ kVarighetTekst }}" onChange="{{ settKVarighetTekst }}" placeholder="{{ kVarighetRegnet }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                      <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
-                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kVarighetHjelp }}</span>
-                        <button type="button" onClick="{{ kVarighetAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Bruk tidene på datoene</button>
-                      </div>
-                    </div>
+                    <!-- Varighetsfeltet sto her, med «Bruk tidene paa
+                         datoene» under seg. Det var en overstyring: sto det
+                         noe der, gjaldt den teksten uansett hva klokka paa
+                         datoene sa. Eieren, 30. august: «fjern varighet og
+                         bruk tidene paa datoen». Varigheten regnes naa av
+                         start- og sluttida, alltid — se Kursmal::varighetFor.
+                         Den staar i faktaboksen paa kurssiden som foer. -->
 
                     <!-- «Kort beskrivelse» og «Dette lager du» sto her.
                          Den foerste var en andre beskrivelse ved siden av
@@ -19900,6 +19900,26 @@ class Component extends DCLogic {
     window.requestAnimationFrame(proev);
   }
 
+  /**
+   * Ruller til toppen av kursoppsettet.
+   *
+   * Kortet bytter innhold naar steget skifter, og hoeyden med det. Uten
+   * dette blir rullingen staaende der den var — som regel nedenfor hele
+   * kortet.
+   */
+  rullTilKursoppsettet() {
+    let forsok = 0;
+    const proev = () => {
+      const el = document.getElementById('kursoppsett');
+      if (el) {
+        window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        return;
+      }
+      if (++forsok < 20) { window.requestAnimationFrame(proev); }
+    };
+    window.requestAnimationFrame(proev);
+  }
+
   rullTilHenvendelse(id) {
     if (!id) return;
     let forsok = 0;
@@ -25207,7 +25227,6 @@ class Component extends DCLogic {
               felt('gjenstandIKassa', 'Gjenstanden betales i verkstedet', 'hake'),
               felt('nivaaIntern', 'Nivå internt', 'valg', [['nybegynner', 'Nybegynner'], ['videregaende', 'Viderekomne']]),
               felt('nivaaTekst', 'Nivå slik kunden leser det', 'tekst'),
-              felt('varighetTekst', 'Varighet i tekst', 'tekst'),
               felt('instruktor', 'Navn på kursbeviset', 'tekst'),
               felt('kortBeskrivelse', 'Kort beskrivelse', 'lang'),
               felt('om', 'Beskrivelse', 'lang'),
@@ -33444,15 +33463,10 @@ class Component extends DCLogic {
           kNivaaMal: staarTomt(st.kNivaaTekst, mal.nivaaTekst || 'For alle'),
           kNivaaAnbefalt: () => this.setState({ kNivaaTekst: '' }),
 
-          kVarighetTekst: st.kVarighetTekst ?? '',
-          settKVarighetTekst: e => this.setState({ kVarighetTekst: e.target.value }),
-          kVarighetRegnet: raa.varighetVist || 'Regnes av tidene på datoene',
-          kVarighetHjelp: String(st.kVarighetTekst || '').trim() === ''
-            ? (raa.varighetVist
-                ? 'Regnet av tidene: ' + raa.varighetVist
-                : 'Ingen datoer med klokkeslett ennå.')
-            : 'Egen tekst. Den overstyrer tidene på datoene.',
-          kVarighetAnbefalt: () => this.setState({ kVarighetTekst: '' }),
+          // Varighetsfeltet er borte fra oppsettet; varigheten regnes av
+          // tidene paa datoene. Verdien som staar lagret roeres ikke, den
+          // brukes bare ikke lenger.
+
 
           // «Kort beskrivelse» og «Dette lager du» har ikke lenger felt i
           // oppsettet — se merknaden i seksjon 08. Verdiene ligger igjen i
@@ -33925,8 +33939,14 @@ class Component extends DCLogic {
       kSteg3: (this.state.kSteg ?? 1) === 3,
       kVisNeste: (this.state.kSteg ?? 1) < 3,
       kVisTilbake: (this.state.kSteg ?? 1) > 1,
-      kNesteSteg: () => this.setState(s => ({ kSteg: Math.min(3, (s.kSteg ?? 1) + 1) })),
-      kForrigeSteg: () => this.setState(s => ({ kSteg: Math.max(1, (s.kSteg ?? 1) - 1) })),
+      // Steg 1 er tolv seksjoner langt, steg 2 og 3 er korte. Trykte du
+      // «Neste» nederst i steg 1, sto rullingen stille mens kortet krympet
+      // under foettene paa deg — og du sto plutselig midt i kurslista under,
+      // uten at noe hadde gaatt galt. Eieren, 30. august: «naar jeg trykker
+      // paa neste saa kommer jeg hit, hva i helvete». Naa foelger toppen av
+      // kortet med.
+      kNesteSteg: () => { this.setState(s => ({ kSteg: Math.min(3, (s.kSteg ?? 1) + 1) })); this.rullTilKursoppsettet(); },
+      kForrigeSteg: () => { this.setState(s => ({ kSteg: Math.max(1, (s.kSteg ?? 1) - 1) })); this.rullTilKursoppsettet(); },
       kAvbryt: () => this.setState({ kRed: false }),
       // Ut av skjemaet og opp til lista igjen. «Avbryt» staar nederst, etter
       // tolv seksjoner, og gjor det samme — men den som aapnet et kurs for

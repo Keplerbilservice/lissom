@@ -132,6 +132,22 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**«Neste» mistet deg.** Steg 1 i kursoppsettet er tolv seksjoner langt; steg
+2 og 3 er korte. Trykte du «Neste» nederst i steg 1, sto rullingen stille
+mens kortet krympet under føttene på deg — og du sto plutselig midt i
+kurslista under, uten at noe hadde gått galt. Eieren: «når jeg trykker på
+neste så kommer jeg hit, hva i helvete». Toppen av kortet følger nå med, både
+framover og tilbake.
+
+**Varighetsfeltet er borte.** Det var en overstyring: sto det noe der, gjaldt
+den teksten uansett hva klokka på datoene sa, og de to kunne si hver sin ting.
+Eieren: «fjern varighet og bruk tidene på datoen». Varigheten regnes nå av
+start- og sluttida, alltid, og står i faktaboksen som før. Kolonnen
+`varighet_tekst` blir liggende urørt i basen — den leses bare ikke lenger.
+Unntaket som står igjen: kurs der gjenstanden betales i verkstedet ligger ute
+på åpningstidene, og da er økta hele det åpne vinduet. Der sier malen hva som
+gjelder, ellers ville Paint on Pots stått med «10 timer».
+
 **Tre felt ut av kursoppsettet.** Eieren, med veiviseren åpen: «varighet,
 dette regnes fra kursstart til slutt, så fjern disse pillene» og «kort
 beskrivelse og dette lager du kan fjernes».

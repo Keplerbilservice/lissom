@@ -303,18 +303,19 @@ final class Kursmal
     /**
      * Varigheten slik den skal staa paa kurset.
      *
-     * Har eieren skrevet en egen tekst, er det den som gjelder. Ellers
-     * regnes den av oektene som ligger framover. Gaar kurset over flere
+     * Regnes av oektene som ligger framover. Gaar kurset over flere
      * samlinger, staar bade lengden paa hver og hvor mange det er.
+     *
+     * Kolonnen varighet_tekst overstyrte dette: sto det noe der, gjaldt den
+     * teksten uansett hva klokka paa datoene sa, og de to kunne si hver sin
+     * ting. Eieren, 30. august: «fjern varighet og bruk tidene paa datoen».
+     * Feltet er borte fra kursoppsettet og overstyringa er borte her.
+     * Kolonnen staar urort i basen; den leses bare ikke lenger.
      *
      * @param list<array{start:?string,slutt:?string,samlinger:int}> $okter
      */
     public static function varighetFor(array $kurs, array $okter): string
     {
-        $egen = trim((string) ($kurs['varighet_tekst'] ?? ''));
-        if ($egen !== '') {
-            return $egen;
-        }
         // Kurs der gjenstanden betales i verkstedet er lagt ut paa
         // aapningstidene: oekta er hele det aapne vinduet, ofte ti–tolv
         // timer. Det er naar doeren staar aapen, ikke hvor lenge man sitter

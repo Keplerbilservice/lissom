@@ -3403,6 +3403,29 @@ sjekk('gavekortfeltet er en lenke ogsaa i paameldingen',
 sjekk('knapperada i kursoppsettet bryter',
     str_contains($sida2, 'row-gap: var(--space-4); align-items: center; justify-content: space-between; flex-wrap: wrap; border-top: 2px solid var(--lissom-brown);'));
 
+// ── Tre felt ut av kursoppsettet ───────────────────────────────────────
+//
+// Eieren, 30. august: «varighet, dette regnes fra kursstart til slutt, saa
+// fjern disse pillene» og «kort beskrivelse og dette lager du kan fjernes».
+// Varigheten staar i faktaboksen, regnet av start- og sluttida; brikkene var
+// en andre fasit ved siden av klokka. «Kort beskrivelse» laa ved siden av
+// «Om kurset», «Dette lager du» ved siden av «Dette faar du med hjem».
+sjekk('varighetsbrikkene er borte fra kursoppsettet',
+    !str_contains($sida2, "['Varighet', 'kVarighet',"));
+sjekk('… og varigheten regnes fortsatt av tidene paa datoene',
+    str_contains($sida2, "kVarighetRegnet: raa.varighetVist || 'Regnes av tidene på datoene',"));
+sjekk('«Kort beskrivelse» og «Dette lager du» har ingen felt lenger',
+    !str_contains($sida2, 'id="k-kortom"') && !str_contains($sida2, 'id="k-lagerdu"')
+    && !str_contains($sida2, 'settKKortBeskrivelse') && !str_contains($sida2, 'settKLagerDu'));
+// Feltene er borte fra skjemaet, ikke fra kursene. Sendte vi ikke verdien
+// videre, ville teksten som staar ute blitt tom foerste gang noen lagret.
+sjekk('… men teksten som staar lagret sendes videre urort',
+    str_contains($sida2, "kortBeskrivelse: this.state.kKortBeskrivelse || '',")
+    && str_contains($sida2, "lagerDu: this.state.kLagerDu || '',"));
+sjekk('Kursveilederen vekter ikke lenger paa varighet',
+    str_contains($sida2, "const onsket = { nivaa: [], hvem: [], metode: [] };")
+    && !str_contains($sida2, "['Varighet', 'varighet', MERKER.varighet"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

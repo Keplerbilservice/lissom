@@ -7612,18 +7612,15 @@ window.__resources = {
                       </div>
                     </div>
 
-                    <div>
-                      <label for="k-kortom" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kort beskrivelse</label>
-                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Én til to setninger. Står på kurskortet i lista og i delinger.</p>
-                      <textarea id="k-kortom" value="{{ kKortBeskrivelse }}" onChange="{{ settKKortBeskrivelse }}" rows="2" placeholder="{{ kKortMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
-                      <button type="button" onClick="{{ kKortAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
-                    </div>
-
-                    <div>
-                      <label for="k-lagerdu" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette lager du</label>
-                      <textarea id="k-lagerdu" value="{{ kLagerDu }}" onChange="{{ settKLagerDu }}" rows="3" placeholder="{{ kLagerDuMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
-                      <button type="button" onClick="{{ kLagerDuAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
-                    </div>
+                    <!-- «Kort beskrivelse» og «Dette lager du» sto her.
+                         Den foerste var en andre beskrivelse ved siden av
+                         «Om kurset» i seksjon 03, den andre laa tett opp til
+                         «Dette faar du med hjem» rett under. Eieren, 30.
+                         august: «kort beskrivelse og dette lager du kan
+                         fjernes». Feltene er borte fra oppsettet; teksten
+                         som staar lagret blir liggende og vises som foer paa
+                         kurssiden — se lagerDu og kortBeskrivelse i lagringa
+                         nedenfor, som fortsatt sender verdien videre urort. -->
 
                     <div>
                       <label for="k-medhjem" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dette får du med hjem</label>
@@ -28164,12 +28161,16 @@ class Component extends DCLogic {
             if (sv.tekst === gitt) valgteSvar.push(Object.assign({}, sv, { plass: iq }));
           });
         });
-        const onsket = { nivaa: [], hvem: [], metode: [], varighet: [] };
+        // Varighet er ikke lenger et kriterium: brikkene er borte fra
+        // kursoppsettet, saa nye kurs faar den aldri satt, og en vekt som
+        // bare treffer det som ble lagret foer 30. august er en skjult
+        // skjevhet. Se merkegruppene i kursveiviseren.
+        const onsket = { nivaa: [], hvem: [], metode: [] };
         valgteSvar.forEach(sv => {
           const legg = (felt, raa) => String(raa || '').split(',').map(x => x.trim())
             .filter(Boolean).forEach(x => { if (onsket[felt].indexOf(x) === -1) onsket[felt].push(x); });
           legg('nivaa', sv.passerNivaa); legg('hvem', sv.passerHvem);
-          legg('metode', sv.metode); legg('varighet', sv.varighet);
+          legg('metode', sv.metode);
         });
 
         // Plassene paa dreiekursene, slik de faktisk staar i basen.
@@ -28199,11 +28200,10 @@ class Component extends DCLogic {
           const h = iLista(k.passerHvem, onsket.hvem);
           const m = iLista(k.metode, onsket.metode);
           const nv = iLista(k.passerNivaa, onsket.nivaa);
-          const va = iLista(k.varighet, onsket.varighet);
-          poeng += h.length * 2 + m.length * 2 + nv.length + va.length;
+          poeng += h.length * 2 + m.length * 2 + nv.length;
           // «Dreiing og haandbygging» dekker begge metodene.
           if (String(k.metode || '') === 'begge' && onsket.metode.length) { poeng += 2; m.push('begge'); }
-          return { kort: k, poeng, h, m, nv, va };
+          return { kort: k, poeng, h, m, nv };
         }).filter(x => x.poeng > 0).sort((a, b) => b.poeng - a.poeng);
 
         const MERKER = {
@@ -33454,15 +33454,11 @@ class Component extends DCLogic {
             : 'Egen tekst. Den overstyrer tidene på datoene.',
           kVarighetAnbefalt: () => this.setState({ kVarighetTekst: '' }),
 
-          kKortBeskrivelse: st.kKortBeskrivelse ?? '',
-          settKKortBeskrivelse: e => this.setState({ kKortBeskrivelse: e.target.value }),
-          kKortMal: kort(mal.kortBeskrivelse, 120),
-          kKortAnbefalt: () => this.setState({ kKortBeskrivelse: '' }),
-
-          kLagerDu: st.kLagerDu ?? '',
-          settKLagerDu: e => this.setState({ kLagerDu: e.target.value }),
-          kLagerDuMal: kort(mal.lagerDu, 160),
-          kLagerDuAnbefalt: () => this.setState({ kLagerDu: '' }),
+          // «Kort beskrivelse» og «Dette lager du» har ikke lenger felt i
+          // oppsettet — se merknaden i seksjon 08. Verdiene ligger igjen i
+          // state og gaar med i lagringa, saa teksten som staar paa kurs
+          // fra foer blir staaende. Settere og malforslag er borte; det er
+          // ingen som skriver i dem lenger.
 
           kMedHjem: st.kMedHjem ?? '',
           settKMedHjem: e => this.setState({ kMedHjem: e.target.value }),
@@ -33509,7 +33505,7 @@ class Component extends DCLogic {
               + (parseInt(this.state.kPlasser, 10) || 0) + ' deltakere.» som legges på av seg selv.';
           })(),
 
-      // Merkene. Fire grupper, korte og faste lister. De staar paa kurssida,
+      // Merkene. To grupper, korte og faste lister. De staar paa kurssida,
       // og de er det Kursveilederen skal lese naar den foreslaar noe.
       ...(() => {
         const grupper = [
@@ -33520,7 +33516,14 @@ class Component extends DCLogic {
           // som kategorien rett over, i to lister som kunne si hver sin
           // ting. Eieren, 30. august: «du har lagt inn kategorier to
           // ganger». Metoden foelger naa kategorien; se metodeAvKategori().
-          ['Varighet', 'kVarighet', [['kort', 'Under to timer'], ['medium', 'To til fire timer'], ['lang', 'Over fire timer']]],
+          //
+          // «Varighet» sto her ogsaa, med Under to timer / To til fire /
+          // Over fire. Varigheten regnes av start- og sluttida paa datoene
+          // og staar i faktaboksen — brikkene var en andre, haandsatt fasit
+          // som kunne si noe annet enn klokka. Eieren, 30. august:
+          // «varighet, dette regnes fra kursstart til slutt, saa fjern
+          // disse pillene». Verdien som staar lagret roerer vi ikke; den
+          // foelger kurset videre og vises som foer.
         ];
         const valgte = (felt) => String(this.state[felt] || '').split(',').map(x => x.trim()).filter(Boolean);
         return {
@@ -36009,7 +36012,6 @@ class Component extends DCLogic {
           ['Nivå', 'passerNivaa', MERKER.nivaa || []],
           ['Hvem', 'passerHvem', MERKER.hvem || []],
           ['Metode', 'metode', MERKER.metode || []],
-          ['Varighet', 'varighet', MERKER.varighet || []],
         ].map(([navn, felt, valg]) => {
           const naa = String(us(sv, felt, sv[felt] || '')).split(',').map(x => x.trim()).filter(Boolean);
           return {

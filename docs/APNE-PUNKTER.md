@@ -132,6 +132,29 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Tre felt ut av kursoppsettet.** Eieren, med veiviseren åpen: «varighet,
+dette regnes fra kursstart til slutt, så fjern disse pillene» og «kort
+beskrivelse og dette lager du kan fjernes».
+
+Varigheten sto to steder som kunne si hver sin ting: et felt som regnes av
+start- og sluttida på datoene, og tre brikker — Under to timer / To til fire
+timer / Over fire timer — satt for hånd. Brikkene er borte. Feltet står, og
+regner som før.
+
+«Kort beskrivelse» lå ved siden av «Om kurset» i seksjon 03, og «Dette lager
+du» ved siden av «Dette får du med hjem» rett under seg selv. Begge er borte
+fra oppsettet.
+
+Feltene er borte fra skjemaet, ikke fra kursene: teksten som allerede står
+lagret følger med videre og vises som før på kurssiden. Det var eierens eget
+valg da han ble spurt. Konsekvensen er at den teksten ikke lenger kan rettes
+derfra — skal noe av den endres på et kurs, må det gjøres i basen.
+
+Kursveilederen vektet også på varighet når den matchet en besøkende mot et
+kurs. Den vekten er tatt bort: nye kurs får aldri varighet satt, og en vekt
+som bare treffer det som ble lagret før 30. august er en skjult skjevhet.
+Veilederen matcher nå på nivå, hvem og metode.
+
 **Kategoriene ryddet: Håndbygging og Events.** Ute sto seks piller — Dreiing,
 Plateteknikk, Workshop, Sip & Clay, Date Night og Paint on pots. Tre av dem er
 det samme slaget kveld, og to av dem er det samme håndverket under hvert sitt

@@ -3362,6 +3362,47 @@ sjekk('… og den lagrede signaturen rettes med',
     str_contains($m100, "REPLACE(verdi, 'width=\"152\" height=\"139\"', 'width=\"100\" height=\"92\"')")
     && str_contains($m100, "AND verdi LIKE '%lissom-signatur-logo.png%'"));
 
+// ── Kategoriene staar én gang ──────────────────────────────────────────
+//
+// Eieren, 30. august: «du har lagt inn kategorier to ganger». To steder:
+// «Events» sto ved siden av de tre som utgjor Events, og «Metode» gjentok
+// Dreiing og Haandbygging rett under kategorien.
+sjekk('kategorivalget er fem brikker, uten dublettene',
+    str_contains($sida2, "return medInterne ? ute.concat(['Kun medlemmer', 'Drop-in']) : ute;")
+    && !str_contains($sida2, "'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' , plasser: 12 },"));
+sjekk('… og de tre arrangementene kjennes fortsatt igjen',
+    str_contains($sida2, "'Sip & Clay': 'Events',")
+    && str_contains($sida2, "'Date Night': 'Events',"));
+sjekk('«Metode» er borte fra kursoppsettet',
+    !str_contains($sida2, "['Metode', 'kMetode',"));
+sjekk('… og metoden foelger kategorien i stedet',
+    str_contains($sida2, 'metodeAvKategori(kategori, tema, naa) {')
+    && str_contains($sida2, "metode: this.metodeAvKategori(this.state.kKategori, this.state.kTema, this.state.kMetode),"));
+
+// ── Rekkefolgen, overalt ───────────────────────────────────────────────
+//
+// Eieren, 30. august: «sorter globalt, alle dreiekurs foerst, saa alle
+// haandbygging, saa event».
+sjekk('rekkefolgen staar ett sted',
+    str_contains($sida2, "static KURSRANG = ['Dreiing', 'Håndbygging', 'Events'];")
+    && str_contains($sida2, 'sorterKurs(liste, hent) {'));
+sjekk('… og brukes ute, i basen, i nedtrekket og ved paamelding',
+    substr_count($sida2, 'this.sorterKurs(') >= 4);
+
+// ── Gavekortet, diskret overalt ────────────────────────────────────────
+//
+// Eieren, 30. august: «gavekort og rabattkode gjoeres mindre og mer diskret
+// som jeg ba om tidligere, globalt». Kassa hadde det; paameldingen ikke.
+sjekk('gavekortfeltet er en lenke ogsaa i paameldingen',
+    substr_count($sida2, 'Har du gavekort eller rabattkode?') === 2);
+
+// ── Knapperada i kursoppsettet ─────────────────────────────────────────
+//
+// «Neste» og «Lagre endringene» sto side om side uten aa kunne brekke, og
+// paa en telefon stakk den siste ut av kortet.
+sjekk('knapperada i kursoppsettet bryter',
+    str_contains($sida2, 'row-gap: var(--space-4); align-items: center; justify-content: space-between; flex-wrap: wrap; border-top: 2px solid var(--lissom-brown);'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

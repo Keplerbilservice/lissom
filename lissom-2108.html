@@ -2444,7 +2444,20 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg har lest vilkårene" checked="{{ vilkaarOk }}" on-change="{{ toggleVilkaar }}" hint-size="100%,24px"></x-import>
                   <button type="button" onClick="{{ goVilkar }}" style="appearance: none; background: transparent; border: none; padding: 0; margin: 6px 0 0 32px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Les vilkårene</button>
                   <div style="height: var(--space-5);"></div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode (valgfritt)" icon="gift" placeholder="Skriv koden" value="{{ gkKode }}" on-change="{{ settGkKode }}" hint-size="100%,66px"></x-import>
+                  <!-- Gavekortet er diskret her ogsaa.
+                       Feltet sto aapent med etikett og ikon, og ba om
+                       oppmerksomhet paa hver eneste paamelding — de aller
+                       fleste har ikke noe kort. Eieren, 30. august: «gavekort
+                       og rabattkode gjoeres mindre og mer diskret som jeg ba
+                       om tidligere, globalt». Kassa hadde det fra for; naa er
+                       paameldingen den samme: en linje man trykker paa, og den
+                       staar aapen av seg selv om det alt er skrevet en kode. -->
+                  <sc-if value="{{ gkSkjult }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" onClick="{{ gkVis }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Har du gavekort eller rabattkode?</button>
+                  </sc-if>
+                  <sc-if value="{{ gkApen }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gavekort eller rabattkode" placeholder="Skriv koden" value="{{ gkKode }}" on-change="{{ settGkKode }}" hint-size="100%,66px"></x-import>
+                  </sc-if>
                   <!-- Svaret kommer mens man skriver. «Fant ikke gavekortet»
                        skal staa for man bestiller, ikke etterpaa. -->
                   <sc-if value="{{ gkBeskjed }}" hint-placeholder-val="{{ false }}">
@@ -7888,8 +7901,13 @@ window.__resources = {
               </div>
               </sc-if>
             </div>
-            <div style="display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; border-top: 2px solid var(--lissom-brown); margin-top: var(--space-6); padding-top: var(--space-5); max-width: 680px;">
-              <div style="display: flex; gap: var(--space-3);">
+            <!-- Knapperada bryter naar det ikke er plass.
+                 «Neste» og «Lagre endringene» sto side om side uten aa kunne
+                 brekke: paa en telefon stakk «Lagre endringene» ut av kortet,
+                 og halve ordet laa utenfor kanten. Eieren, 30. august: «se paa
+                 lagre endringer paa denne». -->
+            <div style="display: flex; gap: var(--space-3); row-gap: var(--space-4); align-items: center; justify-content: space-between; flex-wrap: wrap; border-top: 2px solid var(--lissom-brown); margin-top: var(--space-6); padding-top: var(--space-5); max-width: 680px;">
+              <div style="display: flex; gap: var(--space-3); row-gap: var(--space-3); flex-wrap: wrap; min-width: 0;">
                 <sc-if value="{{ kVisTilbake }}" hint-placeholder-val="{{ false }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" on-click="{{ kForrigeSteg }}" hint-size="auto,44px">Tilbake</x-import>
                 </sc-if>
@@ -15441,25 +15459,13 @@ class Component extends DCLogic {
       ut = ut.map(k => this.medValgtTid(k, naar)).filter(Boolean);
     }
 
-    // Dreiekursene forst.
+    // Dreiing forst, saa haandbygging, saa events — den samme rekkefolgen
+    // som overalt ellers. Se sorterKurs(); regelen staar ett sted.
     //
-    // Lissom 28. august. Dreiing er det folk kommer for — det er
-    // dreieskiva de har sett for seg — og da skal de staa oeverst framfor
-    // aa ligge mellom plateteknikk og workshop i den rekkefolgen serveren
-    // tilfeldigvis sendte dem.
-    //
-    // Hva som ER et dreiekurs staar ett sted: kursIKategori. Skrev jeg
-    // regelen paa nytt her, kunne knappen «Dreiing» og denne sorteringen
-    // vaert uenige om det samme kurset.
-    //
-    // Resten beholder rekkefolgen sin. Har man valgt en kategori, er det
-    // ingenting aa flytte paa — da er alle kursene i den samme.
-    const dreie = new Set(this.kursIKategori(ut, 'Dreiing'));
-    if (dreie.size > 0 && dreie.size < ut.length) {
-      ut = ut.filter(k => dreie.has(k)).concat(ut.filter(k => !dreie.has(k)));
-    }
-
-    return ut;
+    // Dreiing er det folk kommer for: det er dreieskiva de har sett for seg,
+    // og da skal de staa oeverst framfor aa ligge mellom haandbygging og
+    // events i den rekkefolgen serveren tilfeldigvis sendte dem.
+    return this.sorterKurs(ut, k => ({ tema: k.tema || k.level, navn: k.title }));
   }
 
   /** Setter undertemaer paa hele lista, uten aa roere resten. */
@@ -17425,7 +17431,10 @@ class Component extends DCLogic {
 
   /** Kursene «Ny kursdato» kan legge datoer paa. */
   ndKursnavn() {
-    const fra = this.kursData().map(k => k.navn).filter(Boolean);
+    // Samme rekkefolge som overalt: dreiing, haandbygging, events.
+    const fra = this.sorterKurs(this.kursData().filter(k => k.navn),
+                                k => ({ tema: k.tema, navn: k.navn }))
+      .map(k => k.navn);
     if (fra.length) return fra;
     return this.erPublisert() ? []
       : ['Nybegynner dreiekurs', 'Kurs boller', 'Store fat kurs', 'Keramikk Workshop', 'Date Night', 'Paint on Pots', 'Sip & Clay'];
@@ -21738,7 +21747,8 @@ class Component extends DCLogic {
       punkter: this.state.kPunkter || '', laerer: this.state.kLaerer || '',
       praktisk: this.state.kPraktisk || '', allergener: this.state.kAllergener || '',
       passerNivaa: this.state.kPasserNivaa || '', passerHvem: this.state.kPasserHvem || '',
-      metode: this.state.kMetode || '', varighet: this.state.kVarighet || '',
+      metode: this.metodeAvKategori(this.state.kKategori, this.state.kTema, this.state.kMetode),
+      varighet: this.state.kVarighet || '',
       // Nivaa, varighet og faktaboksen (migrasjon 072).
       nivaaIntern: this.state.kNivaaIntern || 'nybegynner',
       nivaaTekst: this.state.kNivaaTekst || '',
@@ -23600,15 +23610,17 @@ class Component extends DCLogic {
     // «Haandbygging».
     const ute = ['Dreiing', 'Håndbygging', 'Events'];
 
-    // I admin kan man i tillegg sette det enkelte arrangementet. Kortet
-    // havner uansett under Events ute — se KATEGORI i kursKort() — men
-    // temaet styrer teksten og malene, og Paint on Pots kjennes paa sitt.
+    // De samme tre ute og inne.
+    //
+    // I admin sto ogsaa «Sip & Clay», «Date Night» og «Paint on pots» ved
+    // siden av «Events» — altsaa Events og de tre som utgjor Events, aatte
+    // brikker der fem holder. Eieren, 30. august: «du har lagt inn
+    // kategorier to ganger». De tre er borte som valg; kurs som har dem som
+    // tema staar som Events, se KATEGORI_ELDRE.
     //
     // «Kun medlemmer» og «Drop-in» staar med i admin, men ikke i filterrada
     // ute: de er ikke kategorier kundene skal kunne bla seg inn i.
-    return medInterne
-      ? ute.concat(['Sip & Clay', 'Date Night', 'Paint on pots', 'Kun medlemmer', 'Drop-in'])
-      : ute;
+    return medInterne ? ute.concat(['Kun medlemmer', 'Drop-in']) : ute;
   }
 
   /**
@@ -23629,9 +23641,6 @@ class Component extends DCLogic {
     // med — se KATEGORI_ELDRE under og migrasjon 099.
     'Håndbygging':   { type: 'Kurs',          tema: 'Håndbygging' , plasser: 12 },
     'Events':        { type: 'Event',         tema: 'Events' , plasser: 12 },
-    'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' , plasser: 12 },
-    'Date Night':    { type: 'Event',         tema: 'Date Night' , plasser: 12 },
-    'Paint on pots': { type: 'Event',         tema: 'Paint on pots' , plasser: 12 },
     'Kun medlemmer': { type: 'Kun medlemmer', tema: 'Kun for medlemmer' , plasser: 12 },
     'Drop-in':       { type: 'Drop-in',       tema: 'Drop-in' , plasser: 8 },
   };
@@ -23647,7 +23656,67 @@ class Component extends DCLogic {
     'Workshop': 'Håndbygging',
     'Plateteknikk': 'Håndbygging',
     'Event': 'Events',
+    // De tre arrangementene er Events. Temaet blir staaende paa kurset —
+    // Paint on Pots kjennes paa sitt — men kategorien er én.
+    'Sip & Clay': 'Events',
+    'Date Night': 'Events',
+    'Paint on pots': 'Events',
+    'Paint on Pots': 'Events',
   };
+
+  /**
+   * Rekkefolgen kursene staar i — overalt.
+   *
+   * Eieren, 30. august: «sorter globalt, alle dreiekurs foerst, saa alle
+   * haandbygging, saa event». Lista sto i én rekkefolge paa nettsida, en
+   * annen i nedtrekket for ny dato, og en tredje i basen. Naa er det én
+   * regel, og den staar her.
+   *
+   * Innenfor hver kategori: alfabetisk. Det er den eneste rekkefolgen som
+   * staar stille naar et kurs faar en ny dato.
+   */
+  static KURSRANG = ['Dreiing', 'Håndbygging', 'Events'];
+
+  /** Hvor i rekka et kurs hoerer hjemme. Ukjent kategori havner bakerst. */
+  kursRang(tema, tittel) {
+    const kat = this.kategoriFor(String(tema || ''), '')
+      || (String(tittel || '').toLowerCase().indexOf('paint on pots') === 0 ? 'Events' : '');
+    const i = Component.KURSRANG.indexOf(kat);
+    return i === -1 ? Component.KURSRANG.length : i;
+  }
+
+  /**
+   * Sorterer en liste kurs i den rekkefolgen.
+   *
+   * «hent» sier hvor temaet og navnet ligger paa raden — listene ute og inne
+   * har hver sine feltnavn, men rekkefolgen skal vaere den samme.
+   */
+  sorterKurs(liste, hent) {
+    return (liste || []).slice().sort((a, b) => {
+      const x = hent(a), y = hent(b);
+      const r = this.kursRang(x.tema, x.navn) - this.kursRang(y.tema, y.navn);
+      if (r !== 0) return r;
+      return String(x.navn || '').localeCompare(String(y.navn || ''), 'nb');
+    });
+  }
+
+  /**
+   * Metoden kurset bruker, utledet av kategorien.
+   *
+   * Kursveilederen leser «metode» naar den foreslaar et kurs. Feltet sto som
+   * en egen rad i kursoppsettet, med Dreiing og Haandbygging — de samme
+   * ordene som kategorien rett over. To rader som kan si hver sin ting om det
+   * samme kurset, og da er den ene alltid feil.
+   *
+   * Kategorien vinner. Temaet gaar foran der det sier noe kategorien ikke
+   * kan: Paint on Pots er maling. Sier ingen av dem noe, blir det som staar
+   * staaende — en «begge»-verdi noen har satt fra for skal ikke nullstilles.
+   */
+  metodeAvKategori(kategori, tema, naa) {
+    if (String(tema || '').toLowerCase() === 'paint on pots') return 'maling';
+    const M = { 'Dreiing': 'dreiing', 'Håndbygging': 'handbygging' };
+    return M[kategori] || naa || '';
+  }
 
   /** Kategorien et lagret kurs staar i, utledet av temaet det har. */
   kategoriFor(tema, type) {
@@ -23734,10 +23803,10 @@ class Component extends DCLogic {
     // rette. Sorteringa paa «naar gaar det neste gang» hoerer til der man
     // jobber med datoer.
     if (fane === 'maler') {
-      return this.kursData()
-        .map((k, i) => ({ k, i, n: 0 }))
-        .filter(({ k }) => k.status !== 'avlyst')
-        .sort((a, b) => String(a.k.navn || '').localeCompare(String(b.k.navn || ''), 'nb'));
+      // Dreiing, haandbygging, events — den samme rekkefolgen som ute.
+      return this.sorterKurs(
+        this.kursData().map((k, i) => ({ k, i, n: 0 })).filter(({ k }) => k.status !== 'avlyst'),
+        (r) => ({ tema: r.k.tema, navn: r.k.navn }));
     }
     return this.kursData()
       .map((k, i) => ({ k, i, n: nesteGang(k) }))
@@ -33447,8 +33516,10 @@ class Component extends DCLogic {
           ['Nivå', 'kPasserNivaa', [['nybegynner', 'Nybegynnere'], ['litt', 'Litt erfaring'], ['erfaren', 'Erfarne']]],
           ['Hvem', 'kPasserHvem', [['alene', 'Deg alene'], ['par', 'To sammen'], ['venner', 'Venner'],
                                    ['familie', 'Familie'], ['firma', 'Bedrift'], ['barn', 'Barn med voksen']]],
-          ['Metode', 'kMetode', [['dreiing', 'Dreiing'], ['handbygging', 'Håndbygging'],
-                                 ['maling', 'Maling'], ['begge', 'Dreiing og håndbygging']]],
+          // «Metode» sto her med Dreiing og Haandbygging — de samme ordene
+          // som kategorien rett over, i to lister som kunne si hver sin
+          // ting. Eieren, 30. august: «du har lagt inn kategorier to
+          // ganger». Metoden foelger naa kategorien; se metodeAvKategori().
           ['Varighet', 'kVarighet', [['kort', 'Under to timer'], ['medium', 'To til fire timer'], ['lang', 'Over fire timer']]],
         ];
         const valgte = (felt) => String(this.state[felt] || '').split(',').map(x => x.trim()).filter(Boolean);
@@ -35462,8 +35533,11 @@ class Component extends DCLogic {
         // og da er det den som bestemmer hvilket kurs som er valgt. Alle de
         // gamle snarveiene fungerer derfor som for, uten aa vite om dette.
         const fraOkt = okter.find(o => String(o.oktId) === String(this.state.mpOkt || ''));
-        const kursnavn = [];
-        for (const o of okter) if (kursnavn.indexOf(o.tittel) < 0) kursnavn.push(o.tittel);
+        // Kursene i den vanlige rekkefolgen. Oektene kommer sortert paa dato,
+        // saa uten dette sto kursene i den rekkefolgen de tilfeldigvis gaar.
+        const kursnavn = this.sorterKurs(
+          okter.filter((o, i) => okter.findIndex(x => x.tittel === o.tittel) === i),
+          o => ({ tema: o.tema, navn: o.tittel })).map(o => o.tittel);
         const valgtKurs = fraOkt ? fraOkt.tittel
           : (kursnavn.indexOf(this.state.mpKurs || '') >= 0 ? this.state.mpKurs : (kursnavn[0] || ''));
         const kursOkter = okter.filter(o => o.tittel === valgtKurs);

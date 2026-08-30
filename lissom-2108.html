@@ -3398,11 +3398,10 @@ window.__resources = {
                          spoerre om noe man ikke kontrollerer. -->
                     <sc-if value="{{ levPakke }}" hint-placeholder-val="{{ false }}">
                       <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4);">
-                        <!-- Navnet paa etiketten. Kan vaere et annet enn
-                             kjoperens: butikken har gaveinnpakning, og da er
-                             det gaven som skal fram. Staar det tomt, brukes
-                             navnet under Kontaktopplysninger. -->
-                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn på mottaker" placeholder="Kari Nordmann" value="{{ levMottaker }}" on-change="{{ settLevMottaker }}" hint-size="100%,66px"></x-import>
+                        <!-- Navnet paa etiketten. Det samme navnet som under
+                             Kontaktopplysninger — skriver du det ett sted,
+                             staar det begge. -->
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Kari Nordmann" value="{{ kaNavn }}" on-change="{{ settKaNavn }}" hint-size="100%,66px"></x-import>
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Gateadresse" placeholder="Nordre Løkkevei 15" value="{{ levAdresse }}" on-change="{{ settLevAdresse }}" hint-size="100%,66px"></x-import>
                         <div style="display: grid; grid-template-columns: 108px 1fr; gap: var(--space-3);">
                           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Postnr." placeholder="3120" value="{{ levPostnr }}" on-change="{{ settLevPostnr }}" hint-size="100%,66px"></x-import>
@@ -3433,23 +3432,16 @@ window.__resources = {
                 </div>
               </div>
 
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-6);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Kontaktopplysninger</div>
-                <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
-                  <!-- Feltene var tegnet, men ikke koblet til noe: det man
-                       skrev ble kastet, og kvitteringen gikk til adressen fra
-                       Vipps-innloggingen uansett. Naa staar innloggingens
-                       verdier her, og kan rettes.
+              <!-- Kortet «Kontaktopplysninger» sto her: navn, telefon og
+                   e-post. Eieren 30. august: han vil ikke ha det, bare navn
+                   over adressen.
 
-                       «Mottaker av gavekort» sto her ogsaa. Gavekort selges
-                       ikke gjennom handlekurven — de kjopes paa gavekortsida,
-                       som har sine egne felter for mottaker og hilsen. Feltet
-                       kunne aldri ha gjort noe, og er tatt ut. -->
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ kaNavn }}" on-change="{{ settKaNavn }}" hint-size="100%,66px"></x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47" value="{{ kaTelefon }}" on-change="{{ settKaTelefon }}" hint-size="100%,66px"></x-import>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ kaEpost }}" on-change="{{ settKaEpost }}" hint-size="100%,66px"></x-import>
-                </div>
-              </div>
+                   Det kunne gaa fordi kassa krever innlogging med Vipps —
+                   se bookOgBetal(). Navn, telefon og e-post kommer derfra,
+                   og api/ordre.php faller tilbake paa medlemmets egne
+                   verdier naar feltene staar tomme. Feltene her var
+                   Vipps-verdiene skrevet én gang til, med en sjanse til aa
+                   skrive dem feil. -->
             </div>
 
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8); position: sticky; top: 104px;">
@@ -18199,8 +18191,6 @@ class Component extends DCLogic {
         // skjermen, og serveren visste hverken at det var en pakke eller hvor
         // den skulle. Beloepet legges paa av serveren, ikke herfra.
         levering: this.erPakke() ? 'pakke' : 'hent',
-        mottaker: (this.state.levMottaker === undefined
-          ? (this.state.kaNavn || '') : this.state.levMottaker).trim(),
         adresse: (this.state.levAdresse || '').trim(),
         postnr: (this.state.levPostnr || '').trim(),
         poststed: (this.state.levPoststed || '').trim(),
@@ -28882,11 +28872,6 @@ class Component extends DCLogic {
       // Adressen. Vises bare naar pakken skal sendes — og da kreves den, her
       // og paa serveren. En pakke uten adresse er ingen pakke.
       levPakke: this.erPakke(),
-      // Navnet paa pakken. Er det ikke skrevet, foreslaas kjoperens — de
-      // aller fleste sender til seg selv.
-      levMottaker: this.state.levMottaker === undefined
-        ? (this.state.kaNavn || '') : this.state.levMottaker,
-      settLevMottaker: e => this.setState({ levMottaker: e.target.value }),
       levAdresse: this.state.levAdresse || '',
       settLevAdresse: e => this.setState({ levAdresse: e.target.value }),
       levPostnr: this.state.levPostnr || '',

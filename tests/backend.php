@@ -3026,18 +3026,15 @@ sjekk('kassa sender leveringen med bestillingen',
     && str_contains($sida2, "adresse: (this.state.levAdresse || '').trim(),"));
 sjekk('… og adressefeltene staar bare naar det skal sendes',
     str_contains($sida2, '{{ levPakke }}') && str_contains($sida2, 'label="Gateadresse"'));
-// En adresse uten mottaker er ikke noe Posten kan levere paa. Eget felt, for
-// butikken har gaveinnpakning: den som betaler er ikke alltid den som skal
-// ha pakken.
-sjekk('pakken har et navn paa etiketten',
-    str_contains($sida2, 'label="Navn på mottaker"')
-    && str_contains($sida2, "mottaker: (this.state.levMottaker === undefined"));
-sjekk('… lagret for seg, ikke som kjoeperens navn',
-    str_contains($ordre, "\$leveringsfelt['mottaker']")
-    && str_contains(file_get_contents(__DIR__ . '/../db/migrations/098_mottaker.sql'),
-                    'ADD COLUMN IF NOT EXISTS mottaker'));
-sjekk('… og staar det tomt, er det kjoeperen som faar den',
-    str_contains($ordre, '$mottaker = $navn;'));
+// En adresse uten navn er ikke noe Posten kan levere paa. Navnet staar over
+// adressen, og bare der: kortet «Kontaktopplysninger» er tatt bort (eieren,
+// 30. august). Det kunne gaa fordi kassa krever innlogging med Vipps —
+// navn, telefon og e-post kommer derfra, og api/ordre.php faller tilbake
+// paa medlemmets egne verdier naar feltene staar tomme.
+sjekk('navnet staar over adressen',
+    str_contains($sida2, 'label="Navn" placeholder="Kari Nordmann" value="{{ kaNavn }}"'));
+sjekk('… og kortet «Kontaktopplysninger» er borte',
+    !str_contains($sida2, '>Kontaktopplysninger</div>'));
 // Tallet 89 sto skrevet inn fire steder. Naa staar det ett sted, i basen.
 sjekk('fraktprisen staar ingen steder i koden',
     !str_contains($sida2, 'Send som pakke (kr. 89,-)'));

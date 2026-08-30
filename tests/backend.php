@@ -3198,6 +3198,20 @@ sjekk('hurtigfeltet i kalenderen har e-post',
 sjekk('… og adressen foelger med kallet',
     str_contains($sida2, "epost: (this.state.klNyDEpost || '').trim(),"));
 
+// ── Nye paameldinger faller av etter tre dager ─────────────────────────
+//
+// Eieren, 30. august: «nye paameldinger vises kun i 3 dager». Om plassen er
+// betalt, staar paa kursdatoen — det er ingenting aa gjore fra kortet ut over
+// aa se det, og da skal det tomme seg selv framfor aa vise et tall som ikke
+// gaar ned.
+$oversiktFil = file_get_contents(__DIR__ . '/../api/admin/oversikt.php');
+sjekk('nye paameldinger er avgrenset til tre dager',
+    str_contains($oversiktFil, 'AND b.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)'));
+// Kortet paa Oversikt teller den samme lista, saa tallet foelger med.
+sjekk('… og kortet teller den samme lista',
+    str_contains($sida2, "const nyeste = ((this.state.adminData || {}).nyeste || []).length;")
+    && str_contains($sida2, "nyeste ? 'De siste tre dagene.'"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

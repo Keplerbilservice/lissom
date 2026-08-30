@@ -221,6 +221,17 @@ $nyeste = DB::alle(
   LEFT JOIN members m ON m.id = b.member_id
   LEFT JOIN payments p ON p.id = b.payment_id
       WHERE b.status IN ('betalt','reservert')
+        -- Tre dager, ikke lenger.
+        --
+        -- «Nye paameldinger» er det som har skjedd siden sist du saa etter.
+        -- Sto den samme paameldingen der i to uker, var den ikke ny lenger —
+        -- den var bare et tall som ikke gikk ned. Eieren, 30. august: «nye
+        -- paameldinger vises kun i 3 dager».
+        --
+        -- Om den er betalt, staar paa kurset. Derfor er det ingenting aa
+        -- gjore fra dette kortet ut over aa se det — og da skal det tomme seg
+        -- selv.
+        AND b.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 DAY)
         -- Bare paameldinger til noe som ikke har vaert.
         --
         -- Kortet tok de tolv siste uansett dato. Paa et verksted med jevn

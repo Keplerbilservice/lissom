@@ -1213,6 +1213,15 @@ window.__resources = {
     .lx-adminaside nav { display: none !important; }
     .lx-admmob { display: flex !important; }
     .lx-admmobpanel { display: grid !important; }
+    /* «Lukk» oeverst til hoyre.
+       Pillen sto helt ute i kanten av stripa, og paa eierens telefon havnet
+       den utenfor skjermen — eieren 30. august: «piller lukk oeverst til
+       hoeyre maa flyttes litt til venstre saa den ikke gaar utenfor
+       skjermen». Stripa klemmes til skjermbredden uansett hva som ellers
+       staar paa sida, og faar litt mer luft paa hoyre side enn paa venstre.
+       Da har pillen alltid en kant aa staa mot. */
+    .lx-adminaside { box-sizing: border-box !important; max-width: 100% !important; padding-right: 28px !important; }
+    .lx-admmob, .lx-admmobpanel { max-width: 100% !important; }
   }
 
   /* Maneds- og ukevisningen i kalenderen er sju spalter. Paa en telefon er
@@ -5678,11 +5687,12 @@ window.__resources = {
                   <textarea value="{{ f.verdi }}" onChange="{{ f.endre }}" rows="3" style="{{ f.feltStil }}"></textarea>
                 </sc-if>
                 <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
-                  <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.feltStil }}">
-                    <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="3">
-                      <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ f.valg }}" as="br" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                 </sc-if>
                 <sc-if value="{{ f.erHake }}" hint-placeholder-val="{{ false }}">
                   <button type="button" onClick="{{ f.veksle }}" style="{{ f.hakeStil }}">{{ f.hakeTekst }}</button>
@@ -6211,12 +6221,12 @@ window.__resources = {
                 </sc-if>
                 <sc-if value="{{ klDKanFlytte }}" hint-placeholder-val="{{ true }}">
                   <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; margin-top: var(--space-4);">
-                    <select value="{{ klDFlyttTil }}" onChange="{{ settKlDFlyttTil }}" style="{{ klDFlyttStil }}">
-                      <option value="">Flytt til en annen dato …</option>
-                      <sc-for list="{{ klDFlyttValg }}" as="o" hint-placeholder-count="3">
-                        <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                      <sc-for list="{{ klDFlyttValg }}" as="br" hint-placeholder-count="3">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
-                    </select>
+                    </div>
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klDFlyttUtfor }}" hint-size="auto,36px">Flytt</x-import>
                   </div>
                 </sc-if>
@@ -6581,11 +6591,12 @@ window.__resources = {
             <div style="padding: var(--space-5) var(--space-6); border-top: 1px solid var(--border-subtle); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end;">
               <div style="flex: 1 1 150px;">
                 <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Hvem</label>
-                <select value="{{ khTimeHvem }}" onChange="{{ settKhTimeHvem }}" style="{{ khFeltStil }}">
-                  <sc-for list="{{ khValg }}" as="v" hint-placeholder-count="3">
-                    <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ khValg }}" as="br" hint-placeholder-count="3">
+                    <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
-                </select>
+                </div>
               </div>
               <div style="flex: 0 1 150px;">
                 <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Dato</label>
@@ -7029,11 +7040,12 @@ window.__resources = {
             <sc-if value="{{ nrErMedlemskap }}" hint-placeholder-val="{{ false }}">
               <div>
                 <label style="{{ nrEtikett }}">Medlemskap</label>
-                <select value="{{ nrPlan }}" onChange="{{ settNrPlan }}" style="{{ nrValgStil }}">
-                  <sc-for list="{{ nrPlaner }}" as="p" hint-placeholder-count="4">
-                    <option value="{{ p.verdi }}" label="{{ p.navn }}">{{ p.navn }}</option>
+                <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ nrPlaner }}" as="br" hint-placeholder-count="4">
+                    <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
-                </select>
+                </div>
                 <sc-if value="{{ nrIngenPlaner }}" hint-placeholder-val="{{ false }}">
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">Ingen medlemskap er lagt ut. Lag ett under Kurs og medlemskap → Medlemskap.</p>
                 </sc-if>
@@ -7044,11 +7056,12 @@ window.__resources = {
             <sc-if value="{{ nrErOkt }}" hint-placeholder-val="{{ true }}">
               <div>
                 <label style="{{ nrEtikett }}">{{ nrOktEtikett }}</label>
-                <select value="{{ nrOkt }}" onChange="{{ settNrOkt }}" style="{{ nrValgStil }}">
-                  <sc-for list="{{ nrOkter }}" as="o" hint-placeholder-count="6">
-                    <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
+                <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                  <sc-for list="{{ nrOkter }}" as="br" hint-placeholder-count="6">
+                    <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
-                </select>
+                </div>
                 <sc-if value="{{ nrIngenOkter }}" hint-placeholder-val="{{ false }}">
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--terracotta-600);">{{ nrIngenOkterTekst }}</p>
                 </sc-if>
@@ -7060,11 +7073,12 @@ window.__resources = {
                   </div>
                   <div>
                     <label style="{{ nrEtikett }}">Betalt med</label>
-                    <select value="{{ nrMaate }}" onChange="{{ settNrMaate }}" style="{{ nrValgStil }}">
-                      <sc-for list="{{ nrMaater }}" as="m" hint-placeholder-count="5">
-                        <option value="{{ m }}" label="{{ m }}">{{ m }}</option>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <sc-for list="{{ nrMaater }}" as="br" hint-placeholder-count="5">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
-                    </select>
+                    </div>
                   </div>
                   <div>
                     <label style="{{ nrEtikett }}">Beløp i kroner</label>
@@ -8058,7 +8072,7 @@ window.__resources = {
                   <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ k.pameldte }}</span>
                 </div>
                 <div style="font-size: var(--text-sm); color: var(--text-body); white-space: nowrap;">{{ k.neste }}</div>
-                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                <div style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
                   <button type="button" onClick="{{ k.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <sc-if value="{{ k.harDato }}" hint-placeholder-val="{{ true }}">
                     <button type="button" onClick="{{ k.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
@@ -8115,7 +8129,10 @@ window.__resources = {
                   <span style="min-width: 42px; text-align: center; font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ o.plassTekst }}</span>
                   <button type="button" onClick="{{ o.flere }}" title="Én plass til" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; color: var(--text-heading); font-size: 17px;">+</button>
                 </div>
-                <div style="display: flex; gap: var(--space-3); margin-left: auto;">
+                <!-- Knappene bryter naar det ikke er plass. Paa en telefon er
+                     «Rediger · Legg til deltaker · Paameldte · Slett dato»
+                     bredere enn kortet, og «Slett dato» sto utenfor ramma. -->
+                <div style="display: flex; gap: var(--space-3); row-gap: var(--space-2); flex-wrap: wrap; margin-left: auto; min-width: 0;">
                   <button type="button" onClick="{{ o.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Rediger</button>
                   <button type="button" onClick="{{ o.leggTil }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Legg til deltaker</button>
                   <button type="button" onClick="{{ o.sePameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Påmeldte</button>
@@ -8158,11 +8175,12 @@ window.__resources = {
                       </div>
                       <div>
                         <label style="{{ mpEtikett }}">Betalt med</label>
-                        <select value="{{ mpMaate }}" onChange="{{ settMpMaate }}" style="{{ mpValgStil }}">
-                          <sc-for list="{{ mpMaater }}" as="m" hint-placeholder-count="4">
-                            <option value="{{ m }}" label="{{ m }}">{{ m }}</option>
+                        <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <sc-for list="{{ mpMaater }}" as="br" hint-placeholder-count="4">
+                            <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                           </sc-for>
-                        </select>
+                        </div>
                       </div>
                       <div>
                         <label style="{{ mpEtikett }}">Beløp</label>
@@ -8225,11 +8243,12 @@ window.__resources = {
                       <sc-if value="{{ harKursholdere }}" hint-placeholder-val="{{ true }}">
                         <div style="flex: 0 1 200px;">
                           <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Kursholder</label>
-                          <select value="{{ oktHolder }}" onChange="{{ settOktHolder }}" style="{{ oktFeltStil }}">
-                            <sc-for list="{{ kursholderValg }}" as="h" hint-placeholder-count="3">
-                              <option value="{{ h.verdi }}" label="{{ h.navn }}">{{ h.navn }}</option>
+                          <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <sc-for list="{{ kursholderValg }}" as="br" hint-placeholder-count="3">
+                              <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                             </sc-for>
-                          </select>
+                          </div>
                         </div>
                       </sc-if>
                       <div style="flex: 1 1 260px; min-width: 0;">
@@ -8358,6 +8377,16 @@ window.__resources = {
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldMedlemmer }}" hint-size="auto,40px">Melding til medlemmene</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="send" on-click="{{ mobMeldDeltakere }}" hint-size="auto,40px">Til deltakere</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="download" on-click="{{ aDagsoppgjor }}" hint-size="auto,40px">Dagsoppgjør</x-import>
+        </div>
+
+        <!-- Verkstedet: er du her, og naar er det ferie.
+             Sto oeverst i adminmenyen. Eieren, 30. august: «stemple inn og
+             ferie maa flyttes til oversikt. Behold utseende» — samme tekst,
+             samme piller, samme farger, paa den samme moerke bunnen. -->
+        <div data-theme="ink" style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-10);">
+          <span style="{{ ovStempStatusStil }}">{{ ovStempStatus }}</span>
+          <button type="button" onClick="{{ ovStempVelg }}" style="{{ ovStempStil }}">{{ ovStempNavn }}</button>
+          <button type="button" onClick="{{ ovFerieVelg }}" style="{{ ovFerieStil }}">{{ ovFerieNavn }}</button>
         </div>
 
         <!-- Kortene.
@@ -8512,11 +8541,12 @@ window.__resources = {
                 <div style="display: grid; grid-template-columns: 74px 74px 1fr 44px 28px; gap: var(--space-2); align-items: center;">
                   <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ skFeltStil }}">
                   <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ skFeltStil }}">
-                  <select value="{{ r.gjelder }}" onChange="{{ r.settGjelder }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 10px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
-                    <sc-for list="{{ grGjelderValg }}" as="g" hint-placeholder-count="5">
-                      <option value="{{ g.verdi }}" label="{{ g.navn }}">{{ g.navn }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ r.gjelderValg }}" as="br" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                   <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
                   <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
                 </div>
@@ -8558,11 +8588,12 @@ window.__resources = {
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
-                <select value="{{ bnLenke }}" onChange="{{ settBnLenke }}" style="{{ bnValgStil }}">
-                  <sc-for list="{{ bnMaal }}" as="m" hint-placeholder-count="8">
-                    <option value="{{ m.nokkel }}" label="{{ m.navn }}">{{ m.navn }}</option>
+                <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <sc-for list="{{ bnMaal }}" as="br" hint-placeholder-count="8">
+                    <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                   </sc-for>
-                </select>
+                </div>
               </div>
             </div>
 
@@ -8721,19 +8752,21 @@ window.__resources = {
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
                       <div>
                         <label for="{{ q.typeId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Svartype</label>
-                        <select id="{{ q.typeId }}" value="{{ q.rType }}" onChange="{{ q.settType }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                          <sc-for list="{{ kvaTyper }}" as="t" hint-placeholder-count="6">
-                            <option value="{{ t.verdi }}" label="{{ t.navn }}">{{ t.navn }}</option>
+                        <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <sc-for list="{{ q.typeValg }}" as="br" hint-placeholder-count="6">
+                            <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                           </sc-for>
-                        </select>
+                        </div>
                       </div>
                       <div>
                         <label for="{{ q.narId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Vis bare når</label>
-                        <select id="{{ q.narId }}" value="{{ q.rNarId }}" onChange="{{ q.settNarId }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                          <sc-for list="{{ q.narValg }}" as="n" hint-placeholder-count="3">
-                            <option value="{{ n.verdi }}" label="{{ n.navn }}">{{ n.navn }}</option>
+                        <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <sc-for list="{{ q.narBrikker }}" as="br" hint-placeholder-count="3">
+                            <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                           </sc-for>
-                        </select>
+                        </div>
                       </div>
                       <sc-if value="{{ q.harNar }}" hint-placeholder-val="{{ false }}">
                         <div>
@@ -8780,11 +8813,12 @@ window.__resources = {
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
                           <div>
                             <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Anbefaler</label>
-                            <select value="{{ sv.mal }}" onChange="{{ sv.settMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                              <sc-for list="{{ kvaMaal }}" as="m" hint-placeholder-count="6">
-                                <option value="{{ m.verdi }}" label="{{ m.navn }}">{{ m.navn }}</option>
+                            <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                              <sc-for list="{{ sv.malValg }}" as="br" hint-placeholder-count="6">
+                                <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                               </sc-for>
-                            </select>
+                            </div>
                           </div>
                           <div>
                             <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Begrunnelse (valgfritt)</label>
@@ -9102,11 +9136,12 @@ window.__resources = {
               </div>
               <input value="{{ vaBruker }}" onChange="{{ settVa.smtp_bruker }}" placeholder="post@lissom.no" aria-label="Brukernavn" style="{{ vaFeltStil }}">
               <input type="password" value="{{ vaPassord }}" onChange="{{ settVa.smtp_passord }}" placeholder="{{ vaPassordHint }}" aria-label="Passord" style="{{ vaFeltStil }}">
-              <select value="{{ vaSikkerhet }}" onChange="{{ settVa.smtp_sikkerhet }}" aria-label="Kryptering" style="{{ vaFeltStil }}">
-                <sc-for list="{{ vaSikkerhetValg }}" as="v" hint-placeholder-count="3">
-                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+              <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <sc-for list="{{ vaSikkerhetValg }}" as="br" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                 </sc-for>
-              </select>
+              </div>
               <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4);">
                 <input value="{{ vaFra }}" onChange="{{ settVa.epost_fra }}" placeholder="Avsenderadresse, f.eks. post@lissom.no" aria-label="Avsenderadresse" style="{{ vaFeltStil }}">
                 <input value="{{ vaFraNavn }}" onChange="{{ settVa.epost_fra_navn }}" placeholder="Avsendernavn, f.eks. Lissom Keramikk" aria-label="Avsendernavn" style="{{ vaFeltStil }}">
@@ -9590,19 +9625,21 @@ window.__resources = {
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
                 <div>
                   <label style="{{ mpEtikett }}">Kurs</label>
-                  <select value="{{ mpKurs }}" onChange="{{ settMpKurs }}" style="{{ mpValgStil }}">
-                    <sc-for list="{{ mpKursvalg }}" as="k" hint-placeholder-count="6">
-                      <option value="{{ k.verdi }}" label="{{ k.navn }}">{{ k.navn }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                    <sc-for list="{{ mpKursvalg }}" as="br" hint-placeholder-count="6">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label style="{{ mpEtikett }}">Dato</label>
-                  <select value="{{ mpOkt }}" onChange="{{ settMpOkt }}" style="{{ mpValgStil }}">
-                    <sc-for list="{{ mpOkter }}" as="o" hint-placeholder-count="6">
-                      <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                    <sc-for list="{{ mpOkter }}" as="br" hint-placeholder-count="6">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                 </div>
               </div>
               <sc-if value="{{ mpIngenOkter }}" hint-placeholder-val="{{ false }}">
@@ -9631,11 +9668,12 @@ window.__resources = {
                 </div>
                 <div>
                   <label style="{{ mpEtikett }}">Betalt med</label>
-                  <select value="{{ mpMaate }}" onChange="{{ settMpMaate }}" style="{{ mpValgStil }}">
-                    <sc-for list="{{ mpMaater }}" as="m" hint-placeholder-count="5">
-                      <option value="{{ m }}" label="{{ m }}">{{ m }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ mpMaater }}" as="br" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label style="{{ mpEtikett }}">Beløp i kroner</label>
@@ -9773,11 +9811,12 @@ window.__resources = {
                       <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
                         <div style="flex: 0 1 200px; min-width: 150px;">
                           <label style="{{ mpEtikett }}">Hvordan kom pengene inn</label>
-                          <select value="{{ betMaate }}" onChange="{{ settBetMaate }}" style="{{ mpValgStil }}">
-                            <sc-for list="{{ betMaater }}" as="m" hint-placeholder-count="5">
-                              <option value="{{ m.verdi }}" label="{{ m.navn }}">{{ m.navn }}</option>
+                          <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <sc-for list="{{ betMaater }}" as="br" hint-placeholder-count="5">
+                              <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                             </sc-for>
-                          </select>
+                          </div>
                         </div>
                         <div style="flex: 0 1 140px; min-width: 110px;">
                           <label style="{{ mpEtikett }}">Beløp i kroner</label>
@@ -9803,11 +9842,12 @@ window.__resources = {
                 <div style="padding: 0 var(--space-6) var(--space-5); display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4);">
                   <div style="flex: 1 1 320px; min-width: 0;">
                     <label style="{{ mpEtikett }}">Flytt {{ p.navn }} til</label>
-                    <select value="{{ flyttOkt }}" onChange="{{ settFlyttOkt }}" style="{{ mpValgStil }}">
-                      <sc-for list="{{ flyttOkter }}" as="o" hint-placeholder-count="6">
-                        <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                      <sc-for list="{{ flyttOkter }}" as="br" hint-placeholder-count="6">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
-                    </select>
+                    </div>
                   </div>
                   <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ flyttUtfor }}" hint-size="auto,40px">Flytt hit</x-import>
@@ -10023,11 +10063,12 @@ window.__resources = {
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
                 <div>
                   <label style="{{ miEtikett }}">Medlemskap</label>
-                  <select value="{{ miType }}" onChange="{{ settMiType }}" style="{{ miFeltStil }}">
-                    <sc-for list="{{ miTyper }}" as="t" hint-placeholder-count="3">
-                      <option value="{{ t }}" label="{{ t }}">{{ t }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ miTyper }}" as="br" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label style="{{ miEtikett }}">Notat</label>
@@ -10612,11 +10653,12 @@ window.__resources = {
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
                 <div>
                   <label style="{{ miEtikett }}">Medlemskap</label>
-                  <select value="{{ miType }}" onChange="{{ settMiType }}" style="{{ miFeltStil }}">
-                    <sc-for list="{{ miTyper }}" as="t" hint-placeholder-count="3">
-                      <option value="{{ t }}" label="{{ t }}">{{ t }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ miTyper }}" as="br" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                 </div>
                 <div>
                   <label style="{{ miEtikett }}">Notat</label>
@@ -10911,11 +10953,12 @@ window.__resources = {
                 <sc-if value="{{ nbTilOkt }}" hint-placeholder-val="{{ false }}">
                   <div>
                     <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
-                    <select value="{{ nbOkt }}" onChange="{{ settNbOkt }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
-                      <sc-for list="{{ nbOkter }}" as="o" hint-placeholder-count="5">
-                        <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                      <sc-for list="{{ nbOkter }}" as="br" hint-placeholder-count="5">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
-                    </select>
+                    </div>
                   </div>
                 </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Overskrift" value="{{ nbEmne }}" on-change="{{ settNbEmne }}" placeholder="F.eks. Ovnen går natt til torsdag" hint-size="100%,66px"></x-import>
@@ -11233,11 +11276,12 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Åpningstider for drop-in</div>
               <sc-for list="{{ dropinTider }}" as="d" hint-placeholder-count="7">
                 <div style="{{ d.radStil }}">
-                  <select value="{{ d.dag }}" onChange="{{ d.settDag }}" style="{{ d.dagStil }}">
-                    <sc-for list="{{ dager }}" as="dag" hint-placeholder-count="7">
-                      <option value="{{ dag }}" label="{{ dag }}">{{ dag }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                    <sc-for list="{{ d.dagValg }}" as="br" hint-placeholder-count="7">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                   <input type="time" value="{{ d.fra }}" onChange="{{ d.settFra }}" style="{{ d.feltStil }}">
                   <input type="time" value="{{ d.til }}" onChange="{{ d.settTil }}" style="{{ d.feltStil }}">
                   <button type="button" onClick="{{ d.slett }}" title="Slett" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font-size: 16px; line-height: 1;">×</button>
@@ -11695,11 +11739,12 @@ window.__resources = {
               <sc-if value="{{ nbTilOkt }}" hint-placeholder-val="{{ false }}">
                 <div>
                   <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hvilken dato</label>
-                  <select value="{{ nbOkt }}" onChange="{{ settNbOkt }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); cursor: pointer;">
-                    <sc-for list="{{ nbOkter }}" as="o" hint-placeholder-count="5">
-                      <option value="{{ o.verdi }}" label="{{ o.navn }}">{{ o.navn }}</option>
+                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
+                    <sc-for list="{{ nbOkter }}" as="br" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
-                  </select>
+                  </div>
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">Alle påmeldte på datoen får beskjeden — også de som ikke er medlemmer.</p>
                 </div>
               </sc-if>
@@ -11965,11 +12010,12 @@ window.__resources = {
                 <div style="margin-bottom: var(--space-4);">
                   <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">{{ f.etikett }}</label>
                   <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
-                    <select value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.stil }}">
-                      <sc-for list="{{ f.valg }}" as="v" hint-placeholder-count="3">
-                        <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <sc-for list="{{ f.valg }}" as="br" hint-placeholder-count="3">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                       </sc-for>
-                    </select>
+                    </div>
                   </sc-if>
                   <sc-if value="{{ f.erFelt }}" hint-placeholder-val="{{ true }}">
                     <input type="{{ f.type }}" value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="{{ f.hint }}" style="{{ f.stil }}">
@@ -12716,27 +12762,30 @@ window.__resources = {
                           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3);">
                             <div>
                               <label for="{{ ab.etterId }}" style="{{ abLitenEtikett }}">Står etter</label>
-                              <select id="{{ ab.etterId }}" value="{{ ab.etter }}" onChange="{{ ab.settEtter }}" style="{{ abFeltStil }}">
-                                <sc-for list="{{ ab.etterValg }}" as="v" hint-placeholder-count="3">
-                                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                              <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <sc-for list="{{ ab.etterValg }}" as="br" hint-placeholder-count="3">
+                                  <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                                 </sc-for>
-                              </select>
+                              </div>
                             </div>
                             <div>
                               <label for="{{ ab.plassId }}" style="{{ abLitenEtikett }}">Plassering</label>
-                              <select id="{{ ab.plassId }}" value="{{ ab.plassering }}" onChange="{{ ab.settPlassering }}" style="{{ abFeltStil }}">
-                                <sc-for list="{{ ab.plassValg }}" as="v" hint-placeholder-count="4">
-                                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                              <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <sc-for list="{{ ab.plassValg }}" as="br" hint-placeholder-count="4">
+                                  <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                                 </sc-for>
-                              </select>
+                              </div>
                             </div>
                             <div>
                               <label for="{{ ab.storrId }}" style="{{ abLitenEtikett }}">Størrelse</label>
-                              <select id="{{ ab.storrId }}" value="{{ ab.storrelse }}" onChange="{{ ab.settStorrelse }}" style="{{ abFeltStil }}">
-                                <sc-for list="{{ ab.storrValg }}" as="v" hint-placeholder-count="3">
-                                  <option value="{{ v.verdi }}" label="{{ v.navn }}">{{ v.navn }}</option>
+                              <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <sc-for list="{{ ab.storrValg }}" as="br" hint-placeholder-count="3">
+                                  <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                                 </sc-for>
-                              </select>
+                              </div>
                             </div>
                           </div>
                           <div>
@@ -16834,6 +16883,56 @@ class Component extends DCLogic {
           'Låse dørene og legge nøklene tilbake i nøkkelboksene.',
         ],
       },
+    ];
+  }
+
+  /**
+   * Nedtrekkene som Safari ikke tegner.
+   *
+   * ── Feilen ────────────────────────────────────────────────────────────
+   *
+   * <sc-for> inne i <select> er ikke gyldig HTML. Etter standarden skal en
+   * ukjent start-tag inne i et nedtrekk kastes, og Safari gjor akkurat det —
+   * loekka forsvinner, og med den valgene. Chrome tolererer det. Feilen
+   * finnes derfor bare paa telefonen, som er der verkstedet faktisk staar:
+   * eieren 30. august, om Monicas admin, «naar hun forsoker aa legge inn
+   * deltaker og skal velge betalingsmetode saa faar hun opp den gamle
+   * visningen som er tom».
+   *
+   * Det var ikke en gammel utgave. Alle ser det samme — nedtrekket var tomt
+   * for alle som brukte Safari.
+   *
+   * ── Loesningen ────────────────────────────────────────────────────────
+   *
+   * Brikker: vanlige knapper i en div. Ingen regler om hva som kan staa
+   * inni, og det er den samme formen som betalingsvalget i kassa og i
+   * kalenderen alt hadde — de to stedene som ikke var i stykker.
+   *
+   * Lista over staar her, ett sted, saa det ikke er tjueaatte steder aa
+   * huske paa. Hver rad er [lista, verdien som er valgt, setteren]. Punktum
+   * i navnet er et oppslag i et objekt («settVa.smtp_sikkerhet»).
+   *
+   * Setteren roeres ikke: den venter en hendelse med «target.value», og
+   * brikka gir den akkurat det. Da er det bare visningen som byttes, og
+   * ingen av kallene under.
+   */
+  static get NEDTREKK() {
+    return [
+      ['klDFlyttValg',   'klDFlyttTil',  'settKlDFlyttTil'],
+      ['khValg',         'khTimeHvem',   'settKhTimeHvem'],
+      ['nrPlaner',       'nrPlan',       'settNrPlan'],
+      ['nrOkter',        'nrOkt',        'settNrOkt'],
+      ['nrMaater',       'nrMaate',      'settNrMaate'],
+      ['mpMaater',       'mpMaate',      'settMpMaate'],
+      ['mpKursvalg',     'mpKurs',       'settMpKurs'],
+      ['mpOkter',        'mpOkt',        'settMpOkt'],
+      ['betMaater',      'betMaate',     'settBetMaate'],
+      ['flyttOkter',     'flyttOkt',     'settFlyttOkt'],
+      ['kursholderValg', 'oktHolder',    'settOktHolder'],
+      ['bnMaal',         'bnLenke',      'settBnLenke'],
+      ['vaSikkerhetValg','vaSikkerhet',  'settVa.smtp_sikkerhet'],
+      ['miTyper',        'miType',       'settMiType'],
+      ['nbOkter',        'nbOkt',        'settNbOkt'],
     ];
   }
 
@@ -26184,9 +26283,19 @@ class Component extends DCLogic {
     return liste.map(x => Object.assign({}, x, { velg: this.apne.apply(this, spec(x)) }));
   }
 
-  adminMeny() {
-    const aktiv = this.adminSted().meny;
-
+  /**
+   * Innstemplinga og ferien, som piller.
+   *
+   * Sto oeverst i adminmenyen. Eieren, 30. august: «verkstedet staar som
+   * stengt, stemple inn og ferie maa flyttes til oversikt. Behold utseende».
+   * Menyen er stedene man kan gaa; dette er to ting man gjor, og de hoerer
+   * hjemme der dagen begynner.
+   *
+   * Utseendet foelger med uendret: samme tekst, samme form, samme farger paa
+   * moerk bunn — stripa paa Oversikt staar paa det brune, som gule «Ofte
+   * brukt» rett over.
+   */
+  stemplingPiller() {
     // ── Er du her? ────────────────────────────────────────────────────────
     //
     // Aapningstida paa nettsiden ble regnet av kalenderen alene: en paastand
@@ -26198,58 +26307,53 @@ class Component extends DCLogic {
     const inne = this.erInne();
     const siden = (this.state.stempling || {}).siden
       || ((this.state.apningsdager || {}).apenSiden || '');
-    const stempling = [{
-      // Statuslinja over knappen. Uten den staar det bare en knapp, og man
-      // vet ikke hva nettsiden sier akkurat naa.
-      navn: inne
+    const pille = (paa) => ({
+      appearance: 'none', cursor: 'pointer', textAlign: 'left',
+      padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+      font: 'var(--type-body-sm)', fontWeight: 700,
+      border: paa ? 'none' : '1px solid rgba(244,235,222,.28)',
+      background: paa ? 'var(--sage-500)' : 'transparent',
+      color: paa ? '#fff' : 'var(--clay-200)',
+    });
+
+    return {
+      // Statuslinja over knappene. Uten den staar det bare to knapper, og
+      // man vet ikke hva nettsiden sier akkurat naa.
+      statusNavn: inne
         ? (siden ? 'Verkstedet er åpent · siden ' + siden : 'Verkstedet er åpent')
         : 'Verkstedet står som stengt',
-      velg: () => {},
-      stil: {
-        appearance: 'none', border: 'none', background: 'transparent',
-        textAlign: 'left', cursor: 'default', padding: '0 14px 6px',
+      statusStil: {
         font: 'var(--type-label)', fontSize: 11,
         letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
         color: inne ? 'var(--sage-500)' : 'var(--clay-400)',
       },
-    }, {
-      navn: inne ? '●  Stemple ut' : '○  Stemple inn',
+      stempleNavn: inne ? '●  Stemple ut' : '○  Stemple inn',
       // Samme kall som knappen paa Min side. Kvitteringen sier hva som
       // skjedde, og aapningstida hentes paa nytt: den endrer seg av dette.
-      velg: () => {
+      stempleVelg: () => {
         this.stemplingKall({ handling: inne ? 'ut' : 'inn' }, true);
         this._apningHentes = false;
         this.setState({ apningsdager: null });
       },
-      stil: {
-        appearance: 'none', cursor: 'pointer', textAlign: 'left',
-        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
-        font: 'var(--type-body-sm)', fontWeight: 700,
-        marginBottom: 6,
-        border: inne ? 'none' : '1px solid rgba(244,235,222,.28)',
-        background: inne ? 'var(--sage-500)' : 'transparent',
-        color: inne ? '#fff' : 'var(--clay-200)',
-      },
-    }, {
-      // Ferie. Samme pille som innstemplinga, rett under — eieren 30.
-      // august. Tallet sier hvor mange dager som staar stengt framover, saa
+      stempleStil: pille(inne),
+      // Ferie. Tallet sier hvor mange dager som staar stengt framover, saa
       // man ser at det ligger en ferie der uten aa aapne skjermen.
-      navn: (() => {
+      ferieNavn: (() => {
         const n = ((this.state.ferieData || {}).stengte || [])
           .filter(d => d >= new Date().toISOString().slice(0, 10)).length;
         return n ? '⌂  Ferie · ' + n + (n === 1 ? ' dag' : ' dager') : '⌂  Ferie';
       })(),
-      velg: () => this.gaaAdmin('adminferie', {}),
-      stil: {
-        appearance: 'none', cursor: 'pointer', textAlign: 'left',
-        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
-        font: 'var(--type-body-sm)', fontWeight: 700,
-        marginBottom: 'var(--space-3)',
-        border: '1px solid rgba(244,235,222,.28)',
-        background: 'transparent',
-        color: 'var(--clay-200)',
-      },
-    }];
+      ferieVelg: () => this.gaaAdmin('adminferie', {}),
+      ferieStil: pille(false),
+    };
+  }
+
+  adminMeny() {
+    const aktiv = this.adminSted().meny;
+
+    // Innstemplinga og ferien sto her. De staar naa paa Oversikt — se
+    // stemplingPiller() over.
+    const stempling = [];
 
     const rader = Component.ADMIN_MENY.map(([navn, rute, forvalg]) => ({
       navn,
@@ -26973,6 +27077,79 @@ class Component extends DCLogic {
     }));
   }
 
+  /**
+   * Én liste med valg, som brikker.
+   *
+   * Godtar det nedtrekket godtok: rene tekster, eller rader med «verdi» og
+   * «navn». Setteren er den samme som for — brikka kaller den med en
+   * hendelse den kjenner igjen.
+   */
+  brikkeliste(liste, naa, sett) {
+    const valgt = naa === undefined || naa === null ? '' : String(naa);
+    return (Array.isArray(liste) ? liste : []).map(v => {
+      const rad = v !== null && typeof v === 'object';
+      const verdi = String(rad ? (v.verdi !== undefined ? v.verdi : v.navn) : v);
+      const navn = String(rad ? (v.navn !== undefined ? v.navn : v.verdi) : v);
+      const aktiv = verdi === valgt;
+      return {
+        verdi, navn, aktiv,
+        velg: () => { if (typeof sett === 'function') sett({ target: { value: verdi } }); },
+        stil: {
+          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+          padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600,
+          textAlign: 'left', maxWidth: '100%', whiteSpace: 'normal',
+          border: '1.5px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+          background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
+          color: aktiv ? 'var(--clay-50)' : 'var(--text-heading)',
+        },
+      };
+    });
+  }
+
+  /** Slaar opp «a» eller «a.b» i verdiene. */
+  velgUt(vals, sti) {
+    const deler = String(sti).split('.');
+    let v = vals;
+    for (let i = 0; i < deler.length; i++) {
+      if (v === null || v === undefined) return undefined;
+      v = v[deler[i]];
+    }
+    return v;
+  }
+
+  /**
+   * Bytter nedtrekkene i Component.NEDTREKK ut med brikker, ett sted.
+   * Se kommentaren over NEDTREKK for hvorfor.
+   */
+  utenNedtrekk(vals) {
+    Component.NEDTREKK.forEach(([liste, verdi, sett]) => {
+      if (!Array.isArray(vals[liste])) return;
+      vals[liste] = this.brikkeliste(vals[liste],
+                                     this.velgUt(vals, verdi),
+                                     this.velgUt(vals, sett));
+    });
+
+    // Feltlistene som beskriver seg selv: en rad med «erValg» baerer sine
+    // egne valg, sin egen verdi og sin egen setter. De kan ikke staa i
+    // tabellen over — det er raden som vet hva den gjelder — men regelen er
+    // den samme, og da skal den staa ett sted her ogsaa.
+    //
+    // Rader uten «endre» roeres ikke: de er alt brikker (kdFelt i
+    // kalenderen bygde dem selv for denne veien fantes).
+    Object.keys(vals).forEach(nokkel => {
+      const liste = vals[nokkel];
+      if (!Array.isArray(liste)) return;
+      liste.forEach(rad => {
+        if (rad && typeof rad === 'object' && rad.erValg
+            && Array.isArray(rad.valg) && typeof rad.endre === 'function') {
+          rad.valg = this.brikkeliste(rad.valg, rad.verdi, rad.endre);
+        }
+      });
+    });
+
+    return vals;
+  }
+
   renderVals() {
     const side = this.state.side;
 
@@ -27318,7 +27495,10 @@ class Component extends DCLogic {
       { navn: 'Leire, hvit porselen', detalj: '5 kg pose', sum: 'kr. 340,-', tid: '28. juli 15:20', ref: 'LIS-10388' },
     ]);
 
-    return {
+    // Verdiene samles forst, saa gjor utenNedtrekk() nedtrekkene om til
+    // brikker — se Component.NEDTREKK for hvorfor de ikke kan staa som
+    // <select> med en loekke inni.
+    const vals = {
       sider,
       sant: true,
       detaljApen: !!this.state.detalj,
@@ -32669,6 +32849,20 @@ class Component extends DCLogic {
       // kan stemme.
       adminDagsdato: this.norskDagsdato(),
       adminHilsen: this.adminHilsen(),
+      // Innstemplinga og ferien, flyttet hit fra menyen. Se stemplingPiller().
+      ...(() => {
+        const st = this.stemplingPiller();
+        return {
+          ovStempStatus: st.statusNavn,
+          ovStempStatusStil: st.statusStil,
+          ovStempNavn: st.stempleNavn,
+          ovStempVelg: st.stempleVelg,
+          ovStempStil: st.stempleStil,
+          ovFerieNavn: st.ferieNavn,
+          ovFerieVelg: st.ferieVelg,
+          ovFerieStil: st.ferieStil,
+        };
+      })(),
       ovOmsListe: this.omsetningsLinjer(),
       ingenOmsLinjer: this.erPublisert() && this.omsetningsLinjer().length === 0,
       ingenOmsTekst: (this.state.ovOms || 'I dag') === 'I dag'
@@ -33494,6 +33688,15 @@ class Component extends DCLogic {
           settMin: e => oppdater({ min: Math.max(2, parseInt(e.target.value, 10) || 2) }),
           settProsent: e => oppdater({ prosent: Math.min(100, Math.max(1, parseFloat(e.target.value) || 1)) }),
           settGjelder: e => oppdater({ gjelder: e.target.value }),
+          // Brikker, ikke et nedtrekk: se Component.NEDTREKK. Lista hoerer
+          // til raden, saa den kan ikke staa i tabellen der.
+          gjelderValg: this.brikkeliste(
+            this.state.rabattMaal || [
+              { verdi: 'alle', navn: 'Alle kurs og workshops' },
+              { verdi: 'dreiing', navn: 'Alle dreiekurs' },
+            ],
+            r.gjelder,
+            e => oppdater({ gjelder: e.target.value })),
           veksl: () => oppdater({ aktiv: !r.aktiv }),
           aktivTekst: r.aktiv ? 'På' : 'Av',
           aktivStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 0', font: 'var(--type-body-sm)', fontWeight: 700, border: '1px solid ' + (r.aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: r.aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)', color: r.aktiv ? 'var(--clay-50)' : 'var(--text-muted)' },
@@ -35496,14 +35699,18 @@ class Component extends DCLogic {
         const TYPENAVN = {};
         (d.typer || []).forEach(t => { TYPENAVN[t.verdi] = t.navn; });
 
+        // Kursene og sidene et svar kan peke paa. Sto bare i verdiene under;
+        // brikkene paa hvert svar trenger den samme lista.
+        const maalene = [{ verdi: '', navn: 'La merkene avgjøre' }]
+          .concat((d.sider || []).map(x => ({ verdi: x.verdi, navn: x.navn })))
+          .concat((d.kurs || []).map(k => ({ verdi: k, navn: k })));
+
         return {
           kvaMangler: !!this.state.veilederMangler,
           kvaTyper: d.typer || [],
           // Kursene og sidene et svar kan peke paa. Tomt betyr «la poengene
           // avgjore» — det er ikke det samme som «ingenting skjer».
-          kvaMaal: [{ verdi: '', navn: 'La merkene avgjøre' }]
-            .concat((d.sider || []).map(x => ({ verdi: x.verdi, navn: x.navn })))
-            .concat((d.kurs || []).map(k => ({ verdi: k, navn: k }))),
+          kvaMaal: maalene,
 
           kvaSporsmal: liste.map((q, i) => ({
             merke: 'Spørsmål ' + (i + 1) + (q.aktiv ? '' : ' · slått av'),
@@ -35540,6 +35747,9 @@ class Component extends DCLogic {
             settHjelp: e => settQ(q.id, { hjelpetekst: e.target.value }),
             rType: uq(q, 'type', q.type),
             settType: e => settQ(q.id, { type: e.target.value }),
+            // Brikker, ikke nedtrekk: se Component.NEDTREKK.
+            typeValg: this.brikkeliste(d.typer || [], uq(q, 'type', q.type),
+                                       e => settQ(q.id, { type: e.target.value })),
             erTall: uq(q, 'type', q.type) === 'tall',
             // Et spoersmaal kan ikke henge paa seg selv, og ikke paa et som
             // kommer etter — da ville svaret ikke finnes ennaa.
@@ -35547,6 +35757,11 @@ class Component extends DCLogic {
               liste.filter((x, j) => j < i).map(x => ({ verdi: String(x.id), navn: 'Svaret på «' + x.tekst + '»' }))),
             rNarId: String(uq(q, 'visNarId', q.visNarId || 0)),
             settNarId: e => settQ(q.id, { visNarId: parseInt(e.target.value, 10) || 0 }),
+            narBrikker: this.brikkeliste(
+              [{ verdi: '0', navn: 'Alle får dette spørsmålet' }].concat(
+                liste.filter((x, j) => j < i).map(x => ({ verdi: String(x.id), navn: 'Svaret på «' + x.tekst + '»' }))),
+              String(uq(q, 'visNarId', q.visNarId || 0)),
+              e => settQ(q.id, { visNarId: parseInt(e.target.value, 10) || 0 })),
             harNar: (parseInt(uq(q, 'visNarId', q.visNarId || 0), 10) || 0) > 0,
             rNarVerdi: uq(q, 'visNarVerdi', q.visNarVerdi || ''),
             settNarVerdi: e => settQ(q.id, { visNarVerdi: e.target.value }),
@@ -35593,6 +35808,8 @@ class Component extends DCLogic {
               settTekst: e => settS(sv.id, { tekst: e.target.value }),
               mal: us(sv, 'mal', sv.mal || ''),
               settMal: e => settS(sv.id, { mal: e.target.value }),
+              malValg: this.brikkeliste(maalene, us(sv, 'mal', sv.mal || ''),
+                                        e => settS(sv.id, { mal: e.target.value })),
               begrunnelse: us(sv, 'begrunnelse', sv.begrunnelse || ''),
               settBegrunnelse: e => settS(sv.id, { begrunnelse: e.target.value }),
               merkegrupper: merkegrupper(sv),
@@ -36265,6 +36482,10 @@ class Component extends DCLogic {
         fra: t.fra,
         til: t.til,
         settDag: (e) => this.endreTid(t.id, 'dag', e.target.value),
+        // Brikker, ikke et nedtrekk: se Component.NEDTREKK.
+        dagValg: this.brikkeliste(
+          ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'],
+          t.dag, (e) => this.endreTid(t.id, 'dag', e.target.value)),
         settFra: (e) => this.endreTid(t.id, 'fra', e.target.value),
         settTil: (e) => this.endreTid(t.id, 'til', e.target.value),
         slett: () => this.slettTid(t.id),
@@ -37777,22 +37998,25 @@ class Component extends DCLogic {
                     tekstId: 'ab-tekst-' + i,
                     altId: 'ab-alt-' + i,
                     etter: String(b.etter === undefined ? 0 : b.etter),
-                    etterValg,
+                    // Brikker, ikke nedtrekk: se Component.NEDTREKK.
+                    etterValg: this.brikkeliste(etterValg,
+                      String(b.etter === undefined ? 0 : b.etter),
+                      e => endre(i, { etter: parseInt(e.target.value, 10) || 0 })),
                     settEtter: e => endre(i, { etter: parseInt(e.target.value, 10) || 0 }),
                     plassering: b.plassering || 'full',
-                    plassValg: [
+                    plassValg: this.brikkeliste([
                       { verdi: 'full', navn: 'Full bredde' },
                       { verdi: 'venstre', navn: 'Til venstre' },
                       { verdi: 'hoyre', navn: 'Til høyre' },
                       { verdi: 'midtstilt', navn: 'Midtstilt' },
-                    ],
+                    ], b.plassering || 'full', e => endre(i, { plassering: e.target.value })),
                     settPlassering: e => endre(i, { plassering: e.target.value }),
                     storrelse: b.storrelse || 'medium',
-                    storrValg: [
+                    storrValg: this.brikkeliste([
                       { verdi: 'liten', navn: 'Liten' },
                       { verdi: 'medium', navn: 'Medium' },
                       { verdi: 'stor', navn: 'Stor' },
-                    ],
+                    ], b.storrelse || 'medium', e => endre(i, { storrelse: e.target.value })),
                     settStorrelse: e => endre(i, { storrelse: e.target.value }),
                     bildetekst: b.bildetekst || '',
                     settBildetekst: e => endre(i, { bildetekst: e.target.value }),
@@ -39216,6 +39440,8 @@ class Component extends DCLogic {
       })(),
       produkter: this.forsideProdukter(),
     };
+
+    return this.utenNedtrekk(vals);
   }
 
   // Produktene i butikkfeltet paa forsiden. Rutenettet paa desktop og

@@ -2746,23 +2746,30 @@ sjekk('… og stilen nedtrekket hadde er ryddet bort',
 
 // ── Nedtrekkene paa iPhone ─────────────────────────────────────────────
 //
-// Motoren pakker {{ }} i et <span class="sc-interp">. Chrome faller tilbake
-// paa option.text og viser navnet; Safari paa iPhone leser innholdet slik det
-// staar, finner et element framfor tekst, og viser en blank linje. Eieren
-// 29. august: nedtrekket «Betaling» var tomt med en hake i.
+// <sc-for> inne i <select> er ikke gyldig HTML. Standarden sier at en ukjent
+// start-tag inne i et nedtrekk skal kastes, og Safari gjor det: loekka
+// forsvinner, og med den valgene. Chrome tolererer det, saa feilen fantes
+// bare paa telefonen. Eieren 30. august, om Monicas admin: «naar hun forsoker
+// aa legge inn deltaker og skal velge betalingsmetode saa faar hun opp den
+// gamle visningen som er tom».
 //
-// «label» er det standarden peker paa naar et valg skal ha en annen etikett
-// enn innholdet, og den vises naar den finnes. Innholdet blir staaende, saa
-// option.text virker som for.
-preg_match_all('/<option value="\{\{ [^}]+ \}\}"([^>]*)>/', $sida2, $treff);
-$utenLabel = array_values(array_filter(
-    $treff[1] ?? [],
-    static fn(string $rest): bool => !str_contains($rest, 'label="{{')
+// Foerste forsok var «label» paa hvert valg. Det var feil sted: valgene kom
+// aldri saa langt. Naa er det brikker — vanlige knapper i en div — overalt.
+preg_match_all('/<select\b[^>]*>.*?<\/select>/s', $sida2, $selects);
+$medLokke = array_values(array_filter(
+    $selects[0] ?? [],
+    static fn(string $blokk): bool => str_contains($blokk, '<sc-for')
 ));
-sjekk('hvert valg i et nedtrekk har en etikett Safari kan lese',
-    $utenLabel === [], count($utenLabel) . ' uten label');
-sjekk('… og det gjelder alle nedtrekkene', count($treff[1] ?? []) >= 28,
-    count($treff[1] ?? []) . ' valg');
+sjekk('ingen nedtrekk har en løkke inni seg', $medLokke === [],
+    count($medLokke) . ' nedtrekk med sc-for');
+sjekk('… og brikkene lages ett sted',
+    str_contains($sida2, 'static get NEDTREKK()')
+    && str_contains($sida2, 'return this.utenNedtrekk(vals);')
+    && str_contains($sida2, 'brikkeliste(liste, naa, sett) {'));
+// Setteren nedtrekket hadde roeres ikke: brikka kaller den med den samme
+// hendelsen. Da er det bare visningen som er byttet.
+sjekk('… og setterne er de samme som for',
+    str_contains($sida2, "sett({ target: { value: verdi } });"));
 
 // ── Fast QR til disken ─────────────────────────────────────────────────
 //
@@ -3116,8 +3123,12 @@ sjekk('ferieskjermen finnes, med ukenummer aa trykke paa',
     str_contains($sida2, 'data-screen-label="Admin – ferie"')
     && str_contains($sida2, 'onClick="{{ v.vekslUke }}"')
     && str_contains($sida2, 'onClick="{{ g.veksl }}"'));
-sjekk('… og pillen staar under innstemplinga',
-    str_contains($sida2, "velg: () => this.gaaAdmin('adminferie', {}),"));
+sjekk('… og pillen staar paa Oversikt, sammen med innstemplinga',
+    str_contains($sida2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),")
+    && str_contains($sida2, '{{ ovStempNavn }}') && str_contains($sida2, '{{ ovFerieNavn }}'));
+// Eieren, 30. august: «stemple inn og ferie maa flyttes til oversikt».
+sjekk('… og de staar ikke lenger i menyen',
+    str_contains($sida2, 'const stempling = [];'));
 // Paameldte forsvinner ikke av seg selv — eieren maa faa vite om dem.
 sjekk('skjermen sier fra naar noen alt har booket',
     str_contains($sida2, 'de forsvinner ikke av seg selv, så gi beskjed.'));

@@ -132,6 +132,27 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Nedtrekkene virket ikke på iPhone — alle sammen.** `<sc-for>` inne i
+`<select>` er ikke gyldig HTML: standarden sier at en ukjent start-tag inne i
+et nedtrekk skal kastes, og Safari gjør det. Løkka forsvinner, og med den
+valgene. Chrome tolererer det, så feilen fantes bare på telefonen — der
+verkstedet faktisk står. Monica fikk et tomt nedtrekk med en hake i da hun
+skulle velge betalingsmåte. Det var ikke en gammel utgave hun satt på; alle
+som brukte Safari så det samme, i alle 28 nedtrekkene i admin.
+
+Alle er nå brikker — vanlige knapper i en div, samme form som betalingsvalget
+i kassa og i kalenderen alt hadde. Reglene står ett sted (`Component.NEDTREKK`
+og `utenNedtrekk()`), og setterne er urørt: brikka kaller den samme funksjonen
+med den samme hendelsen, så bare visningen er byttet.
+
+**Stemple inn og Ferie står på Oversikt.** Menyen er stedene man kan gå;
+dette er to ting man gjør. Samme tekst, samme piller, samme farger — flyttet
+til den mørke stripa rett under «Ofte brukt».
+
+**«Lukk» øverst til høyre går ikke lenger utenfor skjermen,** og knapperaden
+på en kursdato («Rediger · Legg til deltaker · Påmeldte · Slett dato») bryter
+i stedet for å stikke utenfor kortet.
+
 **Planlagte kurs har uke, måned og liste.** De samme tre visningene som
 kalenderen, på de samme øktene: uka med alle sju dagene (også de tomme),
 månedsrutenettet som ruller sidelengs på telefon, og lista fjorten dager

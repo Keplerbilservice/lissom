@@ -2971,6 +2971,17 @@ sjekk('snarveiene under «Ofte brukt» er like store paa telefon',
     && str_contains($sida2, '.lx-ofte > span { flex: 1 1 100% !important;')
     && str_contains($sida2, '.lx-ofte button {'));
 
+// Paint on Pots og andre der gjenstanden velges i verkstedet sto helt uten
+// pris paa kortet — og et kort uten pris ser ut som et kort der noe mangler.
+// Eieren 30. august: det skal staa en fra-pris. Tallet er serverens: plassen
+// pluss den rimeligste varen som kan males, saa kortet aldri lover mindre
+// enn kassa krever.
+sjekk('kort med gjenstand i kassa viser en fra-pris',
+    substr_count($sida2, "? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')") === 2);
+sjekk('… og serveren regner den ut av den rimeligste varen',
+    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'prisFraOre'      => \$fra,")
+    && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'SELECT MIN(pris_ore) FROM products'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

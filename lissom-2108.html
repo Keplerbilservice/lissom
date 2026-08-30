@@ -14737,7 +14737,11 @@ class Component extends DCLogic {
         // oppstart; de har hver sin knapp og hver sin side.
         folgerApningstid: !!kat.folgerApningstid,
         prisOre: kat.prisOre,
-        price: kat.prisOre === 0 ? 'Gratis' : kat.pris,
+        // Samme regel her som paa kortene over: er gjenstanden det som
+        // koster, er det fra-prisen som skal staa.
+        price: kat.gjenstandIKassa
+          ? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')
+          : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
         status: 'Ta kontakt for dato',
         date: 'Etter avtale',
         duration: '',
@@ -14794,11 +14798,19 @@ class Component extends DCLogic {
       // kvelder man kan velge mellom er noe annet, og det staar i
       // datovelgeren. Endrer verkstedet tidene, foelger tallet med.
       // Paint on Pots: prisen paa kurset er plassen, ikke det du gaar hjem
-      // med, og et tall paa et kort ville sagt noe annet enn det som skjer i
-      // kassa. Kortet staar uten pris; den staar der den skal brukes — i
-      // bestillingen — som «Fra kr. N,-», regnet av den rimeligste varen.
+      // med. Kortet sto derfor helt uten pris — og et kort uten pris ser ut
+      // som et kort der noe mangler. Eieren 30. august: det skal staa en
+      // fra-pris.
+      //
+      // Tallet er serverens, ikke et anslag: plassen pluss den rimeligste
+      // varen som faktisk kan males, regnet i api/kurs.php. Da kan kortet
+      // aldri love mindre enn kassa krever. Er det ingen varer aa male,
+      // staar kortet uten pris som for — heller ingenting enn et tall vi
+      // ikke kan staa for.
       folgerApningstid: !!kat.folgerApningstid,
-      price: kat.gjenstandIKassa ? '' : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
+      price: kat.gjenstandIKassa
+        ? (kat.prisFraOre ? 'Fra ' + kat.prisFra : '')
+        : (kat.prisOre === 0 ? 'Gratis' : kat.pris),
       duration: kat.varighetVist || k.duration,
       nivaaTekst: kat.nivaaTekst || k.nivaaTekst || '',
       laererTekst: kat.laerer || k.laererTekst || '',

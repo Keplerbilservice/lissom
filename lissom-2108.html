@@ -36117,9 +36117,10 @@ class Component extends DCLogic {
           refRedLogoStil: {
             width: 96, height: 96, flex: '0 0 auto', borderRadius: 'var(--radius-md)',
             border: '1px solid var(--border-subtle)',
-            // Hvit bak: en logo er som regel laget for hvit bakgrunn, og
-            // forsvinner paa leirefarge.
-            backgroundColor: '#fff',
+            // Ingen hvit bak. Ruta skal vise logoen slik den faktisk staar paa
+            // forsida — og der ligger den rett paa bakgrunnen. Ramma blir
+            // staaende: den sier hvor du kan trykke for aa bytte logo.
+            backgroundColor: 'transparent',
             backgroundImage: (r && r.logo) ? "url('" + r.logo + "')" : 'none',
             // Logoen skal ikke beskjaeres. «contain» viser hele merket.
             backgroundSize: 'contain',
@@ -39424,14 +39425,25 @@ class Component extends DCLogic {
           // Kundene: logoen over navnet, lenken under teksten, og hvem
           // sitatet er fra naar det staar et.
           rotHarLogo: !!r.logo,
+          // Logoen ligger rett paa bakgrunnen.
+          //
+          // Her sto en hvit plate med ramme rundt, saa en hvilken som helst
+          // kundelogo skulle lese mot leirefargen. En PNG med gjennomsiktig
+          // bakgrunn viste da plata, ikke gjennomsiktigheten — eieren, 30.
+          // august: «hvorfor er det hvit bakgrunn paa kepler logoen, det er
+          // png fil». Platen er borte.
+          //
+          // Merk hva det koster: en logo i hvitt eller lys graa forsvinner
+          // naa. Kommer en slik kunde, maa logoen leveres i en moerk utgave.
+          //
+          // Venstrestilt, ikke midtstilt: uten plata er det ingen ramme aa
+          // staa midt i, og teksten under begynner i venstre kant.
           rotLogoStil: {
             width: 132, height: 60, marginBottom: 'var(--space-4)',
-            borderRadius: 'var(--radius-md)',
-            background: '#fff', border: '1px solid var(--border-subtle)',
             backgroundImage: "url('" + (r.logo || '') + "')",
-            backgroundSize: '76% auto',
+            backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center',
+            backgroundPosition: 'left center',
           },
           rotLogoAlt: 'Logoen til ' + r.merke,
           rotHarUndertekst: !!r.undertekst,

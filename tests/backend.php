@@ -3282,6 +3282,19 @@ sjekk('brikkefeltene i et rutenett tar hele raden',
 sjekk('drop-in bruker korte dagsnavn',
     str_contains($sida2, "[['Mandag', 'Man'], ['Tirsdag', 'Tir'], ['Onsdag', 'Ons'], ['Torsdag', 'Tor'],"));
 
+// ── Kundelogoen paa forsida ────────────────────────────────────────────
+//
+// Bak logoen sto en hvit plate med ramme, saa en hvilken som helst logo
+// skulle lese mot leirefargen. En PNG med gjennomsiktig bakgrunn viste da
+// plata — eieren, 30. august: «hvorfor er det hvit bakgrunn paa kepler
+// logoen, det er png fil», og etterpaa: «ja, ingen hvit plate».
+sjekk('kundelogoen ligger rett paa bakgrunnen',
+    str_contains($sida2, "backgroundPosition: 'left center',")
+    && !preg_match("/rotLogoStil: \{[^}]*background: '#fff'/s", $sida2));
+// Ruta i admin skal vise det samme som forsida gjor.
+sjekk('… og forhaandsvisningen i admin viser det samme',
+    str_contains($sida2, "backgroundColor: 'transparent',"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

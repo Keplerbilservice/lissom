@@ -123,8 +123,13 @@ echo "\n== Kapasitet ==\n";
 // datoene sine, sto kurset uten oekter — og testen sammenlignet null med null
 // og meldte «gronn». En test som gaar gronn paa manglende data, tester
 // ingenting. Riggen lages her og ryddes bort av nullstill().
+// Oektene under staar ti dager fram, klokka 10:00 UTC — ikke paa klokkeslettet
+// testene kjores. Uten sluttid regner Apent tre timer, og kjorte man suiten
+// etter klokka ni om kvelden, spilte den antatte slutten over midnatt. Da slo
+// en helt annen sjekk feil — den om at dag to av et flerdagerskurs ikke skal
+// aapne ved midnatt — og feilen fantes bare om kvelden.
 $kapKurs = DB::settInn('courses', ['slug'=>'testkapasitet','tittel'=>'Testkapasitet','type'=>'kurs','pris_ore'=>69000,'kapasitet'=>12,'status'=>'publisert']);
-$oktId = DB::settInn('course_sessions', ['course_id'=>$kapKurs,'start_tid'=>gmdate('Y-m-d H:i:s', time()+864000),'kapasitet'=>12]);
+$oktId = DB::settInn('course_sessions', ['course_id'=>$kapKurs,'start_tid'=>gmdate('Y-m-d', time()+864000) . ' 10:00:00','kapasitet'=>12]);
 $okt = ['id'=>$oktId, 'kap'=>12];
 sjekk('full kapasitet naar ingen har booket', Booking::ledigePlasser($oktId) === (int)$okt['kap'], Booking::ledigePlasser($oktId) . ' av ' . $okt['kap']);
 
@@ -474,7 +479,7 @@ echo "\n== Booking uten Vipps (gratis medlemsarrangement) ==\n";
 // (migrasjon 037), og testen stoppet paa «Denne datoen kan ikke bookes».
 // Katalogen er verkstedets, ikke testens — riggen lages her.
 $gratisKurs = DB::settInn('courses', ['slug'=>'testgratis','tittel'=>'Testgratis','type'=>'event','pris_ore'=>0,'kapasitet'=>10,'status'=>'publisert']);
-$gratisOkt = DB::settInn('course_sessions', ['course_id'=>$gratisKurs,'start_tid'=>gmdate('Y-m-d H:i:s', time()+864000),'kapasitet'=>10]);
+$gratisOkt = DB::settInn('course_sessions', ['course_id'=>$gratisKurs,'start_tid'=>gmdate('Y-m-d', time()+864000) . ' 10:00:00','kapasitet'=>10]);
 $r = Booking::reserverOgBetal($gratisOkt, 1, 'Test Testesen', 'test@example.com', '+4791234567', $medlemId);
 sjekk('gratis booking uten betaling', $r['redirectUrl'] === '' && $r['bookingId'] > 0);
 sjekk('bookingen er betalt med en gang', DB::verdi('SELECT status FROM bookings WHERE id=:i',['i'=>$r['bookingId']]) === 'betalt');
@@ -501,7 +506,7 @@ sjekk('utlopt reservasjon teller ikke', Booking::ledigePlasser($oktId) === $forb
 
 echo "\n== Overbooking avvises ==\n";
 $liten = DB::settInn('courses', ['slug'=>'testliten','tittel'=>'Liten','type'=>'kurs','pris_ore'=>0,'kapasitet'=>1,'status'=>'publisert']);
-$litenOkt = DB::settInn('course_sessions', ['course_id'=>$liten,'start_tid'=>gmdate('Y-m-d H:i:s', time()+864000)]);
+$litenOkt = DB::settInn('course_sessions', ['course_id'=>$liten,'start_tid'=>gmdate('Y-m-d', time()+864000) . ' 10:00:00']);
 Booking::reserverOgBetal($litenOkt, 1, 'Forste', 'a@example.com', '+4791234567', $medlemId);
 try { Booking::reserverOgBetal($litenOkt, 1, 'Andre', 'b@example.com', '+4791234568', $medlemId); sjekk('siste plass kan ikke bookes to ganger', false, 'slapp gjennom'); }
 catch (RuntimeException $e) { sjekk('siste plass kan ikke bookes to ganger', true, $e->getMessage()); }
@@ -3236,6 +3241,46 @@ sjekk('… med bekreftelse for pengene sendes',
     str_contains($sida2, "'Pengene går tilbake på Vipps med det samme. Dette kan ikke angres.'"));
 sjekk('… og bare der det er noe aa refundere',
     str_contains($sida2, "kanRefundere: ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1"));
+
+// ── Vis eller skjul en referansekunde ──────────────────────────────────
+//
+// Eieren, 30. august: «kan jeg faa mulighet aa vise eller ikke vise
+// referansekundene, saa slipper jeg aa slette de». Bryteren fantes bare inne
+// i redigeringsskjemaet: aapne, finn haken, lagre — og det samme igjen naar
+// kortet skulle tilbake.
+$refFil = file_get_contents(__DIR__ . '/../api/admin/referanser.php');
+sjekk('referansekunder kan skjules uten aa slettes',
+    str_contains($refFil, "if (\$handling === 'veksle') {")
+    && str_contains($refFil, "DB::oppdater('referansekunder', ['aktiv' => \$paa ? 1 : 0], ['id' => \$id]);"));
+// Samtykket er en avtale med kunden, ikke en synlighet. Det skal ikke kunne
+// slaas paa ved et uhell fra lista.
+sjekk('… og samtykket roeres ikke av bryteren',
+    !str_contains(substr($refFil, strpos($refFil, "if (\$handling === 'veksle')"),
+                         strpos($refFil, '// ── Slett') - strpos($refFil, "if (\$handling === 'veksle')")),
+                  "'samtykke' =>"));
+sjekk('… og svaret sier fra naar kortet likevel ikke vises',
+    str_contains($refFil, "» er slått på, men vises ikke før '"));
+sjekk('knappen staar paa raden, ved siden av Rediger',
+    str_contains($sida2, 'onClick="{{ r.veksle }}"')
+    && str_contains($sida2, "visTekst: k.aktiv ? 'Skjul' : 'Vis',"));
+
+// ── Brikkene maa ha plass ──────────────────────────────────────────────
+//
+// Da nedtrekkene ble brikker, arvet de spaltene nedtrekket sto i — 74 px i
+// rabattraden, 130-220 px i skjemaene. Ni valg ble en soyle nedover. Eieren
+// 30. august, om grupperabatten: «syns du dette ser bra ut?» Nei.
+//
+// Raden er derfor et kort med etiketter, og hvert brikkefelt i et rutenett
+// tar hele raden.
+sjekk('rabattraden er ikke fem smale spalter lenger',
+    !str_contains($sida2, "grid-template-columns: 74px 74px 1fr 44px 28px"));
+sjekk('… og tallfeltene har sin egen bredde',
+    str_contains($sida2, 'grTallStil:'));
+sjekk('brikkefeltene i et rutenett tar hele raden',
+    substr_count($sida2, 'grid-column: 1 / -1;') >= 8);
+// Sju ganger «Mandag» tar tre linjer paa en telefon.
+sjekk('drop-in bruker korte dagsnavn',
+    str_contains($sida2, "[['Mandag', 'Man'], ['Tirsdag', 'Tir'], ['Onsdag', 'Ons'], ['Torsdag', 'Tor'],"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

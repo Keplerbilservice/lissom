@@ -8527,28 +8527,39 @@ window.__resources = {
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Rabatten trekkes automatisk i kassen når antallet i bestillingen når minimum. Høyeste sats vinner.</p>
-              <!-- Overskrifter over kolonnene. Uten dem sto det to like tallfelt
-                   ved siden av hverandre, og det var ikke til aa se hvilket som
-                   var antall og hvilket som var prosent. -->
-              <div style="display: grid; grid-template-columns: 74px 74px 1fr 44px 28px; gap: var(--space-2); align-items: end; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">
-                <span>Fra antall</span>
-                <span>Rabatt %</span>
-                <span>Gjelder</span>
-                <span>På</span>
-                <span></span>
-              </div>
+              <!-- Én rad er ett kort, ikke fem spalter.
+                   Spaltene var 74 px, 74 px, resten, 44 px og 28 px. Da
+                   «Gjelder» ble brikker i stedet for et nedtrekk, fikk de en
+                   spalte paa under to hundre piksler aa staa i, og ni valg
+                   ble en soyle nedover. Eieren, 30. august, om akkurat det:
+                   «syns du dette ser bra ut?» Nei.
+                   Naa staar tallene ved siden av hverandre med hver sin
+                   etikett, og valgene i full bredde under. -->
               <sc-for list="{{ grListe }}" as="r" hint-placeholder-count="2">
-                <div style="display: grid; grid-template-columns: 74px 74px 1fr 44px 28px; gap: var(--space-2); align-items: center;">
-                  <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ skFeltStil }}">
-                  <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ skFeltStil }}">
-                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <sc-for list="{{ r.gjelderValg }}" as="br" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
-                    </sc-for>
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3);">
+                  <div style="display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap;">
+                    <label style="flex: 0 0 auto;">
+                      <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Fra antall</span>
+                      <input type="number" min="2" value="{{ r.min }}" onChange="{{ r.settMin }}" title="Minimum antall deltakere" style="{{ grTallStil }}">
+                    </label>
+                    <label style="flex: 0 0 auto;">
+                      <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Rabatt %</span>
+                      <input type="number" min="1" max="100" value="{{ r.prosent }}" onChange="{{ r.settProsent }}" title="Rabatt i prosent" style="{{ grTallStil }}">
+                    </label>
+                    <div style="display: flex; align-items: center; gap: var(--space-3); margin-left: auto;">
+                      <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
+                      <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                    </div>
                   </div>
-                  <button type="button" onClick="{{ r.veksl }}" title="Aktiv / inaktiv" style="{{ r.aktivStil }}">{{ r.aktivTekst }}</button>
-                  <button type="button" onClick="{{ r.slett }}" aria-label="Slett rabattnivå" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
+                  <div>
+                    <span style="display: block; font-size: 11px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Gjelder</span>
+                    <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <sc-for list="{{ r.gjelderValg }}" as="br" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
                 </div>
               </sc-for>
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
@@ -8586,9 +8597,9 @@ window.__resources = {
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Tekst på knappen</label>
                 <input value="{{ bnKnapp }}" onChange="{{ settBnKnapp }}" placeholder="F.eks. Kjøp gavekort" style="{{ bnFeltStil }}">
               </div>
-              <div>
+              <div style="grid-column: 1 / -1;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Knappen går til</label>
-                <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                <!-- Brikkene tar hele raden: en halv spalte gjor aatte valg til en søyle. -->
                 <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <sc-for list="{{ bnMaal }}" as="br" hint-placeholder-count="8">
                     <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
@@ -8750,7 +8761,7 @@ window.__resources = {
                       <input id="{{ q.hjelpId }}" value="{{ q.rHjelp }}" onChange="{{ q.settHjelp }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
-                      <div>
+                      <div style="grid-column: 1 / -1;">
                         <label for="{{ q.typeId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Svartype</label>
                         <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -8759,7 +8770,7 @@ window.__resources = {
                           </sc-for>
                         </div>
                       </div>
-                      <div>
+                      <div style="grid-column: 1 / -1;">
                         <label for="{{ q.narId }}" style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Vis bare når</label>
                         <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                         <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -8811,7 +8822,7 @@ window.__resources = {
                           <button type="button" onClick="{{ sv.slett }}" aria-label="Slett svaret" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;">×</button>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3); margin-top: var(--space-3);">
-                          <div>
+                          <div style="grid-column: 1 / -1;">
                             <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Anbefaler</label>
                             <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                             <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
@@ -9026,6 +9037,9 @@ window.__resources = {
               <div style="display: flex; gap: var(--space-3); margin-left: auto; flex-wrap: wrap;">
                 <button type="button" onClick="{{ r.opp }}" title="Flytt opp" style="{{ r.pilStil }}">↑</button>
                 <button type="button" onClick="{{ r.ned }}" title="Flytt ned" style="{{ r.pilStil }}">↓</button>
+                <!-- Vis eller skjul uten aa slette. Et skjult kort ligger her
+                     med bilde, sitat og rekkefolge i behold. -->
+                <button type="button" onClick="{{ r.veksle }}" style="{{ r.visStil }}">{{ r.visTekst }}</button>
                 <button type="button" onClick="{{ r.rediger }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;">Rediger</button>
                 <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font: var(--type-body-sm);">Slett</button>
               </div>
@@ -9623,18 +9637,18 @@ window.__resources = {
                    — og det var enklere aa gaa via kurset i kurslista. Naa
                    velger du kurset, og faar bare det kursets datoer. -->
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4);">
-                <div>
+                <div style="grid-column: 1 / -1;">
                   <label style="{{ mpEtikett }}">Kurs</label>
-                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <!-- Brikkene tar hele raden. -->
                   <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                     <sc-for list="{{ mpKursvalg }}" as="br" hint-placeholder-count="6">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
                   </div>
                 </div>
-                <div>
+                <div style="grid-column: 1 / -1;">
                   <label style="{{ mpEtikett }}">Dato</label>
-                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <!-- Brikkene tar hele raden. -->
                   <div style="display: flex; gap: 6px; flex-wrap: wrap; max-height: 168px; overflow-y: auto; padding: 2px;">
                     <sc-for list="{{ mpOkter }}" as="br" hint-placeholder-count="6">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
@@ -10061,9 +10075,9 @@ window.__resources = {
                 </div>
               </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
-                <div>
+                <div style="grid-column: 1 / -1;">
                   <label style="{{ miEtikett }}">Medlemskap</label>
-                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <!-- Brikkene tar hele raden. -->
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ miTyper }}" as="br" hint-placeholder-count="3">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
@@ -10651,9 +10665,9 @@ window.__resources = {
                 </div>
               </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);">
-                <div>
+                <div style="grid-column: 1 / -1;">
                   <label style="{{ miEtikett }}">Medlemskap</label>
-                  <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
+                  <!-- Brikkene tar hele raden. -->
                   <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <sc-for list="{{ miTyper }}" as="br" hint-placeholder-count="3">
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
@@ -11282,9 +11296,12 @@ window.__resources = {
                       <button type="button" onClick="{{ br.velg }}" style="{{ br.stil }}">{{ br.navn }}</button>
                     </sc-for>
                   </div>
-                  <input type="time" value="{{ d.fra }}" onChange="{{ d.settFra }}" style="{{ d.feltStil }}">
-                  <input type="time" value="{{ d.til }}" onChange="{{ d.settTil }}" style="{{ d.feltStil }}">
-                  <button type="button" onClick="{{ d.slett }}" title="Slett" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font-size: 16px; line-height: 1;">×</button>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="time" value="{{ d.fra }}" onChange="{{ d.settFra }}" style="{{ d.feltStil }}">
+                    <span style="color: var(--text-muted);">–</span>
+                    <input type="time" value="{{ d.til }}" onChange="{{ d.settTil }}" style="{{ d.feltStil }}">
+                    <button type="button" onClick="{{ d.slett }}" title="Slett" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--terracotta-600); font-size: 16px; line-height: 1; margin-left: auto;">×</button>
+                  </div>
                 </div>
               </sc-for>
               <div style="height: var(--space-5);"></div>
@@ -12789,7 +12806,7 @@ window.__resources = {
                         <button type="button" onClick="{{ ab.bytt }}" aria-label="Bytt bilde" style="{{ ab.ruteStil }}"></button>
                         <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-3);">
                           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--space-3);">
-                            <div>
+                            <div style="grid-column: 1 / -1;">
                               <label for="{{ ab.etterId }}" style="{{ abLitenEtikett }}">Står etter</label>
                               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -12798,7 +12815,7 @@ window.__resources = {
                                 </sc-for>
                               </div>
                             </div>
-                            <div>
+                            <div style="grid-column: 1 / -1;">
                               <label for="{{ ab.plassId }}" style="{{ abLitenEtikett }}">Plassering</label>
                               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -12807,7 +12824,7 @@ window.__resources = {
                                 </sc-for>
                               </div>
                             </div>
-                            <div>
+                            <div style="grid-column: 1 / -1;">
                               <label for="{{ ab.storrId }}" style="{{ abLitenEtikett }}">Størrelse</label>
                               <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
                               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
@@ -33796,6 +33813,12 @@ class Component extends DCLogic {
         { verdi: 'alle', navn: 'Alle kurs og workshops' },
         { verdi: 'dreiing', navn: 'Alle dreiekurs' },
       ]),
+      // Tallfeltene sto i en spalte paa 74 px. Spalten er borte, saa bredden
+      // maa staa paa feltet selv — ellers strekker det seg over hele kortet.
+      grTallStil: { boxSizing: 'border-box', width: 96, border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)', padding: '9px 10px',
+                    font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+                    background: 'var(--surface-card)' },
       grKnapp: this.state.rabattUlagret ? 'Lagre rabattene' : 'Lagret',
       grLagre: () => {
         if (!this.state.rabattUlagret) return;
@@ -33822,7 +33845,7 @@ class Component extends DCLogic {
             e => oppdater({ gjelder: e.target.value })),
           veksl: () => oppdater({ aktiv: !r.aktiv }),
           aktivTekst: r.aktiv ? 'På' : 'Av',
-          aktivStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 0', font: 'var(--type-body-sm)', fontWeight: 700, border: '1px solid ' + (r.aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: r.aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)', color: r.aktiv ? 'var(--clay-50)' : 'var(--text-muted)' },
+          aktivStil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, border: '1px solid ' + (r.aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: r.aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)', color: r.aktiv ? 'var(--clay-50)' : 'var(--text-muted)' },
           slett: () => this.setState({ rabattNivaer: this.rabattNivaer().filter((x, j) => j !== i), rabattUlagret: true }),
         };
       }),
@@ -36024,6 +36047,21 @@ class Component extends DCLogic {
               backgroundSize: 'cover', backgroundPosition: this.fokusFor(k.bilde || ''),
             },
             pilStil: pil,
+            // Vis eller skjul, med ett trykk.
+            //
+            // Bryteren fantes fra for, men bare inne i redigeringsskjemaet:
+            // skulle et kort bort en uke, matte man aapne det, finne haken,
+            // lagre — og gjenta naar det skulle tilbake. Eieren, 30. august:
+            // «kan jeg faa mulighet aa vise eller ikke vise
+            // referansekundene, saa slipper jeg aa slette de».
+            visTekst: k.aktiv ? 'Skjul' : 'Vis',
+            visStil: {
+              appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer',
+              font: 'var(--type-body-sm)', fontWeight: 600,
+              color: k.aktiv ? 'var(--text-muted)' : 'var(--sage-600, #4C6B4F)',
+              textDecoration: 'underline', textUnderlineOffset: 3,
+            },
+            veksle: () => this.referanseKall({ handling: 'veksle', id: k.id, paa: k.aktiv ? 'nei' : 'ja' }),
             opp: () => this.referanseKall({ handling: 'flytt', id: k.id, retning: 'opp' }),
             ned: () => this.referanseKall({ handling: 'flytt', id: k.id, retning: 'ned' }),
             rediger: () => this.setState({ refRed: Object.assign({}, k), refBeskjed: '' }),
@@ -36606,14 +36644,24 @@ class Component extends DCLogic {
         til: t.til,
         settDag: (e) => this.endreTid(t.id, 'dag', e.target.value),
         // Brikker, ikke et nedtrekk: se Component.NEDTREKK.
+        //
+        // Kort navn paa brikka, helt navn som verdi: sju ganger «Mandag» tar
+        // tre linjer paa en telefon, og det er den samme dagen.
         dagValg: this.brikkeliste(
-          ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'],
+          [['Mandag', 'Man'], ['Tirsdag', 'Tir'], ['Onsdag', 'Ons'], ['Torsdag', 'Tor'],
+           ['Fredag', 'Fre'], ['Lørdag', 'Lør'], ['Søndag', 'Søn']]
+            .map(([verdi, navn]) => ({ verdi, navn })),
           t.dag, (e) => this.endreTid(t.id, 'dag', e.target.value)),
         settFra: (e) => this.endreTid(t.id, 'fra', e.target.value),
         settTil: (e) => this.endreTid(t.id, 'til', e.target.value),
         slett: () => this.slettTid(t.id),
+        // Raden er to linjer: dagen over, tidene under.
+        //
+        // Her sto fire spalter — «1fr auto auto 28px». Dagen laa i den forste,
+        // og da nedtrekket ble til sju brikker, fikk de en spalte paa under
+        // to hundre piksler og stablet seg nedover.
         radStil: {
-          display: 'grid', gridTemplateColumns: '1fr auto auto 28px', gap: 8, alignItems: 'center',
+          display: 'flex', flexDirection: 'column', gap: 8,
           padding: '10px 0', borderTop: '1px solid var(--border-subtle)',
         },
         feltStil: {

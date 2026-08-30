@@ -155,6 +155,48 @@ if ($handling === 'flytt') {
     Svar::ok(['kunder' => kundene(), 'beskjed' => 'Rekkefølgen er endret.']);
 }
 
+// ── Vis eller skjul ────────────────────────────────────────────────────────
+//
+// Eieren, 30. august: «kan jeg faa mulighet aa vise eller ikke vise
+// referansekundene, saa slipper jeg aa slette de». Bryteren fantes fra for,
+// men bare inne i redigeringsskjemaet — skulle et kort bort en uke, maatte
+// man aapne det, finne haken, lagre, og gjenta naar det skulle tilbake. Eller
+// slette det, og skrive alt paa nytt senere.
+//
+// Samtykket roeres ikke. Det er en avtale med kunden, ikke en synlighet, og
+// et kort uten samtykke skal ikke kunne slaas paa ved et uhell herfra.
+if ($handling === 'veksle') {
+    $id = Foresporsel::heltall('id');
+    $k = DB::en('SELECT navn, samtykke, bilde FROM referansekunder WHERE id = :i', ['i' => $id]);
+    if ($k === null) {
+        Svar::feil('Fant ikke kunden.', 404);
+    }
+    $paa = Foresporsel::tekst('paa') === 'ja';
+    DB::oppdater('referansekunder', ['aktiv' => $paa ? 1 : 0], ['id' => $id]);
+    revider('referanse_' . ($paa ? 'vist' : 'skjult'), 'referanse', $id, ['navn' => $k['navn']]);
+
+    // Slaas den paa uten at de to andre kravene er der, staar den fortsatt
+    // ikke ute. Da skal svaret si det, framfor aa melde «paa forsiden» om
+    // noe ingen ser.
+    $mangler = [];
+    if ((int) $k['samtykke'] !== 1) {
+        $mangler[] = 'kunden har sagt ja';
+    }
+    if (trim((string) ($k['bilde'] ?? '')) === '') {
+        $mangler[] = 'et bilde';
+    }
+
+    Svar::ok([
+        'kunder'  => kundene(),
+        'beskjed' => $paa
+            ? ($mangler === []
+                ? '«' . $k['navn'] . '» står på forsiden.'
+                : '«' . $k['navn'] . '» er slått på, men vises ikke før '
+                  . implode(' og ', $mangler) . ' er på plass.')
+            : '«' . $k['navn'] . '» er skjult. Den ligger her til du vil ha den fram igjen.',
+    ]);
+}
+
 // ── Slett ──────────────────────────────────────────────────────────────────
 if ($handling === 'slett') {
     $id = Foresporsel::heltall('id');

@@ -7535,7 +7535,8 @@ window.__resources = {
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">05 · Beskrivelse</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det kunden leser først, under overskriften på kurssiden — og hele teksten under «Kursene våre», der alle kursene står beskrevet. To til fire setninger.</p>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">To til fire setninger om hva slags kveld dette er.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden og under «Kursene våre». Ikke på e-post.</p>
                   <textarea id="k-om" value="{{ kBeskrivelse }}" onChange="{{ settKBeskrivelse }}" rows="4" placeholder="Hva slags kveld er dette, og hva sitter man igjen med?" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
                   <!-- AI-en leser beskrivelsene som alt staar ute og skriver i
                        samme stil. Forslaget havner i feltet, ikke ute paa
@@ -7565,7 +7566,8 @@ window.__resources = {
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">07 · Dette lærer deltakerne</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hva de kan når de går hjem. Står som eget avsnitt på kurssiden. Kan stå tomt.</p>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hva de kan når de går hjem. Kan stå tomt.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt og i faktaboksen øverst. Ikke på e-post.</p>
                   <textarea id="k-laerer" value="{{ kLaerer }}" onChange="{{ settKLaerer }}" rows="3" placeholder="F.eks. Å sentrere leira, åpne den og trekke opp en vegg. Å trimme foten dagen etter." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                 </div>
 
@@ -7581,13 +7583,15 @@ window.__resources = {
                      inn og rette. -->
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">08 · Nivå, varighet og faktaboksen</div>
-                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Faktaboksen øverst på kurssiden, og avsnittene under den. Står feltet tomt, bruker nettsiden den anbefalte teksten for denne kurstypen — den ser du under hvert felt.</p>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Står feltet tomt, bruker nettsiden standardteksten for kategorien — den ser du under hvert felt.</p>
+                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Alt i denne seksjonen vises på kurssiden: faktaboksen øverst og avsnittene under den. Ingenting av det går på e-post.</p>
 
                   <div style="display: flex; flex-direction: column; gap: var(--space-5);">
 
                     <div>
                       <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Nivå — internt</div>
-                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Dette står bare her, for deres egen del. Kunden ser aldri ordet «nybegynner» eller «videregående».</p>
+                      <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">For deres egen del, så dere vet hva slags kurs det er.</p>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises ingen steder ute. Kunden ser aldri ordet «nybegynner» eller «videregående».</p>
                       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                         <sc-for list="{{ kNivaaValg }}" as="n" hint-placeholder-count="2">
                           <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
@@ -7630,15 +7634,36 @@ window.__resources = {
 
                     <div>
                       <label for="k-ferdigtid" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Når er den ferdig</label>
-                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hvor lenge det tar før arbeidene kan hentes. Spørsmålet kommer uansett — står det her, kommer det ikke på telefonen.</p>
+                      <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Hvor lenge det tar før arbeidene kan hentes. Spørsmålet kommer uansett — står det her, kommer det ikke på telefonen.</p>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt.</p>
                       <textarea id="k-ferdigtid" value="{{ kFerdigTid }}" onChange="{{ settKFerdigTid }}" rows="2" placeholder="{{ kFerdigTidMal }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
-                      <button type="button" onClick="{{ kFerdigTidAnbefalt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Gjenopprett anbefalt tekst</button>
+                      <!-- Standardteksten for kategorien, redigerbar rett her. -->
+                      <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdFerdigHjelp }}</span>
+                        <sc-if value="{{ kStdFerdigHarHent }}" hint-placeholder-val="{{ true }}">
+                          <button type="button" onClick="{{ kStdFerdigHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                        </sc-if>
+                        <sc-if value="{{ kStdFerdigHarLagre }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ kStdFerdigLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdFerdigLagreTekst }}</button>
+                        </sc-if>
+                      </div>
                     </div>
 
                     <div>
                       <label for="k-tillegg" style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Godt å vite</label>
-                      <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Alt annet som hører til dette kurset og ikke passer i feltene over. Kan stå tomt.</p>
-                      <textarea id="k-tillegg" value="{{ kTillegg }}" onChange="{{ settKTillegg }}" rows="2" placeholder="F.eks. Ta med forkle om du har. Vi har også ekstra." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                      <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Alt annet som hører til dette kurset og ikke passer i feltene over. Kan stå tomt.</p>
+                      <p style="margin: 0 0 8px; font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt — rett under «Praktisk informasjon», som er nabofeltet i innhold.</p>
+                      <textarea id="k-tillegg" value="{{ kTillegg }}" onChange="{{ settKTillegg }}" rows="2" placeholder="{{ kStdTilleggPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                      <!-- Standardteksten for kategorien, redigerbar rett her. -->
+                      <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                        <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdTilleggHjelp }}</span>
+                        <sc-if value="{{ kStdTilleggHarHent }}" hint-placeholder-val="{{ true }}">
+                          <button type="button" onClick="{{ kStdTilleggHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                        </sc-if>
+                        <sc-if value="{{ kStdTilleggHarLagre }}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{ kStdTilleggLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdTilleggLagreTekst }}</button>
+                        </sc-if>
+                      </div>
                     </div>
 
                   </div>
@@ -7646,26 +7671,58 @@ window.__resources = {
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">09 · Alt som er inkludert</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Ett punkt per linje. Dette sto fast i koden før og kunne ikke endres herfra. Skriver du ingenting, står den samme teksten som i dag. «Maks N deltakere» legges på av seg selv og følger antall plasser.</p>
-                  <textarea id="k-punkter" value="{{ kPunkter }}" onChange="{{ settKPunkter }}" rows="4" placeholder="Leire, glasur og brenning er inkludert.&#10;Ingen forkunnskaper nødvendig." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Ett punkt per linje. Står feltet tomt, brukes standardteksten under. «Maks N deltakere» legges på av seg selv og følger antall plasser.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som avhakede punkter under prisen. Ikke på e-post.</p>
+                  <textarea id="k-punkter" value="{{ kPunkter }}" onChange="{{ settKPunkter }}" rows="4" placeholder="{{ kStdPunkterPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ kPunkterHjelp }}</p>
+                  <!-- Standardteksten for kategorien, redigerbar rett her. -->
+                  <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdPunkterHjelp }}</span>
+                    <sc-if value="{{ kStdPunkterHarHent }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ kStdPunkterHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                    </sc-if>
+                    <sc-if value="{{ kStdPunkterHarLagre }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ kStdPunkterLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdPunkterLagreTekst }}</button>
+                    </sc-if>
+                  </div>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">10 · Praktisk informasjon</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Oppmøte, klær, parkering, hva de skal ta med. Står på kurssiden, før de betaler.</p>
-                  <textarea id="k-praktisk" value="{{ kPraktisk }}" onChange="{{ settKPraktisk }}" rows="3" placeholder="F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Oppmøte, klær, parkering, hva de skal ta med.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, før de betaler. Ikke på e-post.</p>
+                  <textarea id="k-praktisk" value="{{ kPraktisk }}" onChange="{{ settKPraktisk }}" rows="3" placeholder="{{ kStdPraktiskPlass }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                  <!-- Standardteksten for kategorien, redigerbar rett her. -->
+                  <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ kStdPraktiskHjelp }}</span>
+                    <sc-if value="{{ kStdPraktiskHarHent }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ kStdPraktiskHent }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Hent standardteksten</button>
+                    </sc-if>
+                    <sc-if value="{{ kStdPraktiskHarLagre }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" onClick="{{ kStdPraktiskLagre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 6px 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ kStdPraktiskLagreTekst }}</button>
+                    </sc-if>
+                  </div>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">11 · Allergener og kommentarer</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det som gjelder dette kurset — servering, materialer, aldersgrense. Deltakeren blir spurt om sine egne allergier i påmeldingen; dette er det motsatte veien.</p>
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Det som gjelder dette kurset — servering, materialer, aldersgrense. Deltakeren blir spurt om sine egne allergier i påmeldingen; dette er den motsatte veien.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises på kurssiden, som eget avsnitt. Ikke på e-post.</p>
                   <textarea id="k-allergener" value="{{ kAllergener }}" onChange="{{ settKAllergener }}" rows="3" placeholder="F.eks. Vi serverer kaffe og kake. Kaka inneholder nøtter og gluten." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
                 </div>
 
                 <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">12 · Bekreftelse og påminnelse</div>
-                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Teksten de får på skjermen etter kjøp og i e-postkvitteringen.</p>
+                  <!-- Sto som «teksten de faar paa skjermen etter kjop og i
+                       e-postkvitteringen». Det stemmer ikke: kolonnen
+                       bekreftelse_tekst skrives her og leses ingen steder.
+                       Kvitteringen som gaar ut er malen «ordrebekreftelse»
+                       under Beskjeder, med {navn}, {ordre} og {belop}.
+                       Eieren, 30. august: «er det info som vises deltakerne
+                       paa epost, saa faa det tydelig frem». Da skal det staa
+                       hva som faktisk skjer. -->
+                  <p style="margin: 0 0 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Tenkt som en hilsen til dem som melder seg på dette kurset.</p>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); font-weight: 700; color: var(--terracotta-600); letter-spacing: 0.02em;">Vises ingen steder ennå. E-posten deltakerne får settes opp under Beskjeder → E-post- og SMS-maler. Si fra om du vil at denne teksten skal legges inn i den.</p>
                   <textarea id="k-bekreftelse" value="{{ kBekreftelse }}" onChange="{{ settKBekreftelse }}" rows="3" placeholder="F.eks. Velkommen! Møt opp 10 minutter før, bruk klær som tåler leire." style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 11px 14px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); resize: vertical; margin-bottom: var(--space-2);"></textarea>
                   <!-- Standardteksten fylles ut paa nye kurs. Her endrer du den
                        for alle nye, eller henter den tilbake om du har slettet
@@ -23251,7 +23308,15 @@ class Component extends DCLogic {
    * Sletting og avlysning endrer noe ekte. Gjorde vi det bare i
    * skjermbildet, sto kurset der igjen ved neste sidelasting.
    */
-  kursKall(kropp) {
+  /**
+   * @param {boolean} [behold] La kursoppsettet staa aapent etterpaa.
+   *
+   * De fleste kallene her avslutter noe — et kurs lagres, en dato slettes —
+   * og da skal skjemaet lukke seg. «Lagre som standard» gjor ikke det: den
+   * lagrer en tekst ved siden av kurset man holder paa med, og lukker
+   * skjemaet man sto midt i om den faar lov.
+   */
+  kursKall(kropp, behold) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden' });
       return;
@@ -23267,11 +23332,17 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
       .then(({ ok, d }) => {
         this._kursKall = false;
-        this.setState({
+        const ny = {
           kvittering: ok ? 'Lagret' : 'Gikk ikke',
           kvitteringDetalj: (d && (d.beskjed || d.feil)) || '',
-          kRed: false,
-        });
+        };
+        if (!behold) ny.kRed = false;
+        // Standardtekstene kommer tilbake med svaret, saa hjelpelinja under
+        // feltet sier det nye med en gang — uten aa vente paa hentAdmin().
+        if (d && d.standardtekster && typeof d.standardtekster === 'object') {
+          ny.standardtekster = d.standardtekster;
+        }
+        this.setState(ny);
         if (ok) { this._adminHentes = false; this.hentAdmin(); this.hentKatalog(); }
       })
       .catch(() => {
@@ -26935,6 +27006,11 @@ class Component extends DCLogic {
         // praktiske informasjonen enten skrevet paa nytt eller droppet.
         if (kurs && typeof kurs.bekreftelseStandard === 'string') {
           ny.bekreftelseStandard = kurs.bekreftelseStandard;
+        }
+        // Standardtekstene for «Alt som er inkludert», «Praktisk
+        // informasjon», «Naar er den ferdig» og «Godt aa vite», per kategori.
+        if (kurs && kurs.standardtekster && typeof kurs.standardtekster === 'object') {
+          ny.standardtekster = kurs.standardtekster;
         }
         if (Object.keys(ny).length) this.setState(ny);
       })
@@ -33508,6 +33584,86 @@ class Component extends DCLogic {
                  + 'prisen med gjenstanden, betaler kunden nå den summen for plassen og '
                  + 'gjenstanden i tillegg. Sett prisen til 0, eller til et bordgebyr.';
           })(),
+        };
+      })(),
+
+      // ── Standardtekstene, redigerbare rett i feltet ──────────────────
+      //
+      // Eieren, 30. august: «feltene godt aa vite, naar er den ferdig, alt
+      // som er inkludert og praktisk informasjon — dette vil jeg kunne
+      // redigere default tekst, enkelt rett i feltene og faa opp lagre».
+      //
+      // Standarden foelger kategorien: det som gjelder for et dreiekurs er
+      // ikke det som gjelder for Paint on Pots. Den ligger i innstillinger,
+      // ikke i koden, saa den kan endres uten en ny utlegging — se
+      // Kursmal::standardtekster().
+      //
+      // Lagre-lenka staar bare naar teksten i feltet faktisk er noe annet
+      // enn standarden. Ellers hadde det staatt en knapp under hvert felt
+      // hele tiden som ikke gjorde noe.
+      //
+      // Verdiene skrives ut med fulle navn og ikke i en loekke: vaktskriptene
+      // leser malen mot koden, og en noekkel satt av 'kStd' + navn er ikke
+      // til aa finne for dem. Da hadde en binding uten verdi gaatt rett
+      // gjennom.
+      ...(() => {
+        const kategori = String(this.state.kKategori || '').trim();
+        const alle = this.state.standardtekster || {};
+        // Eksempelet som staar i feltet naar ingen standardtekst er skrevet
+        // enda. Det sto som fast tekst i malen for; naa er det reserven.
+        const EKSEMPEL = {
+          punkter: 'Leire, glasur og brenning er inkludert.\nIngen forkunnskaper nødvendig.',
+          praktisk: 'F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget.',
+          ferdigTid: 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.',
+          tillegg: 'F.eks. Ta med forkle om du har. Vi har også ekstra.',
+        };
+        const lag = (felt, sti) => {
+          const naa = String(this.state[sti] || '').trim();
+          const fasit = String((alle[kategori] || {})[felt] || '');
+          return {
+            plass: fasit || EKSEMPEL[felt] || '',
+            hjelp: kategori === ''
+              ? 'Velg kategori i seksjon 02, så kan du sette standardteksten for den.'
+              : (fasit === ''
+                  ? 'Ingen standardtekst for ' + kategori + ' ennå. Skriv en her og lagre den.'
+                  : 'Standard for ' + kategori + ': '
+                    + (fasit.length > 90 ? fasit.slice(0, 90) + '…' : fasit)),
+            harHent: fasit !== '' && naa !== fasit,
+            hent: () => this.setState({ [sti]: fasit }),
+            // Et tomt felt er det vanlige paa et kurs som foelger standarden,
+            // og skal ikke tilby aa tomme standarden for alle.
+            harLagre: kategori !== '' && naa !== '' && naa !== fasit,
+            lagreTekst: 'Lagre som standard for ' + (kategori || 'kategorien'),
+            lagre: () => {
+              if (kategori === '' || naa === '') return;
+              if (!window.confirm(fasit === ''
+                    ? 'Bruke denne teksten som standard for alle ' + kategori + '-kurs?'
+                    : 'Erstatte standardteksten for ' + kategori + ' med denne?')) return;
+              this.kursKall({ handling: 'standardtekst', kategori: kategori, felt: felt, tekst: naa }, true);
+            },
+          };
+        };
+        const punkter = lag('punkter', 'kPunkter');
+        const praktisk = lag('praktisk', 'kPraktisk');
+        const ferdig = lag('ferdigTid', 'kFerdigTid');
+        const tillegg = lag('tillegg', 'kTillegg');
+        return {
+          kStdPunkterPlass: punkter.plass, kStdPunkterHjelp: punkter.hjelp,
+          kStdPunkterHarHent: punkter.harHent, kStdPunkterHent: punkter.hent,
+          kStdPunkterHarLagre: punkter.harLagre, kStdPunkterLagre: punkter.lagre,
+          kStdPunkterLagreTekst: punkter.lagreTekst,
+          kStdPraktiskPlass: praktisk.plass, kStdPraktiskHjelp: praktisk.hjelp,
+          kStdPraktiskHarHent: praktisk.harHent, kStdPraktiskHent: praktisk.hent,
+          kStdPraktiskHarLagre: praktisk.harLagre, kStdPraktiskLagre: praktisk.lagre,
+          kStdPraktiskLagreTekst: praktisk.lagreTekst,
+          kStdFerdigPlass: ferdig.plass, kStdFerdigHjelp: ferdig.hjelp,
+          kStdFerdigHarHent: ferdig.harHent, kStdFerdigHent: ferdig.hent,
+          kStdFerdigHarLagre: ferdig.harLagre, kStdFerdigLagre: ferdig.lagre,
+          kStdFerdigLagreTekst: ferdig.lagreTekst,
+          kStdTilleggPlass: tillegg.plass, kStdTilleggHjelp: tillegg.hjelp,
+          kStdTilleggHarHent: tillegg.harHent, kStdTilleggHent: tillegg.hent,
+          kStdTilleggHarLagre: tillegg.harLagre, kStdTilleggLagre: tillegg.lagre,
+          kStdTilleggLagreTekst: tillegg.lagreTekst,
         };
       })(),
 

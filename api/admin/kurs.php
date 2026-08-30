@@ -176,6 +176,11 @@ if (Foresporsel::metode() === 'GET') {
     // Standardteksten nye kurs fylles ut med. Ligger i innstillinger, saa
     // eieren kan endre den uten en ny utlegging av nettsiden.
     'bekreftelseStandard' => (string) Config::hent('kurs_bekreftelse', ''),
+    // Standardtekstene for «Alt som er inkludert», «Praktisk informasjon»,
+    // «Naar er den ferdig» og «Godt aa vite», én per kategori. De ligger
+    // ikke i koden som resten av malene: eieren skriver dem selv, rett i
+    // feltet i kursoppsettet.
+    'standardtekster' => Kursmal::standardtekster(),
     // Kursholderne, saa datoene kan tildeles uten et oppslag til.
     'kursholdere' => array_map(static fn($h) => [
         'id'    => (int) $h['id'],
@@ -1018,6 +1023,51 @@ switch ($handling) {
             'beskjed' => $tekst === ''
                 ? 'Standardteksten er tømt. Nye kurs starter med et tomt felt.'
                 : 'Teksten er lagret som standard for nye kurs.',
+        ]);
+
+    // ---------------------------------------- standardtekst per kategori
+    //
+    // De fire feltene eieren ba om aa kunne sette selv: «Alt som er
+    // inkludert», «Praktisk informasjon», «Naar er den ferdig» og «Godt aa
+    // vite». Én tekst per kategori — det som gjelder for et dreiekurs er
+    // ikke det som gjelder for Paint on Pots.
+    //
+    // Alt ligger som JSON under én noekkel. Da trengs ingen ny tabell, og et
+    // felt til koster ingen migrasjon.
+    case 'standardtekst':
+        $kategori = trim(Foresporsel::tekst('kategori'));
+        $felt     = trim(Foresporsel::tekst('felt'));
+        if (!in_array($kategori, Kursmal::KATEGORIER, true)) {
+            Svar::feil('Ukjent kategori: ' . $kategori);
+        }
+        if (!in_array($felt, Kursmal::EGNE_FELT, true)) {
+            Svar::feil('Ukjent felt: ' . $felt);
+        }
+        $tekst = trim(mb_substr(Foresporsel::tekst('tekst'), 0, 4000));
+
+        // Les, rett, skriv. Hele objektet lagres paa nytt, saa en tekst som
+        // ble satt for et annet felt eller en annen kategori staar urort.
+        $alle = Kursmal::standardtekster();
+        if ($tekst === '') {
+            unset($alle[$kategori][$felt]);
+            if (($alle[$kategori] ?? []) === []) {
+                unset($alle[$kategori]);
+            }
+        } else {
+            $alle[$kategori][$felt] = $tekst;
+        }
+        DB::kjor(
+            'INSERT INTO innstillinger (nokkel, verdi) VALUES (:n, :v)
+             ON DUPLICATE KEY UPDATE verdi = VALUES(verdi)',
+            ['n' => 'kurs_standardtekster', 'v' => json_encode($alle, JSON_UNESCAPED_UNICODE)]
+        );
+        Kursmal::glemStandard();
+        revider('standardtekst', 'innstilling', 0, ['kategori' => $kategori, 'felt' => $felt]);
+        Svar::ok([
+            'standardtekster' => $alle,
+            'beskjed' => $tekst === ''
+                ? 'Standardteksten for ' . $kategori . ' er tømt.'
+                : 'Lagret som standard for ' . $kategori . '.',
         ]);
 
     // ------------------------------------------------- slett et kurs

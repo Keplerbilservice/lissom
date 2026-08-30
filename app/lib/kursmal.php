@@ -158,6 +158,110 @@ final class Kursmal
     }
 
     /**
+     * De fire feltene eieren selv setter standardteksten paa.
+     *
+     * De ligger ikke i maler() over: de er ikke skrevet av oss, de skrives av
+     * verkstedet fra kursoppsettet, og de skal kunne endres uten en ny
+     * utlegging. Resten av malene staar i koden fordi de er lange
+     * salgstekster som ble skrevet én gang.
+     */
+    public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid', 'tillegg'];
+
+    /** Kategoriene en standardtekst kan settes for. */
+    public const KATEGORIER = ['Dreiing', 'Håndbygging', 'Events', 'Kun medlemmer', 'Drop-in'];
+
+    /** @var array<string, array<string, string>>|null */
+    private static ?array $standard = null;
+
+    /**
+     * Standardtekstene verkstedet har skrevet, per kategori.
+     *
+     * Ligger som JSON under én noekkel i innstillinger. Ett oppslag, ingen ny
+     * tabell, og ingenting aa migrere naar et felt kommer til.
+     *
+     * Taaler at noekkelen ikke finnes, at JSON-en er oedelagt og at tabellen
+     * mangler: da er det ingen standardtekst, ikke en hvit side.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function standardtekster(): array
+    {
+        if (self::$standard !== null) {
+            return self::$standard;
+        }
+        self::$standard = [];
+        try {
+            $rad = DB::en("SELECT verdi FROM innstillinger WHERE nokkel = 'kurs_standardtekster'");
+            $raa = json_decode((string) ($rad['verdi'] ?? ''), true);
+            if (is_array($raa)) {
+                foreach ($raa as $kategori => $felt) {
+                    if (!is_array($felt) || !in_array((string) $kategori, self::KATEGORIER, true)) {
+                        continue;
+                    }
+                    $rein = [];
+                    foreach (self::EGNE_FELT as $n) {
+                        $v = trim((string) ($felt[$n] ?? ''));
+                        if ($v !== '') {
+                            $rein[$n] = $v;
+                        }
+                    }
+                    if ($rein !== []) {
+                        self::$standard[(string) $kategori] = $rein;
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            self::$standard = [];
+        }
+        return self::$standard;
+    }
+
+    /** Leses paa nytt naar noen har lagret. */
+    public static function glemStandard(): void
+    {
+        self::$standard = null;
+    }
+
+    /**
+     * Kategorien et kurs staar i.
+     *
+     * Den samme regelen som kategoriFor() i nettsida: temaet foerst, saa de
+     * gamle temanavnene, og til slutt navnet — Paint on Pots sto med tema
+     * NULL i basen og er likevel et event.
+     */
+    public static function kategoriAv(array $kurs): string
+    {
+        $tema = trim((string) ($kurs['tema'] ?? ''));
+        $rett = [
+            'Dreiing' => 'Dreiing',
+            'Håndbygging' => 'Håndbygging',
+            'Events' => 'Events',
+            'Kun for medlemmer' => 'Kun medlemmer',
+            'Kun medlemmer' => 'Kun medlemmer',
+            'Drop-in' => 'Drop-in',
+            // Temaer som ikke lenger er egne kategorier.
+            'Workshop' => 'Håndbygging',
+            'Plateteknikk' => 'Håndbygging',
+            'Event' => 'Events',
+            'Sip & Clay' => 'Events',
+            'Date Night' => 'Events',
+            'Paint on pots' => 'Events',
+            'Paint on Pots' => 'Events',
+        ];
+        if (isset($rett[$tema])) {
+            return $rett[$tema];
+        }
+        $tittel = mb_strtolower(trim((string) ($kurs['tittel'] ?? '')));
+        foreach (['paint on pots' => 'Events', 'date night' => 'Events', 'sip & clay' => 'Events',
+                  'drop-in' => 'Drop-in', 'dreie' => 'Dreiing'] as $del => $til) {
+            if ($del !== '' && mb_strpos($tittel, $del) !== false) {
+                return $til;
+            }
+        }
+        return '';
+    }
+
+    /**
      * Malen for et kurs.
      *
      * Slaas opp paa temaet. Kurs boller og Store fat er begge plateteknikk,
@@ -240,6 +344,14 @@ final class Kursmal
         $tittel = trim((string) ($kurs['tittel'] ?? ''));
         if (isset($egne[$tittel])) {
             $mal = array_merge($mal, $egne[$tittel]);
+        }
+
+        // Til slutt de fire feltene verkstedet setter selv. De legges oeverst
+        // fordi de er nyere enn koden: har eieren skrevet en standardtekst
+        // for haandbygging, er det hennes som gjelder, ikke vaar.
+        $kategori = self::kategoriAv($kurs);
+        if ($kategori !== '') {
+            $mal = array_merge($mal, self::standardtekster()[$kategori] ?? []);
         }
         return $mal;
     }

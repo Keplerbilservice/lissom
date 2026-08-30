@@ -132,6 +132,41 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Standardtekst per kategori, redigerbar rett i feltet.** «Alt som er
+inkludert», «Praktisk informasjon», «Når er den ferdig» og «Godt å vite» har
+nå en standardtekst som verkstedet setter selv. Den følger kategorien —
+Dreiing, Håndbygging, Events, Kun medlemmer, Drop-in — fordi det som gjelder
+for et dreiekurs ikke er det som gjelder for Paint on Pots. Skriv i feltet, og
+«Lagre som standard for Dreiing» dukker opp under. Lenka står bare når teksten
+faktisk er noe annet enn standarden, og lagringa lukker ikke skjemaet.
+
+Teksten ligger som JSON under én nøkkel i `innstillinger`, ikke i koden, så
+den kan endres uten en ny utlegging. Ingen migrasjon å kjøre.
+
+**Hvor hvert felt vises står nå i skjemaet.** Eieren: «jeg vet jo ikke hvor
+alt vises». Hver seksjon har fått en linje som sier hvor teksten havner — på
+kurssiden, i faktaboksen, eller ingen steder.
+
+**Seksjon 12 lovte en e-post den ikke sender.** «Bekreftelse og påminnelse»
+sto med «teksten de får på skjermen etter kjøp og i e-postkvitteringen».
+Kolonnen `bekreftelse_tekst` skrives fra kursoppsettet og leses ingen steder i
+hele kodebasen. Kvitteringen som faktisk går ut er malen `ordrebekreftelse`
+under Beskjeder → E-post- og SMS-maler, med `{navn}`, `{ordre}` og `{belop}`.
+Teksten i skjemaet sier nå dette rett ut. Selve koblingen er ikke laget —
+eieren må si om han vil ha den.
+
+### Dobbelt i kursoppsettet, ikke rørt
+
+- **«Praktisk informasjon» (10) og «Godt å vite» (08)** er to fritekstfelt som
+  begge blir egne avsnitt på kurssiden. Eksempelteksten var «møt opp ti
+  minutter før, bruk klær som tåler leire» i det ene og «ta med forkle» i det
+  andre — det er det samme slaget opplysning.
+- **Faktaboksen «Med hjem» leser `lagerDu`**, mens avsnittet «Dette får du med
+  hjem» leser `medHjem`. To felt for én ting, og `lagerDu` har ikke lenger et
+  felt i oppsettet.
+- **«Bekreftelse» (12)** overlapper i innhold med «Praktisk informasjon» (10),
+  i tillegg til at den ikke vises noe sted.
+
 **«Neste» mistet deg.** Steg 1 i kursoppsettet er tolv seksjoner langt; steg
 2 og 3 er korte. Trykte du «Neste» nederst i steg 1, sto rullingen stille
 mens kortet krympet under føttene på deg — og du sto plutselig midt i

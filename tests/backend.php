@@ -3443,6 +3443,62 @@ sjekk('… og «Neste» og «Tilbake» bruker det',
     str_contains($sida2, 'rullTilKursoppsettet() {')
     && substr_count($sida2, 'this.rullTilKursoppsettet();') === 2);
 
+// ── Standardtekst per kategori ─────────────────────────────────────────
+//
+// Eieren: «feltene godt aa vite, naar er den ferdig, alt som er inkludert og
+// praktisk informasjon — dette vil jeg kunne redigere default tekst, enkelt
+// rett i feltene og faa opp lagre». Standarden foelger kategorien.
+$kmal = file_get_contents(__DIR__ . '/../app/lib/kursmal.php');
+sjekk('de fire feltene har en standardtekst per kategori',
+    str_contains($kmal, "public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid', 'tillegg'];")
+    && str_contains($kmal, 'public static function standardtekster(): array'));
+// Standarden ligger oeverst paa malen: har eieren skrevet en, er det hennes
+// som gjelder, ikke den vi skrev i koden.
+sjekk('… og den legges oeverst paa malen',
+    str_contains($kmal, 'self::standardtekster()[$kategori] ?? []'));
+sjekk('… kategorien leses av temaet, ogsaa de gamle navnene',
+    str_contains($kmal, "'Workshop' => 'Håndbygging',")
+    && str_contains($kmal, "'Sip & Clay' => 'Events',"));
+// En oedelagt JSON eller en tabell som ikke finnes skal gi ingen
+// standardtekst, ikke en hvit side paa kurssida.
+sjekk('… og en oedelagt verdi gir ingen tekst, ikke en feil',
+    str_contains($kmal, '} catch (Throwable $e) {'));
+$akurs = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+sjekk('standardteksten lagres per kategori og felt',
+    str_contains($akurs, "case 'standardtekst':")
+    && str_contains($akurs, "in_array(\$kategori, Kursmal::KATEGORIER, true)")
+    && str_contains($akurs, "in_array(\$felt, Kursmal::EGNE_FELT, true)"));
+// Hele objektet skrives paa nytt, saa en tekst satt for et annet felt eller
+// en annen kategori staar urort.
+sjekk('… uten aa slette de andre',
+    str_contains($akurs, '$alle = Kursmal::standardtekster();')
+    && str_contains($akurs, "'n' => 'kurs_standardtekster'"));
+sjekk('praktisk informasjon faller tilbake paa standarden ute',
+    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
+                 "(string) (Kursmal::forKurs(\$k)['praktisk'] ?? '')"));
+sjekk('lagre-lenka staar bare naar teksten er endret',
+    str_contains($sida2, 'harLagre: kategori !== \'\' && naa !== \'\' && naa !== fasit,'));
+// «Lagre som standard» lagrer en tekst ved siden av kurset man holder paa
+// med. Lukket den skjemaet, mistet man plassen sin i tolv seksjoner.
+sjekk('… og lagringa lukker ikke kursoppsettet',
+    str_contains($sida2, "this.kursKall({ handling: 'standardtekst', kategori: kategori, felt: felt, tekst: naa }, true);")
+    && str_contains($sida2, 'if (!behold) ny.kRed = false;'));
+sjekk('alle fire feltene har raden',
+    substr_count($sida2, 'Hent standardteksten</button>') === 5);
+
+// ── Hvor hvert felt vises ──────────────────────────────────────────────
+//
+// Eieren: «er det info som vises deltakerne paa epost, saa faa det tydelig
+// frem at de faar det paa epost. Jeg vet jo ikke hvor alt vises.»
+sjekk('hver seksjon sier hvor teksten havner',
+    substr_count($sida2, 'Vises på kurssiden') >= 6);
+// Seksjon 12 lovte at teksten gikk ut i kvitteringen. Kolonnen
+// bekreftelse_tekst skrives fra kursoppsettet og leses ingen steder — mailen
+// som gaar er malen «ordrebekreftelse» med {navn}, {ordre} og {belop}.
+sjekk('… og seksjon 12 lover ikke lenger en e-post den ikke sender',
+    !str_contains($sida2, 'Teksten de får på skjermen etter kjøp og i e-postkvitteringen.')
+    && str_contains($sida2, 'Vises ingen steder ennå. E-posten deltakerne får settes opp under Beskjeder'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

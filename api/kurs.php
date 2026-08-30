@@ -140,8 +140,9 @@ foreach ($kurs as $k) {
                 'ferdigTid'       => $velg('ferdig_tid', 'ferdigTid'),
                 'tillegg'         => $velg('tillegg', 'tillegg'),
                 // Varigheten er ikke en tekst noen har skrevet: den regnes av
-                // start- og sluttida paa oektene. «varighet_tekst» overstyrer
-                // for de kursene som trenger en annen formulering.
+                // start- og sluttida paa oektene, alltid. Kolonnen
+                // «varighet_tekst» overstyrte den for; det ble fjernet 30.
+                // august — se Kursmal::varighetFor.
                 'varighetVist'    => Kursmal::varighetFor($k, array_map(static fn($o) => [
                     'start'     => (string) $o['start_tid'],
                     'slutt'     => $o['slutt_tid'] ?? null,
@@ -220,7 +221,13 @@ foreach ($kurs as $k) {
         // Sto den begge steder, vant den siste — og den var tom. Det er den
         // samme fella som «bPasserFor» og «refLogoStil» gikk i: to like
         // navn i det samme objektet er bare én av dem.
-        'praktisk'   => (string) ($k['praktisk'] ?? ''),
+        // Praktisk informasjon, «naar er den ferdig» og «godt aa vite»
+        // faller tilbake paa standardteksten for kategorien naar kurset ikke
+        // sier noe selv — den eieren har skrevet i kursoppsettet. Samme regel
+        // som punktlista over.
+        'praktisk'   => (string) ($k['praktisk'] ?? '') !== ''
+            ? (string) $k['praktisk']
+            : (string) (Kursmal::forKurs($k)['praktisk'] ?? ''),
         'allergener' => (string) ($k['allergener'] ?? ''),
         'passerNivaa'=> (string) ($k['passer_nivaa'] ?? ''),
         'passerHvem' => (string) ($k['passer_hvem'] ?? ''),

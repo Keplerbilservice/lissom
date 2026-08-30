@@ -29,6 +29,9 @@ if (Foresporsel::metode() === 'GET') {
         'belop'      => Booking::kroner((int) $p['belop_ore']),
         'belopOre'   => (int) $p['belop_ore'],
         'refundert'  => (int) $p['refundert_ore'] > 0 ? Booking::kroner((int) $p['refundert_ore']) : null,
+        // Raa tall ogsaa, saa skjermen kan regne ut hva som staar igjen aa
+        // refundere uten aa tolke «kr. 1 490,-» tilbake til et tall.
+        'refundertOre' => (int) $p['refundert_ore'],
         'status'     => $p['status'],
         'medlem'     => $p['medlem'],
         'tidspunkt'  => Booking::norskDato((string) $p['created_at']),
@@ -69,15 +72,25 @@ DB::oppdater('payments', [
     'status'        => $nyRefundert >= (int) $betaling['belop_ore'] ? 'refundert' : 'delvis_refundert',
 ], ['id' => $betaling['id']]);
 
-// Booking foelger betalingen.
-DB::kjor(
-    "UPDATE bookings SET status = 'refundert' WHERE payment_id = :p",
-    ['p' => $betaling['id']]
-);
+// Booking foelger betalingen — men bare naar hele beloepet er sendt tilbake.
+//
+// Her sto oppdateringen uten betingelse. En delrefusjon etter vilkaarene (50 %
+// inntil sju dager for) ville da satt plassen som refundert: deltakeren falt
+// ut av lista, og stolen ble ledig igjen — selv om hen fortsatt skulle komme.
+// Det er delrefusjonens hele poeng at plassen ikke gis fra seg gratis.
+if ($nyRefundert >= (int) $betaling['belop_ore']) {
+    DB::kjor(
+        "UPDATE bookings SET status = 'refundert' WHERE payment_id = :p",
+        ['p' => $betaling['id']]
+    );
+}
 
 revider('refusjon', 'payment', (int) $betaling['id'], ['belop_ore' => $belop]);
 
 Svar::ok([
     'refundert' => Booking::kroner($belop),
     'gjenstaar' => Booking::kroner($maks - $belop),
+    // Raa tall ogsaa: skjermen skal ikke maatte sammenligne «kr. 0,-» som
+    // tekst for aa vite om det staar noe igjen.
+    'gjenstaarOre' => $maks - $belop,
 ]);

@@ -12168,12 +12168,41 @@ window.__resources = {
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Siste betalinger</div>
             <sc-for list="{{ betalinger }}" as="b" hint-placeholder-count="6">
-              <div onClick="{{ b.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ b.navn }}</div>
-                  <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ b.hva }} · {{ b.tid }}</div>
+              <div style="border-top: 1px solid var(--border-subtle);">
+                <div onClick="{{ b.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); cursor: pointer;">
+                  <div style="min-width: 0;">
+                    <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ b.navn }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ b.hva }} · {{ b.tid }}</div>
+                  </div>
+                  <div style="text-align: right; white-space: nowrap;">
+                    <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">{{ b.sum }}</div>
+                    <!-- Er noe sendt tilbake, skal det staa paa raden. Ellers
+                         ser en delvis refundert betaling ut som en hel. -->
+                    <sc-if value="{{ b.erRefundert }}" hint-placeholder-val="{{ false }}">
+                      <div style="font-size: var(--text-xs); color: var(--terracotta-600);">{{ b.refundertTekst }}</div>
+                    </sc-if>
+                  </div>
                 </div>
-                <div style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); color: var(--text-heading); white-space: nowrap;">{{ b.sum }}</div>
+                <!-- Refusjon.
+                     Avbestiller kunden selv fra Min side, gaar refusjonen av
+                     seg selv etter vilkaarene. Dette er veien for alt annet:
+                     en avlyst dato, en kunde som ringer. -->
+                <sc-if value="{{ b.kanRefundere }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding: 0 var(--space-6) var(--space-4);">
+                    <button type="button" onClick="{{ b.refApne }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Refunder …</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ b.refApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin: 0 var(--space-6) var(--space-4); padding: var(--space-4); background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+                    <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">Beløp i kroner</label>
+                    <input value="{{ refBelop }}" onChange="{{ settRefBelop }}" inputmode="numeric" placeholder="Tomt = alt som gjenstår" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                    <p style="margin: 8px 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ b.refHjelp }}</p>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <button type="button" onClick="{{ b.refUtfor }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--terracotta-500); background: var(--terracotta-500); color: var(--clay-50); border-radius: var(--radius-pill); padding: 8px 18px; font: var(--type-body-sm); font-weight: 700;">Refunder</button>
+                      <button type="button" onClick="{{ b.refLukk }}" style="appearance: none; cursor: pointer; border: none; background: transparent; color: var(--text-muted); padding: 8px 4px; font: var(--type-body-sm);">Avbryt</button>
+                    </div>
+                  </div>
+                </sc-if>
               </div>
             </sc-for>
           </div>
@@ -19973,6 +20002,53 @@ class Component extends DCLogic {
       minimumFractionDigits: kr < 10 ? 2 : 0,
       maximumFractionDigits: kr < 10 ? 2 : 0,
     }).replace(/\u00a0/g, ' ');
+  }
+
+  /**
+   * Refunderer en betaling gjennom Vipps.
+   *
+   * Serveren gjor jobben: den kaller Vipps, skriver «refundert» eller
+   * «delvis_refundert» paa betalingen, setter bookingen til refundert og
+   * forer det i revisjonsloggen. Her sender vi bare referansen og beloepet i
+   * kroner — tomt beloep betyr resten.
+   *
+   * Lista hentes paa nytt etterpaa. Vi gjetter ikke paa hva som ble
+   * refundert: det staar i basen naar serveren har svart.
+   */
+  refunderKall(referanse, kroner) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Refusjon gaar mot Vipps, og finnes bare paa lissom.no.' });
+      return Promise.resolve(false);
+    }
+    return fetch('/api/admin/betalinger.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ referanse, belop: kroner }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        if (!ok) {
+          this.setState({ kvittering: 'Ble ikke refundert',
+                          kvitteringDetalj: d.feil || 'Vipps godtok ikke refusjonen.' });
+          return false;
+        }
+        this._adminHentes = false;
+        this.setState({
+          refFor: null, refBelop: '',
+          kvittering: d.refundert + ' er refundert',
+          kvitteringDetalj: (d.gjenstaarOre || 0) > 0
+            ? d.gjenstaar + ' står igjen på betalingen.'
+            : 'Hele beløpet er refundert. Pengene er tilbake på Vipps innen få virkedager.',
+        });
+        this.hentAdmin();
+        return true;
+      })
+      .catch(() => {
+        this.setState({ kvittering: 'Ble ikke refundert',
+                        kvitteringDetalj: 'Fikk ikke svar fra serveren. Prøv igjen.' });
+        return false;
+      });
   }
 
   /**
@@ -31320,6 +31396,8 @@ class Component extends DCLogic {
         ],
         'Lukk'
       ),
+      refBelop: this.state.refBelop || '',
+      settRefBelop: e => this.setState({ refBelop: e.target.value }),
       // Betalingslista, filtrert til dem man jobber med.
       //
       // «Betalinger» under Kursdeltakere skal vise det de har betalt for
@@ -31340,6 +31418,51 @@ class Component extends DCLogic {
           sum: b.belop,
           status: b.status,
           referanse: b.referanse,
+          // ── Refusjon ────────────────────────────────────────────────
+          //
+          // Avbestiller kunden selv fra Min side, refunderer api/avbestill
+          // .php etter vilkaarene. Alt annet — en avlyst dato, en kunde som
+          // ringer — sto uten vei: skjermen sa «maa refunderes manuelt under
+          // Okonomi», og under Okonomi var det ingen knapp. Da var eneste
+          // utvei portalen hos Vipps, og basen visste ingenting om det.
+          //
+          // Serverdelen var alt bygget (POST til api/admin/betalinger.php).
+          // Dette er knappen som mangler.
+          referanse: b.referanse,
+          belopOre: b.belopOre || 0,
+          gjenstaarOre: Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0)),
+          erRefundert: !!b.refundert,
+          refundertTekst: b.refundert ? 'Refundert ' + b.refundert : '',
+          // Bare en gjennomfort betaling kan refunderes, og bare saa lenge
+          // det staar noe igjen. Serveren sier det samme — men en knapp som
+          // ikke kan trykkes er bedre enn en som svarer nei.
+          kanRefundere: ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1
+            && (b.belopOre || 0) - (b.refundertOre || 0) > 0,
+          refApen: this.state.refFor === b.referanse,
+          refApne: (e) => {
+            if (e && e.stopPropagation) e.stopPropagation();
+            this.setState({ refFor: b.referanse, refBelop: '' });
+          },
+          refLukk: (e) => {
+            if (e && e.stopPropagation) e.stopPropagation();
+            this.setState({ refFor: null, refBelop: '' });
+          },
+          refHjelp: 'Står feltet tomt, refunderes hele det som gjenstår — '
+            + this.kroner(Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0))) + '.',
+          refUtfor: (e) => {
+            if (e && e.stopPropagation) e.stopPropagation();
+            const igjen = Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));
+            const skrevet = parseInt(String(this.state.refBelop || '').replace(/\s/g, ''), 10);
+            const ore = skrevet > 0 ? Math.min(skrevet * 100, igjen) : igjen;
+            if (ore <= 0) {
+              this.setState({ kvittering: 'Ingenting å refundere' });
+              return;
+            }
+            if (!window.confirm('Refundere ' + this.kroner(ore) + ' til '
+                + (b.medlem || b.navn || 'kunden') + '?\n\n'
+                + 'Pengene går tilbake på Vipps med det samme. Dette kan ikke angres.')) return;
+            this.refunderKall(b.referanse, Math.round(ore / 100));
+          },
         })).concat((this.state.adminBetalinger || this.erPublisert()) ? [] : [
         { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: 'I dag 08:02', sum: 'kr. 2 590,-' },
         { navn: 'Tom Ødegård', hva: 'Nybegynner dreiekurs', tid: 'I går 19:41', sum: 'kr. 2 800,-' },

@@ -3212,6 +3212,31 @@ sjekk('… og kortet teller den samme lista',
     str_contains($sida2, "const nyeste = ((this.state.adminData || {}).nyeste || []).length;")
     && str_contains($sida2, "nyeste ? 'De siste tre dagene.'"));
 
+// ── Refusjon fra admin ─────────────────────────────────────────────────
+//
+// Eieren, 30. august: «legg inn refunder-knappen». Serverdelen fantes fra
+// for; det var knappen som manglet, saa alt annet enn kundens egen
+// avbestilling matte gjores i portalen hos Vipps — og da visste ikke basen
+// om det.
+$betFil = file_get_contents(__DIR__ . '/../api/admin/betalinger.php');
+sjekk('refusjonen kaller Vipps og skriver den ned',
+    str_contains($betFil, 'Vipps::refunder($referanse, $belop);')
+    && str_contains($betFil, "'status'        => \$nyRefundert >= (int) \$betaling['belop_ore'] ? 'refundert' : 'delvis_refundert',"));
+// En delrefusjon etter vilkaarene (50 % inntil sju dager for) skal ikke ta
+// plassen fra deltakeren. Her sto oppdateringen uten betingelse.
+sjekk('… og plassen settes bare som refundert naar alt er sendt tilbake',
+    str_contains($betFil, "if (\$nyRefundert >= (int) \$betaling['belop_ore']) {"));
+sjekk('knappen staar paa betalingen under Økonomi',
+    str_contains($sida2, 'onClick="{{ b.refApne }}"')
+    && str_contains($sida2, 'onClick="{{ b.refUtfor }}"')
+    && str_contains($sida2, '{{ b.refHjelp }}'));
+// Penger som gaar ut skal bekreftes, og bare en gjennomfort betaling med noe
+// igjen kan refunderes.
+sjekk('… med bekreftelse for pengene sendes',
+    str_contains($sida2, "'Pengene går tilbake på Vipps med det samme. Dette kan ikke angres.'"));
+sjekk('… og bare der det er noe aa refundere',
+    str_contains($sida2, "kanRefundere: ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

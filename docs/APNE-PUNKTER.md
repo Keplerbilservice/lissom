@@ -132,6 +132,18 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Refunder-knapp under Økonomi.** Avbestiller kunden selv fra Min side, går
+refusjonen av seg selv etter vilkårene. Alt annet — en avlyst dato, en kunde
+som ringer — sto uten vei: skjermen sa «må refunderes manuelt under Økonomi»,
+og der fantes ingen knapp. Serverdelen var ferdig fra før; nå er den koblet.
+Trykk «Refunder …» på en betaling, la feltet stå tomt for hele beløpet eller
+skriv et delbeløp, og bekreft. Betalingen settes til refundert eller delvis
+refundert, og beløpet står på raden.
+
+Samtidig rettet: en delrefusjon satte plassen som refundert og ga stolen bort.
+Nå skjer det bare når hele beløpet er sendt tilbake — det er hele poenget med
+50 %-regelen at plassen ikke gis fra seg gratis.
+
 **Nedtrekkene virket ikke på iPhone — alle sammen.** `<sc-for>` inne i
 `<select>` er ikke gyldig HTML: standarden sier at en ukjent start-tag inne i
 et nedtrekk skal kastes, og Safari gjør det. Løkka forsvinner, og med den

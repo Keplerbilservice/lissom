@@ -56,6 +56,7 @@ require APP_DIR . '/lib/lenker.php';
 require APP_DIR . '/lib/booking.php';
 require APP_DIR . '/lib/stempling.php';
 require APP_DIR . '/lib/apent.php';
+require APP_DIR . '/lib/ferie.php';
 require APP_DIR . '/lib/bilder.php';
 require APP_DIR . '/lib/serier.php';
 require APP_DIR . '/lib/samlinger.php';

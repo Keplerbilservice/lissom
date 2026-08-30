@@ -9163,6 +9163,97 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- ── Ferie ──────────────────────────────────────────────────────────
+       Dagene verkstedet holder stengt. En stengt dag skjuler kursdatoene
+       som ligger paa den — fra nettsida, fra aapningstidene og fra
+       bookingen. Oektene roeres ikke; aapnes dagen igjen, er alt tilbake.
+
+       Ingen egen ferietabell: «apningstider» med «stengt = 1» er det
+       samme, og fantes fra for. Se app/lib/ferie.php. -->
+  <sc-if value="{{ erAdminFerie }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – ferie" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavFerie }}" as="a" hint-placeholder-count="9">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </aside>
+      <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
+        <div style="margin-bottom: var(--space-8);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
+          <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Ferie</h1>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 64ch; text-wrap: pretty;">Trykk på en dato for å stenge den. Trykk på ukenummeret for hele uka. Kursene som ligger på en stengt dag forsvinner fra nettsiden og kan ikke bookes — de blir stående i kalenderen din, og er tilbake straks du åpner dagen igjen.</p>
+        </div>
+
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 640px;">
+          <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);">
+            <button type="button" onClick="{{ feForrige }}" aria-label="Forrige måned" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-pill); cursor: pointer; padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading);">‹</button>
+            <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">{{ feMaaned }}</span>
+            <button type="button" onClick="{{ feNeste }}" aria-label="Neste måned" style="appearance: none; border: 1px solid var(--border-subtle); background: var(--surface-card); border-radius: var(--radius-pill); cursor: pointer; padding: 5px 14px; font: var(--type-body-sm); color: var(--text-heading);">›</button>
+          </div>
+
+          <div style="padding: var(--space-4) var(--space-5);">
+            <div style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px;">
+              <span></span>
+              <sc-for list="{{ feUkedager }}" as="u" hint-placeholder-count="7">
+                <span style="text-align: center; font: var(--type-label); font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ u.navn }}</span>
+              </sc-for>
+            </div>
+            <sc-for list="{{ feUker }}" as="v" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 5px; align-items: center;">
+                <button type="button" onClick="{{ v.vekslUke }}" style="{{ v.ukeStil }}">{{ v.uke }}</button>
+                <sc-for list="{{ v.dager }}" as="g" hint-placeholder-count="7">
+                  <button type="button" onClick="{{ g.veksl }}" title="{{ g.tittel }}" style="{{ g.stil }}">
+                    <span>{{ g.tall }}</span>
+                    <sc-if value="{{ g.harMerke }}" hint-placeholder-val="{{ true }}">
+                      <span style="{{ g.merkeStil }}">{{ g.merke }}</span>
+                    </sc-if>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty; flex: 1 1 260px;">{{ feOppsummering }}</p>
+            <sc-if value="{{ feHarStengt }}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{ feNullstill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0 8px; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Åpne alle igjen</button>
+            </sc-if>
+          </div>
+        </div>
+
+        <p style="margin: var(--space-5) 0 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 60ch; text-wrap: pretty;">Tallet i en rute er hvor mange kurs som ligger den dagen. Hold musa over for å se hvilke.</p>
+      </main>
+    </div>
+  </sc-if>
+
   <!-- ── Feilmeldinger ─────────────────────────────────────────────────
        To slag havner her, og de fanger hver sin type feil: det nettleseren
        kaster av seg selv, og det et menneske skriver. Nedtrekket som sto
@@ -15747,6 +15838,7 @@ class Component extends DCLogic {
       // Samlesida med beskrivelsen av hvert kurs. Kurslista viser kortene
       // med dato og pris; her staar hva kurset faktisk er.
       { sti: '/kursene-vare',  side: 'kursoversikt' },
+      { sti: '/admin/ferie',        side: 'adminferie' },
       { sti: '/admin/feilmeldinger', side: 'adminfeil' },
       { sti: '/nyttig-info',   side: 'nyttig' },
       // Spoersmaal og svar. Sto som en seksjon paa Om oss, og hadde derfor
@@ -20154,6 +20246,190 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Ferieskjermen: hvilke dager verkstedet holder stengt.
+   *
+   * En stengt dag skjuler kursdatoene som ligger paa den — fra nettsida,
+   * fra aapningstidene og fra bookingen. Oektene roeres ikke; aapnes dagen
+   * igjen, er alt tilbake slik det var.
+   *
+   * Ingen egen «ferie»-tabell: «apningstider» med «stengt = 1» er det samme,
+   * og fantes fra for. Se app/lib/ferie.php.
+   */
+  ferieRutenett() {
+    // Maaneden som vises, og de seks ukene rundt den. Rutenettet begynner
+    // alltid paa en mandag — norsk uke.
+    const mnd = this.state.ferieMnd || new Date().toISOString().slice(0, 7);
+    const forste = new Date(mnd + '-01T12:00:00');
+    const start = new Date(forste);
+    // getDay(): 0 = soendag. Mandag som forste dag betyr aa trekke fra
+    // (dag + 6) % 7.
+    start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+    const uker = [];
+    const d = new Date(start);
+    for (let u = 0; u < 6; u++) {
+      const dager = [];
+      for (let i = 0; i < 7; i++) {
+        dager.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      uker.push(dager);
+    }
+    return { mnd, forste, start, uker };
+  }
+
+  /** Hvilket ukenummer denne datoen ligger i. ISO 8601, som Norge bruker. */
+  ukeNummer(dato) {
+    const d = new Date(Date.UTC(dato.getFullYear(), dato.getMonth(), dato.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const nyttaar = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - nyttaar) / 86400000) + 1) / 7);
+  }
+
+  hentFerie() {
+    if (this._ferieHentes) return;
+    this._ferieHentes = true;
+    const { start } = this.ferieRutenett();
+    const fra = new Date(start.getTime() - start.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 10);
+    fetch('/api/admin/apningstider.php?fra=' + fra + '&maneder=3',
+          { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => { if (d && d.ok) this.setState({ ferieData: d }); })
+      .catch(() => {});
+  }
+
+  ferieKall(kropp) {
+    fetch('/api/admin/apningstider.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.ok) {
+          this._ferieHentes = false;
+          this.hentFerie();
+          // «Steng» svarer med hvor mange kurs som gaar den dagen. Det er
+          // ikke en feil, men noe eieren skal se: datoen forsvinner fra
+          // nettsida, men den som alt har betalt staar der fortsatt.
+          if (d.beskjed) this.setState({ kvittering: 'Lagret', kvitteringDetalj: d.beskjed });
+        } else {
+          this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: (d && d.feil) || '' });
+        }
+      })
+      .catch(() => this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' }));
+  }
+
+  /** Verdiene ferieskjermen tegner. */
+  ferieVals() {
+    const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                 'august', 'september', 'oktober', 'november', 'desember'];
+    const d = this.state.ferieData || {};
+    const stengte = d.stengte || [];
+    const kurs = d.kurs || {};
+    const { mnd, forste, uker } = this.ferieRutenett();
+    const iso = (dato) => new Date(dato.getTime() - dato.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 10);
+    const idag = iso(new Date());
+
+    const flytt = (n) => () => {
+      const f = new Date(mnd + '-01T12:00:00');
+      f.setMonth(f.getMonth() + n);
+      this._ferieHentes = false;
+      this.setState({ ferieMnd: f.toISOString().slice(0, 7) }, () => this.hentFerie());
+    };
+
+    return {
+      feMaaned: MND[forste.getMonth()] + ' ' + forste.getFullYear(),
+      feForrige: flytt(-1),
+      feNeste: flytt(1),
+      feUkedager: ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
+        .map(navn => ({ navn })),
+      feUker: uker.map(dager => {
+        const iso7 = dager.map(iso);
+        // Uka regnes som stengt naar alle dagene som ikke har vaert er det.
+        const framover = iso7.filter(x => x >= idag);
+        const heleStengt = framover.length > 0
+          && framover.every(x => stengte.indexOf(x) !== -1);
+        return {
+          uke: 'Uke ' + this.ukeNummer(dager[0]),
+          ukeStil: {
+            appearance: 'none', cursor: framover.length ? 'pointer' : 'default',
+            border: 'none', background: 'transparent', padding: '0 6px',
+            font: 'var(--type-body-sm)', fontSize: 11, whiteSpace: 'nowrap',
+            color: framover.length ? 'var(--lissom-brown)' : 'var(--text-muted)',
+            textDecoration: framover.length ? 'underline' : 'none',
+            textUnderlineOffset: 3, opacity: framover.length ? 1 : .45,
+          },
+          vekslUke: () => {
+            if (!framover.length) return;
+            this.ferieKall({ handling: 'uke', dato: iso7[0], paa: heleStengt ? 'nei' : 'ja' });
+          },
+          dager: dager.map((dag, i) => {
+            const nokkel = iso7[i];
+            const stengt = stengte.indexOf(nokkel) !== -1;
+            const iMnd = dag.getMonth() === forste.getMonth();
+            const forbi = nokkel < idag;
+            const k = kurs[nokkel];
+            return {
+              tall: String(dag.getDate()),
+              // Hvor mange kurs dagen skjuler. En prikk sier at det er noe
+              // der; tallet sier hvor mye.
+              merke: k ? String(k.antall) : '',
+              harMerke: !!k,
+              tittel: k
+                ? (k.antall + (k.antall === 1 ? ' kurs' : ' kurs')
+                   + (k.pameldte ? ' · ' + k.pameldte + ' påmeldt' : '')
+                   + ': ' + (k.navn || []).join(', '))
+                : 'Ingen kurs denne dagen',
+              stil: {
+                appearance: 'none', cursor: forbi ? 'default' : 'pointer',
+                aspectRatio: '1 / 1', width: '100%', minWidth: 0,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 2,
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid ' + (stengt ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                background: stengt ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                color: stengt ? 'var(--clay-50)' : (iMnd ? 'var(--text-heading)' : 'var(--text-muted)'),
+                font: 'var(--type-body-sm)', fontWeight: iMnd ? 700 : 400,
+                opacity: forbi ? .35 : (iMnd ? 1 : .6),
+              },
+              merkeStil: {
+                fontSize: 10, lineHeight: 1,
+                color: stengt ? 'var(--lissom-yellow)' : 'var(--terracotta-600)',
+              },
+              veksl: () => {
+                if (forbi) return;
+                this.ferieKall({ handling: stengt ? 'aapne' : 'steng', dato: nokkel });
+              },
+            };
+          }),
+        };
+      }),
+      // Hva ferien gjor, i klartekst. Et tall paa en rute sier ingenting om
+      // hva som forsvinner fra nettsida.
+      feOppsummering: (() => {
+        const framover = stengte.filter(x => x >= idag);
+        if (!framover.length) return 'Ingen dager står som stengt. Trykk på en dato for å legge inn ferie.';
+        const skjult = framover.reduce((n, x) => n + ((kurs[x] || {}).antall || 0), 0);
+        const folk = framover.reduce((n, x) => n + ((kurs[x] || {}).pameldte || 0), 0);
+        return framover.length + (framover.length === 1 ? ' dag' : ' dager') + ' står som stengt'
+          + (skjult ? ' og skjuler ' + skjult + (skjult === 1 ? ' kursdato' : ' kursdatoer') : '')
+          + '.' + (folk ? ' ' + folk + (folk === 1 ? ' plass er' : ' plasser er') + ' allerede booket på dem — de forsvinner ikke av seg selv, så gi beskjed.' : '');
+      })(),
+      feHarStengt: stengte.filter(x => x >= idag).length > 0,
+      feNullstill: () => {
+        if (!window.confirm('Åpne alle dagene som står som stengt framover?')) return;
+        const idag2 = idag;
+        (this.state.ferieData || {}).stengte
+          ? (this.state.ferieData.stengte || []).filter(x => x >= idag2)
+              .forEach(x => this.ferieKall({ handling: 'aapne', dato: x }))
+          : null;
+      },
+    };
+  }
+
   componentDidMount() {
     // #innlogget settes av vipps-callback.php ved retur fra Vipps. Den sier
     // bare at vi skal hente profilen — hvilken side man skal til, staar i
@@ -23285,6 +23561,8 @@ class Component extends DCLogic {
         ['Oppskrifter',   'adminoppskrifter', { vstFane: 'oppskrifter' }],
         ['Vakter',        'adminoppskrifter', { vstFane: 'vakter' }],
         ['Brenning',      'adminoppskrifter', { vstFane: 'brenning' }],
+        // Ferie hoerer til huset, som vaktene og brenningene.
+        ['Ferie',         'adminferie'],
       ],
       'Nettsiden': [
         ['Innhold',       'admininnhold'],
@@ -23372,6 +23650,7 @@ class Component extends DCLogic {
           : p('Nettsiden', 'Nettsiden', 'SEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'adminfeil':          return p('Nettsiden', 'Nettsiden', 'Feilmeldinger');
+      case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
@@ -25873,10 +26152,29 @@ class Component extends DCLogic {
         appearance: 'none', cursor: 'pointer', textAlign: 'left',
         padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
         font: 'var(--type-body-sm)', fontWeight: 700,
-        marginBottom: 'var(--space-3)',
+        marginBottom: 6,
         border: inne ? 'none' : '1px solid rgba(244,235,222,.28)',
         background: inne ? 'var(--sage-500)' : 'transparent',
         color: inne ? '#fff' : 'var(--clay-200)',
+      },
+    }, {
+      // Ferie. Samme pille som innstemplinga, rett under — eieren 30.
+      // august. Tallet sier hvor mange dager som staar stengt framover, saa
+      // man ser at det ligger en ferie der uten aa aapne skjermen.
+      navn: (() => {
+        const n = ((this.state.ferieData || {}).stengte || [])
+          .filter(d => d >= new Date().toISOString().slice(0, 10)).length;
+        return n ? '⌂  Ferie · ' + n + (n === 1 ? ' dag' : ' dager') : '⌂  Ferie';
+      })(),
+      velg: () => this.gaaAdmin('adminferie', {}),
+      stil: {
+        appearance: 'none', cursor: 'pointer', textAlign: 'left',
+        padding: '11px 14px', borderRadius: 'var(--radius-md)', whiteSpace: 'nowrap',
+        font: 'var(--type-body-sm)', fontWeight: 700,
+        marginBottom: 'var(--space-3)',
+        border: '1px solid rgba(244,235,222,.28)',
+        background: 'transparent',
+        color: 'var(--clay-200)',
       },
     }];
 
@@ -26620,6 +26918,11 @@ class Component extends DCLogic {
     // der staar det et kort naar noe er meldt inn og ikke sett paa enda.
     if ((side === 'adminfeil' || side === 'adminoversikt') && !this.state.feilData) {
       this.hentFeilrapporter();
+    }
+    // Ferien. Hentes paa skjermen som viser den, og paa alle adminskjermer
+    // — pillen i menyen sier hvor mange dager som staar stengt.
+    if (this.erAdminSkjerm(side) && !this.state.ferieData) {
+      this.hentFerie();
     }
     // Soknadene om frys, paa medlemsskjermen i admin.
     if (side === 'adminmedlem' && !this.state.frysAdmin) {
@@ -37519,6 +37822,9 @@ class Component extends DCLogic {
       // Knappen og skjemaet ligger overalt — nettsida, Min side og admin —
       // saa verdiene maa vaere med uansett hvilken skjerm som tegnes.
       ...this.feilVals(),
+      erAdminFerie: side === 'adminferie',
+      adminNavFerie: this.adminMeny(),
+      ...(side === 'adminferie' ? this.ferieVals() : {}),
       erAdminFeil: side === 'adminfeil',
       adminNavFeil: this.adminMeny(),
       ...(side === 'adminfeil' ? this.feilAdminVals() : {}),

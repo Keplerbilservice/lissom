@@ -30,9 +30,104 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
+krev_admin();
+
+// ── Ferieskjermen ─────────────────────────────────────────────────────
+//
+// Eieren 30. august: en pille som heter «Ferie», en kalender aa velge i,
+// «en og en dag, eller hele uker». En stengt dag er akkurat det, og
+// tabellen fantes fra for — se app/lib/ferie.php for hvorfor det ikke ble
+// en egen «ferie»-tabell ved siden av.
+//
+// Lista sier ogsaa hvor mange kurs hver dag skjuler, og hvor mange som er
+// paameldt dem. En stengt dag tar bort datoen fra nettsida, men ikke
+// avtalen med den som alt har betalt — den maa eieren se.
+if (Foresporsel::metode() === 'GET') {
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $utc  = new DateTimeZone('UTC');
+
+    $fra = Foresporsel::tekst('fra');
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fra) !== 1) {
+        $fra = (new DateTimeImmutable('now', $oslo))->format('Y-m-01');
+    }
+    $maneder = max(1, min(12, Foresporsel::heltall('maneder', 3)));
+    $tilDato = (new DateTimeImmutable($fra, $oslo))->modify('+' . $maneder . ' months')->format('Y-m-d');
+
+    $kurs = [];
+    foreach (DB::alle(
+        "SELECT cs.start_tid, c.tittel,
+                (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
+                  WHERE b.course_session_id = cs.id
+                    AND b.status IN ('betalt','reservert')) AS pameldte
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.status = 'planlagt'
+            AND cs.start_tid >= :f AND cs.start_tid < :t
+       ORDER BY cs.start_tid",
+        [
+            'f' => (new DateTimeImmutable($fra . ' 00:00:00', $oslo))->setTimezone($utc)->format('Y-m-d H:i:s'),
+            't' => (new DateTimeImmutable($tilDato . ' 00:00:00', $oslo))->setTimezone($utc)->format('Y-m-d H:i:s'),
+        ]
+    ) as $r) {
+        $d = (new DateTimeImmutable((string) $r['start_tid'], $utc))->setTimezone($oslo);
+        $dag = $d->format('Y-m-d');
+        $kurs[$dag] ??= ['antall' => 0, 'pameldte' => 0, 'navn' => []];
+        $kurs[$dag]['antall']++;
+        $kurs[$dag]['pameldte'] += (int) $r['pameldte'];
+        if (count($kurs[$dag]['navn']) < 4) {
+            $kurs[$dag]['navn'][] = $d->format('H:i') . ' ' . $r['tittel'];
+        }
+    }
+
+    Svar::ok([
+        'fra'     => $fra,
+        'til'     => $tilDato,
+        'maneder' => $maneder,
+        'stengte' => Ferie::dager(),
+        'kurs'    => $kurs,
+    ]);
+}
+
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
-krev_admin();
+
+// «uke» tar hele uka dagen ligger i. Da slipper eieren sju trykk for en
+// ferieuke — og fordi hver dag er sin egen rad, blir «denne dagen likevel
+// ikke» ett trykk etterpaa.
+if (Foresporsel::tekst('handling') === 'uke') {
+    $u = Foresporsel::tekst('dato');
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $u) !== 1) {
+        Svar::feil('Skriv datoen som 2026-09-02.');
+    }
+    $oslo2  = new DateTimeZone('Europe/Oslo');
+    $paa    = Foresporsel::tekst('paa') !== 'nei';
+    $mandag = (new DateTimeImmutable($u, $oslo2))->modify('monday this week');
+    $idag   = (new DateTimeImmutable('now', $oslo2))->format('Y-m-d');
+    $rort   = 0;
+    for ($i = 0; $i < 7; $i++) {
+        $d = $mandag->modify('+' . $i . ' days')->format('Y-m-d');
+        // Dager som har vaert hoppes over i stillhet: uka man staar i er
+        // halvt forbi, og det skal ikke stoppe resten av den.
+        if ($d < $idag) {
+            continue;
+        }
+        if ($paa) {
+            DB::kjor(
+                'INSERT INTO apningstider (dato, stengt) VALUES (:d, 1)
+                 ON DUPLICATE KEY UPDATE stengt = 1, fra = NULL, til = NULL',
+                ['d' => $d]
+            );
+        } else {
+            // Som «aapne»: raden slettes framfor aa settes til stengt = 0.
+            DB::kjor('DELETE FROM apningstider WHERE dato = :d', ['d' => $d]);
+        }
+        $rort++;
+    }
+    Ferie::glem();
+    revider('uke_' . ($paa ? 'stengt' : 'aapnet'), 'apningstider', null,
+            ['fra' => $mandag->format('Y-m-d'), 'dager' => $rort]);
+    Svar::ok(['stengte' => Ferie::dager(), 'rort' => $rort]);
+}
 
 $dato = Foresporsel::tekst('dato');
 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dato) !== 1) {
@@ -84,6 +179,7 @@ switch (Foresporsel::tekst('handling')) {
                 'merknad' => $merknad !== '' ? $merknad : null,
             ]);
         }
+        Ferie::glem();
         revider('dag_stengt', 'apningstider', null, ['dato' => $dato, 'kurs' => $kurs]);
 
         Svar::ok([
@@ -102,6 +198,7 @@ switch (Foresporsel::tekst('handling')) {
             Svar::feil('Den dagen står ikke som stengt.');
         }
         DB::kjor('DELETE FROM apningstider WHERE id = :i', ['i' => (int) $finnes['id']]);
+        Ferie::glem();
         revider('dag_aapnet', 'apningstider', null, ['dato' => $dato]);
 
         Svar::ok([

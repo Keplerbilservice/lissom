@@ -100,6 +100,12 @@ final class Apent
             ]
         );
 
+        // Ferie. Er verkstedet stengt den dagen, er det ikke aapent heller —
+        // aapningstidene lages av kursene, saa de maa foelge med naar kursene
+        // blir borte. Ellers ville nettsida sagt «aapent 10–13» paa en dag
+        // ingen er der.
+        $okter = Ferie::utenom($okter);
+
         // ── Drop-in-oekter som ikke svarer til en aapningstid lenger ───────────────
         //
         // Drop-in-tidene lages av ukereglene den dagen noen trykker «Legg ut tidene»,

@@ -83,6 +83,13 @@ if ($kursIder !== []) {
             AND start_tid > UTC_TIMESTAMP()
           ORDER BY start_tid"
     ) as $o) {
+        // Ferie. Datoen blir usynlig paa nettsida saa lenge dagen staar som
+        // stengt — oekta selv roeres ikke, saa alt er tilbake naar ferien
+        // tas bort. Se app/lib/ferie.php for hvorfor det gjores her og ikke
+        // i sporringen.
+        if (Ferie::stengt((string) $o['start_tid'])) {
+            continue;
+        }
         $okterPerKurs[(int) $o['course_id']][] = $o;
     }
 }

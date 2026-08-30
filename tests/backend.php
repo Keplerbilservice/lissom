@@ -3065,6 +3065,53 @@ sjekk('… og kalenderen gjor det samme',
 sjekk('vaktlista starter i dag, ikke sist uke',
     str_contains($vst, "\$fra = \$dag(Foresporsel::tekst('fra'), 0);"));
 
+// ── Ferie ──────────────────────────────────────────────────────────────
+//
+// Eieren 30. august: en pille som heter «Ferie», en kalender aa velge i,
+// «en og en dag, eller hele uker», og kursene i perioden skal ikke vises paa
+// nettsiden.
+//
+// Ingen egen tabell: «apningstider» med «stengt = 1» er det samme, og
+// migrasjon 060 nevner til og med «en ferieuke». Jeg begynte paa en
+// «ferie»-tabell og maatte rive den — to tabeller for den samme dagen er to
+// steder aa se etter, og to steder aa ta feil.
+sjekk('ferien bygger paa apningstider, ikke en egen tabell',
+    !file_exists(__DIR__ . '/../db/migrations/097_ferie.sql')
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'),
+                    "SELECT dato FROM apningstider WHERE stengt = 1"));
+// Det som var nytt: en stengt dag skjuler kursdatoene, ikke bare
+// aapningstidene i bunnteksten.
+sjekk('en stengt dag skjuler kursdatoene paa nettsida',
+    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), 'Ferie::stengt('));
+sjekk('… og aapningstidene folger med',
+    str_contains(file_get_contents(__DIR__ . '/../app/lib/apent.php'), '$okter = Ferie::utenom($okter);'));
+// Skjult er ikke det samme som stengt: en gammel fane kan sende okt-id-en
+// rett til serveren lenge etterpaa.
+sjekk('… og bookingen stoppes paa serveren',
+    str_contains(file_get_contents(__DIR__ . '/../api/book.php'),
+                 'Verkstedet holder stengt denne dagen. Velg en annen dato.'));
+// Sammenlikningen skjer i PHP: CONVERT_TZ krever tidssonetabeller som ofte
+// ikke er lastet paa et delt webhotell, og svarer da NULL.
+sjekk('… og datoen regnes om i PHP, ikke med CONVERT_TZ',
+    !str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), 'CONVERT_TZ(')
+    && str_contains(file_get_contents(__DIR__ . '/../app/lib/ferie.php'), "new DateTimeZone('Europe/Oslo')"));
+// Hele uker med ett trykk.
+sjekk('hele uka kan stenges med ett trykk',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/apningstider.php'),
+                 "if (Foresporsel::tekst('handling') === 'uke') {"));
+sjekk('… men dager som har vaert hoppes over',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/apningstider.php'), 'if ($d < $idag) {'));
+// Skjermen og pillen.
+sjekk('ferieskjermen finnes, med ukenummer aa trykke paa',
+    str_contains($sida2, 'data-screen-label="Admin – ferie"')
+    && str_contains($sida2, 'onClick="{{ v.vekslUke }}"')
+    && str_contains($sida2, 'onClick="{{ g.veksl }}"'));
+sjekk('… og pillen staar under innstemplinga',
+    str_contains($sida2, "velg: () => this.gaaAdmin('adminferie', {}),"));
+// Paameldte forsvinner ikke av seg selv — eieren maa faa vite om dem.
+sjekk('skjermen sier fra naar noen alt har booket',
+    str_contains($sida2, 'de forsvinner ikke av seg selv, så gi beskjed.'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

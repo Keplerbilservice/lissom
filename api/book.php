@@ -56,6 +56,15 @@ if (Foresporsel::tekst('harAllergier') === 'ja' && $allergier === '') {
 // kunne hvem som helst booket dem ved aa sende okt-id-en rett til serveren —
 // de vises ikke i den offentlige lista, men skjult er ikke det samme som
 // stengt.
+// Ferie. Datoen er borte fra nettsida, men skjult er ikke det samme som
+// stengt — en gammel fane eller en delt lenke kan sende okt-id-en hit lenge
+// etter at dagen ble merket. Da skal den stoppes her.
+if (Ferie::stengt((string) DB::verdi(
+    'SELECT start_tid FROM course_sessions WHERE id = :id', ['id' => $oktId]
+))) {
+    Svar::feil('Verkstedet holder stengt denne dagen. Velg en annen dato.');
+}
+
 $tema = DB::verdi(
     'SELECT c.tema FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE cs.id = :id',
     ['id' => $oktId]
@@ -65,7 +74,7 @@ if ((string) $tema === 'Kun for medlemmer') {
         Svar::feil('Dette arrangementet er for medlemmer. Logg inn for å melde deg på.', 401, ['loggInn' => true]);
     }
     if (!er_aktivt_medlem($medlem)) {
-        Svar::feil('Dette arrangementet er for medlemmer. Søk om medlemskap fra Min side.', 403, ['ikkeMedlem' => true]);
+        Svar::feil('Dette arrangementet er for medlemmer. Du melder deg inn fra Min side.', 403, ['ikkeMedlem' => true]);
     }
 }
 

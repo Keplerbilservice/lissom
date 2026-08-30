@@ -24,6 +24,13 @@
     background: #fff; border: 2px dashed rgba(77,29,18,.3);
     border-radius: 14px; padding: 28px; margin: 16px 0;
   }
+  /* Paa en telefon spiste ramma rundt 56 piksler av bredden, og
+     forhaandsvisningen ble trangere enn en ekte e-post noen gang blir. Da
+     brekker navnet her uten aa gjore det hos mottakeren. */
+  @media (max-width: 480px) {
+    body { padding: 24px 12px 60px; }
+    .boks { padding: 14px; }
+  }
   .merk { font-size: 14px; color: #7a5c50; }
   button#kopier {
     appearance: none; cursor: pointer;
@@ -54,14 +61,14 @@
   <div class="boks" id="signatur">
 
 <!-- ▼▼▼ KOPIER FRA HER ▼▼▼ -->
-<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Georgia,'Times New Roman',serif;color:#4D1D12;">
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Georgia,'Times New Roman',serif;color:#4D1D12;max-width:100%;">
   <tr>
-    <td style="padding:0 20px 0 0;vertical-align:top;">
+    <td width="100" style="padding:0 12px 0 0;vertical-align:top;">
       <a href="https://lissom.no" style="text-decoration:none;">
-        <img src="https://lissom.no/lissom-signatur-logo.png" alt="Lissom Keramikk &amp; Håndverk" width="152" height="139" style="display:block;border:0;border-radius:10px;">
+        <img src="https://lissom.no/lissom-signatur-logo.png" alt="Lissom Keramikk &amp; Håndverk" width="100" height="92" style="display:block;border:0;border-radius:10px;width:100px;max-width:100%;height:auto;">
       </a>
     </td>
-    <td style="padding:0;vertical-align:top;border-left:3px solid #FFCF38;padding-left:20px;">
+    <td style="padding:0;vertical-align:top;border-left:3px solid #FFCF38;padding-left:12px;">
       <div style="font-size:17px;font-weight:bold;color:#4D1D12;padding-bottom:2px;">Monica Væthe-Larsen</div>
       <div style="font-size:13px;color:#7a5c50;padding-bottom:10px;">Keramiker &amp; daglig leder</div>
 
@@ -129,12 +136,12 @@
 
   <h2>For deg som heller vil lime inn koden</h2>
   <p class="merk">Noen e-postprogrammer har et felt for HTML. Da bruker du denne.</p>
-  <textarea readonly onclick="this.select()"><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Georgia,'Times New Roman',serif;color:#4D1D12;">
+  <textarea readonly onclick="this.select()"><table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;font-family:Georgia,'Times New Roman',serif;color:#4D1D12;max-width:100%;">
   <tr>
-    <td style="padding:0 20px 0 0;vertical-align:top;">
-      <a href="https://lissom.no" style="text-decoration:none;"><img src="https://lissom.no/lissom-signatur-logo.png" alt="Lissom Keramikk &amp; Håndverk" width="152" height="139" style="display:block;border:0;border-radius:10px;"></a>
+    <td width="100" style="padding:0 12px 0 0;vertical-align:top;">
+      <a href="https://lissom.no" style="text-decoration:none;"><img src="https://lissom.no/lissom-signatur-logo.png" alt="Lissom Keramikk &amp; Håndverk" width="100" height="92" style="display:block;border:0;border-radius:10px;width:100px;max-width:100%;height:auto;"></a>
     </td>
-    <td style="padding:0 0 0 20px;vertical-align:top;border-left:3px solid #FFCF38;">
+    <td style="padding:0 0 0 12px;vertical-align:top;border-left:3px solid #FFCF38;">
       <div style="font-size:17px;font-weight:bold;color:#4D1D12;padding-bottom:2px;">Monica Væthe-Larsen</div>
       <div style="font-size:13px;color:#7a5c50;padding-bottom:10px;">Keramiker &amp; daglig leder</div>
       <div style="font-size:13px;color:#4D1D12;padding-bottom:2px;"><a href="tel:+4794134601" style="color:#4D1D12;text-decoration:none;">+47 94 13 46 01</a> &middot; <a href="mailto:post@lissom.no" style="color:#4D1D12;text-decoration:none;">post@lissom.no</a></div>

@@ -3341,6 +3341,27 @@ sjekk('… og raden i basen viser grunninnstillingene',
 sjekk('… og et trykk paa raden aapner kursoppsettet',
     str_contains($sida2, "if ((this.state.kursFane || 'alle') === 'maler') {\n            this.setState({ datoerFor: '' });\n            this.apneKursRed(k, i);"));
 
+// ── Signaturen paa telefon ─────────────────────────────────────────────
+//
+// Eieren, 30. august, med en testmelding aapnet paa iPhone: «epost til mobil
+// deler signaturen, den maa skaleres». Logoen tok 152 piksler pluss 20 i luft
+// paa hver side av streken; da fikk «Monica Vaethe-Larsen» 165 piksler aa staa
+// paa, og navnet brakk over to linjer.
+$sigFil = file_get_contents(__DIR__ . '/../e-post-signatur.html');
+sjekk('logoen i signaturen er skalert ned',
+    substr_count($sigFil, 'width="100" height="92"') === 2
+    && !str_contains($sigFil, 'width="152" height="139"'));
+sjekk('… og bildet krymper med spalten sin',
+    substr_count($sigFil, 'width:100px;max-width:100%;height:auto;') === 2);
+sjekk('… begge utgavene paa sida er like',
+    substr_count($sigFil, 'padding:0 12px 0 0') === 2);
+// Signaturen som gaar ut ligger i innstillingene — eieren limte den inn der.
+// Rettes bare fila, gaar meldingene fortsatt ut med den gamle.
+$m100 = file_get_contents(__DIR__ . '/../db/migrations/100_signatur_skalerer.sql');
+sjekk('… og den lagrede signaturen rettes med',
+    str_contains($m100, "REPLACE(verdi, 'width=\"152\" height=\"139\"', 'width=\"100\" height=\"92\"')")
+    && str_contains($m100, "AND verdi LIKE '%lissom-signatur-logo.png%'"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -96,26 +96,48 @@ final class Booking
     private static ?int $skive = null;
 
     /**
-     * Hvor mange medlemmer som staar innstemplet naa.
+     * Hvor mange medlemmer som staar innstemplet naa, per ressurs.
+     *
+     * Eieren, 30. august: «kunne det voere lost om de booker inn og velger
+     * dreieskive, eller verkstedplass». For dette gjettet regnestykket at
+     * enhver innstemplet sto ved en skive, og et medlem som haandbygget ved
+     * bordet holdt av en skive ingen brukte. Naa sier medlemmet det selv naar
+     * det stempler inn fra Min side.
+     *
+     * Rader uten valg — oekter som alt sto aapne da dette ble lagt ut —
+     * teller mot skivene som for. Det er den gamle gjetningen, og den staar
+     * bare til de har stemplet ut.
      *
      * Ett oppslag per foresporsel: ledigePlasserFlere kalles med hele
-     * katalogen om gangen, og tallet er det samme for alle oektene.
+     * katalogen om gangen, og tallene er de samme for alle oektene.
+     *
+     * @return array<int, int> ressursId => antall
      */
-    private static function inneNaa(): int
+    private static function inneNaa(): array
     {
         if (self::$inne !== null) {
             return self::$inne;
         }
+        self::$inne = [];
         try {
-            self::$inne = (int) DB::verdi('SELECT COUNT(*) FROM check_ins WHERE ut_tid IS NULL');
+            $felt = DB::harKolonne('check_ins', 'ressurs_id') ? 'ressurs_id' : 'NULL';
+            foreach (DB::alle(
+                "SELECT {$felt} AS r, COUNT(*) AS n FROM check_ins
+                  WHERE ut_tid IS NULL GROUP BY r"
+            ) as $rad) {
+                $r = $rad['r'] === null ? self::skiveRessurs() : (int) $rad['r'];
+                if ($r > 0) {
+                    self::$inne[$r] = (self::$inne[$r] ?? 0) + (int) $rad['n'];
+                }
+            }
         } catch (Throwable $e) {
-            self::$inne = 0;
+            self::$inne = [];
         }
         return self::$inne;
     }
 
-    /** @var int|null */
-    private static ?int $inne = null;
+    /** @var array<int, int>|null */
+    private static ?array $inne = null;
 
     public static function ledigePlasser(int $oktId, bool $medLaas = false): int
     {
@@ -233,14 +255,12 @@ final class Booking
             // teller derfor bare paa en oekt som gaar akkurat naa; en booking
             // om tre dager kan ikke vite hvem som moeter opp.
             //
-            // De regnes mot skivene. Et medlem som haandbygger ved bordet
-            // blir talt feil, men den feilen tar heller en plass for mye enn
-            // aa selge en skive som staar opptatt.
-            if ($inneNa > 0 && $ressurs === self::skiveRessurs()) {
+            // Hver enkelt teller mot det den selv valgte ved innstemplinga.
+            if (($inneNa[$ressurs] ?? 0) > 0) {
                 $start = new DateTimeImmutable((string) $r['start_tid'], new DateTimeZone('UTC'));
                 $slu   = new DateTimeImmutable((string) $r['slutt_reell'], new DateTimeZone('UTC'));
                 if ($start <= $naa && $slu > $naa) {
-                    $igjen -= $inneNa;
+                    $igjen -= $inneNa[$ressurs];
                 }
             }
 

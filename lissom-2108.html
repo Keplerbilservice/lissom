@@ -3593,6 +3593,29 @@ window.__resources = {
                 Logg ut
               </button>
               <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
+                <!-- Hva du skal bruke.
+                     Eieren, 30. august: «kunne det voere lost om de booker
+                     inn og velger dreieskive, eller verkstedplass» —
+                     medlemmene — «det skjer paa min side».
+
+                     For dette gjettet regnestykket at enhver innstemplet sto
+                     ved en skive, og et medlem som haandbygget ved bordet
+                     holdt av en skive ingen brukte. Naa sier du det selv, og
+                     tallet blir riktig for dem som kommer etter deg.
+
+                     Brikkene staar bare naar verkstedet har satt opp
+                     ressurser, og de forsvinner naar du er inne — da har du
+                     valgt. -->
+                <sc-if value="{{ msVisRessurs }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ msRessursHjelp }}</span>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
               </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ true }}">
@@ -34807,7 +34830,52 @@ class Component extends DCLogic {
         if (st) return st.innstemplet ? 'Innstemplet ' + st.siden + ' · ' + st.saaLenge : 'Du er ikke innstemplet';
         return this.erPublisert() ? 'Henter …' : (this.state.innstemplet ? 'Innstemplet 13:42 · 1 t 20 min' : 'Du er ikke innstemplet');
       })(),
-      vekslStempling: () => this.stemplingKall({ handling: this.erInne() ? 'ut' : 'inn' }, true),
+      // ── Hva medlemmet skal bruke ─────────────────────────────────────
+      //
+      // Eieren, 30. august: «kunne det voere lost om de booker inn og velger
+      // dreieskive, eller verkstedplass» — medlemmene — «det skjer paa min
+      // side». For dette gjettet regnestykket at enhver innstemplet sto ved
+      // en skive; naa sier medlemmet det selv.
+      //
+      // Brikkene staar bare naar man er ute: er man inne, er valget gjort,
+      // og knappen sier «Stemple ut».
+      ...(() => {
+        const st = this.state.stempling || {};
+        const alle = st.ressurser || [];
+        const inne = this.erInne();
+        // Valget staar i state naar man har trykket, ellers det serveren sa.
+        // Har man ikke valgt noe, foreslaas den forste — det vanligste er aa
+        // sette seg ved en skive, og et valg man maa ta for man kommer inn
+        // doera er en sperre, ikke en hjelp.
+        const naa = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
+        return {
+          msVisRessurs: !inne && alle.length > 1,
+          msRessursId: naa,
+          msRessursHjelp: 'Hva skal du bruke? Da vet de som kommer etter deg hva som er ledig.',
+          msRessursValg: alle.map(r => {
+            const paa = Number(naa) === Number(r.id);
+            return {
+              navn: r.navn,
+              velg: () => this.setState({ msRessursId: r.id }),
+              stil: {
+                appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+                border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+              },
+            };
+          }),
+        };
+      })(),
+      vekslStempling: () => {
+        const inne = this.erInne();
+        const st = this.state.stempling || {};
+        const alle = st.ressurser || [];
+        const valgt = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
+        this.stemplingKall(inne ? { handling: 'ut' }
+                                : { handling: 'inn', ressursId: valgt || 0 }, true);
+      },
       // Dialogen sto i skjemamodus og tegnet tre tomme rader — «Vennens navn»
       // uten noe felt aa skrive i — og «Send invitasjon» satte en bryter i
       // nettleseren. Verkstedet fikk aldri vite at noen hadde invitert en

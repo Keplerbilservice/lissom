@@ -162,10 +162,18 @@ som kursene alt sto med. Drop-in tar en skive; det er nettopp den som skal
 miste plasser når skivene er opptatt.
 
 **Innstemplede medlemmer trekkes fra**, men bare på det som går akkurat nå —
-en booking om tre dager kan ikke vite hvem som møter opp. De regnes mot
-skivene. *Et medlem som håndbygger ved bordet blir talt feil.* Den feilen tar
-heller en plass for mye enn å selge en skive som står opptatt. Si fra om det
-skal endres.
+en booking om tre dager kan ikke vite hvem som møter opp.
+
+Først gjettet regnestykket at enhver innstemplet sto ved en skive, og et
+medlem som håndbygget ved bordet holdt av en skive ingen brukte. Eieren så
+det: «kunne det være løst om de booker inn og velger dreieskive, eller
+verkstedplass» — medlemmene — «det skjer på min side». Det gjør det nå
+(migrasjon 104). Medlemmet velger på Min side når det stempler inn, og tallet
+er eksakt. Målt: et medlem på bordplass tar ingen skive, et medlem på
+dreieskive tar én.
+
+Økter som alt sto åpne da dette ble lagt ut har ikke noe valg. De teller mot
+skivene som før, til de har stemplet ut.
 
 **Ressursene ligger i en tabell**, ikke i koden: «må kunne endre, slette og
 legge til for å møte endringer i verkstedet». Kortet «Ressurser» står på

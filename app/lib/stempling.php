@@ -105,17 +105,36 @@ final class Stempling
      * Hele sjekken ligger inne i transaksjonen: to raske trykk etter hverandre
      * skal ikke gi to aapne okter.
      */
-    public static function inn(int $medlemId): int
+    /**
+     * @param int $ressursId Hva medlemmet skal bruke — dreieskive eller
+     *                       verkstedplass. 0 naar det ikke er oppgitt.
+     *
+     * Eieren, 30. august: «kunne det voere lost om de booker inn og velger
+     * dreieskive, eller verkstedplass». For dette gjettet regnestykket at
+     * enhver innstemplet sto ved en skive; naa sier medlemmet det selv.
+     *
+     * Staar man alt inne, endres valget. Det er billigere enn aa stemple ut
+     * og inn igjen for aa flytte seg fra bordet til skiva.
+     */
+    public static function inn(int $medlemId, int $ressursId = 0): int
     {
-        return DB::iTransaksjon(static function () use ($medlemId): int {
+        return DB::iTransaksjon(static function () use ($medlemId, $ressursId): int {
             $apen = DB::en(
                 'SELECT id FROM check_ins WHERE member_id = :m AND ut_tid IS NULL ORDER BY id DESC LIMIT 1 FOR UPDATE',
                 ['m' => $medlemId]
             );
+            $har = DB::harKolonne('check_ins', 'ressurs_id');
             if ($apen !== null) {
+                if ($har && $ressursId > 0) {
+                    DB::oppdater('check_ins', ['ressurs_id' => $ressursId], ['id' => (int) $apen['id']]);
+                }
                 return (int) $apen['id'];
             }
-            return DB::settInn('check_ins', ['member_id' => $medlemId, 'inn_tid' => self::naa()]);
+            $rad = ['member_id' => $medlemId, 'inn_tid' => self::naa()];
+            if ($har) {
+                $rad['ressurs_id'] = $ressursId > 0 ? $ressursId : null;
+            }
+            return DB::settInn('check_ins', $rad);
         });
     }
 
@@ -148,12 +167,15 @@ final class Stempling
      */
     public static function inneNa(): array
     {
+        $ressurs = DB::harKolonne('check_ins', 'ressurs_id')
+            ? ', (SELECT r.navn FROM ressurser r WHERE r.id = c.ressurs_id) AS ressurs'
+            : ", '' AS ressurs";
         $rader = DB::alle(
-            'SELECT c.inn_tid, m.navn, m.vis_innstempling, m.medlemskap_type
+            "SELECT c.inn_tid, m.navn, m.vis_innstempling, m.medlemskap_type{$ressurs}
                FROM check_ins c
                JOIN members m ON m.id = c.member_id
               WHERE c.ut_tid IS NULL
-              ORDER BY c.inn_tid'
+              ORDER BY c.inn_tid"
         );
 
         $synlige = [];
@@ -167,9 +189,10 @@ final class Stempling
             $inn = (new DateTimeImmutable((string) $r['inn_tid'], new DateTimeZone('UTC')))
                 ->setTimezone(self::oslo());
             $synlige[] = [
-                'navn'  => (string) $r['navn'],
-                'siden' => $inn->format('H:i'),
-                'type'  => (string) ($r['medlemskap_type'] ?? ''),
+                'navn'    => (string) $r['navn'],
+                'siden'   => $inn->format('H:i'),
+                'type'    => (string) ($r['medlemskap_type'] ?? ''),
+                'ressurs' => (string) ($r['ressurs'] ?? ''),
             ];
         }
 

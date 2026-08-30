@@ -34,8 +34,20 @@ if (Foresporsel::metode() === 'POST') {
 
     $handling = Foresporsel::tekst('handling');
     if ($handling === 'inn') {
-        Stempling::inn($id);
-        revider('stemplet_inn', 'member', $id);
+        // Hva medlemmet skal bruke. Eieren, 30. august: «kunne det voere
+        // lost om de booker inn og velger dreieskive, eller verkstedplass».
+        // Uten valget gjetter regnestykket at de staar ved en skive.
+        //
+        // En ressurs som ikke finnes, eller er slaatt av, avvises ikke — da
+        // ville innstemplinga mislyktes fordi noen slettet en ressurs mens
+        // medlemmet sto med telefonen i haanda. Den lagres bare ikke.
+        $rid = Foresporsel::heltall('ressursId');
+        if ($rid > 0 && DB::en('SELECT id FROM ressurser WHERE id = :i AND aktiv = 1',
+                               ['i' => $rid]) === null) {
+            $rid = 0;
+        }
+        Stempling::inn($id, $rid);
+        revider('stemplet_inn', 'member', $id, ['ressurs' => $rid]);
     } elseif ($handling === 'ut') {
         $min = Stempling::ut($id);
         if ($min !== null) {
@@ -67,6 +79,28 @@ $brukt = Stempling::minutterDenneManeden($id);
 $perMnd = Medlemskap::timerFor($medlem);
 $inne = Stempling::inneNa();
 
+// Ressursene medlemmet kan velge mellom, og hva det valgte sist. Lista
+// kommer herfra og ikke fra nettsida: legger verkstedet til en ressurs, skal
+// brikkene folge med uten en ny utlegging.
+$ressurser = [];
+$valgtRessurs = 0;
+try {
+    $ressurser = array_map(static fn($r) => [
+        'id'     => (int) $r['id'],
+        'navn'   => (string) $r['navn'],
+        'antall' => (int) $r['antall'],
+    ], DB::alle('SELECT id, navn, antall FROM ressurser WHERE aktiv = 1 ORDER BY navn'));
+    if (DB::harKolonne('check_ins', 'ressurs_id')) {
+        $valgtRessurs = (int) (DB::verdi(
+            'SELECT ressurs_id FROM check_ins WHERE member_id = :m AND ut_tid IS NULL
+              ORDER BY id DESC LIMIT 1',
+            ['m' => $id]
+        ) ?? 0);
+    }
+} catch (Throwable $e) {
+    $ressurser = [];
+}
+
 $siden = null;
 $saaLenge = null;
 if ($apen !== null) {
@@ -81,6 +115,9 @@ Svar::json([
     'siden'       => $siden,
     'saaLenge'    => $saaLenge,
     'visMeg'      => (bool) ($medlem['vis_innstempling'] ?? 1),
+    // Hva medlemmet kan velge mellom, og hva det staar med naa.
+    'ressurser'   => $ressurser,
+    'ressursId'   => $valgtRessurs,
     'timer' => [
         'brukt'    => Stempling::timer($brukt),
         'bruktMin' => $brukt,

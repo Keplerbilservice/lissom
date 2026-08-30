@@ -3747,6 +3747,80 @@ sjekk('… og en ukjent ressurs avvises ved lagring',
     str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
                  "Svar::feil('Fant ikke ressursen.');"));
 
+// ── Medlemmet velger selv ──────────────────────────────────────────────
+//
+// Eieren, 30. august: «kunne det voere lost om de booker inn og velger
+// dreieskive, eller verkstedplass» — medlemmene — «det skjer paa min side».
+// For dette gjettet regnestykket at enhver innstemplet sto ved en skive.
+if (DB::harKolonne('check_ins', 'ressurs_id') && DB::harTabell('ressurser')) {
+    $medl  = DB::en('SELECT id FROM members LIMIT 1');
+    $skive = (int) DB::verdi("SELECT id FROM ressurser WHERE navn = 'Dreieskive'");
+    $bord  = (int) DB::verdi("SELECT id FROM ressurser WHERE navn = 'Bordplass'");
+    if ($medl !== null && $skive > 0 && $bord > 0) {
+        $forInne = DB::alle('SELECT id FROM check_ins WHERE ut_tid IS NULL');
+        DB::kjor('DELETE FROM check_ins WHERE ut_tid IS NULL');
+
+        // En oekt som gaar akkurat naa. Innstemplede teller bare paa dem —
+        // en booking om tre dager kan ikke vite hvem som moeter opp.
+        $kurs = (int) DB::verdi('SELECT id FROM courses WHERE ressurs_id = :r LIMIT 1',
+                                ['r' => $skive]);
+        $naaU = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $oktId = DB::settInn('course_sessions', [
+            'course_id' => $kurs,
+            'start_tid' => $naaU->modify('-20 minutes')->format('Y-m-d H:i:s'),
+            'slutt_tid' => $naaU->modify('+70 minutes')->format('Y-m-d H:i:s'),
+            'kapasitet' => 8, 'status' => 'planlagt', 'fra_apningstid' => 0,
+        ]);
+        // Bufferne i Booking gjelder én foresporsel. I proven endrer vi
+        // basen mellom hvert kall, og da maa de toemmes.
+        $blank = static function (): void {
+            $r = new ReflectionClass('Booking');
+            foreach (['tak', 'inne', 'skive'] as $n) {
+                $p = $r->getProperty($n);
+                $p->setAccessible(true);
+                $p->setValue(null, null);
+            }
+        };
+        $les = static function () use ($oktId, $blank): int {
+            $blank();
+            return Booking::ledigePlasserFlere([$oktId])[$oktId];
+        };
+
+        $tomt = $les();
+        Stempling::inn((int) $medl['id'], $bord);
+        sjekk('et medlem ved bordet tar ikke en dreieskive',
+            $les() === $tomt, 'gikk fra ' . $tomt . ' til ' . $les());
+        DB::kjor('DELETE FROM check_ins WHERE ut_tid IS NULL');
+        Stempling::inn((int) $medl['id'], $skive);
+        sjekk('… og et medlem ved skiva tar én',
+            $les() === $tomt - 1, 'gikk fra ' . $tomt . ' til ' . $les());
+
+        // Uten valg gjelder den gamle gjetningen: mot skivene. Ellers ville
+        // en oekt som alt sto aapen sluppet fri en skive i det dette ble
+        // lagt ut.
+        DB::kjor('DELETE FROM check_ins WHERE ut_tid IS NULL');
+        DB::settInn('check_ins', ['member_id' => (int) $medl['id'],
+                                  'inn_tid' => gmdate('Y-m-d H:i:s')]);
+        sjekk('… og en innstempling uten valg teller mot skivene, som for',
+            $les() === $tomt - 1, 'fikk ' . $les());
+
+        DB::kjor('DELETE FROM check_ins WHERE ut_tid IS NULL');
+        DB::kjor('DELETE FROM course_sessions WHERE id = :i', ['i' => $oktId]);
+        foreach ($forInne as $r) {
+            DB::kjor('UPDATE check_ins SET ut_tid = NULL WHERE id = :i', ['i' => (int) $r['id']]);
+        }
+        $blank();
+    }
+}
+sjekk('valget staar paa Min side, der medlemmet stempler inn',
+    str_contains($sida2, 'msRessursValg:')
+    && str_contains($sida2, "{ handling: 'inn', ressursId: valgt || 0 }"));
+// En ressurs som er slettet eller slaatt av skal ikke gjore at innstemplinga
+// mislykkes — medlemmet staar med telefonen i haanda i dora.
+sjekk('… og en ukjent ressurs stopper ikke innstemplinga',
+    str_contains(file_get_contents(__DIR__ . '/../api/stempling.php'),
+                 "\$rid = 0;"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

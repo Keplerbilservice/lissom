@@ -132,6 +132,32 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 31. august
 
+### De seks feilrapportene — alle seks var mine
+
+**To av dem: «Fikk ikke lastet img», `lissom.no/bilde.php?artikkel=b8e795…».**
+Samme feil som over: `basename()` klippet bort `api/`. Rettet i koden, og
+migrasjon 105 retter den lagrede adressen. De to rapportene kom fra kurssida på
+iPhone og Android — altså to ekte besøkende som så et hull der bildet skulle
+vært.
+
+**Fire av dem: «Serveren svarte 500» kl. 04:32** på `/api/kurs.php`,
+`/api/admin/kurs.php`, `/api/admin/pameldte.php` og `/api/admin/venteliste.php`
+— alle i samme minutt.
+
+Alle fire regner ledige plasser, og `Booking::ledigePlasserFlere()` leste
+`courses.ressurs_id` uten å spørre om kolonna fantes. Utlegginga av koden og
+kjøringa av migrasjon 103 skjer ikke i samme sekund, og i vinduet imellom var
+**kurslista nede for alle** — ute og i admin.
+
+Reprodusert lokalt ved å slippe kolonna:
+`SQLSTATE[42S22]: Unknown column 'c.ressurs_id'` → HTTP 500. Etter fiksen:
+HTTP 200 på alle seks endepunkter jeg prøvde.
+
+Resten av kodebasen spør alltid først — `$oppsettFelt`, `$bilderFelt`,
+`$apenFelt` i `api/kurs.php`. Jeg gjorde det i `Apent` og i `Kursmal`, men ikke
+her. Nå er det tettet tre steder: regnestykket (med det gamle som reserve),
+kurslagringa, og innstemplinga.
+
 **Hjertet etter navnet.** Eieren: «på oversikt så står det God morgen, Monica,
 kan du legge til logo hjertet bak navnet, men dette er kun på Monica». Det står
 nå der, og bare når fornavnet er Monica. Masken er `heart-logo-mask.png` —

@@ -191,6 +191,27 @@ final class Booking
         // castet med intval over, saa de kan staa i SQL-en.
         $inn = implode(',', $ider);
 
+        // ── Er de delte ressursene der i det hele tatt? ─────────────────
+        //
+        // Kolonna og tabellen kom med migrasjon 103. Utlegginga av koden og
+        // kjoringa av migrasjonen skjer ikke i samme sekund, og i vinduet
+        // imellom fantes ikke kolonna.
+        //
+        // Det kostet fire femhundre-feil paa lissom.no 31. august 04:32 —
+        // /api/kurs.php, /api/admin/kurs.php, /api/admin/pameldte.php og
+        // /api/admin/venteliste.php, alle fire i samme minutt, alle fire
+        // fordi de regner ledige plasser. Kurslista var nede for alle mens
+        // det sto paa.
+        //
+        // Resten av kodebasen spor alltid foerst — se $oppsettFelt,
+        // $bilderFelt og $apenFelt i api/kurs.php. Her gjorde jeg det ikke.
+        // Uten kolonna gjelder det gamle regnestykket: hver oekt for seg.
+        $delteRessurser = DB::harKolonne('courses', 'ressurs_id')
+            && DB::harTabell('ressurser');
+        if (!$delteRessurser) {
+            return self::ledigeUtenRessurser($inn, $ider);
+        }
+
         // Aktiv booking: betalt, eller reservert og ikke gaatt ut paa tid.
         // Staar to steder i spoerringa under — paa oekta selv og paa alle de
         // andre som deler ressursen — og maa vaere den samme begge steder.
@@ -344,6 +365,45 @@ final class Booking
             $ut[$i] ??= 0;
         }
 
+        return $ut;
+    }
+
+    /**
+     * Ledige plasser uten delte ressurser — regnestykket slik det var for
+     * migrasjon 103.
+     *
+     * Brukes naar kolonna eller tabellen ikke finnes: i vinduet mellom at
+     * koden legges ut og migrasjonen kjores, og paa en base som er rullet
+     * tilbake. Hver oekt for seg, som for.
+     *
+     * @param list<int> $ider
+     * @return array<int, int>
+     */
+    private static function ledigeUtenRessurser(string $inn, array $ider): array
+    {
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT cs.id,
+                    GREATEST(0,
+                        COALESCE(cs.kapasitet, c.kapasitet)
+                        - COALESCE(cs.manuelt_opptatt, 0)
+                        - COALESCE((SELECT SUM(b.antall) FROM bookings b
+                                     WHERE b.course_session_id = cs.id
+                                       AND (b.status = 'betalt'
+                                            OR (b.status = 'reservert'
+                                                AND (b.reservert_til IS NULL
+                                                     OR b.reservert_til > UTC_TIMESTAMP())))), 0)
+                    ) AS ledige
+               FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.status = 'planlagt' AND cs.id IN ({$inn})"
+        ) as $r) {
+            $ut[(int) $r['id']] = (int) $r['ledige'];
+            self::$sperret[(int) $r['id']] = false;
+        }
+        foreach ($ider as $i) {
+            $ut[$i] ??= 0;
+        }
         return $ut;
     }
 

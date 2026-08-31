@@ -4022,6 +4022,32 @@ sjekk('… og formen er logoens egen',
     str_contains($sida2, "mask-image: url('heart-logo-mask.png'); -webkit-mask-size: contain")
     && is_file(__DIR__ . '/../heart-logo-mask.png'));
 
+// ── Koden taaler at migrasjonen ikke er kjort ──────────────────────────
+//
+// Fire femhundre-feil paa lissom.no 31. august 04:32 — /api/kurs.php,
+// /api/admin/kurs.php, /api/admin/pameldte.php og /api/admin/venteliste.php,
+// alle i samme minutt, alle fordi de regner ledige plasser.
+//
+// Aarsaken: ledigePlasserFlere leste courses.ressurs_id uten aa spore om
+// kolonna fantes. Utlegginga av koden og kjoringa av migrasjonen skjer ikke i
+// samme sekund, og i vinduet imellom var kurslista nede for alle.
+//
+// Resten av kodebasen spor alltid foerst — se $oppsettFelt, $bilderFelt og
+// $apenFelt i api/kurs.php.
+$bok = file_get_contents(__DIR__ . '/../app/lib/booking.php');
+sjekk('ledige plasser spor om de delte ressursene finnes',
+    str_contains($bok, "\$delteRessurser = DB::harKolonne('courses', 'ressurs_id')")
+    && str_contains($bok, "&& DB::harTabell('ressurser');"));
+sjekk('… og har det gamle regnestykket som reserve',
+    str_contains($bok, 'private static function ledigeUtenRessurser(string $inn, array $ider): array'));
+// Skjemaet sender ressursId uansett. Uten vakta ville lagringa av et hvilket
+// som helst kurs feilet paa en kolonne som ikke fantes.
+sjekk('kurslagringa taaler det samme',
+    str_contains($akurs2, "if (\$har('ressursId') && DB::harKolonne('courses', 'ressurs_id') && DB::harTabell('ressurser'))"));
+sjekk('… og innstemplinga ogsaa',
+    str_contains(file_get_contents(__DIR__ . '/../api/stempling.php'),
+                 "if (\$rid > 0 && (!DB::harTabell('ressurser')"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

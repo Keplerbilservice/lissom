@@ -42,8 +42,11 @@ if (Foresporsel::metode() === 'POST') {
         // ville innstemplinga mislyktes fordi noen slettet en ressurs mens
         // medlemmet sto med telefonen i haanda. Den lagres bare ikke.
         $rid = Foresporsel::heltall('ressursId');
-        if ($rid > 0 && DB::en('SELECT id FROM ressurser WHERE id = :i AND aktiv = 1',
-                               ['i' => $rid]) === null) {
+        // Tabellen kom med migrasjon 103. Er den ikke der, lagres ingen
+        // ressurs — innstemplinga skal ikke feile av den grunn.
+        if ($rid > 0 && (!DB::harTabell('ressurser')
+                || DB::en('SELECT id FROM ressurser WHERE id = :i AND aktiv = 1',
+                          ['i' => $rid]) === null)) {
             $rid = 0;
         }
         Stempling::inn($id, $rid);

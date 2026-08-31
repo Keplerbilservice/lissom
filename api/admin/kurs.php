@@ -340,7 +340,10 @@ switch ($handling) {
         // Ressursen kurset deler med alt annet som gaar samtidig. 0 er en
         // gyldig verdi og betyr «ingen delt grense»; en id som ikke finnes
         // avvises, ellers ville kurset staatt uten tak uten aa si fra.
-        if ($har('ressursId')) {
+        // Bare naar migrasjon 103 er kjort. Skjemaet sender feltet uansett,
+        // og i vinduet mellom utlegging og migrasjon ville lagringa av et
+        // hvilket som helst kurs feilet paa en kolonne som ikke fantes.
+        if ($har('ressursId') && DB::harKolonne('courses', 'ressurs_id') && DB::harTabell('ressurser')) {
             $rid = Foresporsel::heltall('ressursId');
             if ($rid > 0 && DB::en('SELECT id FROM ressurser WHERE id = :i', ['i' => $rid]) === null) {
                 Svar::feil('Fant ikke ressursen.');

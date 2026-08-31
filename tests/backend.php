@@ -4131,6 +4131,25 @@ sjekk('… og sier om standarden brukes eller er overstyrt',
     str_contains($sida, "? 'Står tomt: nettsiden viser teksten over'")
     && str_contains($sida, ": 'Egen tekst. Den står foran den anbefalte.',"));
 
+// Eieren, 31. august: «hvorfor sorterer ikke paa dato som vi har snakket om?».
+// Lista ble sortert paa dato da den ble bygget, og saa kastet sorterKurs det
+// bort og stilte dem alfabetisk innenfor hver kategori: «Lag din egen bolle»
+// 3. september over «Store fat kurs» 1. september, fordi L kommer foer S.
+sjekk('kurs sorteres paa dato, ikke paa navn',
+    str_contains($sida, 'const d = this.forsteOktTid(a) - this.forsteOktTid(b);')
+    && str_contains($sida, 'if (d !== 0 && !isNaN(d)) return d;'));
+// Datoregelen staar ett sted og brukes to: her og i alleKort().
+sjekk('… og datoregelen staar ett sted',
+    str_contains($sida, 'forsteOktTid(k) {')
+    && substr_count($sida, 'this.forsteOktTid(') === 3);
+// «Drop inn kurs ligger i oversikten, hallo rydd opp og globalt». 139 datoer
+// drop-in mot noen faa titalls kursdatoer — kursene druknet i lista, i uka og
+// i maaneden under «Kurs og deltakere → Alle kurs». Drop-in har sin egen
+// skjerm.
+sjekk('drop-in staar ikke i kurslistene i admin',
+    str_contains($sida, 'oktIKurslista(o) {')
+    && substr_count($sida, '.filter(o => this.oktIKurslista(o))') === 2);
+
 // Eieren, 31. august: «jeg faar ikke scrollet tilbake, da virker det som
 // siden under er den som scroller». Det er nettopp det som skjer: naar ruta
 // er rullet helt til topps, fortsetter fingeren ned i sida bak.

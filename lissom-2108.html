@@ -15140,14 +15140,7 @@ class Component extends DCLogic {
     // Naa staar de i den rekkefolgen de gaar. Kurs som settes opp naar noen
     // sporr, og som ikke har datoer liggende ute, staar til slutt — de har
     // ingen dag aa sorteres paa, og skal ikke ligge foran noe som har det.
-    const naar = (k) => {
-      const o = (k.okter || []).filter(x => x && x.startUtc);
-      if (!o.length) return Infinity;
-      return Math.min.apply(null, o.map(x => {
-        const t = Date.parse(String(x.startUtc).replace(' ', 'T') + 'Z');
-        return isNaN(t) ? Infinity : t;
-      }));
-    };
+    const naar = (k) => this.forsteOktTid(k);
     this._alleKort = this.medBooking(
       this._kursListe.concat(this.state.nyeKurs || []).concat(this.serverKurs(this._kursListe))
     )
@@ -15554,6 +15547,26 @@ class Component extends DCLogic {
       ],
     };
     return uker[nr] || [];
+  }
+
+  /**
+   * Hoerer oekta hjemme i kurslistene i admin?
+   *
+   * Drop-in gaar hver dag fra aatte til ti om kvelden i plasser paa
+   * halvannen time. Det er 139 datoer i basen mot noen faa titalls
+   * kursdatoer, og under «Kurs og deltakere → Alle kurs» druknet kursene i
+   * dem — bade i lista, i uka og i maaneden. Eieren, 31. august: «drop inn
+   * kurs ligger i oversikten, hallo rydd opp og globalt».
+   *
+   * Drop-in har sin egen skjerm, /admin/drop-in. Der hoerer den hjemme, og
+   * der roeres den ikke.
+   *
+   * Regelen staar her og brukes begge steder — datolista og kalenderen paa
+   * den samme skjermen. Skrives den to steder, blir den ulik.
+   */
+  oktIKurslista(o) {
+    const tema = String((o || {}).tema || '').toLowerCase();
+    return String((o || {}).type || '') !== 'dropin' && tema !== 'drop-in';
   }
 
   /**
@@ -24285,16 +24298,45 @@ class Component extends DCLogic {
   }
 
   /**
+   * Naar kurset gaar foerste gang, i millisekunder.
+   *
+   * Uendelig for et kurs uten datoer ute — det har ingen dag aa sorteres
+   * paa, og skal ikke ligge foran noe som har det.
+   */
+  forsteOktTid(k) {
+    const o = ((k || {}).okter || []).filter(x => x && x.startUtc);
+    if (!o.length) return Infinity;
+    return Math.min.apply(null, o.map(x => {
+      const t = Date.parse(String(x.startUtc).replace(' ', 'T') + 'Z');
+      return isNaN(t) ? Infinity : t;
+    }));
+  }
+
+  /**
    * Sorterer en liste kurs i den rekkefolgen.
    *
    * «hent» sier hvor temaet og navnet ligger paa raden — listene ute og inne
    * har hver sine feltnavn, men rekkefolgen skal vaere den samme.
+   *
+   * Kategori foerst, saa DATO, saa navn.
+   *
+   * Datoen manglet her. Lista var sortert paa dato naar den ble bygget — se
+   * alleKort() — og saa kastet denne sorteringa det bort og stilte dem
+   * alfabetisk innenfor hver kategori. Paa nettsida sto «Lag din egen bolle»
+   * 3. september over «Store fat kurs» 1. september, fordi L kommer foer S.
+   * Eieren, 31. august: «hvorfor sorterer ikke paa dato som vi har snakket
+   * om?».
+   *
+   * Navnet er bare siste utvei, for to kurs paa samme dag og samme kategori.
+   * Et kurs uten datoer ute faar Uendelig og havner bakerst i sin kategori.
    */
   sorterKurs(liste, hent) {
     return (liste || []).slice().sort((a, b) => {
       const x = hent(a), y = hent(b);
       const r = this.kursRang(x.tema, x.navn, x.type) - this.kursRang(y.tema, y.navn, y.type);
       if (r !== 0) return r;
+      const d = this.forsteOktTid(a) - this.forsteOktTid(b);
+      if (d !== 0 && !isNaN(d)) return d;
       return String(x.navn || '').localeCompare(String(y.navn || ''), 'nb');
     });
   }
@@ -32612,6 +32654,7 @@ class Component extends DCLogic {
         // skal lista vise samlingene deres, ikke alt.
         const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
         const alle = (this.state.adminOkter || [])
+          .filter(o => this.oktIKurslista(o))
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1);
 
@@ -33015,6 +33058,7 @@ class Component extends DCLogic {
         };
 
         const raa = (this.state.adminOkter || [])
+          .filter(o => this.oktIKurslista(o))
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1)
           .filter(o => !aapentKurs || (o.tittel || '') === aapentKurs)

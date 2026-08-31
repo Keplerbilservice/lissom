@@ -4093,7 +4093,24 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
 // siden under er den som scroller». Det er nettopp det som skjer: naar ruta
 // er rullet helt til topps, fortsetter fingeren ned i sida bak.
 sjekk('rullinga stopper i ruta, den gaar ikke ned i sida bak',
-    substr_count($sida, "overscrollBehavior: 'contain',") === 2);
+    substr_count($sida, "overscrollBehavior: 'contain'") >= 2);
+// Han spurte om det fantes flere: «er det flere slike scenario eller sjekket
+// og fikset du alle?». Det gjorde det — sju overlegg til med samme feil. Her
+// telles de i stedet for aa ramses opp, saa et nytt overlegg uten stopp blir
+// fanget den dagen det skrives.
+$rullendeUtenStopp = 0;
+foreach (explode("\n", $sida) as $linje) {
+    foreach (preg_split('~style="~', $linje) as $bit) {
+        $stil = explode('"', $bit)[0];
+        if (str_contains($stil, 'position: fixed')
+            && preg_match('~overflow(-y)?:\s*(auto|scroll)~', $stil) === 1
+            && !str_contains($stil, 'overscroll-behavior')) {
+            $rullendeUtenStopp++;
+        }
+    }
+}
+sjekk('… og ingen andre overlegg som ruller mangler den',
+    $rullendeUtenStopp === 0);
 
 // Tavla under Markedsforing lister utkast med status «godkjent», saa et
 // nyhetsbrev eller et innlegg ikke blir borte for det er sendt eller limt

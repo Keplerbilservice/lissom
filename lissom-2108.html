@@ -13443,7 +13443,7 @@ window.__resources = {
 
         <!-- ── Utkast i full lengde ───────────────────────────────────── -->
         <sc-if value="{{ mkLesApen }}" hint-placeholder-val="{{ false }}">
-          <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
+          <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
             <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 720px; width: 100%; padding: var(--space-8);">
               <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-5);">
                 <div>
@@ -13811,7 +13811,7 @@ window.__resources = {
      Ligger den inne i én skjerm, aapner den seg ikke fra den andre.
      Den brukes baade fra Kunnskapsbanken og fra Butikk. -->
 <sc-if value="{{ mkBildevalgApen }}" hint-placeholder-val="{{ false }}">
-  <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto;">
+  <div style="position: fixed; inset: 0; background: rgba(31,17,12,.55); z-index: 60; display: flex; align-items: flex-start; justify-content: center; padding: var(--space-8) var(--space-5); overflow-y: auto; overscroll-behavior: contain;">
     <div style="background: var(--surface-card); border-radius: var(--radius-lg); max-width: 760px; width: 100%; padding: var(--space-8);">
       <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-5); margin-bottom: var(--space-6);">
         <div>
@@ -13997,7 +13997,7 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ nkApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ nkLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-4); overflow-y: auto;">
+  <div onClick="{{ nkLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ stoppKlikk }}" style="width: min(440px, 100%); margin-top: {{ nkTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
       <button type="button" onClick="{{ nkLukk }}" aria-label="Lukk" style="position: absolute; top: 12px; right: 14px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 24px; line-height: 1;">×</button>
       <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Nytt kurs eller event</h3>
@@ -14098,7 +14098,7 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ ktApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ ktLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div onClick="{{ ktLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin-top: {{ ktTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
       <button type="button" onClick="{{ ktLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
       <sc-if value="{{ ktIkkeSendt }}" hint-placeholder-val="{{ true }}">
@@ -14152,7 +14152,7 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ fsApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ fsLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto;">
+  <div onClick="{{ fsLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin-top: {{ fsTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
       <button type="button" onClick="{{ fsLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
       <sc-if value="{{ fsIkkeSendt }}" hint-placeholder-val="{{ true }}">
@@ -14190,7 +14190,7 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ ndApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ ndLukk }}" style="position: fixed; inset: 0; z-index: 96; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-4); overflow-y: auto;">
+  <div onClick="{{ ndLukk }}" style="position: fixed; inset: 0; z-index: 96; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ stoppKlikk }}" style="width: min(480px, 100%); margin-top: {{ ndTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
       <button type="button" onClick="{{ ndLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 24px; line-height: 1;">×</button>
       <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Ny kursdato</h3>
@@ -14420,7 +14420,7 @@ window.__resources = {
      og manglet bare innholdet. Slike feil er det bare et menneske som
      ser. -->
 <sc-if value="{{ fmVises }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ fmLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto;">
+  <div onClick="{{ fmLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 520; display: flex; align-items: center; justify-content: center; padding: var(--space-6); overflow-y: auto; overscroll-behavior: contain;">
     <div onClick="{{ fmStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(480px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
       <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Meld inn feil</div>
       <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Hva gikk galt?</h2>
@@ -24782,7 +24782,7 @@ class Component extends DCLogic {
         alignItems: 'start', gap: 6,
         marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(244,235,222,.18)',
-        maxHeight: '72vh', overflowY: 'auto',
+        maxHeight: '72vh', overflowY: 'auto', overscrollBehavior: 'contain',
       },
       admMobEkstraStil: {
         gridColumn: '1 / -1',

@@ -4077,6 +4077,17 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Eieren, 31. august, med et bilde av footeren paa telefon: «Nordre løkkevei
+// 15 paa en linje takk». Hele adressen sto som én streng, og i den smale
+// spalta brakk den midt i gatenavnet. Spalta er 151 piksler og gata trenger
+// 108, saa den faar plass — den maa bare ikke faa lov til aa brekke.
+sjekk('gateadressen i footeren brekker ikke',
+    str_contains($sida, '<span style="display: block; white-space: nowrap;">{{ ftAdresse1 }}</span>'));
+sjekk('… og postnummeret staar paa linja under',
+    str_contains($sida, "const komma = hel.indexOf(',');")
+    && str_contains($sida, 'ftAdresse1: komma === -1 ? hel : hel.slice(0, komma).trim(),')
+    && str_contains($sida, '{{ ftAdresse2 }}'));
+
 // Eieren, 31. august: «kan du legge til paa sporsmaal og svar: Kan man
 // bestille kun brenning hos dere? Nei, det er forbeholdt medlemmer».
 // Standardteksten staar i malen og feltet i redigeringsskjemaet — begge maa

@@ -12737,7 +12737,19 @@ window.__resources = {
           <div>
             <div style="font: var(--type-label); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-yellow); margin-bottom: var(--space-5);">Besøk oss</div>
             <div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; font-size: var(--text-base); line-height: 1.45; color: var(--clay-200);">
-              <a href="https://maps.google.com/?q=Nordre+L%C3%B8kkevei+15,+3120+N%C3%B8tter%C3%B8y" target="_blank" rel="noopener" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">{{ ftAdresse }}</a>
+              <!-- Gata paa én linje, postnummeret paa neste. Foer sto hele
+                   adressen som én streng, og i den smale spalta paa telefonen
+                   brakk den midt i gatenavnet: «Nordre Løkkevei» over «15,
+                   3120 Nøtterøy». Spalta er 151 piksler og gata trenger 108,
+                   saa den faar plass — den maa bare ikke faa lov til aa
+                   brekke. Delt paa kommaet, saa feltet under Nettsiden →
+                   Innhold fortsatt er én linje aa skrive i. -->
+              <a href="https://maps.google.com/?q=Nordre+L%C3%B8kkevei+15,+3120+N%C3%B8tter%C3%B8y" target="_blank" rel="noopener" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">
+                <span style="display: block; white-space: nowrap;">{{ ftAdresse1 }}</span>
+                <sc-if value="{{ ftHarAdresse2 }}" hint-placeholder-val="{{ true }}">
+                  <span style="display: block;">{{ ftAdresse2 }}</span>
+                </sc-if>
+              </a>
               <a href="tel:+4794134601" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">{{ ftTelefon }}</a>
               <a href="mailto:monica@lissom.no" style="color: var(--clay-200); text-decoration: none; transition: color .18s ease; padding: 3px 0;" style-hover="color: var(--lissom-yellow);">{{ ftEpost }}</a>
               <div style="margin-top: 10px; font-size: var(--text-sm); line-height: 1.45; color: var(--clay-300); display: flex; flex-direction: column;">
@@ -38261,7 +38273,18 @@ class Component extends DCLogic {
       btSpesialKnapp: this.innh('Butikk/3/Knapp'),
       ftKnapp: this.innh('Footer/0/Knapp'),
       ftUndertekst: this.innh('Footer/0/Undertekst'),
-      ftAdresse: this.innh('Footer/1/Adresse'),
+      // Adressen delt paa kommaet: gata paa én linje, postnummeret paa
+      // neste. Se footeren — den smale spalta brakk gatenavnet i to.
+      ...(() => {
+        const hel = (this.innh('Footer/1/Adresse') || '').trim();
+        const komma = hel.indexOf(',');
+        const bak = komma === -1 ? '' : hel.slice(komma + 1).trim();
+        return {
+          ftAdresse1: komma === -1 ? hel : hel.slice(0, komma).trim(),
+          ftAdresse2: bak,
+          ftHarAdresse2: bak !== '',
+        };
+      })(),
       ftTelefon: this.innh('Footer/1/Telefon'),
       ftEpost: this.innh('Footer/1/E-post'),
       // Aapningstida i bunnteksten.

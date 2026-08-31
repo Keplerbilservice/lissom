@@ -3841,14 +3841,20 @@ window.__resources = {
 
               <sc-if value="{{ frysKanSoke }}" hint-placeholder-val="{{ true }}">
                 <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); max-width: 60ch; text-wrap: pretty;">{{ frysHjelp }}</p>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
+                <!-- Datofeltene sto stablet i full bredde paa mobilen: kolonnen
+                     kreide 160 piksler, og da var det ikke plass til to. To
+                     svaere bokser under hverandre — eieren, 31. august: «se
+                     pillene som er for store». Naa staar de to i bredden helt
+                     ned til de smaleste telefonene, og selve feltet er lavere.
+                     Se ogsaa frysDatoStil. -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
                   <div>
                     <label for="frys-fra" style="{{ frysEtikett }}">Fra og med</label>
-                    <input id="frys-fra" type="date" value="{{ frysFra }}" onChange="{{ settFrysFra }}" style="{{ frysFeltStil }}">
+                    <input id="frys-fra" type="date" value="{{ frysFra }}" onChange="{{ settFrysFra }}" style="{{ frysDatoStil }}">
                   </div>
                   <div>
                     <label for="frys-til" style="{{ frysEtikett }}">Til og med</label>
-                    <input id="frys-til" type="date" value="{{ frysTil }}" onChange="{{ settFrysTil }}" style="{{ frysFeltStil }}">
+                    <input id="frys-til" type="date" value="{{ frysTil }}" onChange="{{ settFrysTil }}" style="{{ frysDatoStil }}">
                   </div>
                 </div>
                 <label for="frys-grunn" style="{{ frysEtikett }}">Hvorfor — valgfritt</label>
@@ -35176,6 +35182,15 @@ class Component extends DCLogic {
           frysEtikett: { display: 'block', fontSize: 'var(--text-xs)',
                          color: 'var(--text-muted)', marginBottom: 4 },
           frysFeltStil: felt,
+          // Datofeltet er lavere enn de andre feltene, og har sin egen sak
+          // med Safari paa iPhone: der faar «input type=date» sin egen hoyde
+          // og midtstiller datoen. «appearance: none» tar begge deler, saa
+          // feltet blir like hoyt og venstrestilt som alt annet. Kalenderen
+          // aapner som for naar man trykker.
+          frysDatoStil: Object.assign({}, felt, {
+            padding: '8px 10px', textAlign: 'left',
+            WebkitAppearance: 'none', appearance: 'none', minHeight: 0,
+          }),
           frysOmraadeStil: Object.assign({}, felt, { resize: 'vertical' }),
           frysFra: this.state.frysFra || '',
           settFrysFra: e => this.setState({ frysFra: e.target.value }),

@@ -4077,6 +4077,20 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Eieren, 31. august, med et bilde fra «Frys av medlemskap» paa mobil: «se
+// pillene som er for store». Datofeltene sto stablet i full bredde fordi
+// kolonnen kreide 160 piksler — to fikk ikke plass. Maalt paa 390 px: to felt
+// á 325 px i to rader (131 px) ble to á 157 px paa én rad (44 px).
+sjekk('datofeltene i frys staar to i bredden ogsaa paa mobil',
+    str_contains($sida, 'grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3);'));
+// Safari paa iPhone gir «input type=date» sin egen hoyde og midtstiller
+// datoen. «appearance: none» tar begge deler.
+sjekk('… og datofeltet har sin egen, lavere stil',
+    str_contains($sida, 'frysDatoStil: Object.assign({}, felt, {')
+    && str_contains($sida, "padding: '8px 10px', textAlign: 'left',")
+    && str_contains($sida, "WebkitAppearance: 'none', appearance: 'none', minHeight: 0,")
+    && substr_count($sida, '{{ frysDatoStil }}') === 2);
+
 // Eieren, 31. august, om sidemenyen: «denne visningen er fin, smal bredde,
 // evnt kan du teste med en bredde men lavere hoyde paa pillene. I allefall
 // paa mobil maa det vaere slik». Spurt om pc-en ogsaa skulle ha den: «bare

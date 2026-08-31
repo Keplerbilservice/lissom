@@ -4087,7 +4087,15 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
     && !str_contains($sida, "felt('lagerDu',")
     && !str_contains($sida, "felt('tillegg',")
     && !str_contains($sida, "felt('passerNivaa',")
-    && !str_contains($sida, "felt('metode',"));
+    && !str_contains($sida, "felt('metode',")
+    && !str_contains($sida, "felt('instruktor',"));
+// Kursbeviset leser «courses.instruktor» og faller tilbake paa Monica. Det
+// leser ikke kursholderen som velges i kursoppsettet — eieren, 31. august:
+// «dersom noen andre holder kurset saa er vel dette valgt i kursoppsettet?».
+// Ja, men det er ikke koblet. Feltet er fjernet, ikke koblingen laget.
+sjekk('… og kursbeviset staar fortsatt med Monica naar feltet er tomt',
+    str_contains(file_get_contents(__DIR__ . '/../api/kursbevis.php'),
+                 "\$instruktor = trim((string) (\$b['instruktor'] ?? '')) ?: 'Monica Væthe-Larsen';"));
 // Metoden regnes ut av kategorien. Skrev du noe i feltet, ble det overskrevet
 // neste gang kurset ble lagret fra oppsettet.
 sjekk('… og metoden regnes fortsatt ut av kategorien',

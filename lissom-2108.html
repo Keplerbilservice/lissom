@@ -25852,7 +25852,6 @@ class Component extends DCLogic {
               felt('gjenstandIKassa', 'Gjenstanden betales i verkstedet', 'hake'),
               felt('nivaaIntern', 'Nivå internt', 'valg', [['nybegynner', 'Nybegynner'], ['videregaende', 'Viderekomne']]),
               felt('nivaaTekst', 'Nivå slik kunden leser det', 'tekst'),
-              felt('instruktor', 'Navn på kursbeviset', 'tekst'),
               felt('om', 'Beskrivelse', 'lang'),
               felt('punkter', 'Punkter, ett per linje', 'lang'),
               felt('laerer', 'Dette lærer du', 'lang'),
@@ -25879,10 +25878,31 @@ class Component extends DCLogic {
             //   metode           regnes ut av kategorien i metodeAvKategori().
             //                    Skrev du noe her, ble det overskrevet neste
             //                    gang kurset ble lagret fra oppsettet.
+            //   instruktor       fritekstnavnet paa kursbeviset. Se under.
             //
             // Teksten som ligger lagret blir staaende og vises som for. Det
             // er feltene som er borte, ikke innholdet — og lagringa sender
             // fortsatt verdiene videre urort.
+            //
+            // ── Om «instruktor» spesielt ───────────────────────────────
+            //
+            // api/kursbevis.php leser «courses.instruktor», et fritekstfelt,
+            // og faller tilbake paa Monica naar det er tomt. Den leser IKKE
+            // kursholderen som velges i kursoppsettet — den staar i
+            // «courses.kursholder_id» og peker til kursholdere-tabellen.
+            //
+            // Eieren, 31. august: «dersom noen andre holder kurset saa er vel
+            // dette valgt i kursoppsettet? Saa da henter det her infra». Ja,
+            // det burde det. Slik det er naa foelger beviset ikke det valget.
+            //
+            // Valget hans var aa fjerne fritekstfeltet og la beviset staa med
+            // Monica til de faktisk leier inn noen — alle kursene holdes av
+            // henne. Kolonnen og verdiene blir liggende. Skal det kobles
+            // ordentlig, maa beviset lese kursholderen paa oekta (en enkelt
+            // kveld kan ha en annen enn kurset ellers), og kursholdere maa
+            // faa et signaturfelt: tabellen har navn, rolle, epost, telefon
+            // og timesats, men ingen signatur — saa et riktig navn ville
+            // fortsatt faatt Monicas signatur under seg.
             const endret = felter.filter(f => (naa[f.nokkel] || '') !== (start[f.nokkel] || ''));
             const pos = this.state.klKursRedPos || {};
             return {

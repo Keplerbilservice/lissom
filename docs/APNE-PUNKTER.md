@@ -108,6 +108,32 @@ booket?
 Kursene selv ble laget samme sted. «Glasurkveld for medlemmer» kostet
 verkstedet 10 000 kroner i innleid kursholder før den ble slettet.
 
+### Kursbeviset følger ikke kursholderen som er valgt — 31. august
+
+`api/kursbevis.php` leser `courses.instruktor`, et fritekstfelt, og faller
+tilbake på «Monica Væthe-Larsen» når det er tomt. Den leser **ikke**
+`courses.kursholder_id`, som er kursholderen man faktisk velger i
+kursoppsettet, og som kalenderen, timeføringen og per-dato-overstyringen
+bruker.
+
+Velger du altså en annen kursholder på et kurs, står det fortsatt Monica på
+beviset.
+
+Eieren så det selv: «dersom noen andre holder kurset så er vel dette valgt i
+kursoppsettet? Så da henter det her ifra». Valget hans var å fjerne
+fritekstfeltet fra admin og la beviset stå med Monica til de faktisk leier
+inn noen — alle kursene holdes av henne. Kolonnen og verdiene ligger urørt.
+
+Skal det kobles ordentlig, er det to ting:
+
+1. Beviset må lese kursholderen på **økta**, ikke på kurset. En enkelt kveld
+   kan ha en annen kursholder enn kurset ellers, og beviset gjelder én økt.
+2. `kursholdere` må få et signaturfelt. Tabellen har navn, rolle, e-post,
+   telefon og timesats, men ingen signatur — så et riktig navn ville fortsatt
+   fått Monicas signatur under seg.
+
+---
+
 ### 7. ~~Manuelle betalinger uten betalingsmåte~~ — avklart 27. august
 
 Lissom oppga kontoene: **Vipps 1510, Kontant 1900, Faktura 1920**, og

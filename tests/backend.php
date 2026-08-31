@@ -4089,6 +4089,27 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
     && !str_contains($sida, "felt('passerNivaa',")
     && !str_contains($sida, "felt('metode',")
     && !str_contains($sida, "felt('instruktor',"));
+// Tavla under Markedsforing lister utkast med status «godkjent», saa et
+// nyhetsbrev eller et innlegg ikke blir borte for det er sendt eller limt
+// inn. En artikkel som ligger ute er derimot brukt — men statusen ble aldri
+// satt til «publisert», saa den ble staaende under «Godkjent — klar til
+// bruk» for alltid. Eieren, 31. august: «disse ligger her og jeg kan trykke
+// publiser, men de er publisert».
+$ai = file_get_contents(__DIR__ . '/../api/admin/ai.php');
+sjekk('et utkast som publiseres blir merket publisert',
+    str_contains($ai, "'status'      => \$utNaa ? 'publisert' : 'godkjent',")
+    && str_contains($ai, "DB::oppdater('ai_utkast', ['status' => 'publisert'], ['id' => \$id]);"));
+// Tavla henter fortsatt bare «godkjent» — det er den som er gjorelista.
+sjekk('… og tavla lister bare det som ikke er brukt ennaa',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/marked.php'),
+                 "FROM ai_utkast WHERE status = 'godkjent' ORDER BY id DESC LIMIT 20"));
+// Migrasjon 108 rydder dem som alt laa ute. Bare utkast som peker paa en
+// artikkel som faktisk er publisert — et utkast med en kladd bak seg har
+// fortsatt noe ugjort.
+sjekk('… og de som alt laa ute er ryddet',
+    str_contains(file_get_contents(__DIR__ . '/../db/migrations/108_publiserte_utkast_er_ferdige.sql'),
+                 "WHERE u.status = 'godkjent'\n    AND a.status = 'publisert';"));
+
 // Kursbeviset leste «courses.instruktor», et fritekstfelt ingen annen del av
 // systemet bruker. Eieren, 31. august: «dersom noen andre holder kurset saa er
 // vel dette valgt i kursoppsettet? Saa da henter det her infra» — og «fiks

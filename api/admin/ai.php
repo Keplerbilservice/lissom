@@ -559,11 +559,22 @@ switch ($handling) {
 
         $doptOm = $resultat !== null && isset($tittel) && $tittel !== (string) $u['tittel'];
 
-        DB::oppdater('ai_utkast', ['status' => 'godkjent', 'resultat_id' => $resultat], ['id' => $id]);
-        revider('ai_godkjent', 'ai', $id, ['type' => $u['type']]);
-
         // Bad hun om at den skulle ut med det samme, gaar den ut naa.
         $utNaa = !empty($kropp['publiser']) && $resultat !== null;
+
+        // «Godkjent» betyr «denne vil jeg ha, men den er ikke brukt ennaa» —
+        // og tavla lister nettopp dem, saa et nyhetsbrev eller et innlegg
+        // ikke blir borte for det er sendt eller limt inn. En artikkel som
+        // ligger ute ER brukt. Ble den staaende som godkjent, laa den under
+        // «Godkjent — klar til bruk» for alltid, og eieren maatte lure paa
+        // hva han skulle gjore med den. Han gjorde det, 31. august: «disse
+        // ligger her og jeg kan trykke publiser, men de er publisert».
+        DB::oppdater('ai_utkast', [
+            'status'      => $utNaa ? 'publisert' : 'godkjent',
+            'resultat_id' => $resultat,
+        ], ['id' => $id]);
+        revider('ai_godkjent', 'ai', $id, ['type' => $u['type']]);
+
         if ($utNaa) {
             $publiser($resultat);
         }
@@ -609,6 +620,9 @@ switch ($handling) {
                      . 'Beskjeder, og et innlegg limes inn i kanalen selv.');
         }
         $publiser((int) $u['resultat_id']);
+        // Utkastet er ferdig behandlet naar artikkelen ligger ute. Uten dette
+        // ble det staaende under «Godkjent — klar til bruk» etterpaa.
+        DB::oppdater('ai_utkast', ['status' => 'publisert'], ['id' => $id]);
         revider('ai_publisert', 'ai', $id, ['artikkel' => (int) $u['resultat_id']]);
         Svar::ok(['beskjed' => 'Publisert. Artikkelen ligger ute på nettsiden nå.',
                   'artikkelId' => (int) $u['resultat_id']]);

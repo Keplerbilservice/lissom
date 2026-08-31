@@ -25954,10 +25954,16 @@ class Component extends DCLogic {
               // bare 200 piksler synlig: eieren, 31. august, «pop up, maa
               // aapnes lenger opp saa jeg ser skjermen». Der starter den naa
               // oeverst, tolv piksler ned, uansett hvor du trykket.
+              // «overscrollBehavior: contain» stopper rullinga i ruta.
+              // Uten den fortsetter fingeren ned i sida bak naar ruta er
+              // rullet helt til topps — eieren, 31. august: «jeg faar ikke
+              // scrollet tilbake, da virker det som siden under er den som
+              // scroller». Det er nettopp det som skjer.
               klKursRedStil: this.erSmal()
                 ? {
                     position: 'fixed', zIndex: 78, left: '12px', top: '12px',
                     width: 'calc(100vw - 24px)', maxHeight: '78vh', overflow: 'auto',
+                    overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
                     background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
                     borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
                   }
@@ -25966,6 +25972,7 @@ class Component extends DCLogic {
                     left: Math.max(12, Math.min((pos.x || 320), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 432)) + 'px',
                     top: Math.max(12, Math.min((pos.y || 90), (typeof window !== 'undefined' ? window.innerHeight : 800) - 200)) + 'px',
                     width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',
+                    overscrollBehavior: 'contain',
                     background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
                     borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
                   },

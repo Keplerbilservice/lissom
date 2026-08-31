@@ -4089,6 +4089,12 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
     && !str_contains($sida, "felt('passerNivaa',")
     && !str_contains($sida, "felt('metode',")
     && !str_contains($sida, "felt('instruktor',"));
+// Eieren, 31. august: «jeg faar ikke scrollet tilbake, da virker det som
+// siden under er den som scroller». Det er nettopp det som skjer: naar ruta
+// er rullet helt til topps, fortsetter fingeren ned i sida bak.
+sjekk('rullinga stopper i ruta, den gaar ikke ned i sida bak',
+    substr_count($sida, "overscrollBehavior: 'contain',") === 2);
+
 // Tavla under Markedsforing lister utkast med status «godkjent», saa et
 // nyhetsbrev eller et innlegg ikke blir borte for det er sendt eller limt
 // inn. En artikkel som ligger ute er derimot brukt — men statusen ble aldri

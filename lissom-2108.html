@@ -17958,7 +17958,9 @@ class Component extends DCLogic {
       beskrivelse: k.om || '',
       bekreftelse: k.bekreftelse || '',
       instruktor: k.instruktor || '',
-      sms: k.sms !== false,
+      // «!== false» gjor undefined til paa. SMS skal vaere av med mindre
+      // noen uttrykkelig har slaatt den paa.
+      sms: k.sms === true,
       status: k.status,
       okter: datoer.map(d => {
         const pad = (n) => String(n).padStart(2, '0');
@@ -22280,10 +22282,11 @@ class Component extends DCLogic {
       varighetTekst: this.state.kVarighetTekst || '',
       gjenstandIKassa: this.state.kGjenstandIKassa ? 'ja' : 'nei',
       mva: this.state.kMva ? '25 % mva' : 'Uten mva',
-      // Uten SMS-leverandoer staar haken av og lar seg ikke sette. Da skal
-      // lagring heller ikke skrive den av: valget paa kurset blir staaende
-      // til noen faktisk tar det.
-      sms: this.smsAktivert() ? (this.state.kSms === true) : (this.state.kSms !== false),
+      // SMS er av med mindre noen uttrykkelig har slaatt den paa. Her sto
+      // det «!== false» naar SMS-leverandoeren manglet, og det gjor undefined
+      // til paa — et nytt kurs ble lagret med paaminnelse uten at noen hadde
+      // bedt om det.
+      sms: this.state.kSms === true,
       datoer, okter,
       sekunder: parseFloat(this.state.kSekunder) || 5, fade: this.state.kFade !== false,
       gradient: this.state.kGradient || 'Ingen', styrke: this.state.kStyrke ?? 40,
@@ -25879,14 +25882,30 @@ class Component extends DCLogic {
               klKursRedEndretTekst: endret.length === 1
                 ? 'Du har endret «' + endret[0].etikett.toLowerCase() + '»'
                 : 'Du har endret ' + endret.length + ' felt',
-              klKursRedStil: {
-                position: 'fixed', zIndex: 78,
-                left: Math.max(12, Math.min((pos.x || 320), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 432)) + 'px',
-                top: Math.max(12, Math.min((pos.y || 90), (typeof window !== 'undefined' ? window.innerHeight : 800) - 200)) + 'px',
-                width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',
-                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
-              },
+              // Ruta legger seg ved kortet paa en stor skjerm, saa du ser
+              // hvilket kurs du holder paa med.
+              //
+              // Paa telefonen er den full bredde uansett, og da kjoper det
+              // ingenting — det koster bare skjerm. Trykker du paa et kort
+              // midt paa sida, aapnet ruta der, og klemmen under garanterer
+              // bare 200 piksler synlig: eieren, 31. august, «pop up, maa
+              // aapnes lenger opp saa jeg ser skjermen». Der starter den naa
+              // oeverst, tolv piksler ned, uansett hvor du trykket.
+              klKursRedStil: this.erSmal()
+                ? {
+                    position: 'fixed', zIndex: 78, left: '12px', top: '12px',
+                    width: 'calc(100vw - 24px)', maxHeight: '78vh', overflow: 'auto',
+                    background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                    borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
+                  }
+                : {
+                    position: 'fixed', zIndex: 78,
+                    left: Math.max(12, Math.min((pos.x || 320), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 432)) + 'px',
+                    top: Math.max(12, Math.min((pos.y || 90), (typeof window !== 'undefined' ? window.innerHeight : 800) - 200)) + 'px',
+                    width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',
+                    background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                    borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
+                  },
               klKursRedLukk: () => this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null }),
               klKursRedLagre: () => {
                 // Bare det som er endret, pluss de to serveren alltid trenger:
@@ -26797,7 +26816,7 @@ class Component extends DCLogic {
       pris: String(raa.pris == null ? '' : raa.pris),
       kapasitet: String(raa.kapasitet == null ? '' : raa.kapasitet),
       status: raa.status || 'kladd',
-      visUtenDato: jaNei(raa.visUtenDato), sms: jaNei(raa.sms !== false),
+      visUtenDato: jaNei(raa.visUtenDato), sms: jaNei(raa.sms === true),
       gjenstandIKassa: jaNei(raa.gjenstandIKassa),
       kursholderId: String(raa.kursholderId || 0),
       nivaaIntern: raa.nivaaIntern || 'nybegynner', nivaaTekst: raa.nivaaTekst || '',
@@ -26889,7 +26908,7 @@ class Component extends DCLogic {
     const i = liste.findIndex(k => k.navn === base);
     if (i < 0) { this.setState({ klValgtId: evt.id, klFlyttVis: false, klBekreftAvlys: false, klMeny: null }); return; }
     const k = liste[i];
-    this.setState({ side: 'admin', klMeny: null, klValgtId: null, kFokus: true, kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: (k.pris || '').replace(/[^\d ]/g, '').trim(), kPlasser: ((k.pameldte || '').split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms !== false, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) });
+    this.setState({ side: 'admin', klMeny: null, klValgtId: null, kFokus: true, kRed: true, kSteg: 1, kIndeks: i, kNavn: k.navn, kType: k.type, kPris: (k.pris || '').replace(/[^\d ]/g, '').trim(), kPlasser: ((k.pameldte || '').split('/')[1] || '8').trim(), kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '', kMva: k.mva === '25 % mva', kSms: k.sms === true, kGjentak: ['Ukentlig', 'Månedlig', 'Ingen', 'Egendefinert'].indexOf(k.gjentas) >= 0 ? k.gjentas : (k.gjentas === 'Engangs' ? 'Ingen' : 'Egendefinert'), kIntervall: k.gjentas, kAntall: '', kDatoer: (k.okter && k.okter.length ? k.okter.map(o => ({ dato: o.dato, fra: o.fra, til: o.til })) : [{ dato: '', fra: '', til: '' }]) });
     window.scrollTo(0, 0);
   }
 

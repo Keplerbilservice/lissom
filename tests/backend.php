@@ -4077,6 +4077,29 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Eieren, 31. august: «Jeg skal ikke ha sms paaminnelse som default noe
+// jaevla sted! Dette har jeg sagt saa mange ganger naa». Den kom tilbake
+// fordi den sto paa fem steder, ikke ett: kolonnen med DEFAULT 1, lagringa
+// som skrev «alt som ikke er nei blir 1», og tre steder i fronten som leste
+// «!== false» — og det gjor undefined til paa.
+sjekk('SMS slaas bare paa av et uttrykkelig ja',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
+                 "\$data['sms_paaminnelse'] = Foresporsel::tekst('sms') === 'ja' ? 1 : 0;"));
+sjekk('… og ingen steder i fronten gjoer undefined til paa',
+    preg_match('~sms[^\n]*!== false~i', $sida) !== 1
+    && str_contains($sida, 'sms: this.state.kSms === true,')
+    && str_contains($sida, "kSms: k.sms === true, kGjentak:")
+    && str_contains($sida, 'sms: k.sms === true,')
+    && str_contains($sida, 'sms: jaNei(raa.sms === true),'));
+// Kolonnen sto med DEFAULT 1 fra 001_init, saa enhver INSERT som ikke nevnte
+// den fikk SMS paa. Migrasjon 106 tar bade standarden og radene som ligger
+// inne.
+sjekk('… og kolonnen staar av som standard',
+    str_contains(file_get_contents(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
+                 'MODIFY COLUMN sms_paaminnelse TINYINT(1) NOT NULL DEFAULT 0;')
+    && str_contains(file_get_contents(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
+                 'UPDATE courses SET sms_paaminnelse = 0 WHERE sms_paaminnelse <> 0;'));
+
 // Eieren, 31. august, paa den offentlige kalenderen: «paa kallender, drop
 // inn skal ikke vises her». Drop-in gaar hver dag fra aatte til ti om
 // kvelden i plasser paa halvannen time — femtifire linjer i uka 36, mot ni

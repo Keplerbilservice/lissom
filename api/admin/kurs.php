@@ -363,8 +363,12 @@ switch ($handling) {
         if ($har('kapasitet')) {
             $data['kapasitet'] = max(1, min(999, Foresporsel::heltall('kapasitet', 8)));
         }
+        // Bare et uttrykkelig «ja» slaar paa SMS. Foer sto det «alt som
+        // ikke er 'nei' blir 1», og da holdt det at feltet manglet i kallet
+        // for at paaminnelsen ble slaatt paa. Den skal vaere et valg noen
+        // tar, ikke noe som skjer fordi ingen sa fra.
         if ($har('sms')) {
-            $data['sms_paaminnelse'] = Foresporsel::tekst('sms') === 'nei' ? 0 : 1;
+            $data['sms_paaminnelse'] = Foresporsel::tekst('sms') === 'ja' ? 1 : 0;
         }
         if ($har('om')) {
             $data['beskrivelse'] = Foresporsel::tekst('om') ?: null;

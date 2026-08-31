@@ -70,7 +70,9 @@ nullstill();
 
 echo "\n== Katalog ==\n";
 $kurs = DB::alle("SELECT * FROM courses WHERE status='publisert'");
-sjekk('kurs er publisert', count($kurs) >= 9, count($kurs) . ' stk');
+// Var 9. Drop-in er tatt ned og staar som kladd — se migrasjon 110 og
+// docs/DROP-IN.md — saa det publiserte er ett faerre.
+sjekk('kurs er publisert', count($kurs) >= 8, count($kurs) . ' stk');
 $pop = DB::en("SELECT * FROM courses WHERE slug='paint-on-pots'");
 // Paint on Pots kostet 690 — prisen med gjenstanden inkludert. Etter
 // migrasjon 074 og 075 er de to skilt: plassen er gratis, og gjenstanden
@@ -117,11 +119,25 @@ sjekk('kursteksten folger med det nye navnet',
 sjekk('bollekurset beholder sin egen tekst etter navnebyttet',
     Kursmal::forKurs(['tittel' => 'Lag din egen bolle', 'tema' => 'Plateteknikk'])['lagerDu']
         === 'To personlige boller i keramikk.');
+// ── Drop-in er tatt ned ─────────────────────────────────────────────
+//
+// Eieren, 31. august: «fjern det som har med drop in, i admin, min side, og
+// nettsiden globalt i alle steder, alle kalendere». Kurset staar igjen i
+// basen som kladd, saa ingenting er tapt — se docs/DROP-IN.md — men det skal
+// verken ligge ute eller lage nye datoer av seg selv.
+//
+// Her sto motsatt test: «drop-in har datoer», med 126 oekter. Den er snudd,
+// ikke slettet: skrus drop-in paa igjen, er det denne som skal snus tilbake.
+$dropinKurs = DB::en("SELECT status FROM courses WHERE slug='drop-in'");
+sjekk('drop-in ligger ikke ute',
+    $dropinKurs === null || (string) $dropinKurs['status'] !== 'publisert',
+    $dropinKurs === null ? 'kurset finnes ikke' : (string) $dropinKurs['status']);
 $dropin = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='drop-in'");
-// Antallet varierer: apningstidene i admin lager nye okter framover, og
-// «lag ut okter» rydder bort gamle uten paameldte. Det som betyr noe er at
-// drop-in har datoer i det hele tatt — uten dem kan ingen booke.
-sjekk('drop-in har datoer', (int) $dropin > 0, $dropin . ' okter');
+// Oekter noen har booket blir staaende — plassen er betalt. Det som ikke
+// skal finnes er nye datoer framover.
+$dropinFram = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c.id=cs.course_id
+                          WHERE c.slug='drop-in' AND cs.start_tid > UTC_TIMESTAMP()");
+sjekk('drop-in lager ingen nye datoer', (int) $dropinFram === 0, $dropinFram . ' okter framover');
 
 echo "\n== Kapasitet ==\n";
 // Testen laante en oekt fra katalogen (Paint on Pots). Da verkstedet endret
@@ -253,10 +269,16 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         }
     }
     // Kurs med sitt eget vindu foelger ikke aapningstidene i det hele tatt —
-    // det er hele poenget med dem. Drop-in staar 08-22 hver dag, ni plasser,
-    // uavhengig av om det gaar et kurs. De maales for seg lenger nede.
+    // det er hele poenget med dem. De maales for seg lenger nede.
+    //
+    // Bare publiserte teller. Apent::leggUtPaaApneTider() lager ikke oekter
+    // for en kladd, saa et upublisert kurs med vindu har ingen datoer aa
+    // maale. Drop-in var det eneste kurset med vindu, og staar naa som
+    // kladd — se migrasjon 110 og docs/DROP-IN.md.
     $medVindu = array_column(
-        DB::alle("SELECT id FROM courses WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL"),
+        DB::alle("SELECT id FROM courses
+                   WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL
+                     AND status = 'publisert'"),
         'id'
     );
     foreach (DB::alle('SELECT course_id, start_tid, slutt_tid FROM course_sessions
@@ -300,7 +322,8 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
     // aapningstida.
     if ($medVindu !== []) {
         $vindu = DB::en("SELECT id, fast_fra, fast_til FROM courses
-                          WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL LIMIT 1");
+                          WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL
+                            AND status = 'publisert' LIMIT 1");
         $fraKl = substr((string) $vindu['fast_fra'], 0, 5);
         $tilKl = substr((string) $vindu['fast_til'], 0, 5);
         $dagerMedPlass = [];
@@ -2112,10 +2135,10 @@ sjekk('attrappdialogene «Ny serie» og «Endre aapningstider» er borte',
 sjekk('kursserien lages for ekte',
     str_contains($sida, "handling: 'serie',")
     && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "case 'serie':"));
-// Aapningstidene redigeres for ekte fra drop-in-tidene og fra kalenderen.
+// Aapningstidene redigeres for ekte fra kalenderen. Skjermen «Drop-in» var
+// den andre veien inn; den er borte — se docs/DROP-IN.md.
 sjekk('aapningstidene redigeres for ekte',
-    str_contains($sida, 'aNyDropin: () => this.setState({ dRed: true')
-    && str_contains($sida, "this.klKall('/api/admin/apningstider.php'"));
+    str_contains($sida, "this.klKall('/api/admin/apningstider.php'"));
 
 // To tabeller fra 001_init som ingen SQL leser. «checkins» er tvillingen til
 // «check_ins» med understrek — den ekte — og «hour_usage» ble aldri bygget:
@@ -3346,9 +3369,6 @@ sjekk('… og tallfeltene har sin egen bredde',
     str_contains($sida2, 'grTallStil:'));
 sjekk('brikkefeltene i et rutenett tar hele raden',
     substr_count($sida2, 'grid-column: 1 / -1;') >= 8);
-// Sju ganger «Mandag» tar tre linjer paa en telefon.
-sjekk('drop-in bruker korte dagsnavn',
-    str_contains($sida2, "[['Mandag', 'Man'], ['Tirsdag', 'Tir'], ['Onsdag', 'Ons'], ['Torsdag', 'Tor'],"));
 
 // ── Kundelogoen paa forsida ────────────────────────────────────────────
 //
@@ -3378,7 +3398,7 @@ sjekk('… og workshop og plateteknikk under Haandbygging',
     str_contains($sida2, "'Workshop': 'Håndbygging', 'Plateteknikk': 'Håndbygging',"));
 // Kategorien maa kunne velges der kurs faktisk legges ut — hurtigskjemaet.
 sjekk('Haandbygging kan velges naar et kurs legges ut',
-    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay', 'Drop-in']")
+    str_contains($sida2, "nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay']")
     && str_contains($sida2, "'Håndbygging':   { type: 'Kurs',          tema: 'Håndbygging' , plasser: 12 },"));
 sjekk('… og lagres som tema «Håndbygging»',
     str_contains($sida2, "'Håndbygging': 'Håndbygging', 'Workshop': 'Håndbygging',"));
@@ -3430,8 +3450,10 @@ sjekk('… og den lagrede signaturen rettes med',
 // Eieren, 30. august: «du har lagt inn kategorier to ganger». To steder:
 // «Events» sto ved siden av de tre som utgjor Events, og «Metode» gjentok
 // Dreiing og Haandbygging rett under kategorien.
-sjekk('kategorivalget er fem brikker, uten dublettene',
-    str_contains($sida2, "return medInterne ? ute.concat(['Kun medlemmer', 'Drop-in']) : ute;")
+// Var fem. Drop-in er tatt ned — se docs/DROP-IN.md — saa den interne
+// brikka som var igjen er «Kun medlemmer».
+sjekk('kategorivalget er fire brikker, uten dublettene',
+    str_contains($sida2, "return medInterne ? ute.concat(['Kun medlemmer']) : ute;")
     && !str_contains($sida2, "'Sip & Clay':    { type: 'Sip & Clay',    tema: 'Sip & Clay' , plasser: 12 },"));
 sjekk('… og de tre arrangementene kjennes fortsatt igjen',
     str_contains($sida2, "'Sip & Clay': 'Events',")
@@ -3650,22 +3672,47 @@ sjekk('… med vakt mot tull',
     && str_contains($adropin, '$minutter < Apent::PLASS_MINUTTER'));
 sjekk('… og ukereglene legges ikke ut oppi vinduet',
     str_contains($adropin, "if ((\$kurs['fast_fra'] ?? null) !== null && (\$kurs['fast_til'] ?? null) !== null) {"));
+// ── Drop-in er tatt ned ────────────────────────────────────────────────
+//
+// Eieren, 31. august: «nå vil jeg at du fjerner det som har med drop in, i
+// admin, min side, og nettsiden globalt i alle steder, alle kalendere, og du
+// skal faktisk sjekke at det er borte».
+//
+// Her sto ni sjekker som passet paa at drop-in VAR paa plass: i kurslista, i
+// toppmenyen, paa medlemskapssida, med klokkeslettene fra basen. De er byttet
+// med det motsatte. Sjekkene er ikke slettet, for de er kartet tilbake: skal
+// drop-in opp igjen, er det disse som skal snus. Se docs/DROP-IN.md.
+//
+// Den ekte proeven er bin/dropinsjekk.mjs, som aapner skjermene i en
+// nettleser og leser hva som faktisk staar der. Dette er bare vakta paa
+// kildekoden, saa en gjeninnfoering ikke sklir inn ubemerket.
 sjekk('drop-in er ute av kursoversikten',
-    str_contains($sida2, "if (f !== 'Drop-in') {")
-    && str_contains($sida2, "liste = (liste || []).filter(k => (k.tema || k.level) !== 'Drop-in'"));
+    str_contains($sida2, "liste = (liste || []).filter(k => (k.tema || k.level) !== 'Drop-in'"));
 sjekk('… og ute av toppmenyen',
-    str_contains($sida2, "const lenker = ['Forside', 'Kurs', 'Events', 'Medlemskap', 'Butikk', 'Om oss',"));
-// Ruta staar igjen selv om knappen er borte: en delt lenke til /drop-in skal
-// fortsatt fore et sted.
-sjekk('… men /drop-in virker fortsatt',
-    str_contains($sida2, "'Drop-in': ['kurs', 'Drop-in'],"));
-sjekk('drop-in staar paa medlemskapssida',
-    str_contains($sida2, 'mdiTittel:') && str_contains($sida2, '>Book drop-in</x-import>'));
-// Klokkeslettene kommer fra kurset, ikke fra en tekst i malen. Ellers ville
-// sida lovt tider som ikke fantes.
-sjekk('… med klokkeslettene fra basen, ikke skrevet inn',
-    str_contains($sida2, "mdiTider: fra && til ? 'Hver dag ' + fra + '–' + til")
-    && str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'), "'fastFra' => substr((string) (\$k['fast_fra'] ?? ''), 0, 5),"));
+    str_contains($sida2, "const lenker = ['Forside', 'Kurs', 'Events', 'Medlemskap', 'Butikk', 'Om oss',")
+    && !str_contains($sida2, "'Drop-in': ['kurs', 'Drop-in'],"));
+sjekk('… og ruta /drop-in finnes ikke lenger',
+    !str_contains($sida2, "{ sti: '/drop-in',"));
+sjekk('… og adminskjermen /admin/drop-in er borte',
+    !str_contains($sida2, "{ sti: '/admin/drop-in',")
+    && !str_contains($sida2, "['Drop-in',       'admindropin'],"));
+sjekk('… og inngangen paa medlemskapssida er borte',
+    !str_contains($sida2, 'mdiTittel:') && !str_contains($sida2, '>Book drop-in</x-import>'));
+// Adminlistene viser kladder med vilje. Uten vakta i api/admin/kurs.php sto
+// «Drop-in i verkstedet» igjen i sidemenyen paa kalenderen, i Paameldte og
+// paa Oversikt lenge etter at resten var borte.
+sjekk('… og kurset gaar ikke ut av api/admin/kurs.php',
+    str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
+        "static fn(array \$k): bool => (string) \$k['type'] !== 'dropin'"));
+// Migrasjon 110 er selve bryteren: status = kladd stopper baade
+// Apent::leggUtPaaApneTider() og den offentlige katalogen med én rad.
+$m110 = file_get_contents(__DIR__ . '/../db/migrations/110_drop_in_tas_ned.sql');
+sjekk('… og migrasjon 110 setter kurset til kladd',
+    str_contains($m110, "SET status = 'kladd'"));
+// Ingenting slettes som ikke kan lages igjen: en oekt noen har booket blir
+// staaende, for plassen er betalt.
+sjekk('… uten aa roere oekter noen har booket',
+    str_contains($m110, "AND b.status <> 'avbestilt')"));
 
 // ── Ressursene deles av alle ───────────────────────────────────────────
 //
@@ -4315,10 +4362,16 @@ sjekk('… og postnummeret staar paa linja under',
 // med, ellers staar sporsmaalet der uten aa kunne endres, eller omvendt.
 sjekk('sporsmaalet om brenning staar paa sida',
     str_contains($sida, "{ q: 'Kan jeg bestille bare brenning hos dere?', a: 'Nei. Brenning er forbeholdt medlemmer.' },"));
+// Var nummer 12. De to spoersmaalene om drop-in er tatt bort — se
+// docs/DROP-IN.md — saa brenningsspoersmaalet er naa nummer 10.
 sjekk('… og kan endres under Nettsiden → Innhold',
-    str_contains($sida, "{ l: 'Spørsmål 12', v: 'Kan jeg bestille bare brenning hos dere?' },")
-    && str_contains($sida, "{ l: 'Svar 12', v: 'Nei. Brenning er forbeholdt medlemmer.', lang: true } ] }")
-    && str_contains($sida, "type: '12 spørsmål'"));
+    str_contains($sida, "{ l: 'Spørsmål 10', v: 'Kan jeg bestille bare brenning hos dere?' },")
+    && str_contains($sida, "{ l: 'Svar 10', v: 'Nei. Brenning er forbeholdt medlemmer.', lang: true } ] }")
+    && str_contains($sida, "type: '10 spørsmål'"));
+// Og ingen av dem handler om drop-in lenger.
+sjekk('… og ingen av spoersmaalene handler om drop-in',
+    !str_contains($sida, "{ q: 'Hvordan fungerer drop-in?'")
+    && !str_contains($sida, "{ q: 'Hva er inkludert i drop-in?'"));
 
 // bin/breddesjekk.mjs sitt foerste funn utenom feilen den ble laget for:
 // de tre kortene paa «Slik virker Vipps hos oss» naadde til 902 piksler paa

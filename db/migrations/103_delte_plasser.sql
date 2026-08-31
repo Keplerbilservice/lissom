@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS ressurser (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO ressurser (navn, antall, merknad) VALUES
-  ('Dreieskive', 8,  'Dreiekursene, Date Night og drop-in deler disse.'),
+  ('Dreieskive', 8,  'Dreiekursene og Date Night deler disse.'),
   ('Bordplass', 12, 'Håndbygging, maling og events.')
 ON DUPLICATE KEY UPDATE navn = navn;
 

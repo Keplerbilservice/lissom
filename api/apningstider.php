@@ -120,7 +120,7 @@ if (Foresporsel::tekst('visning') === 'tekst') {
     $linjer[] = '';
     if ($ut === []) {
         $linjer[] = 'Ingen dager har åpningstid de neste ' . DAGER_FRAM . ' dagene.';
-        $linjer[] = 'Det står ingen kursdatoer, drop-in-tider eller samlinger ute.';
+        \$linjer[] = 'Det står ingen kursdatoer eller samlinger ute.';
     }
     foreach ($ut as $d) {
         $linjer[] = ($d['idag'] ? 'I DAG  ' : '       ')
@@ -140,7 +140,7 @@ if (Foresporsel::tekst('visning') === 'tekst') {
         $linjer[] = '';
     }
     $linjer[] = 'Regelen: verkstedet er åpent fra den første økta begynner til den';
-    $linjer[] = 'siste slutter. Drop-in-tider teller med — det er en åpen dør.';
+    \$linjer[] = 'siste slutter.';
     $linjer[] = 'Avlyste datoer og upubliserte kurs teller ikke.';
 
     header('Content-Type: text/plain; charset=utf-8');
@@ -151,12 +151,12 @@ if (Foresporsel::tekst('visning') === 'tekst') {
 Svar::json([
     'dager'    => $ut,
     'dagerFram' => DAGER_FRAM,
-    // Staar verkstedet bemannet akkurat naa? Da er doeren aapen, og drop-in
-    // er en aapen doer — man kan komme innom uten aa booke.
+    // Staar verkstedet bemannet akkurat naa? Da er doeren aapen — man kan
+    // komme innom uten aa booke.
     'apenNa'    => $bemannet['apen'],
     'apenSiden' => $bemannet['siden'],
     // Én setning som forklarer hva lista er. Uten den staar det «10–19» og
     // noen kommer for aa handle midt i et kurs.
-    'forklaring' => 'Verkstedet er åpent når det går kurs. Butikken og drop-in '
-                  . 'har egne tider — se drop-in-siden eller ta kontakt.',
+    'forklaring' => 'Verkstedet er åpent når det går kurs. Butikken har '
+                  . 'egne tider — ta kontakt.',
 ]);

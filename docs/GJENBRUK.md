@@ -47,6 +47,20 @@ streng. Feilen oppstår først når nettleseren regner ut hvor mange spalter
 det er plass til. Krever lokal tjener og database, så den kan ikke ligge i
 GitHub-jobben.
 
+`bin/dropinsjekk.mjs` er den samme ideen brukt på noe helt annet: å passe
+på at noe som er *tatt bort*, blir borte. Drop-in lå i over hundre datoer
+spredt over kalenderen, kurslistene, Oversikt og adminkalenderen. Eieren
+måtte melde fra om hvert enkelt sted, ett om gangen, over flere dager —
+hver gang ble stedet han pekte på rettet, og hver gang sto det igjen fire
+andre. Skriptet åpner alle skjermene og leter etter ordet.
+
+To ting er verdt å ta med seg derfra. Det ene: mål **tallene**, ikke bare
+ordene. «Planlagte kurs» sto på 165 uten at ordet «Drop-in» sto noe sted på
+den siden — skaden var tallet, og første utgave av skriptet ga grønt på
+akkurat den skjermen med filteret slått av. Det andre: **prøv vakten mot
+den ekte feilen** før du stoler på den. Skru av filtrene og se at den går
+rød. En vakt som aldri har vært rød, vet du ingenting om.
+
 ---
 
 ## Del 1 — Markedsføringsmodulen

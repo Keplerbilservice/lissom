@@ -72,8 +72,7 @@ for (const r of STIER) {
   if (r.sti.includes(':')) continue;              // ruter med parameter tas av kurs-oppslaget
   let id = KART[r.side] || null;
   if (r.sti === '/events')  { id = 'events'; }
-  if (r.sti === '/drop-in') { id = 'dropin'; }
-  if (r.side === 'booking' && r.sti !== '/drop-in') { id = null; }
+  if (r.side === 'booking') { id = null; }
   if (id && SEO[id]) { stier[r.sti] = id; }
 }
 

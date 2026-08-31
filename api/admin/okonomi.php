@@ -146,7 +146,7 @@ $satt        = static fn(string $n): bool => (string) Config::hent($n, '') !== '
 
 $vippsProdukter = [
     [
-        'navn' => 'ePayment', 'hva' => 'Kurs, events, drop-in, butikk og gavekort',
+        'navn' => 'ePayment', 'hva' => 'Kurs, events, butikk og gavekort',
         'status' => $harBetaling > 0 ? 'I bruk' : ($satt('vipps_client_id') ? 'Satt opp — ikke brukt ennå' : 'Mangler nøkler'),
         'tone'   => $harBetaling > 0 ? 'success' : ($satt('vipps_client_id') ? 'neutral' : 'warning'),
     ],

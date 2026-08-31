@@ -29,7 +29,6 @@ $faste = [
     ['/kurs',                         '0.9', 'weekly'],
     ['/events',                       '0.9', 'weekly'],
     ['/kalender',                     '0.9', 'daily'],
-    ['/drop-in',                      '0.8', 'weekly'],
     ['/medlemskap',                   '0.8', 'monthly'],
     ['/butikk',                       '0.7', 'weekly'],
     ['/paint-on-pots',                '0.7', 'monthly'],

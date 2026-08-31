@@ -4077,6 +4077,26 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Ruta som aapnes fra kalenderen var bygget ved aa ramse opp hver kolonne
+// kurset har, og viste derfor ogsaa feltene eieren alt hadde bedt om aa bli
+// kvitt i kursoppsettet — «kort beskrivelse og dette lager du kan fjernes»
+// (30. august) og «rydd resten» om Godt aa vite. Da sier de to skjermene
+// forskjellige ting om det samme kurset.
+sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
+    !str_contains($sida, "felt('kortBeskrivelse',")
+    && !str_contains($sida, "felt('lagerDu',")
+    && !str_contains($sida, "felt('tillegg',")
+    && !str_contains($sida, "felt('passerNivaa',")
+    && !str_contains($sida, "felt('metode',"));
+// Metoden regnes ut av kategorien. Skrev du noe i feltet, ble det overskrevet
+// neste gang kurset ble lagret fra oppsettet.
+sjekk('… og metoden regnes fortsatt ut av kategorien',
+    str_contains($sida, 'metode: this.metodeAvKategori(this.state.kKategori, this.state.kTema, this.state.kMetode),'));
+// Teksten som ligger lagret skal bli staaende og vises som for. Det er
+// feltene som er borte, ikke innholdet.
+sjekk('… men lagringa sender verdiene videre urort',
+    str_contains($sida, "'nivaaIntern', 'nivaaTekst', 'kortBeskrivelse', 'lagerDu',"));
+
 // Eieren, 31. august: «Jeg skal ikke ha sms paaminnelse som default noe
 // jaevla sted! Dette har jeg sagt saa mange ganger naa». Den kom tilbake
 // fordi den sto paa fem steder, ikke ett: kolonnen med DEFAULT 1, lagringa

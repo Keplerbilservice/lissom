@@ -25853,21 +25853,36 @@ class Component extends DCLogic {
               felt('nivaaIntern', 'Nivå internt', 'valg', [['nybegynner', 'Nybegynner'], ['videregaende', 'Viderekomne']]),
               felt('nivaaTekst', 'Nivå slik kunden leser det', 'tekst'),
               felt('instruktor', 'Navn på kursbeviset', 'tekst'),
-              felt('kortBeskrivelse', 'Kort beskrivelse', 'lang'),
               felt('om', 'Beskrivelse', 'lang'),
               felt('punkter', 'Punkter, ett per linje', 'lang'),
               felt('laerer', 'Dette lærer du', 'lang'),
-              felt('lagerDu', 'Dette lager du', 'lang'),
               felt('medHjem', 'Dette får du med hjem', 'lang'),
               felt('ferdigTid', 'Når er det ferdig', 'lang'),
-              felt('tillegg', 'Tillegg', 'lang'),
-              felt('praktisk', 'Praktisk', 'lang'),
+              felt('praktisk', 'Praktisk informasjon', 'lang'),
               felt('passerHvem', 'Passer for', 'lang'),
-              felt('passerNivaa', 'Passer på nivå', 'lang'),
-              felt('metode', 'Metode', 'lang'),
               felt('allergener', 'Allergener', 'lang'),
               felt('bekreftelse', 'Tekst i bekreftelsen', 'lang'),
             ];
+            // ── Fem felter er tatt bort her ────────────────────────────
+            //
+            // Ruta var bygget ved aa ramse opp hver kolonne kurset har, og
+            // viste derfor ogsaa dem eieren alt hadde bedt om aa bli kvitt i
+            // kursoppsettet. Da sier de to skjermene forskjellige ting om det
+            // samme kurset. Eieren, 31. august: «hva er disse feltene godt
+            // for?» — og ja til aa gjore ruta lik oppsettet.
+            //
+            //   kortBeskrivelse  «kort beskrivelse og dette lager du kan
+            //   lagerDu           fjernes» — 30. august
+            //   tillegg          «en praktisk informasjon og en dette faar du
+            //                     med hjem, rydd resten» — samme dag
+            //   passerNivaa      staar ingen steder paa nettsida
+            //   metode           regnes ut av kategorien i metodeAvKategori().
+            //                    Skrev du noe her, ble det overskrevet neste
+            //                    gang kurset ble lagret fra oppsettet.
+            //
+            // Teksten som ligger lagret blir staaende og vises som for. Det
+            // er feltene som er borte, ikke innholdet — og lagringa sender
+            // fortsatt verdiene videre urort.
             const endret = felter.filter(f => (naa[f.nokkel] || '') !== (start[f.nokkel] || ''));
             const pos = this.state.klKursRedPos || {};
             return {

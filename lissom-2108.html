@@ -8641,8 +8641,11 @@ window.__resources = {
           <sc-if value="{{ ovPopVis }}" hint-placeholder-val="{{ false }}">
             <!-- Samme ramme som de andre kortene, og inne i det samme
                  rutenettet. Fargestripa paa toppen er borte; den gjorde
-                 dette panelet til noe annet enn kortene rundt. -->
-            <div style="grid-column: span 2; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+                 dette panelet til noe annet enn kortene rundt.
+
+                 Bredden foelger samme regel som ovSkylderRamme: to spalter
+                 der det er plass, hele rada paa telefonen. -->
+            <div style="{{ ovPopRamme }}">
               <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovPopPeriode }}</span>
@@ -31559,6 +31562,13 @@ class Component extends DCLogic {
         const storst = liste.reduce((n, k) => Math.max(n, k.plasser || 0), 0) || 1;
         return {
           ovPopVis: true,
+          // Samme regel som ovSkylderRamme: «span 2» der rutenettet har flere
+          // spalter, hele rada paa telefonen der det bare er én.
+          ovPopRamme: {
+            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+          },
           ovPopTom: liste.length === 0,
           ovPopPeriode: 'Siste tolv måneder',
           ovPopulaere: liste.map(k => ({
@@ -31590,12 +31600,15 @@ class Component extends DCLogic {
           // strek, samme runding. Eieren, 31. august: «jeg vil at kortene
           // skal vaere like som de andre kortene paa denne siden».
           //
-          // Kortet spenner over to spalter fordi radene inni er brede — navn,
-          // beloep og tre betalingsknapper. Ett spalte gjorde dem uleselige.
-          // Er rutenettet smalere enn to spalter, faller «span 2» tilbake til
-          // det som finnes; det er ikke en feil.
+          // Kortet spenner over hele rada fordi radene inni er brede — navn,
+          // beloep og tre betalingsknapper. Én spalte gjorde dem uleselige.
+          //
+          // Paa telefonen har rutenettet bare én spalte, og «span 2» lager da
+          // en spalte til: kortet ble 413 piksler paa en skjerm som er 390, og
+          // hele Oversikt maatte dras sidelengs. Det var min feil. Der spenner
+          // det naa over hele rada, som er én spalte.
           ovSkylderRamme: {
-            gridColumn: 'span 2',
+            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
             border: '1px solid ' + (liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'),
             borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',
             overflow: 'hidden',

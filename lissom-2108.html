@@ -30788,7 +30788,9 @@ class Component extends DCLogic {
         // ble aldri funnet.
         if (erKurs) {
           const kurs = kursData.filter(k => !intern(k));
-          const okter = this.state.adminOkter || [];
+          // Uten drop-in, som lista under. Sa kortet 165 mens lista viste
+          // noen faa titalls, telte de to hver sin ting.
+          const okter = (this.state.adminOkter || []).filter(o => this.oktIKurslista(o));
           // Kurs som har en dato framfor seg. Det er dette «Planlagte kurs»
           // betyr, og tallet paa kortet skal si det samme som lista viser.
           const idag = new Date(new Date().toDateString());
@@ -31689,7 +31691,13 @@ class Component extends DCLogic {
         if (side !== 'adminoversikt') return { ovKort: [] };
 
         const d = this.state.adminData || null;
-        const okter = (this.state.adminOkter || []);
+        // «Planlagte kurs» sto paa 165. Det er ikke kurs — det er drop-in.
+        // Drop-in gaar hver dag fra aatte til ti om kvelden i plasser paa
+        // halvannen time, og de 139 av dem druknet de faa titalls
+        // kursdatoene i tallet. Eieren, 31. august: «hvorfor har jeg drop inn
+        // under planlagte kurs?». Samme regel som i kurslistene — se
+        // oktIKurslista().
+        const okter = (this.state.adminOkter || []).filter(o => this.oktIKurslista(o));
         const deltakere = this.state.adminDeltakere || [];
         const varer = (this.state.adminProdukter || []);
         // Ventelista. Kortet staar bare naar noen faktisk venter.
@@ -31745,7 +31753,11 @@ class Component extends DCLogic {
           const n = new Date();
           const iso = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0')
                     + '-' + String(n.getDate()).padStart(2, '0');
-          return (this.state.adminOkter || []).filter(o => String(o.dato || '').slice(0, 10) === iso).length;
+          // Uten drop-in: ni plasser om dagen ville gjort tallet til et
+          // drop-in-tall. Programmet rett over teller det samme.
+          return (this.state.adminOkter || [])
+            .filter(o => this.oktIKurslista(o))
+            .filter(o => String(o.dato || '').slice(0, 10) === iso).length;
         })();
         // Kursdatoer som er gjennomfoert og ikke meldt fra om ennaa.
         const venterMelding = (this.state.ferdigbrentAdmin || []).filter(o => !o.meldt).length;

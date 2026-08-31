@@ -4163,7 +4163,13 @@ sjekk('… og datoregelen staar ett sted',
 // skjerm.
 sjekk('drop-in staar ikke i kurslistene i admin',
     str_contains($sida, 'oktIKurslista(o) {')
-    && substr_count($sida, '.filter(o => this.oktIKurslista(o))') === 2);
+    && substr_count($sida, '.filter(o => this.oktIKurslista(o))') === 5);
+// «Planlagte kurs» paa Oversikt sto paa 165. Det er ikke kurs — det er
+// drop-in. Eieren, 31. august: «hvorfor har jeg drop inn under planlagte
+// kurs?». Samme tall staar to steder, og begge maa telle det samme.
+sjekk('… heller ikke i tallene paa Oversikt og Kurs og deltakere',
+    str_contains($sida, "const okter = (this.state.adminOkter || []).filter(o => this.oktIKurslista(o));")
+    && str_contains($sida, '.filter(o => String(o.dato || \'\').slice(0, 10) === iso).length;'));
 
 // Eieren, 31. august: «jeg faar ikke scrollet tilbake, da virker det som
 // siden under er den som scroller». Det er nettopp det som skjer: naar ruta

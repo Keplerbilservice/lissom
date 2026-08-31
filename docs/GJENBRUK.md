@@ -37,6 +37,16 @@ felt uten kobling eller en løkke som peker på noe som ikke settes. De er
 skrevet mot denne malen, men reglene er generelle — ta dem med, de finner
 feilene ingen tester fanger.
 
+`bin/breddesjekk.mjs` er den ene som ikke leser tekst. Den åpner hver
+skjerm i en ekte nettleser på 390 px og ser om noe strekker seg forbi
+skjermkanten. Bakgrunnen: et panel fikk `grid-column: span 2`, og på
+telefonen — der rutenettet har én spalte — lagde det en spalte til.
+Panelet ble 413 piksler på en skjerm som er 390, og halve Oversikt var
+klippet bort. Ingen tekstsjekk kan ta den: `span 2` er en helt korrekt
+streng. Feilen oppstår først når nettleseren regner ut hvor mange spalter
+det er plass til. Krever lokal tjener og database, så den kan ikke ligge i
+GitHub-jobben.
+
 ---
 
 ## Del 1 — Markedsføringsmodulen

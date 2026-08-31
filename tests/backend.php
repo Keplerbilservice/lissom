@@ -2451,7 +2451,7 @@ sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
 // saa seg selv — hun holder sjelden kurs, og «Monica er default».
 sjekk('den som vanligvis holder kursene staar som spalte',
     str_contains($sida, 'klStandardHolder()')
-    && str_contains($sida, "const staarFast = kn => kn === 'Brenning' || kn === stdHolder;"));
+    && str_contains($sida, 'const staarFast = kn => kn === stdHolder;'));
 // Navnet skal ikke staa i koden. Settes en annen som standard, eller slutter
 // hen, foelger kalenderen med av seg selv.
 sjekk('standarden leses av registeret, ikke av et navn i koden',
@@ -4057,13 +4057,16 @@ sjekk('… og innstemplinga ogsaa',
 // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen» — og,
 // spurt: «hele kolonnen, jeg vil likevel legge til f eks brenning paa min
 // kalender, en kollone».
-sjekk('«Verkstedet»-kolonnen er borte, «Brenning» staar i stedet',
-    str_contains($sida, "this.klHoldere().concat(['Brenning'])")
-    && str_contains($sida, "e.type === 'brenning'"));
+sjekk('«Verkstedet»-kolonnen er borte, og ingen ny satt i stedet',
+    str_contains($sida, 'const alleKolonner = this.klHoldere().map(kn => {')
+    && !str_contains($sida, "concat(['Verkstedet'])")
+    && !str_contains($sida, "concat(['Brenning'])"));
 // Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
 // plasser om dagen i femten dager druknet alt annet.
-sjekk('… og drop-in staar ikke i kalenderen i det hele tatt',
-    str_contains($sida, "(e.holder === kn && e.type !== 'verksted' && e.type !== 'brenning')"));
+// Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
+// plasser om dagen i femten dager druknet alt annet.
+sjekk('… og alt uten kursholder staar ikke i kalenderen',
+    str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn && e.type !== 'verksted');"));
 // Eieren, med et bilde fra et annet verkstedsystem: han vil at «de kan ligge
 // oppaa hverandre». For delte de bredden mellom seg, og tre ting til samme
 // tid ga tre striper der ingenting var til aa lese.

@@ -25340,12 +25340,15 @@ class Component extends DCLogic {
     // kolonnen, jeg vil likevel legge til f eks brenning paa min kalender, en
     // kollone».
     //
-    // Kolonnen heter derfor «Brenning» og tar bare brenningene. Drop-in og
-    // innsjekkinga staar ikke lenger i kalenderen i det hele tatt.
-    const alleKolonner = this.klHoldere().concat(['Brenning']).map(kn => {
-      const evs = dagensAlle.filter(e => (kn === 'Brenning'
-        ? e.type === 'brenning'
-        : (e.holder === kn && e.type !== 'verksted' && e.type !== 'brenning')));
+    // Kolonnen er borte, og ingen ny satt i stedet. Foerst la jeg inn en som
+    // het «Brenning» — eieren hadde ikke bedt om den: «og har jeg bedt om en
+    // kolonne som heter brenning?». Nei.
+    //
+    // Spaltene er kursholderne, og bare de. Alt uten kursholder — drop-in,
+    // brenning, innstempling — staar ikke i kalenderen. Brenningene finnes
+    // under Verkstedet → Brenning.
+    const alleKolonner = this.klHoldere().map(kn => {
+      const evs = dagensAlle.filter(e => e.holder === kn && e.type !== 'verksted');
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
       const laneEnd = [];
@@ -25359,9 +25362,9 @@ class Component extends DCLogic {
       return {
         navn: kn,
         harNoe: evs.length > 0,
-        erPerson: kn !== 'Brenning',
-        apne: kn !== 'Brenning' ? () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }) : () => {},
-        navnStil: kn !== 'Brenning'
+        erPerson: true,
+        apne: () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }),
+        navnStil: true
           ? { appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--lissom-brown)', textDecoration: 'underline', textDecorationColor: 'var(--clay-300)', textUnderlineOffset: '3px' }
           : { appearance: 'none', border: 'none', background: 'transparent', cursor: 'default', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--text-heading)' },
         under: [kort.length ? kort.length + (kort.length === 1 ? ' økt' : ' økter') : 'Ingenting planlagt', vakt ? 'Vakt ' + vakt.tid + '–' + vakt.slutt : ''].filter(Boolean).join(' · '),
@@ -25431,7 +25434,7 @@ class Component extends DCLogic {
     // kunne gjemme seg — eller naar hun slaar dem paa selv.
     const stdHolder = this.klStandardHolder();
     const valgteHoldere = this.state.klVisHolder || {};
-    const staarFast = kn => kn === 'Brenning' || kn === stdHolder;
+    const staarFast = kn => kn === stdHolder;
     const visesNa = k => k.harNoe || (valgteHoldere[k.navn] === undefined
       ? staarFast(k.navn) : valgteHoldere[k.navn] === true);
     const valgteKolonner = alleKolonner.filter(visesNa);

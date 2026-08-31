@@ -142,8 +142,11 @@ samme runding, og spenner over to spalter fordi radene inni er brede.
 **«Verkstedet»-kolonnen i kalenderen er borte.** Den tok imot alt uten
 kursholder — brenningene, «N medlemmer innsjekket», og etter 30. august også
 hver eneste drop-in-time. Ni plasser om dagen i femten dager druknet resten.
-Kolonnen heter nå **Brenning** og tar bare brenningene. Drop-in og
-innsjekkingen står ikke lenger i kalenderen i det hele tatt.
+Kolonnen er borte, og ingen ny satt i stedet. Først la jeg inn en som het
+«Brenning» — den hadde eieren ikke bedt om: «og har jeg bedt om en kolonne som
+heter brenning?» Nei. Spaltene er kursholderne, og bare de. Alt uten
+kursholder — drop-in, brenning, innstempling — står ikke i kalenderen.
+Brenningene finnes under Verkstedet → Brenning.
 
 **Blokker til samme tid ligger oppå hverandre.** Før delte de bredden mellom
 seg, og tre ting samtidig ga tre striper der ingenting var til å lese. Eieren,

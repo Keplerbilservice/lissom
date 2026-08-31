@@ -32,7 +32,21 @@ final class Kursmal
      * Eieren ba om at den staar overalt: naar keramikken er klar, og at hun
      * sier fra. Den staar her ett sted, saa den er den samme i alle malene.
      */
-    public const HENTING = 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.';
+    /**
+     * Naar keramikken er klar, og hvor man ser det selv.
+     *
+     * Sto for som en hale paa «Dette faar du med hjem» — og samtidig i det
+     * egne feltet «Naar er den ferdig», som kom senere. Paa kurssida sto de
+     * to rett under hverandre og sa hver sin ting: malen «2–3 uker», teksten
+     * eieren selv hadde skrevet «2-4 uker». Eieren, 31. august: «2-4 uker er
+     * riktig».
+     *
+     * Naa staar den ett sted: her, som standard for «ferdigTid». «Dette faar
+     * du med hjem» sier hva du faar med deg, dette sier naar.
+     */
+    public const HENTING = 'Den er normalt klar til henting etter 2–4 uker. Du får beskjed når den er klar. '
+        . 'Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, '
+        . 'eller ved å logge inn på Min side.';
 
     /** Plateteknikk-innledningen, som gjelder alle unntatt dreiing og Date Night. */
     private const PLATE = 'Du får en grunnleggende innføring i plateteknikk og lærer hvordan du '
@@ -70,7 +84,8 @@ final class Kursmal
                 'lagerDu'         => 'Du lager din egen keramikk på dreieskiven. '
                     . 'Resultatet vil variere ut fra hva du får til og ønsker å lage.',
                 'medHjem'         => 'Du får med deg kreasjonen du klarer å lage på dreieskiven. '
-                    . 'Vi ferdigstiller, glaserer og brenner den for deg. ' . self::HENTING,
+                    . 'Vi ferdigstiller, glaserer og brenner den for deg.',
+                'ferdigTid'       => self::HENTING,
             ],
 
             'Plateteknikk' => [
@@ -84,8 +99,8 @@ final class Kursmal
                     . "seg frem, senke skuldrene og kose seg med den kreative prosessen.",
                 'laerer'          => self::PLATE . 'det du lager.',
                 'lagerDu'         => 'Ditt eget arbeid i keramikk.',
-                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg. '
-                    . self::HENTING,
+                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg.',
+                'ferdigTid'       => self::HENTING,
             ],
 
             'Events' => [
@@ -99,8 +114,8 @@ final class Kursmal
                 'laerer'          => 'Dere får en innføring i å forme leiren med hendene, '
                     . 'og i hvordan dere kan dekorere det dere lager.',
                 'lagerDu'         => 'Deres egne arbeider i keramikk.',
-                'medHjem'         => 'Dere får med dere det dere lager. Vi glaserer og brenner det for dere. '
-                    . self::HENTING,
+                'medHjem'         => 'Dere får med dere det dere lager. Vi glaserer og brenner det for dere.',
+                'ferdigTid'       => self::HENTING,
             ],
 
             'Paint on pots' => [
@@ -130,9 +145,10 @@ final class Kursmal
                 'lagerDu'         => 'Du maler den gjenstanden du velger når du kommer.',
                 'medHjem'         => 'Du reserverer plass ved bordet vårt for Paint on Pots. Selve '
                     . 'produktet velges når du kommer til verkstedet. Vi glaserer og brenner keramikken '
-                    . 'for deg etter at du har malt den. ' . self::HENTING,
+                    . 'for deg etter at du har malt den.',
                 'tillegg'         => 'Produktene prises individuelt. Aktuelle priser vises i verkstedet '
                     . 'og oppdateres fortløpende. Du velger selv produkt når du kommer.',
+                'ferdigTid'       => self::HENTING,
             ],
 
             'Drop-in' => [
@@ -141,8 +157,8 @@ final class Kursmal
                 'kortBeskrivelse' => 'Halvannen time i verkstedet der du jobber med dine egne prosjekter.',
                 'laerer'          => 'Du jobber selvstendig. Vi hjelper når du trenger det.',
                 'lagerDu'         => 'Det du selv vil lage.',
-                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg. '
-                    . self::HENTING,
+                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg.',
+                'ferdigTid'       => self::HENTING,
             ],
 
             '*' => [
@@ -151,8 +167,8 @@ final class Kursmal
                 'kortBeskrivelse' => 'Et hyggelig kurs med leire mellom hendene. Ingen erfaring nødvendig.',
                 'laerer'          => self::PLATE . 'det du lager.',
                 'lagerDu'         => 'Ditt eget arbeid i keramikk.',
-                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg. '
-                    . self::HENTING,
+                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg.',
+                'ferdigTid'       => self::HENTING,
             ],
         ];
     }
@@ -330,7 +346,7 @@ final class Kursmal
             'laerer'          => self::PLATE . 'bollene.',
             'lagerDu'         => 'To personlige boller i keramikk.',
             'medHjem'         => 'Du får med deg de to bollene du lager. Vi glaserer og brenner dem '
-                . 'for deg. ' . self::HENTING,
+                . 'for deg.',
         ];
 
         $egne = [
@@ -350,7 +366,8 @@ final class Kursmal
                     . 'bruke mønster, struktur og detaljer for å gjøre fatet personlig.',
                 'lagerDu'         => 'Ett stort fat i keramikk.',
                 'medHjem'         => 'Du får med deg det store fatet du lager. Vi glaserer og brenner det '
-                    . 'for deg. ' . self::HENTING,
+                    . 'for deg.',
+                'ferdigTid'       => self::HENTING,
             ],
         ];
 

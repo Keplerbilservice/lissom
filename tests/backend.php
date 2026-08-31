@@ -4089,6 +4089,29 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
     && !str_contains($sida, "felt('passerNivaa',")
     && !str_contains($sida, "felt('metode',")
     && !str_contains($sida, "felt('instruktor',"));
+// Hentetiden sto to steder, med to forskjellige tall. «Dette faar du med
+// hjem» endte paa en fast setning om henting — skrevet for feltet «Naar er
+// den ferdig» fantes — og paa kurssida sto de rett under hverandre og sa
+// «2–3 uker» og «2-4 uker». Eieren, 31. august: «2-4 uker er riktig».
+$mal = file_get_contents(__DIR__ . '/../app/lib/kursmal.php');
+sjekk('hentetiden staar bare i «Naar er den ferdig»',
+    substr_count($mal, 'self::HENTING') === 7
+    && !preg_match("~'medHjem'[^\n]*(\n\s*\.[^\n]*)*self::HENTING~", $mal));
+// Alle seks kategoriene maa ha den. Uten en standard staar feltet tomt, og
+// da sier kurssida ingenting om naar keramikken er klar.
+sjekk('… og alle seks kategoriene har den',
+    substr_count($mal, "'ferdigTid'       => self::HENTING,") === 7);
+// Og eieren ba om at det skal staa hvor man ser det selv.
+sjekk('… og teksten sier hvor man kan se det selv',
+    str_contains($mal, '2–4 uker')
+    && str_contains($mal, 'lissom.no/ferdigbrent')
+    && str_contains($mal, 'logge inn på Min side'));
+// Fire kurs hadde den innlimte teksten. Migrasjonen toemmer bare den
+// noeyaktige — har noen skrevet noe eget, blir det staaende.
+sjekk('… og de fire kursene med innlimt tekst foelger malen',
+    str_contains(file_get_contents(__DIR__ . '/../db/migrations/109_hentetiden_staar_ett_sted.sql'),
+                 "WHERE TRIM(ferdig_tid) = 'Klart til henting etter 2-4 uker. Vi gir beskjed.';"));
+
 // Eieren, 31. august: «jeg forstaar ikke alle de tomme feltene». Et tomt felt
 // betyr at nettsida viser standardteksten for kategorien — men ruta viste
 // bare en tom boks, mens kursoppsettet viser teksten som graa hjelpetekst.

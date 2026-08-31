@@ -3889,6 +3889,79 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     }
 }
 
+// ── Et planlagt kurs holder plassene sine ──────────────────────────────
+//
+// Eieren, 30. august: «det maa ikke vaere mulig aa booke drop in eller
+// dreieskive paa forhaand for medlemmer naar det er planlagt kurs. Da er de
+// ressursene booket og opptatt med kurs.»
+//
+// Spurt om et kurs med faerre plasser enn ressursen har: «kurset holder av
+// sine plasser». Et dreiekurs paa aatte tar altsaa alle aatte skivene, ogsaa
+// for noen har meldt seg paa.
+if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
+    $kurs = DB::en(
+        "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.ressurs_id,
+                COALESCE(cs.kapasitet, c.kapasitet) AS kap
+           FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+          WHERE cs.status = 'planlagt' AND cs.fra_apningstid = 0
+            AND c.ressurs_id IS NOT NULL AND cs.slutt_tid IS NOT NULL
+            AND DATE(cs.slutt_tid) = DATE(cs.start_tid)
+            AND cs.start_tid > UTC_TIMESTAMP()
+            -- Bare et kurs som faktisk har aapne plasser inni seg. Ellers
+            -- maaler proven ingenting, og gaar gjennom uten aa ha sett noe.
+            AND EXISTS (
+                SELECT 1 FROM course_sessions a
+                  JOIN courses ca ON ca.id = a.course_id
+                 WHERE a.fra_apningstid = 1 AND a.status = 'planlagt'
+                   AND ca.ressurs_id = c.ressurs_id
+                   AND a.start_tid >= cs.start_tid AND a.start_tid < cs.slutt_tid)
+          ORDER BY cs.start_tid LIMIT 1"
+    );
+    if ($kurs !== null) {
+        $tak = Booking::verkstedTak()[(int) $kurs['ressurs_id']] ?? 0;
+        // De aapne plassene som ligger inni kursets tid.
+        $aapne = DB::alle(
+            'SELECT cs.id FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+              WHERE cs.fra_apningstid = 1 AND cs.status = \'planlagt\'
+                AND c.ressurs_id = :r
+                AND cs.start_tid >= :s AND cs.start_tid < :e',
+            ['r' => (int) $kurs['ressurs_id'], 's' => (string) $kurs['start_tid'],
+             'e' => (string) $kurs['slutt_tid']]
+        );
+        if ($aapne !== [] && $tak > 0) {
+            $led = Booking::ledigePlasserFlere(array_column($aapne, 'id'));
+            $ventet = max(0, $tak - (int) $kurs['kap']);
+            sjekk('drop-in er stengt mens kurset gaar',
+                max($led) === $ventet,
+                'ventet ' . $ventet . ' ledige (' . $tak . ' minus kursets '
+                . $kurs['kap'] . '), fikk ' . max($led));
+        }
+        // Men kurset selv skal ikke sperre for seg selv: det er nettopp det
+        // som skjer om en tom drop-in-plass paa aatte holder plasstallet sitt
+        // ogsaa. Da tar de to livet av hverandre.
+        $egen = Booking::ledigePlasserFlere([(int) $kurs['id']])[(int) $kurs['id']];
+        sjekk('… men kurset sperrer ikke for seg selv',
+            $egen > 0, 'kurset sto med ' . $egen . ' ledige');
+
+        // Og kunden skal faa vite hvorfor. «Fullbooket» paa en drop-in-time
+        // der det ikke er én booking, men et kurs, gir en telefon fra en som
+        // ikke ser noen i verkstedet.
+        if (isset($aapne) && $aapne !== [] && ($ventet ?? 1) === 0) {
+            $sp = Booking::sperretAvAnnet(array_column($aapne, 'id'));
+            sjekk('… og en stengt drop-in-time sier at det gaar kurs',
+                in_array(true, $sp, true), 'ingen av dem er merket sperret');
+        }
+    }
+}
+
+sjekk('nettsida skriver «Kurs i verkstedet», ikke «Fullbooket»',
+    str_contains($sida2, "if (sperret && (isNaN(l) || l <= 0)) return 'Kurs i verkstedet';"));
+// Grunnen maa foelge med helt ut. Regnes den ett sted og vises et annet,
+// kommer de to til aa si forskjellige ting.
+sjekk('… og grunnen sendes med fra serveren',
+    str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
+                 "'sperret'  => \$sperretKart[(int) \$o['id']] ?? false,"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

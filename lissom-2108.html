@@ -15217,8 +15217,14 @@ class Component extends DCLogic {
    * og i medlemslista — og fire steder som regner hver for seg blir fire
    * steder som etter hvert sier noe forskjellig.
    */
-  ledigTekst(ledige, kapasitet) {
+  ledigTekst(ledige, kapasitet, sperret) {
     const l = parseInt(ledige, 10);
+    // Full fordi noe annet holder ressursen, ikke fordi noen har booket her.
+    // «Fullbooket» paa en drop-in-time der det ikke er én booking, men et
+    // dreiekurs som opptar skivene, er en liten loegn — og den gir en
+    // telefon fra en som ikke ser noen i verkstedet. Se «sperret» i
+    // api/kurs.php og Booking::sperretAvAnnet().
+    if (sperret && (isNaN(l) || l <= 0)) return 'Kurs i verkstedet';
     if (isNaN(l) || l <= 0) return 'Fullbooket';
     const kap = parseInt(kapasitet, 10) || 12;
 
@@ -15237,7 +15243,7 @@ class Component extends DCLogic {
   plasstekst(datoer, kapasitet) {
     const neste = (datoer || [])[0];
     if (!neste) return 'Ingen datoer ennå';
-    return this.ledigTekst(neste.ledige, neste.plasser || kapasitet);
+    return this.ledigTekst(neste.ledige, neste.plasser || kapasitet, neste.sperret);
   }
 
   medServerdata(k) {
@@ -20454,7 +20460,7 @@ class Component extends DCLogic {
       // Gaar kurset over flere dager, skal det staa paa datoen du velger —
       // ikke oppdages etter at du har betalt.
       tid: (d.samlinger || []).length > 1 ? (d.samlinger.length + ' samlinger') : '',
-      plasser: this.ledigTekst(d.ledige, d.plasser || kat.plasser),
+      plasser: this.ledigTekst(d.ledige, d.plasser || kat.plasser, d.sperret),
       full: d.ledige <= 0,
       valgt: i === 0,
     }));
@@ -29246,7 +29252,7 @@ class Component extends DCLogic {
                   date: d ? d.dato : 'Dato kommer',
                   duration: '',
                   price: k.prisOre === 0 ? 'Gratis' : k.pris,
-                  status: d ? this.ledigTekst(d.ledige, d.plasser || k.plasser) : 'Åpen påmelding',
+                  status: d ? this.ledigTekst(d.ledige, d.plasser || k.plasser, d.sperret) : 'Åpen påmelding',
                   image: FOTO + 'handbygging.jpg',
                   om: k.om || '',
                   timer: 'Nei, samlingen kommer i tillegg til timene dine',

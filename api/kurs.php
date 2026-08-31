@@ -99,6 +99,8 @@ if ($kursIder !== []) {
 $alleOkter  = array_merge(...(array_values($okterPerKurs) ?: [[]]));
 $oktIder    = array_map(static fn(array $o): int => (int) $o['id'], $alleOkter);
 $ledigeKart = Booking::ledigePlasserFlere($oktIder);
+// Maa leses etter ledigePlasserFlere: den regner det ut, denne henter svaret.
+$sperretKart = Booking::sperretAvAnnet($oktIder);
 $samlingKart = Samlinger::forOkter($oktIder);
 
 $ut = [];
@@ -294,6 +296,10 @@ foreach ($kurs as $k) {
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],
             'ledige'   => $ledigeKart[(int) $o['id']] ?? 0,
+            // Full fordi noe annet holder ressursen. En drop-in-time midt i
+            // et dreiekurs er ikke «fullbooket» — det gaar et kurs, og
+            // skivene staar dekket til det.
+            'sperret'  => $sperretKart[(int) $o['id']] ?? false,
             // Datoen kan ha faerre plasser enn kurset ellers.
             'plasser'  => (int) ($o['kapasitet'] ?: $k['kapasitet']),
             // Prisen kan avvike paa én dato. Tomt betyr «som kurset».

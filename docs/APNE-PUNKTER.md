@@ -132,6 +132,35 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Et planlagt kurs holder plassene sine.** Eieren: «det må ikke være mulig å
+booke drop in eller dreieskive på forhånd for medlemmer når det er planlagt
+kurs. Da er de ressursene booket og opptatt med kurs.»
+
+Før holdt et kurs bare de plassene som var *solgt*. Et dreiekurs 17–20 med tre
+påmeldte lot fem drop-in-plasser stå åpne — på skiver som var dekket til
+kurset. Nå holder kurset **plasstallet sitt**, ikke bare de solgte. Spurt om et
+kurs med færre plasser enn ressursen har: «kurset holder av sine plasser» — en
+Date Night for tre par tar seks av åtte skiver, og de to siste kan bookes.
+Samme regel per ressurs, også bordene.
+
+Målt onsdag 9. september, dreiekurs 17–20 med åtte plasser:
+
+| Drop-in | Ledige |
+| --- | --- |
+| 08:00–15:30 | 8 |
+| 17:00 og 18:30 | **0** |
+| 20:00 | 8 |
+
+**Ett unntak, og det er avgjørende:** de åpne plassene (drop-in og Paint on
+Pots) holder bare det som faktisk er booket. De er et tilbud, ikke en plan.
+Holdt de plasstallet sitt også, ville en tom drop-in-plass på åtte sperret
+dreiekurset ved siden av, og de to hadde tatt livet av hverandre.
+
+**Og kunden får vite hvorfor.** En drop-in-time som er stengt av et kurs sier
+nå «Kurs i verkstedet», ikke «Fullbooket». Det siste er en liten løgn når det
+ikke finnes én booking på timen — og den gir en telefon fra en som ikke ser
+noen i verkstedet.
+
 **Et flerdagerskurs sperret natta.** Funnet på lissom.no rett etter at delte
 ressurser ble lagt ut: drop-in torsdag klokka åtte sto med fem ledige uten at
 noe skjedde i huset.

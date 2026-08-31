@@ -256,20 +256,50 @@ final class Booking
                                      WHERE b.course_session_id = cs.id
                                        AND {$aktiv}), 0)
                     ) AS ledige,
-                    -- Alt som legger beslag paa den samme ressursen samtidig.
-                    -- Aatte skiver er aatte skiver enten de sitter paa et
-                    -- dreiekurs, en Date Night eller en drop-in.
+                    -- Alt ANNET som legger beslag paa den samme ressursen
+                    -- samtidig. Aatte skiver er aatte skiver enten de sitter
+                    -- paa et dreiekurs, en Date Night eller en drop-in.
+                    --
+                    -- Et planlagt kurs holder plasstallet sitt, ikke bare de
+                    -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
+                    -- mulig aa booke drop in eller dreieskive paa forhaand for
+                    -- medlemmer naar det er planlagt kurs. Da er de ressursene
+                    -- booket og opptatt med kurs.» Et dreiekurs med aatte
+                    -- plasser tar alle aatte skivene i den tida det gaar, ogsaa
+                    -- for noen har meldt seg paa — skivene staar dekket til
+                    -- kurset.
+                    --
+                    -- Med ett unntak, og det er avgjorende: de aapne plassene
+                    -- (fra_apningstid = 1 — drop-in og Paint on Pots) holder
+                    -- bare det som faktisk er booket. De er et tilbud, ikke en
+                    -- plan. Holdt de plasstallet sitt ogsaa, ville en tom
+                    -- drop-in-plass paa aatte sperret dreiekurset ved siden av,
+                    -- og de to hadde tatt livet av hverandre.
                     COALESCE((
-                        SELECT SUM(COALESCE(cs2.manuelt_opptatt, 0)
-                             + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
-                                          WHERE b2.course_session_id = cs2.id
-                                            AND {$aktiv2}), 0))
+                        SELECT SUM(
+                            GREATEST(
+                                CASE WHEN cs2.fra_apningstid = 1 THEN 0
+                                     ELSE COALESCE(cs2.kapasitet, c2.kapasitet) END,
+                                COALESCE(cs2.manuelt_opptatt, 0)
+                                + COALESCE((SELECT SUM(b2.antall) FROM bookings b2
+                                             WHERE b2.course_session_id = cs2.id
+                                               AND {$aktiv2}), 0)
+                            ))
                           FROM course_sessions cs2
                           JOIN courses c2 ON c2.id = cs2.course_id
                          WHERE cs2.status = 'planlagt'
+                           AND c2.status <> 'avlyst'
+                           AND cs2.id <> cs.id
                            AND c2.ressurs_id = c.ressurs_id
                            AND ({$iVeien})
-                    ), 0) AS brukt_ressurs
+                    ), 0) AS brukt_ressurs,
+                    -- Det oekta selv legger beslag paa. Her teller bare det
+                    -- som er booket: sporsmalet er hvor mange FLERE den kan ta
+                    -- imot, og da kan den ikke sperre for seg selv.
+                    COALESCE(cs.manuelt_opptatt, 0)
+                    + COALESCE((SELECT SUM(b.antall) FROM bookings b
+                                 WHERE b.course_session_id = cs.id
+                                   AND {$aktiv}), 0) AS eget_beslag
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt' AND cs.id IN ({$inn})"
@@ -279,9 +309,10 @@ final class Booking
             $ressurs = $r['ressurs_id'] === null ? 0 : (int) $r['ressurs_id'];
             if (!isset($tak[$ressurs])) {
                 $ut[(int) $r['id']] = (int) $r['ledige'];
+                self::$sperret[(int) $r['id']] = false;
                 continue;
             }
-            $igjen = $tak[$ressurs] - (int) $r['brukt_ressurs'];
+            $igjen = $tak[$ressurs] - (int) $r['brukt_ressurs'] - (int) $r['eget_beslag'];
 
             // Medlemmer booker ikke — de stempler inn naar de kommer. De
             // teller derfor bare paa en oekt som gaar akkurat naa; en booking
@@ -297,6 +328,13 @@ final class Booking
             }
 
             $ut[(int) $r['id']] = max(0, min((int) $r['ledige'], $igjen));
+            // Full fordi noe annet holder ressursen, ikke fordi noen har
+            // booket her. «Fullbooket» paa en drop-in-time der det ikke er én
+            // booking, men et kurs som opptar skivene, er en liten loegn — og
+            // den gir en telefon. Se ledigTekst() i nettsida.
+            self::$sperret[(int) $r['id']] =
+                $ut[(int) $r['id']] === 0 && (int) $r['eget_beslag'] === 0
+                && (int) $r['ledige'] > 0;
         }
 
         // En okt som ikke er «planlagt» — avlyst, eller som ikke finnes — har
@@ -308,6 +346,28 @@ final class Booking
 
         return $ut;
     }
+
+    /**
+     * Hvilke oekter som er stengt av noe annet enn sine egne bookinger.
+     *
+     * Fylles av ledigePlasserFlere(), som alt har regnet det ut. Kall den
+     * forst — ellers er svaret tomt, og et tomt svar betyr «ikke sperret»,
+     * som er den trygge antakelsen.
+     *
+     * @param list<int> $oktIder
+     * @return array<int, bool>
+     */
+    public static function sperretAvAnnet(array $oktIder): array
+    {
+        $ut = [];
+        foreach ($oktIder as $i) {
+            $ut[(int) $i] = self::$sperret[(int) $i] ?? false;
+        }
+        return $ut;
+    }
+
+    /** @var array<int, bool> */
+    private static array $sperret = [];
 
     /**
      * Grupperabatten som gjelder for et kurs med et gitt antall plasser.

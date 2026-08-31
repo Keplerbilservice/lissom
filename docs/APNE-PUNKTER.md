@@ -132,6 +132,28 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 30. august
 
+**Et flerdagerskurs sperret natta.** Funnet på lissom.no rett etter at delte
+ressurser ble lagt ut: drop-in torsdag klokka åtte sto med fem ledige uten at
+noe skjedde i huset.
+
+Et kurs over to kvelder ligger som **én rad**: «Nybegynner dreiekurs» står med
+9. september 17:00 → 10. september 20:00. Det er ikke syvogtyve timer i
+verkstedet, det er to kvelder á tre — akkurat den fella `Kursmal::varighetAv`
+allerede kjenner. Regnet rett fram holdt kurset tre dreieskiver opptatt
+gjennom natta og hele torsdag formiddag.
+
+Nå to prøver, ikke én: datoene må møtes, **og** klokkeslettene må møtes. To
+kvelder 17–20 er i veien for hverandre; en kveld 17–20 og en formiddag
+08–09:30 er det ikke, selv om raden spenner over begge. Målt etter fiksen:
+
+| | Onsdag 9.9 | Torsdag 10.9 |
+| --- | --- | --- |
+| 08:00–15:30 | 8 ledige | 8 ledige |
+| 17:00 og 18:30 | 5 ledige | 5 ledige |
+| 20:00 | 8 ledige | 8 ledige |
+
+Kursets andre kveld sperrer fortsatt, som den skal.
+
 ### Ressursene i verkstedet, delt av alle (migrasjon 103)
 
 Eieren: «må ta plasser fra de samme ressursene. Altså om det er kurs eller

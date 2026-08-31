@@ -3821,6 +3821,74 @@ sjekk('… og en ukjent ressurs stopper ikke innstemplinga',
     str_contains(file_get_contents(__DIR__ . '/../api/stempling.php'),
                  "\$rid = 0;"));
 
+// ── Et flerdagerskurs sperrer ikke natta ───────────────────────────────
+//
+// Et kurs over to kvelder ligger som ÉN rad: «Nybegynner dreiekurs» staar med
+// 9. september 17:00 → 10. september 20:00. Det er ikke syvogtyve timer i
+// verkstedet, det er to kvelder á tre.
+//
+// Regnet rett fram holdt kurset tre dreieskiver opptatt gjennom natta og hele
+// torsdag formiddag, og drop-in torsdag klokka aatte sto med fem ledige uten
+// at noe skjedde i huset. Sett paa lissom.no like etter at delte ressurser
+// ble lagt ut.
+if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
+    $fler = DB::en(
+        "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.ressurs_id
+           FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
+          WHERE cs.slutt_tid IS NOT NULL
+            AND DATE(cs.slutt_tid) > DATE(cs.start_tid)
+            AND TIME(cs.slutt_tid) > TIME(cs.start_tid)
+            AND c.ressurs_id IS NOT NULL
+          LIMIT 1"
+    );
+    if ($fler !== null) {
+        // Proven lager sin egen booking. Testdataene kan ha null, og da ville
+        // begge maalingene gitt fullt hus og sagt ingenting.
+        $kursId = (int) DB::verdi('SELECT course_id FROM course_sessions WHERE id = :s',
+                                  ['s' => (int) $fler['id']]);
+        DB::kjor(
+            "INSERT INTO bookings (course_id, course_session_id, gjest_navn, gjest_epost,
+                                   antall, belop_ore, status)
+             VALUES (:c, :s, 'Flerdagersproeve', 'proeve@lissom.test', 3, 0, 'betalt')",
+            ['c' => $kursId, 's' => (int) $fler['id']]
+        );
+        // Plassene paa den samme ressursen, dagen etter at kurset begynner.
+        $andre = DB::alle(
+            'SELECT cs.id, cs.start_tid FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE c.ressurs_id = :r AND cs.id <> :s AND cs.status = \'planlagt\'
+                AND DATE(cs.start_tid) = DATE(:slutt)
+              ORDER BY cs.start_tid',
+            ['r' => (int) $fler['ressurs_id'], 's' => (int) $fler['id'],
+             'slutt' => (string) $fler['slutt_tid']]
+        );
+        if ($andre !== []) {
+            $led = Booking::ledigePlasserFlere(array_column($andre, 'id'));
+            $morgen = null;
+            $kveld = null;
+            foreach ($andre as $o) {
+                $kl = substr((string) $o['start_tid'], 11, 5);
+                if ($kl < substr((string) $fler['start_tid'], 11, 5)) {
+                    $morgen ??= $led[(int) $o['id']];
+                } else {
+                    $kveld ??= $led[(int) $o['id']];
+                }
+            }
+            $tak = Booking::verkstedTak()[(int) $fler['ressurs_id']] ?? 0;
+            if ($morgen !== null && $tak > 0) {
+                sjekk('formiddagen dagen etter er ledig, kurset gaar om kvelden',
+                    $morgen === $tak, 'sto med ' . $morgen . ' av ' . $tak);
+            }
+            // Men kvelden derpaa er kursets egen — den skal fortsatt sperre.
+            if ($kveld !== null && $tak > 0) {
+                sjekk('… men kvelden derpaa sperrer, den er kursets andre samling',
+                    $kveld < $tak, 'sto med ' . $kveld . ' av ' . $tak);
+            }
+        }
+        DB::kjor("DELETE FROM bookings WHERE gjest_navn = 'Flerdagersproeve'");
+    }
+}
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

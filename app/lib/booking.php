@@ -209,6 +209,39 @@ final class Booking
         $slutt  = 'COALESCE(cs.slutt_tid,  cs.start_tid  + INTERVAL 3 HOUR)';
         $slutt2 = 'COALESCE(cs2.slutt_tid, cs2.start_tid + INTERVAL 3 HOUR)';
 
+        // ── Naar to oekter er i veien for hverandre ──────────────────────
+        //
+        // Et flerdagerskurs ligger som ÉN rad: «Nybegynner dreiekurs» staar
+        // med 9. september 17:00 → 10. september 20:00. Det er ikke
+        // syvogtyve timer i verkstedet, det er to kvelder á tre — akkurat den
+        // fella Kursmal::varighetAv alt kjenner.
+        //
+        // Regnet rett fram holdt kurset tre dreieskiver opptatt gjennom natta
+        // og hele torsdag formiddag, og drop-in torsdag klokka aatte sto med
+        // fem ledige uten at noe skjedde i huset. Sett paa lissom.no like
+        // etter at dette ble lagt ut.
+        //
+        // Derfor to proever, ikke én: datoene maa mötes, og klokkeslettene
+        // maa mötes. To kvelder 17-20 er i veien for hverandre; en kveld
+        // 17-20 og en formiddag 08-09:30 er det ikke, selv om raden spenner
+        // over begge.
+        //
+        // Krysser en oekt midnatt uten aa vare flere dager — 22:00 til 01:00
+        // — er klokkevinduet snudd. Da er den sammenhengende, og teller hele
+        // doegnet framfor aa regnes bort.
+        $vindu = static function (string $a, string $slutt): array {
+            return [
+                'fraDato'   => "DATE({$a}.start_tid)",
+                'tilDato'   => "DATE({$slutt})",
+                'fraKlokke' => "IF(TIME({$slutt}) > TIME({$a}.start_tid), TIME({$a}.start_tid), '00:00:00')",
+                'tilKlokke' => "IF(TIME({$slutt}) > TIME({$a}.start_tid), TIME({$slutt}), '23:59:59')",
+            ];
+        };
+        $v1 = $vindu('cs', $slutt);
+        $v2 = $vindu('cs2', $slutt2);
+        $iVeien = "{$v1['fraDato']} <= {$v2['tilDato']} AND {$v2['fraDato']} <= {$v1['tilDato']}"
+                . " AND {$v1['fraKlokke']} < {$v2['tilKlokke']} AND {$v2['fraKlokke']} < {$v1['tilKlokke']}";
+
         $tak = self::verkstedTak();
         $inneNa = self::inneNaa();
         $naa = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -235,8 +268,7 @@ final class Booking
                           JOIN courses c2 ON c2.id = cs2.course_id
                          WHERE cs2.status = 'planlagt'
                            AND c2.ressurs_id = c.ressurs_id
-                           AND cs2.start_tid < {$slutt}
-                           AND cs.start_tid  < {$slutt2}
+                           AND ({$iVeien})
                     ), 0) AS brukt_ressurs
                FROM course_sessions cs
                JOIN courses c ON c.id = cs.course_id

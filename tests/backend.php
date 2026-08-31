@@ -4062,11 +4062,14 @@ sjekk('«Verkstedet»-kolonnen er borte, og ingen ny satt i stedet',
     && !str_contains($sida, "concat(['Verkstedet'])")
     && !str_contains($sida, "concat(['Brenning'])"));
 // Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
-// plasser om dagen i femten dager druknet alt annet.
-// Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
-// plasser om dagen i femten dager druknet alt annet.
-sjekk('… og alt uten kursholder staar ikke i kalenderen',
-    str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn && e.type !== 'verksted');"));
+// plasser om dagen i femten dager druknet alt annet. Foerst sila jeg dem bort
+// i dagsvisninga alene, og da stod ukesvisninga full av dem. Sila hoerer
+// hjemme der hendelsene hentes, saa gjelder den alle visningene.
+sjekk('drop-in siles bort der hendelsene hentes',
+    str_contains($sida, "const alle = this.klAlle(y, m)\n"
+        . "      .filter(e => e.type !== 'dropin' && e.type !== 'verksted' && e.type !== 'brenning')"));
+sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
+    str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn);"));
 // Eieren, med et bilde fra et annet verkstedsystem: han vil at «de kan ligge
 // oppaa hverandre». For delte de bredden mellom seg, og tre ting til samme
 // tid ga tre striper der ingenting var til aa lese.

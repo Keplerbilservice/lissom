@@ -25132,7 +25132,19 @@ class Component extends DCLogic {
     const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
     const modus = this.state.klFarge || 'type';
     const info = this.klTypeInfo(), hInfo = this.klHolderInfo();
-    const alle = this.klAlle(y, m).filter(e => !(e.holder && skjulH[e.holder]));
+    // Drop-in, brenning og innstempling staar ikke i kalenderen.
+    //
+    // Eieren, 31. august: «i kalenderen saa er det naa en kollone som heter
+    // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen, jeg
+    // vil ikke se drop in timene i min kallender».
+    //
+    // Forst tok jeg det i spaltene i dagsvisningen. Det var for langt ute:
+    // ukesvisningen tegner hendelsene selv, og der sto drop-in i hver eneste
+    // kolonne, hver nittiende minutt. Filtreringa hoerer hjemme her, der
+    // hendelsene hentes — da gjelder den alle visningene paa én gang.
+    const alle = this.klAlle(y, m)
+      .filter(e => e.type !== 'dropin' && e.type !== 'verksted' && e.type !== 'brenning')
+      .filter(e => !(e.holder && skjulH[e.holder]));
     const farge = e => (modus === 'holder' && e.holder ? (hInfo[e.holder] || info.verksted) : info[e.type]);
     const pill = (e, blokk) => {
       const f = farge(e);
@@ -25340,15 +25352,14 @@ class Component extends DCLogic {
     // kolonnen, jeg vil likevel legge til f eks brenning paa min kalender, en
     // kollone».
     //
-    // Kolonnen er borte, og ingen ny satt i stedet. Foerst la jeg inn en som
-    // het «Brenning» — eieren hadde ikke bedt om den: «og har jeg bedt om en
-    // kolonne som heter brenning?». Nei.
+    // Kolonnen «Verkstedet» er borte, og ingen ny satt i stedet. Foerst la jeg
+    // inn en som het «Brenning» — eieren hadde ikke bedt om den: «og har jeg
+    // bedt om en kolonne som heter brenning?». Nei.
     //
-    // Spaltene er kursholderne, og bare de. Alt uten kursholder — drop-in,
-    // brenning, innstempling — staar ikke i kalenderen. Brenningene finnes
-    // under Verkstedet → Brenning.
+    // Spaltene er kursholderne, og bare de. Det som ikke har en kursholder er
+    // alt filtrert bort der hendelsene hentes — se «alle» over.
     const alleKolonner = this.klHoldere().map(kn => {
-      const evs = dagensAlle.filter(e => e.holder === kn && e.type !== 'verksted');
+      const evs = dagensAlle.filter(e => e.holder === kn);
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
       const laneEnd = [];

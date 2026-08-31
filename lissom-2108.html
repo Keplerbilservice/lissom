@@ -25692,7 +25692,13 @@ class Component extends DCLogic {
             : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '2' },
           klHovedStil: this.erSmal()
             ? { minWidth: 0, order: 1 }
-            : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-17px' : visning === 'uke' ? '17px' : 0 },
+            // Det hvite i kalenderen — rutenettet under kolonneoverskriftene —
+            // skal staa paa linje med det hvite til venstre, altsaa foerste
+            // kurskortet under «Alle kurs». Overskriftsrada er ulik hoey i de
+            // tre visningene, saa hver visning trenger sitt eget loft. Maalt
+            // paa 1500 px: dag laa 48 px for lavt, maaned 21 px for hoeyt,
+            // uka stemte alt.
+            : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px' },
           klSideAntall: this.kursData().length + ' kurs',
           klSideKurs: this.kursData().map(k => ({
             navn: k.navn,

@@ -4070,6 +4070,13 @@ sjekk('drop-in siles bort der hendelsene hentes',
         . "      .filter(e => e.type !== 'dropin' && e.type !== 'verksted' && e.type !== 'brenning')"));
 sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
     str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn);"));
+// Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
+// linje med det hvite i kallenderen». Overskriftsrada i kalenderen er ulik
+// hoey i de tre visningene, saa hver visning trenger sitt eget loft. Maalt paa
+// 1500 px: alle tre lander naa paa 496.
+sjekk('det hvite staar paa linje i alle tre visningene',
+    str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
+
 // Eieren, med et bilde fra et annet verkstedsystem: han vil at «de kan ligge
 // oppaa hverandre». For delte de bredden mellom seg, og tre ting til samme
 // tid ga tre striper der ingenting var til aa lese.

@@ -3030,7 +3030,7 @@ window.__resources = {
         <div style="max-width: var(--width-content); margin: 0 auto;">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Kurskalender</div>
           <h1 style="margin: 0 0 var(--space-4); font-size: var(--text-5xl);">Alt som skjer, uke for uke</h1>
-          <p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Kurs, events og drop-in samlet. Trykk på en oppføring for å booke.</p>
+          <p style="margin: 0; color: var(--text-body); font-size: var(--text-lg); max-width: 52ch; text-wrap: pretty;">Kurs og events samlet, uke for uke. Trykk på en oppføring for å booke.</p>
         </div>
       </section>
       <section style="background: var(--clay-100); padding: var(--space-12) var(--space-8) var(--section-y);">
@@ -15528,6 +15528,28 @@ class Component extends DCLogic {
     return uker[nr] || [];
   }
 
+  /**
+   * Hoerer kurset hjemme i den offentlige kalenderen?
+   *
+   * Drop-in gaar hver dag fra aatte om morgenen til ti om kvelden, i plasser
+   * paa halvannen time. I kalenderen ble det ni linjer om dagen, og en uke
+   * med ett kurs saa ut som en uke uten: kurset laa nederst under fjorten
+   * bleke drop-in-rader. Eieren, 31. august: «paa kallender, drop inn skal
+   * ikke vises her».
+   *
+   * Regelen maa gjelde begge steder. Brukes den bare i lista, teller
+   * okterEtterUke() fortsatt drop-in — og siden drop-in finnes hver eneste
+   * dag, ville kalenderen alltid aapnet paa inneverende uke og vist «ingen
+   * kurs» der det faktisk var noe uka etter.
+   *
+   * Det som bare gjelder medlemmer hoerer heller ikke hjemme paa en side
+   * hvem som helst kan se.
+   */
+  visesIKalenderen(k) {
+    const tema = (k.tema || '').toLowerCase();
+    return k.tema !== 'Kun for medlemmer' && k.type !== 'dropin' && tema !== 'drop-in';
+  }
+
   // Oktene i uke «nr», fordelt paa ukedager. Uketall regnes etter ISO, som
   // er det norske: uke 1 er den med forste torsdag i januar.
   ukeFraKatalog(nr) {
@@ -15544,7 +15566,7 @@ class Component extends DCLogic {
     const dager = DAG.map(d => ({ dag: d, dato: '', poster: [] }));
 
     (this.state.katalog || []).forEach(k => {
-      if (k.tema === 'Kun for medlemmer') return;
+      if (!this.visesIKalenderen(k)) return;
       (k.datoer || []).forEach(o => {
         if (!o.startUtc) return;
         const d = iOslo(new Date(String(o.startUtc).replace(' ', 'T') + 'Z'));
@@ -15599,7 +15621,7 @@ class Component extends DCLogic {
     const naa = new Date();
     const uker = [];
     (this.state.katalog || []).forEach(k => {
-      if (k.tema === 'Kun for medlemmer') return;
+      if (!this.visesIKalenderen(k)) return;
       (k.datoer || []).forEach(o => {
         if (!o.startUtc) return;
         const d = new Date(String(o.startUtc).replace(' ', 'T') + 'Z');
@@ -17102,13 +17124,13 @@ class Component extends DCLogic {
     kalender: {
       fokus: 'kurskalender keramikk Tønsberg',
       tittel: 'Kurskalender | Lissom Keramikk i Tønsberg',
-      meta: 'Alt som skjer i keramikkverkstedet på Teie, uke for uke: kurs, events og drop-in. Se hvilke datoer som har ledige plasser og book direkte.',
+      meta: 'Alt som skjer i keramikkverkstedet på Teie, uke for uke: kurs og events. Se hvilke datoer som har ledige plasser og book direkte.',
       slug: 'kurskalender-keramikk',
       h1: 'Kurskalender for keramikk i Tønsberg',
       sekundare: 'ledige datoer, keramikkurs når, kalender Vestfold',
-      altTekst: 'Ukeoversikt over kurs og drop-in hos Lissom Keramikk',
+      altTekst: 'Ukeoversikt over kurs og events hos Lissom Keramikk',
       ogTittel: 'Kurskalender | Lissom Keramikk',
-      ogBeskrivelse: 'Kurs, events og drop-in samlet uke for uke. Trykk på en oppføring for å booke.',
+      ogBeskrivelse: 'Kurs og events samlet uke for uke. Trykk på en oppføring for å booke.',
       canonical: 'https://lissom.no/kalender',
       internlenker: 'Kurs, Drop-in, Medlemskap',
       schema: 'Event',

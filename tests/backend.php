@@ -4077,6 +4077,24 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Eieren, 31. august, paa den offentlige kalenderen: «paa kallender, drop
+// inn skal ikke vises her». Drop-in gaar hver dag fra aatte til ti om
+// kvelden i plasser paa halvannen time — femtifire linjer i uka 36, mot ni
+// kurs. Kursene laa nederst under dem.
+sjekk('drop-in staar ikke i den offentlige kalenderen',
+    str_contains($sida, 'visesIKalenderen(k) {')
+    && str_contains($sida, "return k.tema !== 'Kun for medlemmer' && k.type !== 'dropin' && tema !== 'drop-in';"));
+// Regelen maa gjelde begge steder. Brukes den bare i lista, teller
+// okterEtterUke() fortsatt drop-in — og siden drop-in finnes hver eneste dag,
+// ville kalenderen alltid aapnet paa inneverende uke.
+sjekk('… ogsaa naar det regnes ut hvilken uke den aapner paa',
+    substr_count($sida, 'if (!this.visesIKalenderen(k)) return;') === 2
+    && !str_contains($sida, "if (k.tema === 'Kun for medlemmer') return;"));
+// Sida lovet «kurs, events og drop-in samlet». Det stemte ikke lenger.
+sjekk('… og teksten lover ikke drop-in lenger',
+    !str_contains($sida, 'Kurs, events og drop-in samlet')
+    && str_contains($sida, 'Kurs og events samlet, uke for uke.'));
+
 // Eieren, 31. august, med et bilde av footeren paa telefon: «Nordre løkkevei
 // 15 paa en linje takk». Hele adressen sto som én streng, og i den smale
 // spalta brakk den midt i gatenavnet. Spalta er 151 piksler og gata trenger

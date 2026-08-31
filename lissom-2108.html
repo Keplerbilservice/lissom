@@ -14684,7 +14684,7 @@ const SIDEINNHOLD = {
   // «Spørsmål og svar/0/Spørsmål 1», og «Finn fram» rykket fra 2 til 1.
   // Migrasjon 083 flytter det som ligger lagret, saa ingen tekst gaar tapt.
   'Spørsmål og svar': [
-    { navn: 'Det folk lurer på', type: '11 spørsmål', synlig: 'Publisert', felter: [
+    { navn: 'Det folk lurer på', type: '12 spørsmål', synlig: 'Publisert', felter: [
       { l: 'Overskrift', v: 'Det folk lurer på' },
       { l: 'Undertekst', v: 'Finner du ikke svaret? Ring oss eller send en e-post, vi svarer raskt.', lang: true },
       { l: 'Spørsmål 1', v: 'Må jeg kunne noe om keramikk fra før?' },
@@ -14708,7 +14708,9 @@ const SIDEINNHOLD = {
       { l: 'Spørsmål 10', v: 'Hva er inkludert i drop-in?' },
       { l: 'Svar 10', v: 'Leire, verktøy, materialer og brenning av ett ferdig arbeid opptil 20 × 20 cm.', lang: true },
       { l: 'Spørsmål 11', v: 'Kan jeg spise og drikke av keramikken?' },
-      { l: 'Svar 11', v: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.', lang: true } ] }
+      { l: 'Svar 11', v: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.', lang: true },
+      { l: 'Spørsmål 12', v: 'Kan jeg bestille bare brenning hos dere?' },
+      { l: 'Svar 12', v: 'Nei. Brenning er forbeholdt medlemmer.', lang: true } ] }
   ],
   // Avbestillingsvilkaarene sto her som tre felter, og samtidig i teksten
   // paa Vilkaar-sida. Bare den siste vises. Serveren regner dessuten
@@ -36377,6 +36379,7 @@ class Component extends DCLogic {
         { q: 'Hvordan fungerer drop-in?', a: 'Halvannen time i verkstedet der du jobber med det du vil. Timene gjelder for økten og kan ikke overføres eller spares opp. Drop-in krever at du har gått kurs hos oss, eller at du kommer sammen med et aktivt medlem. Book og betal på nettsiden.' },
         { q: 'Hva er inkludert i drop-in?', a: 'Leire, verktøy, materialer og brenning av ett ferdig arbeid opptil 20 × 20 cm.' },
         { q: 'Kan jeg spise og drikke av keramikken?', a: 'Ja. Keramikk til mat og drikke brennes med godkjente glasurer på riktig temperatur. Dekorobjekter er ikke alltid matsikret — det står når det gjelder.' },
+        { q: 'Kan jeg bestille bare brenning hos dere?', a: 'Nei. Brenning er forbeholdt medlemmer.' },
         ].map((s, i) => ({ q: hent('Spørsmål ' + (i + 1), s.q), a: hent('Svar ' + (i + 1), s.a) }));
       })(),
       // «47 medlemmer» var et oppdiktet tall paa en offentlig side. Byttet med

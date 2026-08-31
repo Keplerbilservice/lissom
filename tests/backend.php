@@ -4077,6 +4077,17 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Eieren, 31. august: «kan du legge til paa sporsmaal og svar: Kan man
+// bestille kun brenning hos dere? Nei, det er forbeholdt medlemmer».
+// Standardteksten staar i malen og feltet i redigeringsskjemaet — begge maa
+// med, ellers staar sporsmaalet der uten aa kunne endres, eller omvendt.
+sjekk('sporsmaalet om brenning staar paa sida',
+    str_contains($sida, "{ q: 'Kan jeg bestille bare brenning hos dere?', a: 'Nei. Brenning er forbeholdt medlemmer.' },"));
+sjekk('… og kan endres under Nettsiden → Innhold',
+    str_contains($sida, "{ l: 'Spørsmål 12', v: 'Kan jeg bestille bare brenning hos dere?' },")
+    && str_contains($sida, "{ l: 'Svar 12', v: 'Nei. Brenning er forbeholdt medlemmer.', lang: true } ] }")
+    && str_contains($sida, "type: '12 spørsmål'"));
+
 // bin/breddesjekk.mjs sitt foerste funn utenom feilen den ble laget for:
 // de tre kortene paa «Slik virker Vipps hos oss» naadde til 902 piksler paa
 // en skjerm som er 390. «lx-cols4» er klassen som faar et rutenett til aa

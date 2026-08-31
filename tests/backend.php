@@ -4077,6 +4077,13 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// bin/breddesjekk.mjs sitt foerste funn utenom feilen den ble laget for:
+// de tre kortene paa «Slik virker Vipps hos oss» naadde til 902 piksler paa
+// en skjerm som er 390. «lx-cols4» er klassen som faar et rutenett til aa
+// falle til to spalter paa nettbrett og én paa telefon, og den manglet.
+sjekk('de tre Vipps-kortene faller til én spalte paa telefon',
+    str_contains($sida, '<div class="lx-cols4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); align-items: start;">'));
+
 // Eieren, 31. august, med et bilde fra «Frys av medlemskap» paa mobil: «se
 // pillene som er for store». Datofeltene sto stablet i full bredde fordi
 // kolonnen kreide 160 piksler — to fikk ikke plass. Maalt paa 390 px: to felt

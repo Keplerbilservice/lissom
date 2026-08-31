@@ -3290,7 +3290,12 @@ window.__resources = {
             </sc-for>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); align-items: start;">
+          <!-- «lx-cols4» er klassen som faar et rutenett til aa falle til to
+               spalter paa nettbrett og én paa telefon. Den manglet her, og da
+               stod «repeat(3, 1fr)» fast: paa en skjerm som er 390 piksler naadde
+               kortene til 902, og to av tre var klippet bort. bin/breddesjekk.mjs
+               fant det. -->
+          <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-6); align-items: start;">
 
             <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Samtykke til månedstrekk</div>

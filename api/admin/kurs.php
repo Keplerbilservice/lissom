@@ -457,12 +457,32 @@ switch ($handling) {
         // paa kurssida. Bare naar feltet er med — et skjema som ikke kjenner
         // bilder skal ikke toemme dem.
         //
-        // Bare filnavn vi selv har lagt ut: basename() klipper bort alt som
-        // ligner en sti eller en adresse utenfra.
+        // Bare bilder vi selv har lagt ut.
+        //
+        // Her sto bare basename(). Den klipper bort alt som ligner en sti — og
+        // et opplastet bilde ER en sti: billedvelgeren gir
+        // «api/bilde.php?artikkel=b8e795….jpg», og basename() gjorde det om
+        // til «bilde.php?artikkel=b8e795….jpg». Uten «api/» peker adressen paa
+        // ingenting, og ruteren svarte med hele nettsida i stedet for bildet.
+        //
+        // Eieren, 31. august: «bilde fra mitt nye kurs vises ikke». Bildet laa
+        // der hele tiden — 180 kB, hentbart paa den riktige adressen.
+        //
+        // To former slipper gjennom, og bare de: et opplastet bilde bak
+        // api/bilde.php, og et filnavn som ligger i rota. Samme vakt som
+        // api/admin/referanser.php, der den alt sto riktig.
         if (array_key_exists('bilder', Foresporsel::kropp())) {
             $rene = [];
             foreach ((array) (Foresporsel::kropp()['bilder'] ?? []) as $f) {
-                $navn = basename(trim((string) $f));
+                $raa = trim((string) $f);
+                if ($raa === '') {
+                    continue;
+                }
+                if (preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $raa) === 1) {
+                    $rene[] = $raa;
+                    continue;
+                }
+                $navn = basename($raa);
                 if ($navn !== '') {
                     $rene[] = mb_substr($navn, 0, 191);
                 }

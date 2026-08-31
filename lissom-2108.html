@@ -7505,7 +7505,18 @@ window.__resources = {
                 <button type="button" onClick="{{ kSeDatoene }}" style="appearance: none; border: 1px solid var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 7px 14px; font: var(--type-body-sm); font-weight: 600; color: var(--text-heading); white-space: nowrap;">{{ kSeDatoeneTekst }}</button>
               </sc-if>
             </div>
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-6);">{{ kTittel }} · Steg {{ kSteg }} av 3</div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ kTittel }}</div>
+            <!-- Stegene som brikker, ikke som «Steg 1 av 3».
+                 Eieren, 31. august: «finner ikke noe sted aa legge inn bilde
+                 naar jeg proever aa redigere et kurs som allerede er lagt
+                 ut». Bildene ligger i steg 3 — bak to trykk paa «Neste»,
+                 nederst i tolv seksjoner. At de fantes var ikke til aa vite.
+                 Naa staar de tre stegene med navn, og ett trykk tar deg dit. -->
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
+              <sc-for list="{{ kStegValg }}" as="sv" hint-placeholder-count="3">
+                <button type="button" onClick="{{ sv.velg }}" style="{{ sv.stil }}">{{ sv.navn }}</button>
+              </sc-for>
+            </div>
             <div style="display: flex; flex-direction: column; gap: var(--space-8); max-width: 680px;">
               <sc-if value="{{ kSteg1 }}" hint-placeholder-val="{{ true }}">
               <!-- Kursoppsettet i tolv seksjoner.
@@ -34526,6 +34537,23 @@ class Component extends DCLogic {
         background: this.state.kFade === false ? 'transparent' : 'var(--lissom-brown)',
         color: this.state.kFade === false ? 'var(--lissom-brown)' : 'var(--clay-50)',
       },
+      // De tre stegene som brikker. Bildene laa i steg 3, bak to trykk paa
+      // «Neste» nederst i tolv seksjoner, og at de fantes var ikke til aa
+      // vite. Navnene staar her, ikke bare tallene.
+      kStegValg: [[1, 'Kursoppsett'], [2, 'Dager'], [3, 'Bilder og video']].map(([n, navn]) => {
+        const paa = (this.state.kSteg ?? 1) === n;
+        return {
+          navn: n + ' · ' + navn,
+          velg: () => { this.setState({ kSteg: n }); this.rullTilKursoppsettet(); },
+          stil: {
+            appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+            padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+            border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+            background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+            color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+          },
+        };
+      }),
       kSteg: this.state.kSteg ?? 1,
       kSteg1: (this.state.kSteg ?? 1) === 1,
       kSteg2: (this.state.kSteg ?? 1) === 2,

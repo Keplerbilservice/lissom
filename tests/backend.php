@@ -3514,9 +3514,9 @@ sjekk('Kursveilederen vekter ikke lenger paa varighet',
 // neste saa kommer jeg hit, hva i helvete».
 sjekk('kursoppsettet har et feste aa rulle til',
     str_contains($sida2, 'id="kursoppsett"'));
-sjekk('… og «Neste» og «Tilbake» bruker det',
+sjekk('… og «Neste», «Tilbake» og stegbrikkene bruker det',
     str_contains($sida2, 'rullTilKursoppsettet() {')
-    && substr_count($sida2, 'this.rullTilKursoppsettet();') === 2);
+    && substr_count($sida2, 'this.rullTilKursoppsettet();') === 3);
 
 // ── Standardtekst per kategori ─────────────────────────────────────────
 //
@@ -3975,6 +3975,39 @@ sjekk('… og sier hvor mange plasser verkstedet har',
 // og ingenting ser ut til aa skje naar man trykker «Endre».
 sjekk('… og «Endre» ruller ned til skjemaet',
     str_contains($sida2, "this.rullTil('ressursskjema');"));
+
+// ── Kursbildet beholder adressen sin ───────────────────────────────────
+//
+// Eieren, 31. august: «bilde fra mitt nye kurs vises ikke».
+//
+// Bildet laa der hele tiden. Lagringa kjorte basename() paa verdien fra
+// billedvelgeren, og basename() tar siste ledd av en sti:
+// «api/bilde.php?artikkel=b8e795….jpg» ble til «bilde.php?artikkel=…».
+// Uten «api/» finnes ingen slik fil, og ruteren svarte med hele nettsida.
+// Maalt paa lissom.no: den klippede adressen ga 1,2 MB HTML, den hele ga
+// 180 kB image/jpeg.
+$akurs2 = file_get_contents(__DIR__ . '/../api/admin/kurs.php');
+sjekk('et opplastet kursbilde beholder api/-adressen',
+    str_contains($akurs2, "preg_match('~^api/bilde\\.php\\?artikkel=[A-Za-z0-9._-]{1,120}\$~', \$raa) === 1"));
+// Men en sti utenfra skal fortsatt klippes. Vakta er ikke fjernet, den er
+// gjort presis — samme regel som api/admin/referanser.php alt hadde.
+sjekk('… men en sti utenfra klippes fortsatt',
+    str_contains($akurs2, '$navn = basename($raa);'));
+$m105 = file_get_contents(__DIR__ . '/../db/migrations/105_kursbilder_far_adressen_sin.sql');
+sjekk('… og radene som alt er lagret rettes',
+    str_contains($m105, "SET bilde = CONCAT('api/', bilde)")
+    && str_contains($m105, "WHERE bilde LIKE 'bilde.php?artikkel=%'")
+    && str_contains($m105, "'\"bilde.php?artikkel=', '\"api/bilde.php?artikkel='"));
+
+// ── Stegene har navn ───────────────────────────────────────────────────
+//
+// Eieren: «finner ikke noe sted aa legge inn bilde naar jeg proever aa
+// redigere et kurs som allerede er lagt ut». Bildene ligger i steg 3 — bak to
+// trykk paa «Neste», nederst i tolv seksjoner. At de fantes var ikke til aa
+// vite av «Steg 1 av 3».
+sjekk('stegene i kursoppsettet har navn og kan trykkes',
+    str_contains($sida2, "kStegValg: [[1, 'Kursoppsett'], [2, 'Dager'], [3, 'Bilder og video']]")
+    && !str_contains($sida2, '· Steg {{ kSteg }} av 3'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -132,6 +132,29 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 31. august
 
+**Kursbildet fikk adressen sin tilbake (migrasjon 105).** Eieren: «bilde fra
+mitt nye kurs vises ikke».
+
+Bildet lå der hele tiden. Lagringa i `api/admin/kurs.php` kjørte `basename()`
+på verdien fra billedvelgeren — og `basename()` tar siste ledd av en sti.
+`api/bilde.php?artikkel=b8e795….jpg` ble til `bilde.php?artikkel=…`. Uten
+`api/` finnes ingen slik fil, og ruteren svarte med hele nettsida.
+
+Målt på lissom.no: den klippede adressen ga **1,2 MB HTML**, den hele ga
+**180 kB image/jpeg**. Bildet var aldri borte.
+
+Vakta er ikke fjernet, den er gjort presis: et opplastet bilde bak
+`api/bilde.php` slipper gjennom helt, en sti utenfra klippes som før. Samme
+regel som `api/admin/referanser.php` allerede hadde. `artikler.php` og
+`marked.php` lagrer verdien rått og var aldri rammet — bare kursbildene.
+
+**Stegene i kursoppsettet har fått navn.** Eieren: «finner ikke noe sted å
+legge inn bilde når jeg prøver å redigere et kurs som allerede er lagt ut».
+Bildene ligger i steg 3 — bak to trykk på «Neste», nederst i tolv seksjoner.
+At de fantes var ikke til å vite av «Steg 1 av 3». Nå står de tre stegene som
+brikker: **1 · Kursoppsett · 2 · Dager · 3 · Bilder og video**, og ett trykk
+tar deg dit.
+
 **Ressursene står øverst på skjermen sin.** Eieren, med skjermen åpen på
 telefonen: «jeg vil og se hvilke ressurser som ligger inne». Lista lå der, men
 under «Ny ressurs», som tok hele telefonskjermen — og da er den ikke der. Man

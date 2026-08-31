@@ -4133,8 +4133,15 @@ sjekk('… og blokkene ligger foran rutenettet',
 sjekk('de to panelene staar inne i kortrutenettet',
     strpos($sida2, 'id="ov-kortrutenett"') < strpos($sida2, '{{ ovSkylderVis }}'));
 sjekk('… med samme ramme som resten',
-    str_contains($sida2, "gridColumn: 'span 2',")
-    && str_contains($sida2, "grid-column: span 2; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg)"));
+    str_contains($sida2, "borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',")
+    && str_contains($sida2, "borderRadius: 'var(--radius-lg)', overflow: 'hidden',"));
+// «span 2» var min feil. Paa telefonen har rutenettet én spalte, og «span 2»
+// lager da en spalte til: panelene ble 413 piksler paa en skjerm som er 390,
+// og hele Oversikt maatte dras sidelengs. Under 760 piksler skal de spenne
+// over hele rada, over 760 over to spalter som for.
+sjekk('… og sprenger ikke telefonskjermen',
+    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 2
+    && !str_contains($sida2, 'grid-column: span 2;'));
 
 // ── Dra-kortene i kalenderen ───────────────────────────────────────────
 //

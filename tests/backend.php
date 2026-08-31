@@ -4131,6 +4131,21 @@ sjekk('… og sier om standarden brukes eller er overstyrt',
     str_contains($sida, "? 'Står tomt: nettsiden viser teksten over'")
     && str_contains($sida, ": 'Egen tekst. Den står foran den anbefalte.',"));
 
+// Eieren, 31. august: «paa disse kortene maa vi fjerne dato». Kortet baerer
+// bare den foerste av datoene kurset har, og det leses som om det er den
+// eneste — Nybegynner dreiekurs gaar 9. sep, 16. sep og 7. okt, og oktober
+// fantes ikke for den som saa paa lista.
+sjekk('kurskortene staar uten dato',
+    !str_contains($sida, 'title="{{ k.title }}" date="{{ k.date }}"')
+    && substr_count($sida, 'CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}"') === 3);
+// «Teksten onsdag 9 ….. endrer seg ikke til tross for at jeg velger en annen
+// dato». Linja over «Velg dato» sto paa kursets FOERSTE dato. Foerste forsoek
+// leste «valgtKurs.datoer» — feil liste; datovelgeren bruker ekteDatoer().
+sjekk('linja over «Velg dato» foelger datoen som er valgt',
+    str_contains($sida, 'const datoer = this.ekteDatoer() || k.datoer || [];')
+    && str_contains($sida, "(this.state.bDato && datoer.find(d => d && d.dato === this.state.bDato))")
+    && str_contains($sida, "String(d.dag || d.dato || '') === this.state.bDag"));
+
 // Eieren, 31. august: «hvorfor sorterer ikke paa dato som vi har snakket om?».
 // Lista ble sortert paa dato da den ble bygget, og saa kastet sorterKurs det
 // bort og stilte dem alfabetisk innenfor hver kategori: «Lag din egen bolle»

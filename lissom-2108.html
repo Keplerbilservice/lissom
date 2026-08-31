@@ -1599,7 +1599,17 @@ window.__resources = {
                knapp i stedet; kortene ligger uansett paa kurssiden. -->
           <div class="lx-kortgrid lx-hide-m" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
             <sc-for list="{{ kursForside }}" as="k" hint-placeholder-count="4">
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <!-- Uten dato.
+                   Kortet baerer bare den foerste av datoene kurset har, og
+                   det leses som om det er den eneste. Nybegynner dreiekurs
+                   gaar 9. september, 16. september og 7. oktober; kortet sa
+                   «onsdag 9. – torsdag 10. september», og oktober fantes
+                   ikke for den som saa paa lista. Eieren, 31. august: «paa
+                   disse kortene maa vi fjerne dato».
+                   Datoene staar inne paa kurset, der alle er med.
+                   CourseCard filtrerer bort tomme felt selv — se «meta» i
+                   ds-bundle.js — saa raden blir ikke staaende tom. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -1853,7 +1863,7 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
               </sc-for>
             </div>
           </sc-if>
@@ -2005,7 +2015,7 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.date }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
           </sc-for>
         </div>
       </section>
@@ -38637,9 +38647,27 @@ class Component extends DCLogic {
           { merke: 'Med hjem', verdi: kort(k.medHjem) },
         ].filter(f => f.verdi !== '');
       })(),
+      // Linja over «Velg dato»: naar kurset gaar, hvor lenge det varer og
+      // hvilket nivaa det er paa.
+      //
+      // Den sto paa «k.date» — kursets FOERSTE dato — og rikket seg ikke naar
+      // man valgte en annen. Eieren, 31. august: «teksten onsdag 9 ….. endrer
+      // seg ikke til tross for at jeg velger en annen dato». Han hadde valgt
+      // 16. september, og linja sa fortsatt 9.–10.
+      //
+      // Naa foelger den valget: den valgte tida foerst, saa den valgte dagen,
+      // og foerst naar ingenting er valgt, kursets foerste dato.
       bOppsummering: (() => {
         const k = this.state.valgtKurs || {};
-        return [(k.date || 'Flere datoer'), (k.duration || ''), (k.nivaaTekst || '')].filter(Boolean).join(' · ');
+        // Samme kilde som datovelgeren under bruker — ekteDatoer(), ikke
+        // «valgtKurs.datoer». Foerste forsoek leste feil liste, og da fant
+        // oppslaget aldri den valgte dagen.
+        const datoer = this.ekteDatoer() || k.datoer || [];
+        const valgt = (this.state.bDato && datoer.find(d => d && d.dato === this.state.bDato))
+          || (this.state.bDag && datoer.find(d => d && String(d.dag || d.dato || '') === this.state.bDag))
+          || null;
+        const naar = (valgt && valgt.dato) || k.date || 'Flere datoer';
+        return [naar, (k.duration || ''), (k.nivaaTekst || '')].filter(Boolean).join(' · ');
       })(),
       // «Kari · kursdeltaker i juni» og «Marte · utdrikningslag i mai» fantes
       // ikke. Jeg skrev dem inn da sida ble bygget, og de sto som ekte

@@ -132,6 +132,12 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 31. august
 
+**Hjertet etter navnet.** Eieren: «på oversikt så står det God morgen, Monica,
+kan du legge til logo hjertet bak navnet, men dette er kun på Monica». Det står
+nå der, og bare når fornavnet er Monica. Masken er `heart-logo-mask.png` —
+samme fil heroen bruker — så formen er logoens egen og ikke et hjerte fra en
+skrifttype. Fargen kommer fra designsystemet.
+
 **Kursbildet fikk adressen sin tilbake (migrasjon 105).** Eieren: «bilde fra
 mitt nye kurs vises ikke».
 

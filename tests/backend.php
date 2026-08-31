@@ -4009,6 +4009,19 @@ sjekk('stegene i kursoppsettet har navn og kan trykkes',
     str_contains($sida2, "kStegValg: [[1, 'Kursoppsett'], [2, 'Dager'], [3, 'Bilder og video']]")
     && !str_contains($sida2, '· Steg {{ kSteg }} av 3'));
 
+// ── Hjertet etter navnet ───────────────────────────────────────────────
+//
+// Eieren, 31. august: «paa oversikt saa staar det God morgen, Monica, kan du
+// legge til logo hjertet bak navnet, men dette er kun paa Monica».
+sjekk('hjertet staar bare naar Monica er logget inn',
+    str_contains($sida2, "adminHilsenHjerte: (this.state.vippsNavn || '').trim().split(/\\s+/)[0]")
+    && str_contains($sida2, ".toLowerCase() === 'monica',"));
+// Masken er den samme fila heroen bruker, saa formen er logoens og ikke et
+// hjerte fra en skrifttype.
+sjekk('… og formen er logoens egen',
+    str_contains($sida2, "mask-image: url('heart-logo-mask.png'); -webkit-mask-size: contain")
+    && is_file(__DIR__ . '/../heart-logo-mask.png'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

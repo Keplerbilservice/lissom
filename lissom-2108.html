@@ -8510,7 +8510,20 @@ window.__resources = {
         <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6) var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <div>
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ adminDagsdato }}</div>
-            <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">{{ adminHilsen }}</h1>
+            <!-- Hjertet fra logoen etter navnet.
+                 Eieren, 31. august: «kan du legge til logo hjertet bak
+                 navnet, men dette er kun paa Monica». Det er hennes verksted,
+                 og det staar bare naar det er hun som er logget inn.
+
+                 Masken er den samme fila heroen bruker, saa formen er logoens
+                 og ikke et hjerte fra en skrifttype. Fargen kommer fra
+                 designsystemet og folger med om paletten endres. -->
+            <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+              <span>{{ adminHilsen }}</span>
+              <sc-if value="{{ adminHilsenHjerte }}" hint-placeholder-val="{{ false }}">
+                <span aria-hidden="true" style="flex: 0 0 auto; display: inline-block; width: 0.72em; height: 0.72em; background: linear-gradient(150deg, var(--terracotta-500) 0%, var(--lissom-brown) 100%); -webkit-mask-image: url('heart-logo-mask.png'); mask-image: url('heart-logo-mask.png'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></span>
+              </sc-if>
+            </h1>
             <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ adminUnderTittel }}</div>
           </div>
         </div>
@@ -33674,6 +33687,11 @@ class Component extends DCLogic {
       // kan stemme.
       adminDagsdato: this.norskDagsdato(),
       adminHilsen: this.adminHilsen(),
+      // Hjertet staar bare for Monica. Sammenlignet paa fornavn og uten
+      // hensyn til store bokstaver: navnet kommer fra Vipps, og der staar
+      // det ikke alltid likt skrevet.
+      adminHilsenHjerte: (this.state.vippsNavn || '').trim().split(/\s+/)[0]
+        .toLowerCase() === 'monica',
       // Innstemplinga og ferien, flyttet hit fra menyen. Se stemplingPiller().
       ...(() => {
         const st = this.stemplingPiller();

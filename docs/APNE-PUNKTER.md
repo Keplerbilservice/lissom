@@ -132,6 +132,34 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ## Gjort 31. august
 
+**«Ikke betalt» og statistikken er kort som de andre.** De sto som to brede
+paneler over kortrutenettet, i en annen drakt — terrakotta stripe på toppen,
+egen ramme. Eieren: «jeg vil at de skal ha vært sitt kort, men ikke slike kort
+som i dag, jeg vil at kortene skal være like som de andre kortene på denne
+siden». De ligger nå inne i rutenettet med samme hvite flate, samme strek og
+samme runding, og spenner over to spalter fordi radene inni er brede.
+
+**«Verkstedet»-kolonnen i kalenderen er borte.** Den tok imot alt uten
+kursholder — brenningene, «N medlemmer innsjekket», og etter 30. august også
+hver eneste drop-in-time. Ni plasser om dagen i femten dager druknet resten.
+Kolonnen heter nå **Brenning** og tar bare brenningene. Drop-in og
+innsjekkingen står ikke lenger i kalenderen i det hele tatt.
+
+**Blokker til samme tid ligger oppå hverandre.** Før delte de bredden mellom
+seg, og tre ting samtidig ga tre striper der ingenting var til å lese. Eieren,
+med et bilde fra et annet verkstedsystem: de skal kunne «ligge oppå hverandre».
+Hver blokk står i full bredde, forskjøvet 14 piksler fra den under (9 i
+ukesvisning), og den forskjøvne ligger øverst.
+
+**Dra-kortene under «Alle kurs» er halvert og ligger to i bredden.** Seksten
+kort á nitti piksler var fjorten hundre piksler dra-liste før man nådde
+ventelista. Nå: åtte rader, og **VENTELISTE er synlig på samme skjerm**.
+Prisen er tatt av kortet — den hører til kurset og står ett klikk unna.
+
+**Hjertet er tegnet, ikke skalert.** Først brukte jeg `heart-logo-mask.png`
+som maske: 720 × 695 piksler krympet til 24, og kantene ble grumsete. Nå er
+det en SVG-kurve, skarp i enhver størrelse.
+
 ### De seks feilrapportene — alle seks var mine
 
 **To av dem: «Fikk ikke lastet img», `lissom.no/bilde.php?artikkel=b8e795…».**

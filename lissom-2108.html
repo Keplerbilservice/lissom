@@ -5509,20 +5509,29 @@ window.__resources = {
             </div>
             <div style="font-size: var(--text-xs); color: var(--text-muted);">Dra et kurs inn på en dato for å sette det opp.</div>
           </div>
-          <sc-for list="{{ klSideKurs }}" as="k" hint-placeholder-count="5">
+          <!-- To i bredden, og mye mindre.
+               Seksten kort á nitti piksler er fjorten hundre piksler
+               dra-liste for aa naa ventelista under. Eieren, 31. august:
+               «pillene under alle kurs paa kalenderoversikten maa bli mye
+               mindre, og det kan ligge to piller i bredden, slik at de som
+               kommer paa venteliste bli synlig».
+
+               Prisen staar ikke lenger paa kortet: den hoerer til kurset, og
+               den staar i kursoppsettet ett klikk unna. Her skal man finne
+               kurset og dra det. -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <sc-for list="{{ klSideKurs }}" as="k" hint-placeholder-count="6">
             <div onMouseDown="{{ k.ned }}" style="{{ k.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
-              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-2);">
-                <span style="font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--text-heading); min-width: 0;">{{ k.navn }}</span>
-                <span style="font-size: 13px; font-weight: 700; color: var(--text-heading); white-space: nowrap;">{{ k.pris }}</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px; margin-top: 3px;">
-                <span style="font-size: 13px; color: var(--text-muted);">{{ k.type }}</span>
+              <div style="font-size: 12px; font-weight: 700; color: var(--text-heading); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ k.navn }}</div>
+              <div style="display: flex; align-items: baseline; gap: 5px; font-size: 10px; color: var(--text-muted); overflow: hidden; white-space: nowrap;">
+                <span style="overflow: hidden; text-overflow: ellipsis;">{{ k.type }}</span>
                 <sc-if value="{{ k.ikkePub }}" hint-placeholder-val="{{ false }}">
-                  <span style="font-size: 10px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); border: 1px solid var(--terracotta-500); border-radius: var(--radius-pill); padding: 1px 8px;">Ikke publisert</span>
+                  <span style="flex: 0 0 auto; color: var(--terracotta-600); font-weight: 700;">Kladd</span>
                 </sc-if>
               </div>
             </div>
           </sc-for>
+          </div>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ mobNyttKurs }}" hint-size="auto,44px">Nytt kurs</x-import>
           <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 6px 2px 0;">
             <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Venteliste</span>
@@ -8521,7 +8530,18 @@ window.__resources = {
             <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
               <span>{{ adminHilsen }}</span>
               <sc-if value="{{ adminHilsenHjerte }}" hint-placeholder-val="{{ false }}">
-                <span aria-hidden="true" style="flex: 0 0 auto; display: inline-block; width: 0.72em; height: 0.72em; background: linear-gradient(150deg, var(--terracotta-500) 0%, var(--lissom-brown) 100%); -webkit-mask-image: url('heart-logo-mask.png'); mask-image: url('heart-logo-mask.png'); -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;"></span>
+                <!-- Tegnet, ikke skalert.
+                     Foerst brukte jeg heart-logo-mask.png som maske. Den er
+                     720 x 695 piksler og ble krympet til 24 — kantene ble
+                     grumsete, og eieren saa det med det samme: «hjertet bak
+                     monica er ikke saa pent, og det virker ikke som hele
+                     bildet kom med».
+
+                     En kurve er skarp i enhver stoerrelse, og den staar i
+                     fila i stedet for aa hentes over nett. -->
+                <svg aria-hidden="true" viewBox="0 0 24 22" style="flex: 0 0 auto; width: 0.66em; height: 0.66em; overflow: visible;">
+                  <path d="M12 21.2 3.3 12.5a5.8 5.8 0 0 1 0-8.2 5.8 5.8 0 0 1 8.2 0l.5.5.5-.5a5.8 5.8 0 0 1 8.2 0 5.8 5.8 0 0 1 0 8.2Z" fill="var(--terracotta-600)"></path>
+                </svg>
               </sc-if>
             </h1>
             <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ adminUnderTittel }}</div>
@@ -8563,6 +8583,13 @@ window.__resources = {
                skript oeverst i fila — dc bygger rutenettet paa nytt ved hver
                endring, og da maa lyttingen henge paa beholderen og ikke paa
                hvert kort. -->
+          <!-- «Ikke betalt» og statistikken laa her, over rutenettet, som to
+               brede paneler i en annen drakt enn kortene under. Eieren, 31.
+               august: «jeg vil at de skal ha vaert sitt kort, men ikke slike
+               kort som i dag, jeg vil at kortene skal vaere like som de andre
+               kortene paa denne siden». De staar naa inne i rutenettet, med
+               den samme ramma som resten. Se ovSkylderRamme og ovPopRamme. -->
+          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
           <!-- Ikke betalt.
                Plasser lagt inn for haand som staar som reservert: noen har
                faatt plassen, pengene er ikke kommet. Eieren, 29. august: han
@@ -8601,8 +8628,11 @@ window.__resources = {
                stoerste, saa forholdet mellom dem er til aa se og ikke bare
                til aa lese. -->
           <sc-if value="{{ ovPopVis }}" hint-placeholder-val="{{ false }}">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-5);">
-              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+            <!-- Samme ramme som de andre kortene, og inne i det samme
+                 rutenettet. Fargestripa paa toppen er borte; den gjorde
+                 dette panelet til noe annet enn kortene rundt. -->
+            <div style="grid-column: span 2; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+              <div style="padding: var(--space-5) var(--space-5) var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                 <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Statistikk · mest populære kurs</span>
                 <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ ovPopPeriode }}</span>
               </div>
@@ -8621,7 +8651,6 @@ window.__resources = {
             </div>
           </sc-if>
 
-          <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
             <sc-for list="{{ ovKort }}" as="k" hint-placeholder-count="9">
               <button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
@@ -25301,8 +25330,22 @@ class Component extends DCLogic {
     const pxTime = Math.max(40, Math.min(110, Math.floor((vh - 350) / ((bSluttMin - bStart) / 60))));
     this._klRange = { start: bStart, slutt: bSluttMin, px: pxTime };
     const bHoyde = (bSluttMin - bStart) / 60 * pxTime;
-    const alleKolonner = this.klHoldere().concat(['Verkstedet']).map(kn => {
-      const evs = dagensAlle.filter(e => (kn === 'Verkstedet' ? !e.holder || e.type === 'verksted' : (e.holder === kn && e.type !== 'verksted')));
+    // «Verkstedet» sto her og tok imot alt uten kursholder — brenningene,
+    // «N medlemmer innsjekket», og etter 30. august ogsaa hver eneste
+    // drop-in-time. Ni plasser om dagen i femten dager druknet resten.
+    //
+    // Eieren, 31. august: «i kalenderen saa er det naa en kollone som heter
+    // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen, jeg
+    // vil ikke se drop in timene i min kallender» — og, spurt: «hele
+    // kolonnen, jeg vil likevel legge til f eks brenning paa min kalender, en
+    // kollone».
+    //
+    // Kolonnen heter derfor «Brenning» og tar bare brenningene. Drop-in og
+    // innsjekkinga staar ikke lenger i kalenderen i det hele tatt.
+    const alleKolonner = this.klHoldere().concat(['Brenning']).map(kn => {
+      const evs = dagensAlle.filter(e => (kn === 'Brenning'
+        ? e.type === 'brenning'
+        : (e.holder === kn && e.type !== 'verksted' && e.type !== 'brenning')));
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
       const laneEnd = [];
@@ -25316,9 +25359,9 @@ class Component extends DCLogic {
       return {
         navn: kn,
         harNoe: evs.length > 0,
-        erPerson: kn !== 'Verkstedet',
-        apne: kn !== 'Verkstedet' ? () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }) : () => {},
-        navnStil: kn !== 'Verkstedet'
+        erPerson: kn !== 'Brenning',
+        apne: kn !== 'Brenning' ? () => this.setState({ klHolderVis: kn, klHBeskjed: '', klHSendtTil: null }) : () => {},
+        navnStil: kn !== 'Brenning'
           ? { appearance: 'none', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--lissom-brown)', textDecoration: 'underline', textDecorationColor: 'var(--clay-300)', textUnderlineOffset: '3px' }
           : { appearance: 'none', border: 'none', background: 'transparent', cursor: 'default', padding: 0, fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 'var(--text-base)', color: 'var(--text-heading)' },
         under: [kort.length ? kort.length + (kort.length === 1 ? ' økt' : ' økter') : 'Ingenting planlagt', vakt ? 'Vakt ' + vakt.tid + '–' + vakt.slutt : ''].filter(Boolean).join(' · '),
@@ -25353,12 +25396,24 @@ class Component extends DCLogic {
               position: 'absolute',
               top: (Math.max(0, p.s - bStart) / 60 * pxTime) + 'px',
               height: Math.max(34, (Math.min(p.sl, bSluttMin) - Math.max(p.s, bStart)) / 60 * pxTime - 4) + 'px',
-              left: 'calc(' + (p.lane * (100 / nLanes)) + '% + 5px)',
-              width: 'calc(' + (100 / nLanes) + '% - 10px)',
+              // Blokkene ligger oppaa hverandre, ikke ved siden av.
+              //
+              // For delte de bredden mellom seg: tre ting til samme tid ga tre
+              // smale striper der ingenting var til aa lese. Eieren, 31.
+              // august, med et bilde fra et annet verkstedsystem: han vil at
+              // «de kan ligge oppaa hverandre».
+              //
+              // Hver blokk staar i full bredde og forskyves 14 piksler til
+              // hoeyre for den under. Da ser man at det er flere, og den
+              // oeverste er hel. Se ogsaa zIndex under.
+              left: (5 + p.lane * 14) + 'px',
+              width: 'calc(100% - ' + (10 + p.lane * 14) + 'px)',
               boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left',
               border: f.kant || 'none', borderLeft: '3px solid rgba(46,16,2,.28)', borderRadius: '8px', padding: '6px 9px',
               background: f.bg, color: f.fg, fontSize: '12px', lineHeight: 1.35, overflow: 'hidden',
-              boxShadow: 'var(--shadow-sm)', zIndex: 2, userSelect: 'none',
+              // Den som er forskjovet lengst inn ligger over. Uten dette
+              // ville den nederste blokka tegnet over den som staar foran.
+              boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none',
               opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none',
             }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', boxShadow: 'var(--shadow-lg)', cursor: 'grabbing' } : {}),
           };
@@ -25376,7 +25431,7 @@ class Component extends DCLogic {
     // kunne gjemme seg — eller naar hun slaar dem paa selv.
     const stdHolder = this.klStandardHolder();
     const valgteHoldere = this.state.klVisHolder || {};
-    const staarFast = kn => kn === 'Verkstedet' || kn === stdHolder;
+    const staarFast = kn => kn === 'Brenning' || kn === stdHolder;
     const visesNa = k => k.harNoe || (valgteHoldere[k.navn] === undefined
       ? staarFast(k.navn) : valgteHoldere[k.navn] === true);
     const valgteKolonner = alleKolonner.filter(visesNa);
@@ -25436,7 +25491,7 @@ class Component extends DCLogic {
             harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadAntall: String((p.e.deltakere || []).filter(dl => dl.merknad).length),
             harMeta: (p.e.deltakere || []).length > 0 || (p.e.deltakere || []).some(dl => dl.merknad),
-            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: 'calc(' + (p.lane * (100 / nL)) + '% + 3px)', width: 'calc(' + (100 / nL) + '% - 6px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: 2, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
+            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: (3 + p.lane * 9) + 'px', width: 'calc(100% - ' + (6 + p.lane * 9) + 'px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
           };
         }),
       };
@@ -25630,7 +25685,10 @@ class Component extends DCLogic {
             type: k.type,
             pris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim() + ' kr',
             ikkePub: k.publisert === false,
-            kortStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '4px', borderLeftStyle: 'solid', borderLeftColor: k.type === 'Event' ? (k.navn === 'Paint on Pots' ? 'var(--slip-500)' : 'var(--terracotta-500)') : 'var(--lissom-yellow)', borderRadius: 'var(--radius-md)', padding: '12px 14px', cursor: 'grab', userSelect: 'none', opacity: k.publisert === false ? .6 : 1 },
+            // Mindre kort, to i bredden. Navnet er det man leter etter;
+            // typen staar under i smaatt, og prisen er tatt bort — den hoerer
+            // til kurset og staar ett klikk unna.
+            kortStil: { background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '3px', borderLeftStyle: 'solid', borderLeftColor: k.type === 'Event' ? (k.navn === 'Paint on Pots' ? 'var(--slip-500)' : 'var(--terracotta-500)') : 'var(--lissom-yellow)', borderRadius: 'var(--radius-sm)', padding: '6px 8px', cursor: 'grab', userSelect: 'none', minWidth: 0, opacity: k.publisert === false ? .6 : 1 },
             ned: e => this.klNyDragStart(k, e),
           })),
           // ── Kurset, redigert der det staar ──────────────────────────────
@@ -31446,16 +31504,24 @@ class Component extends DCLogic {
           ovSkylderTom: liste.length === 0,
           // Roedt bare naar noen faktisk skylder. En roed ramme hver dag naar
           // alt er gjort opp slutter man aa se etter en uke.
+          // Samme ramme som de andre kortene paa Oversikt: hvit flate, tynn
+          // strek, samme runding. Eieren, 31. august: «jeg vil at kortene
+          // skal vaere like som de andre kortene paa denne siden».
+          //
+          // Kortet spenner over to spalter fordi radene inni er brede — navn,
+          // beloep og tre betalingsknapper. Ett spalte gjorde dem uleselige.
+          // Er rutenettet smalere enn to spalter, faller «span 2» tilbake til
+          // det som finnes; det er ikke en feil.
           ovSkylderRamme: {
-            border: '1.5px solid ' + (liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'),
+            gridColumn: 'span 2',
+            border: '1px solid ' + (liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'),
             borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',
-            overflow: 'hidden', marginBottom: 'var(--space-4)',
+            overflow: 'hidden',
           },
           ovSkylderHode: {
             display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)',
-            padding: 'var(--space-4) var(--space-5)',
-            background: liste.length ? 'var(--terracotta-500)' : 'var(--clay-100)',
-            color: liste.length ? 'var(--clay-50)' : 'var(--text-muted)',
+            padding: 'var(--space-5) var(--space-5) var(--space-4)',
+            color: liste.length ? 'var(--terracotta-600)' : 'var(--text-muted)',
           },
           ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
             : liste.length + (liste.length === 1 ? ' plass · ' : ' plasser · ')

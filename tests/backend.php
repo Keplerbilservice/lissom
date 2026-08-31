@@ -2451,7 +2451,7 @@ sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
 // saa seg selv — hun holder sjelden kurs, og «Monica er default».
 sjekk('den som vanligvis holder kursene staar som spalte',
     str_contains($sida, 'klStandardHolder()')
-    && str_contains($sida, "const staarFast = kn => kn === 'Verkstedet' || kn === stdHolder;"));
+    && str_contains($sida, "const staarFast = kn => kn === 'Brenning' || kn === stdHolder;"));
 // Navnet skal ikke staa i koden. Settes en annen som standard, eller slutter
 // hen, foelger kalenderen med av seg selv.
 sjekk('standarden leses av registeret, ikke av et navn i koden',
@@ -4018,9 +4018,12 @@ sjekk('hjertet staar bare naar Monica er logget inn',
     && str_contains($sida2, ".toLowerCase() === 'monica',"));
 // Masken er den samme fila heroen bruker, saa formen er logoens og ikke et
 // hjerte fra en skrifttype.
-sjekk('… og formen er logoens egen',
-    str_contains($sida2, "mask-image: url('heart-logo-mask.png'); -webkit-mask-size: contain")
-    && is_file(__DIR__ . '/../heart-logo-mask.png'));
+// Foerst var hjertet heart-logo-mask.png som maske: 720 x 695 piksler
+// krympet til 24. Kantene ble grumsete, og eieren saa det med det samme.
+// En kurve er skarp i enhver stoerrelse.
+sjekk('… og det er tegnet, ikke et krympet bilde',
+    str_contains($sida2, '<svg aria-hidden="true" viewBox="0 0 24 22"')
+    && !str_contains($sida2, "mask-image: url('heart-logo-mask.png'); -webkit-mask-size: contain"));
 
 // ── Koden taaler at migrasjonen ikke er kjort ──────────────────────────
 //
@@ -4047,6 +4050,55 @@ sjekk('kurslagringa taaler det samme',
 sjekk('… og innstemplinga ogsaa',
     str_contains(file_get_contents(__DIR__ . '/../api/stempling.php'),
                  "if (\$rid > 0 && (!DB::harTabell('ressurser')"));
+
+// ── Kalenderen ─────────────────────────────────────────────────────────
+//
+// Eieren, 31. august: «i kalenderen saa er det naa en kollone som heter
+// verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen» — og,
+// spurt: «hele kolonnen, jeg vil likevel legge til f eks brenning paa min
+// kalender, en kollone».
+sjekk('«Verkstedet»-kolonnen er borte, «Brenning» staar i stedet',
+    str_contains($sida, "this.klHoldere().concat(['Brenning'])")
+    && str_contains($sida, "e.type === 'brenning'"));
+// Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
+// plasser om dagen i femten dager druknet alt annet.
+sjekk('… og drop-in staar ikke i kalenderen i det hele tatt',
+    str_contains($sida, "(e.holder === kn && e.type !== 'verksted' && e.type !== 'brenning')"));
+// Eieren, med et bilde fra et annet verkstedsystem: han vil at «de kan ligge
+// oppaa hverandre». For delte de bredden mellom seg, og tre ting til samme
+// tid ga tre striper der ingenting var til aa lese.
+sjekk('blokker til samme tid ligger oppaa hverandre',
+    str_contains($sida, "left: (5 + p.lane * 14) + 'px',")
+    && str_contains($sida, "width: 'calc(100% - ' + (10 + p.lane * 14) + 'px)',"));
+sjekk('… og den forskjovne ligger over',
+    substr_count($sida, 'zIndex: 2 + p.lane') === 2);
+
+// ── «Ikke betalt» og statistikken er kort som de andre ─────────────────
+//
+// Eieren: «jeg vil at de skal ha vaert sitt kort, men ikke slike kort som i
+// dag, jeg vil at kortene skal vaere like som de andre kortene paa denne
+// siden». De sto som to brede paneler over rutenettet, i en annen drakt.
+sjekk('de to panelene staar inne i kortrutenettet',
+    strpos($sida2, 'id="ov-kortrutenett"') < strpos($sida2, '{{ ovSkylderVis }}'));
+sjekk('… med samme ramme som resten',
+    str_contains($sida2, "gridColumn: 'span 2',")
+    && str_contains($sida2, "grid-column: span 2; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg)"));
+
+// ── Dra-kortene i kalenderen ───────────────────────────────────────────
+//
+// Eieren, 31. august: «pillene under alle kurs paa kalenderoversikten maa bli
+// mye mindre, og det kan ligge to piller i bredden, slik at de som kommer paa
+// venteliste bli synlig». Seksten kort á nitti piksler er fjorten hundre
+// piksler dra-liste for aa naa ventelista under.
+sjekk('dra-kortene ligger to i bredden',
+    str_contains($sida, '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">'));
+sjekk('… og er mye mindre',
+    str_contains($sida, "borderRadius: 'var(--radius-sm)', padding: '6px 8px', cursor: 'grab'"));
+// Prisen hoerer til kurset og staar i kursoppsettet ett klikk unna. Her skal
+// man finne kurset og dra det.
+sjekk('… uten prisen paa kortet',
+    !str_contains($sida, '<span >{{ k.pris }}</span>')
+    && str_contains($sida, '>{{ k.navn }}</div>'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

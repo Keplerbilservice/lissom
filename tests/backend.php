@@ -4077,13 +4077,19 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
-// Eieren, med et bilde fra et annet verkstedsystem: han vil at «de kan ligge
-// oppaa hverandre». For delte de bredden mellom seg, og tre ting til samme
-// tid ga tre striper der ingenting var til aa lese.
-sjekk('blokker til samme tid ligger oppaa hverandre',
-    str_contains($sida, "left: (5 + p.lane * 14) + 'px',")
-    && str_contains($sida, "width: 'calc(100% - ' + (10 + p.lane * 14) + 'px)',"));
-sjekk('… og den forskjovne ligger over',
+// Eieren, 31. august: «kan kortene altsaa avtalene i kalendere skaleres naar
+// jeg trekker et kort til paa samme tid?» — ja, de deler bredden. Bade i
+// dagsvisninga og i uka.
+sjekk('blokker til samme tid deler bredden',
+    substr_count($sida, "left: 'calc(' + (p.lane / p.av * 100) + '% + ") === 2
+    && substr_count($sida, "width: 'calc(' + (100 / p.av) + '% - ") === 2);
+// Delinga gaar per klynge, ikke per dag: to som kraesjer klokka ti skal ikke
+// gjore alt annet den dagen smalere.
+sjekk('… og bredden deles per klynge, ikke per dag',
+    str_contains($sida, 'const delBredden = liste => {')
+    && str_contains($sida, 'if (klynge.length && p.s >= klyngeSlutt) lukk();')
+    && substr_count($sida, 'delBredden(') === 2);
+sjekk('… og blokkene ligger foran rutenettet',
     substr_count($sida, 'zIndex: 2 + p.lane') === 2);
 
 // ── «Ikke betalt» og statistikken er kort som de andre ─────────────────

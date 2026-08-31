@@ -25358,18 +25358,41 @@ class Component extends DCLogic {
     //
     // Spaltene er kursholderne, og bare de. Det som ikke har en kursholder er
     // alt filtrert bort der hendelsene hentes — se «alle» over.
+    // Ligger to avtaler til samme tid, deler de bredden mellom seg — eieren,
+    // 31. august: «kan kortene altsaa avtalene i kalendere skaleres naar jeg
+    // trekker et kort til paa samme tid?». Ja.
+    //
+    // Bredden deles per klynge, ikke per dag: to som kraesjer klokka ti gjoer
+    // ikke alt annet den dagen smalere. En klynge er de blokkene som henger
+    // sammen — hver av dem overlapper minst én annen i klynga.
+    const delBredden = liste => {
+      const sortert = liste.slice().sort((a, b) => (a.s - b.s) || (a.sl - b.sl));
+      const ut = [];
+      let klynge = [], laneEnd = [], klyngeSlutt = -1;
+      const lukk = () => {
+        const av = Math.max(1, laneEnd.length);
+        klynge.forEach(p => { p.av = av; ut.push(p); });
+        klynge = []; laneEnd = []; klyngeSlutt = -1;
+      };
+      sortert.forEach(p => {
+        if (klynge.length && p.s >= klyngeSlutt) lukk();
+        let lane = laneEnd.findIndex(t => t <= p.s);
+        if (lane === -1) { lane = laneEnd.length; laneEnd.push(p.sl); } else laneEnd[lane] = p.sl;
+        p.lane = lane;
+        klyngeSlutt = Math.max(klyngeSlutt, p.sl);
+        klynge.push(p);
+      });
+      if (klynge.length) lukk();
+      return ut;
+    };
     const alleKolonner = this.klHoldere().map(kn => {
       const evs = dagensAlle.filter(e => e.holder === kn);
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
-      const laneEnd = [];
-      const plassert = kort.map(e => {
-        const s = minAv(e.tid), sl = e.slutt ? minAv(e.slutt) : s + 60;
-        let lane = laneEnd.findIndex(t => t <= s);
-        if (lane === -1) { lane = laneEnd.length; laneEnd.push(sl); } else laneEnd[lane] = sl;
-        return { e, s, sl, lane };
-      });
-      const nLanes = Math.max(1, laneEnd.length);
+      const plassert = delBredden(kort.map(e => {
+        const s = minAv(e.tid);
+        return { e, s, sl: e.slutt ? minAv(e.slutt) : s + 60 };
+      }));
       return {
         navn: kn,
         harNoe: evs.length > 0,
@@ -25410,23 +25433,16 @@ class Component extends DCLogic {
               position: 'absolute',
               top: (Math.max(0, p.s - bStart) / 60 * pxTime) + 'px',
               height: Math.max(34, (Math.min(p.sl, bSluttMin) - Math.max(p.s, bStart)) / 60 * pxTime - 4) + 'px',
-              // Blokkene ligger oppaa hverandre, ikke ved siden av.
-              //
-              // For delte de bredden mellom seg: tre ting til samme tid ga tre
-              // smale striper der ingenting var til aa lese. Eieren, 31.
-              // august, med et bilde fra et annet verkstedsystem: han vil at
-              // «de kan ligge oppaa hverandre».
-              //
-              // Hver blokk staar i full bredde og forskyves 14 piksler til
-              // hoeyre for den under. Da ser man at det er flere, og den
-              // oeverste er hel. Se ogsaa zIndex under.
-              left: (5 + p.lane * 14) + 'px',
-              width: 'calc(100% - ' + (10 + p.lane * 14) + 'px)',
+              // Alene staar blokka i full bredde. Kommer det en til paa samme
+              // tid, deler de to bredden; tre deler den paa tre. «p.av» er
+              // hvor mange som deler akkurat her — se «delBredden» over.
+              left: 'calc(' + (p.lane / p.av * 100) + '% + 5px)',
+              width: 'calc(' + (100 / p.av) + '% - 10px)',
               boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left',
               border: f.kant || 'none', borderLeft: '3px solid rgba(46,16,2,.28)', borderRadius: '8px', padding: '6px 9px',
               background: f.bg, color: f.fg, fontSize: '12px', lineHeight: 1.35, overflow: 'hidden',
-              // Den som er forskjovet lengst inn ligger over. Uten dette
-              // ville den nederste blokka tegnet over den som staar foran.
+              // Blokkene deler bredden og gaar ikke over hverandre, men
+              // zIndex holder dem foran rutenettet og timelinjene.
               boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none',
               opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none',
             }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', boxShadow: 'var(--shadow-lg)', cursor: 'grabbing' } : {}),
@@ -25468,14 +25484,10 @@ class Component extends DCLogic {
       const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i);
       const iso = ukeIsos[i];
       const evs = dagEvts(iso).filter(e => e.type !== 'vakt');
-      const laneEnd = [];
-      const plas = evs.slice().sort((a, b) => minAv(a.tid) - minAv(b.tid)).map(e => {
-        const s = minAv(e.tid), sl = e.slutt ? minAv(e.slutt) : s + 60;
-        let lane = laneEnd.findIndex(t => t <= s);
-        if (lane === -1) { lane = laneEnd.length; laneEnd.push(sl); } else laneEnd[lane] = sl;
-        return { e, s, sl, lane };
-      });
-      const nL = Math.max(1, laneEnd.length);
+      const plas = delBredden(evs.map(e => {
+        const s = minAv(e.tid);
+        return { e, s, sl: e.slutt ? minAv(e.slutt) : s + 60 };
+      }));
       const erIdag = iso === idagIso;
       const stengtU = !!this.klStengte()[iso];
       return {
@@ -25505,7 +25517,7 @@ class Component extends DCLogic {
             harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadAntall: String((p.e.deltakere || []).filter(dl => dl.merknad).length),
             harMeta: (p.e.deltakere || []).length > 0 || (p.e.deltakere || []).some(dl => dl.merknad),
-            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: (3 + p.lane * 9) + 'px', width: 'calc(100% - ' + (6 + p.lane * 9) + 'px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
+            stil: Object.assign({ position: 'absolute', top: (Math.max(0, p.s - wStart) / 60 * pxUke) + 'px', height: Math.max(26, (Math.min(p.sl, wSlutt) - Math.max(p.s, wStart)) / 60 * pxUke - 3) + 'px', left: 'calc(' + (p.lane / p.av * 100) + '% + 3px)', width: 'calc(' + (100 / p.av) + '% - 6px)', boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left', border: f.kant || 'none', borderRadius: '6px', padding: '3px 6px', background: f.bg, color: f.fg, fontSize: '11px', lineHeight: 1.3, overflow: 'hidden', boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none', opacity: p.e.avlyst ? .45 : 1, textDecoration: p.e.avlyst ? 'line-through' : 'none' }, varsel(p.e), puls(p.e), dragState && dragState.id === p.e.id ? { transform: 'translate(' + dragState.dx + 'px,' + dragState.dy + 'px)', zIndex: 30, pointerEvents: 'none', cursor: 'grabbing' } : {}),
           };
         }),
       };

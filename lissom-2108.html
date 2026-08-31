@@ -5769,10 +5769,19 @@ window.__resources = {
               <div>
                 <label style="display: block; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px;">{{ f.etikett }}</label>
                 <sc-if value="{{ f.erTekst }}" hint-placeholder-val="{{ true }}">
-                  <input value="{{ f.verdi }}" onChange="{{ f.endre }}" style="{{ f.feltStil }}">
+                  <input value="{{ f.verdi }}" onChange="{{ f.endre }}" placeholder="{{ f.mal }}" style="{{ f.feltStil }}">
                 </sc-if>
                 <sc-if value="{{ f.erLang }}" hint-placeholder-val="{{ false }}">
-                  <textarea value="{{ f.verdi }}" onChange="{{ f.endre }}" rows="3" style="{{ f.feltStil }}"></textarea>
+                  <textarea value="{{ f.verdi }}" onChange="{{ f.endre }}" rows="3" placeholder="{{ f.mal }}" style="{{ f.feltStil }}"></textarea>
+                </sc-if>
+                <!-- Hva et tomt felt betyr.
+                     Kursoppsettet viser standardteksten som graa hjelpetekst;
+                     her sto bare en tom boks. Samme felt, to skjermer, og
+                     bare den ene forklarte seg. Eieren, 31. august: «jeg
+                     forstaar ikke alle de tomme feltene». Det var ingenting
+                     aa forstaa det ut fra. -->
+                <sc-if value="{{ f.harMal }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: 4px; font-size: var(--text-xs); color: var(--text-muted);">{{ f.malMerke }}</div>
                 </sc-if>
                 <sc-if value="{{ f.erValg }}" hint-placeholder-val="{{ false }}">
                   <!-- Brikker, ikke et nedtrekk: se Component.NEDTREKK. -->
@@ -25848,8 +25857,34 @@ class Component extends DCLogic {
             const sett = (n, v) => this.setState(st => ({
               klKursVerdier: Object.assign({}, st.klKursVerdier, { [n]: v }),
             }));
+            // Standardteksten for kategorien kurset staar i.
+            //
+            // Samme kilde som kursoppsettet bruker — «red.mal», som serveren
+            // regner ut i Kursmal::forKurs(). Da kan de to skjermene ikke si
+            // hver sin ting om hva som kommer paa nettsida.
+            //
+            // Bare feltene som faktisk HAR en standard staar her. De andre er
+            // tomme fordi de er tomme, og da skal det ikke staa noe som lover
+            // at nettsida fyller inn noe.
+            const MAL_FELT = {
+              om: 'beskrivelse', laerer: 'laerer', medHjem: 'medHjem',
+              nivaaTekst: 'nivaaTekst', punkter: 'punkter',
+              praktisk: 'praktisk', ferdigTid: 'ferdigTid',
+            };
+            const mal = red.mal || {};
+            const kortet = (t, n) => {
+              const r = String(t || '').replace(/\s+/g, ' ').trim();
+              return r.length > n ? r.slice(0, n - 1).trim() + '…' : r;
+            };
             const felt = (nokkel, etikett, type, valg) => ({
               nokkel: nokkel, etikett: etikett,
+              // Plassholderen er selve teksten, kortet ned. Merket under sier
+              // hva som skjer med den — om den brukes, eller er overstyrt.
+              mal: kortet(mal[MAL_FELT[nokkel]] || '', 150),
+              harMal: String(mal[MAL_FELT[nokkel]] || '').trim() !== '',
+              malMerke: String(naa[nokkel] === undefined ? '' : naa[nokkel]).trim() === ''
+                ? 'Står tomt: nettsiden viser teksten over'
+                : 'Egen tekst. Den står foran den anbefalte.',
               erTekst: type === 'tekst', erLang: type === 'lang',
               erValg: type === 'valg', erHake: type === 'hake',
               verdi: naa[nokkel] === undefined ? '' : String(naa[nokkel]),

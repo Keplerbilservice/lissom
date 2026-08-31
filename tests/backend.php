@@ -4089,6 +4089,25 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
     && !str_contains($sida, "felt('passerNivaa',")
     && !str_contains($sida, "felt('metode',")
     && !str_contains($sida, "felt('instruktor',"));
+// Eieren, 31. august: «jeg forstaar ikke alle de tomme feltene». Et tomt felt
+// betyr at nettsida viser standardteksten for kategorien — men ruta viste
+// bare en tom boks, mens kursoppsettet viser teksten som graa hjelpetekst.
+// Samme felt, to skjermer, og bare den ene forklarte seg.
+sjekk('ruta viser standardteksten i de tomme feltene',
+    str_contains($sida, 'placeholder="{{ f.mal }}"')
+    && substr_count($sida, 'placeholder="{{ f.mal }}"') === 2
+    && str_contains($sida, "mal: kortet(mal[MAL_FELT[nokkel]] || '', 150),"));
+// Samme kilde som kursoppsettet — «red.mal», som serveren regner ut i
+// Kursmal::forKurs(). Da kan de to skjermene ikke si hver sin ting om hva
+// som kommer paa nettsida.
+sjekk('… fra samme mal som kursoppsettet bruker',
+    str_contains($sida, 'const mal = red.mal || {};')
+    && str_contains($sida, "om: 'beskrivelse', laerer: 'laerer', medHjem: 'medHjem',"));
+// Og under feltet: hva som faktisk gjelder akkurat naa.
+sjekk('… og sier om standarden brukes eller er overstyrt',
+    str_contains($sida, "? 'Står tomt: nettsiden viser teksten over'")
+    && str_contains($sida, ": 'Egen tekst. Den står foran den anbefalte.',"));
+
 // Eieren, 31. august: «jeg faar ikke scrollet tilbake, da virker det som
 // siden under er den som scroller». Det er nettopp det som skjer: naar ruta
 // er rullet helt til topps, fortsetter fingeren ned i sida bak.

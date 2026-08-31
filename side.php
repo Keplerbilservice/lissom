@@ -9,7 +9,7 @@
  * Det virker for et menneske. Det virker ikke for det som ikke kjorer
  * skript, og maalt 28. august var det slik:
  *
- *   /kurs, /medlemskap, /butikk, /paint-on-pots, /drop-in
+ *   /kurs, /medlemskap, /butikk, /paint-on-pots
  *   → samme tittel «Keramikkurs i Tonsberg», ingen canonical,
  *     ingen strukturerte data. Seks adresser som ser ut som samme side.
  *

@@ -25,7 +25,20 @@ krev_admin();
 
 // ---------------------------------------------------------------- lesing
 if (Foresporsel::metode() === 'GET') {
-    $kurs = DB::alle('SELECT * FROM courses ORDER BY status, tittel');
+    // Drop-in er tatt ned — se migrasjon 110 og docs/DROP-IN.md. Kurset
+    // staar igjen i basen som kladd, saa ingenting er tapt, men det skal
+    // ikke ut herfra: adminlistene viser kladder med vilje, og «Drop-in i
+    // verkstedet» ble derfor staaende igjen i sidemenyen paa kalenderen,
+    // i Paameldte og paa Oversikt lenge etter at resten var borte.
+    //
+    // Vakta staar her, der lista hentes, saa den gjelder alle skjermene paa
+    // én gang. Skal drop-in tilbake, er dette ett av stedene som maa aapnes.
+    $kurs = array_values(array_filter(
+        DB::alle('SELECT * FROM courses ORDER BY status, tittel'),
+        static fn(array $k): bool => (string) $k['type'] !== 'dropin'
+            && (string) ($k['tema'] ?? '') !== 'Drop-in'
+            && (string) ($k['slug'] ?? '') !== 'drop-in'
+    ));
 
     // ── Datoene, hentet én gang ─────────────────────────────────────────
     //

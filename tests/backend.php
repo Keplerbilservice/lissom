@@ -4089,13 +4089,39 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
     && !str_contains($sida, "felt('passerNivaa',")
     && !str_contains($sida, "felt('metode',")
     && !str_contains($sida, "felt('instruktor',"));
-// Kursbeviset leser «courses.instruktor» og faller tilbake paa Monica. Det
-// leser ikke kursholderen som velges i kursoppsettet — eieren, 31. august:
-// «dersom noen andre holder kurset saa er vel dette valgt i kursoppsettet?».
-// Ja, men det er ikke koblet. Feltet er fjernet, ikke koblingen laget.
-sjekk('… og kursbeviset staar fortsatt med Monica naar feltet er tomt',
-    str_contains(file_get_contents(__DIR__ . '/../api/kursbevis.php'),
-                 "\$instruktor = trim((string) (\$b['instruktor'] ?? '')) ?: 'Monica Væthe-Larsen';"));
+// Kursbeviset leste «courses.instruktor», et fritekstfelt ingen annen del av
+// systemet bruker. Eieren, 31. august: «dersom noen andre holder kurset saa er
+// vel dette valgt i kursoppsettet? Saa da henter det her infra» — og «fiks
+// kursbeviset da». Naa henter det derfra: oekta foerst, saa kurset.
+$bevis = file_get_contents(__DIR__ . '/../api/kursbevis.php');
+sjekk('kursbeviset henter kursholderen fra oekta foerst, saa kurset',
+    str_contains($bevis, "LEFT JOIN kursholdere kho ON kho.id = cs.kursholder_id")
+    && str_contains($bevis, "LEFT JOIN kursholdere khk ON khk.id = c.kursholder_id")
+    && str_contains($bevis, "foreach ([['holder_navn', 'holder_signatur'],"));
+// Navnet og signaturen maa hentes fra samme kilde. Ett navn med en annen
+// signatur under er verre enn feil navn: det ser ut som noen har skrevet
+// under paa noe hen ikke var med paa.
+sjekk('… og signaturen foelger navnet, aldri fra en annen kilde',
+    str_contains($bevis, "\$instruktor = \$kandidat;")
+    && str_contains($bevis, "\$signatur   = trim((string) (\$b[\$sigFelt] ?? ''));"));
+// Er signaturen ukjent eller tom, staar arket uten. Foer falt den tilbake paa
+// Monicas, og da ville en innleid kursholders navn faatt hennes signatur.
+sjekk('… og et ark uten signatur skrives uten, ikke med Monicas',
+    str_contains($bevis, "\$signatur = '';")
+    && str_contains($bevis, "<?php if (\$signatur !== ''): ?>"));
+// Monica staar som kursholder paa alle kurs fra migrasjon 093. Uten en
+// signatur paa raden hennes ville hvert eneste bevis mistet signaturen i det
+// beviset begynte aa lese kursholderen.
+sjekk('… og Monica faar signaturen sin med i samme migrasjon',
+    str_contains(file_get_contents(__DIR__ . '/../db/migrations/107_kursholder_signatur.sql'),
+                 "ADD COLUMN IF NOT EXISTS signatur VARCHAR(255) NULL")
+    && str_contains(file_get_contents(__DIR__ . '/../db/migrations/107_kursholder_signatur.sql'),
+                 "SET signatur = 'signatur-monica.png'"));
+sjekk('… og signaturen kan legges inn paa kursholderen',
+    str_contains($sida, "khVelgSignatur: () => this.apneBildevalg({ slag: 'signatur' }),")
+    && str_contains($sida, "if (v.slag === 'signatur') {")
+    && str_contains(file_get_contents(__DIR__ . '/../api/admin/kursholdere.php'),
+                    "if (DB::harKolonne('kursholdere', 'signatur')) {"));
 // Metoden regnes ut av kategorien. Skrev du noe i feltet, ble det overskrevet
 // neste gang kurset ble lagret fra oppsettet.
 sjekk('… og metoden regnes fortsatt ut av kategorien',

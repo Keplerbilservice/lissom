@@ -28,15 +28,35 @@ $bevisFelt = DB::harKolonne('bookings', 'bevis_navn')
     ? 'b.bevis_navn, b.bevis_kurs, b.bevis_sperret,'
     : '';
 
+// Kursholderen som faktisk holdt kurset.
+//
+// Beviset leste «courses.instruktor», et fritekstfelt ingen annen del av
+// systemet bruker. Kursholderen man velger i kursoppsettet staar et helt
+// annet sted — «course_sessions.kursholder_id» for den enkelte datoen, og
+// «courses.kursholder_id» for kurset ellers (migrasjon 085). Velger du en
+// annen kursholder, sto det altsaa fortsatt Monica paa beviset.
+//
+// Oekta gaar foran kurset: beviset gjelder én kveld, og den som sto der den
+// kvelden er den som skal staa paa arket.
+$holderFelt = DB::harKolonne('kursholdere', 'signatur')
+    ? 'kho.navn AS holder_navn, kho.signatur AS holder_signatur,
+       khk.navn AS kurs_holder_navn, khk.signatur AS kurs_holder_signatur,'
+    : '';
+$holderJoin = $holderFelt === '' ? '' :
+    'LEFT JOIN kursholdere kho ON kho.id = cs.kursholder_id
+     LEFT JOIN kursholdere khk ON khk.id = c.kursholder_id';
+
 $b = DB::en(
     "SELECT b.id, b.member_id, b.gjest_navn, b.status,
             {$bevisFelt}
             c.tittel, c.type, c.instruktor, c.instruktor_signatur,
+            {$holderFelt}
             cs.start_tid, cs.slutt_tid,
             m.navn AS medlem_navn
        FROM bookings b
        JOIN courses c ON c.id = b.course_id
   LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
+  {$holderJoin}
   LEFT JOIN members m ON m.id = b.member_id
       WHERE b.id = :id",
     ['id' => $bookingId]
@@ -73,12 +93,41 @@ $navn = trim((string) ($b['bevis_navn'] ?? '')) ?: trim((string) ($b['medlem_nav
 $kurs = trim((string) ($b['bevis_kurs'] ?? '')) ?: (string) $b['tittel'];
 $dato = Booking::norskDatoKort((string) $slutt);
 
-$instruktor = trim((string) ($b['instruktor'] ?? '')) ?: 'Monica Væthe-Larsen';
-$signatur   = trim((string) ($b['instruktor_signatur'] ?? '')) ?: 'signatur-monica.png';
+// Navnet og signaturen hoerer sammen og hentes samlet.
+//
+// Ett navn med en annen signatur under er verre enn feil navn: det ser ut som
+// noen har skrevet under paa noe hen ikke var med paa. Derfor plukkes de
+// aldri fra hver sin kilde — den foerste kilden som har et navn, gir begge.
+//
+// Rekkefolgen: kursholderen paa oekta, saa kursholderen paa kurset, saa det
+// gamle fritekstfeltet, og til slutt Monica. De to siste er der for rader som
+// ble laget for kursholderne kom (migrasjon 042) og for basen som ikke har
+// kjort 107.
+$instruktor = '';
+$signatur   = '';
+foreach ([['holder_navn', 'holder_signatur'],
+          ['kurs_holder_navn', 'kurs_holder_signatur'],
+          ['instruktor', 'instruktor_signatur']] as [$navnFelt, $sigFelt]) {
+    $kandidat = trim((string) ($b[$navnFelt] ?? ''));
+    if ($kandidat !== '') {
+        $instruktor = $kandidat;
+        $signatur   = trim((string) ($b[$sigFelt] ?? ''));
+        break;
+    }
+}
+if ($instruktor === '') {
+    $instruktor = 'Monica Væthe-Larsen';
+    $signatur   = 'signatur-monica.png';
+}
 
-// Bare filnavn — ingen skraastreker, ingen mappebytting.
-if (!preg_match('/^[A-Za-z0-9._-]+\.(png|jpg|jpeg|svg)$/', $signatur)) {
-    $signatur = 'signatur-monica.png';
+// Filnavn, eller et bilde eieren har lastet opp. Ingen skraastreker, ingen
+// mappebytting.
+//
+// Godtas ikke verdien, staar arket uten signatur — foer falt den tilbake paa
+// Monicas, og da ville en innleid kursholders navn faatt hennes signatur.
+if (!preg_match('/^[A-Za-z0-9._-]+\.(png|jpg|jpeg|svg)$/', $signatur)
+    && preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $signatur) !== 1) {
+    $signatur = '';
 }
 
 $e = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
@@ -181,7 +230,9 @@ header('Cache-Control: no-store');
   <div class="felt navn"><span><?= $e($navn) ?></span></div>
   <div class="felt kurs"><span><?= $e($kurs) ?></span></div>
   <div class="felt dato"><span><?= $e($dato) ?></span></div>
+  <?php if ($signatur !== ''): ?>
   <div class="signatur"><img src="/<?= $e($signatur) ?>" alt=""></div>
+  <?php endif; ?>
   <div class="instruktor"><?= $e($instruktor) ?></div>
   <div class="rolle">INSTRUKTØR</div>
 </div>

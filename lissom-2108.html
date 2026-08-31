@@ -6654,6 +6654,25 @@ window.__resources = {
                 <input value="{{ khTelefon }}" onChange="{{ settKh.telefon }}" placeholder="Telefon" style="{{ khFeltStil }}">
               </div>
               <input value="{{ khKurs }}" onChange="{{ settKh.kurs }}" placeholder="Holder kursene, f.eks. Nybegynner dreiekurs, Date Night" style="{{ khFeltStil }}">
+              <!-- Signaturen paa kursbeviset.
+                   Beviset henter navnet fra kursholderen som holdt oekta. Uten
+                   en signatur her ville navnet staatt over Monicas — og det
+                   ser ut som hun har skrevet under paa noe hun ikke var med
+                   paa. Er ruta tom, staar beviset uten signatur i stedet. -->
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" onClick="{{ khVelgSignatur }}" style="{{ khSignaturStil }}">
+                  <sc-if value="{{ khHarSignatur }}" hint-placeholder-val="{{ false }}">
+                    <img data-src="{{ khSignatur }}" alt="" style="max-width: 150px; max-height: 44px; display: block;">
+                  </sc-if>
+                  <sc-if value="{{ khUtenSignatur }}" hint-placeholder-val="{{ true }}">
+                    <span style="font: var(--type-body-sm); color: var(--text-muted);">+ Signatur på kursbeviset</span>
+                  </sc-if>
+                </button>
+                <sc-if value="{{ khHarSignatur }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ khFjernSignatur }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); text-decoration: underline; text-underline-offset: 3px;">Fjern</button>
+                </sc-if>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">Står tomt: beviset skrives uten signatur.</span>
+              </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); align-items: center;">
                 <input value="{{ khTimesats }}" onChange="{{ settKh.timesats }}" placeholder="Timesats i kroner" inputmode="numeric" style="{{ khFeltStil }}">
                 <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
@@ -19601,6 +19620,15 @@ class Component extends DCLogic {
     }
     if (v.slag === 'referanselogo') {
       this.endreReferanse({ logo: url || '' });
+      return;
+    }
+    // Signaturen til en kursholder. Ligger i skjemaet til det lagres — en ny
+    // kursholder har ingen id aa lagre paa foer hen er opprettet.
+    if (v.slag === 'signatur') {
+      this.setState(st => ({
+        khUtkast: Object.assign({}, st.khUtkast || {}, { signatur: url || '' }),
+        khBeskjed: '',
+      }));
       return;
     }
     // Bildet til et markedsforingsutkast ligger i skjemaet til utkastet er
@@ -33877,6 +33905,21 @@ class Component extends DCLogic {
           khNavn: u.navn || '', khRolle: u.rolle || '', khEpost: u.epost || '',
           khTelefon: u.telefon || '', khKurs: u.kurs || '', khTimesats: u.timesats || '',
           khVises: u.vises !== false,
+          // Signaturen paa kursbeviset (migrasjon 107).
+          khSignatur: u.signatur || '',
+          khHarSignatur: !!(u.signatur || ''),
+          khUtenSignatur: !(u.signatur || ''),
+          khSignaturStil: {
+            appearance: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center',
+            justifyContent: 'center', minWidth: '170px', minHeight: '52px',
+            border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-md)',
+            background: 'var(--clay-50)', padding: '4px 10px',
+          },
+          khVelgSignatur: () => this.apneBildevalg({ slag: 'signatur' }),
+          khFjernSignatur: () => this.setState(st => ({
+            khUtkast: Object.assign({}, st.khUtkast || {}, { signatur: '' }),
+            khBeskjed: '',
+          })),
           settKh: ['navn','rolle','epost','telefon','kurs','timesats'].reduce((m, n) => {
             m[n] = e => this.setState(st => ({
               khUtkast: Object.assign({}, st.khUtkast || {}, { [n]: e.target.value }),
@@ -33891,6 +33934,7 @@ class Component extends DCLogic {
             navn: (u.navn || '').trim(), rolle: u.rolle || '', epost: u.epost || '',
             telefon: u.telefon || '', kurs: u.kurs || '', timesats: u.timesats || '',
             vises: u.vises !== false ? 'ja' : 'nei',
+            signatur: u.signatur || '',
           })),
           khSlett: () => {
             if (!window.confirm('Ta ' + (u.navn || 'kursholderen') + ' ut av lista? Timene står igjen.')) return;

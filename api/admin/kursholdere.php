@@ -63,6 +63,9 @@ if (Foresporsel::metode() === 'GET') {
             'telefon'   => (string) ($h['telefon'] ?? ''),
             'kurs'      => (string) ($h['kurs'] ?? ''),
             'timesats'  => $h['timesats_ore'] === null ? '' : (string) ((int) $h['timesats_ore'] / 100),
+            // Signaturen paa kursbeviset. Kom med migrasjon 107 — uten
+            // vakten faller lista for alle som ikke har kjort den.
+            'signatur'  => (string) ($h['signatur'] ?? ''),
             'vises'     => (bool) $h['vises_paa_nett'],
             // Den som foreslaas naar en ny kursdato settes opp. Bare én.
             'standard'  => (bool) ($h['standard'] ?? 0),
@@ -99,6 +102,20 @@ if ($handling === 'lagre') {
         'timesats_ore'  => $sats === '' ? null : (int) round((float) str_replace(',', '.', $sats) * 100),
         'vises_paa_nett' => Foresporsel::tekst('vises') === 'ja' ? 1 : 0,
     ];
+
+    // Signaturen paa kursbeviset.
+    //
+    // To former godtas, de samme som alle andre bilder i huset: et filnavn
+    // som ligger i prosjektet, eller et bilde eieren har lastet opp. Alt
+    // annet forkastes — verdien kommer fra nettleseren og ender i en
+    // src-attributt paa beviset.
+    if (DB::harKolonne('kursholdere', 'signatur')) {
+        $sig = trim(Foresporsel::tekst('signatur'));
+        $felt['signatur'] = ($sig !== ''
+            && (preg_match('~^api/bilde\.php\?artikkel=[A-Za-z0-9._-]{1,120}$~', $sig) === 1
+                || preg_match('/^[A-Za-z0-9._-]{1,120}\.(png|jpg|jpeg|svg)$/i', $sig) === 1))
+            ? $sig : null;
+    }
 
     $id = Foresporsel::heltall('id');
     if ($id > 0) {

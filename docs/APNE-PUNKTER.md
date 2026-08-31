@@ -108,7 +108,7 @@ booket?
 Kursene selv ble laget samme sted. «Glasurkveld for medlemmer» kostet
 verkstedet 10 000 kroner i innleid kursholder før den ble slettet.
 
-### Kursbeviset følger ikke kursholderen som er valgt — 31. august
+### ~~Kursbeviset følger ikke kursholderen som er valgt~~ — løst 31. august
 
 `api/kursbevis.php` leser `courses.instruktor`, et fritekstfelt, og faller
 tilbake på «Monica Væthe-Larsen» når det er tomt. Den leser **ikke**
@@ -124,13 +124,17 @@ kursoppsettet? Så da henter det her ifra». Valget hans var å fjerne
 fritekstfeltet fra admin og la beviset stå med Monica til de faktisk leier
 inn noen — alle kursene holdes av henne. Kolonnen og verdiene ligger urørt.
 
-Skal det kobles ordentlig, er det to ting:
+**Løst samme kveld**, etter «fiks kursbeviset da». Begge delene:
 
-1. Beviset må lese kursholderen på **økta**, ikke på kurset. En enkelt kveld
-   kan ha en annen kursholder enn kurset ellers, og beviset gjelder én økt.
-2. `kursholdere` må få et signaturfelt. Tabellen har navn, rolle, e-post,
-   telefon og timesats, men ingen signatur — så et riktig navn ville fortsatt
-   fått Monicas signatur under seg.
+1. Beviset leser kursholderen på **økta** først, så på kurset, så det gamle
+   fritekstfeltet, og til slutt Monica. Navnet og signaturen hentes fra samme
+   kilde — ett navn med en annen signatur under er verre enn feil navn.
+2. `kursholdere` har fått et signaturfelt med bildevelger (migrasjon 107).
+   Monica får sin egen i samme migrasjon: hun står som kursholder på alle kurs
+   etter 093, så uten den ville hvert eneste bevis mistet signaturen i det
+   beviset begynte å lese kursholderen.
+
+Har en kursholder ingen signatur, skrives beviset **uten** — ikke med Monicas.
 
 ---
 

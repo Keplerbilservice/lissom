@@ -4077,6 +4077,25 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
 sjekk('det hvite staar paa linje i alle tre visningene',
     str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
 
+// Eieren, 31. august, om sidemenyen: «denne visningen er fin, smal bredde,
+// evnt kan du teste med en bredde men lavere hoyde paa pillene. I allefall
+// paa mobil maa det vaere slik». Spurt om pc-en ogsaa skulle ha den: «bare
+// mobil». Saa pc beholder to i bredden, mobilen faar én lav pille.
+sjekk('sidemenyen har to i bredden paa pc og én paa mobil',
+    str_contains($sida, "klSideRutenett: this.erSmal()")
+    && str_contains($sida, "? { display: 'grid', gridTemplateColumns: '1fr', gap: '4px' }")
+    && str_contains($sida, ": { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' },"));
+sjekk('… og kurspilla er én linje paa mobilen',
+    str_contains($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }")
+    && str_contains($sida, ": { padding: '6px 8px' }),")
+    && str_contains($sida, "this.erSmal() ? { marginLeft: 'auto', flex: '0 0 auto' } : {}),"));
+// Ventelistekortene var tre linjer med stor skrift og tok mest plass av alt i
+// sidemenyen. Paa mobilen er de naa én linje, som kursene.
+sjekk('… og ventelista foelger samme regel',
+    str_contains($sida, "const smal = this.erSmal();")
+    && str_contains($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', borderLeftWidth: '3px', borderRadius: 'var(--radius-sm)', padding: '4px 8px' }")
+    && str_contains($sida, ": { borderLeftWidth: '4px', borderRadius: 'var(--radius-md)', padding: '12px 14px' }),"));
+
 // Eieren, 31. august: «kan kortene altsaa avtalene i kalendere skaleres naar
 // jeg trekker et kort til paa samme tid?» — ja, de deler bredden. Bade i
 // dagsvisninga og i uka.
@@ -4110,9 +4129,10 @@ sjekk('… med samme ramme som resten',
 // venteliste bli synlig». Seksten kort á nitti piksler er fjorten hundre
 // piksler dra-liste for aa naa ventelista under.
 sjekk('dra-kortene ligger to i bredden',
-    str_contains($sida, '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">'));
+    str_contains($sida, ": { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' },"));
 sjekk('… og er mye mindre',
-    str_contains($sida, "borderRadius: 'var(--radius-sm)', padding: '6px 8px', cursor: 'grab'"));
+    str_contains($sida, "borderRadius: 'var(--radius-sm)', cursor: 'grab'")
+    && str_contains($sida, ": { padding: '6px 8px' }),"));
 // Prisen hoerer til kurset og staar i kursoppsettet ett klikk unna. Her skal
 // man finne kurset og dra det.
 sjekk('… uten prisen paa kortet',

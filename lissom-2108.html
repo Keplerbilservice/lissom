@@ -9455,12 +9455,42 @@ window.__resources = {
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
           <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Ressurser</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 64ch; text-wrap: pretty;">Én plass er én ressurs. Åtte dreieskiver er åtte plasser, uansett om de sitter på et dreiekurs, en Date Night eller en drop-in. Alt som skjer samtidig og bruker det samme, deler taket — kurs, medlemsbooking og drop-in.</p>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 64ch; text-wrap: pretty;">Én plass er én ressurs. Alt som skjer samtidig og bruker det samme, deler taket — kurs, medlemsbooking og drop-in. Et planlagt kurs holder plassene sine, også før noen har meldt seg på.</p>
         </div>
 
-        <!-- Ny eller endret ressurs. Ett skjema for begge: en rad man
+        <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ reListeTittel }}</div>
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 720px;">
+          <sc-for list="{{ reListe }}" as="r" hint-placeholder-count="2">
+            <div style="{{ r.radStil }}">
+              <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font: var(--type-body); font-weight: 700; color: var(--text-heading);">{{ r.navn }}</span>
+                <span style="font: var(--type-body-sm); color: var(--text-heading);">{{ r.antallTekst }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.brukt }}</span>
+              </div>
+              <sc-if value="{{ r.harMerknad }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ r.merknad }}</p>
+              </sc-if>
+              <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-4);">
+                <button type="button" onClick="{{ r.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Endre</button>
+                <button type="button" onClick="{{ r.veksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ r.vekselTekst }}</button>
+                <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ reTomt }}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; padding: var(--space-8); font: var(--type-body-sm); color: var(--text-muted); text-align: center;">Ingen ressurser er satt opp. Uten dem gjelder bare plasstallet på hvert enkelt kurs, og to ting som går samtidig vet ikke om hverandre.</p>
+          </sc-if>
+        </div>
+        <!-- Skjemaet staar UNDER lista, ikke over.
+             Eieren, 31. august, med skjermen aapen paa telefonen: «jeg vil
+             og se hvilke ressurser som ligger inne». Lista laa der, men
+             under et skjema som tok hele skjermen — og da er den ikke der.
+             Man kommer hit for aa se hva verkstedet har, ikke for aa legge
+             til noe. Det siste er unntaket.
+
+             Ett skjema for baade ny og endret: en rad man
              trykker «Endre» paa fyller det ut, ellers staar det tomt. -->
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 720px; margin-bottom: var(--space-8);">
+        <div id="ressursskjema" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); max-width: 720px; margin-top: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ reSkjemaTittel }}</div>
           <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: flex-end;">
             <div style="flex: 1 1 200px; min-width: 0;">
@@ -9484,28 +9514,6 @@ window.__resources = {
           </div>
         </div>
 
-        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 720px;">
-          <sc-for list="{{ reListe }}" as="r" hint-placeholder-count="2">
-            <div style="{{ r.radStil }}">
-              <div style="display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap;">
-                <span style="font: var(--type-body); font-weight: 700; color: var(--text-heading);">{{ r.navn }}</span>
-                <span style="font: var(--type-body-sm); color: var(--text-heading);">{{ r.antallTekst }}</span>
-                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ r.brukt }}</span>
-              </div>
-              <sc-if value="{{ r.harMerknad }}" hint-placeholder-val="{{ true }}">
-                <p style="margin: 4px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ r.merknad }}</p>
-              </sc-if>
-              <div style="display: flex; gap: var(--space-5); flex-wrap: wrap; margin-top: var(--space-4);">
-                <button type="button" onClick="{{ r.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">Endre</button>
-                <button type="button" onClick="{{ r.veksle }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">{{ r.vekselTekst }}</button>
-                <button type="button" onClick="{{ r.slett }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Slett</button>
-              </div>
-            </div>
-          </sc-for>
-          <sc-if value="{{ reTomt }}" hint-placeholder-val="{{ false }}">
-            <p style="margin: 0; padding: var(--space-8); font: var(--type-body-sm); color: var(--text-muted); text-align: center;">Ingen ressurser er satt opp. Uten dem gjelder bare plasstallet på hvert enkelt kurs, og to ting som går samtidig vet ikke om hverandre.</p>
-          </sc-if>
-        </div>
       </main>
     </div>
   </sc-if>
@@ -20156,16 +20164,15 @@ class Component extends DCLogic {
   }
 
   /**
-   * Ruller til toppen av kursoppsettet.
+   * Ruller til et element, naar det finnes.
    *
-   * Kortet bytter innhold naar steget skifter, og hoeyden med det. Uten
-   * dette blir rullingen staaende der den var — som regel nedenfor hele
-   * kortet.
+   * Proever i tjue bilder: elementet tegnes ofte forst etter at state er
+   * satt, og et oppslag med det samme finner ingenting.
    */
-  rullTilKursoppsettet() {
+  rullTil(id) {
     let forsok = 0;
     const proev = () => {
-      const el = document.getElementById('kursoppsett');
+      const el = document.getElementById(id);
       if (el) {
         window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
         return;
@@ -20173,6 +20180,17 @@ class Component extends DCLogic {
       if (++forsok < 20) { window.requestAnimationFrame(proev); }
     };
     window.requestAnimationFrame(proev);
+  }
+
+  /**
+   * Ruller til toppen av kursoppsettet.
+   *
+   * Kortet bytter innhold naar steget skifter, og hoeyden med det. Uten
+   * dette blir rullingen staaende der den var — som regel nedenfor hele
+   * kortet.
+   */
+  rullTilKursoppsettet() {
+    this.rullTil('kursoppsett');
   }
 
   rullTilHenvendelse(id) {
@@ -20872,8 +20890,14 @@ class Component extends DCLogic {
           borderBottom: '1px solid var(--border-subtle)',
           opacity: r.aktiv ? 1 : 0.55,
         },
-        endre: () => this.setState({ reId: r.id, reNavn: r.navn,
-                                     reAntall: String(r.antall), reMerknad: r.merknad || '' }),
+        // Skjemaet staar under lista, saa «Endre» maa ta deg dit. Ellers
+        // fylles det ut et sted du ikke ser, og ingenting ser ut til aa
+        // skje naar du trykker.
+        endre: () => {
+          this.setState({ reId: r.id, reNavn: r.navn,
+                          reAntall: String(r.antall), reMerknad: r.merknad || '' });
+          this.rullTil('ressursskjema');
+        },
         vekselTekst: r.aktiv ? 'Slå av' : 'Slå på',
         veksle: () => this.ressursKall({ handling: 'veksle', id: r.id }),
         slett: () => {
@@ -20881,6 +20905,14 @@ class Component extends DCLogic {
           this.ressursKall({ handling: 'slett', id: r.id });
         },
       })),
+      reListeTittel: (() => {
+        const paa = liste.filter(r => r.aktiv);
+        const sum = paa.reduce((n, x) => n + (x.antall || 0), 0);
+        if (liste.length === 0) return 'Ingen ressurser';
+        return 'Verkstedet har ' + sum + (sum === 1 ? ' plass' : ' plasser')
+          + ' fordelt på ' + paa.length + (paa.length === 1 ? ' ressurs' : ' ressurser')
+          + (liste.length > paa.length ? ' · ' + (liste.length - paa.length) + ' avslått' : '');
+      })(),
       reTomt: liste.length === 0,
       reRedigerer: redigerer,
       reSkjemaTittel: redigerer ? 'Endre ressurs' : 'Ny ressurs',

@@ -3962,6 +3962,20 @@ sjekk('… og grunnen sendes med fra serveren',
     str_contains(file_get_contents(__DIR__ . '/../api/kurs.php'),
                  "'sperret'  => \$sperretKart[(int) \$o['id']] ?? false,"));
 
+// ── Ressursene staar oeverst ───────────────────────────────────────────
+//
+// Eieren, 31. august, med skjermen aapen paa telefonen: «jeg vil og se hvilke
+// ressurser som ligger inne». Lista laa der, men under et skjema som tok hele
+// skjermen — og da er den ikke der.
+sjekk('lista over ressurser staar for skjemaet',
+    strpos($sida2, '{{ reListeTittel }}') < strpos($sida2, 'id="ressursskjema"'));
+sjekk('… og sier hvor mange plasser verkstedet har',
+    str_contains($sida2, "'Verkstedet har ' + sum + (sum === 1 ? ' plass' : ' plasser')"));
+// Skjemaet staar under lista. Uten dette fylles det ut et sted man ikke ser,
+// og ingenting ser ut til aa skje naar man trykker «Endre».
+sjekk('… og «Endre» ruller ned til skjemaet',
+    str_contains($sida2, "this.rullTil('ressursskjema');"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -130,6 +130,18 @@ Lissoms egen regel er det en tjeneste med 25 %.
 
 ---
 
+## Gjort 31. august
+
+**Ressursene står øverst på skjermen sin.** Eieren, med skjermen åpen på
+telefonen: «jeg vil og se hvilke ressurser som ligger inne». Lista lå der, men
+under «Ny ressurs», som tok hele telefonskjermen — og da er den ikke der. Man
+kommer til denne skjermen for å se hva verkstedet har; å legge til noe er
+unntaket.
+
+Lista står nå først, med en linje som sier «Verkstedet har 20 plasser fordelt
+på 2 ressurser». Skjemaet står under, og «Endre» ruller ned til det — ellers
+fylles det ut et sted man ikke ser, og ingenting ser ut til å skje.
+
 ## Gjort 30. august
 
 **Et planlagt kurs holder plassene sine.** Eieren: «det må ikke være mulig å

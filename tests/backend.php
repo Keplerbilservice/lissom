@@ -2397,14 +2397,38 @@ sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
     sjekk('tomt paa kurset gir verkstedets standard',
         Kursholder::forKurs($kursId) === $b);
 
-    // 3. Er ingen standard, staar datoen tom. Da skal ingen faa et
+    // 3. En som har sluttet teller ikke som «den som staar paa kurset».
+    //
+    //    Her sto oppslaget uten aa sporre om hen fortsatt holder kurs.
+    //    Pekte kurset paa en som hadde sluttet, ble navnet arvet videre til
+    //    hver eneste nye dato, og fallbacken til standarden slo aldri inn —
+    //    feltet var jo ikke tomt. Kalenderen viser ingen som har sluttet, saa
+    //    datoen sto i spalta «Uten kursholder» med noen paa seg.
+    //
+    //    Eieren, 1. september: «flere paint on pots kurs ligger paa kolonnen
+    //    uten kursholdere» — etter at standarden var satt.
+    DB::oppdater('courses', ['kursholder_id' => $a], ['id' => $kursId]);
+    DB::kjor('UPDATE kursholdere SET aktiv = 0 WHERE id = :i', ['i' => $a]);
+    Kursholder::glem();
+    sjekk('en kursholder som har sluttet arves ikke videre',
+        Kursholder::forKurs($kursId) === $b,
+        var_export(Kursholder::forKurs($kursId), true));
+    DB::kjor('UPDATE kursholdere SET aktiv = 1 WHERE id = :i', ['i' => $a]);
+    DB::oppdater('courses', ['kursholder_id' => null], ['id' => $kursId]);
+    Kursholder::glem();
+    // Og oppslaget maa faktisk sporre om det, ikke bare lese feltet.
+    sjekk('… fordi oppslaget sporr om hen fortsatt holder kurs',
+        str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursholder.php'),
+                     'JOIN kursholdere k ON k.id = c.kursholder_id AND k.aktiv = 1'));
+
+    // 4. Er ingen standard, staar datoen tom. Da skal ingen faa et
     //    tilfeldig navn paa seg.
     DB::kjor('UPDATE kursholdere SET standard = 0 WHERE id = :i', ['i' => $b]);
     Kursholder::glem();
     sjekk('uten standard staar datoen tom framfor aa gjette',
         Kursholder::forKurs($kursId) === null);
 
-    // 4. Og de faste ukedagene bruker den samme regelen. Dette er det stedet
+    // 5. Og de faste ukedagene bruker den samme regelen. Dette er det stedet
     //    som la ut flest tomme datoer — Paint on Pots gaar hver uke.
     DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => $b]);
     Kursholder::glem();

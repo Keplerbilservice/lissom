@@ -5983,6 +5983,49 @@ sjekk('… og markupen spor om det',
 sjekk('… mens resten av bunnteksten staar som for',
     str_contains($sida, "'gavekortside', 'kontakt', 'ferdigbrent'].indexOf(side) !=="));
 
+// ── «Kontakt oss» aapner det enkle skjemaet ───────────────────────────
+//
+// Knappen paa et kurskort uten datoer aapnet gruppeforespoerselen: «Antall
+// personer 2–5 / 6–10 / 11–16» og «Hva oensker dere? F.eks. teambuilding for
+// 10 kolleger». Paa Date Night — en kveld for to — var hvert eneste felt
+// feil.
+//
+// Eieren, 1. september: «kontakt oss maa vaere med emne datenight og ikke
+// flrespoerselskjemaet som er naa», med bilde av det enkle skjemaet: «Jeg vil
+// de skal faa dette skjemaet».
+//
+// Gruppeskjemaet er ikke feil i seg selv — det hoerer til «Er dere en gruppe,
+// eller har spesielle oensker? Les mer» paa forsida, og staar der som for.
+//
+// Malt i nettleseren, med Date Night uten datoer slik det staar hos eieren:
+// kortet viser kr. 2 990,-, knappen aapner det enkle skjemaet, det sier
+// «Gjelder: Date Night», og «Antall personer» er ikke der.
+sjekk('kurskortet aapner det enkle skjemaet',
+    str_contains($sida, "? () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktEmne: k.title,"));
+sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
+    substr_count($sida, 'fsApen: true') === 2
+    && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
+sjekk('… kurset foelger med som emne til serveren',
+    str_contains($sida, "type: (s.ktEmne || '').trim() || 'Kontaktskjema',"));
+sjekk('… skjermen sier hva det gjelder',
+    str_contains($sida, 'Gjelder: {{ ktEmne }}')
+    && str_contains($sida, "ktHarEmne: !!(this.state.ktEmne || '').trim(),"));
+// Emnet maa toemmes etter sending, ellers henger kursnavnet igjen paa neste
+// foresporsel fra menyen.
+sjekk('… og emnet toemmes naar skjemaet er sendt',
+    str_contains($sida, "ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '', ktEmne: '' });"));
+
+// ── Date Night koster 2990 ────────────────────────────────────────────
+$mig121 = file_get_contents(dirname(__DIR__) . '/db/migrations/121_date_night_koster_2990.sql');
+sjekk('migrasjonen setter Date Night til 2990', str_contains($mig121, 'SET pris_ore = 299000'));
+if (DB::harTabell('courses')) {
+    $dn = DB::en("SELECT pris_ore FROM courses WHERE tittel = 'Date Night'");
+    if ($dn !== null) {
+        sjekk('Date Night koster 2990 i basen', (int) $dn['pris_ore'] === 299000,
+            (int) $dn['pris_ore'] . ' oere');
+    }
+}
+
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //
 // Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare

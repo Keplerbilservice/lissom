@@ -14180,6 +14180,11 @@ window.__resources = {
       <sc-if value="{{ ktIkkeSendt }}" hint-placeholder-val="{{ true }}">
         <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send oss en forespørsel</h3>
         <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi svarer som regel samme dag.</p>
+        <!-- Kom du fra et kurskort, staar kurset her — saa du ser at
+             foresporselen gjelder det, og slipper aa skrive det selv. -->
+        <sc-if value="{{ ktHarEmne }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: -14px 0 var(--space-6); font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Gjelder: {{ ktEmne }}</p>
+        </sc-if>
         <div style="display: flex; flex-direction: column; gap: var(--space-4);">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ ktNavn }}" on-change="{{ settKtNavn }}" hint-size="100%,66px"></x-import>
           <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
@@ -15303,8 +15308,20 @@ class Component extends DCLogic {
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
         cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),
+        // ── «Kontakt oss» aapner det enkle skjemaet ─────────────────
+        //
+        // Knappen aapnet gruppeforespoerselen: «Antall personer 2–5 / 6–10 /
+        // 11–16» og «Hva oensker dere? F.eks. teambuilding for 10 kolleger».
+        // Paa Date Night — en kveld for to — var hvert eneste felt feil.
+        //
+        // Eieren, 1. september: «kontakt oss maa vaere med emne datenight og
+        // ikke flrespoerselskjemaet som er naa», med bilde av det enkle
+        // skjemaet: «Jeg vil de skal faa dette skjemaet».
+        //
+        // Kurset foelger med som emne, saa forespoerselen kommer inn merket
+        // med hvilket kurs den gjelder.
         book: k.kunKontakt
-          ? () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsType: k.title, fsTop: Math.min(this.topNaa(60), 90) })
+          ? () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktEmne: k.title, ktTop: Math.min(this.topNaa(60), 90) })
           : () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
   }
@@ -18438,7 +18455,7 @@ class Component extends DCLogic {
       this.setState(st => ({
         ktSendt2: true, ktFeil: null,
         nyeForesporsler: (st.nyeForesporsler || []).concat([{
-          navn, hva: 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
+          navn, hva: (s.ktEmne || '').trim() || 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
           tekst: (s.ktMelding || '').trim() || 'Ingen detaljer oppgitt', epost, tlf,
         }]),
         ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '',
@@ -18456,7 +18473,9 @@ class Component extends DCLogic {
       body: JSON.stringify({
         navn: navn,
         kontakt: epost || tlf,
-        type: 'Kontaktskjema',
+        // Kurset naar skjemaet ble aapnet fra et kurskort, ellers bare
+        // «Kontaktskjema». Da ser verkstedet med én gang hva det gjelder.
+        type: (s.ktEmne || '').trim() || 'Kontaktskjema',
         antall: '',
         melding: (s.ktMelding || '').trim(),
       }),
@@ -18465,8 +18484,8 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._ktPagaar = false;
         if (!ok) { this.setState({ ktFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
-        this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '' });
-        this.maal('generate_lead', { form: 'Kontaktskjema' });
+        this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '', ktEmne: '' });
+        this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });
         ferdig();
       })
       .catch(() => {
@@ -30253,6 +30272,8 @@ class Component extends DCLogic {
       ktEpost: this.state.ktEpost || '', settKtEpost: e => this.setState({ ktEpost: e.target.value, ktFeil: null }),
       ktMelding: this.state.ktMelding || '', settKtMelding: e => this.setState({ ktMelding: e.target.value, ktFeil: null }),
       ktFeil: this.state.ktFeil || '',
+      ktEmne: this.state.ktEmne || '',
+      ktHarEmne: !!(this.state.ktEmne || '').trim(),
       ktSend: () => this.sendKontakt(),
       fsApen: !!this.state.fsApen,
       fsLukk: () => this.setState({ fsApen: false }),

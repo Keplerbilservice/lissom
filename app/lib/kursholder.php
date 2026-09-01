@@ -59,13 +59,31 @@ final class Kursholder
         return self::$standard;
     }
 
-    /** Den som staar paa selve kurset, eller null. */
+    /**
+     * Den som staar paa selve kurset, eller null.
+     *
+     * «Staar paa kurset» betyr en som fortsatt holder kurs. Her sto bare
+     * oppslaget, uten aa sporre om det: pekte kurset paa en som hadde
+     * sluttet, ble det navnet arvet videre til hver eneste nye dato, og
+     * fallbacken til standarden slo aldri inn — feltet var jo ikke tomt.
+     *
+     * Kalenderen viser ingen som har sluttet (den ser etter «aktiv = 1»), saa
+     * datoen sto der som «Uten kursholder» selv om det sto noen paa den.
+     * Eieren, 1. september: «flere paint on pots kurs ligger paa kolonnen
+     * uten kursholdere».
+     */
     public static function paaKurset(int $kursId): ?int
     {
         if ($kursId <= 0 || !DB::harKolonne('courses', 'kursholder_id')) {
             return null;
         }
-        $id = DB::verdi('SELECT kursholder_id FROM courses WHERE id = :i', ['i' => $kursId]);
+        $id = DB::verdi(
+            'SELECT c.kursholder_id
+               FROM courses c
+               JOIN kursholdere k ON k.id = c.kursholder_id AND k.aktiv = 1
+              WHERE c.id = :i',
+            ['i' => $kursId]
+        );
         return $id !== null ? (int) $id : null;
     }
 

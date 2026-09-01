@@ -1473,6 +1473,11 @@ sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
     DB::kjor("DELETE FROM courses WHERE slug = 'testholder'");
     DB::kjor("DELETE FROM kursholdere WHERE navn IN ('Testholder A', 'Testholder B')");
 
+    // Verkstedets standard laanes, og leveres tilbake nederst. Uten dette
+    // sto basen igjen uten standard etter hver kjoring av proven — og da
+    // legger aapent verksted ut datoer uten kursholder.
+    $forStandard = DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 LIMIT 1');
+
     $a = DB::settInn('kursholdere', ['navn' => 'Testholder A', 'rolle' => 'keramiker', 'aktiv' => 1]);
     $b = DB::settInn('kursholdere', ['navn' => 'Testholder B', 'rolle' => 'vikar', 'aktiv' => 1]);
 
@@ -1517,6 +1522,10 @@ sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
     DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $kursId]);
     DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
     DB::kjor('DELETE FROM kursholdere WHERE id = :i', ['i' => $a]);
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    if ($forStandard !== null) {
+        DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => (int) $forStandard]);
+    }
 })();
 
 // Endepunktet skal avvise en kursholder som ikke finnes — ellers ville datoen
@@ -1525,7 +1534,11 @@ $kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('kurs.php slaar opp kursholderen for den lagres',
     str_contains($kursFil, "Svar::feil('Fant ikke kursholderen.')"));
 sjekk('en ny dato foreslaar verkstedets standard',
-    str_contains($kursFil, "SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1"));
+    str_contains($kursFil, 'Kursholder::forKurs($kursId)')
+    && str_contains(
+        file_get_contents(dirname(__DIR__) . '/app/lib/kursholder.php'),
+        "SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1"
+    ));
 $khFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursholdere.php');
 sjekk('standarden byttes i én transaksjon, saa bare én staar igjen',
     str_contains($khFil, "UPDATE kursholdere SET standard = 0 WHERE standard = 1"));
@@ -1861,8 +1874,13 @@ sjekk('bare delingsbildet mangler en webp-tvilling', (static function (): bool {
 // settes opp: doeren er aapen og noen er der.
 $kursFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('en tom aapningstid gjor ikke kursholderen opptatt',
-    str_contains($kursFil2, '$ledigTid = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')')
-    && str_contains($kursFil2, 'AND (cs.fra_apningstid = 0'));
+    str_contains($kursFil2, "\$apenKol[] = 'cs.fra_apningstid = 1';")
+    && str_contains($kursFil2, '"AND (NOT (" . implode(\' OR \', $apenKol) . ")'));
+// Drop-in legges ut paa hver aapningstid, akkurat som Paint on Pots. Fra og
+// med kursholder-runden har ogsaa de et navn paa seg — og da ville de gjort
+// Monica opptatt hver eneste kveld verkstedet er aapent, om de talte med.
+sjekk('en tom drop-in-time gjor heller ikke kursholderen opptatt',
+    str_contains($kursFil2, "\$apenKol[] = 'cs.fra_dropin_tid IS NOT NULL';"));
 // Har noen booket, er den en avtale med et menneske, og to ting samtidig er
 // en ekte kollisjon.
 sjekk('en booket aapningstid teller likevel som opptatt',
@@ -2260,8 +2278,110 @@ sjekk('kursholderen kan lagres paa kurset',
 // Tomt paa kurset betyr ikke «ingen» — det betyr Monica.
 sjekk('en ny dato arver kursets kursholder, ellers verkstedets standard',
     str_contains($kursFil, "? \$holderId('kursholderId')
-                : (\$paaKurset !== null ? (int) \$paaKurset
-                    : (\$standard !== null ? (int) \$standard : null));"));
+                : Kursholder::forKurs(\$kursId);"));
+
+// ── Regelen staar ett sted, og alle fire bruker den ──────────────────────
+//
+// Eieren, 1. september: «lag din egen bolle dukker opp i kalenderen naa, uten
+// kursholder, hvordan er det mulig naar det kun er monica som er kursholder
+// og default?» — og: «det gjelder saa klart ogsaa paa alle paint on pots».
+//
+// Fire steder lager kursdatoer. Bare «ny dato» i admin satte kursholder; de
+// faste ukedagene, aapent verksted og drop-in la dem ut tomme. Naa gaar alle
+// fire gjennom Kursholder::forKurs().
+(static function (): void {
+    if (!DB::harKolonne('course_sessions', 'kursholder_id')
+        || !DB::harKolonne('courses', 'kursholder_id')
+        || !DB::harKolonne('kursholdere', 'standard')) {
+        sjekk('kursholderregelen krever migrasjon 085 og 089', false, 'kolonner mangler');
+        return;
+    }
+
+    // Basen settes tilbake til slik den sto etterpaa — proven kjores mot den
+    // samme basen som resten, og en standard paa avveie ville flyttet seg
+    // inn i andre proever.
+    $forStandard = DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 LIMIT 1');
+
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    $a = DB::settInn('kursholdere', ['navn' => 'Regelholder A', 'aktiv' => 1]);
+    $b = DB::settInn('kursholdere', ['navn' => 'Regelholder B', 'aktiv' => 1, 'standard' => 1]);
+    $kursId = DB::settInn('courses', [
+        'slug' => 'regelkurs-' . bin2hex(random_bytes(3)),
+        'tittel' => 'Regelkurs', 'pris_ore' => 0, 'status' => 'publisert',
+        'kursholder_id' => $a,
+    ]);
+
+    // 1. Den som staar paa kurset gaar foran standarden.
+    Kursholder::glem();
+    sjekk('kursets egen kursholder gaar foran standarden',
+        Kursholder::forKurs($kursId) === $a);
+
+    // 2. Tomt paa kurset betyr ikke «ingen» — det betyr standarden.
+    DB::oppdater('courses', ['kursholder_id' => null], ['id' => $kursId]);
+    Kursholder::glem();
+    sjekk('tomt paa kurset gir verkstedets standard',
+        Kursholder::forKurs($kursId) === $b);
+
+    // 3. Er ingen standard, staar datoen tom. Da skal ingen faa et
+    //    tilfeldig navn paa seg.
+    DB::kjor('UPDATE kursholdere SET standard = 0 WHERE id = :i', ['i' => $b]);
+    Kursholder::glem();
+    sjekk('uten standard staar datoen tom framfor aa gjette',
+        Kursholder::forKurs($kursId) === null);
+
+    // 4. Og de faste ukedagene bruker den samme regelen. Dette er det stedet
+    //    som la ut flest tomme datoer — Paint on Pots gaar hver uke.
+    DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => $b]);
+    Kursholder::glem();
+    if (DB::harTabell('kurs_serier')) {
+        DB::settInn('kurs_serier', [
+            'course_id' => $kursId, 'ukedag' => 3,
+            'fra' => '18:00', 'til' => '20:00',
+            'uker_fram' => 2, 'aktiv' => 1,
+        ]);
+        Serier::fyllPaa($kursId);
+        $tomme = (int) DB::verdi(
+            'SELECT COUNT(*) FROM course_sessions WHERE course_id = :k AND kursholder_id IS NULL',
+            ['k' => $kursId]
+        );
+        $laget = (int) DB::verdi(
+            'SELECT COUNT(*) FROM course_sessions WHERE course_id = :k',
+            ['k' => $kursId]
+        );
+        sjekk('faste ukedager lages med kursholder',
+            $laget > 0 && $tomme === 0, $laget . ' datoer, ' . $tomme . ' uten');
+        DB::kjor('DELETE FROM kurs_serier WHERE course_id = :k', ['k' => $kursId]);
+    }
+
+    DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM kursholdere WHERE id IN (:a, :b)', ['a' => $a, 'b' => $b]);
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    if ($forStandard !== null) {
+        DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => (int) $forStandard]);
+    }
+    Kursholder::glem();
+})();
+
+// Og en femte vei inn skal ikke kunne gli forbi: hver fil som lager en
+// kursdato maa nevne kursholderen. Uten dette sto tre av fire stille i tre
+// maaneder — koden gjorde ingenting galt, den gjorde bare ingenting.
+$lagerDatoer = [];
+$utenHolder  = [];
+foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
+    $kode = file_get_contents($f);
+    if (!preg_match('/INSERT[^;]{0,80}INTO course_sessions|settInn\(\s*\'course_sessions\'/', $kode)) {
+        continue;
+    }
+    $lagerDatoer[] = basename($f);
+    if (!str_contains($kode, 'kursholder_id')) {
+        $utenHolder[] = basename($f);
+    }
+}
+sjekk('alle stedene som lager kursdatoer er funnet',
+    count($lagerDatoer) >= 4, implode(', ', $lagerDatoer));
+sjekk('… og hvert av dem setter kursholder',
+    $utenHolder === [], implode(', ', $utenHolder));
 sjekk('kursholderen er et valg i kursoppsettet',
     str_contains($sida, "felt('kursholderId', 'Kursholder', 'valg',")
     && str_contains($sida, "[['0', 'Verkstedets standard']].concat("));
@@ -3025,6 +3145,49 @@ sjekk('… og teller opp den samme feilen framfor aa lage en rad til',
     str_contains($fapi, 'ON DUPLICATE KEY UPDATE'));
 sjekk('en melding krever at bryteren staar paa',
     str_contains($fapi, 'innmelding av feil er stengt akkurat nå.'));
+
+// ── «Sett paa» sa «Fant ikke rapporten» ────────────────────────────────
+//
+// Eieren, 1. september: «feilrapport som er sendt inn, trykket paa sett paa,
+// men den staar der fortsatt, og naar jeg forsoker aa trykke sett paa igjen,
+// saa sier den fant ikke rapporten».
+//
+// rowCount() teller rader som ble ENDRET, ikke rader som ble funnet. Sto
+// rapporten alt paa «lukket» — sett paa i en annen fane, paa telefonen, eller
+// bare en liste som var noen minutter gammel — endret UPDATE ingenting, og
+// endepunktet svarte at rapporten ikke fantes. Den fantes.
+$frapi = file_get_contents(__DIR__ . '/../api/admin/feilrapporter.php');
+sjekk('rapporten slaas opp for den avvises',
+    str_contains($frapi, "if (DB::en('SELECT id FROM feilrapporter WHERE id = :id', ['id' => \$id]) === null) {"));
+sjekk('… og statusen settes uten aa telle endrede rader',
+    str_contains($frapi, "DB::kjor('UPDATE feilrapporter SET status = :s WHERE id = :id', ['s' => \$ny, 'id' => \$id]);")
+    && !str_contains($frapi, "'s' => \$ny, 'id' => \$id])->rowCount() === 0"));
+
+if (DB::harTabell('feilrapporter')) {
+    $rid = DB::settInn('feilrapporter', [
+        'slag' => 'melding', 'melding' => 'Proverapport',
+        'nettleser' => 'Proven', 'fingeravtrykk' => sha1('prove:' . bin2hex(random_bytes(8))),
+    ]);
+    $sett = static function (int $id, string $status): bool {
+        if (DB::en('SELECT id FROM feilrapporter WHERE id = :id', ['id' => $id]) === null) {
+            return false;
+        }
+        DB::kjor('UPDATE feilrapporter SET status = :s WHERE id = :id', ['s' => $status, 'id' => $id]);
+        return true;
+    };
+    sjekk('foerste «sett paa» gaar gjennom', $sett($rid, 'lukket'));
+    sjekk('… og andre gang er den fortsatt funnet, ikke borte', $sett($rid, 'lukket'));
+    sjekk('… mens en rapport som virkelig ikke finnes avvises', !$sett(999999999, 'lukket'));
+    DB::kjor('DELETE FROM feilrapporter WHERE id = :i', ['i' => $rid]);
+}
+
+// Og raden skal forsvinne under fingeren, ikke staa til svaret kommer.
+sjekk('raden tas ut av lista med det samme',
+    str_contains($sida2, "if (kropp.handling === 'status' && kropp.status === 'lukket') {")
+    && str_contains($sida2, 'rapporter: f.rapporter.filter(r => r.id !== kropp.id),'));
+// Gikk det ikke, skal lista bli sann igjen framfor aa vise det vi trodde.
+sjekk('… og lista hentes paa nytt ogsaa naar serveren sier nei',
+    str_contains($sida2, "// Gikk det ikke, hentes lista likevel: da staar det som faktisk"));
 
 // Bildene i kassa ba om «{{ utQrBilde }}» som om det var en filadresse.
 // Feilvakta fant det selv, forste gang den kjorte.

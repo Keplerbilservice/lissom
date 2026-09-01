@@ -18465,7 +18465,7 @@ class Component extends DCLogic {
     if (talt.indexOf(id) !== -1) return;
 
     const NAVN = {
-      booking: 'Kurs eller event', dropin: 'Drop-in', gavekort: 'Gavekort',
+      booking: 'Kurs eller event', gavekort: 'Gavekort',
       ordre: 'Butikk', medlemskap: 'Medlemskap',
     };
     const gikk = this.maal('purchase', {
@@ -31848,12 +31848,12 @@ class Component extends DCLogic {
       betalinger: this.klikkbar(
         (this.state.adminBetalinger || []).filter(b => {
           const f = this.state.okonomiFor;
-          if (f === 'deltakere') return ['booking', 'dropin'].indexOf(b.formal) !== -1;
+          if (f === 'deltakere') return b.formal === 'booking';
           if (f === 'medlemmer') return b.formal === 'medlemskap';
           return true;
         }).map(b => ({
           navn: b.medlem || 'Gjest',
-          hva: ({ booking: 'Kursbooking', dropin: 'Drop-in', gavekort: 'Gavekort',
+          hva: ({ booking: 'Kursbooking', gavekort: 'Gavekort',
                   ordre: 'Butikkordre', medlemskap: 'Medlemskap' })[b.formal] || b.formal,
           tid: b.tidspunkt,
           sum: b.belop,

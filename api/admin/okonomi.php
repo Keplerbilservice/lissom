@@ -75,7 +75,6 @@ $topp = max(array_map(static fn($u) => $u['ore'], $uker));
 // --- Hva pengene kom fra ---------------------------------------------------
 $FORMAL = [
     'booking'    => 'Kurs og events',
-    'dropin'     => 'Drop-in',
     'ordre'      => 'Butikk',
     'gavekort'   => 'Gavekort',
     'medlemskap' => 'Medlemskap',

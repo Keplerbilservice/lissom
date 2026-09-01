@@ -37,14 +37,13 @@
  *
  * To ting, fordi ordet alene ikke holder:
  *
- *   ORDET   «Drop-in» skal ikke staa noe sted paa noen skjerm.
- *           Unntaket er de tre skjermene som viser BETALTE bookinger fra
- *           den tida drop-in gikk. En kunde som har betalt kr. 490,- skal
- *           fortsatt se kjopet sitt, og linja skal fortsatt staa i
- *           regnskapet. De er merket «historikk» under, og skriptet sier
- *           fra om hva det fant der uten aa felle det. Skal historikken
- *           ogsaa bort, er det en egen beslutning — se docs/DROP-IN.md
- *           punkt 6 — og da skal merket fjernes herfra.
+ *   ORDET   «Drop-in» skal ikke staa noe sted paa noen skjerm. Ikke ett.
+ *
+ *           En kort periode hadde tre av skjermene unntak: Min side,
+ *           Oversikt og Paameldte viste fortsatt ordet naar det fantes en
+ *           betalt booking fra den tida drop-in gikk. Eieren, 1. september:
+ *           «Historikken på drop inn skal også bort». Migrasjon 111 slettet
+ *           de bookingene og betalingene, og unntaket er borte med dem.
  *   TALLENE Tellingene skjermen viser. «Planlagte kurs» sto paa 165 uten at
  *           ordet «Drop-in» sto noe sted paa Oversikt — skaden var tallet.
  *           Foerste utgave av dette skriptet ga groent paa akkurat den
@@ -93,19 +92,17 @@ const SKJERMER = [
   { sti: '/kalender',      hvorfor: 'den offentlige kalenderen — 54 linjer i uke 36 mot ni kurs' },
   { sti: '/sporsmal-og-svar', hvorfor: 'to av tolv spoersmaal handlet om drop-in' },
   { sti: '/booking',       hvorfor: 'bookingen — godkjenningssteget sto her' },
-  { sti: '/min-side',      hvorfor: 'Min side — «Timene er brukt opp → Drop-in kr. 490,-»',
-    historikk: 'kundens egne kjop og plasser' },
+  { sti: '/min-side',      hvorfor: 'Min side — knappen «Drop-in · kr. 490,-», og kundens egne kjop' },
   { sti: '/om-oss',        hvorfor: 'om oss' },
   { sti: '/nyttig-info',   hvorfor: 'nyttig info' },
 
   // ── Admin ──────────────────────────────────────────────────────────
-  { sti: '/admin',         hvorfor: 'Oversikt — «Planlagte kurs» sto paa 165, der 116 var drop-in',
-    historikk: 'salg per kurs',
+  { sti: '/admin',         hvorfor: 'Oversikt — «Planlagte kurs» sto paa 165, der 116 var drop-in; og salg per kurs',
     tall: [{ merke: 'Planlagte kurs', tak: 90, hvorfor: 'kursdatoer, ikke ni drop-in-plasser om dagen' }] },
   { sti: '/admin/kurs/alle', hvorfor: 'Kurs og deltakere — 139 rader foer det foerste kurset' },
   { sti: '/admin/kurs',    hvorfor: 'kursoppsettet — «Drop-in» sto i Type-nedtrekket' },
   { sti: '/admin/kalender', hvorfor: 'adminkalenderen — ni bleke rader per dag i hver kolonne' },
-  { sti: '/admin/pameldte', hvorfor: 'paameldte', historikk: 'raden for en deltaker som har betalt' },
+  { sti: '/admin/pameldte', hvorfor: 'paameldte — raden for en deltaker som hadde betalt' },
   { sti: '/admin/ny-registrering', hvorfor: 'ny registrering — «Drop-in» var ett av fire valg' },
   { sti: '/admin/okonomi', hvorfor: 'oekonomi — hadde egen konto og mva-kode for drop-in' },
   { sti: '/admin/innhold', hvorfor: 'Nettsiden → Innhold — hadde en egen Drop-in-seksjon' },
@@ -166,19 +163,10 @@ for (const s of SKJERMER) {
   }
 
   const traff = (tekst.match(/drop[\s-]?in/gi) || []).length;
-  if (s.historikk) {
-    // Her kan ordet staa, men bare som navnet paa noe som alt er betalt.
-    console.log('  ~     ' + s.sti + ' — ' + (traff
-      ? traff + ' treff, ventet: ' + s.historikk
-      : 'ingen treff (' + s.historikk + ' finnes ikke i basen naa)'));
-    tekst.split('\n').filter(l => /drop[\s-]?in/i.test(l)).slice(0, 3)
+  si(traff === 0, s.sti + ' er fri for drop-in' + (traff ? ' (' + traff + ' treff)' : '') + ' — ' + s.hvorfor);
+  if (traff) {
+    tekst.split('\n').filter(l => /drop[\s-]?in/i.test(l)).slice(0, 5)
       .forEach(l => console.log('          ' + l.trim().slice(0, 80)));
-  } else {
-    si(traff === 0, s.sti + ' er fri for drop-in' + (traff ? ' (' + traff + ' treff)' : '') + ' — ' + s.hvorfor);
-    if (traff) {
-      tekst.split('\n').filter(l => /drop[\s-]?in/i.test(l)).slice(0, 5)
-        .forEach(l => console.log('          ' + l.trim().slice(0, 80)));
-    }
   }
 
   // Tellingene. Kortet skriver tallet paa linja under merket.
@@ -213,10 +201,7 @@ for (const sti of BORTE) {
 
 await b.close();
 
-const medHistorikk = SKJERMER.filter(s => s.historikk).length;
 console.log('\n' + (feil === 0
   ? 'Drop-in er borte (' + sjekker + ' sjekker).'
   : feil + ' av ' + sjekker + ' sjekker er feil.'));
-console.log('Linjene med ~ er de ' + medHistorikk + ' skjermene der betalte kjop fra '
-  + 'den tida drop-in gikk\nfortsatt skal kunne leses. Se docs/DROP-IN.md punkt 6.');
 process.exit(feil === 0 ? 0 : 1);

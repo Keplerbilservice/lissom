@@ -201,6 +201,14 @@ final class Medlemskap
             'subscription_id' => $id,
             'belop_ore'       => (int) $plan['pris_ore'],
             'status'          => 'opprettet',
+            // Denne manglet, og «payments.idempotency_key» er NOT NULL uten
+            // standardverdi. Innsettingen kastet derfor hver eneste gang:
+            // hele veien for medlemskap som betales én gang — «Prov Lissom»,
+            // og alle som valgte «ordner selv» — endte i en databasefeil for
+            // Vipps i det hele tatt ble kontaktet. Alle de andre stedene som
+            // oppretter en betaling setter noekkelen; dette var det ene som
+            // ikke gjorde det.
+            'idempotency_key' => Vipps::uuid(),
         ]);
 
         try {
@@ -356,6 +364,86 @@ final class Medlemskap
             ], ['id' => (int) $a['id']]);
         }
         return ['status' => 'aktiv', 'avtale' => $a];
+    }
+
+    /**
+     * Er engangsbetalingen for medlemskapet i havn?
+     *
+     * Eieren, 1. september: «Hun fikk medlemskap selv om betalingen ikke gikk
+     * inn hva faen».
+     *
+     * Han hadde rett. Godkjenningen i admin sjekket bare avtalen i Vipps naar
+     * sokeren hadde valgt fast trekk. Valgte hen «ordner selv», ble ingenting
+     * sjekket i det hele tatt: ett trykk paa Godkjenn ga full tilgang, og
+     * svaret paa skjermen sa «gjor opp selv for hver periode» — som om alt
+     * var i orden. Ingen sto igjen med en beskjed om at foerste betaling
+     * aldri kom.
+     *
+     * Denne er motstykket til slippForsteTrekk(), og folger samme regel:
+     * fasiten er Vipps, ikke raden vaar. Kunden kan ha betalt uten aa komme
+     * tilbake til nettsiden, og da skal ikke godkjenningen stoppes.
+     *
+     * Svarene:
+     *   aktiv    betalingen er i havn
+     *   ingen    det finnes ingen betaling aa se paa — en gammel soknad,
+     *            fra for innmeldingen krevde noe. Da maa den kreves inn
+     *            paa annen maate, og det skal staa i svaret.
+     *   ellers   status paa betalingen slik den staar naa
+     *
+     * @return array{status:string,avtale:array<string,mixed>|null}
+     */
+    public static function engangsBetalt(int $medlemId): array
+    {
+        $a = DB::en(
+            'SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+            ['m' => $medlemId]
+        );
+        if ($a === null) {
+            return ['status' => 'ingen', 'avtale' => null];
+        }
+        if ((string) $a['status'] === 'aktiv') {
+            return ['status' => 'aktiv', 'avtale' => $a];
+        }
+
+        $betaling = DB::en(
+            'SELECT * FROM payments WHERE subscription_id = :s ORDER BY id DESC LIMIT 1',
+            ['s' => (int) $a['id']]
+        );
+        if ($betaling === null) {
+            return ['status' => 'ingen', 'avtale' => $a];
+        }
+        // Er den alt bokfoert som betalt, men medlemskapet ikke slaatt paa,
+        // retter vi det her framfor aa avvise en som har betalt.
+        if ((string) $betaling['status'] === 'betalt') {
+            self::betaltEngangs((int) $a['id']);
+            return ['status' => 'aktiv', 'avtale' => $a];
+        }
+
+        // Sporr Vipps. Cron gjor det samme, men bare de forste to dognene og
+        // tre av gangen — en soknad som blir liggende en uke ville ellers
+        // blitt avvist selv om pengene kom.
+        $ref = (string) ($betaling['vipps_reference'] ?? '');
+        if ($ref !== '') {
+            try {
+                $svar = Vipps::hentBetaling($ref);
+                $tilstand = strtoupper((string) ($svar['state'] ?? ''));
+                if ($tilstand === 'AUTHORIZED') {
+                    Vipps::trekk($ref, (int) ($svar['aggregate']['authorizedAmount']['value'] ?? 0));
+                    $tilstand = 'CAPTURED';
+                }
+                if ($tilstand === 'CAPTURED') {
+                    Booking::markerBetalt($ref);
+                    return ['status' => 'aktiv', 'avtale' => $a];
+                }
+            } catch (Throwable $e) {
+                // Naar vi ikke faar svar fra Vipps, vet vi ikke — og da skal
+                // ingen slippes inn paa en antakelse.
+                logg_feil('Fikk ikke sjekket medlemsbetaling for medlem ' . $medlemId, $e);
+                return ['status' => 'ukjent', 'avtale' => $a];
+            }
+        }
+
+        return ['status' => (string) $betaling['status'], 'avtale' => $a];
     }
 
     /**

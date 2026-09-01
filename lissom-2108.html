@@ -29749,10 +29749,20 @@ class Component extends DCLogic {
           p.velgOgLukk();
         },
       })),
+      // Gavekortet er ikke en butikkvare.
+      //
+      // Knappen la «Gavekort» i handlekurven til fast 500 kroner. Kassa slaar
+      // hver linje opp blant butikkvarene, og det staar ingen «Gavekort»
+      // der — saa dette endte i den samme doede enden som medlemskapet:
+      // «Gavekort finnes ikke i butikken lenger». Det gikk heller ikke an aa
+      // velge belop, mottaker eller hilsen, som er hele poenget med et
+      // gavekort.
+      //
+      // Naa gaar den dit kjopet faktisk finnes.
       paafyll: [
         { navn: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter', pris: 'Valgfritt beløp' },
       ].map(v => Object.assign(v, {
-        kjop: () => this.leggTil(v.navn),
+        kjop: this.go('gavekortside'),
       })),
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
@@ -29954,11 +29964,11 @@ class Component extends DCLogic {
       bookOrdreTittel: (this.state.valgtKurs && (this.state.valgtKurs.title || this.state.valgtKurs.tittel)) || 'Nybegynner dreiekurs',
       bookOrdreDato: (this.state.bDato) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
       bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
-      bookTilKurv: () => {
-        const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs' };
-        const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || k.date || '';
-        this.leggTil((k.title || k.tittel || 'Kurs') + (dato ? ' — ' + dato : ''));
-      },
+      // «bookTilKurv» sto her: den la kursnavnet med datoen i handlekurven.
+      // Ingen knapp pekte paa den, og godt var det — kassa slaar hver linje
+      // opp blant butikkvarene, og et kurs staar ikke der. Den ville gitt
+      // samme doede ende som gavekortet og medlemskapet. Booking gaar gjennom
+      // api/booking.php, som ogsaa holder av plassen.
       // Knappen sier hva som faktisk skjer. «Book plass» paa et medlemskap
       // er misvisende — det er en avtale, ikke en plass.
       bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')

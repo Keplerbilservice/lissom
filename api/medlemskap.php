@@ -101,8 +101,39 @@ switch (Foresporsel::tekst('handling')) {
 
     case 'start':
         Rate::sjekk('medlemsavtale', maks: 5, vindu: 600);
+
+        // Fast trekk eller én betaling — planen bestemmer.
+        //
+        // Eieren, 1. september: «Funker det paa alle medlemskap?»
+        //
+        // Det gjorde det ikke. Denne opprettet alltid en loepende avtale i
+        // Vipps, uansett hvilken plan det var. For «Prov Lissom» — ti timer
+        // i lopet av tretti dager, som skal betales én gang — ville det gitt
+        // et trekk hver maaned for noe som er over. Innmeldingen i
+        // api/bli-medlem.php har alltid skilt paa dette; her sto skillet
+        // ikke.
+        //
+        // Regelen er den samme som der: krever planen fast trekk, er valget
+        // tatt. Er den en engangsplan, kan den ikke ha fast trekk. Ellers
+        // gjelder fast trekk, som for.
+        $planNavn = Foresporsel::tekst('plan');
+        $plan     = $planNavn === '' ? null : Medlemskap::plan($planNavn);
+        if ($plan === null) {
+            Svar::feil('Ukjent medlemskap.');
+        }
+
+        $betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';
+        if (Medlemskap::kreverFastTrekk($plan)) {
+            $betaling = 'trekk';
+        }
+        if ((int) ($plan['engangs'] ?? 0) === 1) {
+            $betaling = 'selv';
+        }
+
         try {
-            $ut = Medlemskap::startAvtale($medlem, Foresporsel::tekst('plan'));
+            $ut = $betaling === 'trekk'
+                ? Medlemskap::startAvtale($medlem, $planNavn)
+                : Medlemskap::startEngangs($medlem, $planNavn);
         } catch (RuntimeException $e) {
             Svar::feil($e->getMessage());
         }

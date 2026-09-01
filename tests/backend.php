@@ -3798,6 +3798,145 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── Alle fire medlemskapene, ikke bare de tre ──────────────────────────
+//
+// Eieren, 1. september: «Funker det paa alle medlemskap?»
+//
+// Nei. To ting sto igjen, og begge gjaldt medlemskap som betales én gang.
+//
+// 1) api/medlemskap.php opprettet ALLTID en loepende avtale i Vipps, uansett
+//    plan. «Prov Lissom» — ti timer i lopet av tretti dager — ville faatt et
+//    trekk hver maaned for noe som er over. Innmeldingen i bli-medlem.php har
+//    alltid skilt paa dette; her sto skillet ikke.
+//
+// 2) Medlemskap::startEngangs() satte ikke «idempotency_key», og kolonna er
+//    NOT NULL uten standardverdi. Innsettingen kastet hver eneste gang. Hele
+//    veien for medlemskap som betales én gang — «Prov Lissom», og alle som
+//    valgte «ordner selv» — dode i en databasefeil for Vipps ble kontaktet.
+//
+// Maalt: for rettelsen svarte «Prov Lissom» «Field 'idempotency_key' doesn't
+// have a default value». Etterpaa kommer alle fire helt fram til Vipps.
+$mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$mlibEngangs = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+sjekk('engangsplaner faar ikke fast trekk',
+    str_contains($mapi, "if ((int) (\$plan['engangs'] ?? 0) === 1) {\n            \$betaling = 'selv';"));
+sjekk('… og planer som krever fast trekk faar det',
+    str_contains($mapi, "if (Medlemskap::kreverFastTrekk(\$plan)) {\n            \$betaling = 'trekk';"));
+sjekk('… og de to veiene gaar hver sin vei',
+    str_contains($mapi, "\$ut = \$betaling === 'trekk'\n                ? Medlemskap::startAvtale(\$medlem, \$planNavn)\n                : Medlemskap::startEngangs(\$medlem, \$planNavn);"));
+sjekk('… og en ukjent plan avvises for noe opprettes',
+    str_contains($mapi, "if (\$plan === null) {\n            Svar::feil('Ukjent medlemskap.');"));
+
+// Kolonna er NOT NULL uten standardverdi, saa en betaling uten noekkel kan
+// ikke settes inn i det hele tatt.
+sjekk('engangsbetalingen setter idempotency-noekkelen',
+    str_contains($mlibEngangs, "'subscription_id' => \$id,")
+    && str_contains($mlibEngangs, "'idempotency_key' => Vipps::uuid(),"));
+// Alle stedene som oppretter en betaling maa sette den. Ett sted som glemmer
+// det er nok til at den veien er doed.
+$utenNokkel = [];
+foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
+    $kode = file_get_contents($f);
+    $fra = 0;
+    while (($i = strpos($kode, "DB::settInn('payments'", $fra)) !== false) {
+        // Fram til den avsluttende «]);» — et fast vindu kutter en lang
+        // liste midt i, og da ser noekkelen ut til aa mangle.
+        // Feltene bygges ofte i en variabel rett over innsettingen
+        // (api/ordre.php, app/lib/booking.php). Da staar noekkelen der, ikke
+        // i kallet — saa vi ser bakover ogsaa.
+        $slutt = strpos($kode, "]);", $i);
+        $fram  = ($slutt === false ? 2000 : $slutt - $i);
+        $start = max(0, $i - 2500);
+        $blokk = substr($kode, $start, ($i - $start) + $fram);
+        if (!str_contains($blokk, 'idempotency_key')) {
+            $utenNokkel[] = basename($f) . ' linje ' . (substr_count(substr($kode, 0, $i), "\n") + 1);
+        }
+        $fra = $i + 20;
+    }
+}
+sjekk('ingen oppretter en betaling uten idempotency-noekkel',
+    $utenNokkel === [], implode(' | ', $utenNokkel));
+
+// ── Bare butikkvarer kan ligge i handlekurven ──────────────────────────
+//
+// Eieren, 1. september: «Funker det overalt?»
+//
+// Nei — det var ett til. kjopKurv() slaar hver linje opp blant butikkvarene,
+// saa en noekkel som ikke er en vare gir «finnes ikke i butikken lenger», og
+// raadet om aa ta den ut av kurven er umulig aa folge.
+//
+// Tre steder la noe annet enn en vare i kurven:
+//   medlemskapet   tre knapper paa Min side   (rettet over)
+//   gavekortet     «Paafyll» paa Min side, til faste 500 kroner
+//   et kurs        en ubrukt binding paa bookingskjermen
+//
+// Maalt i nettleseren: «Paafyll → Gavekort → Legg til» og deretter «Fullfor
+// bestilling» → «Godkjenn i Vipps» ga «Kan ikke bestille alt — Gavekort
+// finnes ikke i butikken lenger».
+//
+// Gavekortet har heller ikke fast pris: belop, mottaker og hilsen er hele
+// poenget, og de finnes bare paa gavekortsida.
+sjekk('gavekortet legges ikke i handlekurven',
+    str_contains($sida2, "kjop: this.go('gavekortside'),"));
+sjekk('… og kurs legges ikke i den heller',
+    !str_contains($sida2, 'bookTilKurv:'));
+
+// Alt som fortsatt kan legges i kurven maa vaere noe kassa finner igjen:
+// «#<id>» paa en butikkvare, eller varens tittel. Et gavekortbelop hoerer
+// til forhaandsvisningen i designverktoyet, der det ikke gaar mot serveren.
+preg_match_all('/this\.leggTil\((.*)$/m', $sida2, $m);
+$kurvKall = array_map('trim', $m[1]);
+$mistenkelige = array_values(array_filter($kurvKall, static fn(string $x): bool
+    => !str_contains($x, "'#'") && !str_starts_with($x, "'Gavekort kr. '")));
+sjekk('ingenting annet enn butikkvarer legges i kurven',
+    $mistenkelige === [], implode(' | ', $mistenkelige));
+sjekk('… og det er faktisk kall aa se paa', count($kurvKall) >= 3, count($kurvKall) . ' kall');
+
+// ── Ingen slippes inn uten at betalingen er i havn ─────────────────────
+//
+// Eieren, 1. september: «Hun fikk medlemskap selv om betalingen ikke gikk inn
+// hva faen».
+//
+// Godkjenningen i admin sjekket avtalen i Vipps naar sokeren hadde valgt fast
+// trekk. Valgte hen «ordner selv», ble ingenting sjekket: ett trykk paa
+// Godkjenn ga status «prove» — som er full tilgang — og svaret sa «gjor opp
+// selv for hver periode», som om alt var i orden.
+//
+// Maalt paa den gamle koden: soknad med betaling «selv» og betalingsraden paa
+// «venter» ga {"ok":true}, medlemmet ble «prove», og betalingen sto fortsatt
+// som «venter». Ingen penger, full tilgang.
+$soknader = file_get_contents(dirname(__DIR__) . '/api/admin/soknader.php');
+$mlib     = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+sjekk('«ordner selv» sjekkes for godkjenning',
+    str_contains($soknader, "if (\$vedtak === 'godkjent' && \$betaling === 'selv') {"));
+sjekk('… og avvises naar betalingen ikke er kommet inn',
+    str_contains($soknader, "if (!in_array(\$avtaleStatus, ['aktiv', 'ingen'], true)) {\n        Svar::feil('Betalingen fra '"));
+// Faar vi ikke svar fra Vipps, vet vi ikke — og da skal ingen inn.
+sjekk('… og ingen slippes inn naar Vipps ikke svarer',
+    str_contains($soknader, "if (\$avtaleStatus === 'ukjent') {"));
+sjekk('… mens fast trekk sjekkes som for',
+    str_contains($soknader, "if (\$vedtak === 'godkjent' && \$betaling === 'trekk') {"));
+
+// Fasiten er Vipps, ikke raden vaar: kunden kan ha betalt uten aa komme
+// tilbake til nettsiden, og da skal godkjenningen ikke stoppes.
+sjekk('sjekken spor Vipps, ikke bare vaar egen rad',
+    str_contains($mlib, 'public static function engangsBetalt(int $medlemId): array')
+    && str_contains($mlib, '$svar = Vipps::hentBetaling($ref);'));
+sjekk('… og retter opp en betaling som er bokfoert men ikke slaatt paa',
+    str_contains($mlib, "if ((string) \$betaling['status'] === 'betalt') {\n            self::betaltEngangs((int) \$a['id']);"));
+// En feil fra Vipps skal ikke leses som «betalt».
+sjekk('… og sier «ukjent» framfor aa gjette naar Vipps feiler',
+    str_contains($mlib, "return ['status' => 'ukjent', 'avtale' => \$a];"));
+
+// Svaret paa skjermen maa si hva som faktisk gjelder. «Foerste trekk gaar ut
+// i natt» til en som gjor opp selv er et trekk som aldri kommer.
+sjekk('svaret lover ikke et trekk til en som gjor opp selv',
+    str_contains($soknader, "\$betaling !== 'selv' && \$avtaleStatus === 'aktiv'"));
+sjekk('… og sier fra naar det ikke finnes noen betaling i det hele tatt',
+    str_contains($soknader, "'Godkjent. Det finnes ingen betaling på '"));
+
 // ── Medlemskap kan ikke legges i handlekurven ──────────────────────────
 //
 // Eieren, 1. september, med et skjermbilde fra et medlem som ikke fikk

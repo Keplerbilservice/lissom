@@ -27005,25 +27005,29 @@ class Component extends DCLogic {
               under: (v.paaKurset
                 ? 'Hele kurset'
                 : uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3)) + ' · #' + v.posisjon,
-              // Samme regel som kurspillene over: lav pille paa mobilen, det
-              // store kortet paa pc.
-              kortStil: Object.assign({ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftStyle: 'solid', borderLeftColor: 'var(--terracotta-500)', cursor: 'grab', userSelect: 'none' },
+              // ── Samme pille som kursene over ─────────────────────────
+              //
+              // Kortet her sto med 16 px display-skrift og 12/14 px luft,
+              // mens kurspillene rett over sto med 12 px og 6/8. To lister
+              // under hverandre i den samme spalta, i to stoerrelser.
+              //
+              // Eieren, 1. september: «jeg vil ha samme stoerrelse paa pillen
+              // som paa kursene over». Tallene under er hentet ordrett fra
+              // klSideKurs; bare den terrakotta venstrekanten staar igjen,
+              // saa man ser hvilken liste man er i.
+              kortStil: Object.assign({ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '3px', borderLeftStyle: 'solid', borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0 },
                 smal
-                  ? { display: 'flex', alignItems: 'baseline', gap: '8px', borderLeftWidth: '3px', borderRadius: 'var(--radius-sm)', padding: '4px 8px' }
-                  : { borderLeftWidth: '4px', borderRadius: 'var(--radius-md)', padding: '12px 14px' }),
-              navnStil: smal
-                ? { fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }
-                : { fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--text-heading)' },
-              metaStil: smal
-                ? { display: 'flex', alignItems: 'baseline', gap: '5px', marginLeft: 'auto', flex: '0 0 auto', fontSize: '10px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }
-                : { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 'var(--space-2)', marginTop: '3px' },
-              kursStil: smal
-                ? { overflow: 'hidden', textOverflow: 'ellipsis' }
-                : { fontSize: '13px', fontWeight: 600, color: 'var(--text-body)', minWidth: 0 },
-              underStil: smal
-                ? { flex: '0 0 auto' }
-                : { fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
-              ned: ev => this.klVlDragStart({ id: v.id, navn: v.navn, srcId: e.id }, ev),
+                  ? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }
+                  : { padding: '6px 8px' }),
+              navnStil: Object.assign({ fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                smal ? { minWidth: 0 } : {}),
+              metaStil: Object.assign({ display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap' },
+                smal ? { marginLeft: 'auto', flex: '0 0 auto' } : {}),
+              // Kursnavnet er det lange, saa det er det som kuttes. Plassen i
+              // koen staar alltid helt ut.
+              kursStil: { overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
+              underStil: { flex: '0 0 auto', marginLeft: 'auto' },
+              ned: ev => this.klVlDragStart({ id: v.id, navn: v.navn, kurs: e.tittel, srcId: e.id }, ev),
             };
           })), []).slice(0, 8); })(),
           klVlSideTom: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).length === 0,
@@ -28100,7 +28104,28 @@ class Component extends DCLogic {
       window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
       const d = this._klVl; this._klVl = null;
       this.setState({ klNyDrag: null });
-      if (!d || !d.moved) return;
+      // ── Et klikk aapner henne der plassen gis ────────────────────────
+      //
+      // Pilla kunne bare dras. Ville du gi henne plassen paa en annen dato,
+      // varsle henne, eller ta henne av lista, matte du ut av kalenderen,
+      // inn i Venteliste, og finne henne igjen.
+      //
+      // Eieren, 1. september: «og jeg vil kunne trykke paa den og komme inn
+      // for aa tildele eller avslaa ventelisten».
+      //
+      // Vi lager ingen ny skjerm for det: Venteliste-raden har allerede
+      // datoknappene, «Varsle» og «Fjern». Klikket aapner nettopp hennes rad
+      // (vlApen), med den samme emnelinja raden selv setter naar man aapner
+      // den der.
+      if (!d) return;
+      if (!d.moved) {
+        this.gaaAdmin('adminventeliste', {
+          vlApen: p.id,
+          vlEmne: 'Ledig plass på ' + (p.kurs || ''),
+          vlMelding: '',
+        });
+        return;
+      }
       // Maalet er en okt, ikke et tidspunkt: brikka baerer nummeret sitt i
       // «id», som «kalevt-<nummer>».
       //

@@ -5503,14 +5503,41 @@ sjekk('… og ventelista foelger samme regel',
 // jeg trekker et kort til paa samme tid?» — ja, de deler bredden. Bade i
 // dagsvisninga og i uka.
 sjekk('blokker til samme tid deler bredden',
-    substr_count($sida, "left: 'calc(' + (p.lane / p.av * 100) + '% + ") === 2
-    && substr_count($sida, "width: 'calc(' + (100 / p.av) + '% - ") === 2);
+    // Uka deler hele bredden. Dagsvisningen deler stripa blokka staar i —
+    // se «Paint on Pots tar ikke spalta» under.
+    substr_count($sida, "left: 'calc(' + (p.lane / p.av * 100) + '% + ") === 1
+    && substr_count($sida, "width: 'calc(' + (100 / p.av) + '% - ") === 1
+    && str_contains($sida, "left: 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + '")
+    && str_contains($sida, "width: 'calc(' + (p.bredde / p.av) + '% - '"));
 // Delinga gaar per klynge, ikke per dag: to som kraesjer klokka ti skal ikke
-// gjore alt annet den dagen smalere.
+// gjore alt annet den dagen smalere. Tre kall naa: de smale for seg, de
+// andre for seg, og uka.
 sjekk('… og bredden deles per klynge, ikke per dag',
     str_contains($sida, 'const delBredden = liste => {')
     && str_contains($sida, 'if (klynge.length && p.s >= klyngeSlutt) lukk();')
-    && substr_count($sida, 'delBredden(') === 2);
+    && substr_count($sida, 'delBredden(') === 3);
+
+// ── Paint on Pots tar ikke spalta ──────────────────────────────────────
+//
+// Eieren, 1. september: «kortene paint on pots, disse vil jeg skal vises mye
+// mindre slik at de ikke tar saa mye plass i bredden. om den kan krympes ned
+// til 15% av stoerrelsen».
+//
+// De legges ut automatisk paa hver aapningstid, saa det er seks-sju av dem
+// paa en dag. Delte de bredden likt med et ekte kurs, ble kurset en strime.
+sjekk('Paint on Pots staar i en smal stripe',
+    str_contains($sida, 'const SMAL_ANDEL = 15;')
+    && str_contains($sida, "const erSmal = e => e.type === 'pop';"));
+sjekk('… og de andre faar resten av bredden',
+    str_contains($sida, 'const bredResten = smaa.length ? 100 - SMAL_ANDEL : 100;'));
+// Er det ingen Paint on Pots den dagen, skal spalta se ut som for.
+sjekk('… men hele bredden naar det ikke er noen',
+    str_contains($sida, 'smaa.length ? 100 - SMAL_ANDEL : 100'));
+// I en stripe paa femten prosent er det plass til klokka og navnet.
+sjekk('den smale blokka viser ikke plasstall, ansikter og merknader',
+    str_contains($sida, "detalj: p.smal ? '' :")
+    && str_contains($sida, 'harAvatarer: !p.smal &&')
+    && str_contains($sida, 'harMerknad: !p.smal &&'));
 sjekk('… og blokkene ligger foran rutenettet',
     substr_count($sida, 'zIndex: 2 + p.lane') === 2);
 

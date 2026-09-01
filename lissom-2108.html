@@ -26212,10 +26212,29 @@ class Component extends DCLogic {
         : dagensAlle.filter(e => e.holder === kn);
       const vakt = evs.find(e => e.type === 'vakt');
       const kort = evs.filter(e => e.type !== 'vakt').sort((a, b) => minAv(a.tid) - minAv(b.tid));
-      const plassert = delBredden(kort.map(e => {
+      // ── Paint on Pots tar ikke spalta ──────────────────────────────
+      //
+      // Eieren, 1. september: «kortene paint on pots, disse vil jeg skal
+      // vises mye mindre slik at de ikke tar saa mye plass i bredden. om den
+      // kan krympes ned til 15% av stoerrelsen».
+      //
+      // De legges ut automatisk paa hver aapningstid, saa det er seks-sju av
+      // dem paa en dag. Delte de bredden likt med et ekte kurs, ble kurset
+      // en strime. Naa staar de i en stripe ytterst, og de andre far resten.
+      const SMAL_ANDEL = 15;                 // prosent av spalta
+      const erSmal = e => e.type === 'pop';
+      const tilP = e => {
         const s = minAv(e.tid);
         return { e, s, sl: e.slutt ? minAv(e.slutt) : s + 60 };
-      }));
+      };
+      const smaa  = kort.filter(erSmal);
+      const store = kort.filter(e => !erSmal(e));
+      // Er det ingen smale, skal de andre ha hele bredden som for.
+      const bredResten = smaa.length ? 100 - SMAL_ANDEL : 100;
+      const plassert = delBredden(store.map(tilP))
+        .map(q => Object.assign(q, { fra: 0, bredde: bredResten, smal: false }))
+        .concat(delBredden(smaa.map(tilP))
+          .map(q => Object.assign(q, { fra: bredResten, bredde: SMAL_ANDEL, smal: true })));
       return {
         navn: kn,
         harNoe: evs.length > 0,
@@ -26235,7 +26254,9 @@ class Component extends DCLogic {
           return {
             tid: p.e.tid + (p.e.slutt ? '–' + p.e.slutt : ''),
             tittel: p.e.tittel,
-            detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
+            // I en stripe paa 15 prosent er det plass til klokka og navnet.
+            // Plasstall, ansikter og merknader ville bare blitt klippet.
+            detalj: p.smal ? '' : [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
             id: p.e.id, domId: 'kalevt-' + p.e.id, velg: velg(p.e),
             ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
             inn: ev => {
@@ -26248,10 +26269,10 @@ class Component extends DCLogic {
               tittel: dl.navn,
               stil: { width: '18px', height: '18px', borderRadius: '50%', flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clay-50)', color: 'var(--lissom-brown)', border: '1.5px solid ' + (f.kant ? 'var(--lissom-brown)' : 'rgba(46,16,2,.25)'), boxSizing: 'border-box' },
             })),
-            harAvatarer: (p.e.deltakere || []).length > 0,
+            harAvatarer: !p.smal && (p.e.deltakere || []).length > 0,
             harFlere: (p.e.deltakere || []).length > 6,
             flereTekst: '+' + Math.max(0, (p.e.deltakere || []).length - 6),
-            harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
+            harMerknad: !p.smal && (p.e.deltakere || []).some(dl => dl.merknad),
             merknadStil: { display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px', background: 'var(--terracotta-500)', color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '1px 8px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em' },
             merknadTekst: (() => { const n = (p.e.deltakere || []).filter(dl => dl.merknad).length; return n + (n === 1 ? ' merknad' : ' merknader'); })(),
             harNye: !!p.e.nye,
@@ -26261,14 +26282,18 @@ class Component extends DCLogic {
               position: 'absolute',
               top: (Math.max(0, p.s - bStart) / 60 * pxTime) + 'px',
               height: Math.max(34, (Math.min(p.sl, bSluttMin) - Math.max(p.s, bStart)) / 60 * pxTime - 4) + 'px',
-              // Alene staar blokka i full bredde. Kommer det en til paa samme
-              // tid, deler de to bredden; tre deler den paa tre. «p.av» er
+              // Alene staar blokka i full bredde av stripa si. Kommer det en
+              // til paa samme tid, deler de to; tre deler paa tre. «p.av» er
               // hvor mange som deler akkurat her — se «delBredden» over.
-              left: 'calc(' + (p.lane / p.av * 100) + '% + 5px)',
-              width: 'calc(' + (100 / p.av) + '% - 10px)',
+              // «p.fra» og «p.bredde» er stripa: Paint on Pots ytterst i 15
+              // prosent, de andre i resten.
+              left: 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + ' + (p.smal ? 2 : 5) + 'px)',
+              width: 'calc(' + (p.bredde / p.av) + '% - ' + (p.smal ? 4 : 10) + 'px)',
               boxSizing: 'border-box', appearance: 'none', cursor: 'grab', textAlign: 'left',
-              border: f.kant || 'none', borderLeft: '3px solid rgba(46,16,2,.28)', borderRadius: '8px', padding: '6px 9px',
-              background: f.bg, color: f.fg, fontSize: '12px', lineHeight: 1.35, overflow: 'hidden',
+              border: f.kant || 'none', borderLeft: (p.smal ? '2px' : '3px') + ' solid rgba(46,16,2,.28)', borderRadius: '8px',
+              padding: p.smal ? '3px 4px' : '6px 9px',
+              background: f.bg, color: f.fg, fontSize: p.smal ? '9px' : '12px',
+              lineHeight: p.smal ? 1.2 : 1.35, overflow: 'hidden',
               // Blokkene deler bredden og gaar ikke over hverandre, men
               // zIndex holder dem foran rutenettet og timelinjene.
               boxShadow: 'var(--shadow-sm)', zIndex: 2 + p.lane, userSelect: 'none',

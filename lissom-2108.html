@@ -6248,17 +6248,6 @@ window.__resources = {
         </div>
       </sc-if>
 
-      <sc-if value="{{ klKasseVises }}" hint-placeholder-val="{{ false }}">
-        <div onClick="{{ klKasseLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
-          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kasse</div>
-            <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">Åpner kassen</h2>
-            <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Kassen er bygget i hovedprosjektet og kobles på her. Knappen skal åpne kassevisningen direkte fra kalenderen.</p>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klKasseLukk }}" hint-size="auto,44px">Lukk</x-import>
-          </div>
-        </div>
-      </sc-if>
-
       <sc-if value="{{ klIcsVises }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ klIcsLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
           <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(520px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
@@ -13438,6 +13427,193 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- ══ GEO — aa bli sitert av en AI ═══════════════════════════════════════
+       Samme skjerm som SEO, andre regler. SEO handler om aa rangere i en
+       trefflste; her finnes ingen trefflste — én kilde blir sitert, resten
+       finnes ikke. Derfor er det korte svaret, tallene og stedsnavnet som
+       teller, ikke tittellengde og soekeord. -->
+  <sc-if value="{{ erAdminGeo }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – GEO" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavGeo }}" as="a" hint-placeholder-count="7">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </aside>
+      <main style="padding: var(--space-8); min-width: 0;">
+        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
+          <div>
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Markedsføring</div>
+            <h1 style="margin: 0; font-size: var(--text-3xl);">Synlighet i AI-svar</h1>
+            <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Stadig flere spør ChatGPT eller Perplexity «hvor kan jeg ta keramikkurs i Tønsberg?» i stedet for å google det. Da rangeres ingenting — én kilde blir sitert. Her skriver du setningen som skal siteres.</p>
+          </div>
+        </div>
+
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- Sagt rett ut, for et tall som later som det vet mer enn det gjor
+             er verre enn ingen tall. -->
+        <div style="background: var(--clay-100); border-left: 4px solid var(--lissom-yellow); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-body); max-width: 78ch;">
+          <strong style="color: var(--text-heading);">Om tallet:</strong> ingen AI publiserer hvem de siterer, så scoren måler ikke om ChatGPT nevner Lissom. Den måler om siden er <em>formet</em> slik at den lar seg sitere: ett kort svar som står på egne bein, med pris, sted og varighet i selve setningen.
+        </div>
+
+        <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); margin-bottom: var(--space-6);">
+          <sc-for list="{{ geoDash }}" as="t" hint-placeholder-count="4">
+            <div onClick="{{ t.velg }}" style="{{ t.kortStil }}">
+              <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ t.merke }}</div>
+              <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading); margin: 10px 0 4px;">{{ t.verdi }}</div>
+              <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ t.under }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ geoAltGront }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6); font-size: var(--text-sm); color: var(--text-heading);">Alle sidene har et kort svar en AI kan sitere.</div>
+        </sc-if>
+
+        <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+          <div style="min-width: 0;">
+            <div style="font-weight: 700; font-size: var(--text-base); color: var(--text-heading);">Optimaliser for GEO</div>
+            <div style="font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">{{ geoFyllHjelp }}</div>
+          </div>
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="sparkles" on-click="{{ geoFyllAlle }}" hint-size="auto,44px">{{ geoFyllKnapp }}</x-import>
+        </div>
+
+        <sc-for list="{{ geoHandlinger }}" as="h" hint-placeholder-count="2">
+          <button type="button" onClick="{{ h.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); width: 100%; appearance: none; cursor: pointer; text-align: left; background: var(--surface-card); border: 1px solid var(--border-subtle); border-left: 4px solid var(--terracotta-500); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 8px; font: var(--type-body-sm); color: var(--text-heading);">
+            <span style="font-weight: 600;">{{ h.tekst }}</span>
+            <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ h.hint }} →</span>
+          </button>
+        </sc-for>
+
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 1.6fr); gap: var(--space-6); align-items: start; margin-top: var(--space-6);">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Sider og score</div>
+            <sc-for list="{{ geoListe }}" as="s" hint-placeholder-count="8">
+              <button type="button" onClick="{{ s.velg }}" style="{{ s.stil }}">
+                <span style="flex: 1; min-width: 0; font-weight: 600;">{{ s.navn }}</span>
+                <span style="{{ s.barYtre }}"><span style="{{ s.barIndre }}"></span></span>
+                <span style="flex: 0 0 28px; text-align: right; font-weight: 700;">{{ s.score }}</span>
+              </button>
+            </sc-for>
+          </div>
+
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6);">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
+              <div>
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">{{ geoValgtType }}</div>
+                <h2 style="margin: 4px 0 0; font-size: var(--text-2xl); letter-spacing: 0;">{{ geoValgtNavn }}</h2>
+              </div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <sc-if value="{{ geoUlagret }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ geoForkast }}" hint-size="auto,36px">Forkast</x-import>
+                </sc-if>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ geoOverskriv }}" hint-size="auto,36px">Erstatt alt med forslag</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="sparkles" on-click="{{ geoForeslaa }}" hint-size="auto,36px">Foreslå GEO</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ geoLagre }}" hint-size="auto,36px">{{ geoLagreTekst }}</x-import>
+              </div>
+            </div>
+
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5);">
+              <div style="display: flex; align-items: center; gap: var(--space-4); margin-bottom: 8px;">
+                <span style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading);">GEO-score</span>
+                <span style="flex: 1; height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden;"><span style="{{ geoScoreBar }}"></span></span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-lg); color: var(--text-heading);">{{ geoScoreTall }}</span>
+              </div>
+              <sc-if value="{{ geoIngenTrekk }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-xs); color: var(--sage-600, var(--text-muted));">Ingen trekk — svaret står på egne bein.</div>
+              </sc-if>
+              <sc-for list="{{ geoTrekk }}" as="t" hint-placeholder-count="2">
+                <div style="font-size: var(--text-xs); color: var(--text-body); padding: 2px 0;">· {{ t }}</div>
+              </sc-for>
+            </div>
+
+            <!-- Slik setningen ser ut naar den staar alene i et AI-svar, uten
+                 sida rundt. Det er der «vi holder kurs hver onsdag» faller
+                 fra hverandre: leseren vet ikke hvem «vi» er. -->
+            <sc-if value="{{ geoHarSitat }}" hint-placeholder-val="{{ true }}">
+              <div style="border: 1px solid var(--border-subtle); border-left: 4px solid var(--sage-500); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-5);">
+                <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Slik kan det bli sitert</div>
+                <div style="font-size: var(--text-sm); color: var(--text-muted); margin-bottom: 6px;">{{ geoSitatSporsmal }}</div>
+                <blockquote style="margin: 0; font-family: var(--font-display); font-size: var(--text-lg); line-height: 1.5; color: var(--text-heading);">{{ geoSitat }}</blockquote>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+              <sc-for list="{{ geoFelter }}" as="f" hint-placeholder-count="4">
+                <div>
+                  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: 2px;">
+                    <label style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ f.navn }}</label>
+                    <span style="{{ f.tellerStil }}">{{ f.teller }}</span>
+                  </div>
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 6px;">{{ f.hjelp }}</div>
+                  <sc-if value="{{ f.lang }}" hint-placeholder-val="{{ false }}">
+                    <textarea value="{{ f.verdi }}" onChange="{{ f.sett }}" rows="3" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card); resize: vertical;"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ f.kort }}" hint-placeholder-val="{{ true }}">
+                    <input value="{{ f.verdi }}" onChange="{{ f.sett }}" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 10px 12px; font: var(--type-body-sm); color: var(--text-heading); background: var(--surface-card);">
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="margin-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Dette legges i sidens hode (FAQPage)</div>
+              <pre style="margin: 0; background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4); font-size: 11px; line-height: 1.5; color: var(--text-body); overflow-x: auto; white-space: pre-wrap;">{{ geoJson }}</pre>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--space-8); background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+          <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Hva som ellers er gjort for AI-søk</div>
+          <sc-for list="{{ geoTiltak }}" as="g" hint-placeholder-count="4">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: 12px var(--space-5); border-top: 1px solid var(--border-subtle); flex-wrap: wrap;">
+              <div style="min-width: 0; max-width: 62ch;">
+                <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ g.navn }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ g.hva }}</div>
+              </div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="success" hint-size="auto,24px">{{ g.status }}</x-import>
+            </div>
+          </sc-for>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
 
 </div>
 
@@ -13851,6 +14027,38 @@ window.__resources = {
             <input type="number" min="1" max="24" value="{{ ndPlasser }}" onChange="{{ settNdPlasser }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           </div>
         </div>
+        <!-- Gjentakelse.
+             Samme valg som i steg 2 av kursveiviseren, og samme regel bak:
+             det legges i kurs_serier, som laa der fra for og fylles paa av
+             seg selv. Ukedagen og datoen i maneden leses av datoen rett
+             over — du skal ikke fylle ut det samme to ganger.
+
+             Staar rett under datoen med vilje. Den laa nederst, under Fra,
+             Til og Sluttdato med hjelpetekst, og havnet dermed 190 piksler
+             under skjermkanten paa en telefon — i en dialog som er 1083
+             piksler hoy paa en skjerm som viser 664. Eieren, 1. september:
+             «paa mobilen klarte jeg det ikke. Fant ikke gjentagelsenknappen».
+             Den kunne rulles fram, men ingenting sa at det var mer under.
+
+             Den hoerer uansett hjemme her: du velger en dato, og sier med
+             det samme om den skal gjentas. -->
+        <div>
+          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <sc-for list="{{ ndGjentakValg }}" as="g" hint-placeholder-count="4">
+              <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ ndGjentar }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+              <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Antall ganger</label>
+              <input value="{{ ndAntall }}" onChange="{{ settNdAntall }}" placeholder="F.eks. 10" style="width: 90px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
+            </div>
+            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndGjentakHjelp }}</p>
+          </sc-if>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
           <div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
@@ -13871,28 +14079,6 @@ window.__resources = {
           <input type="date" value="{{ ndSluttdato }}" onChange="{{ settNdSluttdato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndSluttdatoHjelp }}</p>
         </div>
-        <!-- Gjentakelse.
-             Samme valg som i steg 2 av kursveiviseren, og samme regel bak:
-             det legges i kurs_serier, som laa der fra for og fylles paa av
-             seg selv. Ukedagen og datoen i maneden leses av datoen du valgte
-             over — du skal ikke fylle ut det samme to ganger. -->
-        <div>
-          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <sc-for list="{{ ndGjentakValg }}" as="g" hint-placeholder-count="4">
-              <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
-            </sc-for>
-          </div>
-          <sc-if value="{{ ndGjentar }}" hint-placeholder-val="{{ false }}">
-            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-              <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Antall ganger</label>
-              <input value="{{ ndAntall }}" onChange="{{ settNdAntall }}" placeholder="F.eks. 10" style="width: 90px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
-            </div>
-            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndGjentakHjelp }}</p>
-          </sc-if>
-        </div>
-
         <sc-if value="{{ ndHarLagtTil }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
             <div style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Lagt ut nå</div>
@@ -13901,7 +14087,16 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-        <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-2);">
+        <!-- Handlingsraden ligger fast i bunnen av dialogen.
+             Den sto sist i innholdet, og havnet dermed paa y=1048 i en dialog
+             som viser 664 piksler paa en telefon: for aa legge ut datoen
+             maatte man foerst rulle ned til en knapp man ikke visste fantes.
+             Naa staar den stille mens resten ruller — og fordi den ligger der
+             hele tiden, ser man ogsaa at det er mer innhold over den.
+
+             Skyggen over kanten er det som viser at noe forsvinner under
+             raden. Uten den ser en fastlimt rad ut som slutten paa dialogen. -->
+        <div style="position: sticky; bottom: calc(var(--space-6) * -1); z-index: 1; display: flex; align-items: center; gap: var(--space-4); margin: var(--space-2) calc(var(--space-6) * -1) calc(var(--space-6) * -1); padding: var(--space-4) var(--space-6) var(--space-6); background: var(--surface-card); border-top: 1px solid var(--border-subtle); box-shadow: 0 -10px 14px -10px rgba(45,20,12,.18);">
           <button type="button" onClick="{{ ndLeggTil }}" style="{{ ndLeggTilStil }}">{{ ndLeggTilTekst }}</button>
           <button type="button" onClick="{{ ndLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ferdig</button>
         </div>
@@ -16043,6 +16238,7 @@ class Component extends DCLogic {
       { sti: '/admin/beskjeder',    side: 'adminbeskjeder' },
       { sti: '/admin/oppskrifter',  side: 'adminoppskrifter' },
       { sti: '/admin/seo',          side: 'adminseo' },
+      { sti: '/admin/geo',          side: 'admingeo' },
       { sti: '/admin/markedsforing', side: 'adminmarked' },
       { sti: '/admin/nyttig',       side: 'adminnyttig' },
       { sti: '/admin/mobilvisning', side: 'adminmobilvis' },
@@ -18312,6 +18508,29 @@ class Component extends DCLogic {
   kjopKurv() {
     const kurv = this.state.kurv || {};
     const varer = this.state.butikkvareListe || [];
+
+    // Et medlemskap kan aldri bli en ordre: det er en avtale i Vipps som
+    // belastes hver periode. Havner det likevel i kurven — en kurv som stod
+    // aapen fra for rettelsen, eller en vei vi ikke har sett — skal det ikke
+    // meldes som en vare som er borte fra butikken. Da fikk medlemmet beskjed
+    // om aa ta noe ut av kurven som ikke gikk aa ta ut noe sted.
+    const abonnement = Object.keys(kurv).filter(n => String(n).indexOf('Abonnement: ') === 0);
+    if (abonnement.length) {
+      const andre = Object.keys(kurv).filter(n => abonnement.indexOf(n) === -1);
+      if (!andre.length) {
+        this.startAbonnement(abonnement[0]);
+        return;
+      }
+      // Sammen med varer gaar det ikke: to ulike betalinger i ett trykk.
+      // Da sier vi hva som maa gjores, framfor aa velge for medlemmet.
+      this.setState({
+        kvittering: 'Medlemskapet betales for seg',
+        kvitteringDetalj: abonnement[0].replace('Abonnement: ', '')
+          + ' er en avtale i Vipps, ikke en vare. Fullfør handlekurven først, '
+          + 'og opprett avtalen fra Min side etterpå.',
+      });
+      return;
+    }
 
     const linjer = [];
     const ukjente = [];
@@ -22793,6 +23012,15 @@ class Component extends DCLogic {
       });
     }
 
+    // Sporsmaalet og svaret eieren har skrevet i GEO-skjermen. Ligger det
+    // ikke noe der, legges ingenting til — og sida ser ut som for.
+    const geoId = this.seoIdForSide(this.state.side);
+    if (geoId) {
+      const std = this.seoSider().find(x => x.id === geoId) || null;
+      const faq = this.geoStrukturert(this.geoData(geoId), std);
+      if (faq) graf.push(Object.assign({ '@id': rot + '/#faq-' + geoId }, faq));
+    }
+
     return { '@context': 'https://schema.org', '@graph': graf };
   }
 
@@ -22897,6 +23125,341 @@ class Component extends DCLogic {
     ];
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  //  GEO — aa bli sitert av en AI, ikke rangert av Google
+  // ════════════════════════════════════════════════════════════════════
+  //
+  // Eieren, 1. september: «jeg er blitt fortalt at noe heter GEO som er med
+  // ai chat gpt, jeg vil optimalisere siden for dette ogsaa».
+  //
+  // Folk spor ChatGPT og Perplexity «hvor kan jeg ta keramikkurs i Tonsberg»
+  // framfor aa google det. Da rangeres ingenting — én kilde blir sitert, og
+  // resten finnes ikke. Det er den forskjellen GEO handler om.
+  //
+  // ── Hva scoren er, og hva den ikke er ─────────────────────────────
+  //
+  // Google har Search Console: du kan se hva du rangerer paa. OpenAI har
+  // ingenting tilsvarende. Ingen kan maale om ChatGPT faktisk nevner
+  // Lissom.
+  //
+  // Denne scoren er derfor VAAR tommelfingerregel. Den maaler om sida er
+  // FORMET slik en AI kan sitere fra den. Den kan ikke maale om noen gjor
+  // det. Det staar paa skjermen ogsaa, for et tall som later som det vet
+  // mer enn det gjor, er verre enn ingen tall.
+  //
+  // ── Hva som faktisk teller ────────────────────────────────────────
+  //
+  // En AI siterer helst én setning som staar paa egne bein. «Et
+  // nybegynnerkurs i dreiing hos Lissom koster kr. 2 800,- og gaar over to
+  // kvelder paa Teie i Tonsberg» kan limes rett inn i et svar. «Meld deg
+  // paa i dag!» kan ikke — den sier ingenting uten sida rundt.
+  //
+  // Derfor er tallene og stedsnavnet vektet tyngst: det er dem som gjor en
+  // setning selvstendig.
+
+  /** Feltene GEO legger til. Lagres som «GEO/<id>» i content_blocks. */
+  geoFeltDef() {
+    return [
+      { key: 'sporsmal', navn: 'Spørsmålet siden svarer på', maks: 90, min: 12,
+        hjelp: 'Slik en kunde ville spurt. «Hva koster et dreiekurs i Tønsberg?»' },
+      { key: 'kortSvar', navn: 'Kort svar — det en AI kan sitere', maks: 220, min: 60, lang: true,
+        hjelp: 'Én setning som står på egne bein, med tall og sted. Uten «vi» og «hos oss».' },
+      { key: 'fakta', navn: 'Fakta, én per linje', maks: 400, lang: true,
+        hjelp: 'Pris, varighet, hva som er inkludert, hvor det er. Tre eller flere.' },
+      { key: 'hvemFor', navn: 'Hvem det passer for', maks: 120,
+        hjelp: 'Kort. «Nybegynnere uten erfaring» er nok.' },
+    ];
+  }
+
+  geoLagret(id) {
+    const raa = (this.state.innholdLagret || {})['GEO/' + id];
+    if (!raa) return {};
+    try { return JSON.parse(raa) || {}; } catch (e) { return {}; }
+  }
+
+  geoData(id) {
+    return Object.assign({}, this.geoLagret(id), (this.state.geoUtkast || {})[id] || {});
+  }
+
+  /**
+   * Hvor godt sida lar seg sitere.
+   *
+   * Reglene er ikke de samme som SEO sine. En meta description paa 155 tegn
+   * er bra for Google og likegyldig for en AI; et tall i en hel setning er
+   * omvendt.
+   */
+  geoScore(d) {
+    const trekk = [];
+    let score = 100;
+    const sted = /tønsberg|nøtterøy|teie|vestfold/i;
+    const tall = /\d/;
+
+    const sp = (d.sporsmal || '').trim();
+    if (!sp) { score -= 22; trekk.push('Mangler spørsmålet siden svarer på (−22)'); }
+    else if (sp.slice(-1) !== '?') { score -= 6; trekk.push('Spørsmålet mangler spørsmålstegn (−6)'); }
+
+    const sv = (d.kortSvar || '').trim();
+    if (!sv) { score -= 30; trekk.push('Mangler kort svar — det er dette en AI siterer (−30)'); }
+    else {
+      if (sv.length < 60) { score -= 10; trekk.push('Det korte svaret er for kort til å stå alene (−10)'); }
+      if (sv.length > 220) { score -= 6; trekk.push('Det korte svaret er for langt til å siteres helt (−6)'); }
+      if (!tall.test(sv)) { score -= 12; trekk.push('Svaret har ingen tall — pris, varighet eller antall (−12)'); }
+      if (!sted.test(sv)) { score -= 10; trekk.push('Svaret sier ikke hvor det er (−10)'); }
+      // «Vi» og «hos oss» betyr ingenting naar setningen staar alene i et
+      // AI-svar. Leseren vet ikke hvem «vi» er.
+      if (/\b(vi|oss|vår|våre)\b/i.test(sv)) { score -= 8; trekk.push('Svaret sier «vi» eller «oss» — navngi Lissom i stedet (−8)'); }
+    }
+
+    const linjer = (d.fakta || '').split('\n').map(x => x.trim()).filter(Boolean);
+    if (!linjer.length) { score -= 18; trekk.push('Mangler fakta (−18)'); }
+    else {
+      if (linjer.length < 3) { score -= 8; trekk.push('Færre enn tre fakta (−8)'); }
+      if (!linjer.some(l => tall.test(l))) { score -= 6; trekk.push('Ingen av faktaene har et tall (−6)'); }
+    }
+
+    if (!(d.hvemFor || '').trim()) { score -= 8; trekk.push('Står ikke hvem det passer for (−8)'); }
+
+    return { score: Math.max(0, score), trekk };
+  }
+
+  /**
+   * Ferdigskrevne sporsmaal og svar, én per side.
+   *
+   * Motstykket til SEO_FERDIG, og skrevet etter de samme reglene som
+   * geoScore maaler: setningen skal kunne limes rett inn i et AI-svar og
+   * fortsatt vaere sann og forstaaelig for en som aldri har sett sida.
+   *
+   * Derfor staar «Lissom Keramikk» og «Nordre Lokkevei 15 paa Teie i
+   * Tonsberg» i selve setningen, ikke «vi» og «hos oss». Klipt ut av
+   * sammenhengen sier «vi holder kurs hver onsdag» ingenting om hvem.
+   *
+   * Ingen tall her er gjettet. Prisene og datoene staar ikke i teksten —
+   * de hentes fra katalogen i geoForslag, slik at de aldri kan bli
+   * staaende igjen som feil naar Monica endrer en pris.
+   */
+  static get GEO_FERDIG() {
+    const ADRESSE = 'Adresse: Nordre Løkkevei 15, 3120 Nøtterøy';
+    const TLF = 'Telefon: 94 13 46 01';
+    const INKL = 'Leire, verktøy, glasur og brenning er inkludert';
+    const VIPPS = 'Booking og betaling går gjennom Vipps';
+    const NAER = 'Teie ligger 5 minutter fra Tønsberg sentrum';
+    return {
+      forside: {
+        sporsmal: 'Hva er Lissom Keramikk?',
+        svar: 'Lissom Keramikk & Håndverk er et keramikkverksted i Nordre Løkkevei 15 på Teie i Tønsberg, med kurs i dreiing og håndbygging, kreative kveldsarrangementer og medlemskap.',
+        fakta: [ADRESSE, TLF, INKL, VIPPS],
+        hvemFor: 'Nybegynnere og erfarne — de fleste kursene krever ingen forkunnskaper.',
+      },
+      kurs: {
+        sporsmal: 'Hvilke keramikkurs kan man ta i Tønsberg?',
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg holder kurs i dreiing på dreieskive og håndbygging med plateteknikk, i tillegg til kveldene Sip & Clay, Date Night og Paint on Pots.',
+        fakta: ['Alle kursdatoer ligger på lissom.no/kurs', INKL, NAER],
+        hvemFor: 'De fleste kursene passer for nybegynnere uten erfaring.',
+      },
+      events: {
+        sporsmal: 'Hva slags keramikk-events arrangeres i Tønsberg?',
+        svar: 'Lissom Keramikk arrangerer Sip & Clay, Date Night og Paint on Pots i Nordre Løkkevei 15 på Teie i Tønsberg — kvelder der leire, verktøy og brenning er inkludert.',
+        fakta: ['Datoene ligger på lissom.no/events', ADRESSE, INKL],
+        hvemFor: 'Venner, par og kolleger — ingen forkunnskaper nødvendig.',
+      },
+      dreiekurs: {
+        sporsmal: 'Hva koster et nybegynnerkurs i dreiing i Tønsberg?',
+        svar: 'Nybegynnerkurset i dreiing hos Lissom Keramikk holdes i Nordre Løkkevei 15 på Teie i Tønsberg, og leire, verktøy, glasur og brenning er inkludert i prisen.',
+        fakta: [NAER, INKL, 'Ingen forkunnskaper nødvendig'],
+        hvemFor: 'Nybegynnere som aldri har sittet ved en dreieskive.',
+      },
+      boller: {
+        sporsmal: 'Hvor kan man lære å lage sin egen bolle i keramikk?',
+        svar: '«Lag din egen bolle» er et kveldskurs i håndbygging hos Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg, der leire, glasur og brenning er inkludert.',
+        fakta: [NAER, INKL, 'Bollen brennes i verkstedet og hentes senere'],
+        hvemFor: 'Nybegynnere — ingen forkunnskaper nødvendig.',
+      },
+      fat: {
+        sporsmal: 'Kan man lære å lage store fat i keramikk i Tønsberg?',
+        svar: 'Kurset i store fat hos Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg går på plateteknikk, og leire, glasur og brenning er inkludert.',
+        fakta: [NAER, INKL, 'Fatet brennes i verkstedet og hentes senere'],
+        hvemFor: 'Passer best for de som har prøvd leire før.',
+      },
+      workshop: {
+        sporsmal: 'Holder Lissom Keramikk workshop i Tønsberg?',
+        svar: 'Lissom Keramikk holder keramikkworkshop i Nordre Løkkevei 15 på Teie i Tønsberg, med leire, verktøy, glasur og brenning inkludert i prisen.',
+        fakta: [NAER, INKL, 'Datoene ligger på lissom.no/kurs'],
+        hvemFor: 'Alle nivåer — både nybegynnere og de som har prøvd før.',
+      },
+      datenight: {
+        sporsmal: 'Hva er Date Night hos Lissom Keramikk?',
+        svar: 'Date Night er en kveld for to ved dreieskiva hos Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg, med leire, verktøy og brenning inkludert.',
+        fakta: [ADRESSE, INKL, 'Datoene ligger på lissom.no/events'],
+        hvemFor: 'Par som vil gjøre noe annet enn å gå ut og spise.',
+      },
+      sipclay: {
+        sporsmal: 'Hva er Sip & Clay i Tønsberg?',
+        svar: 'Sip & Clay er en kveld med leire og godt selskap hos Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg, der materialer og brenning er inkludert.',
+        fakta: [ADRESSE, INKL, 'Datoene ligger på lissom.no/events'],
+        hvemFor: 'Venner, kolleger og bursdagsgjenger — ingen erfaring nødvendig.',
+      },
+      paintonpots: {
+        sporsmal: 'Hva er Paint on Pots i Tønsberg?',
+        svar: 'Paint on Pots hos Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg går ut på å male ferdigbrent keramikk, som glaseres og brennes i verkstedet etterpå.',
+        fakta: [ADRESSE, 'Glasering og brenning er inkludert', 'Det ferdige stykket hentes i verkstedet når det er brent'],
+        hvemFor: 'Barn og voksne — passer også de yngste.',
+      },
+      medlemskap: {
+        sporsmal: 'Kan man leie plass i et keramikkverksted i Tønsberg?',
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg tilbyr medlemskap med egen hylle, dørkode og tilgang til dreieskiver, glasur og ovn.',
+        fakta: ['Medlemmer har døgnåpen tilgang med egen dørkode', 'Egen hylle i verkstedet', ADRESSE, 'Planene ligger på lissom.no/medlemskap'],
+        hvemFor: 'De som har vært på kurs og vil fortsette på egen hånd.',
+      },
+      butikk: {
+        sporsmal: 'Hvor kan man kjøpe håndlaget keramikk i Tønsberg?',
+        svar: 'Håndlaget keramikk fra verkstedet i Nordre Løkkevei 15 på Teie i Tønsberg selges i nettbutikken til Lissom Keramikk, og kan hentes eller sendes.',
+        fakta: [ADRESSE, 'Hvert stykke er laget for hånd, så farge og form varierer litt', 'Betaling går gjennom Vipps'],
+        hvemFor: 'De som vil ha unike kopper, skåler og fat.',
+      },
+      gavekort: {
+        sporsmal: 'Finnes det gavekort på keramikkurs i Tønsberg?',
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg selger gavekort som gjelder på alle kurs, events og varer, og som sendes på e-post etter kjøp.',
+        fakta: ['Gjelder alle kurs, events og varer', 'Sendes på e-post rett etter kjøp', ADRESSE],
+        hvemFor: 'Gave til noen som har lyst til å prøve keramikk.',
+      },
+      omoss: {
+        sporsmal: 'Hvor holder Lissom Keramikk til?',
+        svar: 'Lissom Keramikk & Håndverk holder til i Nordre Løkkevei 15 på Teie i Tønsberg, og er et verksted for kurs, kreative kvelder og medlemmer med fast plass.',
+        fakta: [ADRESSE, NAER, TLF],
+        hvemFor: 'Alle som vil prøve keramikk, uansett erfaring.',
+      },
+      kontakt: {
+        sporsmal: 'Hvordan kontakter man Lissom Keramikk?',
+        svar: 'Lissom Keramikk nås på telefon 94 13 46 01 og e-post monica@lissom.no, og holder til i Nordre Løkkevei 15 på Teie i Tønsberg.',
+        fakta: [TLF, 'E-post: monica@lissom.no', ADRESSE],
+        hvemFor: 'Spørsmål om kurs, medlemskap, bedriftsarrangement og gavekort.',
+      },
+      bedrift: {
+        sporsmal: 'Kan bedrifter ha teambuilding med keramikk i Vestfold?',
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg tar imot bedrifter til teambuilding, julebord og kick-off, med leire, verktøy og brenning inkludert.',
+        fakta: [ADRESSE, INKL, 'Opplegget avtales på forhånd — ta kontakt på 94 13 46 01'],
+        hvemFor: 'Bedrifter og grupper i Vestfold.',
+      },
+      kalender: {
+        sporsmal: 'Når har Lissom Keramikk åpent?',
+        svar: 'Verkstedet til Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg er åpent når det går kurs eller event, og medlemmer har døgnåpen tilgang med egen dørkode.',
+        fakta: ['Alle datoene ligger på lissom.no/kalender', 'Medlemmer har tilgang hele døgnet med dørkode', ADRESSE],
+        hvemFor: 'Alle som vil se hva som skjer framover.',
+      },
+      kursoversikt: {
+        sporsmal: 'Hvilke kurs holder Lissom Keramikk?',
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg holder kurs i dreiing på dreieskive og håndbygging med plateteknikk, med materialer og brenning inkludert.',
+        fakta: ['Alle kursene ligger på lissom.no/kurs', INKL, NAER],
+        hvemFor: 'Nybegynnere og de som har prøvd leire før.',
+      },
+      nyttig: {
+        sporsmal: 'Hvor finner man brennetabell og cone-temperaturer?',
+        svar: 'Brennetabell, cone-temperaturer og trivselsregler for verkstedet til Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg er samlet under Nyttig info på lissom.no.',
+        fakta: ['Brennetabell og cone-temperaturer: lissom.no/nyttig-info/brennetabell', 'Trivselsregler: lissom.no/nyttig-info/trivselsregler', ADRESSE],
+        hvemFor: 'Medlemmer og andre som brenner egen keramikk.',
+      },
+      nyheter: {
+        sporsmal: 'Skriver Lissom Keramikk guider om keramikk?',
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg legger ut guider og nyheter om dreiing, glasering og brenning på lissom.no/nyheter.',
+        fakta: ['Guidene ligger på lissom.no/nyheter', ADRESSE, 'Skrevet ut fra det som gjøres i verkstedet'],
+        hvemFor: 'Alle som vil lære mer mellom kursene.',
+      },
+    };
+  }
+
+  /**
+   * Forslaget til én side: den ferdige teksten, med tallene fra basen lagt paa.
+   *
+   * Prisen, varigheten og datoene staar aldri i den ferdige teksten. De
+   * hentes her, fra katalogen, slik at setningen en AI siterer er sann i dag
+   * — og slik at en prisendring ikke etterlater et gammelt tall i en
+   * setning ingen husker at de skrev.
+   *
+   * Finner vi ikke kurset i katalogen, staar setningen uten pris. Et forslag
+   * som gjetter prisen er verre enn ingen forslag: det blir sitert like
+   * villig.
+   */
+  geoForslag(s) {
+    const kat = (this.state.katalog || []).find(k => (k.tittel || '') === s.navn) || {};
+    const pris = String(kat.pris || '').replace(/\s+/g, ' ').trim();
+    const varighet = String(kat.varighetVist || '').trim();
+    const datoer = (kat.datoer || []).length;
+    const neste = ((kat.datoer || [])[0] || {}).dag || '';
+
+    const f = Component.GEO_FERDIG[s.id];
+    if (!f) {
+      // En side uten ferdigskrevet tekst. Da er navnet det eneste vi vet
+      // sikkert, og setningen holdes til det.
+      return {
+        sporsmal: 'Hva er ' + s.navn.toLowerCase() + ' hos Lissom Keramikk?',
+        kortSvar: s.navn + ' hos Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg.',
+        fakta: 'Adresse: Nordre Løkkevei 15, 3120 Nøtterøy\nTelefon: 94 13 46 01\nLeire, verktøy, glasur og brenning er inkludert',
+        hvemFor: 'Alle — ingen forkunnskaper nødvendig.',
+      };
+    }
+
+    // Tallene forst i faktalista: det er dem folk spor om.
+    const fakta = [];
+    if (pris) fakta.push('Pris: ' + pris);
+    if (varighet) fakta.push('Varighet: ' + varighet);
+    if (datoer) fakta.push('Datoer ute nå: ' + datoer + (neste ? ' — første ' + neste : ''));
+    f.fakta.forEach(x => { if (fakta.indexOf(x) === -1) fakta.push(x); });
+
+    return {
+      sporsmal: f.sporsmal,
+      // Prisen som egen setning etter svaret. Da holder hovedsetningen seg
+      // like lang og lesbar enten prisen er kjent eller ikke.
+      kortSvar: pris ? f.svar.replace(/\.$/, '') + '. Prisen er ' + pris + '.' : f.svar,
+      fakta: fakta.join('\n'),
+      hvemFor: f.hvemFor,
+    };
+  }
+
+  /**
+   * Sporsmaal og svar som maskinlesbar markering.
+   *
+   * Dette er det eneste GEO legger igjen i selve sida. Resten — llms.txt,
+   * robots.txt — er filer ved siden av. En FAQPage er formatet baade Google
+   * og AI-tjenestene leser sporsmaal og svar i, saa setningen eieren skriver
+   * havner samme sted uansett hvem som henter den.
+   *
+   * Uten baade sporsmaal og svar blir det ingenting. Halv markering er verre
+   * enn ingen: den lover et svar som ikke staar der.
+   */
+  geoStrukturert(d, sd) {
+    const sp = (d.sporsmal || '').trim();
+    const sv = (d.kortSvar || '').trim();
+    if (!sp || !sv) return null;
+
+    const linjer = (d.fakta || '').split('\n').map(x => x.trim()).filter(Boolean);
+    // Det korte svaret forst, faktaene etter. Da staar setningen som kan
+    // siteres alene overs, og opplysningene under er der for den som vil ha
+    // mer — ikke blandet inn i den ene setningen.
+    const svar = [sv].concat(linjer).join(' ');
+
+    const sporsmaal = [{
+      '@type': 'Question',
+      name: sp,
+      acceptedAnswer: { '@type': 'Answer', text: svar },
+    }];
+
+    // «Hvem passer det for» er et sporsmaal om et kurs, ikke om en side.
+    // «Hvem passer kontakt for?» er ikke noe noen har spurt om, og en
+    // FAQPage med et sporsmaal ingen stiller er stoy for baade Google og
+    // en AI. Derfor bare paa kursene og eventene.
+    const hvem = (d.hvemFor || '').trim();
+    const erKurs = sd && (sd.type === 'kurs' || sd.type === 'event');
+    if (hvem && erKurs && sd.navn) {
+      sporsmaal.push({
+        '@type': 'Question',
+        name: 'Hvem passer ' + String(sd.navn).toLowerCase() + ' for?',
+        acceptedAnswer: { '@type': 'Answer', text: hvem },
+      });
+    }
+
+    return { '@type': 'FAQPage', mainEntity: sporsmaal };
+  }
+
   seoScore(d, s) {
     const trekk = [];
     let score = 100;
@@ -22938,6 +23501,52 @@ class Component extends DCLogic {
         if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null });
       })
       .catch(() => { this._medlemskapHentes = false; });
+  }
+
+  /**
+   * Starte eller fornye et medlemskap.
+   *
+   * Eieren, 1. september, med et skjermbilde fra et medlem som ikke fikk
+   * betalt: «Har faatt denne fra et medlem som skal betale!!!!!!!!»
+   *
+   * Kassa sa «Abonnement: Basis 30 finnes ikke i butikken lenger». Den hadde
+   * rett. Tre knapper paa Min side — «Forny» to steder, og «Legg i
+   * handlekurven» paa planene under «Bytt abonnement» — la medlemskapet i
+   * handlekurven som om det var en kopp. Men kjopKurv() slaar hver linje opp
+   * i butikkvarene, og et medlemskap staar ikke der. Det kunne det heller
+   * ikke: et medlemskap er en avtale i Vipps som belastes hver periode, ikke
+   * en ordre som betales én gang.
+   *
+   * Det var altsaa ikke en gammel kurv som hadde blitt staaende. Veien var
+   * stengt fra foerste trykk, for alle, hver gang.
+   *
+   * Riktig vei fantes fra for: den bookingskjermen bruker for kurs merket
+   * «Medlemskap». Naa gaar disse tre samme vei.
+   *
+   * Serveren avgjor om det gaar. Loeper det alt en avtale, svarer den «Du har
+   * alt et medlemskap» — og det er den som skal si det, ikke vi: bare den vet
+   * hva som staar i Vipps. Vi kan aldri opprette to avtaler ved siden av
+   * hverandre herfra.
+   */
+  startAbonnement(planNavn) {
+    const navn = String(planNavn || '').replace(/^Abonnement: /, '').trim()
+      || (this.state.abo || this.aktivPlan().navn || '');
+    if (!navn) {
+      this.setState({ kvittering: 'Velg medlemskap', kvitteringDetalj: 'Vi fant ikke hvilket medlemskap det gjelder.' });
+      return;
+    }
+    // Ligger det et medlemskap i kurven, skal det ut naar avtalen startes.
+    // Ellers ville det blitt staaende og stoppet neste butikkjop.
+    this.setState(st => {
+      const k = Object.assign({}, st.kurv);
+      Object.keys(k).forEach(n => { if (String(n).indexOf('Abonnement: ') === 0) delete k[n]; });
+      return { kurv: k };
+    });
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Avtalen er opprettet i Vipps', abo: navn, aboKjopt: true, oppsagt: false });
+      return;
+    }
+    this.medlemskapKall({ handling: 'start', plan: navn }, 'Avtalen er opprettet i Vipps');
   }
 
   medlemskapKall(kropp, merkelapp) {
@@ -24118,6 +24727,7 @@ class Component extends DCLogic {
         // side, og staar naa som kort paa Oversikt.
         ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
+        ['GEO',           'admingeo',        { geoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
         // Feilmeldingene hoerer til nettsida: det er der de oppstaar, og
         // det er der knappen som melder dem inn staar.
@@ -24141,6 +24751,9 @@ class Component extends DCLogic {
         // markedsforingsfanene, byttet hele sidemenyen til «Nettsiden», og
         // veien tilbake fantes ikke uten aa gaa om menyen paa nytt.
         ['SEO',             'adminseo',     { seoFra: 'marked' }],
+        // GEO er soskenet til SEO: samme skjerm, andre regler. Den staar
+        // begge steder av samme grunn som SEO gjor det.
+        ['GEO',             'admingeo',     { geoFra: 'marked' }],
       ],
     };
   }
@@ -24194,6 +24807,10 @@ class Component extends DCLogic {
         return st.seoFra === 'marked'
           ? p('Markedsføring', 'Markedsføring', 'SEO')
           : p('Nettsiden', 'Nettsiden', 'SEO');
+      case 'admingeo':
+        return st.geoFra === 'marked'
+          ? p('Markedsføring', 'Markedsføring', 'GEO')
+          : p('Nettsiden', 'Nettsiden', 'GEO');
       case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
       case 'adminfeil':          return p('Nettsiden', 'Nettsiden', 'Feilmeldinger');
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
@@ -26451,9 +27068,17 @@ class Component extends DCLogic {
       klIcsMarker: e => e.target.select(),
       klIcsUrl: 'webcal://lissom.no/api/kalender.ics?nokkel=•••',
       klIcsPaminUrl: 'webcal://lissom.no/api/paminnelser.ics?nokkel=•••',
-      klKasse: () => this.setState({ klKasseVis: true }),
-      klKasseVises: !!this.state.klKasseVis,
-      klKasseLukk: () => this.setState({ klKasseVis: false }),
+      // «Kasse» aapnet en rute som sa at kassa «kobles paa her».
+      //
+      // Eieren, 1. september, med et skjermbilde av den: «Kasse fra kalender
+      // er ikke ferdig». Han hadde rett — knappen lovet noe og gjorde
+      // ingenting. Kassa finnes: den ligger under Oversikt → Kassa, samme
+      // sted kortet paa oversikten sender deg. Naa gaar knappen dit, med
+      // samme utgangspunkt som det kortet gir.
+      klKasse: () => this.gaaAdmin('adminuttak', {
+        utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
+        utBelop: '', utSalgBeskjed: '',
+      }),
     };
   }
 
@@ -29091,18 +29716,10 @@ class Component extends DCLogic {
                 { navn: 'Inneholder', verdi: p.detalj },
                 { navn: 'Bytte', verdi: 'Gjelder fra neste måned' },
                 { navn: 'Oppsigelse', verdi: 'Måned til måned — si opp når du vil' },
-              ], 'Legg i handlekurven', null, false, () => {
-                this.setState(s2 => {
-                  const k = Object.assign({}, s2.kurv);
-                  // Ett medlemskap om gangen. Navnene sto skrevet inn her,
-                  // saa et omdopt medlemskap ble liggende igjen ved siden av
-                  // det nye — og kunden betalte for begge.
-                  Object.keys(k).forEach(n => { if (n.indexOf('Abonnement: ') === 0) delete k[n]; });
-                  k['Abonnement: ' + p.navn] = 1;
-                  return { kurv: k };
-                });
-                this.apneKurvAuto(200);
-              }),
+              // Knappen sa «Legg i handlekurven», og det var nettopp det
+              // som ikke gikk: kassa kunne ikke bestille et medlemskap.
+              // Naa sier den hva som skjer, og gjor det.
+              ], 'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),
         stil: {
           appearance: 'none', cursor: p.brukt ? 'not-allowed' : 'pointer', textAlign: 'left', fontFamily: 'inherit',
           display: 'flex', flexDirection: 'column', gap: 2,
@@ -29129,10 +29746,20 @@ class Component extends DCLogic {
           p.velgOgLukk();
         },
       })),
+      // Gavekortet er ikke en butikkvare.
+      //
+      // Knappen la «Gavekort» i handlekurven til fast 500 kroner. Kassa slaar
+      // hver linje opp blant butikkvarene, og det staar ingen «Gavekort»
+      // der — saa dette endte i den samme doede enden som medlemskapet:
+      // «Gavekort finnes ikke i butikken lenger». Det gikk heller ikke an aa
+      // velge belop, mottaker eller hilsen, som er hele poenget med et
+      // gavekort.
+      //
+      // Naa gaar den dit kjopet faktisk finnes.
       paafyll: [
         { navn: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter', pris: 'Valgfritt beløp' },
       ].map(v => Object.assign(v, {
-        kjop: () => this.leggTil(v.navn),
+        kjop: this.go('gavekortside'),
       })),
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
@@ -29334,11 +29961,11 @@ class Component extends DCLogic {
       bookOrdreTittel: (this.state.valgtKurs && (this.state.valgtKurs.title || this.state.valgtKurs.tittel)) || 'Nybegynner dreiekurs',
       bookOrdreDato: (this.state.bDato) || (this.state.valgtKurs && this.state.valgtKurs.datoer && this.state.valgtKurs.datoer[0] && this.state.valgtKurs.datoer[0].dato) || (this.state.valgtKurs && this.state.valgtKurs.date) || 'Onsdag 2. september, 17:30',
       bookOrdreSum: ((this.state.valgtKurs && this.state.valgtKurs.price) || 'Fra kr. 2 800,-').replace('Fra ', ''),
-      bookTilKurv: () => {
-        const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs' };
-        const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || k.date || '';
-        this.leggTil((k.title || k.tittel || 'Kurs') + (dato ? ' — ' + dato : ''));
-      },
+      // «bookTilKurv» sto her: den la kursnavnet med datoen i handlekurven.
+      // Ingen knapp pekte paa den, og godt var det — kassa slaar hver linje
+      // opp blant butikkvarene, og et kurs staar ikke der. Den ville gitt
+      // samme doede ende som gavekortet og medlemskapet. Booking gaar gjennom
+      // api/booking.php, som ogsaa holder av plassen.
       // Knappen sier hva som faktisk skjer. «Book plass» paa et medlemskap
       // er misvisende — det er en avtale, ikke en plass.
       bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')
@@ -34964,7 +35591,7 @@ class Component extends DCLogic {
         };
       })(),
 
-      aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || this.aktivPlan().navn)),
+      aFornyAbo: () => this.startAbonnement(this.state.abo || this.aktivPlan().navn),
 
       apneManuell: this.apne('Stemple inn manuelt', 'Koden står på skiltet ved døra og byttes hver dag. Glemmer du å stemple ut, stopper telleren automatisk ved stengetid.', [
         { navn: 'Dagens kode', verdi: '' },
@@ -38359,6 +38986,7 @@ class Component extends DCLogic {
         window.scrollTo(0, 0);
       },
       erAdminSeo: side === 'adminseo',
+      erAdminGeo: side === 'admingeo',
       erAdminMarked: side === 'adminmarked',
       adminNavMarked: this.adminMeny(),
 
@@ -38457,6 +39085,11 @@ class Component extends DCLogic {
             { merke: 'Utkast', tall: String(utkast.filter(u => u.type === 'sosialt').length), tekst: 'innlegg til sosiale medier', velg: () => this.setState({ mkFane: 'sosialt' }) },
             { merke: 'SEO', tall: String(muligheter.length), tekst: 'muligheter funnet i basen',
               velg: () => { this.setState({ side: 'adminseo', seoFra: 'marked' }); window.scrollTo(0, 0); } },
+            // GEO staar for seg selv. Det er ikke en fane under SEO: reglene
+            // er andre, og skjules den bak SEO-kortet blir den aldri aapnet.
+            { merke: 'GEO', tall: String(this.seoSider().filter(x => !(this.geoData(x.id).kortSvar || '').trim()).length),
+              tekst: 'sider uten svar en AI kan sitere',
+              velg: () => { this.setState({ side: 'admingeo', geoFra: 'marked' }); window.scrollTo(0, 0); } },
             // Uten dette kortet ville skjermen for e-post og SMS ikke vaert
             // til aa finne: markedsforing har ingen undermeny aa henge den i.
             { merke: 'Utsending',
@@ -39619,6 +40252,176 @@ class Component extends DCLogic {
               ),
             }));
           })(),
+        };
+      })(),
+      ...(() => {
+        if (side !== 'admingeo') return {};
+        const sider = this.seoSider();
+        const valgtId = this.state.geoValgtId || 'forside';
+        const valgtSide = sider.find(x => x.id === valgtId) || sider[0];
+        const utkast = this.state.geoUtkast || {};
+        const d = this.geoData(valgtSide.id);
+        const sc = this.geoScore(d);
+        const scoreFarge = n => n >= 80 ? 'var(--sage-500)' : n >= 55 ? 'var(--lissom-yellow)' : 'var(--terracotta-500)';
+
+        // Her finnes ingen SEO_FERDIG-motstykke: GEO-teksten er ikke skrevet
+        // paa forhaand, den bygges av det som staar i basen naar knappen
+        // trykkes. Da maaler lista bare det som faktisk er lagret — og et
+        // tomt felt er et ekte hull, ikke et som er dekket av en standardtekst.
+        const alle = sider.map(s => ({ s, sc: this.geoScore(this.geoData(s.id)) }));
+        const snitt = Math.round(alle.reduce((a, x) => a + x.sc.score, 0) / alle.length);
+        const utenSvar = alle.filter(x => !(this.geoData(x.s.id).kortSvar || '').trim());
+        const utenSporsmal = alle.filter(x => !(this.geoData(x.s.id).sporsmal || '').trim());
+        const utenFakta = alle.filter(x => !(this.geoData(x.s.id).fakta || '').trim());
+        const under70 = alle.filter(x => x.sc.score < 70);
+        const velgSide = id => () => this.setState({ geoValgtId: id });
+
+        return {
+          adminNavGeo: this.adminMeny(),
+          geoDash: [
+            { merke: 'Snittscore', verdi: snitt + '/100', under: sider.length + ' sider målt' },
+            { merke: 'Sider under 70', verdi: String(under70.length), under: 'Bør fikses først' },
+            { merke: 'Uten kort svar', verdi: String(utenSvar.length), under: 'Det en AI siterer' },
+            { merke: 'Uten fakta', verdi: String(utenFakta.length), under: 'Pris, sted, varighet' },
+          ].map((t, i) => {
+            const kilde = [under70, under70, utenSvar, utenFakta][i];
+            const gaar = kilde.length > 0;
+            return Object.assign(t, {
+              under: gaar || i === 0 ? t.under : 'Ingenting å ta tak i',
+              velg: gaar ? velgSide(kilde[0].s.id) : null,
+              kortStil: {
+                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
+                cursor: gaar ? 'pointer' : 'default',
+              },
+            });
+          }),
+          geoHandlinger: [
+            utenSvar.length ? { tekst: utenSvar.length + ' sider mangler det korte svaret', hint: 'Åpne første og bruk «Foreslå GEO»', velg: velgSide(utenSvar[0].s.id) } : null,
+            utenSporsmal.length ? { tekst: utenSporsmal.length + ' sider mangler spørsmålet de svarer på', hint: 'Åpne første og bruk «Foreslå GEO»', velg: velgSide(utenSporsmal[0].s.id) } : null,
+            utenFakta.length ? { tekst: utenFakta.length + ' sider mangler fakta', hint: 'Pris, varighet og sted', velg: velgSide(utenFakta[0].s.id) } : null,
+            under70.length ? { tekst: under70.length + ' sider har GEO-score under 70', hint: 'Start med den laveste', velg: velgSide(under70.slice().sort((a, b) => a.sc.score - b.sc.score)[0].s.id) } : null,
+          ].filter(Boolean),
+          geoAltGront: [utenSvar, utenSporsmal, utenFakta, under70].every(x => !x.length),
+          geoListe: alle.map(x => ({
+            navn: x.s.navn, score: x.sc.score + '',
+            velg: velgSide(x.s.id),
+            stil: {
+              display: 'flex', alignItems: 'center', gap: 'var(--space-4)', width: '100%', textAlign: 'left',
+              appearance: 'none', cursor: 'pointer', background: x.s.id === valgtSide.id ? 'var(--clay-100)' : 'transparent',
+              border: 'none', borderTop: '1px solid var(--border-subtle)', padding: '12px 16px', font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+            },
+            barYtre: { flex: '0 0 72px', height: 6, borderRadius: 999, background: 'var(--clay-200)', overflow: 'hidden' },
+            barIndre: { display: 'block', width: x.sc.score + '%', height: '100%', borderRadius: 999, background: scoreFarge(x.sc.score) },
+          })),
+          geoValgtNavn: valgtSide.navn,
+          geoValgtType: valgtSide.type === 'kurs' ? 'Kurs' : valgtSide.type === 'event' ? 'Event' : valgtSide.type === 'kategori' ? 'Produktkategori' : 'Side',
+          geoScoreTall: sc.score + '/100',
+          geoScoreBar: { display: 'block', width: sc.score + '%', height: '100%', borderRadius: 999, background: scoreFarge(sc.score) },
+          geoTrekk: sc.trekk,
+          geoIngenTrekk: !sc.trekk.length,
+
+          // Setningen slik den vil staa alene i et svar. Er den ikke skrevet
+          // enda, staar ruta tom — en tenkt forhaandsvisning av ingenting
+          // ville bare vaert pynt.
+          geoHarSitat: !!(d.kortSvar || '').trim(),
+          geoSitatSporsmal: (d.sporsmal || '').trim() || 'Spørsmålet er ikke skrevet enda',
+          geoSitat: '«' + (d.kortSvar || '').trim() + '»',
+
+          geoFelter: this.geoFeltDef().map(f => {
+            const verdi = d[f.key] || '';
+            const forMye = f.maks && verdi.length > f.maks;
+            const forLite = f.min && verdi.length > 0 && verdi.length < f.min;
+            return {
+              navn: f.navn, hjelp: f.hjelp || '', verdi, lang: !!f.lang, kort: !f.lang,
+              teller: verdi.length + (f.maks ? ' / ' + f.maks : ''),
+              tellerStil: { fontSize: 11, color: forMye || forLite ? 'var(--terracotta-600)' : 'var(--text-muted)' },
+              sett: e => {
+                const v = e.target.value;
+                this.setState(st => ({ geoUtkast: Object.assign({}, st.geoUtkast, { [valgtSide.id]: Object.assign({}, this.geoData(valgtSide.id), { [f.key]: v }) }) }));
+              },
+            };
+          }),
+
+          geoJson: (() => {
+            const o = this.geoStrukturert(d, valgtSide);
+            return o ? JSON.stringify(o, null, 2)
+              : 'Skriv spørsmålet og det korte svaret — så vises markeringen her.';
+          })(),
+
+          geoForeslaa: () => {
+            const forslag = this.geoForslag(valgtSide);
+            this.setState(st => ({ geoUtkast: Object.assign({}, st.geoUtkast, { [valgtSide.id]: Object.assign({}, forslag, this.geoData(valgtSide.id)) }) }));
+          },
+          geoOverskriv: () => {
+            const forslag = this.geoForslag(valgtSide);
+            this.setState(st => ({ geoUtkast: Object.assign({}, st.geoUtkast, { [valgtSide.id]: forslag }) }));
+          },
+
+          // «Optimaliser for GEO» — samme knapp som SEO sin, samme regel:
+          // det eieren alt har skrevet blir staaende, hullene fylles.
+          geoFyllKnapp: this.state.geoFyller ? 'Fyller inn …' : 'Fyll inn og lagre',
+          geoFyllHjelp: 'Spørsmål, kort svar, fakta og hvem det passer for på alle '
+            + sider.length + ' sidene — bygget av prisene og datoene som ligger i basen, '
+            + 'ikke gjettet. Felt du selv har skrevet røres ikke.',
+          geoFyllAlle: () => {
+            if (this.state.geoFyller) return;
+            const endringer = {};
+            let rort = 0;
+            sider.forEach(sd => {
+              const fra = this.geoData(sd.id);
+              const ny = Object.assign({}, this.geoForslag(sd), fra);
+              if (JSON.stringify(ny) === JSON.stringify(fra)) return;
+              endringer['GEO/' + sd.id] = JSON.stringify(ny);
+              rort++;
+            });
+            if (!rort) {
+              this.setState({ kvittering: 'Alt er alt fylt ut', kvitteringDetalj: 'Ingen tomme felt igjen.' });
+              return;
+            }
+            this.setState({ geoFyller: true, geoUtkast: {} });
+            this.lagreInnhold(endringer, rort + ' sider er optimalisert for GEO');
+            this._seoSatt = null;
+            setTimeout(() => this.setState({ geoFyller: false }), 1200);
+          },
+
+          geoUlagret: !!utkast[valgtSide.id],
+          geoLagreTekst: utkast[valgtSide.id] ? 'Lagre endringene' : 'Lagret',
+          geoLagre: () => {
+            if (!utkast[valgtSide.id]) return;
+            const rent = {};
+            this.geoFeltDef().forEach(f => {
+              const v = (d[f.key] || '').trim();
+              if (v) rent[f.key] = v;
+            });
+            this.lagreInnhold(
+              { ['GEO/' + valgtSide.id]: JSON.stringify(rent) },
+              'GEO for ' + valgtSide.navn + ' er lagret'
+            );
+            this._seoSatt = null;
+            this.setState(st => {
+              const u = Object.assign({}, st.geoUtkast);
+              delete u[valgtSide.id];
+              return { geoUtkast: u };
+            });
+          },
+          geoForkast: () => {
+            this.setState(st => {
+              const u = Object.assign({}, st.geoUtkast);
+              delete u[valgtSide.id];
+              return { geoUtkast: u };
+            });
+          },
+
+          // Det som gjelder hele nettstedet, ikke den enkelte sida. Staar her
+          // fordi eieren ellers ikke har noen maate aa se at det finnes — det
+          // er filer og hodemarkering ingen aapner i en nettleser.
+          geoTiltak: [
+            { navn: 'llms.txt', status: 'På', hva: 'lissom.no/llms.txt — kurs, priser, datoer, åpningstider og medlemskap i ren tekst, bygget av basen. Det er fila AI-tjenestene leser først.' },
+            { navn: 'robots.txt', status: 'På', hva: 'Søkerobotene til ChatGPT, Perplexity og Claude slipper inn på de åpne sidene, og er stengt ute fra admin, Min side og kassa.' },
+            { navn: 'Strukturerte data', status: 'På', hva: 'Verkstedet, kursene med datoer og priser, varene i butikken og spørsmål og svar ligger som maskinlesbar markering i hodet på hver side.' },
+            { navn: 'Sidekart', status: 'På', hva: 'lissom.no/sitemap.xml oppdaterer seg selv når et kurs legges ut eller tas ned.' },
+          ],
         };
       })(),
       goTilbake: this.go(this.state.fra === 'minside' ? 'minside' : this.state.fra === 'medlemskap' ? 'medlemskap' : 'kurs'),

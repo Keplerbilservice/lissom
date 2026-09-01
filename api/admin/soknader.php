@@ -83,6 +83,31 @@ $betaling = DB::harKolonne('membership_applications', 'betaling')
     ? (string) ($soknad['betaling'] ?? 'trekk') : 'trekk';
 
 $avtaleStatus = 'ingen';
+
+// «Ordner selv» skal sjekkes like noye som fast trekk.
+//
+// Eieren, 1. september: «Hun fikk medlemskap selv om betalingen ikke gikk inn
+// hva faen». Her sto ingen sjekk i det hele tatt for denne maaten: ett trykk
+// paa Godkjenn ga full tilgang, og svaret sa «gjor opp selv for hver periode»
+// — som om alt var i orden. At foerste betaling aldri kom, sto ingen steder.
+//
+// Forskjellen paa de to maatene er hvem som krever inn de SENERE periodene.
+// Den foerste betalingen skal vaere i havn uansett.
+if ($vedtak === 'godkjent' && $betaling === 'selv') {
+    $ut = Medlemskap::engangsBetalt((int) $soknad['member_id']);
+    $avtaleStatus = $ut['status'];
+
+    if ($avtaleStatus === 'ukjent') {
+        Svar::feil('Fikk ikke sjekket betalingen hos Vipps akkurat nå. '
+            . 'Prøv igjen om litt — da slipper vi å slippe noen inn på en antakelse.');
+    }
+    if (!in_array($avtaleStatus, ['aktiv', 'ingen'], true)) {
+        Svar::feil('Betalingen fra ' . $soknad['navn'] . ' har ikke kommet inn. '
+            . 'Den står som «' . $avtaleStatus . '» hos Vipps. Be hen fullføre '
+            . 'betalingen fra medlemskapssiden, så kan du si ja her etterpå.');
+    }
+}
+
 if ($vedtak === 'godkjent' && $betaling === 'trekk') {
     $ut = Medlemskap::slippForsteTrekk((int) $soknad['member_id']);
     $avtaleStatus = $ut['status'];
@@ -161,11 +186,21 @@ Svar::ok([
     'status'  => $vedtak,
     'beskjed' => $vedtak !== 'godkjent'
         ? 'Søknaden er avslått, og betalingsavtalen er stoppet.'
-        : ($avtaleStatus === 'aktiv'
+        // «selv» foerst: staar «aktiv» over, faar en som gjor opp selv
+        // beskjed om et trekk som aldri kommer.
+        : ($betaling !== 'selv' && $avtaleStatus === 'aktiv'
             ? 'Godkjent. Første trekk går ut i natt.'
             : ($betaling === 'selv'
-                ? 'Godkjent. ' . $soknad['navn'] . ' gjør opp selv for hver periode — '
-                  . 'det kommer ingen automatiske trekk.'
+                // «ingen» betyr at det ikke finnes noen betaling aa se paa —
+                // en gammel soknad. Da skal det staa at ingenting er betalt,
+                // ikke bare at det ikke kommer trekk.
+                ? ($avtaleStatus === 'ingen'
+                    ? 'Godkjent. Det finnes ingen betaling på ' . $soknad['navn']
+                      . ' — søknaden er fra før innmeldingen krevde det, så beløpet '
+                      . 'må kreves inn selv.'
+                    : 'Godkjent. Første betaling er i havn. ' . $soknad['navn']
+                      . ' gjør opp selv for de neste periodene — det kommer ingen '
+                      . 'automatiske trekk.')
                 : 'Godkjent. Denne søknaden har ingen betalingsavtale — '
                   . 'den er fra før innmeldingen krevde det, så beløpet må kreves inn selv.')),
 ]);

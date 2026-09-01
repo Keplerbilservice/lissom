@@ -2294,8 +2294,10 @@ sjekk('ventelista har faatt sin plass i fanerekka',
     str_contains($sida, "['Venteliste',    'adminventeliste'],")
     && str_contains($sida, "case 'adminventeliste':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Venteliste');"));
 // En fane som forer til en skjerm uten fanerad er en blindvei.
+// Tallet er summen av skjermer med fanerad. Det gikk fra 15 til 16 da
+// GEO-skjermen kom til — den har fanerekka som SEO-skjermen har.
 sjekk('ventelisteskjermen har fanerekka, saa den ikke blir en blindvei',
-    substr_count($sida, '{{ harOmrFaner }}') === 15);
+    substr_count($sida, '{{ harOmrFaner }}') === 16);
 // Oversikt var blitt en oppslagstavle med fjorten kort. Eieren, 29. august,
 // pekte ut fire som skulle bort: «Kursadministrasjon», «Meld noen paa»,
 // «Intern side» og programlista. Skjermene naas fra menyen som for — det er
@@ -3795,6 +3797,286 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 // Kalenderen sendte ikke vinduet i det hele tatt.
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
+
+// ── «Kasse» i kalenderen aapner kassa ──────────────────────────────────
+//
+// Eieren, 1. september, med et skjermbilde av ruta knappen aapnet: «Kasse fra
+// kalender er ikke ferdig».
+//
+// Ruta sa «Kassen er bygget i hovedprosjektet og kobles paa her. Knappen skal
+// aapne kassevisningen direkte fra kalenderen» — en knapp som lovet noe og
+// gjorde ingenting. Kassa finnes: Oversikt → Kassa, samme sted kortet paa
+// oversikten sender deg.
+sjekk('placeholderen for kassa er borte',
+    !str_contains($sida2, 'kobles på her'));
+sjekk('… og knappen aapner den ekte kassa',
+    str_contains($sida2, "klKasse: () => this.gaaAdmin('adminuttak', {"));
+sjekk('… med samme utgangspunkt som kortet paa oversikten',
+    substr_count($sida2, "utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',") === 2);
+
+// ── Alle fire medlemskapene, ikke bare de tre ──────────────────────────
+//
+// Eieren, 1. september: «Funker det paa alle medlemskap?»
+//
+// Nei. To ting sto igjen, og begge gjaldt medlemskap som betales én gang.
+//
+// 1) api/medlemskap.php opprettet ALLTID en loepende avtale i Vipps, uansett
+//    plan. «Prov Lissom» — ti timer i lopet av tretti dager — ville faatt et
+//    trekk hver maaned for noe som er over. Innmeldingen i bli-medlem.php har
+//    alltid skilt paa dette; her sto skillet ikke.
+//
+// 2) Medlemskap::startEngangs() satte ikke «idempotency_key», og kolonna er
+//    NOT NULL uten standardverdi. Innsettingen kastet hver eneste gang. Hele
+//    veien for medlemskap som betales én gang — «Prov Lissom», og alle som
+//    valgte «ordner selv» — dode i en databasefeil for Vipps ble kontaktet.
+//
+// Maalt: for rettelsen svarte «Prov Lissom» «Field 'idempotency_key' doesn't
+// have a default value». Etterpaa kommer alle fire helt fram til Vipps.
+$mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$mlibEngangs = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+sjekk('engangsplaner faar ikke fast trekk',
+    str_contains($mapi, "if ((int) (\$plan['engangs'] ?? 0) === 1) {\n            \$betaling = 'selv';"));
+sjekk('… og planer som krever fast trekk faar det',
+    str_contains($mapi, "if (Medlemskap::kreverFastTrekk(\$plan)) {\n            \$betaling = 'trekk';"));
+sjekk('… og de to veiene gaar hver sin vei',
+    str_contains($mapi, "\$ut = \$betaling === 'trekk'\n                ? Medlemskap::startAvtale(\$medlem, \$planNavn)\n                : Medlemskap::startEngangs(\$medlem, \$planNavn);"));
+sjekk('… og en ukjent plan avvises for noe opprettes',
+    str_contains($mapi, "if (\$plan === null) {\n            Svar::feil('Ukjent medlemskap.');"));
+
+// Kolonna er NOT NULL uten standardverdi, saa en betaling uten noekkel kan
+// ikke settes inn i det hele tatt.
+sjekk('engangsbetalingen setter idempotency-noekkelen',
+    str_contains($mlibEngangs, "'subscription_id' => \$id,")
+    && str_contains($mlibEngangs, "'idempotency_key' => Vipps::uuid(),"));
+// Alle stedene som oppretter en betaling maa sette den. Ett sted som glemmer
+// det er nok til at den veien er doed.
+$utenNokkel = [];
+foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
+    $kode = file_get_contents($f);
+    $fra = 0;
+    while (($i = strpos($kode, "DB::settInn('payments'", $fra)) !== false) {
+        // Fram til den avsluttende «]);» — et fast vindu kutter en lang
+        // liste midt i, og da ser noekkelen ut til aa mangle.
+        // Feltene bygges ofte i en variabel rett over innsettingen
+        // (api/ordre.php, app/lib/booking.php). Da staar noekkelen der, ikke
+        // i kallet — saa vi ser bakover ogsaa.
+        $slutt = strpos($kode, "]);", $i);
+        $fram  = ($slutt === false ? 2000 : $slutt - $i);
+        $start = max(0, $i - 2500);
+        $blokk = substr($kode, $start, ($i - $start) + $fram);
+        if (!str_contains($blokk, 'idempotency_key')) {
+            $utenNokkel[] = basename($f) . ' linje ' . (substr_count(substr($kode, 0, $i), "\n") + 1);
+        }
+        $fra = $i + 20;
+    }
+}
+sjekk('ingen oppretter en betaling uten idempotency-noekkel',
+    $utenNokkel === [], implode(' | ', $utenNokkel));
+
+// ── Bare butikkvarer kan ligge i handlekurven ──────────────────────────
+//
+// Eieren, 1. september: «Funker det overalt?»
+//
+// Nei — det var ett til. kjopKurv() slaar hver linje opp blant butikkvarene,
+// saa en noekkel som ikke er en vare gir «finnes ikke i butikken lenger», og
+// raadet om aa ta den ut av kurven er umulig aa folge.
+//
+// Tre steder la noe annet enn en vare i kurven:
+//   medlemskapet   tre knapper paa Min side   (rettet over)
+//   gavekortet     «Paafyll» paa Min side, til faste 500 kroner
+//   et kurs        en ubrukt binding paa bookingskjermen
+//
+// Maalt i nettleseren: «Paafyll → Gavekort → Legg til» og deretter «Fullfor
+// bestilling» → «Godkjenn i Vipps» ga «Kan ikke bestille alt — Gavekort
+// finnes ikke i butikken lenger».
+//
+// Gavekortet har heller ikke fast pris: belop, mottaker og hilsen er hele
+// poenget, og de finnes bare paa gavekortsida.
+sjekk('gavekortet legges ikke i handlekurven',
+    str_contains($sida2, "kjop: this.go('gavekortside'),"));
+sjekk('… og kurs legges ikke i den heller',
+    !str_contains($sida2, 'bookTilKurv:'));
+
+// Alt som fortsatt kan legges i kurven maa vaere noe kassa finner igjen:
+// «#<id>» paa en butikkvare, eller varens tittel. Et gavekortbelop hoerer
+// til forhaandsvisningen i designverktoyet, der det ikke gaar mot serveren.
+preg_match_all('/this\.leggTil\((.*)$/m', $sida2, $m);
+$kurvKall = array_map('trim', $m[1]);
+$mistenkelige = array_values(array_filter($kurvKall, static fn(string $x): bool
+    => !str_contains($x, "'#'") && !str_starts_with($x, "'Gavekort kr. '")));
+sjekk('ingenting annet enn butikkvarer legges i kurven',
+    $mistenkelige === [], implode(' | ', $mistenkelige));
+sjekk('… og det er faktisk kall aa se paa', count($kurvKall) >= 3, count($kurvKall) . ' kall');
+
+// ── Ingen slippes inn uten at betalingen er i havn ─────────────────────
+//
+// Eieren, 1. september: «Hun fikk medlemskap selv om betalingen ikke gikk inn
+// hva faen».
+//
+// Godkjenningen i admin sjekket avtalen i Vipps naar sokeren hadde valgt fast
+// trekk. Valgte hen «ordner selv», ble ingenting sjekket: ett trykk paa
+// Godkjenn ga status «prove» — som er full tilgang — og svaret sa «gjor opp
+// selv for hver periode», som om alt var i orden.
+//
+// Maalt paa den gamle koden: soknad med betaling «selv» og betalingsraden paa
+// «venter» ga {"ok":true}, medlemmet ble «prove», og betalingen sto fortsatt
+// som «venter». Ingen penger, full tilgang.
+$soknader = file_get_contents(dirname(__DIR__) . '/api/admin/soknader.php');
+$mlib     = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+sjekk('«ordner selv» sjekkes for godkjenning',
+    str_contains($soknader, "if (\$vedtak === 'godkjent' && \$betaling === 'selv') {"));
+sjekk('… og avvises naar betalingen ikke er kommet inn',
+    str_contains($soknader, "if (!in_array(\$avtaleStatus, ['aktiv', 'ingen'], true)) {\n        Svar::feil('Betalingen fra '"));
+// Faar vi ikke svar fra Vipps, vet vi ikke — og da skal ingen inn.
+sjekk('… og ingen slippes inn naar Vipps ikke svarer',
+    str_contains($soknader, "if (\$avtaleStatus === 'ukjent') {"));
+sjekk('… mens fast trekk sjekkes som for',
+    str_contains($soknader, "if (\$vedtak === 'godkjent' && \$betaling === 'trekk') {"));
+
+// Fasiten er Vipps, ikke raden vaar: kunden kan ha betalt uten aa komme
+// tilbake til nettsiden, og da skal godkjenningen ikke stoppes.
+sjekk('sjekken spor Vipps, ikke bare vaar egen rad',
+    str_contains($mlib, 'public static function engangsBetalt(int $medlemId): array')
+    && str_contains($mlib, '$svar = Vipps::hentBetaling($ref);'));
+sjekk('… og retter opp en betaling som er bokfoert men ikke slaatt paa',
+    str_contains($mlib, "if ((string) \$betaling['status'] === 'betalt') {\n            self::betaltEngangs((int) \$a['id']);"));
+// En feil fra Vipps skal ikke leses som «betalt».
+sjekk('… og sier «ukjent» framfor aa gjette naar Vipps feiler',
+    str_contains($mlib, "return ['status' => 'ukjent', 'avtale' => \$a];"));
+
+// Svaret paa skjermen maa si hva som faktisk gjelder. «Foerste trekk gaar ut
+// i natt» til en som gjor opp selv er et trekk som aldri kommer.
+sjekk('svaret lover ikke et trekk til en som gjor opp selv',
+    str_contains($soknader, "\$betaling !== 'selv' && \$avtaleStatus === 'aktiv'"));
+sjekk('… og sier fra naar det ikke finnes noen betaling i det hele tatt',
+    str_contains($soknader, "'Godkjent. Det finnes ingen betaling på '"));
+
+// ── Medlemskap kan ikke legges i handlekurven ──────────────────────────
+//
+// Eieren, 1. september, med et skjermbilde fra et medlem som ikke fikk
+// betalt: «Har faatt denne fra et medlem som skal betale!!!!!!!!»
+//
+// Kassa sa «Abonnement: Basis 30 finnes ikke i butikken lenger». Den hadde
+// rett: kjopKurv() slaar hver linje opp i butikkvarene, og et medlemskap
+// staar ikke der. Tre knapper paa Min side la det likevel i kurven. Veien
+// var stengt fra foerste trykk — ikke en gammel kurv som hadde blitt
+// staaende, men en doer som aldri hadde gaatt opp.
+//
+// Et medlemskap er en avtale i Vipps som belastes hver periode. Det kan
+// aldri bli en ordre.
+sjekk('ingen knapp legger et medlemskap i handlekurven',
+    !str_contains($sida2, "leggTil('Abonnement: "));
+sjekk('«Forny» starter avtalen i stedet',
+    str_contains($sida2, "aFornyAbo: () => this.startAbonnement("));
+sjekk('… og det gjor plankortet ogsaa',
+    str_contains($sida2, "'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),"));
+sjekk('… og begge gaar til handling=start',
+    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn }"));
+
+// Kurver som stod aapne da rettelsen gikk ut, skal ikke moete den samme
+// doede enden. De var det eneste stedet en «Abonnement:»-linje kunne
+// komme fra etter dette.
+sjekk('en kurv som alt har et medlemskap i seg blir ikke en blindvei',
+    str_contains($sida2, "const abonnement = Object.keys(kurv).filter(n => String(n).indexOf('Abonnement: ') === 0);"));
+sjekk('… den starter avtalen naar den staar alene',
+    str_contains($sida2, "        this.startAbonnement(abonnement[0]);"));
+// Sammen med varer er det to ulike betalinger i ett trykk. Da skal det staa
+// hva som maa gjores, ikke velges for medlemmet.
+sjekk('… og sier fra naar den staar sammen med varer',
+    str_contains($sida2, "kvittering: 'Medlemskapet betales for seg',"));
+// Blir avtalen startet, skal linja ut av kurven — ellers stopper den neste
+// butikkjop.
+sjekk('… og medlemskapet tas ut av kurven naar avtalen startes',
+    str_contains($sida2, "Object.keys(k).forEach(n => { if (String(n).indexOf('Abonnement: ') === 0) delete k[n]; });\n      return { kurv: k };"));
+
+// Serveren skal fortsatt vaere den som avgjor. Den er den eneste som vet
+// hva som staar i Vipps, og den hindrer to avtaler ved siden av hverandre.
+$mlib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('serveren nekter to avtaler ved siden av hverandre',
+    str_contains($mlib, "throw new RuntimeException('Du har alt et medlemskap."));
+
+// ── GEO: aa bli sitert av en AI ────────────────────────────────────────
+//
+// Eieren, 1. september: «jeg er blitt fortalt at noe heter GEO som er med ai
+// chat gpt, jeg vil optimalisere siden for dette ogsaa. Og jeg vil ha samme
+// knapp som seo, optimaliser for geo».
+//
+// Skjermen sjekkes i nettleseren av bin/dropinsjekk.mjs, som gaar gjennom
+// alle adressene i STIER. Her sjekkes det den ikke ser: at reglene faktisk
+// staar der, og at ingen av de ferdigskrevne setningene bryter dem.
+sjekk('GEO har egen adresse', str_contains($sida2, "{ sti: '/admin/geo',          side: 'admingeo' },"));
+sjekk('… og staar i begge menyene',
+    substr_count($sida2, "'admingeo',") >= 2);
+sjekk('… med sin egen brodsmulesti',
+    str_contains($sida2, "case 'admingeo':"));
+sjekk('… og en skjerm som tegnes', str_contains($sida2, "erAdminGeo: side === 'admingeo',"));
+sjekk('… og en verdiblokk bak den', str_contains($sida2, "if (side !== 'admingeo') return {};"));
+
+// Feltene lagres som «GEO/<id>» i content_blocks, slik SEO gjor.
+sjekk('GEO lagres i content_blocks', str_contains($sida2, "'GEO/' + valgtSide.id"));
+
+// Scoren skal trekke for det som gjor en setning uselvstendig. Dette er
+// selve regelen — endres den, skal noen ha ment aa endre den.
+sjekk('scoren trekker for manglende kort svar',
+    str_contains($sida2, "score -= 30; trekk.push('Mangler kort svar"));
+sjekk('… for svar uten tall', str_contains($sida2, "score -= 12; trekk.push('Svaret har ingen tall"));
+sjekk('… for svar uten stedsnavn', str_contains($sida2, "score -= 10; trekk.push('Svaret sier ikke hvor det er"));
+// «Vi holder kurs hver onsdag» sier ingenting naar setningen staar alene i
+// et AI-svar: leseren vet ikke hvem «vi» er.
+sjekk('… og for «vi» og «oss»',
+    str_contains($sida2, "if (/\\b(vi|oss|vår|våre)\\b/i.test(sv))"));
+
+// Alle de ferdigskrevne setningene maa taale sine egne regler. Uten dette
+// kunne «Optimaliser for GEO» fylt inn tjue sider som scorer 60.
+preg_match('/static get GEO_FERDIG\(\) \{(.*?)\n  \}\n/s', $sida2, $m);
+$geoBlokk = $m[1] ?? '';
+sjekk('de ferdigskrevne GEO-tekstene finnes', $geoBlokk !== '');
+
+preg_match_all("/\n        svar: '((?:[^'\\\\]|\\\\.)*)',/", $geoBlokk, $sv);
+$svar = array_map(static fn(string $x): string => str_replace(["\\'", '\\\\'], ["'", '\\'], $x), $sv[1]);
+sjekk('… og det er tjue av dem', count($svar) === 20, count($svar) . ' svar');
+
+$forKorte = array_filter($svar, static fn(string $x): bool => mb_strlen($x) < 60);
+$forLange = array_filter($svar, static fn(string $x): bool => mb_strlen($x) > 220);
+$utenTall = array_filter($svar, static fn(string $x): bool => !preg_match('/\d/', $x));
+$utenSted = array_filter($svar, static fn(string $x): bool => !preg_match('/tønsberg|nøtterøy|teie|vestfold/iu', $x));
+$medVi    = array_filter($svar, static fn(string $x): bool => (bool) preg_match('/(^|[^\p{L}])(vi|oss|vår|våre)([^\p{L}]|$)/iu', $x));
+
+sjekk('… alle er lange nok til aa staa alene', $forKorte === [], implode(' | ', $forKorte));
+sjekk('… og korte nok til aa siteres helt', $forLange === [], implode(' | ', $forLange));
+sjekk('… alle har et tall', $utenTall === [], implode(' | ', $utenTall));
+sjekk('… alle sier hvor det er', $utenSted === [], implode(' | ', $utenSted));
+sjekk('… og ingen sier «vi» eller «oss»', $medVi === [], implode(' | ', $medVi));
+
+// Prisen skal aldri staa i den ferdige teksten. Staar den der, blir den
+// staaende igjen som feil den dagen Monica endrer prisen — og en AI siterer
+// et gammelt tall like villig som et nytt.
+$medPris = array_filter($svar, static fn(string $x): bool => (bool) preg_match('/\bkr\.?\s|\bkroner\b/iu', $x));
+sjekk('… og ingen av dem har prisen skrevet inn', $medPris === [], implode(' | ', $medPris));
+sjekk('prisen hentes fra katalogen i stedet',
+    str_contains($sida2, "kortSvar: pris ? f.svar.replace(/\\.\$/, '') + '. Prisen er ' + pris + '.' : f.svar,"));
+
+// FAQPage i hodet. «Hvem passer kontakt for?» er ikke et sporsmaal noen
+// stiller — det skal bare paa kurs og events.
+sjekk('sporsmaal og svar legges i hodet som FAQPage',
+    str_contains($sida2, "return { '@type': 'FAQPage', mainEntity: sporsmaal };"));
+sjekk('… bare naar baade sporsmaal og svar finnes',
+    str_contains($sida2, "if (!sp || !sv) return null;"));
+sjekk('… og «hvem passer det for» bare paa kurs og events',
+    str_contains($sida2, "const erKurs = sd && (sd.type === 'kurs' || sd.type === 'event');"));
+
+// llms.txt er fila AI-tjenestene leser forst. Uten dette blir svarene
+// eieren skriver liggende i basen uten aa naa noen.
+$llms = file_get_contents(dirname(__DIR__) . '/api/llms.php');
+sjekk('llms.txt henter svarene fra basen',
+    str_contains($llms, "WHERE nokkel LIKE 'GEO/%'"));
+sjekk('… og hopper over dem uten svar',
+    str_contains($llms, "if (\$sp === '' || \$sv === '') {"));
+// En «Kilde:» som peker feil er verre enn ingen kilde.
+sjekk('… og slaar opp kursadressene paa tittelen',
+    str_contains($llms, "\$GEO_SIDER[\$id] = '/kurs/' . rawurlencode((string) \$c['slug']);"));
 
 // ── Ressursene deles av alle ───────────────────────────────────────────
 //

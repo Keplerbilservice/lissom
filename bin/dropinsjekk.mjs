@@ -148,6 +148,19 @@ const TALL = {
 const BORTE = ['/drop-in', '/admin/drop-in'];
 
 /**
+ * Filer som serveres som ren tekst, ikke som skjermer.
+ *
+ * Vakta aapnet skjermer i en nettleser og leste det som sto der. llms.txt —
+ * fila som forteller ChatGPT og Perplexity hva Lissom er — er ingen skjerm,
+ * og sto derfor og reklamerte for drop-in i tre uker etter at tilbudet var
+ * tatt ned. Ingen av de 130 sjekkene kunne se den.
+ *
+ * De hentes med fetch fra sida, ikke med goto: da gaar de gjennom den samme
+ * tjeneren og de samme omskrivingsreglene som en robot moeter.
+ */
+const FILER = ['/llms.txt', '/robots.txt', '/sitemap.xml'];
+
+/**
  * Adressene, lest ut av STIER-tabellen i sida selv — samme kilde som
  * breddesjekken bruker. Aa skrive lista av her ville gitt to steder aa
  * vedlikeholde, og det ene ville blitt glemt.
@@ -200,7 +213,7 @@ if (!paalogging || paalogging.ok !== true) {
 }
 
 console.log('Drop-in-sjekk paa ' + ADRESSE + ' — ' + (SKJERMER.length + BORTE.length)
-  + ' adresser x ' + BREDDER.length + ' bredder\n');
+  + ' adresser x ' + BREDDER.length + ' bredder, og ' + FILER.length + ' filer\n');
 
 const p = await kontekst.newPage();
 p.setDefaultTimeout(20000);
@@ -264,6 +277,29 @@ for (const sti of BORTE) {
   }
   const traff = (tekst.match(/drop[\s-]?in/gi) || []).length;
   si(traff === 0, sti + ' finnes ikke lenger' + (traff ? ' — men viser fortsatt drop-in (' + traff + ' treff)' : ''));
+}
+
+// ── Filene ─────────────────────────────────────────────────────────────
+for (const fil of FILER) {
+  let svar;
+  try {
+    svar = await p.evaluate((u) => fetch(u, { cache: 'no-store' })
+      .then(r => r.text().then(t => ({ status: r.status, tekst: t })))
+      .catch(e => ({ status: 0, tekst: String(e) })), fil);
+  } catch (e) {
+    si(false, fil + ' — kom ikke fram: ' + String(e).split('\n')[0].slice(0, 70));
+    continue;
+  }
+  if (!svar || svar.status !== 200) {
+    si(false, fil + ' svarer ikke (status ' + ((svar && svar.status) || '?') + ')');
+    continue;
+  }
+  const traff = (svar.tekst.match(/drop[\s-]?in/gi) || []).length;
+  si(traff === 0, fil + ' er fri for drop-in' + (traff ? ' (' + traff + ' treff)' : ''));
+  if (traff) {
+    svar.tekst.split('\n').filter(l => /drop[\s-]?in/i.test(l)).slice(0, 3)
+      .forEach(l => console.log('          ' + l.trim().slice(0, 80)));
+  }
 }
 
 await b.close();

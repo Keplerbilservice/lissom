@@ -5593,6 +5593,39 @@ if (DB::harTabell('innstillinger')) {
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
 
+// ── Kalenderen begynner der dagen begynner ────────────────────────────
+//
+// Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare
+// begynne TIDLIGERE enn 10:00, aldri senere. En dag med ett kveldskurs
+// 18:00–20:00 viste likevel 10:00–20:00 — ti tomme timer over det ene
+// kortet, og kortet sa langt nede at det havnet under skjermkanten.
+//
+// Eieren, 1. september: «kallender i admin, kan den starte visning en time
+// for forste kurs?»
+//
+// Malt i nettleseren for og etter: dagvisningen gikk fra tidsakse 10:00–21:00
+// med okta pa 20:00 (usynlig uten a rulle) til 19:00–21:00 med hele okta
+// framme, og timehoyden doblet seg fra 54 til 110 px fordi det ble farre
+// timer a dele plassen pa.
+//
+// Slutten er urort: fortsatt minst 20:00, og lenger om noe varer lenger.
+$dagRegel  = 'bStart = Math.max(0, Math.floor(forsteMin / 60) * 60 - 60);';
+$ukeRegel  = 'wStart = Math.max(0, Math.floor(f1 / 60) * 60 - 60);';
+sjekk('dagvisningen begynner en time for forste okt', str_contains($sida, $dagRegel));
+sjekk('ukevisningen begynner en time for forste okt i uka', str_contains($sida, $ukeRegel));
+// Kontrollen: den gamle regelen skal vaere borte begge steder. Uten denne
+// ville sjekkene over vaere gronne selv om noen la den tilbake ved siden av.
+sjekk('… og det gamle taket pa 10:00 er borte',
+    !str_contains($sida, 'Math.min(600, Math.floor(forsteMin / 60) * 60)')
+    && !str_contains($sida, 'Math.min(600, Math.floor(f1 / 60) * 60)'));
+// Slutten skal fortsatt vaere som for, i begge visningene.
+sjekk('… mens slutten fortsatt er minst 20:00',
+    substr_count($sida, 'Math.max(1200, Math.min(24 * 60, Math.ceil(') === 2);
+// En tom dag har ingen forste okt, og skal falle tilbake til 10:00–20:00.
+sjekk('… og en dag uten okter star som for',
+    str_contains($sida, 'let bStart = 600, bSluttMin = 1200;')
+    && str_contains($sida, 'let wStart = 600, wSlutt = 1200;'));
+
 // ── To tall som ble blandet sammen ─────────────────────────────────────
 //
 // Brennetida og oppbevaringstida er to forskjellige ting, og de sa hver sin

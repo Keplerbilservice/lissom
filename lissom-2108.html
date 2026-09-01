@@ -26175,11 +26175,27 @@ class Component extends DCLogic {
     const minAv = t => { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); };
     const dagensAlle = dagEvts(dagIso);
     const rekkevidde = dagensAlle.filter(e => e.type !== 'vakt');
+    // ── Visningen begynner en time for forste okt ──────────────────────
+    //
+    // Her sto Math.min(600, ...): visningen kunne bare begynne TIDLIGERE enn
+    // 10:00, aldri senere. En dag med ett kveldskurs 20:00–22:00 viste
+    // likevel 10:00–22:00 — ti tomme timer over det ene kortet, og kortet
+    // sa langt nede at det havnet under skjermkanten.
+    //
+    // Eieren, 1. september: «kallender i admin, kan den starte visning en
+    // time for forste kurs?»
+    //
+    // Timen for er med vilje: da ser man at det ikke ligger noe rett for,
+    // og det er plass til aa dra en okt oppover. Slutten er urort — den er
+    // fortsatt minst 20:00, og strekker seg om noe varer lenger.
+    //
+    // Vakter teller ikke med (de er filtrert bort over), og en tom dag
+    // faller tilbake til 10:00–20:00 som for.
     let bStart = 600, bSluttMin = 1200;
     if (rekkevidde.length) {
       const forsteMin = Math.min.apply(null, rekkevidde.map(e => minAv(e.tid)));
       const sisteMin = Math.max.apply(null, rekkevidde.map(e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60)));
-      bStart = Math.min(600, Math.floor(forsteMin / 60) * 60);
+      bStart = Math.max(0, Math.floor(forsteMin / 60) * 60 - 60);
       bSluttMin = Math.max(1200, Math.min(24 * 60, Math.ceil(sisteMin / 60) * 60));
     }
     const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
@@ -26375,11 +26391,14 @@ class Component extends DCLogic {
     const naM = naNu.getHours() * 60 + naNu.getMinutes();
     const ukeIsos = uked.map((n, i) => { const d = new Date(ukeStart); d.setDate(ukeStart.getDate() + i); return isoAv(d); });
     const ukeAlle = ukeIsos.reduce((acc, iso) => acc.concat(dagEvts(iso).filter(e => e.type !== 'vakt')), []);
+    // Samme regel som i dagvisningen over: en time for den forste okta i
+    // uka, ikke ett fast klokkeslett. Er den forste okta i uka mandag 08:00,
+    // begynner hele uka 07:00 — kolonnene deler samme akse.
     let wStart = 600, wSlutt = 1200;
     if (ukeAlle.length) {
       const f1 = Math.min.apply(null, ukeAlle.map(e => minAv(e.tid)));
       const s2 = Math.max.apply(null, ukeAlle.map(e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60)));
-      wStart = Math.min(600, Math.floor(f1 / 60) * 60);
+      wStart = Math.max(0, Math.floor(f1 / 60) * 60 - 60);
       wSlutt = Math.max(1200, Math.min(24 * 60, Math.ceil(s2 / 60) * 60));
     }
     const pxUke = Math.max(36, Math.min(96, Math.floor((vh - 360) / ((wSlutt - wStart) / 60))));

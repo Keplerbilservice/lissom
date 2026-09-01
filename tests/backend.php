@@ -5526,18 +5526,22 @@ sjekk('… og bredden deles per klynge, ikke per dag',
 // De legges ut automatisk paa hver aapningstid, saa det er seks-sju av dem
 // paa en dag. Delte de bredden likt med et ekte kurs, ble kurset en strime.
 sjekk('Paint on Pots staar i en smal stripe',
-    str_contains($sida, 'const SMAL_ANDEL = 15;')
+    str_contains($sida, 'const SMAL_ANDEL = 25;')
     && str_contains($sida, "const erSmal = e => e.type === 'pop';"));
 sjekk('… og de andre faar resten av bredden',
     str_contains($sida, 'const bredResten = smaa.length ? 100 - SMAL_ANDEL : 100;'));
 // Er det ingen Paint on Pots den dagen, skal spalta se ut som for.
 sjekk('… men hele bredden naar det ikke er noen',
     str_contains($sida, 'smaa.length ? 100 - SMAL_ANDEL : 100'));
-// I en stripe paa femten prosent er det plass til klokka og navnet.
-sjekk('den smale blokka viser ikke plasstall, ansikter og merknader',
-    str_contains($sida, "detalj: p.smal ? '' :")
-    && str_contains($sida, 'harAvatarer: !p.smal &&')
-    && str_contains($sida, 'harMerknad: !p.smal &&'));
+// Bare bredden endres. Eieren, 1. september: «dette er et kurs, som jeg ikke
+// trenger aa se annen enn at det faktisk kommer noen» — plasstallet og
+// deltakerne er nettopp det som skal staa, ogsaa paa en smal blokk.
+sjekk('den smale blokka viser fortsatt plasstall, ansikter og merknader',
+    !str_contains($sida, "detalj: p.smal ? '' :")
+    && !str_contains($sida, 'harAvatarer: !p.smal')
+    && !str_contains($sida, 'harMerknad: !p.smal')
+    && str_contains($sida, "detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : ''")
+    && str_contains($sida, 'harAvatarer: (p.e.deltakere || []).length > 0,'));
 sjekk('… og blokkene ligger foran rutenettet',
     substr_count($sida, 'zIndex: 2 + p.lane') === 2);
 

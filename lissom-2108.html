@@ -26218,10 +26218,21 @@ class Component extends DCLogic {
       // vises mye mindre slik at de ikke tar saa mye plass i bredden. om den
       // kan krympes ned til 15% av stoerrelsen».
       //
+      // Det ble 25. Paa femton brakk «Paint on Pots» til ett ord per linje og
+      // «+1 ny»-pilla la seg oppaa navnet — og det er nettopp paameldingene
+      // som skal staa: «dette er et kurs, som jeg ikke trenger aa se annen
+      // enn at det faktisk kommer noen». Han valgte bredden selv da han saa
+      // det.
+      //
       // De legges ut automatisk paa hver aapningstid, saa det er seks-sju av
       // dem paa en dag. Delte de bredden likt med et ekte kurs, ble kurset
       // en strime. Naa staar de i en stripe ytterst, og de andre far resten.
-      const SMAL_ANDEL = 15;                 // prosent av spalta
+      //
+      // Bare bredden endres. Her sto plasstall, ansikter og merknader
+      // gjemt bort paa de smale ogsaa — men det er nettopp det som skal
+      // staa: «dette er et kurs, som jeg ikke trenger aa se annet enn at
+      // det faktisk kommer noen».
+      const SMAL_ANDEL = 25;                 // prosent av spalta
       const erSmal = e => e.type === 'pop';
       const tilP = e => {
         const s = minAv(e.tid);
@@ -26254,9 +26265,7 @@ class Component extends DCLogic {
           return {
             tid: p.e.tid + (p.e.slutt ? '–' + p.e.slutt : ''),
             tittel: p.e.tittel,
-            // I en stripe paa 15 prosent er det plass til klokka og navnet.
-            // Plasstall, ansikter og merknader ville bare blitt klippet.
-            detalj: p.smal ? '' : [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
+            detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : '', p.e.avlyst ? 'Avlyst' : ''].filter(Boolean).join(' · '),
             id: p.e.id, domId: 'kalevt-' + p.e.id, velg: velg(p.e),
             ned: ev => { this.setState({ klHover: null }); this.klDragStart(p.e, ev); },
             inn: ev => {
@@ -26269,10 +26278,10 @@ class Component extends DCLogic {
               tittel: dl.navn,
               stil: { width: '18px', height: '18px', borderRadius: '50%', flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clay-50)', color: 'var(--lissom-brown)', border: '1.5px solid ' + (f.kant ? 'var(--lissom-brown)' : 'rgba(46,16,2,.25)'), boxSizing: 'border-box' },
             })),
-            harAvatarer: !p.smal && (p.e.deltakere || []).length > 0,
+            harAvatarer: (p.e.deltakere || []).length > 0,
             harFlere: (p.e.deltakere || []).length > 6,
             flereTekst: '+' + Math.max(0, (p.e.deltakere || []).length - 6),
-            harMerknad: !p.smal && (p.e.deltakere || []).some(dl => dl.merknad),
+            harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadStil: { display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px', background: 'var(--terracotta-500)', color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '1px 8px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em' },
             merknadTekst: (() => { const n = (p.e.deltakere || []).filter(dl => dl.merknad).length; return n + (n === 1 ? ' merknad' : ' merknader'); })(),
             harNye: !!p.e.nye,

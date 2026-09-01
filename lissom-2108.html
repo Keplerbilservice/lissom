@@ -21892,6 +21892,64 @@ class Component extends DCLogic {
         const idagIso = (() => { const d = new Date(); d.setHours(0,0,0,0);
           return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })();
         const framover = nye.filter(o => o.dato >= idagIso).length;
+
+        // ── Gjentakelsen fra steg 2 ────────────────────────────────────
+        //
+        // «Ukentlig · 10 ganger» ble skrevet inn i feltet «gjentas» paa
+        // kurset og ble aldri annet enn en etikett: datoene under ble lagt ut
+        // én og én med «nydato», og noen regel ble aldri satt opp. Setter du
+        // opp et barnekurs hver fredag i ti uker, fikk du den ene datoen du
+        // skrev inn — og trodde hosten var planlagt. Eieren, 1. september:
+        // «La ut kurs for barn hver fredag i 10 uker fremover ved aa trykke
+        // paa gjentagelse ukentlig 10 ganger. Men som du ser her saa ligger
+        // det bare ute en dato».
+        //
+        // Veiviseren «Ny kursdato» har gjort dette riktig hele tiden. Her er
+        // det samme kallet, med de samme verdiene, lest av den forste datoen:
+        // regelen sier «fredager 15:00-17:30», og den maa vite hvilken dag og
+        // hvilke klokkeslett.
+        //
+        // Datoen som alt er lagt ut med «nydato» blir ikke lagt ut to ganger.
+        // Serier::fyllPaa teller den med i «ti ganger» ($alt++ ogsaa naar
+        // INSERT IGNORE lot den staa), saa summen blir ti — ikke elleve.
+        const MONSTER = { 'Ukentlig': 'ukentlig', 'Annenhver uke': 'annenhver', 'Månedlig': 'manedlig' };
+        const monster = MONSTER[this.state.kGjentak || 'Ingen'] || null;
+        const forst = nye.slice().sort((a, b) => String(a.dato).localeCompare(String(b.dato)))[0];
+        const serieKall = () => {
+          if (!monster || !forst) return Promise.resolve();
+          const dag = new Date(forst.dato + 'T12:00');
+          if (isNaN(dag)) return Promise.resolve();
+          const antall = Math.max(0, Math.min(500, parseInt(this.state.kAntall, 10) || 0));
+          // Vinduet maa vaere stort nok til at alle gangene faar plass. Det
+          // regnes fra i dag, mens tellingen begynner paa den forste datoen,
+          // saa avstanden dit legges paa.
+          const ukerPerGang = monster === 'manedlig' ? 4.4 : (monster === 'annenhver' ? 2 : 1);
+          const dagerTil = Math.max(0, Math.ceil((dag - new Date()) / 86400000));
+          const ukerFram = antall > 0
+            ? Math.max(1, Math.min(52, Math.ceil(antall * ukerPerGang + dagerTil / 7) + 1))
+            : (monster === 'manedlig' ? 26 : 8);
+          return fetch('/api/admin/kurs.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              handling: 'serie',
+              kursId: d.id,
+              monster: monster,
+              // getDay() gir 0 for sondag; basen bruker 1-7 med mandag som 1.
+              ukedag: dag.getDay() === 0 ? 7 : dag.getDay(),
+              dagIMaaned: monster === 'manedlig' ? dag.getDate() : 0,
+              fra: forst.fra || '18:00',
+              til: forst.til || forst.fra || '21:00',
+              kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 0,
+              ukerFram: ukerFram,
+              antall: antall,
+              startDato: forst.dato,
+            }),
+          }).then(r => r.json()).then(sv => { serieSvar = (sv && sv.beskjed) || ''; }).catch(() => {});
+        };
+        let serieSvar = '';
+
         return fjern.then(() => nye.reduce((kjede, o) => kjede.then(() => fetch('/api/admin/kurs.php', {
           method: 'POST',
           credentials: 'same-origin',
@@ -21904,6 +21962,7 @@ class Component extends DCLogic {
             kapasitet: parseInt(String(rad.pameldte).split('/')[1], 10) || 0,
           }),
         })), Promise.resolve())
+          .then(serieKall)
           .then(() => {
             this._kursLagres = false;
             this.setState({
@@ -21918,6 +21977,10 @@ class Component extends DCLogic {
               // framfor slettet fordi noen var paameldt, skal grunnen staa.
               kvitteringDetalj: [
                 nye.length ? nye.length + (nye.length === 1 ? ' dato' : ' datoer') + ' lagt ut.' : '',
+                // Gjentakelsen sier sitt eget antall: «10 datoer er lagt ut
+                // framover». Uten det ville kvitteringen sagt «1 dato lagt
+                // ut» paa et kurs som nettopp fikk ti.
+                serieSvar,
                 borte.length ? borte.length + (borte.length === 1 ? ' dato' : ' datoer') + ' tatt bort.' : '',
                 beskjeder.join(' '),
                 // Nettsiden viser bare datoer som ligger foran oss. Har

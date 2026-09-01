@@ -51,6 +51,7 @@ require APP_DIR . '/lib/session.php';
 require APP_DIR . '/lib/auth.php';
 require APP_DIR . '/lib/ratelimit.php';
 require APP_DIR . '/lib/varsler.php';
+require APP_DIR . '/lib/maler.php';
 require APP_DIR . '/lib/vipps.php';
 require APP_DIR . '/lib/lenker.php';
 require APP_DIR . '/lib/booking.php';

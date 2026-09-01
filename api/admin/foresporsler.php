@@ -156,13 +156,13 @@ if (Foresporsel::tekst('handling') === 'svar') {
     $sendtEpost = false;
     $sendtSms = false;
     if ($epost !== '') {
-        Varsel::epost($epost, 'Svar fra Lissom Keramikk', $kropp, 'enquiry', $id);
+        Varsel::mal('foresporsel_svar', ['epost' => $epost], ['svar' => $kropp], 'enquiry', $id);
         $sendtEpost = true;
     }
     // SMS bare naar det ikke finnes en e-postadresse. Ellers faar folk det
     // samme to ganger, og et langt svar hoerer uansett hjemme i en e-post.
     if (!$sendtEpost && $tlf !== '' && Varsel::smsMulig()) {
-        Varsel::sms($tlf, 'Svar fra Lissom: ' . $tekst, 'enquiry', $id);
+        Varsel::mal('foresporsel_svar_sms', ['telefon' => $tlf], ['svar' => $tekst], 'enquiry', $id);
         $sendtSms = true;
     }
 

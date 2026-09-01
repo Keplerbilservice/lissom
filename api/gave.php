@@ -102,13 +102,12 @@ try {
     Svar::feil('Gaven er allerede løst inn.');
 }
 
-Varsel::tilAdmin(
-    'Gave løst inn: ' . $tittel($g),
-    $medlem['navn'] . ' (' . ($medlem['epost'] ?: $medlem['telefon']) . ') har løst inn «'
-        . $tittel($g) . "».\n\n" . ($beskjed !== '' ? $beskjed : 'Ingen flere opplysninger.'),
-    'medlemsgave',
-    (int) $g['id']
-);
+    Varsel::malTilAdmin('intern_gave_lost_inn', [
+        'tittel'  => $tittel($g),
+        'navn'    => (string) $medlem['navn'],
+        'kontakt' => (string) ($medlem['epost'] ?: $medlem['telefon']),
+        'beskjed' => $beskjed !== '' ? $beskjed : 'Ingen flere opplysninger.',
+    ], 'medlemsgave', (int) $g['id']);
 
 revider('gave_brukt', 'medlemsgave', (int) $g['id']);
 

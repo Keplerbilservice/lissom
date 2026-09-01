@@ -56,9 +56,13 @@ if ($rad === null) {
     Svar::feil('Fant ikke varen.', 404);
 }
 
-$si = static function (array $rad, string $emne, string $tekst): void {
+// Teksten ligger i malene «medlemsvare_godkjent» og «medlemsvare_avvist»,
+// som Monica kan endre selv under Maler.
+$si = static function (array $rad, string $mal, array $felter = []): void {
     if (!empty($rad['epost'])) {
-        Varsel::epost((string) $rad['epost'], $emne, $tekst, 'medlemssalg', (int) $rad['id']);
+        Varsel::mal($mal, ['epost' => (string) $rad['epost']],
+            ['navn' => (string) $rad['navn'], 'tittel' => (string) $rad['tittel']] + $felter,
+            'medlemssalg', (int) $rad['id']);
     }
 };
 
@@ -66,9 +70,7 @@ switch (Foresporsel::tekst('handling')) {
 
     case 'godkjenn':
         DB::oppdater('member_sales', ['status' => 'publisert', 'avvist_grunn' => null], ['id' => $id]);
-        $si($rad, '«' . $rad['tittel'] . '» er ute i butikken',
-            'Hei ' . $rad['navn'] . "!\n\n«" . $rad['tittel'] . '» er godkjent og ligger nå i butikken på lissom.no.'
-            . "\n\nKjoperen betaler direkte til Vippsnummeret ditt, og tar kontakt for aa avtale overlevering.");
+        $si($rad, 'medlemsvare_godkjent');
         revider('medlemssalg_godkjent', 'member_sale', $id, ['tittel' => $rad['tittel']]);
         Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er ute i butikken.']);
 
@@ -77,10 +79,8 @@ switch (Foresporsel::tekst('handling')) {
         DB::oppdater('member_sales', ['status' => 'avvist', 'avvist_grunn' => $grunn ?: null], ['id' => $id]);
         // Vi sier fra. En vare som bare blir borte uten et ord er verre enn et
         // nei — selgeren vet ikke om noe er galt eller om ingen har sett paa den.
-        $si($rad, '«' . $rad['tittel'] . '» ble ikke lagt ut',
-            'Hei ' . $rad['navn'] . "!\n\nVi har sett paa «" . $rad['tittel'] . '», og legger den ikke ut slik den er naa.'
-            . ($grunn !== '' ? "\n\nGrunn: " . $grunn : '')
-            . "\n\nDu kan legge den ut paa nytt fra Min side naar du vil.");
+        $si($rad, 'medlemsvare_avvist',
+            ['grunn' => $grunn !== '' ? "\n\nGrunn: " . $grunn : '']);
         revider('medlemssalg_avvist', 'member_sale', $id, ['tittel' => $rad['tittel'], 'grunn' => $grunn]);
         Svar::ok(['salg' => $hent(), 'beskjed' => $rad['tittel'] . ' er avvist, og selgeren har fått beskjed.']);
 

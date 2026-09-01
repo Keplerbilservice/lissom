@@ -4672,7 +4672,11 @@ window.__resources = {
         <div style="border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap;">
           <div style="display: flex; gap: var(--space-3) var(--space-6); flex-wrap: wrap; font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--clay-300);">
             <span>&copy; {{ aarstall }} {{ ftFirmanavn }}</span>
-            <span style="color: var(--clay-50); font-weight: 700; font-size: 13px;">{{ ftOrgnr }}</span>
+            <!-- Orgnummeret sto i --clay-50, altsaa nesten hvitt, mens resten av
+                 raden staar i --clay-300. Eieren, 1. september: «jeg vil ha samme
+                 farge som den andre teksten». Fargen er tatt bort, saa linja arver
+                 raden. Vekt og storrelse staar som for. -->
+            <span style="font-weight: 700; font-size: 13px;">{{ ftOrgnr }}</span>
             <!-- Joika Design-merket, i en lav utgave laget for denne raden.
                  Gjennomsiktigheten er 68 %, ikke lavere: under det faller
                  kontrasten mot den brune bunnen under 4,5, og linja er 12

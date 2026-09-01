@@ -5517,6 +5517,69 @@ sjekk('… og bredden deles per klynge, ikke per dag',
     && str_contains($sida, 'if (klynge.length && p.s >= klyngeSlutt) lukk();')
     && substr_count($sida, 'delBredden(') === 3);
 
+// ── Dagsoppgjoeret, slik regnskapsfoereren ba om det ───────────────────
+//
+// Hun saa paa fila 1. september og svarte paa alle punktene. Det eneste hun
+// ville ha annerledes var kolonnene:
+//
+//   «Det skal ikke vaere debet- og kreditkolonner men man bruker fortegn i
+//    beloep (positivt beloep = debet, negativt beloep = kredit). For oevrig
+//    ser det bra ut.»
+$doFil = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+sjekk('fila har ett beloepsfelt, ikke debet og kredit',
+    str_contains($doFil, "fputcsv(\$f, ['Dato', 'Bilagstekst', 'Konto', 'Mva-kode', 'Beløp', 'Beskrivelse']")
+    && !str_contains($doFil, "'Debet', 'Kredit'"));
+// Inntekt er kredit og skal staa negativt; pengene inn er debet og positivt.
+sjekk('inntekt staar negativt, innbetalinger positivt',
+    str_contains($doFil, "\$kr(-\$l['belopOre'])")
+    && str_contains($doFil, "\$kr(\$i['belopOre'])"));
+
+// «Butikk boer skilles fra medlemskap slik at man kan beregne
+// bruttofortjeneste.» De sto begge paa 3000.
+sjekk('butikken har sin egen konto',
+    str_contains($doFil, "'ordre'      => ['navn' => 'Varer i butikk',"));
+
+// Drop-in ble tatt ned med migrasjon 110 og 111. Eieren, 1. september: «vi
+// har ikke drop-inn ... aldri ha det med».
+sjekk('drop-in staar ikke i regnskapsoppsettet',
+    !str_contains($doFil, 'regnskap_konto_dropin')
+    && !str_contains($doFil, 'regnskap_mva_dropin'));
+sjekk('… og ikke blant feltene i admin heller',
+    !str_contains($sida, "'regnskap_konto_dropin'")
+    && !str_contains($sida, "'regnskap_mva_dropin'"));
+
+// Kontoene hun opprettet i Tripletex.
+$m116 = file_get_contents(dirname(__DIR__) . '/db/migrations/116_kontoene_fra_regnskapsforeren.sql');
+foreach ([['regnskap_konto_kurs', '3200'], ['regnskap_mva_kurs', '6'],
+          ['regnskap_konto_medlemskap', '3000'], ['regnskap_mva_medlemskap', '3'],
+          ['regnskap_konto_butikk', '3020'], ['regnskap_mva_butikk', '3'],
+          ['regnskap_konto_gavekort', '2905'],
+          ['regnskap_motkonto_vipps', '1510'], ['regnskap_motkonto_kontant', '1900'],
+          ['regnskap_motkonto_faktura', '1920']] as [$n, $v]) {
+    sjekk('migrasjon 116 setter ' . $n . ' = ' . $v,
+        preg_match("~'" . $n . "',\s*'" . $v . "'~", $m116) === 1);
+}
+sjekk('… og rydder bort drop-in-kontoen om den sto der',
+    str_contains($m116, "WHERE nokkel IN ('regnskap_konto_dropin', 'regnskap_mva_dropin')"));
+
+// Er kontoene faktisk satt i basen, skal bilaget ikke si at noe mangler.
+if (DB::harTabell('innstillinger')) {
+    $sattFeil = [];
+    foreach ([['regnskap_konto_kurs', '3200'], ['regnskap_konto_medlemskap', '3000'],
+              ['regnskap_konto_butikk', '3020'], ['regnskap_konto_gavekort', '2905'],
+              ['regnskap_motkonto_vipps', '1510'], ['regnskap_motkonto_kontant', '1900'],
+              ['regnskap_motkonto_faktura', '1920']] as [$n, $v]) {
+        $har = trim((string) DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => $n]));
+        if ($har !== '' && $har !== $v) {
+            $sattFeil[] = $n . ' = ' . $har;
+        }
+    }
+    sjekk('kontoene i basen er dem regnskapsfoereren oppga',
+        $sattFeil === [], implode(', ', $sattFeil));
+    sjekk('… og drop-in-kontoen ligger ikke igjen',
+        DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
+}
+
 // ── Paint on Pots tar ikke spalta ──────────────────────────────────────
 //
 // Eieren, 1. september: «kortene paint on pots, disse vil jeg skal vises mye

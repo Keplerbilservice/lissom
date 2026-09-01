@@ -31,7 +31,6 @@ const REGNSKAPSFELTER = [
     'regnskap_konto_kurs', 'regnskap_mva_kurs',
     'regnskap_konto_medlemskap', 'regnskap_mva_medlemskap',
     'regnskap_konto_butikk', 'regnskap_mva_butikk',
-    'regnskap_konto_dropin', 'regnskap_mva_dropin',
     'regnskap_konto_gavekort', 'regnskap_mva_gavekort',
     'regnskap_motkonto_vipps', 'regnskap_motkonto_kontant',
     'regnskap_motkonto_faktura',
@@ -92,13 +91,16 @@ $iUtc = static fn(DateTimeImmutable $d): string => $d->setTimezone($utc)->format
 
 // ── Oppsettet fra regnskapsforeren ─────────────────────────────────────
 //
-// «ordre» er butikksalg. «booking» er kurs og events. De to som ikke er
-// avklart — drop-in og gavekort — staar med tom konto til de er det.
+// «ordre» er butikksalg. «booking» er kurs og events. Kontoene er avklart
+// med regnskapsfoereren 1. september, men staar likevel i basen og ikke her,
+// fordi det er hun som eier dem.
+//
+// Drop-in staar ikke her. Tilbudet ble tatt ned med migrasjon 110 og 111, og
+// eieren 1. september: «vi har ikke drop-inn ... aldri ha det med».
 $OPPSETT = [
     'booking'    => ['navn' => 'Kurs og events', 'konto' => 'regnskap_konto_kurs',       'mva' => 'regnskap_mva_kurs'],
     'medlemskap' => ['navn' => 'Medlemskap',     'konto' => 'regnskap_konto_medlemskap', 'mva' => 'regnskap_mva_medlemskap'],
-    'ordre'      => ['navn' => 'Butikksalg',     'konto' => 'regnskap_konto_butikk',     'mva' => 'regnskap_mva_butikk'],
-    'dropin'     => ['navn' => 'Drop-in',        'konto' => 'regnskap_konto_dropin',     'mva' => 'regnskap_mva_dropin'],
+    'ordre'      => ['navn' => 'Varer i butikk', 'konto' => 'regnskap_konto_butikk',     'mva' => 'regnskap_mva_butikk'],
     'gavekort'   => ['navn' => 'Gavekort solgt (gjeld)', 'konto' => 'regnskap_konto_gavekort', 'mva' => 'regnskap_mva_gavekort'],
 ];
 
@@ -284,16 +286,25 @@ if (Foresporsel::tekst('csv') === 'ja') {
 
     $f = fopen('php://output', 'wb');
     fwrite($f, "\xEF\xBB\xBF");
-    fputcsv($f, ['Dato', 'Bilagstekst', 'Konto', 'Mva-kode', 'Debet', 'Kredit', 'Beskrivelse'], ';', '"', '');
+    // Ett beloepsfelt med fortegn, ikke to kolonner.
+    //
+    // Regnskapsfoereren, 1. september: «Det skal ikke vaere debet- og
+    // kreditkolonner men man bruker fortegn i beloep (positivt beloep =
+    // debet, negativt beloep = kredit). For oevrig ser det bra ut.»
+    //
+    // Inntekt er kredit og skrives negativt; pengene inn er debet og skrives
+    // positivt. Et gavekort som loeses inn er ogsaa debet — det trekker ned
+    // gjelden fra dagen kortet ble solgt.
+    fputcsv($f, ['Dato', 'Bilagstekst', 'Konto', 'Mva-kode', 'Beløp', 'Beskrivelse'], ';', '"', '');
 
     foreach ($ut as $b) {
         foreach ($b['linjer'] as $l) {
             fputcsv($f, [$b['dato'], $b['bilagstekst'], $l['konto'] ?: 'MANGLER',
-                         $l['mvakode'], '', $l['belop'], $l['hva']], ';', '"', '');
+                         $l['mvakode'], $kr(-$l['belopOre']), $l['hva']], ';', '"', '');
         }
         foreach ($b['inn'] as $i) {
             fputcsv($f, [$b['dato'], $b['bilagstekst'], $i['konto'] ?: 'MANGLER',
-                         '', $i['belop'], '',
+                         '', $kr($i['belopOre']),
                          $i['maate'] === 'Gavekort' ? 'Gavekort innløst' : 'Innbetalt · ' . $i['maate']], ';', '"', '');
         }
     }

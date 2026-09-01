@@ -39034,13 +39034,20 @@ class Component extends DCLogic {
         const kladd = this.state.doOppsett || {};
         const verdi = (n) => (kladd[n] !== undefined ? kladd[n] : (lagret[n] || ''));
 
+        // Kontonumrene er dem regnskapsfoereren opprettet i Tripletex
+        // 1. september. Butikken er skilt fra medlemskapet «slik at man kan
+        // beregne bruttofortjeneste».
+        //
+        // Drop-in staar ikke her. Tilbudet ble tatt ned med migrasjon 110 og
+        // 111, og eieren 1. september: «vi har ikke drop-inn ... aldri ha
+        // det med».
         const FELT = [
           ['Kurs og events — konto',   'regnskap_konto_kurs',       '3200'],
           ['Kurs og events — mva-kode','regnskap_mva_kurs',         '6'],
           ['Medlemskap — konto',       'regnskap_konto_medlemskap', '3000'],
           ['Medlemskap — mva-kode',    'regnskap_mva_medlemskap',   '3'],
-          ['Butikksalg — konto',       'regnskap_konto_butikk',     '3000 el. 3001'],
-          ['Butikksalg — mva-kode',    'regnskap_mva_butikk',       '3'],
+          ['Varer i butikk — konto',   'regnskap_konto_butikk',     '3020'],
+          ['Varer i butikk — mva-kode','regnskap_mva_butikk',       '3'],
           ['Gavekort — konto (gjeld)',  'regnskap_konto_gavekort',  '2905'],
           ['Gavekort — mva-kode',       'regnskap_mva_gavekort',    'ingen'],
           ['Motkonto Vipps',            'regnskap_motkonto_vipps',  '1510'],

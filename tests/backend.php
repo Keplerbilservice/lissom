@@ -3769,6 +3769,33 @@ sjekk('… og en dato som alt laa der teller med i «ti ganger»',
     str_contains($serier, '$laget += $ny;')
     && str_contains($serier, '$alt++;'));
 
+// ── «N ganger» faar plass i vinduet ────────────────────────────────────
+//
+// kurs_serier har to tall som lett forveksles: «antall» er hvor mange ganger
+// det skal gaa, «uker_fram» er hvor langt fram datoene legges ut. Ber du om
+// ti ganger i et vindu paa aatte uker, faar du aatte datoer.
+//
+// Fire steder setter opp serier. Regelen sto ett sted og manglet de tre
+// andre: kalenderen sendte ikke ukerFram i det hele tatt (serveren falt
+// tilbake paa aatte), og «fast dag» brukte brukerens vindu raatt.
+//
+// Maalt: ti ganger ukentlig med startdato tre uker fram ga 9 av 10 datoer med
+// det gamle vinduet paa 11 uker, og 10 av 10 med 15.
+sjekk('regelen for vinduet staar ett sted',
+    str_contains($sida2, 'ukerForSerie(monster, antall, startDato, minst)'));
+sjekk('… og alle fire stedene bruker den',
+    substr_count($sida2, 'this.ukerForSerie(') === 4);
+// Avstanden til startdatoen maa med: vinduet regnes fra i dag, tellingen fra
+// den forste datoen.
+sjekk('… og den regner med avstanden til startdatoen',
+    str_contains($sida2, 'Math.ceil(n * perGang + dagerTil / 7) + 1'));
+// Et vindu noen har satt selv skal aldri senkes.
+sjekk('… uten aa senke et vindu noen har satt selv',
+    str_contains($sida2, 'Math.max(trengs, gulv)'));
+// Kalenderen sendte ikke vinduet i det hele tatt.
+sjekk('… og kalenderen sender det ogsaa',
+    str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
+
 // ── Ressursene deles av alle ───────────────────────────────────────────
 //
 // Eieren, 30. august: «maa ta plasser fra de samme ressursene. Altsaa om det

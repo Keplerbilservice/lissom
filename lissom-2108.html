@@ -4719,7 +4719,7 @@ window.__resources = {
             <div onClick="{{ n.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); cursor: pointer;">
               <div style="min-width: 0;">
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
-                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hva }}</div>
+                <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hvaNaar }}</div>
               </div>
               <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
             </div>
@@ -38690,7 +38690,19 @@ class Component extends DCLogic {
           { navn: 'Petter Nes', hva: 'Date Night, 2 plasser', tid: '21. aug' },
           { navn: 'Anne Five', hva: 'Gavekort kr. 1 000,-', tid: '21. aug' },
           { navn: 'Silje Bratt', hva: 'Medlemskap 30 timer', tid: '20. aug' },
-        ])),
+        ])).map(n => Object.assign({}, n, {
+          // Naar kurset gaar, ikke bare hva det heter.
+          //
+          // Eieren, 1. september: «nye paameldinger kortet viser hvilket kurs
+          // de er meldt paa, men ikke naar kurset er». Raden sa «Keramikk
+          // Workshop», og til hoyre «sondag 30. august, 11:27» — men det er
+          // da paameldingen kom inn, ikke naar kurset gaar. Én dato i raden
+          // leses som den man leter etter, og det var feil dato.
+          //
+          // Kursdatoen laa i svaret fra serveren hele tida, men bare inne i
+          // ruta man faar ved aa trykke. Naa staar den paa raden.
+          hvaNaar: n.hva + (n.naar ? ' · ' + n.naar : ' · dato ikke satt'),
+        })),
         // Raden kunne aapnes, og saa var det ingenting aa gjore. En
         // paamelding til et kurs uten dato blir staaende her for alltid —
         // den finnes ikke under Paameldte heller, for der sorteres det paa

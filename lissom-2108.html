@@ -2284,8 +2284,6 @@ window.__resources = {
                     </div>
                   </div>
                 </sc-if>
-                  </div>
-                </sc-if>
                 <!-- Allergier og annet vi maa vite.
                      Staar for vilkaarene, ikke etter: den som er ferdig med
                      aa krysse av og trykke betal, leser ikke mer. -->
@@ -30289,11 +30287,23 @@ class Component extends DCLogic {
                    ubet || null, 'adminokonomi', { okonomiFor: 'deltakere' },
                    ubet ? 'Se de ubetalte' : 'Se betalingene', true);
               })(),
-              // Min side slik en kursdeltaker ser den. Aapner den ekte
-              // skjermen med rollen satt.
+              // Min side slik de to gruppene ser den. Aapner den ekte skjermen
+              // med rollen satt.
+              //
+              // Begge staar her. En periode laa de hver for seg — deltakeren
+              // her, medlemmet under Medlemmer — fordi de «hoerer til hos dem
+              // de gjelder». Det var min inndeling, ikke eierens, og den kostet
+              // mer enn den ga: staar du paa denne skjermen, ser du at det
+              // finnes en forhaandsvisning, og saa finnes den bare for den ene
+              // halvparten. Eieren, 1. september: «Hva kursdeltakere ser, men
+              // ikke hva medlemmene ser». Medlemskortet staar fortsatt under
+              // Medlemmer ogsaa — det er der man leter etter det.
               kort('Hva kursdeltakere ser',
                    'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
                    null, 'minside', { fhRolle: 'deltaker', fhFra: 'adminomrkurs' }, 'Se siden'),
+              kort('Hva medlemmer ser',
+                   'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
+                   null, 'minside', { fhRolle: 'medlem', fhFra: 'adminomrkurs' }, 'Se siden'),
               kort('Påmeldte',
                    'Alle som er meldt på, med hva de har betalt.',
                    (this.state.adminDeltakere || []).length, 'adminpameldte', {}, 'Se påmeldingene'),
@@ -39565,9 +39575,10 @@ class Component extends DCLogic {
       fhBandTekst: this.state.fhRolle === 'medlem'
         ? 'Slik ser Min side ut for et medlem. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.'
         : 'Slik ser Min side ut for en kursdeltaker uten medlemskap. Navn og tall er dine egne — det er oppsettet som vises her, ikke opplysningene til en annen person.',
-      // Tilbake dit du kom fra. Kortene staar to steder — «Hva medlemmer ser»
-      // under Medlemmer, «Hva kursdeltakere ser» under Deltakere — og en
-      // fast vei tilbake ville sendt den ene feil.
+      // Tilbake dit du kom fra. Kortene staar paa to skjermer — begge to
+      // under Kurs og deltakere, og «Hva medlemmer ser» ogsaa under
+      // Medlemmer — og en fast vei tilbake ville sendt noen feil vei.
+      // Derfor baerer kortet med seg hvor det ble trykket.
       fhTilbake: () => this.gaaAdmin(this.state.fhFra || 'adminomrkurs', {}),
       // Skjemaet staar alltid. For sto det ikke naar en gammel soknad laa
       // som «venter», og da kom hen aldri videre: soknader behandles ikke

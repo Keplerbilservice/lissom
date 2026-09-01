@@ -3855,6 +3855,145 @@ sjekk('… uten aa blinke tom',
 sjekk('… og klokka ryddes naar skjermen forlates',
     str_contains($sida2, 'clearInterval(this._kalenderur);'));
 
+// ── Alle utsendelser er maler Monica kan endre ─────────────────────────
+//
+// Eieren, 1. september: «hvorfor kan ikke alle vaere redigerbare? og ligge i
+// et eget kort paa oversikt som heter maler» — og «ja, alle 29».
+//
+// Tekstene laa to steder: ni i «notification_templates», tjue skrevet rett
+// inn i PHP-en. Og selv de ni kunne ingen endre — lista paa varselskjermen
+// var designdata, og dialogen viste teksten uten aa lagre den. Det fantes
+// ikke noe endepunkt i det hele tatt.
+//
+// Denne proeven er den som holder det paa plass: skriver noen en ny e-post
+// rett inn i koden, blir den roed.
+$sendere = [];
+foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
+    $kort = basename($f);
+    // varsler.php ER avsenderen. beskjed.php sender det Monica selv skriver
+    // i skjemaet — der finnes ingen tekst aa lagre som en mal.
+    if (in_array($kort, ['varsler.php', 'beskjed.php', 'test-varsel.php'], true)) {
+        continue;
+    }
+    $kode = file_get_contents($f);
+    foreach (['Varsel::epost(', 'Varsel::sms(', 'Varsel::tilAdmin('] as $kall) {
+        if (str_contains($kode, $kall)) {
+            $sendere[] = $kort . ' → ' . rtrim($kall, '(');
+        }
+    }
+}
+sjekk('ingen sender e-post eller SMS utenom malene',
+    $sendere === [], implode(' | ', $sendere));
+
+// Malene koden kaller maa finnes. Varsel::mal() skriver en linje i loggen og
+// gaar videre naar malen mangler — altsaa ville en skrivefeil i navnet betydd
+// at meldingen stilltiende sluttet aa gaa ut.
+$kalt = [];
+$kildekode = '';
+foreach (array_merge(
+    glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE),
+    [dirname(__DIR__) . '/bin/cron.php']
+) as $f) {
+    // maler.php er selve registeret. Der staar hvert eneste navn, saa tar vi
+    // den med, beviser proeven bare at registeret er likt seg selv.
+    if (basename($f) === 'maler.php') {
+        continue;
+    }
+    $kode = file_get_contents($f);
+    $kildekode .= $kode;
+    preg_match_all("/Varsel::mal(?:TilAdmin)?\(\s*'([a-z_]+)'/", $kode, $m);
+    foreach ($m[1] as $navn) {
+        $kalt[$navn] = true;
+    }
+}
+$kalt = array_keys($kalt);
+sjekk('… og det er faktisk maler aa se paa', count($kalt) >= 20, count($kalt) . ' navn kalles');
+
+$iRegister = Maler::iBruk();
+$utenRegister = array_values(array_diff($kalt, $iRegister));
+sjekk('hver mal koden kaller staar i registeret',
+    $utenRegister === [], implode(', ', $utenRegister));
+
+// Registeret skal ikke love maler som ikke finnes heller.
+//
+// Navnet naar ikke alltid Varsel::mal() som en ferdig tekst: noen velges i en
+// ternaer («pakke eller henting»), ett staar i en konstant, ett kommer inn som
+// argument til en hjelpefunksjon. Derfor leter vi etter navnet i kildekoden,
+// ikke bare i kallene — et navn som ikke staar noe sted, sendes ingen steder.
+$utenKall = [];
+foreach ($iRegister as $n) {
+    if (!str_contains($kildekode, "'" . $n . "'")) {
+        $utenKall[] = $n;
+    }
+}
+sort($utenKall);
+
+// To av dem staar i basen fra 002, men ingen kode sender dem: statusen paa
+// maanedstrekket hentes aldri tilbake fra Vipps, saa ingenting vet naar et
+// trekk gikk gjennom eller feilet. De to er ventet — en tredje er ikke det.
+$venterPaaTrekkstatus = ['betaling_feilet', 'medlemskap_fornyet'];
+sjekk('… og registeret lover ingen mal som ikke kalles',
+    $utenKall === $venterPaaTrekkstatus, implode(', ', $utenKall));
+
+// Feltene. Eieren: «jeg vil ha en oversikt over komandoer som jeg kan
+// kopiere, slike som denne {varelinjer}». Et felt som staar i teksten men
+// ikke i registeret, staar igjen som raa tekst i e-posten kunden faar.
+if (DB::harTabell('notification_templates')) {
+    $feilFelt = [];
+    foreach (DB::alle('SELECT navn, emne, tekst FROM notification_templates') as $m) {
+        $navn = (string) $m['navn'];
+        if (!in_array($navn, $iRegister, true)) {
+            continue;
+        }
+        $kjente = array_column(Maler::felter($navn), 'felt');
+        preg_match_all('/\{([a-zA-Z_]+)\}/', (string) $m['emne'] . ' ' . (string) $m['tekst'], $funn);
+        foreach (array_unique(array_diff($funn[1], $kjente)) as $ukjent) {
+            $feilFelt[] = $navn . ' → {' . $ukjent . '}';
+        }
+    }
+    sjekk('ingen mal bruker et felt den ikke faar',
+        $feilFelt === [], implode(' | ', $feilFelt));
+}
+
+// Skjermen og endepunktet.
+$malApi = file_get_contents(dirname(__DIR__) . '/api/admin/maler.php');
+sjekk('malene kan endres fra admin', str_contains($malApi, "if (\$handling !== 'lagre') {"));
+sjekk('… og slettes', str_contains($malApi, "if (\$handling === 'slett') {"));
+// En mal koden kaller kan ikke slettes: da ville meldingen stilltiende
+// sluttet aa gaa ut. Den kan slaas av, og da er det et valg noen har tatt.
+sjekk('… men ikke de koden sender selv',
+    str_contains($malApi, "if (in_array(\$navn, \$IBRUK, true)) {"));
+sjekk('… og et ukjent felt avvises for det naar kunden',
+    str_contains($malApi, "Denne malen kjenner ikke {"));
+sjekk('Maler-skjermen finnes', str_contains($sida2, "erAdminMaler: side === 'adminmaler',"));
+sjekk('… og staar som kort paa Oversikt', str_contains($sida2, "kort('Maler',"));
+sjekk('… med feltene til aa kopiere', str_contains($sida2, 'navigator.clipboard.writeText(t)'));
+
+// ── Hentetiden staar ett sted ──────────────────────────────────────────
+//
+// Eieren, 1. september: «all hentetid av keramikk som er laget her er to til
+// fire uker, de faar beskjed eller kan se paa min side eller
+// https://lissom.no/ferdigbrent».
+//
+// Sidene sa «to uker» fire steder og «2–3 uker» tre steder, og butikkassa
+// lovet «Hentetid i butikken: to uker» mens e-posten lovet to virkedager.
+sjekk('hentetida staar som 2–4 uker, ett sted',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php'),
+        "klar til henting etter 2–4 uker"));
+sjekk('… og ingen side sier noe annet',
+    !str_contains($sida2, '2–3 uker') && !str_contains($sida2, 'etter ca. to uker'));
+// Butikkvarer er ikke keramikk laget her, og skal ikke ha et antall dager.
+sjekk('kassa lover ingen hentetid paa butikkvarer',
+    !str_contains($sida2, 'Hentetid i butikken'));
+$butikkmal = DB::harTabell('notification_templates')
+    ? (string) DB::verdi("SELECT tekst FROM notification_templates WHERE navn = 'butikkordre'") : '';
+sjekk('… og butikkbekreftelsen heller ikke',
+    $butikkmal === '' || (!str_contains($butikkmal, 'virkedager') && !str_contains($butikkmal, 'to uker')));
+// Den som valgte «Send som pakke» skal ikke faa beskjed om aa hente paa Teie.
+sjekk('butikkbekreftelsen leser leveringsvalget',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/booking.php'),
+        "\$erPakke ? 'butikkordre_pakke' : 'butikkordre'"));
+
 // ── Admin henter paa nytt naar noen andre har endret noe ───────────────
 //
 // Eieren, 1. september: «Det er lagt til 2 deltakere lag din egen bolle, men

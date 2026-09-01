@@ -119,25 +119,16 @@ $oppsummering = "Navn: {$navn}\n"
     . "\n" . ($melding !== '' ? $melding : 'Ingen detaljer oppgitt.') . "\n\n"
     . 'Se den under Admin → Beskjeder på ' . Config::nettsted() . '/admin/beskjeder';
 
-Varsel::epost(
-    (string) Config::hent('varsel_epost', 'monica@lissom.no'),
-    'Ny forespørsel fra ' . $navn,
-    $oppsummering,
-    'enquiry',
-    $id
-);
+Varsel::malTilAdmin('intern_ny_foresporsel', [
+    'navn'          => $navn,
+    'oppsummering'  => $oppsummering,
+], 'enquiry', $id);
 
 if ($erEpost) {
-    Varsel::epost(
-        $kontakt,
-        'Vi har fått forespørselen din',
-        "Hei {$navn},\n\nTakk for at du tok kontakt. Vi ser på forespørselen og svarer "
-        . "så snart vi kan — som regel samme dag.\n\nDette er det du sendte oss:\n\n"
-        . ($melding !== '' ? $melding : 'Ingen detaljer oppgitt.')
-        . "\n\nHilsen Lissom Keramikk & Håndverk\nNordre Løkkevei 15, 3120 Nøtterøy\n+47 94 13 46 01",
-        'enquiry',
-        $id
-    );
+    Varsel::mal('foresporsel_mottatt', ['epost' => $kontakt], [
+        'navn'    => $navn,
+        'melding' => $melding !== '' ? $melding : 'Ingen detaljer oppgitt.',
+    ], 'enquiry', $id);
 }
 
 revider('foresporsel_mottatt', 'enquiry', $id, ['type' => $type]);

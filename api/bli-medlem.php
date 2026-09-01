@@ -135,47 +135,35 @@ if ($gammel !== null) {
 }
 
 // Sokeren far en kvittering, og verkstedet beskjed om at det ligger en soknad.
-Varsel::epost(
-    $epost,
-    'Velkommen som medlem hos Lissom',
-    "Hei {$navn},\n\nTakk for at du melder deg inn hos Lissom.\n\n"
-    . "Ønsket medlemskap: {$type}\n\n"
-    . ($betaling === 'trekk'
-        ? "Du har opprettet en fast betalingsavtale i Vipps. Den trekkes automatisk, "
-        . "og du får beskjed før hvert trekk. Du kan si den opp fra Min side.\n\n"
-        : "Du har betalt for denne perioden. Det kommer ingen automatiske trekk — "
-        . "vi tar kontakt før neste periode.\n\n")
-    . "Medlemskapet er aktivt så snart betalingen er registrert. "
-    . "Vi går gjennom dørkode og ordensregler første gang du kommer.\n\n"
-    . "Hilsen Lissom Keramikk & Håndverk\nNordre Løkkevei 15, 3120 Nøtterøy"
-);
+// Delt i to maler. Eieren, 1. september: «del i to maler» — da ser han hele
+// teksten kunden faar, og kan skrive de to ulikt.
+Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
+    ['epost' => $epost], [
+        'navn' => $navn,
+        'type' => $type,
+    ], 'membership_application', $id);
 
 // Beskjeden til verkstedet gaar paa e-post, og som SMS i tillegg naar det er
 // satt opp. E-posten er den som alltid kommer fram — en soknad som blir
 // liggende fordi ingen fikk vite om den, er verre enn en soknad for mye.
 $betalingTekst = $betaling === 'trekk' ? 'fast trekk i Vipps' : 'gjør opp selv';
-$kort = "{$navn} har meldt seg inn ({$type}, {$betalingTekst}). Se Admin → Medlemmer.";
 
-Varsel::tilAdmin(
-    'Nytt medlem: ' . $navn,
-    "Det har meldt seg inn et nytt medlem.\n\n"
-    . "Navn: {$navn}\n"
-    . 'E-post: ' . $epost . "\n"
-    . 'Telefon: ' . ($telefon !== '' ? $telefon : '(ikke oppgitt)') . "\n"
-    . "Ønsket medlemskap: {$type}\n"
-    . "Betaling: {$betalingTekst}\n"
-    . ($erfaring !== '' ? "\nErfaring:\n{$erfaring}\n" : '')
-    . ($melding !== '' ? "\nMelding:\n{$melding}\n" : '')
-    . ($betaling === 'trekk'
-        ? "\nAvtalen trekkes automatisk hver periode."
-        : "\nDenne har ingen fast trekk. Neste periode må kreves inn selv.")
-    . "\n\nMedlemmet ligger under Admin → Medlemmer.",
-    'membership_application',
-    $id
-);
+Varsel::malTilAdmin('intern_nytt_medlem', [
+    'navn'     => $navn,
+    'epost'    => $epost,
+    'telefon'  => $telefon !== '' ? $telefon : '(ikke oppgitt)',
+    'type'     => $type,
+    'betaling' => $betalingTekst,
+    'erfaring' => $erfaring !== '' ? "\nErfaring:\n" . $erfaring . "\n" : '',
+    'melding'  => $melding !== '' ? "\nMelding:\n" . $melding . "\n" : '',
+], 'membership_application', $id);
 
 foreach (Config::adminNumre() as $nr) {
-    Varsel::sms($nr, $kort);
+    Varsel::mal('intern_nytt_medlem_sms', ['telefon' => $nr], [
+        'navn'     => $navn,
+        'type'     => $type,
+        'betaling' => $betalingTekst,
+    ], 'membership_application', $id);
 }
 
 revider('medlemsinnmelding', 'membership_application', $id, ['type' => $type, 'betaling' => $betaling]);

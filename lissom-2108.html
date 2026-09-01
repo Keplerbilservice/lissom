@@ -3371,7 +3371,7 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">Du betaler med {{ valgtBetaling }}. Alle priser er inkl. mva der mva gjelder.</p>
               <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
-              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Alt er dreid for hånd, så farge og form varierer litt fra bildet. Hentetid i butikken: to uker.</p>
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Alt er dreid for hånd, så farge og form varierer litt fra bildet. Varene henter du hos oss i Nordre Løkkevei 15 på Teie i vår åpningstid.</p>
             </div>
           </div>
         </div>
@@ -8504,7 +8504,6 @@ window.__resources = {
                 </svg>
               </sc-if>
             </h1>
-            <div style="font-size: var(--text-sm); color: var(--text-muted);">{{ adminUnderTittel }}</div>
           </div>
         </div>
 
@@ -8568,9 +8567,11 @@ window.__resources = {
                     <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
                   </span>
                   <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
-                  <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="3">
-                    <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
-                  </sc-for>
+                  <div style="display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;">
+                    <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                    </sc-for>
+                  </div>
                 </div>
               </sc-for>
               <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
@@ -11896,6 +11897,128 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- ── Malene for alt som sendes ut ───────────────────────────────────
+       Eieren, 1. september: «hvorfor kan ikke alle vaere redigerbare? og
+       ligge i et eget kort paa oversikt som heter maler». Tekstene laa to
+       steder, og ingen av dem kunne endres. Naa ligger alle her. -->
+  <sc-if value="{{ erAdminMaler }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Admin – maler" style="{{ adminGridStil }}">
+      <aside class="lx-adminaside" style="{{ adminAsideStil }}">
+        <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <nav style="{{ adminNavStil }}">
+          <sc-for list="{{ adminNavMaler }}" as="a" hint-placeholder-count="7">
+            <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
+          </sc-for>
+        </nav>
+        <div class="lx-admmob" style="{{ admMobLinjeStil }}">
+          <div style="{{ admMobNaaStil }}">{{ admMobNaa }}</div>
+          <button type="button" onClick="{{ admMobVeksle }}" aria-expanded="{{ admMobUtvidet }}" style="{{ admMobKnappStil }}">{{ admMobKnappTekst }}</button>
+        </div>
+        <sc-if value="{{ admMobApen }}" hint-placeholder-val="{{ false }}">
+          <div class="lx-admmob lx-admmobpanel" style="{{ admMobPanelStil }}">
+            <sc-for list="{{ admMobPunkter }}" as="m" hint-placeholder-count="10">
+              <div style="{{ m.stil }}">
+                <button type="button" onClick="{{ m.velg }}" style="{{ m.knappStil }}">{{ m.navn }}</button>
+                <sc-if value="{{ m.harUnder }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ m.underStil }}">
+                    <sc-for list="{{ m.under }}" as="u" hint-placeholder-count="5">
+                      <button type="button" onClick="{{ u.velg }}" style="{{ u.stil }}">{{ u.navn }}</button>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <div style="{{ admMobEkstraStil }}">
+              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
+                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </aside>
+      <main style="padding: var(--space-8); min-width: 0;">
+        <div style="margin-bottom: var(--space-6);">
+          <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 4px;">Markedsføring</div>
+          <h1 style="margin: 0; font-size: var(--text-3xl);">Maler</h1>
+          <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Hver e-post og SMS systemet sender. Endre teksten, slå den av, eller se når den går ut. {{ malAntall }}.</p>
+        </div>
+
+        <sc-if value="{{ malIngen }}" hint-placeholder-val="{{ false }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Henter malene …</div>
+        </sc-if>
+
+        <div class="lx-split" style="display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 1.7fr); gap: var(--space-6); align-items: start;">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+            <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Alle malene</div>
+            <sc-for list="{{ malListe }}" as="m" hint-placeholder-count="10">
+              <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">
+                <span style="font-weight: 600;">{{ m.navn }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ m.kanal }}</span>
+                <sc-if value="{{ m.av }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: 11px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Slått av</span>
+                </sc-if>
+              </button>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{ malHarValgt }}" hint-placeholder-val="{{ true }}">
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5);">
+              <div>
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                  <h2 style="margin: 0; font-size: var(--text-2xl); letter-spacing: 0;">{{ malTittel }}</h2>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ malKanal }}</span>
+                </div>
+                <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">{{ malHvor }}</p>
+              </div>
+
+              <sc-if value="{{ malHarFelter }}" hint-placeholder-val="{{ true }}">
+                <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Felt du kan bruke — trykk for å kopiere</div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                    <sc-for list="{{ malFelter }}" as="f" hint-placeholder-count="4">
+                      <button type="button" onClick="{{ f.kopier }}" title="{{ f.hva }}" style="{{ f.stil }}">{{ f.felt }}</button>
+                    </sc-for>
+                  </div>
+                  <sc-for list="{{ malFelter }}" as="f" hint-placeholder-count="4">
+                    <div style="font-size: var(--text-xs); color: var(--text-body); padding: 1px 0;"><strong style="font-family: ui-monospace, monospace;">{{ f.felt }}</strong> — {{ f.hva }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ malHarEmne }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Emne</label>
+                  <input value="{{ malEmne }}" onChange="{{ malSettEmne }}" style="{{ malFeltStil }}">
+                </div>
+              </sc-if>
+
+              <div>
+                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Tekst</label>
+                <textarea value="{{ malTekst }}" onChange="{{ malSettTekst }}" rows="9" style="{{ malOmraadeStil }}"></textarea>
+              </div>
+
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding-top: var(--space-4);">
+                <sc-if value="{{ malUlagret }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size: var(--text-xs); color: var(--terracotta-600); font-weight: 600;">Ikke lagret</span>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ malForkast }}" hint-size="auto,36px">Forkast</x-import>
+                </sc-if>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ malLagre }}" hint-size="auto,36px">{{ malLagreTekst }}</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ malVeksleAv }}" hint-size="auto,36px">{{ malAvTekst }}</x-import>
+                <sc-if value="{{ malKanSlette }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="trash-2" on-click="{{ malSlett }}" hint-size="auto,36px">Slett</x-import>
+                </sc-if>
+              </div>
+
+              <sc-if value="{{ malErLaast }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 66ch;">{{ malLaastTekst }}</p>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </main>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ erAdminOppskrifter }}" hint-placeholder-val="{{ false }}">
     <div data-screen-label="Admin – oppskrifter" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
@@ -14603,7 +14726,7 @@ const SIDEINNHOLD = {
       { l: 'Kort 1 tekst', v: 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.', lang: true },
       { l: 'Kort 1 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 2 tittel', v: 'Utdrikningslag' },
-      { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.', lang: true },
+      { l: 'Kort 2 tekst', v: 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to til fire uker.', lang: true },
       { l: 'Kort 2 pris', v: 'Fra kr. 990 per person' },
       { l: 'Kort 3 tittel', v: 'Bursdag og jubileum' },
       { l: 'Kort 3 tekst', v: 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.', lang: true },
@@ -14637,7 +14760,7 @@ const SIDEINNHOLD = {
       { l: 'Spørsmål 1', v: 'Må jeg kunne noe om keramikk fra før?' },
       { l: 'Svar 1', v: 'Nei. Kursene starter fra bunnen, og vi veileder deg gjennom hele prosessen.', lang: true },
       { l: 'Spørsmål 2', v: 'Hvor lang tid tar det før keramikken er ferdig?' },
-      { l: 'Svar 2', v: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar normalt 2–3 uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige.', lang: true },
+      { l: 'Svar 2', v: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar normalt to til fire uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent.', lang: true },
       { l: 'Spørsmål 3', v: 'Hvor lenge oppbevarer dere ferdige arbeider?' },
       { l: 'Svar 3', v: 'Vi oppbevarer ferdige arbeider i to uker etter at du har fått beskjed om at de er klare. Trenger du lengre tid, ta kontakt.', lang: true },
       { l: 'Spørsmål 4', v: 'Kan jeg bli medlem uten å ha tatt kurs hos dere?' },
@@ -14692,7 +14815,7 @@ const SIDEINNHOLD = {
       { l: 'Kicker', v: 'Paint on Pots' },
       { l: 'Overskrift', v: 'Mal din egen keramikk' },
       { l: 'Brødtekst', v: 'Velg et produkt fra vårt Paint on Pots-sortiment. Mal det slik du vil — så glaserer og brenner vi det for deg. Ingen erfaring nødvendig, og alt utstyr er inkludert i prisen.', lang: true },
-      { l: 'Undertekst', v: 'Passer for venner, familier med barn, par og små grupper. Ferdig brent keramikk henter du i verkstedet etter ca. to uker.', lang: true },
+      { l: 'Undertekst', v: 'Passer for venner, familier med barn, par og små grupper. Ferdig brent keramikk henter du i verkstedet etter to til fire uker.', lang: true },
       { l: 'Knapp 1', v: 'Se datoer og book' } ] },
     { navn: 'Om Paint on Pots', type: 'To avsnitt', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Paint on Pots' },
@@ -14738,14 +14861,14 @@ const SIDEINNHOLD = {
       { l: 'Steg 3', v: 'Vi glaserer og brenner' },
       { l: 'Steg 3 tekst', v: 'Vi gjør ferdig arbeidet, så fargene blir blanke og tåler bruk.', lang: true },
       { l: 'Steg 4', v: 'Hent den ferdig' },
-      { l: 'Steg 4 tekst', v: 'Klar til henting i verkstedet etter ca. to uker.', lang: true } ] },
+      { l: 'Steg 4 tekst', v: 'Klar til henting i verkstedet etter to til fire uker.', lang: true } ] },
     { navn: 'Spørsmål og svar', type: 'Fire spørsmål', synlig: 'Publisert', felter: [
       { l: 'Spørsmål 1', v: 'Må jeg kunne male?' },
       { l: 'Svar 1', v: 'Nei. Vi viser deg teknikkene, og det er lov å holde det enkelt.', lang: true },
       { l: 'Spørsmål 2', v: 'Kan barn være med?' },
       { l: 'Svar 2', v: 'Ja, Paint on Pots passer godt for barn i følge med voksen.', lang: true },
       { l: 'Spørsmål 3', v: 'Når er den ferdig?' },
-      { l: 'Svar 3', v: 'Glasering og brenning tar ca. to uker. Vi sier fra når den kan hentes.', lang: true },
+      { l: 'Svar 3', v: 'Glasering og brenning tar to til fire uker. Vi sier fra når den kan hentes.', lang: true },
       { l: 'Spørsmål 4', v: 'Kan vi komme som gruppe?' },
       { l: 'Svar 4', v: 'Ja — send oss en forespørsel, så setter vi opp en egen kveld for dere.', lang: true } ] },
   ],
@@ -15015,11 +15138,11 @@ class Component extends DCLogic {
    */
   kursKort() {
     this._kursListe = this.medUndertemaer([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Arbeidene er klare til henting etter 2–3 uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
+        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg', tema: 'Dreiing', om: 'To økter over to dager. Første kveld lærer du å sentrere og dreie, andre kveld dreier du videre og lærer å trimme foten. Vi glaserer og brenner arbeidene for deg.', punkter: ['Leire, verktøy, glasur og to brenninger er inkludert.', 'Arbeidene er klare til henting etter to til fire uker. Vi sender beskjed.', 'Passer fra 15 år. Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Onsdag 19. august', tid: '18:00 – 21:00, to økter', plasser: '3 av 8 plasser', valgt: true }, { dato: 'Onsdag 2. september', tid: '18:00 – 21:00, to økter', plasser: '6 av 8 plasser' }, { dato: 'Onsdag 16. september', tid: '18:00 – 21:00, to økter', plasser: 'Fullbooket', full: true }] },
         { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg', tema: 'Plateteknikk', om: 'En kveld med plateteknikk. Du kjevler ut leira, former boller i flere størrelser og lærer hvordan du får jevne kanter og rene sammenføyninger. Du velger glasur til slutt.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Du tar med deg to til tre boller hjem.', 'Passer for nybegynnere.'], datoer: [{ dato: 'Mandag 24. august', tid: '17:00 – 20:00', plasser: '3 plasser', valgt: true }, { dato: 'Mandag 7. september', tid: '17:00 – 20:00', plasser: '8 plasser' }] },
-        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Fatene er klare til henting etter 2–3 uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
+        { level: 'Kurs', title: 'Store fat kurs', date: 'tir. 8. sep', duration: '10:00 – 13:00', price: 'Fra kr. 1 490,-', status: '2 plasser igjen', image: 'uploads_shutterstock_2830576133.jpg', tema: 'Plateteknikk', om: 'Formiddagskurs i plateteknikk der du bygger store fat over form. Vi jobber med utkjevling, kanter og dekor med stempler.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Fatene er klare til henting etter to til fire uker.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '2 plasser', valgt: true }, { dato: 'Tirsdag 8. september', tid: '10:00 – 13:00', plasser: '6 plasser' }] },
         { level: 'Event · For dere to', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg', tema: 'Events', om: 'En kveld ved dreieskiva for to. Dere får hver deres skive, veiledning underveis, og noe å drikke.', punkter: ['Leire, verktøy, glasur og brenning er inkludert.', 'Seks par per kveld.', 'Ta med det dere vil drikke, vi har glass.', 'Ingen forkunnskaper nødvendig.'], datoer: [{ dato: 'Fredag 28. august', tid: '18:00 – 21:00', plasser: 'Fullbooket', full: true, valgt: true }] },
-        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 1,5 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka halvannen time.', 'Klar til henting etter to uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
+        { level: 'Event · Den enkleste', title: 'Paint on Pots', date: 'Flere datoer', duration: 'Ca. 1,5 timer', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg', tema: 'Events', temaer: ['Paint on pots'], om: 'Du velger en ferdig brent gjenstand og maler den slik du vil. Vi glaserer og brenner etterpå. Passer for barn og voksne. Prisen gjelder én gjenstand per person.', punkter: ['Gjenstand, farger og brenning er inkludert.', 'Tar cirka halvannen time.', 'Klar til henting etter to til fire uker.', 'Barn fra 6 år, med voksen.'], datoer: [{ dato: 'Søndag 23. august', tid: '12:00 – 14:00', plasser: '7 plasser', valgt: true }, { dato: 'Søndag 6. september', tid: '12:00 – 14:00', plasser: '10 plasser' }] },
     ]);
     // Rekkefolgen var den de sto i her i fila — designlista forst, saa nye
     // kurs, saa det som bare finnes i basen. Den som kom for aa se hva som
@@ -16385,6 +16508,7 @@ class Component extends DCLogic {
       { sti: '/admin/nyttig',       side: 'adminnyttig' },
       { sti: '/admin/mobilvisning', side: 'adminmobilvis' },
       { sti: '/admin/varsler',     side: 'adminvarsler' },
+      { sti: '/admin/maler',       side: 'adminmaler' },
     ];
   }
 
@@ -20809,6 +20933,60 @@ class Component extends DCLogic {
   }
 
   /** Verdiene til knappen og skjemaet. Ligger overalt, saa de er alltid med. */
+  /**
+   * Malene for alt som sendes ut.
+   *
+   * Eieren, 1. september: «hvorfor kan ikke alle vaere redigerbare? og ligge
+   * i et eget kort paa oversikt som heter maler» — og senere: «jeg vil kunne
+   * slette maler ogsaa, ogsaa vil jeg ha en oversikt over komandoer som jeg
+   * kan kopiere, slike som denne {varelinjer} slik at jeg faktisk kan legge
+   * inne selv».
+   *
+   * Tekstene laa to steder: ni i basen, tjue skrevet rett inn i PHP-en. Og
+   * ingen av dem kunne endres — lista paa varselskjermen var designdata, og
+   * dialogen viste teksten uten aa lagre den. Migrasjon 112 flyttet alle inn
+   * i tabellen; dette er skjermen som endrer dem.
+   */
+  hentMaler() {
+    if (!this.erPublisert() || this._malerHentes) return;
+    this._malerHentes = true;
+    fetch('/api/admin/maler.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => {
+        this._malerHentes = false;
+        if (d && d.maler) this.setState({ malListe: d.maler });
+      })
+      .catch(() => { this._malerHentes = false; });
+  }
+
+  malKall(kropp, merkelapp) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Malene ligger i databasen, og finnes bare på lissom.no.' });
+      return;
+    }
+    if (this._malLagrer) return;
+    this._malLagrer = true;
+    fetch('/api/admin/maler.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(kropp),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        this._malLagrer = false;
+        if (ok && d.maler) this.setState({ malListe: d.maler, malUtkast: null });
+        this.setState({
+          kvittering: ok ? (merkelapp || 'Lagret') : 'Gikk ikke',
+          kvitteringDetalj: ok ? (d.beskjed || '') : (d.feil || 'Prøv igjen om litt.'),
+        });
+      })
+      .catch(() => {
+        this._malLagrer = false;
+        this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
+      });
+  }
+
   feilVals() {
     const s = this.state;
     const felt = {
@@ -25006,6 +25184,9 @@ class Component extends DCLogic {
       'Markedsføring': [
         ['← Markedsføring', 'adminmarked'],
         ['E-post og SMS',   'adminvarsler'],
+        // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
+        // eget kort paa oversikt som heter maler».
+        ['Maler',           'adminmaler'],
         // SEO hoerer hjemme baade her og under Nettsiden. Kom du fra
         // markedsforingsfanene, byttet hele sidemenyen til «Nettsiden», og
         // veien tilbake fantes ikke uten aa gaa om menyen paa nytt.
@@ -25075,6 +25256,7 @@ class Component extends DCLogic {
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
+      case 'adminmaler':         return p('Markedsføring', 'Markedsføring', 'Maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');
@@ -28792,6 +28974,9 @@ class Component extends DCLogic {
     if (side === 'adminvarsler' && !this.state.varslerData) {
       this.hentVarsler();
     }
+    if (side === 'adminmaler' && !this.state.malListe) {
+      this.hentMaler();
+    }
     if (this.erAdminSkjerm(side) && !this.state.kursholderData) {
       this.hentKursholdere();
     }
@@ -30892,7 +31077,7 @@ class Component extends DCLogic {
         'Ingen erfaring nødvendig — vi viser deg alt underveis.',
         'Leire, materialer, glasering og brenning er inkludert.',
         'Passer venninnekvelder, utdrikningslag, bedrifter og par.',
-        'Arbeidene brennes og er klare til henting etter 2–3 uker.',
+        'Arbeidene brennes og er klare til henting etter to til fire uker.',
       ] : [
         'Leire, verktøy, glasur og brenning er inkludert.',
         'Ingen forkunnskaper nødvendig.',
@@ -32458,6 +32643,13 @@ class Component extends DCLogic {
                    utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
                    utBelop: '', utSalgBeskjed: '',
                  })),
+
+            // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
+            // eget kort paa oversikt som heter maler».
+            kort('Maler',
+                 'Hver e-post og SMS systemet sender. Endre teksten, slå den av, '
+                 + 'eller se når den går ut.',
+                 null, 'adminmaler', {}, 'Se malene →'),
 
             kort('Butikk',
                  'Varer, priser, bilder og lager.',
@@ -34940,7 +35132,7 @@ class Component extends DCLogic {
 
           kFerdigTid: st.kFerdigTid ?? '',
           settKFerdigTid: e => this.setState({ kFerdigTid: e.target.value }),
-          kFerdigTidMal: kort(mal.ferdigTid || 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.', 160),
+          kFerdigTidMal: kort(mal.ferdigTid || 'Den er normalt klar til henting etter 2–4 uker. Du får beskjed når den er klar. Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, eller ved å logge inn på Min side.', 160),
           kFerdigTidAnbefalt: () => this.setState({ kFerdigTid: '' }),
 
           // «Godt aa vite» har ikke lenger felt — se seksjon 08. Verdien
@@ -34998,7 +35190,7 @@ class Component extends DCLogic {
         const EKSEMPEL = {
           punkter: 'Leire, glasur og brenning er inkludert.\nIngen forkunnskaper nødvendig.',
           praktisk: 'F.eks. Møt opp ti minutter før. Bruk klær som tåler leire. Parkering bak bygget.',
-          ferdigTid: 'Den er normalt klar til henting etter 2–3 uker. Du får beskjed når den er klar.',
+          ferdigTid: 'Den er normalt klar til henting etter 2–4 uker. Du får beskjed når den er klar. Du kan også se selv når din keramikk er klar på lissom.no/ferdigbrent, eller ved å logge inn på Min side.',
         };
         const lag = (felt, sti) => {
           const naa = String(this.state[sti] || '').trim();
@@ -36037,14 +36229,6 @@ class Component extends DCLogic {
         const n = st.inne.antall;
         return n === 0 ? 'Ingen innstemplet' : (n === 1 ? 'Ett medlem' : n + ' medlemmer');
       })(),
-      adminUnderTittel: (() => {
-        const d = this.state.adminData;
-        if (d && d.bookinger) {
-          return (d.kommende || []).length + ' økter framover · '
-            + d.bookinger.sisteUke + ' påmeldte siste uke';
-        }
-        return this.erPublisert() ? 'Henter …' : '4 økter i dag · 34 påmeldte denne uka · 5 medlemmer i verkstedet';
-      })(),
       ingenInne: this.state.stempling ? this.state.stempling.inne.antall === 0 : this.erPublisert(),
       // Kontaktopplysningene i kassa. Feltene var tegnet, men ikke koblet
       // til noe. Innloggingen fyller dem, og de kan rettes — kvitteringen
@@ -36967,7 +37151,7 @@ class Component extends DCLogic {
         const hent = (l, fb) => il['Bedrift og event/' + seksjon + '/' + l] ?? fb;
         return [
           { navn: hent('Kort 1 tittel', 'Bedriftsevent og teambuilding'), tekst: hent('Kort 1 tekst', 'To timer ved dreieskiven eller med plateteknikk, med veiledning hele veien. Vi dekker langbordet, dere kan ta med mat og drikke.'), pris: hent('Kort 1 pris', 'Fra kr. 990 per person'), bilde: 'uploads_workshop4.jpg' },
-          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to uker.'), pris: hent('Kort 2 pris', 'Fra kr. 990 per person'), bilde: 'uploads_datenight.jpg' },
+          { navn: hent('Kort 2 tittel', 'Utdrikningslag'), tekst: hent('Kort 2 tekst', 'Hovedpersonen på skiva, resten heier og lager hver sin ting. Vi glaserer og brenner alt — klart til henting etter to til fire uker.'), pris: hent('Kort 2 pris', 'Fra kr. 990 per person'), bilde: 'uploads_datenight.jpg' },
           { navn: hent('Kort 3 tittel', 'Bursdag og jubileum'), tekst: hent('Kort 3 tekst', 'Paint on Pots eller enkel håndbygging for store og små. Passer fra 6 år. Dere velger selv hvor lenge dere vil holde på.'), pris: hent('Kort 3 pris', 'Fra kr. 990 per person'), bilde: 'uploads_barn2.jpg' },
         ].map(t => {
           // Filnavnene her begynner alt med «uploads_». Regelen la paa
@@ -37148,7 +37332,7 @@ class Component extends DCLogic {
         const hent = (l, fallback) => il['Spørsmål og svar/' + seksjon + '/' + l] ?? fallback;
         return [
         { q: 'Må jeg kunne noe om keramikk fra før?', a: 'Nei. Kursene starter fra bunnen, og vi veileder deg gjennom hele prosessen.' },
-        { q: 'Hvor lang tid tar det før keramikken er ferdig?', a: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar normalt 2–3 uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige.' },
+        { q: 'Hvor lang tid tar det før keramikken er ferdig?', a: 'Etter kurset må arbeidene tørke, brennes, glaseres og brennes på nytt. Det tar normalt to til fire uker før keramikken er klar til henting. Vi sender deg beskjed så snart arbeidene dine er ferdige — og du finner den på Min side og på lissom.no/ferdigbrent.' },
         { q: 'Hvor lenge oppbevarer dere ferdige arbeider?', a: 'Vi oppbevarer ferdige arbeider i to uker etter at du har fått beskjed om at de er klare. Trenger du lengre tid, ta kontakt.' },
         { q: 'Kan jeg bli medlem uten å ha tatt kurs hos dere?', a: 'Du må ha tatt et kurs hos oss, eller ha erfaring fra før. Ta kontakt, så finner vi ut av det.' },
         { q: 'Kan jeg bruke verkstedet når jeg vil?', a: 'Som medlem har du tilgang døgnet rundt med egen dørkode. Du booker verkstedtid på Min side, så alle får plass ved skivene.' },
@@ -39058,7 +39242,7 @@ class Component extends DCLogic {
       visIntroRad: side === 'kurs',
       introBokser: (this.state.kursFilter === 'Events' ? [
         { tittel: 'Passer for', punkter: ['Venninnekvelder og par', 'Utdrikningslag og bursdager', 'Bedrifter og teambuilding'] },
-        { tittel: 'Slik fungerer det', punkter: ['Kom som du er — ingen erfaring nødvendig', 'Alt utstyr og materialer er inkludert', 'Arbeidene brennes og hentes etter 2–3 uker'] },
+        { tittel: 'Slik fungerer det', punkter: ['Kom som du er — ingen erfaring nødvendig', 'Alt utstyr og materialer er inkludert', 'Arbeidene brennes og hentes etter to til fire uker'] },
         { tittel: 'For grupper', punkter: ['Flere enn 8? Vi setter opp egen kveld', 'Send en uforpliktende forespørsel', 'Vi svarer som regel samme dag'] },
       ] : [
         { tittel: 'Passer for', punkter: ['Nybegynnere — ingen forkunnskaper', 'Deg som vil lære teknikk fra bunnen', 'Deg som vil gjøre noe kreativt, alene eller sammen'] },
@@ -40217,6 +40401,133 @@ class Component extends DCLogic {
       // og da sier skjermen fra i stedet for aa la eieren skrive i noe som
       // ikke faar virkning.
       erAdminVarsler: side === 'adminvarsler',
+      erAdminMaler: side === 'adminmaler',
+      adminNavMaler: this.adminMeny(),
+      ...(() => {
+        if (side !== 'adminmaler') return {};
+        const alle = this.state.malListe || [];
+        const valgtNavn = this.state.malValgt || (alle[0] || {}).navn || '';
+        const valgt = alle.find(m => m.navn === valgtNavn) || null;
+        const utkast = this.state.malUtkast || null;
+        const endret = !!(utkast && utkast.navn === valgtNavn);
+        const emne = endret ? utkast.emne : (valgt ? valgt.emne : '');
+        const tekst = endret ? utkast.tekst : (valgt ? valgt.tekst : '');
+
+        const settUtkast = (felt, verdi) => this.setState(st => {
+          const fra = (st.malUtkast && st.malUtkast.navn === valgtNavn)
+            ? st.malUtkast
+            : { navn: valgtNavn, emne: valgt ? valgt.emne : '', tekst: valgt ? valgt.tekst : '' };
+          return { malUtkast: Object.assign({}, fra, { [felt]: verdi }) };
+        });
+
+        const felt = {
+          width: '100%', boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+          borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
+          color: 'var(--text-heading)', background: 'var(--surface-card)',
+        };
+
+        // Kanalen sier hva som faktisk skjer. Er SMS ikke satt opp, gaar en
+        // SMS-mal ingen steder — og det skal staa her, ikke oppdages naar
+        // noen ikke moette.
+        const kanalTekst = (k) => {
+          const n = k === 'epost' ? 'E-post' : k === 'sms' ? 'SMS' : 'E-post + SMS';
+          return n.indexOf('SMS') === -1 || this.smsAktivert() ? n : n + ' (SMS er ikke satt opp)';
+        };
+
+        return {
+          malIngen: alle.length === 0,
+          malAntall: alle.length + (alle.length === 1 ? ' mal' : ' maler'),
+          malListe: alle.map(m => ({
+            navn: m.tittel,
+            kanal: kanalTekst(m.kanal),
+            av: !m.aktiv,
+            velg: () => this.setState({ malValgt: m.navn, malUtkast: null }),
+            stil: {
+              display: 'flex', flexDirection: 'column', gap: 2, width: '100%', textAlign: 'left',
+              appearance: 'none', cursor: 'pointer',
+              background: m.navn === valgtNavn ? 'var(--clay-100)' : 'transparent',
+              border: 'none', borderTop: '1px solid var(--border-subtle)',
+              padding: 'var(--space-3) var(--space-5)', font: 'var(--type-body-sm)',
+              color: 'var(--text-heading)', opacity: m.aktiv ? 1 : .55,
+            },
+          })),
+
+          malHarValgt: !!valgt,
+          malTittel: valgt ? valgt.tittel : '',
+          malHvor: valgt ? valgt.hvor : '',
+          malKanal: valgt ? kanalTekst(valgt.kanal) : '',
+          malEmne: emne || '',
+          malSettEmne: e => settUtkast('emne', e.target.value),
+          malTekst: tekst || '',
+          malSettTekst: e => settUtkast('tekst', e.target.value),
+          malFeltStil: felt,
+          malOmraadeStil: Object.assign({}, felt, { minHeight: 190, resize: 'vertical', lineHeight: 1.6 }),
+          malHarEmne: !!(valgt && valgt.kanal !== 'sms'),
+
+          // ── Feltene, til aa kopiere ──────────────────────────────
+          //
+          // Hver mal har sine egne. «{varelinjer}» finnes i
+          // butikkbestillingen og ingen andre steder; skrives den her, staar
+          // den igjen som raa tekst i e-posten kunden faar. Derfor staar bare
+          // de som gjelder denne malen, og serveren avviser resten.
+          malHarFelter: !!(valgt && valgt.felter.length),
+          malFelter: (valgt ? valgt.felter : []).map(f => ({
+            felt: '{' + f.felt + '}',
+            hva: f.hva,
+            kopier: () => {
+              const t = '{' + f.felt + '}';
+              const ferdig = () => this.setState({
+                kvittering: t + ' er kopiert',
+                kvitteringDetalj: 'Lim den inn der du vil ha den i teksten.',
+              });
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(t).then(ferdig).catch(ferdig);
+              } else {
+                ferdig();
+              }
+            },
+            stil: {
+              appearance: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+              border: '1px solid var(--lissom-brown)', background: 'transparent',
+              color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)',
+              padding: '4px 11px', font: 'var(--type-body-sm)', fontWeight: 600,
+              fontFamily: 'ui-monospace, monospace',
+            },
+          })),
+
+          malUlagret: endret,
+          malLagreTekst: endret ? 'Lagre endringene' : 'Lagret',
+          malLagre: () => {
+            if (!endret || !valgt) return;
+            this.malKall({ handling: 'lagre', navn: valgt.navn, emne: utkast.emne,
+                           tekst: utkast.tekst, aktiv: valgt.aktiv ? 'ja' : 'nei' },
+                         valgt.tittel + ' er lagret');
+          },
+          malForkast: () => this.setState({ malUtkast: null }),
+
+          malAvTekst: valgt && valgt.aktiv ? 'Slå av' : 'Slå på',
+          malVeksleAv: () => {
+            if (!valgt) return;
+            this.malKall({ handling: 'lagre', navn: valgt.navn, emne: emne, tekst: tekst,
+                           aktiv: valgt.aktiv ? 'nei' : 'ja' },
+                         valgt.aktiv ? valgt.tittel + ' sendes ikke lenger' : valgt.tittel + ' sendes igjen');
+          },
+
+          // En mal koden kaller kan ikke slettes — da ville meldingen
+          // stilltiende sluttet aa gaa ut. Den kan slaas av i stedet.
+          malKanSlette: !!(valgt && !valgt.iBruk),
+          malSlett: () => {
+            if (!valgt || valgt.iBruk) return;
+            if (!window.confirm('Slette «' + valgt.tittel + '»?\n\nTeksten forsvinner for godt.')) return;
+            this.setState({ malValgt: null });
+            this.malKall({ handling: 'slett', navn: valgt.navn }, valgt.tittel + ' er slettet');
+          },
+          malLaastTekst: valgt && valgt.iBruk
+            ? 'Denne sendes automatisk av systemet, og kan ikke slettes. Slå den av i stedet — da sendes den ikke, og teksten er i behold.'
+            : '',
+          malErLaast: !!(valgt && valgt.iBruk),
+        };
+      })(),
       adminNavVarsler: this.adminMeny(),
       ...(side !== 'adminvarsler' ? {} : (() => {
         const d = this.state.varslerData || {};

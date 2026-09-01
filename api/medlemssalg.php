@@ -152,14 +152,11 @@ $id = DB::settInn('member_sales', [
 ]);
 
 // Verkstedet skal vite at det ligger noe og venter.
-Varsel::epost(
-    (string) Config::hent('epost_fra', 'post@lissom.no'),
-    'Ny vare til godkjenning',
-    $produsent . ' har lagt ut «' . $tittel . '» til ' . Booking::kroner($pris * 100)
-        . ".\n\nGodkjenn eller avvis under Admin → Butikk.",
-    'medlemssalg',
-    $id
-);
+    Varsel::malTilAdmin('intern_ny_vare', [
+        'produsent' => $produsent,
+        'tittel'    => $tittel,
+        'pris'      => Booking::kroner($pris * 100),
+    ], 'medlemssalg', $id);
 
 revider('medlemssalg_lagt_ut', 'member_sale', $id, ['tittel' => $tittel]);
 

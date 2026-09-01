@@ -139,6 +139,58 @@ final class Varsel
     }
 
     /**
+     * Beskjed til verkstedet, av en mal.
+     *
+     * Eieren, 1. september: «hvorfor kan ikke alle vaere redigerbare?» — og
+     * paa spoersmaal om de fire interne ogsaa skulle med: «ja, alle 29».
+     *
+     * De gaar til Monica selv, ikke til en kunde, og skal derfor ikke ha
+     * signaturen under seg. Gruppa «intern» staar utenfor GRUPPER nettopp
+     * derfor. Den kan ikke lagres paa malen — kolonna er en enum uten
+     * «intern» — saa den settes her, ved sending. Da oppfoerer de seg
+     * noeyaktig som da teksten sto i koden.
+     */
+    public static function malTilAdmin(string $malNavn, array $felter = [], ?string $refType = null, ?int $refId = null): int
+    {
+        $mal = self::hentMal($malNavn);
+        if ($mal === null) {
+            return 0;
+        }
+        $emne  = self::flett((string) ($mal['emne'] ?? ''), $felter);
+        $tekst = self::flett((string) $mal['tekst'], $felter);
+
+        $antall = 0;
+        foreach (self::adminEposter() as $adresse) {
+            if (self::epost($adresse, $emne, $tekst, $refType, $refId, 'intern') > 0) {
+                $antall++;
+            }
+        }
+        if ($antall === 0) {
+            logg_feil('Fant ingen adresse å varsle admin på: ' . $emne);
+        }
+        return $antall;
+    }
+
+    /**
+     * Malen, eller null med en linje i loggen.
+     *
+     * Sto inne i mal() og kunne bare naas derfra. Naar en beskjed til
+     * verkstedet ogsaa skal komme av en mal, trenger begge det samme
+     * oppslaget — og en mal som er slaatt av skal vaere slaatt av begge veier.
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function hentMal(string $malNavn): ?array
+    {
+        $mal = DB::en('SELECT * FROM notification_templates WHERE navn = :n AND aktiv = 1', ['n' => $malNavn]);
+        if ($mal === null) {
+            logg_feil("Varselmal «{$malNavn}» finnes ikke eller er slått av");
+            return null;
+        }
+        return $mal;
+    }
+
+    /**
      * Sender en av malene fra `notification_templates`, med {navn}-plassholdere
      * fylt ut. Malen bestemmer selv om det blir e-post, SMS eller begge.
      *
@@ -146,9 +198,8 @@ final class Varsel
      */
     public static function mal(string $malNavn, array $mottaker, array $felter = [], ?string $refType = null, ?int $refId = null): void
     {
-        $mal = DB::en('SELECT * FROM notification_templates WHERE navn = :n AND aktiv = 1', ['n' => $malNavn]);
+        $mal = self::hentMal($malNavn);
         if ($mal === null) {
-            logg_feil("Varselmal «{$malNavn}» finnes ikke eller er slått av");
             return;
         }
 

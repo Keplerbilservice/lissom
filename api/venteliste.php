@@ -107,16 +107,11 @@ $naar = $paaDato
     : '';
 
 // Bekreftelse med en gang, saa ingen lurer paa om det gikk gjennom.
-Varsel::epost(
-    $epost,
-    'Du står på ventelisten hos Lissom',
-    "Hei {$navn}!\n\n"
-    . "Du er satt på ventelisten for {$kurs['tittel']}{$naar}, som plass nummer {$posisjon}.\n\n"
-    . "Blir det ledig, får du en e-post fra oss — eller vi forsøker å ringe deg. "
-    . "Du betaler ingenting før plassen er bekreftet.\n\n"
-    . "Hilsen Lissom Keramikk",
-    'waitlist',
-    $id
-);
+    Varsel::mal('venteliste_satt', ['epost' => $epost], [
+        'navn'     => $navn,
+        'kurs'     => (string) $kurs['tittel'],
+        'dato'     => $naar,
+        'posisjon' => (string) $posisjon,
+    ], 'waitlist', $id);
 
 Svar::ok(['posisjon' => $posisjon, 'kurs' => $kurs['tittel']]);

@@ -937,33 +937,22 @@ final class Booking
         $til = $k['mottaker_epost'] ?: $k['kjoper_epost'];
         $hilsen = $k['hilsen'] ? "\n\n«" . $k['hilsen'] . "»\n— " . $k['kjoper_navn'] : '';
 
-        Varsel::epost(
-            (string) $til,
-            'Gavekort til Lissom Keramikk',
-            "Hei!\n\n"
-            . "Du har fått et gavekort på {$belop} til Lissom Keramikk."
-            . $hilsen . "\n\n"
-            . "Koden er: {$kode}\n"
-            . "Gyldig til {$gyldig}.\n\n"
-            . "Gavekortet kan brukes på kurs, events, medlemskap og verkstedtid. "
-            . "Oppgi koden når du bestiller, eller ta den med i verkstedet.\n\n"
-            . 'Hilsen Lissom Keramikk',
-            'gift_card',
-            $kortId
-        );
+        Varsel::mal('gavekort_mottaker', ['epost' => (string) $til], [
+            'belop'  => $belop,
+            'hilsen' => $hilsen,
+            'kode'   => $kode,
+            'gyldig' => $gyldig,
+        ], 'gift_card', $kortId);
 
         // Kjoperen far ogsaa beskjed om at kortet er sendt.
         if ($k['mottaker_epost'] && $k['kjoper_epost'] && $k['mottaker_epost'] !== $k['kjoper_epost']) {
-            Varsel::epost(
-                (string) $k['kjoper_epost'],
-                'Gavekortet er sendt',
-                "Hei " . $k['kjoper_navn'] . "!\n\n"
-                . "Gavekortet på {$belop} er sendt til {$k['mottaker_epost']}.\n"
-                . "Koden er {$kode}, gyldig til {$gyldig}.\n\n"
-                . 'Hilsen Lissom Keramikk',
-                'gift_card',
-                $kortId
-            );
+            Varsel::mal('gavekort_kjoper', ['epost' => (string) $k['kjoper_epost']], [
+                'navn'     => (string) $k['kjoper_navn'],
+                'belop'    => $belop,
+                'mottaker' => (string) $k['mottaker_epost'],
+                'kode'     => $kode,
+                'gyldig'   => $gyldig,
+            ], 'gift_card', $kortId);
         }
     }
 
@@ -986,36 +975,40 @@ final class Booking
                 self::kroner((int) $l['pris_ore'] * (int) $l['antall']));
         }
 
-        Varsel::epost(
-            (string) $o['kunde_epost'],
-            'Takk for bestillingen hos Lissom!',
-            "Hei " . $o['kunde_navn'] . "!\n\n"
-            . "Vi har mottatt bestillingen din ({$o['ordrenr']}).\n\n"
-            . implode("\n", $liste) . "\n\n"
-            . 'Til sammen: ' . self::kroner((int) $o['sum_ore']) . "\n\n"
-            . "Varene er klare til henting i verkstedet innen to virkedager. "
-            . "Vi gir beskjed når de står klare.\n\n"
-            . "Nordre Løkkevei 15, 3120 Nøtterøy\n\n"
-            . 'Hilsen Lissom Keramikk',
-            'order',
-            $ordreId
-        );
+        // ── Henting eller pakke ──────────────────────────────────────
+        //
+        // Eieren, 1. september, om e-posten Monica fikk: «Trenger ikke staa at
+        // varene er klare innen 2 dager». Den lovet to virkedager; kassa paa
+        // nettsiden lovet to uker. Ingen av dem var noe verkstedet ville staa
+        // for, og de kunne ikke begge stemme.
+        //
+        // Butikken selger ogsaa frakt. Den som valgte «Send som pakke» skal
+        // ikke faa beskjed om aa hente paa Teie — det er feil beskjed til den
+        // kunden, og det var det den gamle teksten gav dem.
+        $erPakke = (string) ($o['levering'] ?? 'hent') === 'pakke';
+        $adresse = trim((string) ($o['adresse'] ?? ''));
+
+        Varsel::mal($erPakke ? 'butikkordre_pakke' : 'butikkordre',
+            ['epost' => (string) $o['kunde_epost']], [
+                'ordre'      => (string) $o['ordrenr'],
+                'varelinjer' => implode("\n", $liste),
+                'sum'        => self::kroner((int) $o['sum_ore']),
+                'adresse'    => $adresse !== '' ? 'Sendes til: ' . $adresse : '',
+            ], 'order', $ordreId);
 
         // En gave krever en handling i verkstedet: pakke inn og skrive
         // kortet. Haken og hilsenen naadde ikke serveren i det hele tatt for
         // 24. august, saa ingen fikk vite det. Varsles bare naar det faktisk
         // er en gave — ellers ville hver eneste bestilling gitt en e-post.
         if ((int) ($o['gave'] ?? 0) === 1) {
-            Varsel::tilAdmin(
-                'Gave skal pakkes inn — ' . $o['ordrenr'],
-                'Bestilling ' . $o['ordrenr'] . ' fra ' . $o['kunde_navn'] . " er merket som gave.\n\n"
-                . implode("\n", $liste) . "\n\n"
-                . 'Hilsen på kortet: ' . (trim((string) ($o['gave_hilsen'] ?? '')) !== ''
-                        ? '«' . $o['gave_hilsen'] . '»'
-                        : '(ingen hilsen skrevet)'),
-                'order',
-                $ordreId
-            );
+            Varsel::malTilAdmin('intern_gave_pakkes', [
+                'ordre'      => (string) $o['ordrenr'],
+                'navn'       => (string) $o['kunde_navn'],
+                'varelinjer' => implode("\n", $liste),
+                'hilsen'     => trim((string) ($o['gave_hilsen'] ?? '')) !== ''
+                    ? '«' . $o['gave_hilsen'] . '»'
+                    : '(ingen hilsen skrevet)',
+            ], 'order', $ordreId);
         }
     }
 

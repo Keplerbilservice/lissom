@@ -145,28 +145,19 @@ DB::iTransaksjon(static function () use ($soknad, $vedtak, $type, $begrunnelse, 
 
 $navn = (string) $soknad['navn'];
 if ($vedtak === 'godkjent') {
-    Varsel::epost(
-        (string) $soknad['epost'],
-        'Velkommen som medlem hos Lissom',
-        "Hei {$navn},\n\nSøknaden din er godkjent. Logg inn på lissom.no, så finner du "
-        . "medlemsdelen på Min side — timer, interne kurs og samlinger, og muligheten "
-        . "til å legge ut egne arbeider for salg.\n\n"
-        . "Vi går gjennom dørkode og ordensregler første gang du kommer.\n\n"
-        . "Hilsen Lissom Keramikk & Håndverk\nNordre Løkkevei 15, 3120 Nøtterøy"
-    );
+    Varsel::mal('soknad_godkjent', ['epost' => (string) $soknad['epost']], [
+        'navn' => $navn,
+    ], 'membership_application', (int) $soknad['id']);
     if ($soknad['telefon']) {
-        Varsel::sms((string) $soknad['telefon'], 'Hei ' . $navn . '! Medlemskapet ditt hos Lissom er godkjent. Logg inn på lissom.no for å se Min side.');
+        Varsel::mal('soknad_godkjent_sms', ['telefon' => (string) $soknad['telefon']], [
+            'navn' => $navn,
+        ], 'membership_application', (int) $soknad['id']);
     }
 } else {
-    Varsel::epost(
-        (string) $soknad['epost'],
-        'Om søknaden din til Lissom',
-        "Hei {$navn},\n\nTakk for søknaden. Vi har dessverre ikke anledning til å ta deg "
-        . "opp som medlem nå."
-        . ($begrunnelse !== '' ? "\n\n{$begrunnelse}" : '')
-        . "\n\nDu er hjertelig velkommen på kurs og arrangementer hos oss, og du kan søke "
-        . "igjen senere.\n\nHilsen Lissom Keramikk & Håndverk"
-    );
+    Varsel::mal('soknad_avslatt', ['epost' => (string) $soknad['epost']], [
+        'navn'        => $navn,
+        'begrunnelse' => $begrunnelse !== '' ? "\n\n" . $begrunnelse : '',
+    ], 'membership_application', (int) $soknad['id']);
 }
 
 // Avslag: avtalen stoppes, saa den ikke blir liggende som en fullmakt hos

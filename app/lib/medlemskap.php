@@ -650,16 +650,12 @@ final class Medlemskap
 
         // Vipps krever at kunden vet om trekket for det skjer.
         if (!empty($avtale['epost'])) {
-            Varsel::epost(
-                (string) $avtale['epost'],
-                'Trekk for medlemskapet ditt',
-                'Hei ' . $avtale['navn'] . "!\n\n"
-                . Booking::kroner((int) $avtale['pris_ore']) . ' for medlemskapet «' . $avtale['plan']
-                . '» trekkes i Vipps ' . self::norskDag($forfall) . ".\n\n"
-                . "Du kan si opp når som helst fra Min side, eller i Vipps-appen.",
-                'medlemskap',
-                $betalingId
-            );
+            Varsel::mal('medlemstrekk_varsel', ['epost' => (string) $avtale['epost']], [
+                'navn'  => (string) $avtale['navn'],
+                'belop' => Booking::kroner((int) $avtale['pris_ore']),
+                'plan'  => (string) $avtale['plan'],
+                'dag'   => self::norskDag($forfall),
+            ], 'medlemskap', $betalingId);
         }
 
         return 'bedt om trekk til ' . $forfall;

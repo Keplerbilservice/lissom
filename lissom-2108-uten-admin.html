@@ -5126,6 +5126,38 @@ window.__resources = {
             <input type="number" min="1" max="24" value="{{ ndPlasser }}" onChange="{{ settNdPlasser }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           </div>
         </div>
+        <!-- Gjentakelse.
+             Samme valg som i steg 2 av kursveiviseren, og samme regel bak:
+             det legges i kurs_serier, som laa der fra for og fylles paa av
+             seg selv. Ukedagen og datoen i maneden leses av datoen rett
+             over — du skal ikke fylle ut det samme to ganger.
+
+             Staar rett under datoen med vilje. Den laa nederst, under Fra,
+             Til og Sluttdato med hjelpetekst, og havnet dermed 190 piksler
+             under skjermkanten paa en telefon — i en dialog som er 1083
+             piksler hoy paa en skjerm som viser 664. Eieren, 1. september:
+             «paa mobilen klarte jeg det ikke. Fant ikke gjentagelsenknappen».
+             Den kunne rulles fram, men ingenting sa at det var mer under.
+
+             Den hoerer uansett hjemme her: du velger en dato, og sier med
+             det samme om den skal gjentas. -->
+        <div>
+          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <sc-for list="{{ ndGjentakValg }}" as="g" hint-placeholder-count="4">
+              <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ ndGjentar }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
+              <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Antall ganger</label>
+              <input value="{{ ndAntall }}" onChange="{{ settNdAntall }}" placeholder="F.eks. 10" style="width: 90px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+              <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
+            </div>
+            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndGjentakHjelp }}</p>
+          </sc-if>
+        </div>
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
           <div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
@@ -5146,28 +5178,6 @@ window.__resources = {
           <input type="date" value="{{ ndSluttdato }}" onChange="{{ settNdSluttdato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndSluttdatoHjelp }}</p>
         </div>
-        <!-- Gjentakelse.
-             Samme valg som i steg 2 av kursveiviseren, og samme regel bak:
-             det legges i kurs_serier, som laa der fra for og fylles paa av
-             seg selv. Ukedagen og datoen i maneden leses av datoen du valgte
-             over — du skal ikke fylle ut det samme to ganger. -->
-        <div>
-          <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Gjentakelse</label>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <sc-for list="{{ ndGjentakValg }}" as="g" hint-placeholder-count="4">
-              <button type="button" onClick="{{ g.velg }}" style="{{ g.stil }}">{{ g.navn }}</button>
-            </sc-for>
-          </div>
-          <sc-if value="{{ ndGjentar }}" hint-placeholder-val="{{ false }}">
-            <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-3);">
-              <label style="font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">Antall ganger</label>
-              <input value="{{ ndAntall }}" onChange="{{ settNdAntall }}" placeholder="F.eks. 10" style="width: 90px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-              <span style="font-size: var(--text-xs); color: var(--text-muted);">Tomt = til du stopper det</span>
-            </div>
-            <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndGjentakHjelp }}</p>
-          </sc-if>
-        </div>
-
         <sc-if value="{{ ndHarLagtTil }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
             <div style="font-size: var(--text-xs); font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Lagt ut nå</div>
@@ -5176,7 +5186,16 @@ window.__resources = {
             </sc-for>
           </div>
         </sc-if>
-        <div style="display: flex; align-items: center; gap: var(--space-4); margin-top: var(--space-2);">
+        <!-- Handlingsraden ligger fast i bunnen av dialogen.
+             Den sto sist i innholdet, og havnet dermed paa y=1048 i en dialog
+             som viser 664 piksler paa en telefon: for aa legge ut datoen
+             maatte man foerst rulle ned til en knapp man ikke visste fantes.
+             Naa staar den stille mens resten ruller — og fordi den ligger der
+             hele tiden, ser man ogsaa at det er mer innhold over den.
+
+             Skyggen over kanten er det som viser at noe forsvinner under
+             raden. Uten den ser en fastlimt rad ut som slutten paa dialogen. -->
+        <div style="position: sticky; bottom: calc(var(--space-6) * -1); z-index: 1; display: flex; align-items: center; gap: var(--space-4); margin: var(--space-2) calc(var(--space-6) * -1) calc(var(--space-6) * -1); padding: var(--space-4) var(--space-6) var(--space-6); background: var(--surface-card); border-top: 1px solid var(--border-subtle); box-shadow: 0 -10px 14px -10px rgba(45,20,12,.18);">
           <button type="button" onClick="{{ ndLeggTil }}" style="{{ ndLeggTilStil }}">{{ ndLeggTilTekst }}</button>
           <button type="button" onClick="{{ ndLukk }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Ferdig</button>
         </div>

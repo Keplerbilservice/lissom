@@ -1,5 +1,20 @@
 # Lissom Keramikk & Håndverk AS
 
+# ── Hvorfor hver robot får sin egen liste ──────────────────────────────
+#
+# En navngitt «User-agent» leser BARE sin egen gruppe. Den ser ikke på
+# «User-agent: *» i det hele tatt. Skriver man
+#
+#     User-agent: *
+#     Disallow: /admin
+#
+#     User-agent: GPTBot
+#     Allow: /
+#
+# så har GPTBot nettopp fått lov til å krype /admin — fordi den aldri leste
+# reglene over. Derfor gjentas «Disallow»-linjene i hver eneste gruppe. Det
+# ser omstendelig ut, og må være slik.
+
 User-agent: *
 
 # Admin, Min side og API-et har ingenting å gjøre i et søkeresultat.
@@ -10,7 +25,92 @@ Disallow: /min-side
 Disallow: /api/
 Disallow: /kasse
 Disallow: /logg-inn
-
 Allow: /
+
+# ── AI-robotene ────────────────────────────────────────────────────────
+#
+# Folk spør ChatGPT og Perplexity «hvor kan jeg ta keramikkurs i Tønsberg»
+# framfor å google det. Skal Lissom kunne nevnes i svaret, må robotene få
+# lese sidene.
+#
+# De sto alt inne under «*» over — men fordi ingen hadde tenkt på dem, ikke
+# fordi noen bestemte det. Her står de med navn, så det er et valg. Eieren,
+# 1. september, spurt om både søk og trening: «Ja».
+#
+# To ulike ting, og de kan skilles:
+#
+#   Søkerobotene     henter sida når noen spør om noe NÅ, og kan sitere den
+#                    i svaret. Det er hele poenget med GEO.
+#   Treningsrobotene tar tekst og bilder med inn i neste modell. Det gir
+#                    ingen lenke tilbake, men gjør at modellen kjenner
+#                    verkstedet av seg selv senere.
+#
+# Skal treningen stanses en dag: bytt «Allow: /» til «Disallow: /» under
+# GPTBot, ClaudeBot, Google-Extended og Applebot-Extended. Søkerobotene skal
+# stå — uten dem forsvinner Lissom ut av svarene med det samme.
+
+# ── Søk: svarer noen som spør akkurat nå ───────────────────────────────
+
+User-agent: OAI-SearchBot
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+User-agent: PerplexityBot
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+User-agent: Claude-SearchBot
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+# ── Trening: leser sidene inn i framtidige modeller ────────────────────
+
+User-agent: GPTBot
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+User-agent: ClaudeBot
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+User-agent: Google-Extended
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+User-agent: Applebot-Extended
+Disallow: /admin
+Disallow: /min-side
+Disallow: /api/
+Disallow: /kasse
+Disallow: /logg-inn
+Allow: /
+
+# Hva sida er, i klartekst, uten meny og markup. Bygges av det som faktisk
+# ligger ute — se api/llms.php.
+# llms.txt: https://lissom.no/llms.txt
 
 Sitemap: https://lissom.no/sitemap.xml

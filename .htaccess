@@ -181,6 +181,17 @@ AddDefaultCharset UTF-8
 # ville servert den gamle fila fordi den finnes.
 RewriteRule ^sitemap\.xml$ /api/sitemap.php [L]
 
+# llms.txt bygges av det samme.
+#
+# Fila laa i rota, skrevet for haand i august. Da drop-in ble tatt ned 1.
+# september, ble den staaende og fortelle ChatGPT og Perplexity om et tilbud
+# som ikke finnes lenger — i to avsnitt, i flere uker. Samme laerdom som
+# sidekartet over: en fil noen maa huske aa redigere, blir feil.
+#
+# Regelen maa staa for filregelen under, som ellers ville servert den gamle
+# fila fordi den finnes paa disk.
+RewriteRule ^llms\.txt$ /api/llms.php [L]
+
 # Nettsidefilene har sine egne adresser fordi de ligger som ekte filer. Begge
 # er den samme sida som «/», og tre adresser med samme innhold er duplikater i
 # soket — de stjeler fra hverandre. Her sendes de dit de hoerer hjemme.

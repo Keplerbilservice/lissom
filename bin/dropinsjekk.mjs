@@ -33,6 +33,26 @@
  * Skal det tilbake, skal denne fila slettes i samme slengen — ikke
  * kommenteres bort, ikke settes til aa godta det den naa avviser.
  *
+ * ── Hvilke skjermer ───────────────────────────────────────────────────
+ *
+ * Alle sammen. Adressene leses ut av STIER-tabellen i lissom-2108.html, slik
+ * breddesjekken gjor det — tabellen er fasiten paa hvilke skjermer som
+ * finnes.
+ *
+ * Foerste utgave hadde en haandplukket liste paa 26 adresser. Eieren, 1.
+ * september, med et skjermbilde av «Drop-in i verkstedet» i dra-lista paa
+ * kalenderen: «Andre? Kan du ikke bare soke det opp da? Og faktisk sjekke».
+ * Han hadde rett: en liste jeg skriver selv, dekker det jeg kom paa. Det er
+ * den samme feilen som gjorde at han maatte melde fra om drop-in fem ganger.
+ * Naa gaar den gjennom alt.
+ *
+ * ── Paa to bredder ────────────────────────────────────────────────────
+ *
+ * 390 px og 1400 px. innerText leser bare det som faktisk vises, og
+ * skjermene tegner ulikt paa telefon og skjerm: fargeforklaringen i
+ * adminkalenderen, sidemenyene, mobilpanelene. En vakt som bare kjorer paa
+ * én bredde ser bare halve sida. Eieren jobber fra telefonen.
+ *
  * ── Hva som maales ────────────────────────────────────────────────────
  *
  * To ting, fordi ordet alene ikke holder:
@@ -63,8 +83,12 @@
  * ikke innlogginga gjennom.
  */
 
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 
+const ROT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const krev = createRequire(import.meta.url);
 const { chromium } = krev('/opt/node22/lib/node_modules/playwright/index.js');
 
@@ -83,43 +107,78 @@ const si = (ok, t) => { sjekker++; if (!ok) feil++; console.log((ok ? '  OK  ' :
  * titalls; drop-in alene var 126. Et tak paa 90 skiller de to fra hverandre
  * uten aa ryke hver gang det settes opp et kurs til.
  */
-const SKJERMER = [
-  // ── Nettsiden ──────────────────────────────────────────────────────
-  { sti: '/',              hvorfor: 'forsida — «Tatt kurs, eller med et medlem? Book drop-in» sto her' },
-  { sti: '/kurs',          hvorfor: 'kurslista' },
-  { sti: '/events',        hvorfor: 'events' },
-  { sti: '/medlemskap',    hvorfor: 'medlemskapssida — inngangen til drop-in laa her til slutt' },
-  { sti: '/kalender',      hvorfor: 'den offentlige kalenderen — 54 linjer i uke 36 mot ni kurs' },
-  { sti: '/sporsmal-og-svar', hvorfor: 'to av tolv spoersmaal handlet om drop-in' },
-  { sti: '/booking',       hvorfor: 'bookingen — godkjenningssteget sto her' },
-  { sti: '/min-side',      hvorfor: 'Min side — knappen «Drop-in · kr. 490,-», og kundens egne kjop' },
-  { sti: '/om-oss',        hvorfor: 'om oss' },
-  { sti: '/nyttig-info',   hvorfor: 'nyttig info' },
+/**
+ * Hvorfor akkurat denne skjermen er verdt aa merke seg. Bare en note i
+ * utskriften — lista over skjermer kommer fra STIER, ikke herfra, saa det aa
+ * glemme en note gjor ingen skjerm usjekket.
+ */
+const HVORFOR = {
+  '/':                 'forsida — «Tatt kurs, eller med et medlem? Book drop-in» sto her',
+  '/kurs':             'kurslista',
+  '/medlemskap':       'medlemskapssida — inngangen til drop-in laa her til slutt',
+  '/kalender':         'den offentlige kalenderen — 54 linjer i uke 36 mot ni kurs',
+  '/sporsmal-og-svar': 'to av tolv spoersmaal handlet om drop-in',
+  '/booking':          'bookingen — godkjenningssteget sto her',
+  '/min-side':         'Min side — knappen «Drop-in · kr. 490,-», og kundens egne kjop',
+  '/admin':            'Oversikt — «Planlagte kurs» sto paa 165, der 116 var drop-in',
+  '/admin/kurs/alle':  'Kurs og deltakere — 139 rader foer det foerste kurset',
+  '/admin/kurs':       'kursoppsettet — «Drop-in» sto i Type-nedtrekket',
+  '/admin/kalender':   'adminkalenderen — bleke rader per dag, og dra-lista «Alle kurs»',
+  '/admin/pameldte':   'paameldte — raden for en deltaker som hadde betalt',
+  '/admin/ny-registrering': 'ny registrering — «Drop-in» var ett av fire valg',
+  '/admin/okonomi':    'oekonomi — hadde egen konto og mva-kode for drop-in',
+  '/admin/innhold':    'Nettsiden → Innhold — hadde en egen Drop-in-seksjon',
+  '/admin/seo':        'SEO — /drop-in var en av sidene',
+  '/admin/ressurser':  'ressurser — merknaden paa dreieskivene nevnte drop-in',
+};
 
-  // ── Admin ──────────────────────────────────────────────────────────
-  { sti: '/admin',         hvorfor: 'Oversikt — «Planlagte kurs» sto paa 165, der 116 var drop-in; og salg per kurs',
-    tall: [{ merke: 'Planlagte kurs', tak: 90, hvorfor: 'kursdatoer, ikke ni drop-in-plasser om dagen' }] },
-  { sti: '/admin/kurs/alle', hvorfor: 'Kurs og deltakere — 139 rader foer det foerste kurset' },
-  { sti: '/admin/kurs',    hvorfor: 'kursoppsettet — «Drop-in» sto i Type-nedtrekket' },
-  { sti: '/admin/kalender', hvorfor: 'adminkalenderen — ni bleke rader per dag i hver kolonne' },
-  { sti: '/admin/pameldte', hvorfor: 'paameldte — raden for en deltaker som hadde betalt' },
-  { sti: '/admin/ny-registrering', hvorfor: 'ny registrering — «Drop-in» var ett av fire valg' },
-  { sti: '/admin/okonomi', hvorfor: 'oekonomi — hadde egen konto og mva-kode for drop-in' },
-  { sti: '/admin/innhold', hvorfor: 'Nettsiden → Innhold — hadde en egen Drop-in-seksjon' },
-  { sti: '/admin/seo',     hvorfor: 'SEO — /drop-in var en av sidene' },
-  { sti: '/admin/medlemskap', hvorfor: 'medlemskap' },
-  { sti: '/admin/ressurser', hvorfor: 'ressurser' },
-  { sti: '/admin/beskjeder', hvorfor: 'beskjeder' },
-  { sti: '/admin/nyttig',  hvorfor: 'nyttig' },
-  { sti: '/admin/varsler', hvorfor: 'varsler' },
-];
+/**
+ * Tellinger paa skjermen som ogsaa maa staa riktig.
+ *
+ * Ordet alene holder ikke: «Planlagte kurs» sto paa 165 uten at ordet
+ * «Drop-in» sto noe sted paa Oversikt — skaden var tallet. Kursdatoene
+ * framover er noen faa titalls; drop-in alene var 126. Et tak paa 90 skiller
+ * de to uten aa ryke hver gang det settes opp et kurs til.
+ */
+const TALL = {
+  '/admin': [{ merke: 'Planlagte kurs', tak: 90, hvorfor: 'kursdatoer, ikke ni drop-in-plasser om dagen' }],
+};
 
 /** Adresser som ikke skal finnes lenger. */
 const BORTE = ['/drop-in', '/admin/drop-in'];
 
+/**
+ * Adressene, lest ut av STIER-tabellen i sida selv — samme kilde som
+ * breddesjekken bruker. Aa skrive lista av her ville gitt to steder aa
+ * vedlikeholde, og det ene ville blitt glemt.
+ */
+function stier(kilde) {
+  const fra = kilde.indexOf('static get STIER() {');
+  if (fra < 0) return [];
+  const blokk = kilde.slice(fra, kilde.indexOf('\n  }', fra));
+  const ut = [];
+  for (const m of blokk.matchAll(/\{\s*sti:\s*'([^']+)'/g)) {
+    if (!ut.includes(m[1])) ut.push(m[1]);
+  }
+  return ut;
+}
+
+const SKJERMER = stier(fs.readFileSync(path.join(ROT, 'lissom-2108.html'), 'utf8'))
+  .filter(sti => BORTE.indexOf(sti) === -1)
+  .map(sti => ({ sti, hvorfor: HVORFOR[sti] || '', tall: TALL[sti] }));
+
+if (SKJERMER.length === 0) {
+  console.log('  FEIL  fant ingen adresser i STIER');
+  process.exit(1);
+}
+
 const b = await chromium.launch({
   args: ['--host-resolver-rules=MAP test.lissom.no 127.0.0.1', '--no-proxy-server'],
 });
+const BREDDER = [
+  { navn: 'mobil',   bredde: 390,  hoyde: 1400 },
+  { navn: 'skjerm',  bredde: 1400, hoyde: 1100 },
+];
 const kontekst = await b.newContext({ viewport: { width: 1400, height: 1100 } });
 
 // Innlogget som admin — uten det finnes ingen av adminskjermene.
@@ -140,7 +199,8 @@ if (!paalogging || paalogging.ok !== true) {
   process.exit(1);
 }
 
-console.log('Drop-in-sjekk paa ' + ADRESSE + ' — ' + (SKJERMER.length + BORTE.length) + ' adresser\n');
+console.log('Drop-in-sjekk paa ' + ADRESSE + ' — ' + (SKJERMER.length + BORTE.length)
+  + ' adresser x ' + BREDDER.length + ' bredder\n');
 
 const p = await kontekst.newPage();
 p.setDefaultTimeout(20000);
@@ -153,6 +213,10 @@ const tekstPaa = async (sti) => {
   return p.locator('body').innerText();
 };
 
+for (const bredde of BREDDER) {
+await p.setViewportSize({ width: bredde.bredde, height: bredde.hoyde });
+console.log('── ' + bredde.navn + ', ' + bredde.bredde + ' px ' + '─'.repeat(40));
+
 for (const s of SKJERMER) {
   let tekst = '';
   try {
@@ -163,7 +227,8 @@ for (const s of SKJERMER) {
   }
 
   const traff = (tekst.match(/drop[\s-]?in/gi) || []).length;
-  si(traff === 0, s.sti + ' er fri for drop-in' + (traff ? ' (' + traff + ' treff)' : '') + ' — ' + s.hvorfor);
+  si(traff === 0, s.sti + ' er fri for drop-in' + (traff ? ' (' + traff + ' treff)' : '')
+    + (s.hvorfor ? ' — ' + s.hvorfor : ''));
   if (traff) {
     tekst.split('\n').filter(l => /drop[\s-]?in/i.test(l)).slice(0, 5)
       .forEach(l => console.log('          ' + l.trim().slice(0, 80)));
@@ -183,6 +248,8 @@ for (const s of SKJERMER) {
     si(n <= t.tak, s.sti + ' teller ' + n + ' under «' + t.merke + '» (tak ' + t.tak + ') — ' + t.hvorfor
       + (n <= t.tak ? '' : '  ⟵ det er drop-in-plasser i tallet'));
   }
+}
+
 }
 
 // Adressene skal ikke lenger fore noe sted. 404-skjermen er svaret; det som

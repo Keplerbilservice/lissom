@@ -36186,7 +36186,10 @@ class Component extends DCLogic {
         const seksjon = (SIDEINNHOLD['Butikk'] || []).findIndex(s => s.navn === 'Praktisk info');
         const hent = (l, fallback) => il['Butikk/' + seksjon + '/' + l] ?? fallback;
         return [
-          { tittel: hent('Punkt 1', 'Hent på Teie'), tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy. Vi holder av varen i to uker.' },
+          // «Vi holder av varen i to uker» sto her. Eieren, 1. september:
+          // «butikken skal ikke si vi holder av varen, fjern det fra
+          // systemet». Adressen staar; loftet om en frist gjor det ikke.
+          { tittel: hent('Punkt 1', 'Hent på Teie'), tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy.' },
           { tittel: hent('Punkt 2', 'Betaling med Vipps'), tekst: 'Du betaler i kassen på nett med Vipps.' },
           { tittel: hent('Punkt 3', 'Hvert stykke er unikt'), tekst: 'Alt er dreid for hånd, så farge og form varierer litt fra bildet.' },
         ];

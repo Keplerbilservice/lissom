@@ -5614,6 +5614,15 @@ sjekk('… og malen kunden faar sier det ogsaa',
 sjekk('… og spoersmaal og svar staar som for',
     str_contains($sida, 'Vi oppbevarer ferdige arbeider i to uker etter at du har fått beskjed'));
 
+// Butikken lover ingen frist i det hele tatt. Eieren, 1. september:
+// «butikken skal ikke si vi holder av varen, fjern det fra systemet».
+// Adressen staar; loftet gjor det ikke.
+// Merknaden i koden siterer setningen, saa proven maa se paa selve punktet
+// og ikke paa fila som helhet.
+sjekk('butikken lover ikke aa holde av varen',
+    !str_contains($sida, 'Nordre Løkkevei 15, 3120 Nøtterøy. Vi holder av varen')
+    && str_contains($sida, "tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy.' }"));
+
 // Brennetida er noe annet, og skal fortsatt vaere to til fire uker.
 sjekk('brennetida er to til fire uker, og staar ett sted',
     str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php'),

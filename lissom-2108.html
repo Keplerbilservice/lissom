@@ -8685,6 +8685,18 @@ window.__resources = {
                staar naa som kort oeverst paa Oversikt, sammen med de andre
                verktoyene. To veier inn til det samme er én for mye. -->
 
+        <!-- ── To redigeringsbokser som ikke hoerer hjemme paa en telefon ──
+             Grupperabatten og banner-redigeringen er to skjemaer med felter,
+             tallrader og ni-ti brikker hver. Paa en telefon ble de to lange
+             sperrer man maa rulle forbi for aa komme til noe man faktisk
+             skal gjore der og da.
+
+             Eieren, 1. september: «paa admin mobil oversikt, fjern banneret
+             under toppbildet, og grupperabatt».
+
+             De staar som for paa pc — det er der man setter dem opp. Bare
+             mobilen slipper dem. -->
+        <sc-if value="{{ visGrRabatt }}" hint-placeholder-val="{{ true }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Grupperabatt</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
@@ -8733,10 +8745,12 @@ window.__resources = {
               </div>
             </div>
           </div>
+        </sc-if>
         </div>
 
         <!-- Banneret under toppbildet. Ett felt som skal brukes til det som
              gjelder akkurat naa: aapent hus, gavekort til jul, paaskeegg. -->
+        <sc-if value="{{ visBannerRed }}" hint-placeholder-val="{{ true }}">
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-10);">
           <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
             <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Banneret under toppbildet</span>
@@ -8786,6 +8800,7 @@ window.__resources = {
             </div>
           </div>
         </div>
+        </sc-if>
 
         <!-- «Ikke fornyet — minn dem paa» sto her.
              Flyttet til Medlemmer 27. august paa bestilling: det er arbeid
@@ -17997,7 +18012,7 @@ class Component extends DCLogic {
       navn: k.tittel,
       type: FRA_TEMA[k.tema] || TYPE[k.type] || 'Kurs',
       tema: k.tema || '',
-      pris: 'kr. ' + String(k.pris || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
+      pris: 'kr.' + ' ' + String(k.pris || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
       gjentas: datoer.length > 1 ? datoer.length + ' datoer' : 'Engangs',
       pameldte: pameldte + ' / ' + kapasitet,
       andel: kapasitet ? Math.round(pameldte / kapasitet * 100) : 0,
@@ -20535,10 +20550,10 @@ class Component extends DCLogic {
    */
   kroner(ore) {
     const kr = (Number(ore) || 0) / 100;
-    return 'kr ' + kr.toLocaleString('nb-NO', {
+    return 'kr' + ' ' + kr.toLocaleString('nb-NO', {
       minimumFractionDigits: kr < 10 ? 2 : 0,
       maximumFractionDigits: kr < 10 ? 2 : 0,
-    }).replace(/\u00a0/g, ' ');
+    });
   }
 
   /**
@@ -22348,7 +22363,7 @@ class Component extends DCLogic {
     }
 
     if (!this.erPublisert()) {
-      const vare = { title: navn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr. ' + pris + ',-', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
+      const vare = { title: navn, detalj: s.npBeskrivelse || 'Håndlaget i verkstedet på Teie.', pris: 'kr.' + ' ' + pris + ',-', image: 'assets_photos_butikken.jpg', badge: 'Nyhet', kategori: 'Nytt' };
       this.setState(s2 => ({ npApen: false, nyeVarer: s.npRediger ? (s2.nyeVarer || []) : (s2.nyeVarer || []).concat([vare]), kvittering: s.npRediger ? 'Endringene er lagret' : navn + ' er lagt ut i butikken' }));
       return;
     }
@@ -22464,7 +22479,7 @@ class Component extends DCLogic {
       navn, type: this.state.kType || 'Kurs',
       kategori: this.state.kKategori || '',
       utenDato: !!this.state.kUtenDato,
-      pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr. ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
+      pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr.' + ' ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
       gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
       pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
       neste: datoer[0] || 'Ikke satt', beskrivelse: this.state.kBeskrivelse || '',
@@ -29674,7 +29689,7 @@ class Component extends DCLogic {
         .map(v => ({
           navn: v.tittel,
           detalj: v.beskrivelse || v.kategori || '',
-          pris: 'kr. ' + Number(v.pris).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-',
+          pris: 'kr.' + ' ' + Number(v.pris).toLocaleString('nb-NO') + ',-',
           lager: v.lager === null ? 'Ikke lagerstyrt' : v.lager + ' igjen',
           id: v.id,
         }))
@@ -30751,7 +30766,7 @@ class Component extends DCLogic {
             const grunn = this.prisAv(k.title || k.tittel || '') || 0;
             if (!grunn) return (k.price || '').replace('Fra ', '') || 'se pris';
             const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
-            return 'kr. ' + Math.round(netto).toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-';
+            return 'kr.' + ' ' + Math.round(netto).toLocaleString('nb-NO') + ',-';
           })()),
       bekreftBooking: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra kr. 2 800,-', date: 'Onsdag 2. september, 17:30' };
@@ -30846,7 +30861,7 @@ class Component extends DCLogic {
         const navn = this.kurvNavn(nokkel);
         const pris = this.prisAv(nokkel);
         const antall = this.state.kurv[nokkel];
-        const kr = n => 'kr. ' + n.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',-';
+        const kr = n => 'kr.' + ' ' + n.toLocaleString('nb-NO') + ',-';
         return {
           navn, antall: String(antall),
           // Stykkprisen bare naar den sier noe nytt. Med ett eksemplar er den
@@ -30894,13 +30909,13 @@ class Component extends DCLogic {
       kurvTom: Object.keys(this.state.kurv || {}).length === 0,
       kurvSum: (Object.keys(this.state.kurv || {}).reduce((n, navn) => n + this.prisAv(navn) * this.state.kurv[navn], 0)
         + ((this.erPakke() && Object.keys(this.state.kurv || {}).length > 0) ? this.fraktKr() : 0)
-      ).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+      ).toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-',
       kurvFraktLinje: this.erPakke() ? 'Inkludert frakt kr. ' + this.fraktKr() + ',-' : '',
       betalKurv: () => {
         const k = this.state.kurv || {};
         const linjer = Object.keys(k).map(navn => ({
-          navn: this.kurvNavn(navn), antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
-          linjesum: (this.prisAv(navn) * k[navn]).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-',
+          navn: this.kurvNavn(navn), antall: k[navn], pris: this.prisAv(navn).toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-',
+          linjesum: (this.prisAv(navn) * k[navn]).toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-',
         }));
         // Tom kurv: knappen gjorde ingenting i det hele tatt. Da tror man at
         // noe er i stykker, ikke at man har glemt aa legge noe i den.
@@ -30913,7 +30928,7 @@ class Component extends DCLogic {
         }
         if ((this.state.betaling || 'Vipps') === 'Vipps') {
           const sum = Object.keys(k).reduce((n, navn) => n + this.prisAv(navn) * k[navn], 0);
-          this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-', kurvApen: false, popupTop: this.topNaa(120) });
+          this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-', kurvApen: false, popupTop: this.topNaa(120) });
         } else {
           this.betalKurv(linjer);
         }
@@ -31322,7 +31337,7 @@ class Component extends DCLogic {
               || (this.state.valgtKurs && this.state.valgtKurs.level) || '',
       ...(() => {
         const k = this.state.valgtKurs || {};
-        const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/\u00a0/g, ' ').replace(/^/, 'kr. ') + ',-';
+        const fmt = n => Math.round(n).toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-';
         // Ingen reservepris. Sto det 2800 her, og oppslaget ikke traff, viste
         // skjermen prisen paa dreiekurset for noe helt annet — det var
         // nettopp det som skjedde med proveperioden. Finner vi ingen pris,
@@ -32246,7 +32261,7 @@ class Component extends DCLogic {
           borderRadius: 'var(--radius-md)', padding: '10px 12px', font: 'var(--type-body-sm)',
           background: 'var(--surface-card)', color: 'var(--text-heading)',
         };
-        const kr = (ore) => 'kr. ' + Math.round(ore / 100).toLocaleString('nb-NO')
+        const kr = (ore) => 'kr.' + ' ' + Math.round(ore / 100).toLocaleString('nb-NO')
           .replace(/ /g, ' ') + ',-';
 
         // Internvarene — leire, brenning, glasur — er medlemmenes, og laa
@@ -32476,7 +32491,7 @@ class Component extends DCLogic {
             // kr() runder til hele kroner. Har noen tastet oerer, skal de
             // staa — ellers sier kvitteringen noe annet enn kunden betalte.
             const tekst = ore % 100 === 0 ? kr(ore)
-              : 'kr. ' + (ore / 100).toLocaleString('nb-NO', { minimumFractionDigits: 2 });
+              : 'kr.' + ' ' + (ore / 100).toLocaleString('nb-NO', { minimumFractionDigits: 2 });
             return 'Kunden betaler ' + tekst + ' med ' + maate.toLowerCase() + '.';
           })(),
 
@@ -32874,7 +32889,7 @@ class Component extends DCLogic {
           },
           ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
             : liste.length + (liste.length === 1 ? ' plass · ' : ' plasser · ')
-              + 'kr. ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
+              + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
           ovSkylder: liste.map(u => ({
             navn: u.navn,
             // Hvor lenge den har staatt er det som avgjor om den haster.
@@ -35330,7 +35345,7 @@ class Component extends DCLogic {
         if (!s.nkNavn || !s.nkPris) return;
         const rad = {
           navn: s.nkNavn, type: s.nkType || 'Kurs',
-          pris: 'kr. ' + s.nkPris.replace(/[^\d ]/g, '').trim() + ',-',
+          pris: 'kr.' + ' ' + s.nkPris.replace(/[^\d ]/g, '').trim() + ',-',
           gjentas: 'Engangs', pameldte: '0 / ' + (s.nkPlasser || '8'), andel: 0,
           neste: 'Ikke satt', beskrivelse: s.nkBeskrivelse || '',
         };
@@ -36129,6 +36144,17 @@ class Component extends DCLogic {
         if (!this.state.rabattUlagret) return;
         this.rabattKall(this.rabattNivaer());
       },
+      // ── To redigeringsbokser som ikke hoerer hjemme paa en telefon ──
+      //
+      // Grupperabatten og banner-redigeringen er to skjemaer med felter,
+      // tallrader og ni-ti brikker hver. Paa en telefon ble de to lange
+      // sperrer man maa rulle forbi.
+      //
+      // Eieren, 1. september: «paa admin mobil oversikt, fjern banneret under
+      // toppbildet, og grupperabatt». De staar som for paa pc — det er der
+      // man setter dem opp.
+      visGrRabatt: !this.erSmal(),
+      visBannerRed: !this.erSmal(),
       grListe: this.rabattNivaer().map((r, i) => {
         const oppdater = endring => this.setState({
           rabattNivaer: this.rabattNivaer().map((x, j) => j === i ? Object.assign({}, x, endring) : x),
@@ -37820,7 +37846,7 @@ class Component extends DCLogic {
           { merke: 'Påmeldte framover', verdi: String(plasser),
             under: kurs === 1 ? 'På ett kurs' : 'Fordelt på ' + kurs + ' kurs og events' },
           { merke: 'Betalt', verdi: String(betalte.length),
-            under: 'kr. ' + sum.toLocaleString('nb-NO').replace(/\u00a0/g, ' ') + ',- innbetalt', filter: 'Betalt' },
+            under: 'kr.' + ' ' + sum.toLocaleString('nb-NO') + ',- innbetalt', filter: 'Betalt' },
           { merke: 'Venter på betaling', verdi: String(ubetalte.length),
             under: ubetalte.length ? 'Ikke gjort opp ennå' : 'Alt er gjort opp', filter: 'Ubetalt' },
           { merke: 'Lagt inn manuelt', verdi: String(manuelle.length),
@@ -38898,7 +38924,7 @@ class Component extends DCLogic {
             .filter(v => (this.state.butikkFane === 'Medlemssalg') ? v.kunMedlemmer : !v.kunMedlemmer)
             .map(v => ({
             navn: v.tittel,
-            pris: v.pris === 0 ? 'Gratis' : 'kr. ' + String(v.pris).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
+            pris: v.pris === 0 ? 'Gratis' : 'kr.' + ' ' + String(v.pris).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
             antall: v.lager,
             status: v.status === 'kladd' ? 'Kladd' : (v.lager === null ? 'Ubegrenset' : (v.lager === 0 ? 'Utsolgt' : (v.lager <= 3 ? 'Få igjen' : 'På lager'))),
             tone: v.status === 'kladd' ? 'neutral' : (v.lager === 0 ? 'danger' : (v.lager !== null && v.lager <= 3 ? 'warning' : 'success')),
@@ -39282,7 +39308,7 @@ class Component extends DCLogic {
             + 'til den er avklart — en gjettet konto er verre enn en som sier fra.',
           doBilag: bilag.map(b => ({
             norsk: b.norsk,
-            sum: 'kr. ' + b.sum,
+            sum: 'kr.' + ' ' + b.sum,
             antallTekst: b.antall === 1 ? '1 salg' : b.antall + ' salg',
             ubalanse: !b.balanse,
             rader: b.linjer.map(l => ({
@@ -39926,7 +39952,7 @@ class Component extends DCLogic {
         const rent = (e.target.value || '').replace(/[^0-9]/g, '').slice(0, 5);
         this.setState({ gvBelopFelt: rent, gvValgt: rent === '' ? null : parseInt(rent, 10) });
       },
-      gvValgt: 'kr. ' + (this.state.gvValgt || 1490) + ',-',
+      gvValgt: 'kr.' + ' ' + (this.state.gvValgt || 1490) + ',-',
       gvNavn: this.state.gvNavn || '',
       settGvNavn: e => this.setState({ gvNavn: e.target.value }),
       gvEpost: this.state.gvEpost || '',

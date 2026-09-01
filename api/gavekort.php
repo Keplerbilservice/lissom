@@ -31,8 +31,10 @@ if (Foresporsel::metode() === 'GET') {
     Svar::json([
         'gyldig'    => true,
         'saldo_ore' => $kort['saldo_ore'],
-        'saldo'     => 'kr. ' . number_format($kort['saldo_ore'] / 100, 0, ',', ' ') . ',-',
-        'beskjed'   => 'Gavekortet har kr. ' . number_format($kort['saldo_ore'] / 100, 0, ',', ' ') . ',- igjen.',
+        // Harde mellomrom, som i Booking::kroner(): saldoen skal ikke brekke
+        // midt i tallet paa en mobilskjerm.
+        'saldo'     => "kr.\u{a0}" . number_format($kort['saldo_ore'] / 100, 0, ',', "\u{a0}") . ',-',
+        'beskjed'   => "Gavekortet har kr.\u{a0}" . number_format($kort['saldo_ore'] / 100, 0, ',', "\u{a0}") . ',- igjen.',
     ]);
 }
 

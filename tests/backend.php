@@ -604,8 +604,29 @@ catch (RuntimeException $e) { sjekk('siste plass kan ikke bookes to ganger', tru
 
 echo "\n== Norsk dato og kroner ==\n";
 sjekk('UTC blir norsk tid', Booking::norskDato('2026-09-02 15:30:00') === 'onsdag 2. september, 17:30', Booking::norskDato('2026-09-02 15:30:00'));
-sjekk('kronebelop formateres', Booking::kroner(280000) === 'kr. 2 800,-', Booking::kroner(280000));
-sjekk('null kroner', Booking::kroner(0) === 'kr. 0,-', Booking::kroner(0));
+// ── Beloepet brekker ikke midt i tallet ───────────────────────────────
+//
+// Mellomrommene er harde (U+00A0), begge to. Med vanlige mellomrom fikk
+// nettleseren lov til aa brekke linja midt i tallet: «kr. 2» paa en linje og
+// «490,-» paa neste. Eieren, 1. september, med bilde av det: «ikke bryt
+// beloepe 2490» og «her maa hele beloepet staa paa en linje».
+//
+// Det er serveren som formaterer og sender belopene ferdig som tekst, saa
+// det maatte loeses her — skjermen far bare en streng.
+//
+// Malt i nettleseren paa 390 px: alle 40 belopene paa OEkonomi staar paa én
+// linje. Med vanlig mellomrom brakk tretten av dem.
+sjekk('kronebelop formateres', Booking::kroner(280000) === "kr.\u{a0}2\u{a0}800,-", Booking::kroner(280000));
+sjekk('… med harde mellomrom, saa linja ikke brekker',
+    !str_contains(Booking::kroner(280000), ' '));
+// CSV-ene til regnskapsforeren har hver sin egen formaterer uten tusenskille
+// i det hele tatt. De skal ikke faa harde mellomrom inn i tallkolonnene.
+foreach (['dagsoppgjor', 'transaksjoner', 'deltakerliste'] as $csv) {
+    $f = file_get_contents(dirname(__DIR__) . '/api/admin/' . $csv . '.php');
+    sjekk('CSV-en i ' . $csv . ' har ikke tusenskille i det hele tatt',
+        str_contains($f, "number_format(\$ore / 100, 2, ',', '')"));
+}
+sjekk('null kroner', Booking::kroner(0) === "kr.\u{a0}0,-", Booking::kroner(0));
 sjekk('kort dato regnes om til norsk tid',
     Booking::norskDatoKort('2026-08-19 22:30:00') === '20. august 2026',
     Booking::norskDatoKort('2026-08-19 22:30:00'));
@@ -5799,6 +5820,87 @@ sjekk('… og sier «Hele kurset» framfor en kveld hun ikke har valgt',
 // koene sammen. Uten dublettsjekk ville «3 venter» vaert én person.
 sjekk('grupperte oekter teller ikke den samme personen flere ganger',
     str_contains($sida, "kjede.forEach(e => (e.venteliste || []).forEach(v => {"));
+
+// ── Tre e-poster med samme emne ───────────────────────────────────────
+//
+// «Takk for bestillingen hos Lissom!» sto som emne paa tre forskjellige
+// meldinger: kurspaamelding, butikkvare til henting, og butikkvare i pakke.
+// Kunden fikk samme linje i innboksen enten hun hadde kjopt en kopp, fatt en
+// pakke i posten, eller meldt seg paa et dreiekurs.
+//
+// Eieren, 1. september, om det som sto under Systemmeldinger: «denne staar jo
+// to ganger og eposten ser jo helt feil ut».
+$mig119 = file_get_contents(dirname(__DIR__) . '/db/migrations/119_tre_eposter_med_samme_emne.sql');
+sjekk('kurspaameldingen far sitt eget emne',
+    str_contains($mig119, "SET emne  = 'Du er påmeldt {kurs}',"));
+sjekk('… henting far sitt', str_contains($mig119, "SET emne = 'Bestillingen din er klar til henting'"));
+sjekk('… og pakke far sitt', str_contains($mig119, "SET emne = 'Takk for bestillingen — den sendes som pakke'"));
+// Har eieren skrevet om en av dem selv, skal hennes ord staa.
+// Alle tre er vernet paa det gamle emnet, og kurspaameldingen ogsaa paa den
+// gamle teksten — den skrives helt om, saa den maa vaere sikrere enn de to
+// som bare bytter emne.
+sjekk('… og en mal hun har endret selv roeres ikke',
+    substr_count($mig119, "emne = 'Takk for bestillingen hos Lissom!'") === 3
+    && str_contains($mig119, "AND tekst LIKE '%Vi har mottatt bestillingen din%'"));
+
+// ── Kurset og naar, hver for seg ──────────────────────────────────────
+//
+// Kursnavnet og datoen var limt sammen i ett felt, saa malen matte si
+// «bestillingen din ({ordre})» — datoen gjemt i en parentes etter feil ord.
+//
+// Malt ende til ende gjennom Booking::sendBekreftelse og varselkoen:
+//   emne   «Du er paameldt Paint on Pots»
+//   naar   «onsdag 2. september, 11:24»
+//   to kvelder: «onsdag 14. – torsdag 15. oktober, 17:00»
+$bkFil = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+sjekk('kurset og naar er to felt', str_contains($bkFil, "'kurs'  => (string) \$b['tittel'],")
+    && str_contains($bkFil, "'naar'  => \$naar,"));
+// Sluttida maa hentes, ellers kan et flerdagerskurs ikke si begge dagene.
+sjekk('… og sluttida hentes, saa to kvelder blir to kvelder',
+    str_contains($bkFil, 'SELECT b.*, c.tittel, cs.start_tid, cs.slutt_tid,')
+    && str_contains($bkFil, "self::norskPeriode((string) \$b['start_tid'], \$b['slutt_tid'] ?? null)"));
+// Koden rulles ut noen minutter for migrasjonen kjores. I det vinduet staar
+// den gamle malen, og den bruker {ordre}. Malt: den fyller seg som for.
+sjekk('… mens {ordre} staar igjen for vinduet for vedlikeholdet er kjort',
+    str_contains($bkFil, "'ordre' => (string) \$b['tittel'] . (\$naar !== '' ? ' — ' . \$naar : ''),"));
+sjekk('… og registeret lover de nye feltene',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/maler.php'),
+                 "'kurs'  => 'Navnet på kurset',"));
+
+// Malen i basen, naar vedlikeholdet er kjort.
+if (DB::harTabell('notification_templates')) {
+    $ob = DB::en("SELECT emne, tekst FROM notification_templates WHERE navn = 'ordrebekreftelse'");
+    if ($ob !== null) {
+        sjekk('malen i basen sier ikke lenger «bestillingen din» om et kurs',
+            !str_contains((string) $ob['tekst'], 'bestillingen din'),
+            mb_substr((string) $ob['emne'], 0, 60));
+        sjekk('… og de tre emnene er forskjellige',
+            (int) DB::verdi(
+                "SELECT COUNT(DISTINCT emne) FROM notification_templates
+                  WHERE navn IN ('ordrebekreftelse','butikkordre','butikkordre_pakke')"
+            ) === 3);
+    }
+}
+
+// ── To redigeringsbokser som ikke hoerer hjemme paa en telefon ────────
+//
+// Grupperabatten og banner-redigeringen er to skjemaer med felter, tallrader
+// og ni-ti brikker hver. Paa Oversikt ble de to lange sperrer man maa rulle
+// forbi paa en telefon for aa komme til noe man faktisk skal gjore der og da.
+//
+// Eieren, 1. september, med bilde av begge: «paa admin mobil oversikt, fjern
+// banneret under toppbildet, og grupperabatt».
+//
+// Malt i nettleseren: paa 390 px finnes ingen av dem, paa 1500 px staar begge.
+sjekk('grupperabatten staar bare paa pc', str_contains($sida, 'visGrRabatt: !this.erSmal(),'));
+sjekk('bannerboksen staar bare paa pc', str_contains($sida, 'visBannerRed: !this.erSmal(),'));
+sjekk('… og markupen spor om det',
+    str_contains($sida, '<sc-if value="{{ visGrRabatt }}" hint-placeholder-val="{{ true }}">')
+    && str_contains($sida, '<sc-if value="{{ visBannerRed }}" hint-placeholder-val="{{ true }}">'));
+// Av/paa-bryteren som heter det samme er noe annet: den styrer om banneret
+// vises for kunden, og staar igjen. Den er én linje, ikke et skjema.
+sjekk('… mens av/paa-bryteren med samme navn staar igjen',
+    str_contains($sida, 'label="Banneret under toppbildet"'));
 
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //

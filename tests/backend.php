@@ -3744,6 +3744,31 @@ sjekk('… og etiketten for drop-in-betalinger er borte',
     !str_contains(file_get_contents(__DIR__ . '/../api/admin/okonomi.php'), "'dropin'     => 'Drop-in',")
     && !str_contains($sida2, "dropin: 'Drop-in'"));
 
+// ── Gjentakelsen i kursveiviseren setter opp en ekte regel ─────────────
+//
+// Eieren, 1. september: «La ut kurs for barn hver fredag i 10 uker fremover
+// ved aa trykke paa gjentagelse ukentlig 10 ganger. Men som du ser her saa
+// ligger det bare ute en dato».
+//
+// «Ukentlig · 10 ganger» ble skrevet inn i feltet «gjentas» paa kurset og ble
+// aldri annet enn en etikett: datoene ble lagt ut én og én med «nydato», og
+// ingen regel ble satt opp. Veiviseren «Ny kursdato» paa Oversikt har gjort
+// det riktig hele tiden — det var kursoppsettet som ikke gjorde det.
+sjekk('kursveiviseren setter opp gjentakelsen',
+    str_contains($sida2, "const serieKall = ()")
+    && str_contains($sida2, ".then(serieKall)"));
+// Rekkefolgen betyr noe: regelen settes opp ETTER at datoene er lagt ut, saa
+// Serier::fyllPaa teller dem med i «ti ganger» framfor aa legge ti paa toppen.
+sjekk('… etter at datoene er lagt ut, ikke for',
+    strpos($sida2, "handling: 'nydato',") < strpos($sida2, "const serieKall = ()")
+    || strpos($sida2, ".then(serieKall)") > strpos($sida2, "handling: 'nydato',"));
+// Og Serier::fyllPaa maa faktisk telle en dato som alt laa der. Uten $alt++
+// utenfor if-en ville regelen lagt ut ti nye i tillegg til den ene.
+$serier = file_get_contents(__DIR__ . '/../app/lib/serier.php');
+sjekk('… og en dato som alt laa der teller med i «ti ganger»',
+    str_contains($serier, '$laget += $ny;')
+    && str_contains($serier, '$alt++;'));
+
 // ── Ressursene deles av alle ───────────────────────────────────────────
 //
 // Eieren, 30. august: «maa ta plasser fra de samme ressursene. Altsaa om det

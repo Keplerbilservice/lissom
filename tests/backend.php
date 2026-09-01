@@ -2294,8 +2294,10 @@ sjekk('ventelista har faatt sin plass i fanerekka',
     str_contains($sida, "['Venteliste',    'adminventeliste'],")
     && str_contains($sida, "case 'adminventeliste':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Venteliste');"));
 // En fane som forer til en skjerm uten fanerad er en blindvei.
+// Tallet er summen av skjermer med fanerad. Det gikk fra 15 til 16 da
+// GEO-skjermen kom til — den har fanerekka som SEO-skjermen har.
 sjekk('ventelisteskjermen har fanerekka, saa den ikke blir en blindvei',
-    substr_count($sida, '{{ harOmrFaner }}') === 15);
+    substr_count($sida, '{{ harOmrFaner }}') === 16);
 // Oversikt var blitt en oppslagstavle med fjorten kort. Eieren, 29. august,
 // pekte ut fire som skulle bort: «Kursadministrasjon», «Meld noen paa»,
 // «Intern side» og programlista. Skjermene naas fra menyen som for — det er
@@ -3795,6 +3797,87 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 // Kalenderen sendte ikke vinduet i det hele tatt.
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
+
+// ── GEO: aa bli sitert av en AI ────────────────────────────────────────
+//
+// Eieren, 1. september: «jeg er blitt fortalt at noe heter GEO som er med ai
+// chat gpt, jeg vil optimalisere siden for dette ogsaa. Og jeg vil ha samme
+// knapp som seo, optimaliser for geo».
+//
+// Skjermen sjekkes i nettleseren av bin/dropinsjekk.mjs, som gaar gjennom
+// alle adressene i STIER. Her sjekkes det den ikke ser: at reglene faktisk
+// staar der, og at ingen av de ferdigskrevne setningene bryter dem.
+sjekk('GEO har egen adresse', str_contains($sida2, "{ sti: '/admin/geo',          side: 'admingeo' },"));
+sjekk('… og staar i begge menyene',
+    substr_count($sida2, "'admingeo',") >= 2);
+sjekk('… med sin egen brodsmulesti',
+    str_contains($sida2, "case 'admingeo':"));
+sjekk('… og en skjerm som tegnes', str_contains($sida2, "erAdminGeo: side === 'admingeo',"));
+sjekk('… og en verdiblokk bak den', str_contains($sida2, "if (side !== 'admingeo') return {};"));
+
+// Feltene lagres som «GEO/<id>» i content_blocks, slik SEO gjor.
+sjekk('GEO lagres i content_blocks', str_contains($sida2, "'GEO/' + valgtSide.id"));
+
+// Scoren skal trekke for det som gjor en setning uselvstendig. Dette er
+// selve regelen — endres den, skal noen ha ment aa endre den.
+sjekk('scoren trekker for manglende kort svar',
+    str_contains($sida2, "score -= 30; trekk.push('Mangler kort svar"));
+sjekk('… for svar uten tall', str_contains($sida2, "score -= 12; trekk.push('Svaret har ingen tall"));
+sjekk('… for svar uten stedsnavn', str_contains($sida2, "score -= 10; trekk.push('Svaret sier ikke hvor det er"));
+// «Vi holder kurs hver onsdag» sier ingenting naar setningen staar alene i
+// et AI-svar: leseren vet ikke hvem «vi» er.
+sjekk('… og for «vi» og «oss»',
+    str_contains($sida2, "if (/\\b(vi|oss|vår|våre)\\b/i.test(sv))"));
+
+// Alle de ferdigskrevne setningene maa taale sine egne regler. Uten dette
+// kunne «Optimaliser for GEO» fylt inn tjue sider som scorer 60.
+preg_match('/static get GEO_FERDIG\(\) \{(.*?)\n  \}\n/s', $sida2, $m);
+$geoBlokk = $m[1] ?? '';
+sjekk('de ferdigskrevne GEO-tekstene finnes', $geoBlokk !== '');
+
+preg_match_all("/\n        svar: '((?:[^'\\\\]|\\\\.)*)',/", $geoBlokk, $sv);
+$svar = array_map(static fn(string $x): string => str_replace(["\\'", '\\\\'], ["'", '\\'], $x), $sv[1]);
+sjekk('… og det er tjue av dem', count($svar) === 20, count($svar) . ' svar');
+
+$forKorte = array_filter($svar, static fn(string $x): bool => mb_strlen($x) < 60);
+$forLange = array_filter($svar, static fn(string $x): bool => mb_strlen($x) > 220);
+$utenTall = array_filter($svar, static fn(string $x): bool => !preg_match('/\d/', $x));
+$utenSted = array_filter($svar, static fn(string $x): bool => !preg_match('/tønsberg|nøtterøy|teie|vestfold/iu', $x));
+$medVi    = array_filter($svar, static fn(string $x): bool => (bool) preg_match('/(^|[^\p{L}])(vi|oss|vår|våre)([^\p{L}]|$)/iu', $x));
+
+sjekk('… alle er lange nok til aa staa alene', $forKorte === [], implode(' | ', $forKorte));
+sjekk('… og korte nok til aa siteres helt', $forLange === [], implode(' | ', $forLange));
+sjekk('… alle har et tall', $utenTall === [], implode(' | ', $utenTall));
+sjekk('… alle sier hvor det er', $utenSted === [], implode(' | ', $utenSted));
+sjekk('… og ingen sier «vi» eller «oss»', $medVi === [], implode(' | ', $medVi));
+
+// Prisen skal aldri staa i den ferdige teksten. Staar den der, blir den
+// staaende igjen som feil den dagen Monica endrer prisen — og en AI siterer
+// et gammelt tall like villig som et nytt.
+$medPris = array_filter($svar, static fn(string $x): bool => (bool) preg_match('/\bkr\.?\s|\bkroner\b/iu', $x));
+sjekk('… og ingen av dem har prisen skrevet inn', $medPris === [], implode(' | ', $medPris));
+sjekk('prisen hentes fra katalogen i stedet',
+    str_contains($sida2, "kortSvar: pris ? f.svar.replace(/\\.\$/, '') + '. Prisen er ' + pris + '.' : f.svar,"));
+
+// FAQPage i hodet. «Hvem passer kontakt for?» er ikke et sporsmaal noen
+// stiller — det skal bare paa kurs og events.
+sjekk('sporsmaal og svar legges i hodet som FAQPage',
+    str_contains($sida2, "return { '@type': 'FAQPage', mainEntity: sporsmaal };"));
+sjekk('… bare naar baade sporsmaal og svar finnes',
+    str_contains($sida2, "if (!sp || !sv) return null;"));
+sjekk('… og «hvem passer det for» bare paa kurs og events',
+    str_contains($sida2, "const erKurs = sd && (sd.type === 'kurs' || sd.type === 'event');"));
+
+// llms.txt er fila AI-tjenestene leser forst. Uten dette blir svarene
+// eieren skriver liggende i basen uten aa naa noen.
+$llms = file_get_contents(dirname(__DIR__) . '/api/llms.php');
+sjekk('llms.txt henter svarene fra basen',
+    str_contains($llms, "WHERE nokkel LIKE 'GEO/%'"));
+sjekk('… og hopper over dem uten svar',
+    str_contains($llms, "if (\$sp === '' || \$sv === '') {"));
+// En «Kilde:» som peker feil er verre enn ingen kilde.
+sjekk('… og slaar opp kursadressene paa tittelen',
+    str_contains($llms, "\$GEO_SIDER[\$id] = '/kurs/' . rawurlencode((string) \$c['slug']);"));
 
 // ── Ressursene deles av alle ───────────────────────────────────────────
 //

@@ -115,6 +115,101 @@ $ut[] = 'Hvert kurs har sin egen side under /kurs/<navn>. Sidekartet på';
 $ut[] = ROT . '/sitemap.xml er bygget av det som faktisk ligger ute.';
 $ut[] = '';
 
+// ── Sporsmaal og svar, skrevet av eieren ───────────────────────────────
+//
+// Dette er GEO-skjermen i admin: ett kort svar per side, med pris, sted og
+// varighet i selve setningen, slik at den kan siteres alene. Det er den
+// eneste teksten i fila et menneske har formulert med en AI som leser i
+// tankene — resten er lister bygget av basen.
+//
+// Bare sidene som faktisk har baade sporsmaal og svar. Et sporsmaal uten
+// svar er verre enn ingenting: det lover noe som ikke staar der.
+$GEO_SIDER = [
+    'forside'      => '/',
+    'kurs'         => '/kurs',
+    'events'       => '/events',
+    'medlemskap'   => '/medlemskap',
+    'butikk'       => '/butikk',
+    'gavekort'     => '/gavekort',
+    'omoss'        => '/om-oss',
+    'kontakt'      => '/kontakt',
+    'bedrift'      => '/bedrift',
+    'kalender'     => '/kalender',
+    'kursoversikt' => '/kurs',
+    'nyttig'       => '/nyttig-info',
+    'nyheter'      => '/nyheter',
+    'paintonpots'  => '/paint-on-pots',
+];
+
+// De seks kurs- og eventsidene har ingen fast adresse: de bor under
+// /kurs/<slug>, og slugen kan endre seg. Derfor slaas den opp paa tittelen
+// her i stedet for aa staa som en konstant som blir feil den dagen kurset
+// doper om seg. Finner vi den ikke, faller sida ut — en «Kilde:» som peker
+// feil er verre enn ingen kilde.
+$GEO_KURS = [
+    'dreiekurs'   => 'Nybegynner dreiekurs',
+    'boller'      => 'Lag din egen bolle',
+    'fat'         => 'Store fat kurs',
+    'workshop'    => 'Keramikk workshop',
+    'datenight'   => 'Date Night',
+    'sipclay'     => 'Sip & Clay',
+];
+try {
+    foreach (DB::alle(
+        "SELECT tittel, slug FROM courses
+          WHERE status = 'publisert' AND slug IS NOT NULL AND slug <> ''"
+    ) as $c) {
+        foreach ($GEO_KURS as $id => $tittel) {
+            if ((string) $c['tittel'] === $tittel) {
+                $GEO_SIDER[$id] = '/kurs/' . rawurlencode((string) $c['slug']);
+            }
+        }
+    }
+} catch (Throwable) {
+    // Da staar de fjorten faste sidene alene.
+}
+
+try {
+    $svar = [];
+    foreach (DB::alle("SELECT nokkel, verdi FROM content_blocks WHERE nokkel LIKE 'GEO/%'") as $r) {
+        $id = substr((string) $r['nokkel'], 4);
+        if (!isset($GEO_SIDER[$id])) {
+            continue;
+        }
+        $d = json_decode((string) $r['verdi'], true);
+        if (!is_array($d)) {
+            continue;
+        }
+        $sp = trim((string) ($d['sporsmal'] ?? ''));
+        $sv = trim((string) ($d['kortSvar'] ?? ''));
+        if ($sp === '' || $sv === '') {
+            continue;
+        }
+        $svar[] = [$sp, $sv, trim((string) ($d['fakta'] ?? '')), $GEO_SIDER[$id]];
+    }
+
+    if ($svar !== []) {
+        $ut[] = '## Spørsmål og svar';
+        $ut[] = '';
+        foreach ($svar as [$sp, $sv, $fakta, $sti]) {
+            $ut[] = '### ' . $sp;
+            $ut[] = '';
+            $ut[] = $sv;
+            foreach (preg_split('/\r?\n/', $fakta) ?: [] as $linje) {
+                $linje = trim($linje);
+                if ($linje !== '') {
+                    $ut[] = '- ' . $linje;
+                }
+            }
+            $ut[] = '';
+            $ut[] = 'Kilde: ' . ROT . $sti;
+            $ut[] = '';
+        }
+    }
+} catch (Throwable) {
+    // Resten av fila gaar ut uansett.
+}
+
 // ── Aapningstider ──────────────────────────────────────────────────────
 //
 // «Naar har dere aapent» er et av de vanligste spoersmaalene en AI faar, og

@@ -3798,6 +3798,22 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── «Kasse» i kalenderen aapner kassa ──────────────────────────────────
+//
+// Eieren, 1. september, med et skjermbilde av ruta knappen aapnet: «Kasse fra
+// kalender er ikke ferdig».
+//
+// Ruta sa «Kassen er bygget i hovedprosjektet og kobles paa her. Knappen skal
+// aapne kassevisningen direkte fra kalenderen» — en knapp som lovet noe og
+// gjorde ingenting. Kassa finnes: Oversikt → Kassa, samme sted kortet paa
+// oversikten sender deg.
+sjekk('placeholderen for kassa er borte',
+    !str_contains($sida2, 'kobles på her'));
+sjekk('… og knappen aapner den ekte kassa',
+    str_contains($sida2, "klKasse: () => this.gaaAdmin('adminuttak', {"));
+sjekk('… med samme utgangspunkt som kortet paa oversikten',
+    substr_count($sida2, "utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',") === 2);
+
 // ── Alle fire medlemskapene, ikke bare de tre ──────────────────────────
 //
 // Eieren, 1. september: «Funker det paa alle medlemskap?»

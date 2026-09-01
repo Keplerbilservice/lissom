@@ -6248,17 +6248,6 @@ window.__resources = {
         </div>
       </sc-if>
 
-      <sc-if value="{{ klKasseVises }}" hint-placeholder-val="{{ false }}">
-        <div onClick="{{ klKasseLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
-          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Kasse</div>
-            <h2 style="margin: 0 0 var(--space-3); font-size: var(--text-2xl);">Åpner kassen</h2>
-            <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Kassen er bygget i hovedprosjektet og kobles på her. Knappen skal åpne kassevisningen direkte fra kalenderen.</p>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klKasseLukk }}" hint-size="auto,44px">Lukk</x-import>
-          </div>
-        </div>
-      </sc-if>
-
       <sc-if value="{{ klIcsVises }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ klIcsLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
           <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(520px, 100%); padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
@@ -27079,9 +27068,17 @@ class Component extends DCLogic {
       klIcsMarker: e => e.target.select(),
       klIcsUrl: 'webcal://lissom.no/api/kalender.ics?nokkel=•••',
       klIcsPaminUrl: 'webcal://lissom.no/api/paminnelser.ics?nokkel=•••',
-      klKasse: () => this.setState({ klKasseVis: true }),
-      klKasseVises: !!this.state.klKasseVis,
-      klKasseLukk: () => this.setState({ klKasseVis: false }),
+      // «Kasse» aapnet en rute som sa at kassa «kobles paa her».
+      //
+      // Eieren, 1. september, med et skjermbilde av den: «Kasse fra kalender
+      // er ikke ferdig». Han hadde rett — knappen lovet noe og gjorde
+      // ingenting. Kassa finnes: den ligger under Oversikt → Kassa, samme
+      // sted kortet paa oversikten sender deg. Naa gaar knappen dit, med
+      // samme utgangspunkt som det kortet gir.
+      klKasse: () => this.gaaAdmin('adminuttak', {
+        utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
+        utBelop: '', utSalgBeskjed: '',
+      }),
     };
   }
 

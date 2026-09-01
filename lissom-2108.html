@@ -32725,7 +32725,7 @@ class Component extends DCLogic {
             kort('Maler',
                  'Hver e-post og SMS systemet sender. Endre teksten, slå den av, '
                  + 'eller se når den går ut.',
-                 null, 'adminmaler', {}, 'Se malene →'),
+                 null, 'Se malene', () => this.gaaAdmin('adminmaler', {})),
 
             kort('Butikk',
                  'Varer, priser, bilder og lager.',

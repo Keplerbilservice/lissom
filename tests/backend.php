@@ -3221,6 +3221,58 @@ sjekk('… og teller opp den samme feilen framfor aa lage en rad til',
 sjekk('en melding krever at bryteren staar paa',
     str_contains($fapi, 'innmelding av feil er stengt akkurat nå.'));
 
+// ── Hvert kort paa Oversikt maa ha en knapp som gaar et sted ───────────
+//
+// Kortet «Maler» ble lagt ut med argumentene i feil rekkefolge:
+//
+//   kort(navn, hva, tall, knapp, velg, haster)
+//   kort('Maler', '…', null, 'adminmaler', {}, 'Se malene →')
+//
+// Ruta havnet der knappeteksten skulle staa, og der klikket skulle staa laa
+// et tomt objekt. Eieren, 1. september: «ser ingen mal paa oversikten».
+//
+// Hjelperen tar imot hva som helst, og hverken knappesjekk eller
+// metodesjekk ser forskjell paa en funksjon og et objekt. Denne gjor det:
+// hvert kort skal ha et kall som faktisk gaar et sted.
+(static function () use ($sida2): void {
+    // Blokka mellom hjelperen og lista si slutt.
+    $fra = strpos($sida2, 'const kort = (navn, hva, tall, knapp, velg, haster) => ({');
+    if ($fra === false) {
+        sjekk('fant kortlista paa Oversikt', false, 'hjelperen er borte eller endret');
+        return;
+    }
+    $blokk = substr($sida2, $fra, 40000);
+
+    // Hvert kort('…')-kall, med parentesene talt saa nostede kall folger med.
+    $uten = [];
+    $antall = 0;
+    $i = 0;
+    while (($j = strpos($blokk, "kort('", $i)) !== false) {
+        $k = strpos($blokk, '(', $j);
+        $dybde = 0;
+        $slutt = $k;
+        $lengde = strlen($blokk);
+        while ($slutt < $lengde) {
+            if ($blokk[$slutt] === '(') { $dybde++; }
+            elseif ($blokk[$slutt] === ')') { $dybde--; if ($dybde === 0) { break; } }
+            $slutt++;
+        }
+        $kall = substr($blokk, $j, $slutt - $j + 1);
+        $antall++;
+        preg_match("/kort\('([^']+)'/", $kall, $m);
+        // En pilfunksjon er det eneste som kan klikkes. Et objekt, en streng
+        // eller ingenting gir et kort som ikke gaar noe sted.
+        if (!str_contains($kall, '=>')) {
+            $uten[] = $m[1] ?? '(uten navn)';
+        }
+        $i = $slutt;
+    }
+
+    sjekk('kortene paa Oversikt er funnet', $antall >= 15, $antall . ' kort');
+    sjekk('… og hvert av dem har en knapp som gaar et sted',
+        $uten === [], implode(', ', $uten));
+})();
+
 // ── Et bilde til feilmeldingen ─────────────────────────────────────────
 //
 // Eieren, 31. august: «paa admin burde man kunne legge inn bilde naar man

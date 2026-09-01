@@ -5960,6 +5960,29 @@ sjekk('prisen kan endres i admin', str_contains($sida, 'id="k-pris"'));
 sjekk('… og lagringen sender status, saa kurset ikke avpubliseres',
     str_contains($sida, "status: raa.status || 'publisert',"));
 
+// ── Én oppfordring for lite er bedre enn tre ─────────────────────────
+//
+// Kontaktsida sa det samme tre ganger: «Kontakt oss» i toppmenyen, «Send
+// foresporsel» i boksen midt paa, og «Send oss en foresporsel» i bandet
+// nederst — alle tre til det samme skjemaet.
+//
+// Eieren, 1. september: «Kontskt oss, saa send en foresporsel saa send oss
+// en foresporsel 🤣».
+//
+// Bandet nederst staar i bunnteksten paa hver side. Paa alle andre sider er
+// det den eneste oppfordringen, og der gjor det jobben sin. Bare paa
+// kontaktsida ble det den tredje.
+//
+// Malt i nettleseren: tre knapper ble til to paa /kontakt.
+sjekk('bunnbandet staar ikke paa kontaktsida',
+    str_contains($sida, "visFotOppfordring: side !== 'kontakt',"));
+sjekk('… og markupen spor om det',
+    str_contains($sida, '<sc-if value="{{ visFotOppfordring }}" hint-placeholder-val="{{ true }}">'));
+// Bunnteksten selv staar fortsatt paa kontaktsida — det er bare bandet
+// oeverst i den som gaar bort.
+sjekk('… mens resten av bunnteksten staar som for',
+    str_contains($sida, "'gavekortside', 'kontakt', 'ferdigbrent'].indexOf(side) !=="));
+
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //
 // Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare

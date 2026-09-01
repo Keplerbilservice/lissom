@@ -12617,6 +12617,16 @@ window.__resources = {
     <footer data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-14) var(--space-8) var(--space-6); position: relative; overflow: hidden;">
       <img src="mark-heart.png" alt="" aria-hidden="true" style="position: absolute; right: -160px; top: -80px; width: 1300px; opacity: 0.05; transform: rotate(-8deg); filter: invert(1); pointer-events: none; -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);" loading="lazy" decoding="async" width="887" height="856">
       <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
+        <!-- «Vil du proeve keramikk? Send oss en forespoersel» staar i
+             bunnen av hver side. Paa kontaktsida sto den som den tredje
+             oppfordringen om det samme: «Kontakt oss» i toppen, «Send
+             forespoersel» i boksen midt paa, og saa denne.
+
+             Eieren, 1. september: «Kontskt oss, saa send en forespoersel saa
+             send oss en forespoersel».
+
+             Den staar som for paa alle andre sider — der er den den eneste. -->
+        <sc-if value="{{ visFotOppfordring }}" hint-placeholder-val="{{ true }}">
         <div style="padding-bottom: var(--space-10); border-bottom: 1px solid rgba(244,235,222,.18);">
           <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 2.8vw, 52px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
           <div class="lx-band" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
@@ -12624,6 +12634,8 @@ window.__resources = {
             <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--clay-300); max-width: 42ch; text-wrap: pretty;">{{ ftUndertekst }}</p>
           </div>
         </div>
+
+        </sc-if>
 
         <div class="lx-footcols" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8) var(--space-10); align-items: start; padding: var(--space-10) 0;">
           <div>
@@ -39412,6 +39424,9 @@ class Component extends DCLogic {
       btSpesialKicker: this.innh('Butikk/3/Kicker'),
       btSpesialKnapp: this.innh('Butikk/3/Knapp'),
       ftKnapp: this.innh('Footer/0/Knapp'),
+      // Ikke paa kontaktsida: der er den den tredje knappen som sier det
+      // samme. Se kommentaren ved bandet i bunnteksten.
+      visFotOppfordring: side !== 'kontakt',
       ftUndertekst: this.innh('Footer/0/Undertekst'),
       // Adressen delt paa kommaet: gata paa én linje, postnummeret paa
       // neste. Se footeren — den smale spalta brakk gatenavnet i to.

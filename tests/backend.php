@@ -4323,10 +4323,19 @@ if (DB::harTabell('notification_templates')) {
 $malApi = file_get_contents(dirname(__DIR__) . '/api/admin/maler.php');
 sjekk('malene kan endres fra admin', str_contains($malApi, "if (\$handling !== 'lagre') {"));
 sjekk('… og slettes', str_contains($malApi, "if (\$handling === 'slett') {"));
-// En mal koden kaller kan ikke slettes: da ville meldingen stilltiende
-// sluttet aa gaa ut. Den kan slaas av, og da er det et valg noen har tatt.
-sjekk('… men ikke de koden sender selv',
-    str_contains($malApi, "if (in_array(\$navn, \$IBRUK, true)) {"));
+// Her sto en sperre: maler koden kaller kunne ikke slettes. Eieren,
+// 1. september: «jeg oensker mulighet til aa slette de malene jeg selv vil».
+// Naa kan de slettes, men bare med et uttrykkelig ja — foelgen er at
+// meldingen slutter aa gaa ut, og ingenting sier fra om det etterpaa.
+sjekk('… ogsaa de koden sender selv, men da med et uttrykkelig ja',
+    str_contains($malApi, "\$sendesAutomatisk = in_array(\$navn, \$IBRUK, true);")
+    && str_contains($malApi, "if (\$sendesAutomatisk && Foresporsel::tekst('bekreftet') !== 'ja') {"));
+sjekk('… og skjermen sier hva foelgen er foer den spoer',
+    str_contains($sida2, 'Denne sendes automatisk av systemet. Slettes den, slutter meldingen å gå ')
+    && str_contains($sida2, "navn: valgt.navn, bekreftet: 'ja' }"));
+// Slettinga skrives i revisjonsloggen, med om malen gikk ut av seg selv.
+sjekk('… og det staar i loggen hva som ble slettet',
+    str_contains($malApi, "['navn' => \$navn, 'sendes_automatisk' => \$sendesAutomatisk]"));
 sjekk('… og et ukjent felt avvises for det naar kunden',
     str_contains($malApi, "Denne malen kjenner ikke {"));
 sjekk('Maler-skjermen finnes', str_contains($sida2, "erAdminMaler: side === 'adminmaler',"));
@@ -5579,6 +5588,118 @@ if (DB::harTabell('innstillinger')) {
     sjekk('… og drop-in-kontoen ligger ikke igjen',
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
+
+// ── Regnskapsfoereren har sin egen innlogging ──────────────────────────
+//
+// Eieren, 1. september: «jeg oensker aa lage en bruker log in til min
+// regnskapsoerer», og paa spoersmaalet om hva hun skal se: «OEkonomi og
+// betalinger», med brukernavn og passord.
+//
+// Systemet hadde to roller. En admin ser alt — deltakerlister, medlemmer,
+// e-postadressene til alle som har vaert paa kurs. Uten en tredje rolle var
+// valget mellom aa gi henne hele verkstedet eller aa sende filene for haand.
+sjekk('rollen finnes i basen',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/117_regnskapsforeren_far_egen_bruker.sql'),
+                 "ENUM('medlem', 'admin', 'regnskap')"));
+$sesjFil = file_get_contents(dirname(__DIR__) . '/app/lib/session.php');
+sjekk('… og krever passord, som admin',
+    str_contains($sesjFil, "if (\$m === null || (\$m['rolle'] ?? '') !== 'regnskap') {")
+    && str_contains($sesjFil, "return (\$m['innlogging_maate'] ?? '') === 'passord';"));
+// En admin er ogsaa «regnskap» — hun ser alt uansett, og da trenger ikke
+// hvert endepunkt to sjekker.
+sjekk('… og en admin gaar alltid gjennom',
+    str_contains($sesjFil, "if (self::erAdmin()) {\n            return true;\n        }"));
+
+$authFil = file_get_contents(dirname(__DIR__) . '/app/lib/auth.php');
+sjekk('krev_regnskap() svarer 404, ikke 403',
+    str_contains($authFil, 'function krev_regnskap(): array')
+    && str_contains($authFil, "logg('Avvist regnskapsforsøk', ['medlem' => \$m['id']]);"));
+
+// Hvilke endepunkter hun naar. Maalt mot den kjorende siden 1. september:
+// 200 paa de fire, 404 paa ti andre, og 404 paa refusjon.
+foreach (['okonomi', 'dagsoppgjor', 'transaksjoner', 'betalinger'] as $e) {
+    sjekk('regnskapet er aapent: ' . $e,
+        str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/' . $e . '.php'), 'krev_regnskap();'));
+}
+// Aa flytte penger er verkstedets avgjorelse. Refusjon og «send kvittering
+// paa nytt» ligger bak krev_admin() i det samme endepunktet.
+$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+sjekk('… men refusjon krever fortsatt admin',
+    str_contains($betFil, 'krev_regnskap();')
+    && str_contains($betFil, "Foresporsel::krevMetode('POST');")
+    && str_contains($betFil, 'krev_admin();')
+    // Rekkefolgen er poenget: lesing er aapen, og admin kreves foer POST-en
+    // behandles. Sto krev_admin() overst, ville hun ikke sett lista i det
+    // hele tatt; sto den ikke der, kunne hun refundert.
+    && strpos($betFil, 'krev_regnskap();') < strpos($betFil, "Foresporsel::krevMetode('POST');")
+    && strpos($betFil, "Foresporsel::krevMetode('POST');") < strpos($betFil, 'krev_admin();'));
+
+// Og resten av admin er stengt: ingen andre endepunkter slipper rollen inn.
+$aapne = [];
+foreach (glob(dirname(__DIR__) . '/api/admin/*.php') as $f) {
+    if (str_contains(file_get_contents($f), 'krev_regnskap();')) {
+        $aapne[] = basename($f, '.php');
+    }
+}
+sort($aapne);
+sjekk('… og ingen andre endepunkter er aapnet',
+    $aapne === ['betalinger', 'dagsoppgjor', 'okonomi', 'transaksjoner'], implode(', ', $aapne));
+
+// Skjermen: ett menypunkt, og ingen vei til de andre.
+sjekk('menyen viser bare OEkonomi for rollen',
+    str_contains($sida2, "? Component.ADMIN_MENY.filter(([navn]) => navn === 'Økonomi')"));
+sjekk('… og navigasjonen sender henne tilbake dit',
+    str_contains($sida2, "if (this.erBareRegnskap() && Component.REGNSKAP_SKJERMER.indexOf(rute) === -1) {"));
+sjekk('… og hun lander paa OEkonomi naar hun logger inn',
+    str_contains($sida2, "side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
+
+// Rollen kunne ikke velges i det hele tatt: skjemaet hadde én avkryssingsboks
+// for admin. Eieren, 1. september: «jeg kan ikke velge hva en ny bruker skal
+// ha av rettigheter under brukere» — og: «admin, medlem, regnskap».
+sjekk('en ny bruker kan faa hvilken som helst av de tre rollene',
+    str_contains($sida2, "['admin', 'Admin'], ['regnskap', 'Regnskap'], ['medlem', 'Medlem'],")
+    && str_contains($sida2, "rolle: this.state.brNyRolle || 'admin',")
+    && !str_contains($sida2, "rolle: this.state.brNyAdmin === false ? 'medlem' : 'admin',"));
+sjekk('… og serveren tar imot alle tre',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/brukere.php'),
+                 "in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)"));
+
+// ── Ruter som aapner seg utenfor skjermen ──────────────────────────────
+//
+// Eieren, 1. september: «hele systemet har en tendens til aa aapne pop up
+// eller nye vinduer utenfor skjermbildet om jeg er langt nede paa siden».
+//
+// «Sett opp kurset» legger seg ved kortet du trykket paa. Klemmen sa bare at
+// TOPPEN skulle vaere innenfor skjermen — men ruta kan vaere 78 % av
+// skjermhoyden hoy. Trykte du langt nede, startet den innenfor og fortsatte
+// langt utenfor, og «Lagre endringer» sto under skjermkanten.
+//
+// Maalt i nettleseren, klikk paa et kort nederst paa skjermen:
+//   for:   700 px skjerm → bunnen paa 1046   (346 px utenfor)
+//          950 px skjerm → bunnen paa 1491   (541 px utenfor)
+//   etter: 700 px skjerm → bunnen paa 688
+//          950 px skjerm → bunnen paa 938
+sjekk('ruta faar bare den hoyden det er plass til',
+    str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',")
+    && !str_contains($sida, "width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',"));
+// Toppen skal fortsatt legge seg ved kortet, ikke midt paa skjermen.
+sjekk('… og legger seg fortsatt der du trykket',
+    str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
+// Ruta ruller inni seg selv naar innholdet er hoyere enn plassen.
+sjekk('… og ruller inni seg selv naar den ikke faar plass',
+    str_contains($sida, "overflow: 'auto',\n                      overscrollBehavior: 'contain',"));
+
+// ── Pillene laa oppi kortene over ──────────────────────────────────────
+//
+// Dagsvisningen ble loftet 65 px for at rutenettet skulle staa paa linje med
+// kortet til venstre. Loftet tok HELE spalta, og det foerste i spalta er
+// «Viser»-raden med kursholderpillene: de laa 45 px inni kortene over, likt
+// paa 1200, 1400 og 1700 px.
+// Kollisjonen staar igjen med vilje: loftet er noe eieren har bedt om «gang
+// paa gang», og de to kan ikke faa plass begge to saa lenge raden ligger i
+// den loftede spalta. Merknaden i koden sier fra om det.
+sjekk('kollisjonen mellom pillene og kortene er skrevet ned',
+    str_contains($sida, 'De havner derfor 45 px'));
 
 // ── Paint on Pots tar ikke spalta ──────────────────────────────────────
 //

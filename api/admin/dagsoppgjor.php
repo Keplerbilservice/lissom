@@ -22,7 +22,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-krev_admin();
+// Regnskapsfoereren slipper inn her — bilaget er hennes. Ogsaa
+// kontooppsettet: det er hun som eier kontonumrene, og en konto hun ser er
+// feil skal hun kunne rette selv. Endringen staar i revisjonsloggen.
+krev_regnskap();
 
 // Kontoene lagres her og ikke sammen med e-postoppsettet: de hoerer til
 // regnskapet, og en skjerm som lagrer to ting den ene ikke eier, blir fort

@@ -19,7 +19,10 @@ declare(strict_types=1);
 require __DIR__ . '/../_boot.php';
 
 Foresporsel::krevMetode('GET');
-krev_admin();
+// Regnskapsfoereren slipper inn her. Eieren, 1. september: «jeg oensker aa
+// lage en bruker log in til min regnskapsoerer». Hun ser OEkonomi og
+// betalingene; resten av admin er stengt for rollen.
+krev_regnskap();
 
 $oslo = new DateTimeZone('Europe/Oslo');
 $utc  = new DateTimeZone('UTC');

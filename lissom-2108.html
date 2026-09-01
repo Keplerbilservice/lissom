@@ -10656,10 +10656,18 @@ window.__resources = {
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ brNyNavn }}" on-change="{{ settBrNyNavn }}" hint-size="100%,66px"></x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ brNyEpost }}" on-change="{{ settBrNyEpost }}" hint-size="100%,66px"></x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Passord" type="password" placeholder="Minst 12 tegn" value="{{ brNyPassord }}" on-change="{{ settBrNyPassord }}" hint-size="100%,66px"></x-import>
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: var(--text-sm); color: var(--text-heading);">
-              <input type="checkbox" checked="{{ brNyAdmin }}" onChange="{{ vekslBrNyAdmin }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
-              Skal ha admin-tilgang
-            </label>
+            <!-- Tre roller, ikke en avkryssingsboks. «Regnskap» kom
+                 1. september: eieren ville gi regnskapsforeren en egen
+                 innlogging framfor aa gi henne hele verkstedet. -->
+            <div>
+              <div style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Tilgang</div>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <sc-for list="{{ brRoller }}" as="r" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
+                </sc-for>
+              </div>
+              <p style="margin: 8px 0 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 60ch;">{{ brRolleForklaring }}</p>
+            </div>
             <sc-if value="{{ brFeil }}" hint-placeholder-val="{{ false }}">
               <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ brFeil }}</div>
             </sc-if>
@@ -18128,6 +18136,7 @@ class Component extends DCLogic {
         const ny = {
           innlogget: inne,
           erAdminBruker: !!d.erAdmin,
+          erRegnskapBruker: !!d.erRegnskap,
           // Adminkonto, men logget inn med Vipps. Adminpanelet krever
           // passord, og uten dette forsvinner lenka uten forklaring.
           adminKreverPassord: !!d.adminKreverPassord,
@@ -18508,7 +18517,7 @@ class Component extends DCLogic {
       brukernavn: (this.state.brNyBruker || '').trim(),
       navn: (this.state.brNyNavn || '').trim(),
       epost: (this.state.brNyEpost || '').trim(),
-      rolle: this.state.brNyAdmin === false ? 'medlem' : 'admin',
+      rolle: this.state.brNyRolle || 'admin',
       passord: this.state.brNyPassord || '',
     }, () => this.setState({
       // Passordet skal ikke bli staaende i skjemaet etterpaa.
@@ -18600,7 +18609,7 @@ class Component extends DCLogic {
         // Vi henter sida paa nytt. Naa har nettleseren cookien, serveren ser
         // en admin, og hele panelet kommer med. Adressen settes forst, saa
         // man havner der man skulle.
-        if (d.erAdmin && !document.querySelector('[data-screen-label^="Admin"]')) {
+        if ((d.erAdmin || d.erRegnskap) && !document.querySelector('[data-screen-label^="Admin"]')) {
           this.setState({ liPassord: '', liFeil: null });
           window.location.assign('/admin');
           return;
@@ -18609,9 +18618,11 @@ class Component extends DCLogic {
         // Passordet skal ikke bli liggende i minnet lenger enn nodvendig.
         this.setState({
           liPassord: '', liFeil: null,
-          innlogget: true, erAdminBruker: !!d.erAdmin,
+          innlogget: true, erAdminBruker: !!d.erAdmin, erRegnskapBruker: !!d.erRegnskap,
           vippsNavn: d.navn || '',
-          side: d.erAdmin ? 'adminoversikt' : 'minside',
+          // Regnskapsfoereren lander paa OEkonomi. Oversikt er stengt for
+          // rollen, og en tom skjerm er ingen velkomst.
+          side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),
           kvittering: 'Du er logget inn',
           kvitteringDetalj: 'Velkommen tilbake, ' + (d.navn || '') + '.',
         });
@@ -21479,7 +21490,7 @@ class Component extends DCLogic {
         .then(d => {
           if (d && !d.innlogget) {
             this.setState({
-              innlogget: false, erAdminBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '',
+              innlogget: false, erAdminBruker: false, erRegnskapBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '',
               side: 'login',
               kvittering: 'Du er logget ut',
               kvitteringDetalj: 'Av sikkerhetsgrunner logges du ut etter tre timer. Logg inn med Vipps for aa fortsette.',
@@ -25140,6 +25151,17 @@ class Component extends DCLogic {
    * sida — se ADMIN_FANER. Kommer det et nytt verktoy for deltakerne, blir
    * det en fane der, ikke en ny linje her.
    */
+  /**
+   * Skjermene regnskapsfoereren naar.
+   *
+   * OEkonomi er hennes, og kassa naar hun skal se en enkelt betaling — det
+   * var det eieren valgte 1. september: «OEkonomi og betalinger». Refusjon og
+   * «send kvittering paa nytt» krever admin paa serveren, ogsaa herfra.
+   */
+  static get REGNSKAP_SKJERMER() {
+    return ['adminokonomi', 'adminuttak'];
+  }
+
   static get ADMIN_MENY() {
     return [
       ['Oversikt',  'adminoversikt'],
@@ -25362,6 +25384,13 @@ class Component extends DCLogic {
 
   /** Aapner et punkt: skjerm pluss det som avgjor hvem det gjelder. */
   gaaAdmin(rute, forvalg) {
+    // Regnskapsfoereren kommer bare til regnskapet. Serveren svarer 404 paa
+    // resten uansett; dette er for at hun ikke skal staa foran en tom skjerm
+    // og lure paa om noe er i stykker.
+    if (this.erBareRegnskap() && Component.REGNSKAP_SKJERMER.indexOf(rute) === -1) {
+      rute = 'adminokonomi';
+      forvalg = { okonomiFor: '' };
+    }
     this.setState(Object.assign({ side: rute, fhRolle: '', fhFra: '' }, forvalg || {}));
     window.scrollTo(0, 0);
   }
@@ -26574,6 +26603,13 @@ class Component extends DCLogic {
             // tre visningene, saa hver visning trenger sitt eget loft. Maalt
             // paa 1500 px: dag laa 48 px for lavt, maaned 21 px for hoeyt,
             // uka stemte alt.
+            //
+            // MERK: loftet paa dagen tar HELE spalta, og det foerste i spalta
+            // er «Viser»-raden med kursholderpillene. De havner derfor 45 px
+            // inni kortene over — likt paa 1200, 1400 og 1700 px. Eieren
+            // sendte bilde 1. september. Linjeringen og pillene kan ikke faa
+            // plass begge to saa lenge raden ligger i den loftede spalta;
+            // hvilken av dem som skal vike, er hans valg.
             : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px' },
           klSideAntall: this.kursData().length + ' kurs',
           // Paa pc ligger kursene to i bredden med typen paa linja under.
@@ -26766,20 +26802,40 @@ class Component extends DCLogic {
               klKursRedStil: this.erSmal()
                 ? {
                     position: 'fixed', zIndex: 78, left: '12px', top: '12px',
-                    width: 'calc(100vw - 24px)', maxHeight: '78vh', overflow: 'auto',
+                    width: 'calc(100vw - 24px)', maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px', overflow: 'auto',
                     overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
                     background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
                     borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
                   }
-                : {
-                    position: 'fixed', zIndex: 78,
-                    left: Math.max(12, Math.min((pos.x || 320), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 432)) + 'px',
-                    top: Math.max(12, Math.min((pos.y || 90), (typeof window !== 'undefined' ? window.innerHeight : 800) - 200)) + 'px',
-                    width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',
-                    overscrollBehavior: 'contain',
-                    background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                    borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
-                  },
+                : (() => {
+                    // Ruta legger seg ved kortet du trykket paa. Klemmen sa
+                    // bare at TOPPEN skulle vaere innenfor skjermen — men ruta
+                    // kan vaere 78 % av skjermhoyden hoy. Trykte du langt nede,
+                    // startet den innenfor og fortsatte langt utenfor, og
+                    // «Lagre» sto under skjermkanten.
+                    //
+                    // Eieren, 1. september: «hele systemet har en tendens til
+                    // aa aapne pop up eller nye vinduer utenfor skjermbildet om
+                    // jeg er langt nede paa siden».
+                    //
+                    // Naa faar hoyden det som er igjen under toppen. Ruta ruller
+                    // inni seg selv, og bunnen staar alltid minst 12 px over
+                    // skjermkanten.
+                    const vb = typeof window !== 'undefined' ? window.innerWidth : 1200;
+                    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+                    const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));
+                    return {
+                      position: 'fixed', zIndex: 78,
+                      left: Math.max(12, Math.min((pos.x || 320), vb - 432)) + 'px',
+                      top: topp + 'px',
+                      width: 'min(420px, calc(100vw - 24px))',
+                      maxHeight: '78vh',
+                      overflow: 'auto',
+                      overscrollBehavior: 'contain',
+                      background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                      borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
+                    };
+                  })(),
               klKursRedLukk: () => this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null }),
               klKursRedLagre: () => {
                 // Bare det som er endret, pluss de to serveren alltid trenger:
@@ -28122,6 +28178,16 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Er dette regnskapsfoereren, og bare det?
+   *
+   * En admin er ogsaa «regnskap» paa serveren — hun ser alt uansett. Her er
+   * spoersmaalet det motsatte: skal skjermen vise bare regnskapet?
+   */
+  erBareRegnskap() {
+    return !!this.state.erRegnskapBruker && !this.state.erAdminBruker;
+  }
+
   adminMeny() {
     const aktiv = this.adminSted().meny;
 
@@ -28129,7 +28195,18 @@ class Component extends DCLogic {
     // stemplingPiller() over.
     const stempling = [];
 
-    const rader = Component.ADMIN_MENY.map(([navn, rute, forvalg]) => ({
+    // Regnskapsfoereren ser ett punkt. Eieren, 1. september: «jeg oensker aa
+    // lage en bruker log in til min regnskapsoerer» — hun skal ha OEkonomi og
+    // betalingene, ikke deltakerlister og medlemmer.
+    //
+    // Serveren er sperren, ikke denne lista: hvert endepunkt utenom
+    // regnskapet svarer 404 paa rollen. Menyen slipper henne bare for aa
+    // vise noe som ikke virker.
+    const bare = this.erBareRegnskap()
+      ? Component.ADMIN_MENY.filter(([navn]) => navn === 'Økonomi')
+      : Component.ADMIN_MENY;
+
+    const rader = bare.map(([navn, rute, forvalg]) => ({
       navn,
       velg: () => this.gaaAdmin(rute, forvalg),
       stil: {
@@ -40630,17 +40707,28 @@ class Component extends DCLogic {
                          valgt.aktiv ? valgt.tittel + ' sendes ikke lenger' : valgt.tittel + ' sendes igjen');
           },
 
-          // En mal koden kaller kan ikke slettes — da ville meldingen
-          // stilltiende sluttet aa gaa ut. Den kan slaas av i stedet.
-          malKanSlette: !!(valgt && !valgt.iBruk),
+          // Alle maler kan slettes. Eieren, 1. september: «jeg oensker
+          // mulighet til aa slette de malene jeg selv vil».
+          //
+          // Sendes malen automatisk, sier ruta hva foelgen er foer den gjor
+          // det — meldingen slutter aa gaa ut, og ingenting sier fra etterpaa.
+          malKanSlette: !!valgt,
           malSlett: () => {
-            if (!valgt || valgt.iBruk) return;
-            if (!window.confirm('Slette «' + valgt.tittel + '»?\n\nTeksten forsvinner for godt.')) return;
+            if (!valgt) return;
+            const spm = valgt.iBruk
+              ? 'Slette «' + valgt.tittel + '»?\n\n'
+                + 'Denne sendes automatisk av systemet. Slettes den, slutter meldingen å gå '
+                + 'ut — og ingenting sier fra om det senere.\n\n'
+                + 'Vil du bare stoppe den en stund, er «Slå av» det du leter etter: '
+                + 'da sendes den ikke, og teksten er i behold.'
+              : 'Slette «' + valgt.tittel + '»?\n\nTeksten forsvinner for godt.';
+            if (!window.confirm(spm)) return;
             this.setState({ malValgt: null });
-            this.malKall({ handling: 'slett', navn: valgt.navn }, valgt.tittel + ' er slettet');
+            this.malKall({ handling: 'slett', navn: valgt.navn, bekreftet: 'ja' },
+                         valgt.tittel + ' er slettet');
           },
           malLaastTekst: valgt && valgt.iBruk
-            ? 'Denne sendes automatisk av systemet, og kan ikke slettes. Slå den av i stedet — da sendes den ikke, og teksten er i behold.'
+            ? 'Denne sendes automatisk av systemet. Slår du den av, sendes den ikke, og teksten er i behold. Sletter du den, er den borte.'
             : '',
           malErLaast: !!(valgt && valgt.iBruk),
         };
@@ -40803,8 +40891,8 @@ class Component extends DCLogic {
         navn: b.navn,
         brukernavn: b.brukernavn || '—',
         epost: b.epost || '—',
-        rolle: b.rolle === 'admin' ? 'Admin' : 'Medlem',
-        tone: b.rolle === 'admin' ? 'success' : 'neutral',
+        rolle: b.rolle === 'admin' ? 'Admin' : (b.rolle === 'regnskap' ? 'Regnskap' : 'Medlem'),
+        tone: b.rolle === 'admin' ? 'success' : (b.rolle === 'regnskap' ? 'info' : 'neutral'),
         maate: b.harPassord && b.harVipps ? 'Passord og Vipps'
              : b.harPassord ? 'Passord'
              : b.harVipps ? 'Vipps'
@@ -40832,8 +40920,30 @@ class Component extends DCLogic {
       settBrNyEpost: e => this.setState({ brNyEpost: e.target.value, brFeil: null }),
       brNyPassord: this.state.brNyPassord || '',
       settBrNyPassord: e => this.setState({ brNyPassord: e.target.value, brFeil: null }),
-      brNyAdmin: this.state.brNyAdmin !== false,
-      vekslBrNyAdmin: () => this.setState({ brNyAdmin: this.state.brNyAdmin === false }),
+      // Rollen den nye brukeren skal ha. «admin» er utgangspunktet — det er
+      // det skjemaet lager oftest.
+      brRoller: [
+        ['admin', 'Admin'], ['regnskap', 'Regnskap'], ['medlem', 'Medlem'],
+      ].map(([verdi, navn]) => ({
+        navn,
+        velg: () => this.setState({ brNyRolle: verdi }),
+        stil: {
+          appearance: 'none', cursor: 'pointer', padding: '7px 14px',
+          borderRadius: 'var(--radius-pill)', font: 'var(--type-body-sm)',
+          fontWeight: (this.state.brNyRolle || 'admin') === verdi ? 700 : 500,
+          border: '1px solid ' + ((this.state.brNyRolle || 'admin') === verdi
+            ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+          background: (this.state.brNyRolle || 'admin') === verdi
+            ? 'var(--lissom-brown)' : 'var(--surface-card)',
+          color: (this.state.brNyRolle || 'admin') === verdi
+            ? 'var(--clay-50)' : 'var(--text-heading)',
+        },
+      })),
+      brRolleForklaring: (this.state.brNyRolle || 'admin') === 'regnskap'
+        ? 'Ser Økonomi og betalingene, og ingenting annet — ikke deltakerlister, ikke medlemmer. Kan ikke refundere penger.'
+        : (this.state.brNyRolle || 'admin') === 'medlem'
+          ? 'Vanlig medlemskonto. Ser Min side, ikke admin.'
+          : 'Ser og kan endre alt i verkstedet.',
       brFeil: this.state.brFeil || '',
       brOppretter: () => this.opprettBruker(),
 

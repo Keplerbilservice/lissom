@@ -65,6 +65,30 @@ function krev_admin(): array
 }
 
 /**
+ * Regnskapet: OEkonomi og betalingene.
+ *
+ * Slipper inn admin og regnskapsfoereren. Alt annet i admin bruker
+ * krev_admin() som for — rollen «regnskap» kommer ikke inn der.
+ *
+ * Merk at dette bare gjelder aa SE. Refusjoner, endringer paa kurs og alt som
+ * sender noe ut krever fortsatt admin, ogsaa paa de endepunktene hun naar.
+ *
+ * @return array<string,mixed>
+ */
+function krev_regnskap(): array
+{
+    $m = Sesjon::medlem();
+    if ($m === null) {
+        Svar::feil('Du må være logget inn.', 401, ['loggInn' => true]);
+    }
+    if (!Sesjon::erRegnskap()) {
+        logg('Avvist regnskapsforsøk', ['medlem' => $m['id']]);
+        Svar::feil('Fant ikke siden.', 404);
+    }
+    return $m;
+}
+
+/**
  * Kom kallet fra en side brukeren selv har aapnet?
  *
  * Verner mot at et annet nettsted lar en innlogget admins nettleser gjore noe

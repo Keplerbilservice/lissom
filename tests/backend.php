@@ -5902,6 +5902,64 @@ sjekk('… og markupen spor om det',
 sjekk('… mens av/paa-bryteren med samme navn staar igjen',
     str_contains($sida, 'label="Banneret under toppbildet"'));
 
+// ── Ingen priser skrevet inn i koden ──────────────────────────────────
+//
+// Paint on Pots viste tre forskjellige tall paa den samme sida:
+//
+//   «Fra kr. 800,-»   prislinja  (plassen + billigste malbare gjenstand)
+//   «kr. 690,-»       knappen    (en pristabell skrevet inn i koden)
+//   kr. 500,-         det serveren faktisk trakk (courses.pris_ore)
+//
+// Eieren, 1. september: «Kr 500 er kr 500 alt annet fjernes», «Ingen
+// hardkode priser» og «Kr 500 som jeg kan endre senere i admin. Ingen fra
+// pris».
+//
+// Malt i nettleseren for og etter: tre tall ble til ett — kr. 500,- baade i
+// prislinja og paa knappen, som er det serveren regner ut.
+sjekk('ingen pristabell i koden',
+    !str_contains($sida, "'Nybegynner dreiekurs': 2800")
+    && !str_contains($sida, "'Paint on Pots': 690")
+    && !preg_match('~\n  priser\(\) \{~', $sida));
+sjekk('… og prisAv henter fra katalogen paa serveren',
+    str_contains($sida, "const kurs = (this.state.katalog || []).find(x => x.tittel === navn);")
+    && str_contains($sida, 'return Math.round(kurs.prisOre / 100);'));
+// Uten pris fra serveren skal skjermen tie, ikke gjette.
+sjekk('… og gjetter ikke naar serveren ikke sier noe',
+    str_contains($sida, "    return 0;\n  }\n\n  leggTil(navn) {"));
+
+// ── Ingen «fra»-pris ──────────────────────────────────────────────────
+sjekk('kortene viser prisen, ikke «Fra»',
+    str_contains($sida, "price: k.pris === 'Gratis' ? 'Gratis' : k.pris,"));
+sjekk('… og den store prislinja gjor det samme',
+    str_contains($sida, "bPris: k.price === 'Gratis' ? 'Gratis'\n            : (grunn > 0 ? fmt(netto) : (k.price || '')),"));
+sjekk('… ogsaa der gjenstanden velges i verkstedet',
+    str_contains($sida, "bPris: fmt(kat2.prisFraOre / 100 * antall),"));
+
+// ── Paint on Pots koster 500 ──────────────────────────────────────────
+$mig120 = file_get_contents(dirname(__DIR__) . '/db/migrations/120_paint_on_pots_koster_500.sql');
+sjekk('migrasjonen setter prisen til 500',
+    str_contains($mig120, 'SET pris_ore = 50000,'));
+sjekk('… og slaar av «gjenstand i kassa», som la 300 oppaa',
+    str_contains($mig120, 'gjenstand_i_kassa = 0'));
+if (DB::harTabell('courses') && DB::harKolonne('courses', 'gjenstand_i_kassa')) {
+    $pop = DB::en("SELECT pris_ore, gjenstand_i_kassa, status FROM courses WHERE slug = 'paint-on-pots'");
+    if ($pop !== null) {
+        sjekk('Paint on Pots koster 500 i basen', (int) $pop['pris_ore'] === 50000,
+            (int) $pop['pris_ore'] . ' oere');
+        sjekk('… og legger ikke gjenstanden oppaa', (int) $pop['gjenstand_i_kassa'] === 0);
+        // Et kurs uten pris far ingen bookingknapp i det hele tatt — knappen
+        // ligger inne i «erBetalt» eller «erGratis», og et kurs til 0 er
+        // ingen av delene. Med 500 er det «erBetalt».
+        sjekk('… saa kurset har noe aa booke', (int) $pop['pris_ore'] > 0);
+    }
+}
+// Prisen skal kunne endres i admin. Feltet finnes, og lagringen sender
+// alltid status — uten den ville kurset blitt avpublisert, fordi kurs.php
+// skriver status ubetinget.
+sjekk('prisen kan endres i admin', str_contains($sida, 'id="k-pris"'));
+sjekk('… og lagringen sender status, saa kurset ikke avpubliseres',
+    str_contains($sida, "status: raa.status || 'publisert',"));
+
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //
 // Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare

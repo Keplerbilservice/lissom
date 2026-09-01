@@ -40657,17 +40657,28 @@ class Component extends DCLogic {
                          valgt.aktiv ? valgt.tittel + ' sendes ikke lenger' : valgt.tittel + ' sendes igjen');
           },
 
-          // En mal koden kaller kan ikke slettes — da ville meldingen
-          // stilltiende sluttet aa gaa ut. Den kan slaas av i stedet.
-          malKanSlette: !!(valgt && !valgt.iBruk),
+          // Alle maler kan slettes. Eieren, 1. september: «jeg oensker
+          // mulighet til aa slette de malene jeg selv vil».
+          //
+          // Sendes malen automatisk, sier ruta hva foelgen er foer den gjor
+          // det — meldingen slutter aa gaa ut, og ingenting sier fra etterpaa.
+          malKanSlette: !!valgt,
           malSlett: () => {
-            if (!valgt || valgt.iBruk) return;
-            if (!window.confirm('Slette «' + valgt.tittel + '»?\n\nTeksten forsvinner for godt.')) return;
+            if (!valgt) return;
+            const spm = valgt.iBruk
+              ? 'Slette «' + valgt.tittel + '»?\n\n'
+                + 'Denne sendes automatisk av systemet. Slettes den, slutter meldingen å gå '
+                + 'ut — og ingenting sier fra om det senere.\n\n'
+                + 'Vil du bare stoppe den en stund, er «Slå av» det du leter etter: '
+                + 'da sendes den ikke, og teksten er i behold.'
+              : 'Slette «' + valgt.tittel + '»?\n\nTeksten forsvinner for godt.';
+            if (!window.confirm(spm)) return;
             this.setState({ malValgt: null });
-            this.malKall({ handling: 'slett', navn: valgt.navn }, valgt.tittel + ' er slettet');
+            this.malKall({ handling: 'slett', navn: valgt.navn, bekreftet: 'ja' },
+                         valgt.tittel + ' er slettet');
           },
           malLaastTekst: valgt && valgt.iBruk
-            ? 'Denne sendes automatisk av systemet, og kan ikke slettes. Slå den av i stedet — da sendes den ikke, og teksten er i behold.'
+            ? 'Denne sendes automatisk av systemet. Slår du den av, sendes den ikke, og teksten er i behold. Sletter du den, er den borte.'
             : '',
           malErLaast: !!(valgt && valgt.iBruk),
         };

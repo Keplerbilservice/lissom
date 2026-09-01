@@ -4,7 +4,7 @@
  *
  *   GET                      alle malene, med feltene hver av dem kan bruke
  *   POST handling=lagre      { navn, emne, tekst, aktiv }
- *   POST handling=slett      { navn }
+ *   POST handling=slett      { navn, bekreftet? }
  *
  * ── Hvorfor denne finnes ─────────────────────────────────────────────
  *
@@ -42,7 +42,7 @@ if (!DB::harTabell('notification_templates')) {
 
 $harGruppe = DB::harKolonne('notification_templates', 'gruppe');
 
-/** Malene koden faktisk kaller. Disse kan slaas av, men ikke slettes. */
+/** Malene koden faktisk kaller. De kan slettes, men bare med et uttrykkelig ja. */
 $IBRUK = Maler::iBruk();
 
 $hent = static function () use ($harGruppe, $IBRUK): array {
@@ -90,13 +90,23 @@ if ($mal === null) {
 // butikkbekreftelse betydd at ingen kunder fikk kvittering, uten at noe sa
 // fra. Den kan slaas av i stedet, og da er det et valg noen har tatt.
 if ($handling === 'slett') {
-    if (in_array($navn, $IBRUK, true)) {
-        Svar::feil(Maler::tittel($navn) . ' sendes automatisk av systemet, og kan ikke slettes. '
-            . 'Slå den av i stedet — da sendes den ikke, og teksten er i behold hvis du ombestemmer deg.', 409);
+    // Her sto en sperre: maler koden kaller kunne ikke slettes, bare slaas
+    // av. Eieren, 1. september: «jeg oensker mulighet til aa slette de malene
+    // jeg selv vil».
+    //
+    // Han faar det. En mal som sendes automatisk krever likevel et
+    // uttrykkelig ja, for foelgen er at meldingen slutter aa gaa ut — en
+    // kunde som bestiller faar ingen kvittering, og ingenting sier fra.
+    // Skjermen spoer foerst, og sender «bekreftet» hit.
+    $sendesAutomatisk = in_array($navn, $IBRUK, true);
+    if ($sendesAutomatisk && Foresporsel::tekst('bekreftet') !== 'ja') {
+        Svar::feil(Maler::tittel($navn) . ' sendes automatisk av systemet. Slettes den, '
+            . 'slutter meldingen å gå ut — bekreft at det er det du vil.', 409);
     }
     DB::kjor('DELETE FROM notification_templates WHERE navn = :n', ['n' => $navn]);
-    revider('mal_slettet', 'mal', null, ['navn' => $navn]);
-    Svar::ok(['maler' => $hent(), 'beskjed' => Maler::tittel($navn) . ' er slettet.']);
+    revider('mal_slettet', 'mal', null, ['navn' => $navn, 'sendes_automatisk' => $sendesAutomatisk]);
+    Svar::ok(['maler' => $hent(), 'beskjed' => Maler::tittel($navn) . ' er slettet.'
+        . ($sendesAutomatisk ? ' Meldingen går ikke lenger ut.' : '')]);
 }
 
 if ($handling !== 'lagre') {

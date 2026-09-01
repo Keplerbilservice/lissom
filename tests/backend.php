@@ -4323,10 +4323,19 @@ if (DB::harTabell('notification_templates')) {
 $malApi = file_get_contents(dirname(__DIR__) . '/api/admin/maler.php');
 sjekk('malene kan endres fra admin', str_contains($malApi, "if (\$handling !== 'lagre') {"));
 sjekk('… og slettes', str_contains($malApi, "if (\$handling === 'slett') {"));
-// En mal koden kaller kan ikke slettes: da ville meldingen stilltiende
-// sluttet aa gaa ut. Den kan slaas av, og da er det et valg noen har tatt.
-sjekk('… men ikke de koden sender selv',
-    str_contains($malApi, "if (in_array(\$navn, \$IBRUK, true)) {"));
+// Her sto en sperre: maler koden kaller kunne ikke slettes. Eieren,
+// 1. september: «jeg oensker mulighet til aa slette de malene jeg selv vil».
+// Naa kan de slettes, men bare med et uttrykkelig ja — foelgen er at
+// meldingen slutter aa gaa ut, og ingenting sier fra om det etterpaa.
+sjekk('… ogsaa de koden sender selv, men da med et uttrykkelig ja',
+    str_contains($malApi, "\$sendesAutomatisk = in_array(\$navn, \$IBRUK, true);")
+    && str_contains($malApi, "if (\$sendesAutomatisk && Foresporsel::tekst('bekreftet') !== 'ja') {"));
+sjekk('… og skjermen sier hva foelgen er foer den spoer',
+    str_contains($sida2, 'Denne sendes automatisk av systemet. Slettes den, slutter meldingen å gå ')
+    && str_contains($sida2, "navn: valgt.navn, bekreftet: 'ja' }"));
+// Slettinga skrives i revisjonsloggen, med om malen gikk ut av seg selv.
+sjekk('… og det staar i loggen hva som ble slettet',
+    str_contains($malApi, "['navn' => \$navn, 'sendes_automatisk' => \$sendesAutomatisk]"));
 sjekk('… og et ukjent felt avvises for det naar kunden',
     str_contains($malApi, "Denne malen kjenner ikke {"));
 sjekk('Maler-skjermen finnes', str_contains($sida2, "erAdminMaler: side === 'adminmaler',"));

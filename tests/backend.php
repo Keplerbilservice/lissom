@@ -5209,10 +5209,14 @@ sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
     str_contains($sida, ": dagensAlle.filter(e => e.holder === kn);"));
 // Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
 // linje med det hvite i kallenderen». Overskriftsrada i kalenderen er ulik
-// hoey i de tre visningene, saa hver visning trenger sitt eget loft. Maalt paa
-// 1500 px: alle tre lander naa paa 496.
+// hoey i de tre visningene, saa hver visning trenger sitt eget loft.
+//
+// Dagen laa paa -65 px saa lenge «Viser»-raden med kursholderpillene laa inni
+// kalenderspalta og skjov rutenettet ned. Raden ligger naa i full bredde over
+// begge spaltene, og da holder -18. Maalt paa nytt 1. september: det hvite
+// lander likt paa 1200, 1500 og 1700 px.
 sjekk('det hvite staar paa linje i alle tre visningene',
-    str_contains($sida, "marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px'"));
+    str_contains($sida, "marginTop: visning === 'dag' ? '-18px' : visning === 'uke' ? '17px' : '21px'"));
 
 // Ruta som aapnes fra kalenderen var bygget ved aa ramse opp hver kolonne
 // kurset har, og viste derfor ogsaa feltene eieren alt hadde bedt om aa bli
@@ -5695,11 +5699,23 @@ sjekk('… og ruller inni seg selv naar den ikke faar plass',
 // kortet til venstre. Loftet tok HELE spalta, og det foerste i spalta er
 // «Viser»-raden med kursholderpillene: de laa 45 px inni kortene over, likt
 // paa 1200, 1400 og 1700 px.
-// Kollisjonen staar igjen med vilje: loftet er noe eieren har bedt om «gang
-// paa gang», og de to kan ikke faa plass begge to saa lenge raden ligger i
-// den loftede spalta. Merknaden i koden sier fra om det.
-sjekk('kollisjonen mellom pillene og kortene er skrevet ned',
-    str_contains($sida, 'De havner derfor 45 px'));
+// Pillene laa 45 px inni kortene over, fordi loftet tok hele spalta og raden
+// var det foerste i den. Eieren valgte selv hva som skulle vike: «Flytt
+// pillene, behold linjeringen».
+//
+// Raden har naa en egen rad i full bredde over begge spaltene. Ligger den
+// bare i kalenderspalta, forskyves den ene og ikke den andre, og linjeringen
+// ryker — det var maalt til 88 px feil for den ble full bredde.
+sjekk('pillene ligger i sin egen rad, i full bredde',
+    str_contains($sida, "klPilleradStil: this.erSmal()")
+    && str_contains($sida, ": { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },"));
+sjekk('… og kalenderen ligger i rada under',
+    str_contains($sida, ": { minWidth: 0, gridColumn: '2', gridRow: '3',")
+    && str_contains($sida, "gridColumn: '1', gridRow: '3' },"));
+// Maalt paa den kjorende siden: pilleraden paa 430, kortene slutter paa 410,
+// null kollisjoner, og det hvite likt paa begge sider.
+sjekk('… og raden er ute av loftet',
+    !str_contains($sida, "marginTop: visning === 'dag' ? '-65px'"));
 
 // ── Paint on Pots tar ikke spalta ──────────────────────────────────────
 //

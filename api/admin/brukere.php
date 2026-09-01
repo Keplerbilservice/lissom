@@ -102,6 +102,29 @@ $id       = Foresporsel::heltall('id');
 // regnskapsfoereren en egen innlogging framfor aa gi henne hele verkstedet.
 $rolle    = in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)
                 ? Foresporsel::tekst('rolle') : 'medlem';
+
+/**
+ * Taaler kolonnen rollen?
+ *
+ * «regnskap» kommer med migrasjon 117. Koden ligger ute noen minutter for
+ * vedlikeholdet kjores, og uten denne sa basen bare «Data truncated for
+ * column 'rolle'» — som ble til «Noe gikk galt» paa skjermen. Eieren,
+ * 1. september: «faar ikke opprettet paa regnskap».
+ */
+$rollenFinnes = static function (string $r): bool {
+    if ($r !== 'regnskap') {
+        return true;   // medlem og admin har vaert der siden 001
+    }
+    $type = (string) DB::verdi(
+        "SELECT COLUMN_TYPE FROM information_schema.columns
+          WHERE table_schema = DATABASE() AND table_name = 'members' AND column_name = 'rolle'"
+    );
+    return str_contains($type, "'regnskap'");
+};
+if (!$rollenFinnes($rolle)) {
+    Svar::feil('Rollen «Regnskap» krever en oppdatering av databasen. '
+        . 'Kjør vedlikeholdet fra menyen nederst til venstre, så kan du opprette henne.', 503);
+}
 $passord  = (string) (Foresporsel::kropp()['passord'] ?? '');
 
 if ($handling === 'opprett') {

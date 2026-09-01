@@ -5406,6 +5406,27 @@ window.__resources = {
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="smartphone" on-click="{{ klIcsApne }}" hint-size="auto,44px">Synk med mobilen</x-import>
         </aside>
 
+        <!-- Kursholderpillene, i sin egen rad.
+
+             De laa inne i kalenderspalta, og den loftes 65 px for at
+             rutenettet skal staa paa linje med kortet til venstre. Loftet
+             tok hele spalta, saa pillene havnet 45 px inni kortene over —
+             eieren sendte bilde 1. september. Han valgte selv hva som
+             skulle vike: «Flytt pillene, behold linjeringen».
+
+             Naa har de en rad for seg, uten loft. Kalenderen ligger i
+             rada under og beholder sitt. -->
+        <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
+          <div style="{{ klPilleradStil }}">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Viser</span>
+              <sc-for list="{{ klHolderSpalter }}" as="h" hint-placeholder-count="3">
+                <button type="button" onClick="{{ h.velg }}" title="{{ h.tittel }}" style="{{ h.stil }}">{{ h.navn }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
         <div style="{{ klHovedStil }}">
 
         <sc-if value="{{ klErManed }}" hint-placeholder-val="{{ false }}">
@@ -5476,15 +5497,6 @@ window.__resources = {
         </sc-if>
 
         <sc-if value="{{ klErDag }}" hint-placeholder-val="{{ true }}">
-          <!-- Hvem som skal ha en spalte i dag. Den som vanligvis holder
-               kursene staar der, og verkstedet. De andre slaas paa her —
-               eller kommer av seg selv den dagen de har noe. -->
-          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
-            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-right: var(--space-2);">Viser</span>
-            <sc-for list="{{ klHolderSpalter }}" as="h" hint-placeholder-count="3">
-              <button type="button" onClick="{{ h.velg }}" title="{{ h.tittel }}" style="{{ h.stil }}">{{ h.navn }}</button>
-            </sc-for>
-          </div>
           <div class="lx-kalbred" style="background: var(--clay-100); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="{{ klBoardHodeStil }}">
               <div style="border-right: 1px solid var(--border-subtle);"></div>
@@ -26594,7 +26606,24 @@ class Component extends DCLogic {
             : { gridColumn: '1 / -1', gridRow: '1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 'var(--space-4)' },
           klAsideStil: this.erSmal()
             ? { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', order: 3 }
-            : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '2' },
+            // Rad 2 er pilleraden i full bredde; rad 3 er sidemenyen og
+            // kalenderen ved siden av hverandre.
+            : { display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', gridColumn: '1', gridRow: '3' },
+          // Kursholderpillene, i sin egen rad.
+          //
+          // De laa inne i kalenderspalta, og den loftes for at rutenettet
+          // skal staa paa linje med kortet til venstre. Loftet tok hele
+          // spalta, saa pillene havnet 45 px inni kortene over. Eieren valgte
+          // selv hva som skulle vike: «Flytt pillene, behold linjeringen».
+          //
+          // Her er de ute av loftet. Paa mobilen staar de der de sto — der
+          // er alt under hverandre, og det var aldri noen kollisjon.
+          klPilleradStil: this.erSmal()
+            ? { order: 0 }
+            // Full bredde over begge spaltene. Ligger den bare i
+            // kalenderspalta, forskyves den ene og ikke den andre, og
+            // linjeringen ryker.
+            : { gridColumn: '1 / -1', gridRow: '2', minWidth: 0 },
           klHovedStil: this.erSmal()
             ? { minWidth: 0, order: 1 }
             // Det hvite i kalenderen — rutenettet under kolonneoverskriftene —
@@ -26604,13 +26633,14 @@ class Component extends DCLogic {
             // paa 1500 px: dag laa 48 px for lavt, maaned 21 px for hoeyt,
             // uka stemte alt.
             //
-            // MERK: loftet paa dagen tar HELE spalta, og det foerste i spalta
-            // er «Viser»-raden med kursholderpillene. De havner derfor 45 px
-            // inni kortene over — likt paa 1200, 1400 og 1700 px. Eieren
-            // sendte bilde 1. september. Linjeringen og pillene kan ikke faa
-            // plass begge to saa lenge raden ligger i den loftede spalta;
-            // hvilken av dem som skal vike, er hans valg.
-            : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px' },
+            // Dagen laa paa -65 px. Det tallet var maalt den gangen
+            // «Viser»-raden laa inni spalta og skjov rutenettet ned; naa har
+            // raden en egen rad i full bredde over begge spaltene, og loftet
+            // maa vaere mye mindre. Maalt paa nytt 1. september, samme sted
+            // som for: -18 px, og da staar det hvite likt paa 1200, 1500 og
+            // 1700 px.
+            : { minWidth: 0, gridColumn: '2', gridRow: '3',
+                marginTop: visning === 'dag' ? '-18px' : visning === 'uke' ? '17px' : '21px' },
           klSideAntall: this.kursData().length + ' kurs',
           // Paa pc ligger kursene to i bredden med typen paa linja under.
           // Paa mobilen er kolonnene for smale til det: der staar de under
@@ -32837,6 +32867,26 @@ class Component extends DCLogic {
                  'Hver e-post og SMS systemet sender. Endre teksten, slå den av, '
                  + 'eller se når den går ut.',
                  null, 'Se malene', () => this.gaaAdmin('adminmaler', {})),
+
+            // Hva de andre ser.
+            //
+            // Kortene fantes fra for — deltakerens under «Kurs og deltakere»,
+            // medlemmets under «Medlemmer». Eieren, 1. september: «paa
+            // oversikt, kan du legge til hva medlemene ser, og hva deltakerne
+            // ser» — og: «kortene finnes allerede fra for, jeg vil bare ha de
+            // paa oversikten».
+            //
+            // De staar fortsatt der de sto. Dette er en vei til, ikke en
+            // flytting: den som aapner Oversikt om morgenen skal kunne se hva
+            // kunden faktisk faar, uten aa lete etter det.
+            kort('Hva kursdeltakere ser',
+                 'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
+                 null, 'Se siden',
+                 () => this.gaaAdmin('minside', { fhRolle: 'deltaker', fhFra: 'adminoversikt' })),
+            kort('Hva medlemmer ser',
+                 'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
+                 null, 'Se siden',
+                 () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
 
             kort('Butikk',
                  'Varer, priser, bilder og lager.',

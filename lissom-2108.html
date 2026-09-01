@@ -17348,6 +17348,42 @@ class Component extends DCLogic {
     return liste[0] || '';
   }
 
+  /**
+   * Hvor mange uker vinduet maa vaere for at «N ganger» faktisk faar plass.
+   *
+   * kurs_serier har to tall som lett forveksles: «antall» er hvor mange
+   * ganger det skal gaa, «uker_fram» er hvor langt fram datoene legges ut.
+   * Ber du om ti ganger i et vindu paa aatte uker, faar du aatte datoer — og
+   * tror hosten er planlagt.
+   *
+   * To ting maa med:
+   *
+   *   monsteret    annenhver uke bruker dobbelt saa mange uker per gang,
+   *                manedlig omtrent 4,4.
+   *   startdatoen  vinduet regnes fra i dag, mens tellingen begynner paa den
+   *                forste datoen. En serie som begynner om tre uker og skal
+   *                gaa ti ganger, trenger tretten ukers vindu — ikke elleve.
+   *
+   * «minst» er et vindu noen har satt selv. Det senkes aldri: har du bedt om
+   * et helt aar, skal du faa et helt aar, ogsaa naar ti ganger er unnagjort
+   * paa ti uker.
+   *
+   * Fire steder setter opp serier — kursoppsettet, «Ny kursdato», kalenderen
+   * og «fast dag». Regelen sto ett sted og manglet de tre andre.
+   */
+  ukerForSerie(monster, antall, startDato, minst) {
+    const gulv = Math.max(0, Math.min(52, parseInt(minst, 10) || 0));
+    const n = Math.max(0, parseInt(antall, 10) || 0);
+    if (n <= 0) {
+      return Math.max(1, Math.max(gulv, monster === 'manedlig' ? 26 : 8));
+    }
+    const perGang = monster === 'manedlig' ? 4.4 : (monster === 'annenhver' ? 2 : 1);
+    const d = startDato ? new Date(startDato + 'T12:00') : null;
+    const dagerTil = (d && !isNaN(d)) ? Math.max(0, Math.ceil((d - new Date()) / 86400000)) : 0;
+    const trengs = Math.ceil(n * perGang + dagerTil / 7) + 1;
+    return Math.max(1, Math.min(52, Math.max(trengs, gulv)));
+  }
+
   // Legger datoen inn i basen. Sto foer bare som en kvittering paa skjermen —
   // eieren fikk beskjed om at datoen var lagt ut, og ingenting var lagret.
   ndLeggTilNaa() {
@@ -17381,12 +17417,8 @@ class Component extends DCLogic {
     const valgtDag = new Date(s.ndDato + 'T12:00');
     const antall = Math.max(0, Math.min(500, parseInt(s.ndAntall, 10) || 0));
 
-    // Hvor langt fram datoene skal ligge ute. Ber du om ti ganger, maa
-    // vinduet vaere stort nok til at de faktisk faar plass.
-    const ukerPerGang = monster === 'manedlig' ? 4.4 : (monster === 'annenhver' ? 2 : 1);
-    const ukerFram = antall > 0
-      ? Math.max(1, Math.min(52, Math.ceil(antall * ukerPerGang) + 1))
-      : (monster === 'manedlig' ? 26 : 8);
+    // Hvor langt fram datoene skal ligge ute — se ukerForSerie().
+    const ukerFram = this.ukerForSerie(monster, antall, s.ndDato, 0);
 
     const kall = monster
       ? {
@@ -21920,14 +21952,7 @@ class Component extends DCLogic {
           const dag = new Date(forst.dato + 'T12:00');
           if (isNaN(dag)) return Promise.resolve();
           const antall = Math.max(0, Math.min(500, parseInt(this.state.kAntall, 10) || 0));
-          // Vinduet maa vaere stort nok til at alle gangene faar plass. Det
-          // regnes fra i dag, mens tellingen begynner paa den forste datoen,
-          // saa avstanden dit legges paa.
-          const ukerPerGang = monster === 'manedlig' ? 4.4 : (monster === 'annenhver' ? 2 : 1);
-          const dagerTil = Math.max(0, Math.ceil((dag - new Date()) / 86400000));
-          const ukerFram = antall > 0
-            ? Math.max(1, Math.min(52, Math.ceil(antall * ukerPerGang + dagerTil / 7) + 1))
-            : (monster === 'manedlig' ? 26 : 8);
+          const ukerFram = this.ukerForSerie(monster, antall, forst.dato, 0);
           return fetch('/api/admin/kurs.php', {
             method: 'POST',
             credentials: 'same-origin',
@@ -25744,11 +25769,16 @@ class Component extends DCLogic {
                 // Ukedagen etter ISO: mandag er 1, sondag er 7. JavaScript
                 // teller fra sondag, og de to blandes lett sammen.
                 const isoDag = ((new Date(d + 'T12:00:00').getDay() + 6) % 7) + 1;
+                // Vinduet sto ikke i kallet, saa serveren falt tilbake paa
+                // aatte uker. Ba du om ti ganger, fikk du aatte datoer.
+                const antallGanger = Math.max(1, Math.min(52, parseInt(this.state.klBAntall || '4', 10) || 4));
+                const monsterKl = gjenta === 'Annenhver uke' ? 'annenhver' : 'ukentlig';
                 this.klKall('/api/admin/kurs.php', {
                   handling: 'serie', kursId: kursId,
-                  monster: gjenta === 'Annenhver uke' ? 'annenhver' : 'ukentlig',
+                  monster: monsterKl,
                   ukedag: isoDag, fra: fra, til: til,
-                  antall: Math.max(1, Math.min(52, parseInt(this.state.klBAntall || '4', 10) || 4)),
+                  antall: antallGanger,
+                  ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),
                   startDato: d,
                 }).then(ok => { if (ok) this.setState({ klBekreft: null }); });
               },
@@ -34276,7 +34306,14 @@ class Component extends DCLogic {
               antall: Math.max(0, Math.min(500, parseInt(this.state.kAntall, 10) || 0)),
               fra: this.state.kSerieFra || '10:00',
               til: this.state.kSerieTil || '13:00',
-              ukerFram: Math.max(1, Math.min(52, parseInt(this.state.kSerieUker, 10) || 8)),
+              // Vinduet du har satt selv, men aldri mindre enn det «antall
+              // ganger» trenger. Sto det ti ganger og aatte uker, fikk du
+              // aatte datoer uten at noe sa fra.
+              ukerFram: this.ukerForSerie(
+                monster,
+                Math.max(0, Math.min(500, parseInt(this.state.kAntall, 10) || 0)),
+                '',
+                Math.max(1, Math.min(52, parseInt(this.state.kSerieUker, 10) || 8))),
             });
           },
           // Haken lagret rett til serveren, og et kurs du holder paa aa

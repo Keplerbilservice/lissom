@@ -120,7 +120,7 @@ if (Foresporsel::tekst('visning') === 'tekst') {
     $linjer[] = '';
     if ($ut === []) {
         $linjer[] = 'Ingen dager har åpningstid de neste ' . DAGER_FRAM . ' dagene.';
-        \$linjer[] = 'Det står ingen kursdatoer eller samlinger ute.';
+        $linjer[] = 'Det står ingen kursdatoer eller samlinger ute.';
     }
     foreach ($ut as $d) {
         $linjer[] = ($d['idag'] ? 'I DAG  ' : '       ')
@@ -140,7 +140,7 @@ if (Foresporsel::tekst('visning') === 'tekst') {
         $linjer[] = '';
     }
     $linjer[] = 'Regelen: verkstedet er åpent fra den første økta begynner til den';
-    \$linjer[] = 'siste slutter.';
+    $linjer[] = 'siste slutter.';
     $linjer[] = 'Avlyste datoer og upubliserte kurs teller ikke.';
 
     header('Content-Type: text/plain; charset=utf-8');

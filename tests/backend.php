@@ -3837,12 +3837,14 @@ sjekk('… og er ikke en person',
 //
 //    Maalt: med kalenderen aapen la jeg et kurs i basen; det kom ikke fram
 //    ved aa vente eller klikke. Etterpaa kommer det naar fanen hentes fram.
-sjekk('kalenderen hentes paa nytt', str_contains($sida2, '  oppfriskKalender() {'));
+sjekk('kalenderen hentes paa nytt', str_contains($sida2, '  oppfriskAdmin() {'));
 sjekk('… naar fanen kommer fram, og hvert minutt',
-    str_contains($sida2, 'this._kalenderur = setInterval(() => this.oppfriskKalender(), 60000);')
+    str_contains($sida2, 'this._kalenderur = setInterval(() => this.oppfriskAdmin(), 60000);')
     && str_contains($sida2, "document.addEventListener('visibilitychange', this._kalenderSynlig);"));
-sjekk('… bare naar kalenderen faktisk staar framme',
-    str_contains($sida2, "if (this.state.side !== 'adminkalender' || document.hidden) return;"));
+// Gjaldt foer bare kalenderen. Da eieren meldte at deltakere lagt inn av en
+// annen ikke kom fram paa Oversikt heller, ble den utvidet til hele admin.
+sjekk('… paa alle adminskjermene',
+    str_contains($sida2, "if (!this.erAdminSkjerm(this.state.side) || document.hidden) return;"));
 // Midt i en flytting skal ingenting rykke under fingeren.
 sjekk('… og ikke midt i en flytting',
     str_contains($sida2, 'if (this.state.klDrag) return;'));
@@ -3852,6 +3854,53 @@ sjekk('… uten aa blinke tom',
     str_contains($sida2, 'this.setState({ kalHentet: {} });'));
 sjekk('… og klokka ryddes naar skjermen forlates',
     str_contains($sida2, 'clearInterval(this._kalenderur);'));
+
+// ── Admin henter paa nytt naar noen andre har endret noe ───────────────
+//
+// Eieren, 1. september: «Det er lagt til 2 deltakere lag din egen bolle, men
+// ikke synlig», «kurset lag din egen bolle 3 september vises paa min admin,
+// men ikke Monica sin», «og naa er min kalender tom paa 3 september ogsaa».
+//
+// Det var ingen feil i koblingene. Jeg la inn to deltakere paa den datoen og
+// spurte serveren direkte:
+//
+//   oversikt.php  → begge to, overst under «Nye paameldinger»
+//   kalender.php  → «Lag din egen bolle | pameldt=2 | [Prove En, Prove To]»
+//
+// Serveren svarte riktig hele veien. Feilen var at skjermen aldri spurte paa
+// nytt: hentAdmin() kalles 28 steder, og alle er etter dine EGNE lagringer.
+// Legger Monica inn en deltaker, faar din skjerm det aldri vite.
+//
+// Maalt i nettleseren, for og etter: «Nye paameldinger» sto paa 4, en annen
+// la inn en paamelding, fanen fikk fokus igjen — og tallet ble 5 uten
+// omlasting, det samme som en omlasting gir. Og i kalenderen: en ny kursdato
+// lagt inn utenfra kom fram ved fokus, paa baade 390 px og 1400 px.
+sjekk('admin henter paa nytt naar man kommer tilbake til fanen',
+    str_contains($sida2, '  oppfriskAdmin() {'));
+sjekk('… og det gjelder alle adminskjermene, ikke bare kalenderen',
+    str_contains($sida2, "if (!this.erAdminSkjerm(this.state.side) || document.hidden) return;")
+    && str_contains($sida2, "    this._adminHentes = false;\n    this.hentAdmin();\n  }"));
+sjekk('… ogsaa paa klokke mens skjermen staar framme',
+    str_contains($sida2, 'this._kalenderur = setInterval(() => this.oppfriskAdmin(), 60000);'));
+sjekk('… og med det samme fanen faar fokus',
+    str_contains($sida2, "this._kalenderSynlig = () => { if (!document.hidden) this.oppfriskAdmin(); };"));
+
+// Kalenderen henter maaned for maaned. Nullstiller vi dataene og ikke bare
+// merkene, blir skjermen tom til svaret kommer — hvert minutt.
+sjekk('kalenderen blinker ikke naar den oppfriskes',
+    str_contains($sida2, "if (this.state.side === 'adminkalender') this.setState({ kalHentet: {} });"));
+
+// Ingenting skal rykke under fingeren, og et aapent skjema skal staa i fred.
+sjekk('… ikke midt i en flytting',
+    str_contains($sida2, "    if (this.state.klDrag) return;\n    if (this.state.kRed"));
+sjekk('… og ikke mens et skjema eller en rute staar aapen',
+    str_contains($sida2, "if (this.state.kRed || this.state.detalj || this.state.klKursRedId) return;"));
+
+// Serveren var aldri feilen. Spoerringene skal fortsatt ta med begge
+// statusene en paamelding kan ha, ellers forsvinner de som ikke har betalt.
+$ovr = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('nye paameldinger tar med baade betalte og reserverte',
+    str_contains($ovr, "WHERE b.status IN ('betalt','reservert')"));
 
 // ── Betalingene i kassa ────────────────────────────────────────────────
 //

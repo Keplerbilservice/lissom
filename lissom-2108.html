@@ -16090,14 +16090,6 @@ class Component extends DCLogic {
   }
 
 
-  priser() {
-    return {
-      'Kopp, sandglasur': 390, 'Kopp med hank': 450, 'Bolle, stor': 590, 'Bolle, liten': 340, 'Fat, 28 cm': 790, 'Gavekort': 500,
-      'Leire, stengods grå': 290, 'Leire, hvit porselen': 340, 'Ekstra råbrann': 150, 'Ekstra glasurbrann': 220,
-      'Abonnement: Prøv Lissom': 990, 'Abonnement: 30 timer': 2590, 'Abonnement: Årsmedlemskap': 1990, 'Abonnement: Fri tilgang': 4990,
-      'Nybegynner dreiekurs': 2800, 'Kurs boller': 1490, 'Store fat kurs': 1490, 'Keramikk Workshop': 1490, 'Date Night': 1190, 'Paint on Pots': 690,
-    };
-  }
 
   /**
    * Varen bak en noekkel i handlekurven, eller null.
@@ -16132,20 +16124,30 @@ class Component extends DCLogic {
     const vare = (this.state.butikkvareListe || []).find(v => v.tittel === navn);
     if (vare) return Math.round(vare.prisOre / 100);
 
-    const p = this.priser();
-    if (p[navn] != null) return p[navn];
+    // ── Kurset fra katalogen ──────────────────────────────────────
+    //
+    // Her sto en tabell skrevet inn i koden: «Paint on Pots: 690»,
+    // «Nybegynner dreiekurs: 2800», og ni til. Basen sa 500 for Paint on
+    // Pots, og bookingknappen viste likevel 690 — et tall ingen hadde satt,
+    // og ikke det serveren trekker.
+    //
+    // Eieren, 1. september: «Kr 500 er kr 500 alt annet fjernes» og «Ingen
+    // hardkode priser».
+    //
+    // Naa finnes ingen priser i koden. Kommer det ingen pris fra serveren,
+    // sier vi ingenting framfor aa gjette — et gjettet tall er verre enn en
+    // tom plass, fordi det ser like riktig ut.
+    const kurs = (this.state.katalog || []).find(x => x.tittel === navn);
+    if (kurs && kurs.prisOre !== null && kurs.prisOre !== undefined) {
+      return Math.round(kurs.prisOre / 100);
+    }
 
     // Medlemskapene staar i kurven med «Abonnement: » foran navnet.
-    // Planen fra basen gaar foran prislista: den foelger med naar
-    // verkstedet endrer pris eller navn.
     const utenPrefiks = String(navn).replace(/^Abonnement: /, '');
     const plan = this.planer().find(x => x.navn === utenPrefiks);
     if (plan && plan.prisOre != null) return Math.round(plan.prisOre / 100);
 
-    if (p['Abonnement: ' + navn] != null) return p['Abonnement: ' + navn];
-
-    const k = Object.keys(p).find(x => navn.indexOf(x) === 0);
-    return k ? p[k] : 0;
+    return 0;
   }
 
   leggTil(navn) {
@@ -16392,7 +16394,7 @@ class Component extends DCLogic {
       title: k.navn,
       date: k.neste && k.neste !== 'Ikke satt' ? k.neste.split(' 1')[0].replace(/ \d{2}:\d{2}.*$/, '') : 'Dato kommer',
       duration: (k.neste || '').match(/\d{2}:\d{2}.*$/) ? k.neste.match(/\d{2}:\d{2}.*$/)[0] : 'Se datoer',
-      price: k.pris === 'Gratis' ? 'Gratis' : 'Fra ' + k.pris,
+      price: k.pris === 'Gratis' ? 'Gratis' : k.pris,
       status: plasser + ' plasser',
       image: FOTO + 'handbygging.jpg',
       // Workshop er et kurs, ikke en egen kategori. Sip & Clay og Date Night
@@ -31367,15 +31369,20 @@ class Component extends DCLogic {
         const kat2 = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
         if (kat2 && kat2.gjenstandIKassa && kat2.prisFraOre) {
           return {
-            bPris: 'Fra ' + fmt(kat2.prisFraOre / 100 * antall),
+            bPris: fmt(kat2.prisFraOre / 100 * antall),
             bPrisAntallNote: antall > 1 ? (antall + ' × fra ' + fmt(kat2.prisFraOre / 100)) : '',
             bRabattLinje: '',
             bRabattTeaser: '',
           };
         }
         return {
+          // Ingen «Fra». Prisen er prisen.
+          //
+          // «Fra» sto foran hvert eneste kurs, uansett om det fantes noe
+          // billigere aa gaa fra. Eieren, 1. september: «Kr 500 som jeg kan
+          // endre senere i admin. Ingen fra pris».
           bPris: k.price === 'Gratis' ? 'Gratis'
-            : (grunn > 0 ? (antall > 1 ? '' : 'Fra ') + fmt(netto) : (k.price || '')),
+            : (grunn > 0 ? fmt(netto) : (k.price || '')),
           bPrisAntallNote: (k.tema !== 'Medlemskap' && antall > 1) ? (antall + ' × ' + fmt(grunn) + (rabatt ? ' = ' + fmt(brutto) : '')) : '',
           bRabattLinje: (rabatt && k.price !== 'Gratis') ? ('Grupperabatt ' + rabatt + ' %: −' + fmt(brutto - netto)) : '',
           bRabattTeaser: (!rabatt && maks > 0 && k.price !== 'Gratis' && k.tema !== 'Medlemskap') ? ('Ta med venner og få opptil ' + maks + ' % rabatt.') : '',

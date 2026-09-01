@@ -316,6 +316,13 @@ switch (Foresporsel::tekst('handling')) {
             ['c' => $kurs['id']]
         )->rowCount();
 
+        // Kursholderen: den som staar paa kurset, ellers verkstedets
+        // standard. Drop-in er aapen tid, ikke en avtale — den gjor ingen
+        // opptatt (se kollisjonssjekken i kurs.php), men den skal ha et navn
+        // paa seg i kalenderen som alle andre datoer.
+        $harHolder = Kursholder::klar();
+        $holder    = $harHolder ? Kursholder::forKurs((int) $kurs['id']) : null;
+
         $laget = 0;
         for ($d = 0; $d < $uker * 7; $d++) {
             $dag = $naa->modify('+' . $d . ' days');
@@ -331,17 +338,25 @@ switch (Foresporsel::tekst('handling')) {
                     continue;   // i dag, men klokka er passert
                 }
 
+                $verdier = [
+                    'c' => $kurs['id'],
+                    's' => $start->setTimezone($utc)->format('Y-m-d H:i:s'),
+                    'e' => $dag->setTime($tt, $mt)->setTimezone($utc)->format('Y-m-d H:i:s'),
+                    'k' => $t['kapasitet'],
+                    't' => $t['id'],
+                ];
+                $ekstraKol = '';
+                $ekstraVal = '';
+                if ($harHolder) {
+                    $ekstraKol = ', kursholder_id';
+                    $ekstraVal = ', :h';
+                    $verdier['h'] = $holder;
+                }
                 DB::kjor(
                     'INSERT IGNORE INTO course_sessions
-                        (course_id, start_tid, slutt_tid, kapasitet, fra_dropin_tid)
-                     VALUES (:c, :s, :e, :k, :t)',
-                    [
-                        'c' => $kurs['id'],
-                        's' => $start->setTimezone($utc)->format('Y-m-d H:i:s'),
-                        'e' => $dag->setTime($tt, $mt)->setTimezone($utc)->format('Y-m-d H:i:s'),
-                        'k' => $t['kapasitet'],
-                        't' => $t['id'],
-                    ]
+                        (course_id, start_tid, slutt_tid, kapasitet, fra_dropin_tid' . $ekstraKol . ')
+                     VALUES (:c, :s, :e, :k, :t' . $ekstraVal . ')',
+                    $verdier
                 );
                 $laget++;
             }

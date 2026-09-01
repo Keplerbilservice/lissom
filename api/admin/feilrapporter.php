@@ -75,6 +75,12 @@ if (Foresporsel::metode() === 'GET') {
             'antall'    => (int) $r['antall'],
             'status'    => (string) $r['status'],
             'sistSett'  => (string) $r['sist_sett'],
+            // Skjermbildet, om den som meldte fra la ved ett. Adressen gaar
+            // gjennom api/bilde.php: filene ligger utenfor det som
+            // publiseres, og bare verkstedet skal se dem.
+            'bilde'     => ($r['bilde'] ?? null) !== null
+                ? '/api/bilde.php?feil=' . rawurlencode((string) $r['bilde'])
+                : '',
         ];
     }, $rader);
 
@@ -93,6 +99,7 @@ if (Foresporsel::metode() === 'GET') {
         $linjer[] = '  Side: ' . ($r['side'] !== '' ? $r['side'] : 'ukjent')
                   . ' · ' . $r['nettleser']
                   . ($r['skjerm'] !== '' ? ' · ' . $r['skjerm'] : '');
+        if ($r['bilde'] !== '')   { $linjer[] = '  Skjermbilde: ja (ligger i admin)'; }
         if ($r['navn'] !== '')    { $linjer[] = '  Innlogget: ' . $r['navn']; }
         if ($r['kontakt'] !== '') { $linjer[] = '  Kontakt: ' . $r['kontakt']; }
         $linjer[] = '';
@@ -152,9 +159,22 @@ $ny = Foresporsel::tekst('status');
 if (!in_array($ny, ['ny', 'lest', 'lukket'], true)) {
     Svar::feil('Ukjent status.');
 }
-if (DB::kjor('UPDATE feilrapporter SET status = :s WHERE id = :id',
-             ['s' => $ny, 'id' => $id])->rowCount() === 0) {
+// Her sto det «Fant ikke rapporten» paa noe som fantes.
+//
+// rowCount() teller rader som ble ENDRET, ikke rader som ble funnet. Sto
+// rapporten alt paa den statusen — fordi den ble sett paa i en annen fane,
+// paa telefonen, eller fordi lista paa skjermen var noen minutter gammel —
+// endret UPDATE ingenting, og endepunktet svarte at rapporten ikke fantes.
+//
+// Eieren, 1. september: «trykket paa sett paa, men den staar der fortsatt,
+// og naar jeg forsoker aa trykke sett paa igjen, saa sier den fant ikke
+// rapporten».
+//
+// Aa be om en status noe alt staar paa er ikke en feil. Det er gjort.
+if (DB::en('SELECT id FROM feilrapporter WHERE id = :id', ['id' => $id]) === null) {
     Svar::feil('Fant ikke rapporten.', 404);
 }
+
+DB::kjor('UPDATE feilrapporter SET status = :s WHERE id = :id', ['s' => $ny, 'id' => $id]);
 
 Svar::ok(['id' => $id, 'status' => $ny]);

@@ -9721,6 +9721,9 @@ window.__resources = {
               <sc-if value="{{ r.harKontakt }}" hint-placeholder-val="{{ false }}">
                 <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ r.kontakt }}</p>
               </sc-if>
+              <sc-if value="{{ r.harBilde }}" hint-placeholder-val="{{ false }}">
+                <img data-src="{{ r.bilde }}" alt="Skjermbilde fra den som meldte fra" style="{{ r.bildeStil }}">
+              </sc-if>
               <button type="button" onClick="{{ r.lukk }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Sett på</button>
             </div>
           </sc-for>
@@ -14473,6 +14476,19 @@ window.__resources = {
       <textarea value="{{ fmTekst }}" onChange="{{ fmSkriv }}" placeholder="Feks. «Jeg skulle velge betaling på workshop 2. september, men listen var tom.»" style="{{ fmOmraadeStil }}"></textarea>
       <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-4) 0 4px;">E-post eller telefon, om du vil ha svar (valgfritt)</label>
       <input value="{{ fmKontakt }}" onChange="{{ fmSkrivKontakt }}" placeholder="ola@epost.no" style="{{ fmFeltStil }}">
+      <label style="display: block; font-size: var(--text-xs); color: var(--text-muted); margin: var(--space-4) 0 4px;">Skjermbilde, om du har ett (valgfritt)</label>
+      <sc-if value="{{ fmHarBilde }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+          <img data-src="{{ fmBilde }}" alt="Skjermbildet du har valgt" style="{{ fmBildeStil }}">
+          <button type="button" onClick="{{ fmFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; align-self: flex-start; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{ fmIkkeBilde }}" hint-placeholder-val="{{ true }}">
+        <div style="position: relative; border: 1px dashed var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-5); text-align: center; font-size: var(--text-sm); color: var(--text-muted); background: var(--clay-50);">
+          Velg et bilde fra maskinen eller telefonen
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange="{{ fmBildeVelg }}" style="position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;">
+        </div>
+      </sc-if>
       <p style="margin: var(--space-4) 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ fmTeknisk }}</p>
       <sc-if value="{{ fmHarFeil }}" hint-placeholder-val="{{ false }}">
         <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--terracotta-600);">{{ fmFeil }}</p>
@@ -20866,6 +20882,27 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  /**
+   * Skjermbildet som folger meldinga.
+   *
+   * Eieren, 31. august: «paa admin burde man kunne legge inn bilde naar man
+   * melder feil, ellers er jeg redd du ikke forstaar hva vi mener». Fila
+   * leses her og sendes med som tekst — den samme veien som resten av
+   * skjemaet, saa det er én forespoersel og ingenting aa rydde opp i om man
+   * ombestemmer seg.
+   */
+  feilBildeValgt(fil) {
+    if (!fil) return;
+    if (fil.size > 7 * 1024 * 1024) {
+      this.setState({ fmFeil: 'Bildet er for stort. Ta gjerne et utsnitt av skjermen.' });
+      return;
+    }
+    const leser = new FileReader();
+    leser.onload = () => this.setState({ fmBilde: String(leser.result || ''), fmFeil: '' });
+    leser.onerror = () => this.setState({ fmFeil: 'Fikk ikke lest bildet.' });
+    leser.readAsDataURL(fil);
+  }
+
   /** Det mennesket skrev. */
   feilSend() {
     if (this.state.fmSender) return;
@@ -20882,10 +20919,11 @@ class Component extends DCLogic {
       // Var det en feil rett for? Da folger den med, saa den som skal rette
       // slipper aa gjette hvilken av dem meldinga handler om.
       feiltekst: this._feilSist || '',
+      bilde: String(this.state.fmBilde || ''),
     }).then(d => {
       if (d && d.ok) {
         this.setState({
-          fmDialog: false, fmTekst: '', fmKontakt: '', fmSender: false,
+          fmDialog: false, fmTekst: '', fmKontakt: '', fmBilde: '', fmSender: false,
           kvittering: 'Takk — feilen er meldt inn',
           kvitteringDetalj: 'Verkstedet får den sammen med hvilken side og nettleser du var på.',
         });
@@ -20914,6 +20952,17 @@ class Component extends DCLogic {
     })
       .then(r => r.json())
       .then(d => {
+        // Raden tas bort med det samme, for lista hentes paa nytt. Er
+        // rapporten sett paa, skal den forsvinne under fingeren — ikke
+        // staa igjen til svaret kommer tilbake fra serveren.
+        if (kropp.handling === 'status' && kropp.status === 'lukket') {
+          const f = this.state.feilData;
+          if (f && f.rapporter) {
+            this.setState({ feilData: Object.assign({}, f, {
+              rapporter: f.rapporter.filter(r => r.id !== kropp.id),
+            }) });
+          }
+        }
         if (d && d.ok) {
           this._frHentes = false;
           this.hentFeilrapporter();
@@ -20926,6 +20975,10 @@ class Component extends DCLogic {
             });
           }
         } else {
+          // Gikk det ikke, hentes lista likevel: da staar det som faktisk
+          // ligger i basen paa skjermen, ikke det vi trodde laa der.
+          this._frHentes = false;
+          this.hentFeilrapporter();
           this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: (d && d.feil) || '' });
         }
       })
@@ -21007,6 +21060,22 @@ class Component extends DCLogic {
       fmSkriv: e => this.setState({ fmTekst: e.target.value }),
       fmKontakt: s.fmKontakt || '',
       fmSkrivKontakt: e => this.setState({ fmKontakt: e.target.value }),
+      // Skjermbildet. Rutene staar der uansett; er det valgt et bilde, er
+      // det bildet som vises, med en vei til aa bytte eller fjerne det.
+      fmBildeVelg: e => {
+        const fil = e.target.files && e.target.files[0];
+        e.target.value = '';
+        this.feilBildeValgt(fil);
+      },
+      fmHarBilde: !!s.fmBilde,
+      fmIkkeBilde: !s.fmBilde,
+      fmBilde: s.fmBilde || '',
+      fmFjernBilde: () => this.setState({ fmBilde: '' }),
+      fmBildeStil: {
+        display: 'block', width: '100%', maxHeight: 220, objectFit: 'contain',
+        borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
+        background: 'var(--clay-50)',
+      },
       fmSend: () => this.feilSend(),
       fmSendTekst: s.fmSender ? 'Sender …' : 'Send inn',
       fmHarFeil: !!s.fmFeil,
@@ -21047,6 +21116,13 @@ class Component extends DCLogic {
         navn: r.navn ? 'Innlogget: ' + r.navn : '',
         harKontakt: !!r.kontakt,
         kontakt: r.kontakt ? 'Kontakt: ' + r.kontakt : '',
+        harBilde: !!r.bilde,
+        bilde: r.bilde || '',
+        bildeStil: {
+          display: 'block', width: '100%', maxWidth: 520, maxHeight: 320,
+          objectFit: 'contain', borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border-subtle)', background: 'var(--clay-50)',
+        },
         naar: (r.sistSett || '').slice(0, 16).replace('T', ' '),
         lukk: () => this.feilKall({ handling: 'status', id: r.id, status: 'lukket' }),
         stil: {
@@ -32649,7 +32725,7 @@ class Component extends DCLogic {
             kort('Maler',
                  'Hver e-post og SMS systemet sender. Endre teksten, slå den av, '
                  + 'eller se når den går ut.',
-                 null, 'adminmaler', {}, 'Se malene →'),
+                 null, 'Se malene', () => this.gaaAdmin('adminmaler', {})),
 
             kort('Butikk',
                  'Varer, priser, bilder og lager.',

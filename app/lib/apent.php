@@ -606,13 +606,26 @@ final class Apent
             // INSERT IGNORE fordi (course_id, start_tid) er unik: staar det
             // alt en oekt lagt inn for haand paa samme klokkeslett, er det
             // den som gjelder.
+            // Kursholderen: den som staar paa kurset, ellers verkstedets
+            // standard. Ett oppslag for alle datoene — det er samme kurs.
+            $harHolder = Kursholder::klar();
+            $holder    = $harHolder ? Kursholder::forKurs($kursId) : null;
+
             foreach ($skalLages as $v) {
+                $verdier = ['c' => $kursId, 's' => $v['start'], 'e' => $v['slutt'],
+                            'k' => max(1, (int) $k['kapasitet'])];
+                $ekstraKol = '';
+                $ekstraVal = '';
+                if ($harHolder) {
+                    $ekstraKol = ', kursholder_id';
+                    $ekstraVal = ', :h';
+                    $verdier['h'] = $holder;
+                }
                 $laget += DB::kjor(
                     'INSERT IGNORE INTO course_sessions
-                        (course_id, start_tid, slutt_tid, kapasitet, status, fra_apningstid)
-                     VALUES (:c, :s, :e, :k, \'planlagt\', 1)',
-                    ['c' => $kursId, 's' => $v['start'], 'e' => $v['slutt'],
-                     'k' => max(1, (int) $k['kapasitet'])]
+                        (course_id, start_tid, slutt_tid, kapasitet, status, fra_apningstid' . $ekstraKol . ')
+                     VALUES (:c, :s, :e, :k, \'planlagt\', 1' . $ekstraVal . ')',
+                    $verdier
                 )->rowCount();
             }
         }

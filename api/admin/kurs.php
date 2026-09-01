@@ -264,12 +264,18 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
     //
     // Har noen booket, teller den likevel. Da er den en avtale med et
     // menneske, og to ting samtidig er en ekte kollisjon.
-    $ledigTid = DB::harKolonne('course_sessions', 'fra_apningstid')
-        ? "AND (cs.fra_apningstid = 0
+    $apenKol = [];
+    if (DB::harKolonne('course_sessions', 'fra_apningstid')) {
+        $apenKol[] = 'cs.fra_apningstid = 1';
+    }
+    if (DB::harKolonne('course_sessions', 'fra_dropin_tid')) {
+        $apenKol[] = 'cs.fra_dropin_tid IS NOT NULL';
+    }
+    $ledigTid = $apenKol === [] ? '' :
+        "AND (NOT (" . implode(' OR ', $apenKol) . ")
                OR (SELECT COALESCE(SUM(b.antall), 0) FROM bookings b
                     WHERE b.course_session_id = cs.id
-                      AND b.status IN ('betalt', 'reservert')) > 0)"
-        : '';
+                      AND b.status IN ('betalt', 'reservert')) > 0)";
     $rad = DB::en(
         "SELECT cs.id, cs.start_tid, c.tittel
            FROM course_sessions cs
@@ -578,17 +584,14 @@ switch ($handling) {
         //   2. Ellers: den som staar paa kurset.
         //   3. Ellers: verkstedets standard — Monica.
         // Uten dette maatte man valgt den samme personen paa hver eneste dato.
-        if (DB::harKolonne('course_sessions', 'kursholder_id')) {
-            $paaKurset = DB::harKolonne('courses', 'kursholder_id')
-                ? DB::verdi('SELECT kursholder_id FROM courses WHERE id = :i', ['i' => $kursId])
-                : null;
-            $standard = DB::harKolonne('kursholdere', 'standard')
-                ? DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1 LIMIT 1')
-                : null;
+        //
+        // Trinn 2 og 3 staar i Kursholder::forKurs(), som ogsaa de faste
+        // ukedagene, aapent verksted og drop-in bruker. Trinn 1 hoerer hjemme
+        // her: det er bare her noen faktisk kan velge.
+        if (Kursholder::klar()) {
             $nyOkt['kursholder_id'] = array_key_exists('kursholderId', Foresporsel::kropp())
                 ? $holderId('kursholderId')
-                : ($paaKurset !== null ? (int) $paaKurset
-                    : ($standard !== null ? (int) $standard : null));
+                : Kursholder::forKurs($kursId);
         }
 
         // Samme person kan ikke staa paa to kurs som gaar samtidig.

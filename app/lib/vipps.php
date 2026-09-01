@@ -550,6 +550,34 @@ final class Vipps
     }
 
     /**
+     * Status pa ett trekk.
+     *
+     * Et trekk er ikke en ePayment og kan ikke slas opp med hentBetaling() —
+     * det ligger under avtalen sin. Uten dette oppslaget visste ingenting om
+     * maanedstrekket gikk gjennom: raden i payments ble staaende paa «venter»
+     * for alltid, og de to malene «Medlemskapet ditt er fornyet» og «Vi fikk
+     * ikke trukket betalingen» ble aldri sendt til noen.
+     *
+     * Vipps svarer med status: CHARGED, FAILED, CANCELLED, PENDING, DUE,
+     * RESERVED, PROCESSING, PARTIALLY_REFUNDED eller REFUNDED.
+     *
+     * @return array<string,mixed>
+     */
+    public static function hentTrekk(string $avtaleId, string $trekkId): array
+    {
+        $svar = http_get_json(
+            Config::vippsBase() . '/recurring/v3/agreements/' . rawurlencode($avtaleId)
+                . '/charges/' . rawurlencode($trekkId),
+            self::headere()
+        );
+
+        if ($svar['status'] !== 200 || !is_array($svar['json'])) {
+            throw new RuntimeException('Fikk ikke hentet trekket fra Vipps.');
+        }
+        return $svar['json'];
+    }
+
+    /**
      * Belaster en avtale.
      *
      * Vipps krever at kunden varsles for trekket. Vi ber om trekk noen dager

@@ -1473,6 +1473,11 @@ sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
     DB::kjor("DELETE FROM courses WHERE slug = 'testholder'");
     DB::kjor("DELETE FROM kursholdere WHERE navn IN ('Testholder A', 'Testholder B')");
 
+    // Verkstedets standard laanes, og leveres tilbake nederst. Uten dette
+    // sto basen igjen uten standard etter hver kjoring av proven — og da
+    // legger aapent verksted ut datoer uten kursholder.
+    $forStandard = DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 LIMIT 1');
+
     $a = DB::settInn('kursholdere', ['navn' => 'Testholder A', 'rolle' => 'keramiker', 'aktiv' => 1]);
     $b = DB::settInn('kursholdere', ['navn' => 'Testholder B', 'rolle' => 'vikar', 'aktiv' => 1]);
 
@@ -1517,6 +1522,10 @@ sjekk('en manuell betaling kan ikke forveksles med en fra Vipps',
     DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $kursId]);
     DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
     DB::kjor('DELETE FROM kursholdere WHERE id = :i', ['i' => $a]);
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    if ($forStandard !== null) {
+        DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => (int) $forStandard]);
+    }
 })();
 
 // Endepunktet skal avvise en kursholder som ikke finnes — ellers ville datoen
@@ -1525,7 +1534,11 @@ $kursFil = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('kurs.php slaar opp kursholderen for den lagres',
     str_contains($kursFil, "Svar::feil('Fant ikke kursholderen.')"));
 sjekk('en ny dato foreslaar verkstedets standard',
-    str_contains($kursFil, "SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1"));
+    str_contains($kursFil, 'Kursholder::forKurs($kursId)')
+    && str_contains(
+        file_get_contents(dirname(__DIR__) . '/app/lib/kursholder.php'),
+        "SELECT id FROM kursholdere WHERE standard = 1 AND aktiv = 1"
+    ));
 $khFil = file_get_contents(dirname(__DIR__) . '/api/admin/kursholdere.php');
 sjekk('standarden byttes i én transaksjon, saa bare én staar igjen',
     str_contains($khFil, "UPDATE kursholdere SET standard = 0 WHERE standard = 1"));
@@ -1861,8 +1874,13 @@ sjekk('bare delingsbildet mangler en webp-tvilling', (static function (): bool {
 // settes opp: doeren er aapen og noen er der.
 $kursFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('en tom aapningstid gjor ikke kursholderen opptatt',
-    str_contains($kursFil2, '$ledigTid = DB::harKolonne(\'course_sessions\', \'fra_apningstid\')')
-    && str_contains($kursFil2, 'AND (cs.fra_apningstid = 0'));
+    str_contains($kursFil2, "\$apenKol[] = 'cs.fra_apningstid = 1';")
+    && str_contains($kursFil2, '"AND (NOT (" . implode(\' OR \', $apenKol) . ")'));
+// Drop-in legges ut paa hver aapningstid, akkurat som Paint on Pots. Fra og
+// med kursholder-runden har ogsaa de et navn paa seg — og da ville de gjort
+// Monica opptatt hver eneste kveld verkstedet er aapent, om de talte med.
+sjekk('en tom drop-in-time gjor heller ikke kursholderen opptatt',
+    str_contains($kursFil2, "\$apenKol[] = 'cs.fra_dropin_tid IS NOT NULL';"));
 // Har noen booket, er den en avtale med et menneske, og to ting samtidig er
 // en ekte kollisjon.
 sjekk('en booket aapningstid teller likevel som opptatt',
@@ -2260,8 +2278,185 @@ sjekk('kursholderen kan lagres paa kurset',
 // Tomt paa kurset betyr ikke «ingen» — det betyr Monica.
 sjekk('en ny dato arver kursets kursholder, ellers verkstedets standard',
     str_contains($kursFil, "? \$holderId('kursholderId')
-                : (\$paaKurset !== null ? (int) \$paaKurset
-                    : (\$standard !== null ? (int) \$standard : null));"));
+                : Kursholder::forKurs(\$kursId);"));
+
+// ── Hvordan gikk maanedstrekket? ─────────────────────────────────────────
+//
+// Trekket ble bedt om, raden ble lagt i payments med «venter» — og der ble
+// den staaende for alltid. Trekk-ID-en fra Vipps ble kastet, saa det fantes
+// ingen vei tilbake for aa sporre. Regnskapet viste null betalte maanedstrekk
+// uansett hvor mange som gikk gjennom, og de to malene «Medlemskapet ditt er
+// fornyet» og «Vi fikk ikke trukket betalingen» sto i basen uten avsender.
+$medlFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('trekk-id-en fra Vipps tas vare paa',
+    str_contains($medlFil, "\$trekkId = Vipps::belastAvtale(")
+    && str_contains($medlFil, "'vipps_psp_ref' => \$trekkId !== '' ? \$trekkId : null,"));
+sjekk('… og et trekk slaas opp under avtalen sin, ikke som en ePayment',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+                 "'/charges/' . rawurlencode(\$trekkId)"));
+sjekk('CHARGED gjor raden betalt og sender kvitteringen',
+    str_contains($medlFil, "if (\$status === 'CHARGED') {")
+    && str_contains($medlFil, "Varsel::mal('medlemskap_fornyet'"));
+sjekk('FAILED sier fra til medlemmet',
+    str_contains($medlFil, "if (\$status === 'FAILED' || \$status === 'CANCELLED') {")
+    && str_contains($medlFil, "Varsel::mal('betaling_feilet'"));
+$cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+sjekk('cron sporr om trekkene som ikke har fatt svar',
+    str_contains($cronFil, 'foreach (Medlemskap::trekkUtenSvar() as $p) {')
+    && str_contains($cronFil, 'Medlemskap::sjekkTrekk($p)'));
+// ePayment-oppslaget ga 404 paa hvert eneste maanedstrekk, hvert femte
+// minutt, og skrev en linje i feilloggen hver gang.
+sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
+    str_contains($cronFil, "AND type <> 'recurring_charge'"));
+
+// Og selve utvalget: bare trekk med en id aa sporre paa, og bare de som ikke
+// har gjort opp for seg.
+(static function (): void {
+    $medlemId = DB::verdi('SELECT id FROM members ORDER BY id LIMIT 1');
+    if ($medlemId === null) {
+        sjekk('trekkutvalget krever et medlem i basen', false, 'ingen medlemmer');
+        return;
+    }
+    $abo = DB::settInn('subscriptions', [
+        'member_id' => (int) $medlemId, 'plan' => 'Proveplan',
+        'pris_ore' => 50000, 'status' => 'aktiv',
+        'vipps_agreement_id' => 'agr_' . bin2hex(random_bytes(4)),
+        'neste_trekk' => gmdate('Y-m-d', time() + 86400 * 30),
+    ]);
+    $legg = static function (int $abo, int $medlem, string $type, ?string $psp, string $status): int {
+        return DB::settInn('payments', [
+            'vipps_reference' => 'PROVE-' . bin2hex(random_bytes(5)),
+            'type' => $type, 'formal' => 'medlemskap',
+            'member_id' => $medlem, 'subscription_id' => $abo,
+            'belop_ore' => 50000, 'status' => $status,
+            'vipps_psp_ref' => $psp,
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+    };
+    $med    = $legg($abo, (int) $medlemId, 'recurring_charge', 'chg_1', 'venter');
+    $uten   = $legg($abo, (int) $medlemId, 'recurring_charge', null, 'venter');
+    $ferdig = $legg($abo, (int) $medlemId, 'recurring_charge', 'chg_2', 'betalt');
+    $annet  = $legg($abo, (int) $medlemId, 'epayment', 'chg_3', 'venter');
+
+    $funnet = array_map(static fn(array $r): int => (int) $r['id'], Medlemskap::trekkUtenSvar(200));
+    sjekk('et trekk som venter paa svar hentes',        in_array($med, $funnet, true));
+    sjekk('… men ikke et uten trekk-id aa sporre paa',  !in_array($uten, $funnet, true));
+    sjekk('… og ikke et som alt har gjort opp for seg', !in_array($ferdig, $funnet, true));
+    sjekk('… og ikke en vanlig betaling',               !in_array($annet, $funnet, true));
+    // Avtalen og medlemmet folger med, saa meldingen vet hvem den gaar til.
+    $rad = null;
+    foreach (Medlemskap::trekkUtenSvar(200) as $r) {
+        if ((int) $r['id'] === $med) { $rad = $r; }
+    }
+    sjekk('raden vet hvilken avtale og hvilket medlem den hoerer til',
+        $rad !== null && ($rad['vipps_agreement_id'] ?? '') !== '' && array_key_exists('epost', $rad));
+
+    DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $abo]);
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $abo]);
+})();
+
+// ── Regelen staar ett sted, og alle fire bruker den ──────────────────────
+//
+// Eieren, 1. september: «lag din egen bolle dukker opp i kalenderen naa, uten
+// kursholder, hvordan er det mulig naar det kun er monica som er kursholder
+// og default?» — og: «det gjelder saa klart ogsaa paa alle paint on pots».
+//
+// Fire steder lager kursdatoer. Bare «ny dato» i admin satte kursholder; de
+// faste ukedagene, aapent verksted og drop-in la dem ut tomme. Naa gaar alle
+// fire gjennom Kursholder::forKurs().
+(static function (): void {
+    if (!DB::harKolonne('course_sessions', 'kursholder_id')
+        || !DB::harKolonne('courses', 'kursholder_id')
+        || !DB::harKolonne('kursholdere', 'standard')) {
+        sjekk('kursholderregelen krever migrasjon 085 og 089', false, 'kolonner mangler');
+        return;
+    }
+
+    // Basen settes tilbake til slik den sto etterpaa — proven kjores mot den
+    // samme basen som resten, og en standard paa avveie ville flyttet seg
+    // inn i andre proever.
+    $forStandard = DB::verdi('SELECT id FROM kursholdere WHERE standard = 1 LIMIT 1');
+
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    $a = DB::settInn('kursholdere', ['navn' => 'Regelholder A', 'aktiv' => 1]);
+    $b = DB::settInn('kursholdere', ['navn' => 'Regelholder B', 'aktiv' => 1, 'standard' => 1]);
+    $kursId = DB::settInn('courses', [
+        'slug' => 'regelkurs-' . bin2hex(random_bytes(3)),
+        'tittel' => 'Regelkurs', 'pris_ore' => 0, 'status' => 'publisert',
+        'kursholder_id' => $a,
+    ]);
+
+    // 1. Den som staar paa kurset gaar foran standarden.
+    Kursholder::glem();
+    sjekk('kursets egen kursholder gaar foran standarden',
+        Kursholder::forKurs($kursId) === $a);
+
+    // 2. Tomt paa kurset betyr ikke «ingen» — det betyr standarden.
+    DB::oppdater('courses', ['kursholder_id' => null], ['id' => $kursId]);
+    Kursholder::glem();
+    sjekk('tomt paa kurset gir verkstedets standard',
+        Kursholder::forKurs($kursId) === $b);
+
+    // 3. Er ingen standard, staar datoen tom. Da skal ingen faa et
+    //    tilfeldig navn paa seg.
+    DB::kjor('UPDATE kursholdere SET standard = 0 WHERE id = :i', ['i' => $b]);
+    Kursholder::glem();
+    sjekk('uten standard staar datoen tom framfor aa gjette',
+        Kursholder::forKurs($kursId) === null);
+
+    // 4. Og de faste ukedagene bruker den samme regelen. Dette er det stedet
+    //    som la ut flest tomme datoer — Paint on Pots gaar hver uke.
+    DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => $b]);
+    Kursholder::glem();
+    if (DB::harTabell('kurs_serier')) {
+        DB::settInn('kurs_serier', [
+            'course_id' => $kursId, 'ukedag' => 3,
+            'fra' => '18:00', 'til' => '20:00',
+            'uker_fram' => 2, 'aktiv' => 1,
+        ]);
+        Serier::fyllPaa($kursId);
+        $tomme = (int) DB::verdi(
+            'SELECT COUNT(*) FROM course_sessions WHERE course_id = :k AND kursholder_id IS NULL',
+            ['k' => $kursId]
+        );
+        $laget = (int) DB::verdi(
+            'SELECT COUNT(*) FROM course_sessions WHERE course_id = :k',
+            ['k' => $kursId]
+        );
+        sjekk('faste ukedager lages med kursholder',
+            $laget > 0 && $tomme === 0, $laget . ' datoer, ' . $tomme . ' uten');
+        DB::kjor('DELETE FROM kurs_serier WHERE course_id = :k', ['k' => $kursId]);
+    }
+
+    DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $kursId]);
+    DB::kjor('DELETE FROM kursholdere WHERE id IN (:a, :b)', ['a' => $a, 'b' => $b]);
+    DB::kjor('UPDATE kursholdere SET standard = 0');
+    if ($forStandard !== null) {
+        DB::kjor('UPDATE kursholdere SET standard = 1 WHERE id = :i', ['i' => (int) $forStandard]);
+    }
+    Kursholder::glem();
+})();
+
+// Og en femte vei inn skal ikke kunne gli forbi: hver fil som lager en
+// kursdato maa nevne kursholderen. Uten dette sto tre av fire stille i tre
+// maaneder — koden gjorde ingenting galt, den gjorde bare ingenting.
+$lagerDatoer = [];
+$utenHolder  = [];
+foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) as $f) {
+    $kode = file_get_contents($f);
+    if (!preg_match('/INSERT[^;]{0,80}INTO course_sessions|settInn\(\s*\'course_sessions\'/', $kode)) {
+        continue;
+    }
+    $lagerDatoer[] = basename($f);
+    if (!str_contains($kode, 'kursholder_id')) {
+        $utenHolder[] = basename($f);
+    }
+}
+sjekk('alle stedene som lager kursdatoer er funnet',
+    count($lagerDatoer) >= 4, implode(', ', $lagerDatoer));
+sjekk('… og hvert av dem setter kursholder',
+    $utenHolder === [], implode(', ', $utenHolder));
 sjekk('kursholderen er et valg i kursoppsettet',
     str_contains($sida, "felt('kursholderId', 'Kursholder', 'valg',")
     && str_contains($sida, "[['0', 'Verkstedets standard']].concat("));
@@ -3025,6 +3220,152 @@ sjekk('… og teller opp den samme feilen framfor aa lage en rad til',
     str_contains($fapi, 'ON DUPLICATE KEY UPDATE'));
 sjekk('en melding krever at bryteren staar paa',
     str_contains($fapi, 'innmelding av feil er stengt akkurat nå.'));
+
+// ── Hvert kort paa Oversikt maa ha en knapp som gaar et sted ───────────
+//
+// Kortet «Maler» ble lagt ut med argumentene i feil rekkefolge:
+//
+//   kort(navn, hva, tall, knapp, velg, haster)
+//   kort('Maler', '…', null, 'adminmaler', {}, 'Se malene →')
+//
+// Ruta havnet der knappeteksten skulle staa, og der klikket skulle staa laa
+// et tomt objekt. Eieren, 1. september: «ser ingen mal paa oversikten».
+//
+// Hjelperen tar imot hva som helst, og hverken knappesjekk eller
+// metodesjekk ser forskjell paa en funksjon og et objekt. Denne gjor det:
+// hvert kort skal ha et kall som faktisk gaar et sted.
+(static function () use ($sida2): void {
+    // Blokka mellom hjelperen og lista si slutt.
+    $fra = strpos($sida2, 'const kort = (navn, hva, tall, knapp, velg, haster) => ({');
+    if ($fra === false) {
+        sjekk('fant kortlista paa Oversikt', false, 'hjelperen er borte eller endret');
+        return;
+    }
+    $blokk = substr($sida2, $fra, 40000);
+
+    // Hvert kort('…')-kall, med parentesene talt saa nostede kall folger med.
+    $uten = [];
+    $antall = 0;
+    $i = 0;
+    while (($j = strpos($blokk, "kort('", $i)) !== false) {
+        $k = strpos($blokk, '(', $j);
+        $dybde = 0;
+        $slutt = $k;
+        $lengde = strlen($blokk);
+        while ($slutt < $lengde) {
+            if ($blokk[$slutt] === '(') { $dybde++; }
+            elseif ($blokk[$slutt] === ')') { $dybde--; if ($dybde === 0) { break; } }
+            $slutt++;
+        }
+        $kall = substr($blokk, $j, $slutt - $j + 1);
+        $antall++;
+        preg_match("/kort\('([^']+)'/", $kall, $m);
+        // En pilfunksjon er det eneste som kan klikkes. Et objekt, en streng
+        // eller ingenting gir et kort som ikke gaar noe sted.
+        if (!str_contains($kall, '=>')) {
+            $uten[] = $m[1] ?? '(uten navn)';
+        }
+        $i = $slutt;
+    }
+
+    sjekk('kortene paa Oversikt er funnet', $antall >= 15, $antall . ' kort');
+    sjekk('… og hvert av dem har en knapp som gaar et sted',
+        $uten === [], implode(', ', $uten));
+})();
+
+// ── Et bilde til feilmeldingen ─────────────────────────────────────────
+//
+// Eieren, 31. august: «paa admin burde man kunne legge inn bilde naar man
+// melder feil, ellers er jeg redd du ikke forstaar hva vi mener».
+//
+// «Listen var tom» kan bety fem ting; et skjermbilde betyr én.
+sjekk('skjemaet har en rute for skjermbilde',
+    str_contains($sida2, '{{ fmBildeVelg }}')
+    && str_contains($sida2, 'Velg et bilde fra maskinen eller telefonen'));
+sjekk('… med forhaandsvisning og en vei til aa fjerne det',
+    str_contains($sida2, '{{ fmHarBilde }}') && str_contains($sida2, '{{ fmFjernBilde }}'));
+sjekk('… og bildet folger med naar meldinga sendes',
+    str_contains($sida2, "bilde: String(this.state.fmBilde || ''),"));
+sjekk('bildet vises igjen paa skjermen som viser rapportene',
+    str_contains($sida2, '{{ r.harBilde }}') && str_contains($sida2, '{{ r.bilde }}'));
+// Bare mennesker legger ved bilde. En sloyfe som kaster den samme feilen
+// tusen ganger skal ikke kunne fylle disken med skjermbilder.
+sjekk('bare en melding fra et menneske kan ha bilde',
+    str_contains($fapi, "if (\$slag === 'melding' && DB::harKolonne('feilrapporter', 'bilde')) {"));
+sjekk('… og bare JPG, PNG og WEBP tas imot',
+    str_contains($fapi, "preg_match('~^data:image/(png|jpe?g|webp);base64,~i', \$data)"));
+sjekk('… med et tak paa stoerrelsen',
+    str_contains($fapi, 'strlen($data) > 10 * 1024 * 1024'));
+// Et skjermbilde fra admin kan vise hva som helst — deltakerlister,
+// e-postadresser, en halvferdig ordre.
+$bildeFil = file_get_contents(__DIR__ . '/../api/bilde.php');
+sjekk('skjermbildet er bare for verkstedet',
+    str_contains($bildeFil, "\$sti = Bilder::sti(\$feil, 'feilrapporter');")
+    && str_contains($bildeFil, 'if ($sti === null || !Sesjon::erAdmin()) {'));
+// En rad som slettes tar ikke fila med seg av seg selv.
+sjekk('ryddingen tar bildene med seg',
+    str_contains($fapi, "Bilder::slett((string) \$g['bilde'], 'feilrapporter');"));
+// Kolonnen kommer med migrasjon 114, og koden ligger ute for den er kjort.
+sjekk('kolonnene settes sammen, saa «bilde» kan mangle',
+    str_contains($fapi, "\$kolonner = array_keys(\$rad);")
+    && str_contains($fapi, "'INSERT INTO feilrapporter (' . implode(', ', \$kolonner) . ')"));
+
+if (DB::harKolonne('feilrapporter', 'bilde')) {
+    // Adressen skal peke gjennom api/bilde.php, ikke paa fila.
+    $rid = DB::settInn('feilrapporter', [
+        'slag' => 'melding', 'melding' => 'Bildeprove',
+        'nettleser' => 'Proven', 'bilde' => 'abc123.jpg',
+        'fingeravtrykk' => sha1('bilde:' . bin2hex(random_bytes(8))),
+    ]);
+    $lest = DB::en('SELECT bilde FROM feilrapporter WHERE id = :i', ['i' => $rid]);
+    sjekk('bildet lagres paa rapporten', ($lest['bilde'] ?? '') === 'abc123.jpg');
+    DB::kjor('DELETE FROM feilrapporter WHERE id = :i', ['i' => $rid]);
+} else {
+    sjekk('bildekolonnen krever migrasjon 114', false, 'kolonnen mangler');
+}
+
+// ── «Sett paa» sa «Fant ikke rapporten» ────────────────────────────────
+//
+// Eieren, 1. september: «feilrapport som er sendt inn, trykket paa sett paa,
+// men den staar der fortsatt, og naar jeg forsoker aa trykke sett paa igjen,
+// saa sier den fant ikke rapporten».
+//
+// rowCount() teller rader som ble ENDRET, ikke rader som ble funnet. Sto
+// rapporten alt paa «lukket» — sett paa i en annen fane, paa telefonen, eller
+// bare en liste som var noen minutter gammel — endret UPDATE ingenting, og
+// endepunktet svarte at rapporten ikke fantes. Den fantes.
+$frapi = file_get_contents(__DIR__ . '/../api/admin/feilrapporter.php');
+sjekk('rapporten slaas opp for den avvises',
+    str_contains($frapi, "if (DB::en('SELECT id FROM feilrapporter WHERE id = :id', ['id' => \$id]) === null) {"));
+sjekk('… og statusen settes uten aa telle endrede rader',
+    str_contains($frapi, "DB::kjor('UPDATE feilrapporter SET status = :s WHERE id = :id', ['s' => \$ny, 'id' => \$id]);")
+    && !str_contains($frapi, "'s' => \$ny, 'id' => \$id])->rowCount() === 0"));
+
+if (DB::harTabell('feilrapporter')) {
+    $rid = DB::settInn('feilrapporter', [
+        'slag' => 'melding', 'melding' => 'Proverapport',
+        'nettleser' => 'Proven', 'fingeravtrykk' => sha1('prove:' . bin2hex(random_bytes(8))),
+    ]);
+    $sett = static function (int $id, string $status): bool {
+        if (DB::en('SELECT id FROM feilrapporter WHERE id = :id', ['id' => $id]) === null) {
+            return false;
+        }
+        DB::kjor('UPDATE feilrapporter SET status = :s WHERE id = :id', ['s' => $status, 'id' => $id]);
+        return true;
+    };
+    sjekk('foerste «sett paa» gaar gjennom', $sett($rid, 'lukket'));
+    sjekk('… og andre gang er den fortsatt funnet, ikke borte', $sett($rid, 'lukket'));
+    sjekk('… mens en rapport som virkelig ikke finnes avvises', !$sett(999999999, 'lukket'));
+    DB::kjor('DELETE FROM feilrapporter WHERE id = :i', ['i' => $rid]);
+}
+
+// Og raden skal forsvinne under fingeren, ikke staa til svaret kommer.
+sjekk('raden tas ut av lista med det samme',
+    str_contains($sida2, "if (kropp.handling === 'status' && kropp.status === 'lukket') {")
+    && str_contains($sida2, 'rapporter: f.rapporter.filter(r => r.id !== kropp.id),'));
+// Gikk det ikke, skal lista bli sann igjen framfor aa vise det vi trodde.
+sjekk('… og lista hentes paa nytt ogsaa naar serveren sier nei',
+    str_contains($sida2, "// Gikk det ikke, hentes lista likevel: da staar det som faktisk"));
 
 // Bildene i kassa ba om «{{ utQrBilde }}» som om det var en filadresse.
 // Feilvakta fant det selv, forste gang den kjorte.
@@ -3928,12 +4269,11 @@ foreach ($iRegister as $n) {
 }
 sort($utenKall);
 
-// To av dem staar i basen fra 002, men ingen kode sender dem: statusen paa
-// maanedstrekket hentes aldri tilbake fra Vipps, saa ingenting vet naar et
-// trekk gikk gjennom eller feilet. De to er ventet — en tredje er ikke det.
-$venterPaaTrekkstatus = ['betaling_feilet', 'medlemskap_fornyet'];
+// Her sto to navn en stund: «medlemskap_fornyet» og «betaling_feilet» laa i
+// basen fra 002, men ingen kode sendte dem — statusen paa maanedstrekket ble
+// aldri hentet tilbake fra Vipps. Naa gjor den det, og lista er tom igjen.
 sjekk('… og registeret lover ingen mal som ikke kalles',
-    $utenKall === $venterPaaTrekkstatus, implode(', ', $utenKall));
+    $utenKall === [], implode(', ', $utenKall));
 
 // Feltene. Eieren: «jeg vil ha en oversikt over komandoer som jeg kan
 // kopiere, slike som denne {varelinjer}». Et felt som staar i teksten men

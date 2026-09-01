@@ -622,7 +622,7 @@ final class Medlemskap
         ]);
 
         try {
-            Vipps::belastAvtale(
+            $trekkId = Vipps::belastAvtale(
                 (string) $avtale['vipps_agreement_id'],
                 (int) $avtale['pris_ore'],
                 'Medlemskap ' . $avtale['plan'],
@@ -635,7 +635,14 @@ final class Medlemskap
             throw $e;
         }
 
-        DB::oppdater('payments', ['status' => 'venter'], ['id' => $betalingId]);
+        // Trekk-ID-en tas vare paa. Den ble kastet for, og da fantes det ingen
+        // vei tilbake til Vipps for aa sporre hvordan det gikk: raden ble
+        // staaende paa «venter» for alltid, og verken «Medlemskapet ditt er
+        // fornyet» eller «Vi fikk ikke trukket betalingen» ble sendt til noen.
+        DB::oppdater('payments', [
+            'status'        => 'venter',
+            'vipps_psp_ref' => $trekkId !== '' ? $trekkId : null,
+        ], ['id' => $betalingId]);
 
         // Neste trekk en maaned fram. Er avtalen en proveperiode, er dette
         // det eneste trekket — da stopper vi den etterpaa.
@@ -659,6 +666,100 @@ final class Medlemskap
         }
 
         return 'bedt om trekk til ' . $forfall;
+    }
+
+    /**
+     * Hvordan gikk trekket?
+     *
+     * Maanedstrekket er ikke en ePayment og kan ikke slaas opp med
+     * hentBetaling(). Det ligger under avtalen sin, og maa hentes derfra.
+     * Uten dette oppslaget sto hvert eneste maanedstrekk paa «venter» i
+     * regnskapet, uansett om pengene kom inn eller ikke.
+     *
+     * Svarer Vipps at trekket er gjort, blir raden betalt og medlemmet faar
+     * kvitteringen. Svarer den at det feilet, blir raden feilet og medlemmet
+     * faar beskjed om aa aapne Vipps. Alt annet — trekket er bestilt, men ikke
+     * forfalt enda — lar vi staa: det er ikke noe galt, det har bare ikke
+     * skjedd enda.
+     *
+     * @param array<string,mixed> $p raden fra payments
+     * @return string hva som ble gjort, for loggen
+     */
+    public static function sjekkTrekk(array $p): string
+    {
+        $trekkId = trim((string) ($p['vipps_psp_ref'] ?? ''));
+        $avtaleId = trim((string) ($p['vipps_agreement_id'] ?? ''));
+        if ($trekkId === '' || $avtaleId === '') {
+            return 'mangler trekk-id';
+        }
+
+        $svar = Vipps::hentTrekk($avtaleId, $trekkId);
+        $status = strtoupper((string) ($svar['status'] ?? ''));
+
+        DB::oppdater('payments', [
+            'siste_payload' => json_encode($svar, JSON_UNESCAPED_UNICODE),
+            'updated_at'    => gmdate('Y-m-d H:i:s'),
+        ], ['id' => (int) $p['id']]);
+
+        // Gikk pengene inn.
+        if ($status === 'CHARGED') {
+            DB::oppdater('payments', ['status' => 'betalt'], ['id' => (int) $p['id']]);
+            if (!empty($p['epost'])) {
+                Varsel::mal('medlemskap_fornyet', ['epost' => (string) $p['epost']], [
+                    'navn'        => (string) ($p['navn'] ?? ''),
+                    'abonnement'  => (string) ($p['plan'] ?? 'Medlemskapet'),
+                ], 'medlemskap', (int) $p['id']);
+            }
+            return 'betalt';
+        }
+
+        // Gikk de ikke. Vipps proever selv i fem dager (retryDays er satt naar
+        // trekket bestilles); staar det FAILED, er de dagene brukt opp. Da er
+        // det medlemmet selv som maa aapne Vipps, og da maa hen faa vite det.
+        if ($status === 'FAILED' || $status === 'CANCELLED') {
+            DB::oppdater('payments', ['status' => $status === 'CANCELLED' ? 'avbrutt' : 'feilet'],
+                         ['id' => (int) $p['id']]);
+            if (!empty($p['epost']) || !empty($p['telefon'])) {
+                Varsel::mal('betaling_feilet', [
+                    'epost'   => $p['epost'] ?? null,
+                    'telefon' => $p['telefon'] ?? null,
+                ], [
+                    'navn'       => (string) ($p['navn'] ?? ''),
+                    'abonnement' => (string) ($p['plan'] ?? 'Medlemskapet'),
+                ], 'medlemskap', (int) $p['id']);
+            }
+            return strtolower($status);
+        }
+
+        return 'venter (' . ($status !== '' ? $status : 'ukjent') . ')';
+    }
+
+    /**
+     * Trekkene som ikke har fatt et svar enda.
+     *
+     * Trekket bes om noen dager fram i tid, saa det er normalt at et trekk
+     * staar en uke for det gjor opp. Etter tretti dager gir vi opp aa sporre:
+     * da har Vipps for lengst gitt opp aa proeve.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function trekkUtenSvar(int $maks = 50): array
+    {
+        if (!DB::harKolonne('payments', 'vipps_psp_ref')) {
+            return [];
+        }
+        return DB::alle(
+            "SELECT p.*, s.vipps_agreement_id, s.plan, m.navn, m.epost, m.telefon
+               FROM payments p
+               JOIN subscriptions s ON s.id = p.subscription_id
+          LEFT JOIN members m ON m.id = p.member_id
+              WHERE p.type = 'recurring_charge'
+                AND p.status IN ('opprettet', 'venter', 'autorisert')
+                AND p.vipps_psp_ref IS NOT NULL
+                AND p.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
+           ORDER BY p.id
+              LIMIT " . max(1, min(200, $maks))
+        );
     }
 
     private static function norskDag(string $dato): string

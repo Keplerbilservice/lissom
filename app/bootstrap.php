@@ -54,6 +54,7 @@ require APP_DIR . '/lib/varsler.php';
 require APP_DIR . '/lib/maler.php';
 require APP_DIR . '/lib/vipps.php';
 require APP_DIR . '/lib/lenker.php';
+require APP_DIR . '/lib/kursholder.php';
 require APP_DIR . '/lib/booking.php';
 require APP_DIR . '/lib/stempling.php';
 require APP_DIR . '/lib/apent.php';

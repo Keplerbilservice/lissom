@@ -96,6 +96,39 @@ if ($slag === 'automatisk' && $feiltekst === null) {
 
 $medlem = Sesjon::medlem();
 
+// Skjermbildet.
+//
+// Eieren, 31. august: «paa admin burde man kunne legge inn bilde naar man
+// melder feil, ellers er jeg redd du ikke forstaar hva vi mener». «Listen var
+// tom» kan bety fem ting; et skjermbilde betyr én.
+//
+// Bare meldinger fra mennesker. En feil som fanges automatisk har ingen som
+// kunne tatt et bilde, og en sloyfe skal ikke kunne fylle disken med dem.
+$bilde = null;
+if ($slag === 'melding' && DB::harKolonne('feilrapporter', 'bilde')) {
+    $data = (string) ($kropp['bilde'] ?? '');
+    if ($data !== '') {
+        // «data:image/png;base64,…» — det nettleseren gir oss fra en fil.
+        if (preg_match('~^data:image/(png|jpe?g|webp);base64,~i', $data) !== 1) {
+            Svar::feil('Bildet må være JPG, PNG eller WEBP.');
+        }
+        // Ti megabyte som tekst er rundt sju som fil. Over det sier vi fra
+        // med en gang, framfor aa la den store filen reise hele veien inn.
+        if (strlen($data) > 10 * 1024 * 1024) {
+            Svar::feil('Bildet er for stort. Ta gjerne et utsnitt av skjermen.');
+        }
+        $raa = base64_decode(substr($data, strpos($data, ',') + 1), true);
+        if ($raa === false) {
+            Svar::feil('Bildet kunne ikke leses.');
+        }
+        try {
+            $bilde = Bilder::taImotData($raa, 'feilrapporter');
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+    }
+}
+
 $rad = [
     'slag'      => $slag,
     'melding'   => $melding,
@@ -110,6 +143,9 @@ $rad = [
     'member_id' => $medlem ? (int) $medlem['id'] : null,
     'rolle'     => $medlem ? $kort($medlem['rolle'] ?? 'medlem', 32) : null,
 ];
+if ($bilde !== null) {
+    $rad['bilde'] = $bilde;
+}
 
 // Samme feil, samme sted, samme nettleserfamilie = én rad som teller opp.
 $familie = preg_match('~(Firefox|Edg|Chrome|Safari)/[\d.]+~', (string) $rad['nettleser'], $m) === 1
@@ -118,12 +154,13 @@ $rad['fingeravtrykk'] = $slag === 'melding'
     ? sha1('melding:' . bin2hex(random_bytes(16)))
     : sha1(implode('|', [$rad['feiltekst'], $rad['kilde'], $rad['side'], $familie]));
 
+// Kolonnene settes sammen av raden, saa «bilde» kan vaere med eller ikke
+// vaere det: den kommer med migrasjon 114, og koden ligger ute noen minutter
+// for vedlikeholdet kjores.
+$kolonner = array_keys($rad);
 DB::kjor(
-    'INSERT INTO feilrapporter
-            (slag, melding, kontakt, feiltekst, kilde, side, nettleser, skjerm,
-             member_id, rolle, fingeravtrykk)
-     VALUES (:slag, :melding, :kontakt, :feiltekst, :kilde, :side, :nettleser, :skjerm,
-             :member_id, :rolle, :fingeravtrykk)
+    'INSERT INTO feilrapporter (' . implode(', ', $kolonner) . ')
+     VALUES (:' . implode(', :', $kolonner) . ')
      ON DUPLICATE KEY UPDATE
             antall    = antall + 1,
             sist_sett = CURRENT_TIMESTAMP,
@@ -134,6 +171,18 @@ DB::kjor(
 // Holder tabellen liten uten at noen maa rydde. Nyeste 500 blir staaende;
 // resten er uansett historie ingen kommer til aa lese.
 if (random_int(1, 25) === 1) {
+    // Bildene forst. En rad som slettes tar ikke fila med seg av seg selv,
+    // og et skjermbilde ingen lenger kan se er bare plass som gaar med.
+    if (DB::harKolonne('feilrapporter', 'bilde')) {
+        $gamle = DB::alle(
+            "SELECT bilde FROM feilrapporter
+              WHERE status = 'lukket' AND bilde IS NOT NULL
+                AND sist_sett < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"
+        );
+        foreach ($gamle as $g) {
+            Bilder::slett((string) $g['bilde'], 'feilrapporter');
+        }
+    }
     DB::kjor(
         'DELETE FROM feilrapporter
           WHERE status = :s

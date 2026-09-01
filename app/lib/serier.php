@@ -50,6 +50,16 @@ final class Serier
         $utc  = new DateTimeZone('UTC');
         $naa  = new DateTimeImmutable('now', $oslo);
         $harSerieId = DB::harKolonne('course_sessions', 'serie_id');
+        $harHolder  = Kursholder::klar();
+        // Ett oppslag per kurs, ikke ett per dato: en regel som legger ut
+        // femtito torsdager spoer ellers femtito ganger om det samme.
+        $holdere = [];
+        $holderen = static function (int $kurs) use (&$holdere): ?int {
+            if (!array_key_exists($kurs, $holdere)) {
+                $holdere[$kurs] = Kursholder::forKurs($kurs);
+            }
+            return $holdere[$kurs];
+        };
         $laget = 0;
 
         foreach ($regler as $r) {
@@ -92,23 +102,31 @@ final class Serier
                     'k' => $r['kapasitet'] !== null ? (int) $r['kapasitet'] : null,
                 ];
 
+                // Kolonner og verdier settes sammen, framfor én spoerring
+                // per kombinasjon: serie_id og kursholder_id kommer hver for
+                // seg med migrasjoner, og de to gir fire varianter.
+                $kol = ['course_id' => ':c', 'start_tid' => ':s',
+                        'slutt_tid' => ':e', 'kapasitet' => ':k'];
+                if ($harSerieId) {
+                    $felter['r'] = (int) $r['id'];
+                    $kol['serie_id'] = ':r';
+                }
+                // Kursholderen. Den som staar paa kurset, ellers verkstedets
+                // standard. Uten dette sto hver eneste faste ukedag som
+                // «Uten kursholder» i kalenderen.
+                if ($harHolder) {
+                    $felter['h'] = $holderen((int) $r['course_id']);
+                    $kol['kursholder_id'] = ':h';
+                }
+
                 // INSERT IGNORE mot den unike noekkelen (kurs, starttid):
                 // en okt som alt ligger der — ogsaa en noen har booket — skal
                 // ikke lages paa nytt eller overskrives.
-                if ($harSerieId) {
-                    $felter['r'] = (int) $r['id'];
-                    $ny = DB::kjor(
-                        'INSERT IGNORE INTO course_sessions (course_id, serie_id, start_tid, slutt_tid, kapasitet)
-                         VALUES (:c, :r, :s, :e, :k)',
-                        $felter
-                    )->rowCount();
-                } else {
-                    $ny = DB::kjor(
-                        'INSERT IGNORE INTO course_sessions (course_id, start_tid, slutt_tid, kapasitet)
-                         VALUES (:c, :s, :e, :k)',
-                        $felter
-                    )->rowCount();
-                }
+                $ny = DB::kjor(
+                    'INSERT IGNORE INTO course_sessions (' . implode(', ', array_keys($kol)) . ')
+                     VALUES (' . implode(', ', $kol) . ')',
+                    $felter
+                )->rowCount();
 
                 $laget += $ny;
                 // Laa datoen der fra for, teller den likevel med i «10

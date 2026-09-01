@@ -4,6 +4,7 @@
  *
  *   GET ?salg=<filnavn>       bilde til en vare i internbutikken
  *   GET ?artikkel=<filnavn>   bilde eieren har lastet opp til en artikkel
+ *   GET ?feil=<filnavn>       skjermbilde fra en feilmelding (bare admin)
  *   GET ...&b=400|800         mindre utgave, laget og lagret ved forste kall
  *
  * Filene ligger utenfor det som publiseres, saa de maa gaa gjennom PHP. Det
@@ -125,6 +126,20 @@ if ($deltaker !== '') {
          && $eier['member_id'] !== null
          && (int) $eier['member_id'] === (int) $m['id'];
     if (!$egen && !Sesjon::erAdmin()) {
+        Svar::feil('Fant ikke bildet.', 404);
+    }
+    lever($sti);
+}
+
+// ── Skjermbildet som fulgte en feilmelding ────────────────────────────────
+//
+// Bare verkstedet. Et skjermbilde tatt i admin kan vise hva som helst —
+// deltakerlister, e-postadresser, en halvferdig ordre — og den som meldte fra
+// gjorde det til verkstedet, ikke til alle som gjetter et filnavn.
+$feil = Foresporsel::tekst('feil');
+if ($feil !== '') {
+    $sti = Bilder::sti($feil, 'feilrapporter');
+    if ($sti === null || !Sesjon::erAdmin()) {
         Svar::feil('Fant ikke bildet.', 404);
     }
     lever($sti);

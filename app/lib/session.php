@@ -144,6 +144,33 @@ final class Sesjon
         return ($m['innlogging_maate'] ?? 'vipps') === 'passord';
     }
 
+    /**
+     * Regnskapsfoereren.
+     *
+     * Eieren, 1. september: «jeg oensker aa lage en bruker log in til min
+     * regnskapsoerer». Hun ser OEkonomi og betalingene, og ingenting annet.
+     *
+     * Samme krav til innlogging som admin: rollen gjelder bare naar man kom
+     * inn med passord. Da kan ikke en Vipps-innlogging paa samme nummer gi
+     * tilgang til regnskapet.
+     *
+     * En admin er ogsaa «regnskap» — hun ser alt uansett, og da skal ikke
+     * hvert endepunkt trenge to sjekker.
+     */
+    public static function erRegnskap(): bool
+    {
+        if (self::erAdmin()) {
+            return true;
+        }
+        $m = self::medlem();
+        if ($m === null || ($m['rolle'] ?? '') !== 'regnskap') {
+            return false;
+        }
+        // Uten migrasjon 030 vet vi ikke hvordan sesjonen ble til. Da er det
+        // riktigere aa si nei enn aa slippe inn paa et ukjent grunnlag.
+        return ($m['innlogging_maate'] ?? '') === 'passord';
+    }
+
     /** Er dette en konto som *kan* vaere admin, uavhengig av innloggingsmaate? */
     public static function kanVaereAdmin(array $m): bool
     {

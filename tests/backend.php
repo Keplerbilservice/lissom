@@ -5589,6 +5589,81 @@ if (DB::harTabell('innstillinger')) {
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
 
+// ── Regnskapsfoereren har sin egen innlogging ──────────────────────────
+//
+// Eieren, 1. september: «jeg oensker aa lage en bruker log in til min
+// regnskapsoerer», og paa spoersmaalet om hva hun skal se: «OEkonomi og
+// betalinger», med brukernavn og passord.
+//
+// Systemet hadde to roller. En admin ser alt — deltakerlister, medlemmer,
+// e-postadressene til alle som har vaert paa kurs. Uten en tredje rolle var
+// valget mellom aa gi henne hele verkstedet eller aa sende filene for haand.
+sjekk('rollen finnes i basen',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/117_regnskapsforeren_far_egen_bruker.sql'),
+                 "ENUM('medlem', 'admin', 'regnskap')"));
+$sesjFil = file_get_contents(dirname(__DIR__) . '/app/lib/session.php');
+sjekk('… og krever passord, som admin',
+    str_contains($sesjFil, "if (\$m === null || (\$m['rolle'] ?? '') !== 'regnskap') {")
+    && str_contains($sesjFil, "return (\$m['innlogging_maate'] ?? '') === 'passord';"));
+// En admin er ogsaa «regnskap» — hun ser alt uansett, og da trenger ikke
+// hvert endepunkt to sjekker.
+sjekk('… og en admin gaar alltid gjennom',
+    str_contains($sesjFil, "if (self::erAdmin()) {\n            return true;\n        }"));
+
+$authFil = file_get_contents(dirname(__DIR__) . '/app/lib/auth.php');
+sjekk('krev_regnskap() svarer 404, ikke 403',
+    str_contains($authFil, 'function krev_regnskap(): array')
+    && str_contains($authFil, "logg('Avvist regnskapsforsøk', ['medlem' => \$m['id']]);"));
+
+// Hvilke endepunkter hun naar. Maalt mot den kjorende siden 1. september:
+// 200 paa de fire, 404 paa ti andre, og 404 paa refusjon.
+foreach (['okonomi', 'dagsoppgjor', 'transaksjoner', 'betalinger'] as $e) {
+    sjekk('regnskapet er aapent: ' . $e,
+        str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/' . $e . '.php'), 'krev_regnskap();'));
+}
+// Aa flytte penger er verkstedets avgjorelse. Refusjon og «send kvittering
+// paa nytt» ligger bak krev_admin() i det samme endepunktet.
+$betFil = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+sjekk('… men refusjon krever fortsatt admin',
+    str_contains($betFil, 'krev_regnskap();')
+    && str_contains($betFil, "Foresporsel::krevMetode('POST');")
+    && str_contains($betFil, 'krev_admin();')
+    // Rekkefolgen er poenget: lesing er aapen, og admin kreves foer POST-en
+    // behandles. Sto krev_admin() overst, ville hun ikke sett lista i det
+    // hele tatt; sto den ikke der, kunne hun refundert.
+    && strpos($betFil, 'krev_regnskap();') < strpos($betFil, "Foresporsel::krevMetode('POST');")
+    && strpos($betFil, "Foresporsel::krevMetode('POST');") < strpos($betFil, 'krev_admin();'));
+
+// Og resten av admin er stengt: ingen andre endepunkter slipper rollen inn.
+$aapne = [];
+foreach (glob(dirname(__DIR__) . '/api/admin/*.php') as $f) {
+    if (str_contains(file_get_contents($f), 'krev_regnskap();')) {
+        $aapne[] = basename($f, '.php');
+    }
+}
+sort($aapne);
+sjekk('… og ingen andre endepunkter er aapnet',
+    $aapne === ['betalinger', 'dagsoppgjor', 'okonomi', 'transaksjoner'], implode(', ', $aapne));
+
+// Skjermen: ett menypunkt, og ingen vei til de andre.
+sjekk('menyen viser bare OEkonomi for rollen',
+    str_contains($sida2, "? Component.ADMIN_MENY.filter(([navn]) => navn === 'Økonomi')"));
+sjekk('… og navigasjonen sender henne tilbake dit',
+    str_contains($sida2, "if (this.erBareRegnskap() && Component.REGNSKAP_SKJERMER.indexOf(rute) === -1) {"));
+sjekk('… og hun lander paa OEkonomi naar hun logger inn',
+    str_contains($sida2, "side: d.erAdmin ? 'adminoversikt' : (d.erRegnskap ? 'adminokonomi' : 'minside'),"));
+
+// Rollen kunne ikke velges i det hele tatt: skjemaet hadde én avkryssingsboks
+// for admin. Eieren, 1. september: «jeg kan ikke velge hva en ny bruker skal
+// ha av rettigheter under brukere» — og: «admin, medlem, regnskap».
+sjekk('en ny bruker kan faa hvilken som helst av de tre rollene',
+    str_contains($sida2, "['admin', 'Admin'], ['regnskap', 'Regnskap'], ['medlem', 'Medlem'],")
+    && str_contains($sida2, "rolle: this.state.brNyRolle || 'admin',")
+    && !str_contains($sida2, "rolle: this.state.brNyAdmin === false ? 'medlem' : 'admin',"));
+sjekk('… og serveren tar imot alle tre',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/brukere.php'),
+                 "in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)"));
+
 // ── Ruter som aapner seg utenfor skjermen ──────────────────────────────
 //
 // Eieren, 1. september: «hele systemet har en tendens til aa aapne pop up

@@ -40,6 +40,8 @@ Svar::json([
     'innlogget'      => true,
     'internInfo'     => (object) $internInfo,
     'erAdmin'        => Sesjon::erAdmin(),
+    // Regnskapsfoereren ser OEkonomi og betalingene, ikke resten.
+    'erRegnskap'     => Sesjon::erRegnskap(),
     // Kontoen er en administratorkonto, men innloggingen holder ikke:
     // adminpanelet krever brukernavn og passord. Uten dette forsvinner
     // admin-lenka uten forklaring, og det ser ut som om tilgangen er borte.

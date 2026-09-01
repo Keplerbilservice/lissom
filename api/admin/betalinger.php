@@ -10,7 +10,10 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-krev_admin();
+// Regnskapsfoereren ser lista. Aa flytte penger er noe annet — refusjon og
+// «send kvittering paa nytt» krever admin, og det kreves lenger nede, rett
+// for POST-en behandles.
+krev_regnskap();
 
 if (Foresporsel::metode() === 'GET') {
     // Kassa viser hele lista med sok, saa den maa strekke lenger enn 200.
@@ -60,6 +63,10 @@ if (Foresporsel::metode() === 'GET') {
 }
 
 Foresporsel::krevMetode('POST');
+
+// Herfra og ned flyttes det penger, eller sendes noe til en kunde. Det er
+// verkstedets avgjorelse, ikke regnskapsfoererens.
+krev_admin();
 Foresporsel::krevSammeOpphav();
 
 $referanse = Foresporsel::tekst('referanse');

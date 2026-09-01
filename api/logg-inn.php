@@ -65,4 +65,6 @@ revider('innlogging_passord', 'member', (int) $m['id']);
 Svar::ok([
     'navn'    => (string) $m['navn'],
     'erAdmin' => Sesjon::erAdmin(),
+    // Regnskapsfoereren ser OEkonomi og betalingene, ikke resten.
+    'erRegnskap' => Sesjon::erRegnskap(),
 ]);

@@ -60,9 +60,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 passord_hash IS NOT NULL AS har_passord, vipps_sub IS NOT NULL AS har_vipps
            FROM members
           WHERE brukernavn IS NOT NULL
-             OR rolle = 'admin'
+             OR rolle IN ('admin', 'regnskap')
              OR telefon IN ({$plass})
-       ORDER BY rolle = 'admin' DESC, brukernavn IS NULL, brukernavn, navn",
+       ORDER BY rolle = 'admin' DESC, rolle = 'regnskap' DESC,
+                brukernavn IS NULL, brukernavn, navn",
         $numre
     );
 
@@ -73,9 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             'navn'       => (string) $r['navn'],
             'epost'      => (string) ($r['epost'] ?? ''),
             // Nodluke-numrene er admin selv om kolonnen sier medlem.
+            // «regnskap» er regnskapsfoereren: hun ser OEkonomi og
+            // betalingene, og ingenting annet.
             'rolle'      => (string) $r['rolle'] === 'admin'
                                 || in_array(normaliser_telefon((string) ($r['telefon'] ?? '')), $numre, true)
-                                ? 'admin' : 'medlem',
+                                ? 'admin'
+                                : ((string) $r['rolle'] === 'regnskap' ? 'regnskap' : 'medlem'),
             'fraNodluke' => (string) $r['rolle'] !== 'admin'
                                 && in_array(normaliser_telefon((string) ($r['telefon'] ?? '')), $numre, true),
             'harPassord' => (bool) $r['har_passord'],
@@ -94,7 +98,10 @@ Foresporsel::krevSammeOpphav();
 
 $handling = Foresporsel::tekst('handling');
 $id       = Foresporsel::heltall('id');
-$rolle    = Foresporsel::tekst('rolle') === 'admin' ? 'admin' : 'medlem';
+// Tre roller naa. «regnskap» kom 1. september: eieren ville gi
+// regnskapsfoereren en egen innlogging framfor aa gi henne hele verkstedet.
+$rolle    = in_array(Foresporsel::tekst('rolle'), ['admin', 'regnskap'], true)
+                ? Foresporsel::tekst('rolle') : 'medlem';
 $passord  = (string) (Foresporsel::kropp()['passord'] ?? '');
 
 if ($handling === 'opprett') {

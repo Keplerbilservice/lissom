@@ -37189,7 +37189,10 @@ class Component extends DCLogic {
         if (side !== 'ferdigbrent') return { erFerdigbrent: false };
         const d = this.state.ferdigbrent;
         const liste = (d && d.meldinger) || [];
-        const uker = (d && d.uker) || 3;
+        // To uker, samme tall som UKER_OPPBEVARING i api/admin/ferdigbrent.php.
+        // Serveren sier det egentlige tallet; dette er bare hva som staar for
+        // svaret er kommet.
+        const uker = (d && d.uker) || 2;
         return {
           erFerdigbrent: true,
           fbIngress: 'Her legger vi ut når arbeidene fra et kurs er ferdig brent. '

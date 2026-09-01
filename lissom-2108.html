@@ -26186,8 +26186,8 @@ class Component extends DCLogic {
     // time for forste kurs?»
     //
     // Timen for er med vilje: da ser man at det ikke ligger noe rett for,
-    // og det er plass til aa dra en okt oppover. Slutten er urort — den er
-    // fortsatt minst 20:00, og strekker seg om noe varer lenger.
+    // og det er plass til aa dra en okt oppover. Slutten folger den samme
+    // regelen — se nedenfor.
     //
     // Vakter teller ikke med (de er filtrert bort over), og en tom dag
     // faller tilbake til 10:00–20:00 som for.
@@ -26196,7 +26196,18 @@ class Component extends DCLogic {
       const forsteMin = Math.min.apply(null, rekkevidde.map(e => minAv(e.tid)));
       const sisteMin = Math.max.apply(null, rekkevidde.map(e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60)));
       bStart = Math.max(0, Math.floor(forsteMin / 60) * 60 - 60);
-      bSluttMin = Math.max(1200, Math.min(24 * 60, Math.ceil(sisteMin / 60) * 60));
+      // ── Og en time etter den siste ───────────────────────────────────
+      //
+      // Slutten sto med Math.max(1200, ...): visningen kunne bare slutte
+      // SENERE enn 20:00, aldri for. En dag med ett formiddagskurs
+      // 10:00–13:00 viste 09:00–20:00 — sju tomme timer under kortet.
+      //
+      // Eieren, 1. september: «paa kallender i admin, saa vil jeg ogsaa ha
+      // en time visning etter kurs er over».
+      //
+      // Timen etter er den samme tanken som timen for: man ser at det ikke
+      // ligger noe rett etter, og det er plass til aa dra en okt nedover.
+      bSluttMin = Math.min(24 * 60, Math.ceil(sisteMin / 60) * 60 + 60);
     }
     const vh = typeof window !== 'undefined' ? window.innerHeight : 900;
     const pxTime = Math.max(40, Math.min(110, Math.floor((vh - 350) / ((bSluttMin - bStart) / 60))));
@@ -26399,7 +26410,8 @@ class Component extends DCLogic {
       const f1 = Math.min.apply(null, ukeAlle.map(e => minAv(e.tid)));
       const s2 = Math.max.apply(null, ukeAlle.map(e => (e.slutt ? minAv(e.slutt) : minAv(e.tid) + 60)));
       wStart = Math.max(0, Math.floor(f1 / 60) * 60 - 60);
-      wSlutt = Math.max(1200, Math.min(24 * 60, Math.ceil(s2 / 60) * 60));
+      // En time etter den siste okta i uka, samme regel som i dagvisningen.
+      wSlutt = Math.min(24 * 60, Math.ceil(s2 / 60) * 60 + 60);
     }
     const pxUke = Math.max(36, Math.min(96, Math.floor((vh - 360) / ((wSlutt - wStart) / 60))));
     if (visning === 'uke') this._klRange = { start: wStart, slutt: wSlutt, px: pxUke };

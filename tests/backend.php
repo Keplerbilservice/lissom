@@ -5673,9 +5673,28 @@ sjekk('ukevisningen begynner en time for forste okt i uka', str_contains($sida, 
 sjekk('… og det gamle taket pa 10:00 er borte',
     !str_contains($sida, 'Math.min(600, Math.floor(forsteMin / 60) * 60)')
     && !str_contains($sida, 'Math.min(600, Math.floor(f1 / 60) * 60)'));
-// Slutten skal fortsatt vaere som for, i begge visningene.
-sjekk('… mens slutten fortsatt er minst 20:00',
-    substr_count($sida, 'Math.max(1200, Math.min(24 * 60, Math.ceil(') === 2);
+// ── Og en time etter den siste ────────────────────────────────────────
+//
+// Slutten hadde det motsatte problemet av starten: Math.max(1200, ...) lot
+// visningen bare slutte SENERE enn 20:00, aldri for. Onsdag 2. september har
+// to okter som er ferdige 13:24 — og viste likevel helt til 20:00.
+//
+// Eieren, 1. september: «paa kallender i admin, saa vil jeg ogsaa ha en time
+// visning etter kurs er over».
+//
+// Malt i nettleseren for og etter, paa nettopp den dagen: tidsaksen gikk fra
+// ti timer (10:00–19:00) til fem (10:00–14:00).
+sjekk('dagvisningen slutter en time etter siste okt',
+    str_contains($sida, 'bSluttMin = Math.min(24 * 60, Math.ceil(sisteMin / 60) * 60 + 60);'));
+sjekk('ukevisningen slutter en time etter siste okt i uka',
+    str_contains($sida, 'wSlutt = Math.min(24 * 60, Math.ceil(s2 / 60) * 60 + 60);'));
+// Kontrollen: det gamle gulvet paa 20:00 skal vaere borte begge steder.
+sjekk('… og det gamle gulvet pa 20:00 er borte',
+    !str_contains($sida, 'Math.max(1200, Math.min(24 * 60, Math.ceil('));
+// Midnatt er fortsatt taket. En okt som slutter 23:30 skal ikke skyve
+// visningen til 25:00.
+sjekk('… mens midnatt fortsatt er taket',
+    substr_count($sida, 'Math.min(24 * 60, Math.ceil(') === 2);
 // En tom dag har ingen forste okt, og skal falle tilbake til 10:00–20:00.
 sjekk('… og en dag uten okter star som for',
     str_contains($sida, 'let bStart = 600, bSluttMin = 1200;')

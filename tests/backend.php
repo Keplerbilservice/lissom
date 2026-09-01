@@ -5503,14 +5503,108 @@ sjekk('… og ventelista foelger samme regel',
 // jeg trekker et kort til paa samme tid?» — ja, de deler bredden. Bade i
 // dagsvisninga og i uka.
 sjekk('blokker til samme tid deler bredden',
-    substr_count($sida, "left: 'calc(' + (p.lane / p.av * 100) + '% + ") === 2
-    && substr_count($sida, "width: 'calc(' + (100 / p.av) + '% - ") === 2);
+    // Uka deler hele bredden. Dagsvisningen deler stripa blokka staar i —
+    // se «Paint on Pots tar ikke spalta» under.
+    substr_count($sida, "left: 'calc(' + (p.lane / p.av * 100) + '% + ") === 1
+    && substr_count($sida, "width: 'calc(' + (100 / p.av) + '% - ") === 1
+    && str_contains($sida, "left: 'calc(' + (p.fra + p.lane / p.av * p.bredde) + '% + '")
+    && str_contains($sida, "width: 'calc(' + (p.bredde / p.av) + '% - '"));
 // Delinga gaar per klynge, ikke per dag: to som kraesjer klokka ti skal ikke
-// gjore alt annet den dagen smalere.
+// gjore alt annet den dagen smalere. Tre kall naa: de smale for seg, de
+// andre for seg, og uka.
 sjekk('… og bredden deles per klynge, ikke per dag',
     str_contains($sida, 'const delBredden = liste => {')
     && str_contains($sida, 'if (klynge.length && p.s >= klyngeSlutt) lukk();')
-    && substr_count($sida, 'delBredden(') === 2);
+    && substr_count($sida, 'delBredden(') === 3);
+
+// ── Dagsoppgjoeret, slik regnskapsfoereren ba om det ───────────────────
+//
+// Hun saa paa fila 1. september og svarte paa alle punktene. Det eneste hun
+// ville ha annerledes var kolonnene:
+//
+//   «Det skal ikke vaere debet- og kreditkolonner men man bruker fortegn i
+//    beloep (positivt beloep = debet, negativt beloep = kredit). For oevrig
+//    ser det bra ut.»
+$doFil = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+sjekk('fila har ett beloepsfelt, ikke debet og kredit',
+    str_contains($doFil, "fputcsv(\$f, ['Dato', 'Bilagstekst', 'Konto', 'Mva-kode', 'Beløp', 'Beskrivelse']")
+    && !str_contains($doFil, "'Debet', 'Kredit'"));
+// Inntekt er kredit og skal staa negativt; pengene inn er debet og positivt.
+sjekk('inntekt staar negativt, innbetalinger positivt',
+    str_contains($doFil, "\$kr(-\$l['belopOre'])")
+    && str_contains($doFil, "\$kr(\$i['belopOre'])"));
+
+// «Butikk boer skilles fra medlemskap slik at man kan beregne
+// bruttofortjeneste.» De sto begge paa 3000.
+sjekk('butikken har sin egen konto',
+    str_contains($doFil, "'ordre'      => ['navn' => 'Varer i butikk',"));
+
+// Drop-in ble tatt ned med migrasjon 110 og 111. Eieren, 1. september: «vi
+// har ikke drop-inn ... aldri ha det med».
+sjekk('drop-in staar ikke i regnskapsoppsettet',
+    !str_contains($doFil, 'regnskap_konto_dropin')
+    && !str_contains($doFil, 'regnskap_mva_dropin'));
+sjekk('… og ikke blant feltene i admin heller',
+    !str_contains($sida, "'regnskap_konto_dropin'")
+    && !str_contains($sida, "'regnskap_mva_dropin'"));
+
+// Kontoene hun opprettet i Tripletex.
+$m116 = file_get_contents(dirname(__DIR__) . '/db/migrations/116_kontoene_fra_regnskapsforeren.sql');
+foreach ([['regnskap_konto_kurs', '3200'], ['regnskap_mva_kurs', '6'],
+          ['regnskap_konto_medlemskap', '3000'], ['regnskap_mva_medlemskap', '3'],
+          ['regnskap_konto_butikk', '3020'], ['regnskap_mva_butikk', '3'],
+          ['regnskap_konto_gavekort', '2905'],
+          ['regnskap_motkonto_vipps', '1510'], ['regnskap_motkonto_kontant', '1900'],
+          ['regnskap_motkonto_faktura', '1920']] as [$n, $v]) {
+    sjekk('migrasjon 116 setter ' . $n . ' = ' . $v,
+        preg_match("~'" . $n . "',\s*'" . $v . "'~", $m116) === 1);
+}
+sjekk('… og rydder bort drop-in-kontoen om den sto der',
+    str_contains($m116, "WHERE nokkel IN ('regnskap_konto_dropin', 'regnskap_mva_dropin')"));
+
+// Er kontoene faktisk satt i basen, skal bilaget ikke si at noe mangler.
+if (DB::harTabell('innstillinger')) {
+    $sattFeil = [];
+    foreach ([['regnskap_konto_kurs', '3200'], ['regnskap_konto_medlemskap', '3000'],
+              ['regnskap_konto_butikk', '3020'], ['regnskap_konto_gavekort', '2905'],
+              ['regnskap_motkonto_vipps', '1510'], ['regnskap_motkonto_kontant', '1900'],
+              ['regnskap_motkonto_faktura', '1920']] as [$n, $v]) {
+        $har = trim((string) DB::verdi('SELECT verdi FROM innstillinger WHERE nokkel = :n', ['n' => $n]));
+        if ($har !== '' && $har !== $v) {
+            $sattFeil[] = $n . ' = ' . $har;
+        }
+    }
+    sjekk('kontoene i basen er dem regnskapsfoereren oppga',
+        $sattFeil === [], implode(', ', $sattFeil));
+    sjekk('… og drop-in-kontoen ligger ikke igjen',
+        DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
+}
+
+// ── Paint on Pots tar ikke spalta ──────────────────────────────────────
+//
+// Eieren, 1. september: «kortene paint on pots, disse vil jeg skal vises mye
+// mindre slik at de ikke tar saa mye plass i bredden. om den kan krympes ned
+// til 15% av stoerrelsen».
+//
+// De legges ut automatisk paa hver aapningstid, saa det er seks-sju av dem
+// paa en dag. Delte de bredden likt med et ekte kurs, ble kurset en strime.
+sjekk('Paint on Pots staar i en smal stripe',
+    str_contains($sida, 'const SMAL_ANDEL = 25;')
+    && str_contains($sida, "const erSmal = e => e.type === 'pop';"));
+sjekk('… og de andre faar resten av bredden',
+    str_contains($sida, 'const bredResten = smaa.length ? 100 - SMAL_ANDEL : 100;'));
+// Er det ingen Paint on Pots den dagen, skal spalta se ut som for.
+sjekk('… men hele bredden naar det ikke er noen',
+    str_contains($sida, 'smaa.length ? 100 - SMAL_ANDEL : 100'));
+// Bare bredden endres. Eieren, 1. september: «dette er et kurs, som jeg ikke
+// trenger aa se annen enn at det faktisk kommer noen» — plasstallet og
+// deltakerne er nettopp det som skal staa, ogsaa paa en smal blokk.
+sjekk('den smale blokka viser fortsatt plasstall, ansikter og merknader',
+    !str_contains($sida, "detalj: p.smal ? '' :")
+    && !str_contains($sida, 'harAvatarer: !p.smal')
+    && !str_contains($sida, 'harMerknad: !p.smal')
+    && str_contains($sida, "detalj: [belegg(p.e) ? belegg(p.e) + ' plasser' : ''")
+    && str_contains($sida, 'harAvatarer: (p.e.deltakere || []).length > 0,'));
 sjekk('… og blokkene ligger foran rutenettet',
     substr_count($sida, 'zIndex: 2 + p.lane') === 2);
 

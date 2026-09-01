@@ -5480,7 +5480,7 @@ window.__resources = {
                       <sc-if value="{{ h.harMeta }}" hint-placeholder-val="{{ false }}">
                         <span style="display: flex; align-items: center; gap: 7px; margin-top: 2px; opacity: .9;">
                           <sc-if value="{{ h.harAvatarer }}" hint-placeholder-val="{{ false }}">
-                            <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>{{ h.antallTekst }}</span>
+                            <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700;"><svg width="14" height="8" viewBox="60 40 192 112" fill="currentColor" aria-hidden="true"><path d="M83.456,148.748h150.533c7.883,0,15.29-8.83,15.943-16.997H62.066 C63.057,141.248,71.286,148.748,83.456,148.748"></path><path d="M133.132,125.422h45.745c18.411,0,24.672-6.342,24.672-26.671v-6.352v-7.818h10.193 c12.009,0,22.867-7.166,22.867-21.16c0-14.004-10.858-21.5-24.838-21.5h-8.223h-0.248h-91.753c-2.11,0-3.089,0.893-3.089,3.238 v53.592C108.459,119.083,114.71,125.422,133.132,125.422 M203.549,59.32c1.623-4.814,6.116-8.396,11.35-8.396 c6.413,0,12.833,4.998,12.833,11.655c0,6.841-5.26,13.001-12.177,13.001c-5.527,0-10.319-3.418-12.006-8.383 c-0.423-1.228-0.665-2.551-0.665-3.949C202.884,61.887,203.129,60.564,203.549,59.32"></path></svg>{{ h.antallTekst }}</span>
                           </sc-if>
                           <sc-if value="{{ h.harMerknad }}" hint-placeholder-val="{{ false }}">
                             <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>{{ h.merknadAntall }}</span>
@@ -5523,7 +5523,7 @@ window.__resources = {
                       <sc-if value="{{ h.harAvatarer }}" hint-placeholder-val="{{ false }}">
                         <span style="display: flex; align-items: center; gap: 3px; margin-top: 5px; flex-wrap: wrap;">
                           <sc-for list="{{ h.avatarer }}" as="av" hint-placeholder-count="0">
-                            <span title="{{ av.tittel }}" style="{{ av.stil }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg></span>
+                            <span title="{{ av.tittel }}" style="{{ av.stil }}"><svg width="19" height="11" viewBox="60 40 192 112" fill="currentColor" aria-hidden="true"><path d="M83.456,148.748h150.533c7.883,0,15.29-8.83,15.943-16.997H62.066 C63.057,141.248,71.286,148.748,83.456,148.748"></path><path d="M133.132,125.422h45.745c18.411,0,24.672-6.342,24.672-26.671v-6.352v-7.818h10.193 c12.009,0,22.867-7.166,22.867-21.16c0-14.004-10.858-21.5-24.838-21.5h-8.223h-0.248h-91.753c-2.11,0-3.089,0.893-3.089,3.238 v53.592C108.459,119.083,114.71,125.422,133.132,125.422 M203.549,59.32c1.623-4.814,6.116-8.396,11.35-8.396 c6.413,0,12.833,4.998,12.833,11.655c0,6.841-5.26,13.001-12.177,13.001c-5.527,0-10.319-3.418-12.006-8.383 c-0.423-1.228-0.665-2.551-0.665-3.949C202.884,61.887,203.129,60.564,203.549,59.32"></path></svg></span>
                           </sc-for>
                           <sc-if value="{{ h.harFlere }}" hint-placeholder-val="{{ false }}">
                             <span style="margin-left: 4px; font-size: 10px; font-weight: 700; opacity: .8;">{{ h.flereTekst }}</span>
@@ -26333,7 +26333,7 @@ class Component extends DCLogic {
             meny: meny(p.e),
             avatarer: (p.e.deltakere || []).slice(0, 6).map(dl => ({
               tittel: dl.navn,
-              stil: { width: '18px', height: '18px', borderRadius: '50%', flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'var(--clay-50)', color: 'var(--lissom-brown)', border: '1.5px solid ' + (f.kant ? 'var(--lissom-brown)' : 'rgba(46,16,2,.25)'), boxSizing: 'border-box' },
+              stil: { flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', color: 'currentColor' },
             })),
             harAvatarer: (p.e.deltakere || []).length > 0,
             harFlere: (p.e.deltakere || []).length > 6,

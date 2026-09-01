@@ -5593,6 +5593,61 @@ if (DB::harTabell('innstillinger')) {
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
 
+// ── Deltakerne er kaffekopper fra logoen ──────────────────────────────
+//
+// Kortene i kalenderen hadde en liten menneskefigur per paameldt deltaker —
+// et hode og et par skuldre, hentet fra et ikonsett og ikke fra oss.
+//
+// Eieren, 1. september: «kortene i kallenderen har smaa avtarer en pr
+// kursdeltaker som er pmeldt, jeg vil at disse endres til smaa kaffekopper
+// fra logen vaar».
+//
+// Koppen er ikke tegnet paa nytt: banene er hentet ordrett fra mark-cup.svg,
+// samme merke som staar oeverst til venstre. Bade koppen og skaala.
+$merket = file_get_contents(dirname(__DIR__) . '/mark-cup.svg');
+preg_match_all('~<path[^>]*\sd="(.*?)"~s', $merket, $mm);
+$reint = static fn(string $b): string => trim((string) preg_replace('~(&#xA;|&#x9;|\s)+~', ' ', $b));
+sjekk('merket har skaala, koppen og ordmerket', count($mm[1]) === 3);
+// Ordmerket «lissom» er den tredje banen. Den ligger utenfor viewBox-en og
+// skal ikke vaere med — ellers drar vi 5,8 kB tekst inn i hvert kort.
+$skaala = $reint($mm[1][0]);
+$koppen = $reint($mm[1][1]);
+$ordet  = $reint($mm[1][2]);
+sjekk('koppen i kalenderen er banen fra logoen', str_contains($sida, $koppen));
+sjekk('… og skaala under den ogsaa', str_contains($sida, $skaala));
+sjekk('… mens ordmerket ikke er dratt med', !str_contains($sida, $ordet));
+
+// To steder: dagvisningen har en kopp per deltaker, ukevisningen har en kopp
+// og et tall. Begge sto med den samme menneskefiguren.
+sjekk('begge visningene bruker koppen',
+    substr_count($sida, 'viewBox="60 40 192 112"') === 2);
+sjekk('… og menneskefiguren er borte',
+    !str_contains($sida, '<circle cx="12" cy="8" r="4"></circle>'));
+
+// Koppen arver kortets egen tekstfarge. Kortene har seks bakgrunner — gul,
+// terrakotta, slip, brun, leire og hvit — og en fast brun kopp ville
+// forsvunnet paa de fire morke. Malt i nettleseren: paa terrakotta staar
+// koppen i rgb(239,239,239), paa gult i rgb(77,29,18), begge like kortets
+// egen tekstfarge.
+sjekk('koppene tegnes i kortets tekstfarge',
+    substr_count($sida, 'viewBox="60 40 192 112" fill="currentColor"') === 2);
+// Ringen rundt ansiktet er borte fra kalenderen. Merk at samme runde form
+// brukes av medlemsavatarene med initialer paa andre skjermer — de skal staa
+// som de er, saa dette maa maales paa kalenderens egen stil og ikke paa
+// formen i seg selv.
+sjekk('… og ringen rundt ansiktet er borte fra kalenderen',
+    !str_contains($sida, "stil: { width: '18px', height: '18px', borderRadius: '50%'")
+    && str_contains($sida, "stil: { flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', color: 'currentColor' },"));
+sjekk('… mens medlemsavatarene med initialer staar urort',
+    substr_count($sida, '{{ m.avatarStil }}') === 2
+    && str_contains($sida, "borderRadius: '50%'"));
+
+// Navnet staar fortsatt paa hver kopp. Det er hele grunnen til at det er en
+// per deltaker og ikke bare et tall.
+sjekk('hver kopp baerer fortsatt navnet til den paameldte',
+    str_contains($sida, '<span title="{{ av.tittel }}" style="{{ av.stil }}">')
+    && str_contains($sida, 'tittel: dl.navn,'));
+
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //
 // Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare

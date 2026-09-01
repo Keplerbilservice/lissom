@@ -12617,6 +12617,16 @@ window.__resources = {
     <footer data-theme="ink" style="background: var(--lissom-brown); padding: var(--space-14) var(--space-8) var(--space-6); position: relative; overflow: hidden;">
       <img src="mark-heart.png" alt="" aria-hidden="true" style="position: absolute; right: -160px; top: -80px; width: 1300px; opacity: 0.05; transform: rotate(-8deg); filter: invert(1); pointer-events: none; -webkit-mask-image: linear-gradient(215deg, black 25%, transparent 80%); mask-image: linear-gradient(215deg, black 25%, transparent 80%);" loading="lazy" decoding="async" width="887" height="856">
       <div style="max-width: var(--width-content); margin: 0 auto; position: relative;">
+        <!-- «Vil du proeve keramikk? Send oss en forespoersel» staar i
+             bunnen av hver side. Paa kontaktsida sto den som den tredje
+             oppfordringen om det samme: «Kontakt oss» i toppen, «Send
+             forespoersel» i boksen midt paa, og saa denne.
+
+             Eieren, 1. september: «Kontskt oss, saa send en forespoersel saa
+             send oss en forespoersel».
+
+             Den staar som for paa alle andre sider — der er den den eneste. -->
+        <sc-if value="{{ visFotOppfordring }}" hint-placeholder-val="{{ true }}">
         <div style="padding-bottom: var(--space-10); border-bottom: 1px solid rgba(244,235,222,.18);">
           <div style="font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 2.8vw, 52px); line-height: 1.05; color: var(--clay-50); max-width: 18ch; text-wrap: balance; margin: 0 0 var(--space-6);">Vil du prøve <em style="font-style: italic; color: var(--lissom-yellow);">keramikk?</em></div>
           <div class="lx-band" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap;">
@@ -12624,6 +12634,8 @@ window.__resources = {
             <p style="margin: 0; font-size: var(--text-lg); line-height: 1.6; color: var(--clay-300); max-width: 42ch; text-wrap: pretty;">{{ ftUndertekst }}</p>
           </div>
         </div>
+
+        </sc-if>
 
         <div class="lx-footcols" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-8) var(--space-10); align-items: start; padding: var(--space-10) 0;">
           <div>
@@ -14168,6 +14180,11 @@ window.__resources = {
       <sc-if value="{{ ktIkkeSendt }}" hint-placeholder-val="{{ true }}">
         <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send oss en forespørsel</h3>
         <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Vi svarer som regel samme dag.</p>
+        <!-- Kom du fra et kurskort, staar kurset her — saa du ser at
+             foresporselen gjelder det, og slipper aa skrive det selv. -->
+        <sc-if value="{{ ktHarEmne }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: -14px 0 var(--space-6); font-size: var(--text-sm); font-weight: 700; color: var(--lissom-brown);">Gjelder: {{ ktEmne }}</p>
+        </sc-if>
         <div style="display: flex; flex-direction: column; gap: var(--space-4);">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Navn" placeholder="Fornavn Etternavn" value="{{ ktNavn }}" on-change="{{ settKtNavn }}" hint-size="100%,66px"></x-import>
           <div class="lx-cols2" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
@@ -15291,8 +15308,20 @@ class Component extends DCLogic {
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
         cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),
+        // ── «Kontakt oss» aapner det enkle skjemaet ─────────────────
+        //
+        // Knappen aapnet gruppeforespoerselen: «Antall personer 2–5 / 6–10 /
+        // 11–16» og «Hva oensker dere? F.eks. teambuilding for 10 kolleger».
+        // Paa Date Night — en kveld for to — var hvert eneste felt feil.
+        //
+        // Eieren, 1. september: «kontakt oss maa vaere med emne datenight og
+        // ikke flrespoerselskjemaet som er naa», med bilde av det enkle
+        // skjemaet: «Jeg vil de skal faa dette skjemaet».
+        //
+        // Kurset foelger med som emne, saa forespoerselen kommer inn merket
+        // med hvilket kurs den gjelder.
         book: k.kunKontakt
-          ? () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsType: k.title, fsTop: Math.min(this.topNaa(60), 90) })
+          ? () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktEmne: k.title, ktTop: Math.min(this.topNaa(60), 90) })
           : () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
   }
@@ -18426,7 +18455,7 @@ class Component extends DCLogic {
       this.setState(st => ({
         ktSendt2: true, ktFeil: null,
         nyeForesporsler: (st.nyeForesporsler || []).concat([{
-          navn, hva: 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
+          navn, hva: (s.ktEmne || '').trim() || 'Forespørsel fra nettsiden', tid: 'Nå nettopp', status: 'Ubesvart', tone: 'warning',
           tekst: (s.ktMelding || '').trim() || 'Ingen detaljer oppgitt', epost, tlf,
         }]),
         ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '',
@@ -18444,7 +18473,9 @@ class Component extends DCLogic {
       body: JSON.stringify({
         navn: navn,
         kontakt: epost || tlf,
-        type: 'Kontaktskjema',
+        // Kurset naar skjemaet ble aapnet fra et kurskort, ellers bare
+        // «Kontaktskjema». Da ser verkstedet med én gang hva det gjelder.
+        type: (s.ktEmne || '').trim() || 'Kontaktskjema',
         antall: '',
         melding: (s.ktMelding || '').trim(),
       }),
@@ -18453,8 +18484,8 @@ class Component extends DCLogic {
       .then(({ ok, d }) => {
         this._ktPagaar = false;
         if (!ok) { this.setState({ ktFeil: (d && d.feil) || 'Fikk ikke sendt. Prøv igjen om litt.' }); return; }
-        this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '' });
-        this.maal('generate_lead', { form: 'Kontaktskjema' });
+        this.setState({ ktSendt2: true, ktFeil: null, ktNavn: '', ktTlf: '', ktEpost: '', ktMelding: '', ktEmne: '' });
+        this.maal('generate_lead', { form: (s.ktEmne || '').trim() || 'Kontaktskjema' });
         ferdig();
       })
       .catch(() => {
@@ -30241,6 +30272,8 @@ class Component extends DCLogic {
       ktEpost: this.state.ktEpost || '', settKtEpost: e => this.setState({ ktEpost: e.target.value, ktFeil: null }),
       ktMelding: this.state.ktMelding || '', settKtMelding: e => this.setState({ ktMelding: e.target.value, ktFeil: null }),
       ktFeil: this.state.ktFeil || '',
+      ktEmne: this.state.ktEmne || '',
+      ktHarEmne: !!(this.state.ktEmne || '').trim(),
       ktSend: () => this.sendKontakt(),
       fsApen: !!this.state.fsApen,
       fsLukk: () => this.setState({ fsApen: false }),
@@ -39412,6 +39445,9 @@ class Component extends DCLogic {
       btSpesialKicker: this.innh('Butikk/3/Kicker'),
       btSpesialKnapp: this.innh('Butikk/3/Knapp'),
       ftKnapp: this.innh('Footer/0/Knapp'),
+      // Ikke paa kontaktsida: der er den den tredje knappen som sier det
+      // samme. Se kommentaren ved bandet i bunnteksten.
+      visFotOppfordring: side !== 'kontakt',
       ftUndertekst: this.innh('Footer/0/Undertekst'),
       // Adressen delt paa kommaet: gata paa én linje, postnummeret paa
       // neste. Se footeren — den smale spalta brakk gatenavnet i to.

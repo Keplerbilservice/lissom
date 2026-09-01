@@ -3798,6 +3798,109 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── Betalingene i kassa ────────────────────────────────────────────────
+//
+// Eieren, 1. september: «Jeg mangler og en viktig funksjon som maa ligge i
+// kortet kasse. 1. her maa betalinger ses 2. betalinger maa vaere klikkbare
+// 3. jeg maa kunne reversere belop naar jeg klikker inn.»
+//
+// Alle tre fantes fra for — men under OEkonomi, tre klikk unna og et annet
+// sted enn der man staar naar kunden er ved disken. Det er samme liste og
+// samme refusjon; den staar naa der den brukes. Paa sporsmaal om omfang
+// svarte han: alt, med sok — og i tillegg dagsoppgjor, kvittering paa nytt
+// og sok.
+$bet = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+
+sjekk('kassa har en egen fane for betalinger',
+    str_contains($sida2, "['Betalinger',       'betalinger', 'adminuttak'],"));
+sjekk('… og de andre fanene viker for den',
+    str_contains($sida2, "utVarerVis: del === 'butikk' || del === 'intern',"));
+sjekk('… og lista er sokbar',
+    str_contains($sida2, 'settBtSok: e => this.setState({ btSok: e.target.value }),'));
+sjekk('… og radene er klikkbare',
+    str_contains($sida2, 'btApen: s2.btApen === b.referanse ? null : b.referanse,'));
+
+// Reverseringen sender penger. Da skal det bekreftes med navn og belop, og
+// det skal staa at det ikke kan angres — for det kan det ikke.
+sjekk('reverseringen bekreftes med navn og belop',
+    str_contains($sida2, "window.confirm('Reversere ' + this.kroner(ore) + ' til '"));
+sjekk('… og sier at det ikke kan angres',
+    str_contains($sida2, 'Pengene går tilbake på Vipps med det samme. Dette kan ikke angres.'));
+// Tomt felt = hele resten. Skrevet tall = bare det, men aldri mer enn det
+// som staar igjen.
+sjekk('… og delbelop er mulig, men aldri mer enn det som staar igjen',
+    str_contains($sida2, 'const ore = skrevet > 0 ? Math.min(skrevet * 100, igjen) : igjen;'));
+
+// Et kontantsalg har aldri vaert innom Vipps. Foer denne sto refusjonen og
+// ventet paa en feil fra Vipps paa en referanse Vipps ikke kjenner.
+sjekk('kontantsalg kan ikke reverseres gjennom Vipps',
+    str_contains($bet, "if ((string) \$betaling['type'] === 'manuell') {"));
+sjekk('… og skjermen sier hvorfor, framfor aa mangle knappen',
+    str_contains($sida2, 'refSperreTekst:'));
+
+// Dagsoppgjoret skal vise det som faktisk staar igjen.
+sjekk('dagsoppgjoret deler dagen i kontant og Vipps',
+    str_contains($sida2, 'const kontant = iDag.filter(b => !b.erVipps).reduce((n, b) => n + netto(b), 0);')
+    && str_contains($sida2, 'const vipps = iDag.filter(b => b.erVipps).reduce((n, b) => n + netto(b), 0);'));
+sjekk('… og trekker fra det som er refundert',
+    str_contains($sida2, 'const netto = b => Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));'));
+sjekk('… og teller bare gjennomforte betalinger',
+    str_contains($sida2, "&& ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1);"));
+sjekk('serveren sier hvilken betalingsmaate det var',
+    str_contains($bet, "'maate'      => (string) \$p['type'] === 'manuell' ? 'Kontant' : 'Vipps',"));
+
+// Kvitteringen sendes paa nytt med de samme funksjonene bookingen og ordren
+// bruker naar de blir betalt — ingen ny tekst, og ingen ny ordre.
+sjekk('kvitteringen kan sendes paa nytt',
+    str_contains($bet, "if (Foresporsel::tekst('handling') === 'kvittering') {"));
+sjekk('… med de samme bekreftelsene som ved betaling',
+    str_contains($bet, 'Booking::sendBekreftelse((int) $booking[\'id\']);')
+    && str_contains($bet, 'Booking::sendOrdrebekreftelse((int) $ordre[\'id\']);'));
+// Gavekort og medlemstrekk har ingen kvittering av dette slaget. Da skal det
+// staa, framfor at skjermen svarer «sendt» uten aa ha sendt noe.
+sjekk('… og sier fra naar det ikke finnes noen kvittering',
+    str_contains($bet, "Svar::feil('Denne betalingen har ingen kvittering å sende. '"));
+sjekk('… og knappen staar bare der det finnes en',
+    str_contains($sida2, 'harKvittering: !!(b.bookingId || b.ordreId),'));
+
+// Et sok som bare naar to hundre rader tilbake finner ikke betalingen fra
+// forrige maaned.
+sjekk('lista strekker lenger enn to hundre rader',
+    str_contains($bet, 'LIMIT 1000'));
+
+// ── Tre datoer paa kurskortet ──────────────────────────────────────────
+//
+// Kortet bar foer bare den FOERSTE datoen, og den ble lest som den eneste.
+// Nybegynner dreiekurs gaar 9., 11. og 16. september og ni ganger til; kortet
+// sa «onsdag 9. – torsdag 10. september», og resten fantes ikke for den som
+// saa paa lista. Eieren, 31. august: «paa disse kortene maa vi fjerne dato» —
+// saa datoen ble tatt bort.
+//
+// Men da forsvant ogsaa det folk leter etter. Eieren, 1. september: «paa
+// kortene kurs saa ba jeg deg fjerne datoer, men jeg vil at det skal vises 3
+// planlagte datoer og se fler datoer». Det er den riktige loesningen paa den
+// opprinnelige feilen: tre datoer sier at det finnes flere, én later som den
+// er alene.
+sjekk('kortene har tre datoer', str_contains($sida2, '  kortDatoer(k) {'));
+sjekk('… og den brukes av alle kortlistene',
+    str_contains($sida2, 'this.medServerdata(k0)')
+    && str_contains($sida2, '.map(k => Object.assign({}, k, this.kortDatoer(k), {'));
+// Kortet baerer datoene som «okter»; «datoer» er navnet i katalogen.
+sjekk('… og finner datoene under begge navnene',
+    str_contains($sida2, 'const alle = (k.okter || k.datoer || []).filter(d => d && d.dag);'));
+// Tre tider samme dag er én dato paa kortet, ikke tre.
+sjekk('… og teller dager, ikke tidspunkt',
+    str_contains($sida2, "const fra = dager.find(x => x.dag === d.dag);"));
+sjekk('… og viser hoyst tre', str_contains($sida2, 'kdListe: dager.slice(0, 3)'));
+sjekk('… med en vei til resten', str_contains($sida2, "kdFlereTekst: 'Se alle ' + dager.length + ' datoer',"));
+// Datoen skal folge med inn i bookingen. Aapner den bare kurset, er knappen
+// ikke annet enn en omvei til «Book plass».
+sjekk('… og datoen folger med inn i bookingen',
+    str_contains($sida2, "}, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));"));
+// Alle tre kortlistene — forsida, populaere datoer og kurslista — har stripa.
+sjekk('alle tre kortlistene viser datoene',
+    substr_count($sida2, '<sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">') === 3);
+
 // ── «Kasse» i kalenderen aapner kassa ──────────────────────────────────
 //
 // Eieren, 1. september, med et skjermbilde av ruta knappen aapnet: «Kasse fra

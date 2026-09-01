@@ -1608,7 +1608,19 @@ window.__resources = {
                    Datoene staar inne paa kurset, der alle er med.
                    CourseCard filtrerer bort tomme felt selv — se «meta» i
                    ds-bundle.js — saa raden blir ikke staaende tom. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <sc-if value="{{ k.kdHar }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                    <sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ k.kdFlere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ k.kdSeFlere }}" style="appearance: none; cursor: pointer; border: none; background: transparent; padding: 5px 4px; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ k.kdFlereTekst }} →</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -1862,7 +1874,19 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
+                <div style="display: flex; flex-direction: column; gap: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <sc-if value="{{ k.kdHar }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                    <sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ k.kdFlere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ k.kdSeFlere }}" style="appearance: none; cursor: pointer; border: none; background: transparent; padding: 5px 4px; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ k.kdFlereTekst }} →</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
               </sc-for>
             </div>
           </sc-if>
@@ -2013,7 +2037,19 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <sc-if value="{{ k.kdHar }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                    <sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ k.kdFlere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ k.kdSeFlere }}" style="appearance: none; cursor: pointer; border: none; background: transparent; padding: 5px 4px; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ k.kdFlereTekst }} →</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
           </sc-for>
         </div>
       </section>
@@ -6636,6 +6672,99 @@ window.__resources = {
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
         </div>
+
+        <!-- ── Betalingene ────────────────────────────────────────────────
+             Eieren, 1. september: «her maa betalinger ses», «betalinger maa
+             vaere klikkbare», «jeg maa kunne reversere belop naar jeg klikker
+             inn». Alt fantes fra for under OEkonomi — det er samme liste og
+             samme refusjon, flyttet dit den brukes. -->
+        <sc-if value="{{ utBetalingerVis }}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+
+            <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); overflow: hidden;">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Dagsoppgjør · {{ boDato }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ boAntall }}</span>
+              </div>
+              <div class="lx-cols3" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border-subtle);">
+                <div style="background: var(--surface-card); padding: var(--space-5) var(--space-6);">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Kontant</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin-top: 6px;">{{ boKontant }}</div>
+                </div>
+                <div style="background: var(--surface-card); padding: var(--space-5) var(--space-6);">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Vipps</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin-top: 6px;">{{ boVipps }}</div>
+                </div>
+                <div style="background: var(--surface-card); padding: var(--space-5) var(--space-6);">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Totalt</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); margin-top: 6px;">{{ boTotalt }}</div>
+                </div>
+              </div>
+              <sc-if value="{{ boHarFormal }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-4) var(--space-6); display: flex; flex-wrap: wrap; gap: var(--space-5);">
+                  <sc-for list="{{ boFormal }}" as="f" hint-placeholder-count="3">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ f.navn }}: <strong style="color: var(--text-heading);">{{ f.sum }}</strong></span>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-3) var(--space-6); font-size: var(--text-xs); color: var(--text-muted);">Beløpene er det som faktisk står igjen — refunderte beløp er trukket fra.</div>
+            </div>
+
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100);">
+                <label style="{{ utEtikett }}">Søk i betalinger</label>
+                <input value="{{ btSok }}" onChange="{{ settBtSok }}" placeholder="Navn, beløp, dato eller referanse" style="{{ utFeltStil }}">
+                <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Viser {{ btAntall }}</div>
+              </div>
+
+              <sc-if value="{{ btIngen }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">{{ btIngenTekst }}</div>
+              </sc-if>
+
+              <sc-for list="{{ btListe }}" as="b" hint-placeholder-count="8">
+                <div>
+                  <button type="button" onClick="{{ b.velg }}" style="{{ b.radStil }}">
+                    <span style="flex: 1 1 160px; min-width: 0;">
+                      <span style="display: block; font-weight: 600;">{{ b.navn }}</span>
+                      <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ b.hva }} · {{ b.tid }} · {{ b.maate }}</span>
+                    </span>
+                    <span style="{{ b.merkeStil }}">{{ b.status }}</span>
+                    <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); white-space: nowrap; margin-left: auto;">{{ b.sum }}</span>
+                  </button>
+
+                  <sc-if value="{{ b.apen }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: var(--space-5) var(--space-6); background: var(--clay-50); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--space-4);">
+                      <sc-if value="{{ b.harRefundert }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size: var(--text-sm); color: var(--terracotta-600); font-weight: 600;">{{ b.refundertTekst }}</div>
+                      </sc-if>
+
+                      <sc-if value="{{ b.kanRefundere }}" hint-placeholder-val="{{ true }}">
+                        <div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4);">
+                          <div style="flex: 1 1 180px; min-width: 0;">
+                            <label style="{{ utEtikett }}">Beløp å reversere</label>
+                            <input value="{{ refBelop }}" onChange="{{ settRefBelop }}" placeholder="Hele beløpet" style="{{ utFeltStil }}">
+                            <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 52ch;">{{ b.refHjelp }}</div>
+                          </div>
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="rotate-ccw" on-click="{{ b.refUtfor }}" hint-size="auto,44px">{{ b.refKnapp }}</x-import>
+                        </div>
+                      </sc-if>
+
+                      <sc-if value="{{ b.refSperret }}" hint-placeholder-val="{{ false }}">
+                        <div style="font-size: var(--text-sm); color: var(--text-body); max-width: 62ch;">{{ b.refSperreTekst }}</div>
+                      </sc-if>
+
+                      <sc-if value="{{ b.harKvittering }}" hint-placeholder-val="{{ true }}">
+                        <div>
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" icon="mail" on-click="{{ b.sendKvittering }}" hint-size="auto,36px">Send kvittering på nytt</x-import>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, 1fr); gap: var(--space-6); align-items: start;">
 
@@ -15020,7 +15149,7 @@ class Component extends DCLogic {
       // «Book plass» og en gammel dato fra designet, sendte knappen folk til
       // en bookingskjerm uten noe aa velge.
       .filter(k => !k.utenDato)
-      .map(k => Object.assign({}, k, {
+      .map(k => Object.assign({}, k, this.kortDatoer(k), {
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
         cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),
@@ -15028,6 +15157,91 @@ class Component extends DCLogic {
           ? () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsType: k.title, fsTop: Math.min(this.topNaa(60), 90) })
           : () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
+  }
+
+  /**
+   * Tre datoer paa kurskortet, og en vei til resten.
+   *
+   * Kortet bar foer bare den FOERSTE datoen, og den ble lest som den eneste.
+   * Nybegynner dreiekurs gaar 9. september, 11. september og 7. oktober;
+   * kortet sa «onsdag 9. – torsdag 10. september», og oktober fantes ikke for
+   * den som saa paa lista. Eieren, 31. august: «paa disse kortene maa vi
+   * fjerne dato» — saa datoen ble tatt bort.
+   *
+   * Men da forsvant ogsaa det folk leter etter. Eieren, 1. september: «paa
+   * kortene kurs saa ba jeg deg fjerne datoer, men jeg vil at det skal vises
+   * 3 planlagte datoer og se fler datoer».
+   *
+   * Det er den riktige loesningen paa den opprinnelige feilen: tre datoer
+   * sier at det finnes flere, én dato later som den er alene.
+   *
+   * Datoene er knapper. Trykker du paa en, aapnes bookingen med den dagen
+   * valgt — ikke bare med kurset. Har dagen bare ett klokkeslett, er hele
+   * valget tatt, og du staar rett paa trinn to.
+   */
+  kortDatoer(k) {
+    // Kortet baerer datoene som «okter» — «datoer» er navnet de har i
+    // katalogen fra serveren. Begge staar her, saa den virker uansett hvilken
+    // av de to listene kortet kom fra.
+    const alle = (k.okter || k.datoer || []).filter(d => d && d.dag);
+    if (!alle.length) {
+      return { kdHar: false, kdListe: [], kdFlere: false, kdFlereTekst: '', kdSeFlere: null };
+    }
+
+    // Én rad per dag. Er det tre tider samme dag, er det fortsatt én dato paa
+    // kortet — ellers ville «tre datoer» vaert samme dag tre ganger.
+    const dager = [];
+    alle.forEach(d => {
+      const fra = dager.find(x => x.dag === d.dag);
+      if (fra) { fra.tider.push(d); return; }
+      dager.push({ dag: d.dag, tider: [d] });
+    });
+
+    const aapne = (rad) => () => {
+      const ledig = rad.tider.filter(t => !t.sperret && (t.ledige == null || t.ledige > 0));
+      const en = ledig.length === 1 ? ledig[0] : (rad.tider.length === 1 ? rad.tider[0] : null);
+      this.setState(Object.assign({
+        side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false,
+        ventelisteBekreftet: null, bDag: rad.dag, bAlleDatoer: false,
+        bDato: null, bOktId: null,
+      }, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
+      window.scrollTo(0, 0);
+    };
+
+    return {
+      kdHar: true,
+      kdListe: dager.slice(0, 3).map(rad => {
+        const full = rad.tider.every(t => t.sperret || (t.ledige != null && t.ledige <= 0));
+        return {
+          // «onsdag 9. september» → «ons 9. sep». Kortet har smal plass, og
+          // tre fulle datoer ville brutt over seks linjer.
+          tekst: String(rad.dag)
+            .replace(/^(man|tirs|ons|tors|fre|lør|søn)dag\s/i, (m, d) => d.toLowerCase() + '. ')
+            .replace(/\s(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)$/i,
+                     (m, mn) => ' ' + mn.slice(0, 3).toLowerCase() + '.'),
+          full,
+          velg: full ? (() => {}) : aapne(rad),
+          stil: {
+            appearance: 'none', cursor: full ? 'default' : 'pointer', whiteSpace: 'nowrap',
+            border: '1px solid ' + (full ? 'var(--border-subtle)' : 'var(--lissom-brown)'),
+            background: 'transparent', color: full ? 'var(--text-muted)' : 'var(--lissom-brown)',
+            borderRadius: 'var(--radius-pill)', padding: '5px 11px', minHeight: 32,
+            font: 'var(--type-body-sm)', fontWeight: 600,
+            textDecoration: full ? 'line-through' : 'none', opacity: full ? .6 : 1,
+          },
+        };
+      }),
+      kdFlere: dager.length > 3,
+      kdFlereTekst: 'Se alle ' + dager.length + ' datoer',
+      // Resten staar paa kurset, der hele velgeren er.
+      kdSeFlere: () => {
+        this.setState({
+          side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false,
+          bDato: null, bOktId: null, bDag: null, bAlleDatoer: true, ventelisteBekreftet: null,
+        });
+        window.scrollTo(0, 0);
+      },
+    };
   }
 
   // Kurs som bare finnes i databasen.
@@ -20247,6 +20461,39 @@ class Component extends DCLogic {
    * Lista hentes paa nytt etterpaa. Vi gjetter ikke paa hva som ble
    * refundert: det staar i basen naar serveren har svart.
    */
+  /**
+   * Sender kvitteringen paa nytt.
+   *
+   * Kunden mistet den, eller den kom aldri fram. Da skal den samme kunne
+   * sendes igjen — et nytt salg ville blitt en ny linje i regnskapet for noe
+   * som alt er betalt.
+   */
+  kvitteringPaaNytt(referanse) {
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Krever den ekte siden',
+                      kvitteringDetalj: 'Kvitteringen sendes med e-post, og det skjer bare på lissom.no.' });
+      return Promise.resolve(false);
+    }
+    return fetch('/api/admin/betalinger.php', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ handling: 'kvittering', referanse }),
+    })
+      .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok !== false, d: d || {} })))
+      .then(({ ok, d }) => {
+        this.setState({
+          kvittering: ok ? 'Kvitteringen er sendt' : 'Ble ikke sendt',
+          kvitteringDetalj: ok ? (d.beskjed || '') : (d.feil || 'Prøv igjen om litt.'),
+        });
+        return ok;
+      })
+      .catch(() => {
+        this.setState({ kvittering: 'Ble ikke sendt',
+                        kvitteringDetalj: 'Fikk ikke svar fra serveren. Prøv igjen.' });
+        return false;
+      });
+  }
+
   refunderKall(referanse, kroner) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden',
@@ -31550,7 +31797,147 @@ class Component extends DCLogic {
           adminNavUttak: this.adminMeny(),
 
           utSalgVis: del === 'salg',
-          utVarerVis: del !== 'salg',
+          utVarerVis: del === 'butikk' || del === 'intern',
+
+          // ── Betalingene, i kassa ──────────────────────────────────────
+          //
+          // Eieren, 1. september: «Jeg mangler og en viktig funksjon som maa
+          // ligge i kortet kasse. 1. her maa betalinger ses 2. betalinger
+          // maa vaere klikkbare 3. jeg maa kunne reversere belop naar jeg
+          // klikker inn».
+          //
+          // Alt av dette fantes fra for — men under OEkonomi, tre klikk unna
+          // og et annet sted enn der man staar naar kunden er ved disken. Det
+          // er samme lista og samme refusjon; den staar bare der den brukes.
+          //
+          // Paa sporsmaal om omfang svarte han: alt, med sok. Serveren
+          // strekker derfor tusen rader tilbake, ikke to hundre.
+          ...(() => {
+            if (del !== 'betalinger') return { utBetalingerVis: false };
+            const alle = st.adminBetalinger || [];
+            const sokB = (st.btSok || '').trim().toLowerCase();
+
+            // Dagsoppgjoret. Bare det som faktisk er penger inn: en betaling
+            // som ikke er gjennomfort er ingen omsetning, og det som er
+            // refundert er sendt tilbake.
+            const idagIso = (() => {
+              const d = new Date();
+              return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+                   + '-' + String(d.getDate()).padStart(2, '0');
+            })();
+            const iDag = alle.filter(b => b.dato === idagIso
+              && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1);
+            const netto = b => Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));
+            const kontant = iDag.filter(b => !b.erVipps).reduce((n, b) => n + netto(b), 0);
+            const vipps = iDag.filter(b => b.erVipps).reduce((n, b) => n + netto(b), 0);
+            const FORMAL = { booking: 'Kurs og events', ordre: 'Butikk',
+                             medlemskap: 'Medlemskap', gavekort: 'Gavekort' };
+            const perFormal = Object.keys(FORMAL)
+              .map(f => ({ navn: FORMAL[f], sum: iDag.filter(b => b.formal === f).reduce((n, b) => n + netto(b), 0) }))
+              .filter(r => r.sum > 0)
+              .map(r => ({ navn: r.navn, sum: this.kroner(r.sum) }));
+
+            const treff = alle.filter(b => {
+              if (!sokB) return true;
+              return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',
+                      b.formal || '', b.maate || '', b.status || ''
+              ].join(' ').toLowerCase().indexOf(sokB) !== -1;
+            });
+
+            const STATUSTEKST = {
+              betalt: 'Betalt', venter: 'Venter', opprettet: 'Ikke fullført',
+              avbrutt: 'Avbrutt', feilet: 'Feilet',
+              refundert: 'Refundert', delvis_refundert: 'Delvis refundert',
+            };
+
+            return {
+              utBetalingerVis: true,
+              boDato: this.kroner ? new Date().toLocaleDateString('nb-NO',
+                { weekday: 'long', day: 'numeric', month: 'long' }) : '',
+              boKontant: this.kroner(kontant),
+              boVipps: this.kroner(vipps),
+              boTotalt: this.kroner(kontant + vipps),
+              boAntall: iDag.length + (iDag.length === 1 ? ' betaling i dag' : ' betalinger i dag'),
+              boFormal: perFormal,
+              boHarFormal: perFormal.length > 0,
+
+              btSok: st.btSok || '',
+              settBtSok: e => this.setState({ btSok: e.target.value }),
+              btAntall: treff.length + ' av ' + alle.length,
+              btIngen: treff.length === 0,
+              btIngenTekst: sokB
+                ? 'Ingen betalinger passer «' + (st.btSok || '').trim() + '».'
+                : 'Ingen betalinger ennå.',
+
+              btListe: treff.slice(0, 200).map(b => {
+                const igjen = Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));
+                const kanRef = b.erVipps
+                  && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1
+                  && igjen > 0;
+                const apen = st.btApen === b.referanse;
+                return {
+                  navn: b.medlem || 'Gjest',
+                  hva: ({ booking: 'Kursbooking', gavekort: 'Gavekort',
+                          ordre: 'Butikkordre', medlemskap: 'Medlemskap' })[b.formal] || b.formal,
+                  tid: b.tidspunkt,
+                  sum: b.belop,
+                  maate: b.maate,
+                  status: STATUSTEKST[String(b.status || '')] || b.status,
+                  refundertTekst: b.refundert ? 'Refundert ' + b.refundert : '',
+                  harRefundert: !!b.refundert,
+                  apen,
+                  velg: () => this.setState(s2 => ({
+                    btApen: s2.btApen === b.referanse ? null : b.referanse,
+                    refBelop: '',
+                  })),
+                  radStil: {
+                    display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 'var(--space-3)',
+                    rowGap: 4, width: '100%', textAlign: 'left', appearance: 'none', cursor: 'pointer',
+                    background: apen ? 'var(--clay-100)' : 'transparent', border: 'none',
+                    borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-4) var(--space-6)',
+                    font: 'var(--type-body-sm)', color: 'var(--text-heading)',
+                  },
+                  merkeStil: {
+                    fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+                    textTransform: 'uppercase', whiteSpace: 'nowrap',
+                    color: String(b.status) === 'betalt' ? 'var(--sage-600, var(--text-muted))'
+                         : String(b.status).indexOf('refundert') !== -1 ? 'var(--terracotta-600)'
+                         : 'var(--text-muted)',
+                  },
+
+                  // ── Reversering ────────────────────────────────────────
+                  //
+                  // Pengene gaar tilbake paa Vipps med det samme. Derfor et
+                  // bekreftelsessteg med navn og belop, og derfor staar det
+                  // at det ikke kan angres — det kan det ikke.
+                  kanRefundere: kanRef,
+                  refHjelp: 'Står feltet tomt, refunderes hele det som gjenstår — '
+                    + this.kroner(igjen) + '.',
+                  refKnapp: 'Reverser ' + this.kroner(igjen),
+                  refUtfor: () => {
+                    const skrevet = parseInt(String(this.state.refBelop || '').replace(/\s/g, ''), 10);
+                    const ore = skrevet > 0 ? Math.min(skrevet * 100, igjen) : igjen;
+                    if (ore <= 0) { this.setState({ kvittering: 'Ingenting å reversere' }); return; }
+                    if (!window.confirm('Reversere ' + this.kroner(ore) + ' til '
+                        + (b.medlem || 'kunden') + '?\n\n'
+                        + 'Pengene går tilbake på Vipps med det samme. Dette kan ikke angres.')) return;
+                    this.refunderKall(b.referanse, Math.round(ore / 100))
+                      .then(() => this.setState({ btApen: null }));
+                  },
+                  // Kontantsalg har aldri vaert innom Vipps. Da staar det
+                  // hvorfor knappen ikke er der, framfor at den bare mangler.
+                  refSperret: !b.erVipps && igjen > 0
+                    && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1,
+                  refSperreTekst: 'Kontantsalg har ikke gått gjennom Vipps, så det finnes '
+                    + 'ingen penger å sende tilbake. Annuller salget under «Salg» i stedet.',
+
+                  // ── Kvittering paa nytt ────────────────────────────────
+                  harKvittering: !!(b.bookingId || b.ordreId),
+                  sendKvittering: () => this.kvitteringPaaNytt(b.referanse),
+                };
+              }),
+            };
+          })(),
 
           utBelop: st.utBelop || '',
           settUtBelop: e => this.setState({ utBelop: e.target.value, utSalgBeskjed: '' }),
@@ -40683,6 +41070,9 @@ class Component extends DCLogic {
           ['Salg',             'salg',   'adminuttak'],
           ['Varer i butikken', 'butikk', 'adminuttak'],
           ['Internbutikk',     'intern', 'adminuttak'],
+          // Betalingene hoerer til i kassa, ikke tre klikk unna under
+          // OEkonomi. Det er der man staar naar kunden vil ha pengene igjen.
+          ['Betalinger',       'betalinger', 'adminuttak'],
         ];
         return {
           kasseValg: rader.map(([navn, verdi]) => ({

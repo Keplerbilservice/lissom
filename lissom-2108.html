@@ -26062,7 +26062,17 @@ class Component extends DCLogic {
         kap: kjede.reduce((n, e) => n + (e.kap || 0), 0),
         pameldt: kjede.reduce((n, e) => n + (e.pameldt || 0), 0),
         deltakere: kjede.reduce((a, e) => a.concat(e.deltakere || []), []),
-        venteliste: kjede.reduce((a, e) => a.concat(e.venteliste || []), []),
+        // Den som venter paa kurset staar paa hver okt i kjeden. En gruppe
+        // som samler tre av dem skal ikke si «3 venter» om én person.
+        venteliste: (() => {
+          const sett = {}, ut = [];
+          kjede.forEach(e => (e.venteliste || []).forEach(v => {
+            const n2 = v.id != null ? 'w' + v.id : 'n' + v.navn;
+            if (sett[n2]) { return; }
+            sett[n2] = true; ut.push(v);
+          }));
+          return ut;
+        })(),
         nye: kjede.reduce((n, e) => n + (e.nye || 0), 0),
         avlyst: kjede.every(e => e.avlyst),
         publisert: kjede.every(e => e.publisert !== false),
@@ -26349,6 +26359,12 @@ class Component extends DCLogic {
             harAvatarer: (p.e.deltakere || []).length > 0,
             harFlere: (p.e.deltakere || []).length > 6,
             flereTekst: '+' + Math.max(0, (p.e.deltakere || []).length - 6),
+            // Ingen pille for koen paa kortet. Den sto her et oyeblikk og sa
+            // «1 venter · paa kurset» — men eieren, 1. september: «hvorfor
+            // merke en venter paa kurset? det er ikke det jeg snakker om, saa
+            // det skal ikke frem». Det han var ute etter er feltet
+            // «Venteliste» i sidemenyen under «Alle kurs», og det er koen fra
+            // serveren som fyller det.
             harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadStil: { display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px', background: 'var(--terracotta-500)', color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '1px 8px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em' },
             merknadTekst: (() => { const n = (p.e.deltakere || []).filter(dl => dl.merknad).length; return n + (n === 1 ? ' merknad' : ' merknader'); })(),
@@ -26972,13 +26988,23 @@ class Component extends DCLogic {
               klBSvarSendtTekst: bv ? 'Svaret er sendt til ' + bv.fra + '.' : '',
             };
           })(),
-          klVlSide: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).reduce((acc, e) => acc.concat(e.venteliste.map(v => {
+          // Panelet lister dem som venter, med kurset og kvelden. Den som
+          // venter paa kurset staar paa hver kommende dato — uten dette ville
+          // én person fylt alle de aatte plassene alene. Hun staar paa den
+          // forste, som ogsaa er den hun mest sannsynlig far.
+          klVlSide: (() => { const sett = {}; return alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).sort((a, b) => (a.dato + a.tid).localeCompare(b.dato + b.tid)).reduce((acc, e) => acc.concat(e.venteliste.filter(v => {
+            const n2 = v.id != null ? 'w' + v.id : 'n' + v.navn + '|' + e.tittel;
+            if (sett[n2]) { return false; }
+            sett[n2] = true; return true;
+          }).map(v => {
             const d = new Date(e.dato + 'T12:00:00');
             const smal = this.erSmal();
             return {
               navn: v.navn,
               kurs: e.tittel,
-              under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3) + ' · #' + v.posisjon,
+              under: (v.paaKurset
+                ? 'Hele kurset'
+                : uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3)) + ' · #' + v.posisjon,
               // Samme regel som kurspillene over: lav pille paa mobilen, det
               // store kortet paa pc.
               kortStil: Object.assign({ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftStyle: 'solid', borderLeftColor: 'var(--terracotta-500)', cursor: 'grab', userSelect: 'none' },
@@ -26999,7 +27025,7 @@ class Component extends DCLogic {
                 : { fontSize: '12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' },
               ned: ev => this.klVlDragStart({ id: v.id, navn: v.navn, srcId: e.id }, ev),
             };
-          })), []).slice(0, 8),
+          })), []).slice(0, 8); })(),
           klVlSideTom: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).length === 0,
           ...(() => {
             const vb = this.state.klVlBekreft;

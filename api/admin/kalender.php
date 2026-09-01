@@ -120,6 +120,29 @@ if ($oktIder !== []) {
 }
 
 // ── Ventelistene ────────────────────────────────────────────────────────
+//
+// To slag folk staar i koen:
+//
+//   paa datoen    de valgte en bestemt kveld
+//   paa kurset    de valgte ikke dato, eller raden er eldre enn datokolonna
+//
+// Her sto bare «WHERE w.course_session_id IN (...)». Den som ventet paa
+// kurset falt ut av spoerringen og var usynlig i kalenderen uansett hvilken
+// dato man aapnet — mens hun sto tydelig paa Venteliste-skjermen, som bruker
+// LEFT JOIN og tar med alle.
+//
+// Eieren, 1. september: «vi har faktisk en paa venteliste, men den vises ikke
+// i kallender?» — og da han hadde funnet henne: «men ingen paa venteliste paa
+// kalender side meny, til tross for at det er en person paa venteliste i
+// venteliste kortet».
+//
+// Malt paa testbasen: Venteliste-skjermen fant 1 rad, kalenderen fant 0 paa
+// alle 69 oektene i sju uker — ogsaa paa de 11 datoene for kurset hun ventet
+// paa.
+//
+// Naa staar hun paa hver kommende dato for kurset, merket «paaKurset» saa det
+// er tydelig at hun ikke har valgt kveld. Det er ikke en dublett: hun venter
+// paa kurset, og kan settes inn paa hvilken som helst av dem.
 $venter = [];
 if ($oktIder !== []) {
     $inn = implode(',', $oktIder);
@@ -130,7 +153,40 @@ if ($oktIder !== []) {
             AND w.status IN ('venter','varslet')
        ORDER BY w.posisjon"
     ) as $w) {
+        $w['paa_kurset'] = false;
         $venter[(int) $w['course_session_id']][] = $w;
+    }
+
+    // De som venter paa kurset. Bare paa oekter som ikke har vaert: en plass
+    // paa en kveld som er over er ingen plass. Kalenderen henter en uke
+    // bakover, saa uten den grensa ville hun ogsaa staatt paa forrige uke.
+    $kursIder = array_values(array_unique(array_map(
+        static fn(array $o): int => (int) $o['course_id'],
+        $okter
+    )));
+    $utenDato = [];
+    foreach (DB::alle(
+        'SELECT w.id, w.course_id, w.navn, w.posisjon, w.status
+           FROM waitlist w
+          WHERE w.course_session_id IS NULL
+            AND w.course_id IN (' . implode(',', $kursIder) . ")
+            AND w.status IN ('venter','varslet')
+       ORDER BY w.posisjon"
+    ) as $w) {
+        $w['paa_kurset'] = true;
+        $utenDato[(int) $w['course_id']][] = $w;
+    }
+    if ($utenDato !== []) {
+        $naa = (new DateTimeImmutable('now', $utc))->format('Y-m-d H:i:s');
+        foreach ($okter as $o) {
+            $ko = $utenDato[(int) $o['course_id']] ?? [];
+            if ($ko === [] || (string) $o['start_tid'] < $naa) {
+                continue;
+            }
+            foreach ($ko as $w) {
+                $venter[(int) $o['id']][] = $w;
+            }
+        }
     }
 }
 
@@ -302,6 +358,9 @@ foreach ($okter as $o) {
             'navn'     => (string) $w['navn'],
             'posisjon' => (int) $w['posisjon'],
             'varslet'  => (string) $w['status'] === 'varslet',
+            // Venter hun paa kurset og ikke paa denne kvelden? Da staar hun
+            // paa alle de kommende datoene, og skjermen skal si hvorfor.
+            'paaKurset' => !empty($w['paa_kurset']),
         ];
     }
 

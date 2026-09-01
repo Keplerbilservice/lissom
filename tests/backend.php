@@ -5648,6 +5648,122 @@ sjekk('hver kopp baerer fortsatt navnet til den paameldte',
     str_contains($sida, '<span title="{{ av.tittel }}" style="{{ av.stil }}">')
     && str_contains($sida, 'tittel: dl.navn,'));
 
+// ── Den som venter paa kurset finnes ogsaa ────────────────────────────
+//
+// Ventelista har to slag folk: de som valgte en bestemt kveld, og de som
+// valgte kurset. De siste far course_session_id = NULL (api/venteliste.php),
+// og det gjor ogsaa hver rad som er eldre enn den kolonna.
+//
+// Kalenderen hentet koen med «WHERE w.course_session_id IN (...)». Den som
+// ventet paa kurset falt ut av spoerringen og var usynlig uansett hvilken
+// dato man aapnet — mens hun sto tydelig paa Venteliste-skjermen, som bruker
+// LEFT JOIN og tar med alle. To skjermer, samme base, motsatt svar.
+//
+// Eieren, 1. september: «vi har faktisk en paa venteliste, men den vises ikke
+// i kallender?» og «men ingen paa venteliste paa kalender side meny, til
+// tross for at det er en person paa venteliste i venteliste kortet».
+//
+// Malt paa denne basen for og etter: Venteliste-skjermen fant 1 rad,
+// kalenderen fant 0 paa alle 69 oektene i sju uker — etterpaa 10, alle
+// merket «paaKurset».
+$kalFil = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
+sjekk('kalenderen henter ogsaa dem som venter paa kurset',
+    str_contains($kalFil, 'WHERE w.course_session_id IS NULL'));
+sjekk('… og merker dem, saa skjermen kan si hvorfor de staar der',
+    str_contains($kalFil, "'paaKurset' => !empty(\$w['paa_kurset']),"));
+// Bare kommende datoer: en plass paa en kveld som er over er ingen plass, og
+// kalenderen henter en uke bakover.
+sjekk('… bare paa datoer som ikke har vaert',
+    str_contains($kalFil, "if (\$ko === [] || (string) \$o['start_tid'] < \$naa) {"));
+// Og den gamle spoerringa skal fortsatt staa: de som valgte en kveld skal
+// vaere paa nettopp den kvelden, ikke paa alle.
+sjekk('… mens den som valgte en kveld fortsatt staar bare der',
+    str_contains($kalFil, 'WHERE w.course_session_id IN ({$inn})')
+    && str_contains($kalFil, "\$w['paa_kurset'] = false;"));
+
+// Regelen, malt mot basen og ikke mot teksten i filen. Uten dette ville
+// sjekkene over vaere gronne selv om spoerringa aldri fant noen.
+if (DB::harTabell('waitlist') && DB::harTabell('course_sessions')) {
+    $utenDato = DB::alle(
+        "SELECT id, course_id, navn FROM waitlist
+          WHERE course_session_id IS NULL AND status IN ('venter','varslet')"
+    );
+    // Den gamle spoerringa, ordrett: bare rader som henger paa en okt.
+    $gammelFant = array_map(
+        static fn(array $r): int => (int) $r['id'],
+        DB::alle(
+            "SELECT w.id FROM waitlist w
+               JOIN course_sessions cs ON cs.id = w.course_session_id
+              WHERE w.status IN ('venter','varslet')"
+        )
+    );
+    // Den nye: i tillegg de uten dato, paa kurs som har en kveld igjen.
+    $nyFant = array_map(
+        static fn(array $r): int => (int) $r['id'],
+        DB::alle(
+            "SELECT w.id FROM waitlist w
+              WHERE w.course_session_id IS NULL
+                AND w.status IN ('venter','varslet')
+                AND EXISTS (SELECT 1 FROM course_sessions cs
+                             WHERE cs.course_id = w.course_id
+                               AND cs.start_tid >= NOW())"
+        )
+    );
+    // Ingen av dem den nye finner sto i den gamle. Det er hele feilen:
+    // to skjermer, samme base, motsatt svar.
+    sjekk('de uten dato er nettopp dem den gamle spoerringa ikke fant',
+        array_intersect($nyFant, $gammelFant) === [],
+        'gammel ' . count($gammelFant) . ', ny ' . count($nyFant));
+    // Og hver av dem har faktisk en kveld aa staa paa — ellers ville fiksen
+    // ikke gjort dem synlige noe sted.
+    foreach ($nyFant as $wid) {
+        $antall = (int) DB::verdi(
+            'SELECT COUNT(*) FROM course_sessions cs
+               JOIN waitlist w ON w.course_id = cs.course_id
+              WHERE w.id = :i AND cs.start_tid >= NOW()',
+            ['i' => $wid]
+        );
+        sjekk('… og hver av dem staar paa minst én kommende dato',
+            $antall > 0, 'venteliste #' . $wid . ': ' . $antall . ' datoer');
+    }
+}
+
+// ── Ingen pille paa kortet ────────────────────────────────────────────
+//
+// Koen fikk et oyeblikk en pille paa selve kortet som sa «1 venter · paa
+// kurset». Eieren, 1. september: «hvorfor merke en venter paa kurset? det er
+// ikke det jeg snakker om, saa det skal ikke frem» — og: «men om du ser paa
+// sidemenyen paa kallenderen, saa er det et felt under alle kurs, som heter
+// venteliste».
+//
+// Det er sidepanelet som skal fylles, ikke kortet. Denne staar for at pilla
+// ikke skal snike seg inn igjen.
+sjekk('kortene i kalenderen har ingen pille for koen',
+    !str_contains($sida, 'harVenteliste: (p.e.venteliste || []).length > 0,')
+    && !str_contains($sida, '{{ h.ventelisteTekst }}')
+    && !str_contains($sida, '{{ h.ventelisteAntall }}'));
+// Sveipekortet og hoyreklikkmenyen sa det fra for, og skal fortsatt gjore det.
+sjekk('… mens sveipekortet fortsatt sier hvor mange som venter',
+    str_contains($sida, "' · ' + he.venteliste.length + ' på venteliste'"));
+sjekk('… og hoyreklikkmenyen fortsatt kan gi plassen',
+    str_contains($sida, "{ navn: 'Tildel plass: ' + menyEvt.venteliste[0].navn,"));
+
+// ── Én person, én rad ─────────────────────────────────────────────────
+//
+// Den som venter paa kurset staar paa hver kommende dato. Sidepanelet lister
+// én rad per person per dato og kutter paa aatte — uten en dublettsjekk ville
+// én person fylt hele panelet alene. Malt i nettleseren: hun staar én gang.
+sjekk('sidepanelet viser hver som venter én gang',
+    str_contains($sida, "klVlSide: (() => { const sett = {}; return alle.filter(")
+    && str_contains($sida, "if (sett[n2]) { return false; }"));
+sjekk('… og sier «Hele kurset» framfor en kveld hun ikke har valgt',
+    str_contains($sida, "under: (v.paaKurset
+                ? 'Hele kurset'"));
+// Grupperte oekter (et kurs over flere dager paa én paamelding) legger
+// koene sammen. Uten dublettsjekk ville «3 venter» vaert én person.
+sjekk('grupperte oekter teller ikke den samme personen flere ganger',
+    str_contains($sida, "kjede.forEach(e => (e.venteliste || []).forEach(v => {"));
+
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //
 // Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare

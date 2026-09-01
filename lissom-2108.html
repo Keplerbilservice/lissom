@@ -32868,6 +32868,26 @@ class Component extends DCLogic {
                  + 'eller se når den går ut.',
                  null, 'Se malene', () => this.gaaAdmin('adminmaler', {})),
 
+            // Hva de andre ser.
+            //
+            // Kortene fantes fra for — deltakerens under «Kurs og deltakere»,
+            // medlemmets under «Medlemmer». Eieren, 1. september: «paa
+            // oversikt, kan du legge til hva medlemene ser, og hva deltakerne
+            // ser» — og: «kortene finnes allerede fra for, jeg vil bare ha de
+            // paa oversikten».
+            //
+            // De staar fortsatt der de sto. Dette er en vei til, ikke en
+            // flytting: den som aapner Oversikt om morgenen skal kunne se hva
+            // kunden faktisk faar, uten aa lete etter det.
+            kort('Hva kursdeltakere ser',
+                 'Min side slik den ser ut for en som har vært på kurs, men ikke er medlem.',
+                 null, 'Se siden',
+                 () => this.gaaAdmin('minside', { fhRolle: 'deltaker', fhFra: 'adminoversikt' })),
+            kort('Hva medlemmer ser',
+                 'Min side slik den ser ut for et medlem. Samme skjerm som medlemmene bruker.',
+                 null, 'Se siden',
+                 () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
+
             kort('Butikk',
                  'Varer, priser, bilder og lager.',
                  varer.length || null, 'Se butikken',

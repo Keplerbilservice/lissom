@@ -3798,6 +3798,76 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── Betalingene i kassa ────────────────────────────────────────────────
+//
+// Eieren, 1. september: «Jeg mangler og en viktig funksjon som maa ligge i
+// kortet kasse. 1. her maa betalinger ses 2. betalinger maa vaere klikkbare
+// 3. jeg maa kunne reversere belop naar jeg klikker inn.»
+//
+// Alle tre fantes fra for — men under OEkonomi, tre klikk unna og et annet
+// sted enn der man staar naar kunden er ved disken. Det er samme liste og
+// samme refusjon; den staar naa der den brukes. Paa sporsmaal om omfang
+// svarte han: alt, med sok — og i tillegg dagsoppgjor, kvittering paa nytt
+// og sok.
+$bet = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+
+sjekk('kassa har en egen fane for betalinger',
+    str_contains($sida2, "['Betalinger',       'betalinger', 'adminuttak'],"));
+sjekk('… og de andre fanene viker for den',
+    str_contains($sida2, "utVarerVis: del === 'butikk' || del === 'intern',"));
+sjekk('… og lista er sokbar',
+    str_contains($sida2, 'settBtSok: e => this.setState({ btSok: e.target.value }),'));
+sjekk('… og radene er klikkbare',
+    str_contains($sida2, 'btApen: s2.btApen === b.referanse ? null : b.referanse,'));
+
+// Reverseringen sender penger. Da skal det bekreftes med navn og belop, og
+// det skal staa at det ikke kan angres — for det kan det ikke.
+sjekk('reverseringen bekreftes med navn og belop',
+    str_contains($sida2, "window.confirm('Reversere ' + this.kroner(ore) + ' til '"));
+sjekk('… og sier at det ikke kan angres',
+    str_contains($sida2, 'Pengene går tilbake på Vipps med det samme. Dette kan ikke angres.'));
+// Tomt felt = hele resten. Skrevet tall = bare det, men aldri mer enn det
+// som staar igjen.
+sjekk('… og delbelop er mulig, men aldri mer enn det som staar igjen',
+    str_contains($sida2, 'const ore = skrevet > 0 ? Math.min(skrevet * 100, igjen) : igjen;'));
+
+// Et kontantsalg har aldri vaert innom Vipps. Foer denne sto refusjonen og
+// ventet paa en feil fra Vipps paa en referanse Vipps ikke kjenner.
+sjekk('kontantsalg kan ikke reverseres gjennom Vipps',
+    str_contains($bet, "if ((string) \$betaling['type'] === 'manuell') {"));
+sjekk('… og skjermen sier hvorfor, framfor aa mangle knappen',
+    str_contains($sida2, 'refSperreTekst:'));
+
+// Dagsoppgjoret skal vise det som faktisk staar igjen.
+sjekk('dagsoppgjoret deler dagen i kontant og Vipps',
+    str_contains($sida2, 'const kontant = iDag.filter(b => !b.erVipps).reduce((n, b) => n + netto(b), 0);')
+    && str_contains($sida2, 'const vipps = iDag.filter(b => b.erVipps).reduce((n, b) => n + netto(b), 0);'));
+sjekk('… og trekker fra det som er refundert',
+    str_contains($sida2, 'const netto = b => Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));'));
+sjekk('… og teller bare gjennomforte betalinger',
+    str_contains($sida2, "&& ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1);"));
+sjekk('serveren sier hvilken betalingsmaate det var',
+    str_contains($bet, "'maate'      => (string) \$p['type'] === 'manuell' ? 'Kontant' : 'Vipps',"));
+
+// Kvitteringen sendes paa nytt med de samme funksjonene bookingen og ordren
+// bruker naar de blir betalt — ingen ny tekst, og ingen ny ordre.
+sjekk('kvitteringen kan sendes paa nytt',
+    str_contains($bet, "if (Foresporsel::tekst('handling') === 'kvittering') {"));
+sjekk('… med de samme bekreftelsene som ved betaling',
+    str_contains($bet, 'Booking::sendBekreftelse((int) $booking[\'id\']);')
+    && str_contains($bet, 'Booking::sendOrdrebekreftelse((int) $ordre[\'id\']);'));
+// Gavekort og medlemstrekk har ingen kvittering av dette slaget. Da skal det
+// staa, framfor at skjermen svarer «sendt» uten aa ha sendt noe.
+sjekk('… og sier fra naar det ikke finnes noen kvittering',
+    str_contains($bet, "Svar::feil('Denne betalingen har ingen kvittering å sende. '"));
+sjekk('… og knappen staar bare der det finnes en',
+    str_contains($sida2, 'harKvittering: !!(b.bookingId || b.ordreId),'));
+
+// Et sok som bare naar to hundre rader tilbake finner ikke betalingen fra
+// forrige maaned.
+sjekk('lista strekker lenger enn to hundre rader',
+    str_contains($bet, 'LIMIT 1000'));
+
 // ── Tre datoer paa kurskortet ──────────────────────────────────────────
 //
 // Kortet bar foer bare den FOERSTE datoen, og den ble lest som den eneste.

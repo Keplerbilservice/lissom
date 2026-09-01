@@ -2474,9 +2474,11 @@ sjekk('kalenderen staar oeverst paa telefon, foran kortene og sidespaltene',
 // Alle de aktive kursholderne sto som spalter saa snart ingen av dem hadde
 // noe, saa en dag uten kurs ble tre tomme spalter. Eieren spurte hvorfor hun
 // saa seg selv — hun holder sjelden kurs, og «Monica er default».
+// Regelen fikk et ledd til 1. september: spalta for det som ikke er tildelt
+// noen staar aldri fast — se «Kalenderen: to feil som gjemte kurs».
 sjekk('den som vanligvis holder kursene staar som spalte',
     str_contains($sida, 'klStandardHolder()')
-    && str_contains($sida, 'const staarFast = kn => kn === stdHolder;'));
+    && str_contains($sida, 'const staarFast = kn => kn === stdHolder && kn !== UTEN_HOLDER;'));
 // Navnet skal ikke staa i koden. Settes en annen som standard, eller slutter
 // hen, foelger kalenderen med av seg selv.
 sjekk('standarden leses av registeret, ikke av et navn i koden',
@@ -3798,6 +3800,59 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── Kalenderen: to feil som gjemte kurs ────────────────────────────────
+//
+// Eieren, 1. september: «Kurset lag din egen bolle 3 september. Den vises paa
+// min admin, men ikke monica sin. Er det noe feil eller manglende synk i
+// admin brukerne» — og etterpaa: «Paa monica sin saa vises det paa mobil
+// admin ikke pc».
+//
+// To ulike feil, som saa like ut.
+//
+// 1) DAGSVISNINGEN HADDE INGEN PLASS TIL DET SOM IKKE ER TILDELT NOEN.
+//    Spaltene lages per kursholder, og en okt uten tildelt holder passet
+//    ingen av dem — den ble aldri tegnet. Mobilen staar i listevisning, som
+//    tegner alt; PC-en staar i dagsvisning. Skjermbildet hans sa det selv:
+//    «· 2 okter · 0 av 20 plasser» oeverst, og Monica-spalta under med «1
+//    okt». Den andre var borte.
+//
+//    Maalt: en okt uten kursholder i dag var usynlig paa 1400 px og synlig
+//    paa 390 px. Etterpaa staar den begge steder.
+sjekk('dagsvisningen har en spalte for det som ikke er tildelt noen',
+    str_contains($sida2, "const UTEN_HOLDER = 'Uten kursholder';")
+    && str_contains($sida2, 'this.klHoldere().concat([UTEN_HOLDER]).map(kn => {'));
+sjekk('… og den henter oktene uten holder',
+    str_contains($sida2, "? dagensAlle.filter(e => !e.holder)"));
+// En tom spalte hver dag ville vaert stoy. Den skal bare staa naar den har noe.
+sjekk('… og staar bare naar den har noe',
+    str_contains($sida2, 'const staarFast = kn => kn === stdHolder && kn !== UTEN_HOLDER;'));
+// Spalta er ingen person: ingen beskjeder aa sende, ingen side aa aapne.
+sjekk('… og er ikke en person',
+    str_contains($sida2, 'erPerson: kn !== UTEN_HOLDER,'));
+
+// 2) KALENDEREN HENTET HVER MAANED ÉN GANG OG ALDRI MER.
+//    «kalHentet» merker maaneden som hentet, og klHent() gaar rett ut igjen.
+//    klFrisk() nullstiller merkene — men kalles bare etter endringer man gjor
+//    selv. Gjorde noen andre endringen, kom den aldri fram.
+//
+//    Maalt: med kalenderen aapen la jeg et kurs i basen; det kom ikke fram
+//    ved aa vente eller klikke. Etterpaa kommer det naar fanen hentes fram.
+sjekk('kalenderen hentes paa nytt', str_contains($sida2, '  oppfriskKalender() {'));
+sjekk('… naar fanen kommer fram, og hvert minutt',
+    str_contains($sida2, 'this._kalenderur = setInterval(() => this.oppfriskKalender(), 60000);')
+    && str_contains($sida2, "document.addEventListener('visibilitychange', this._kalenderSynlig);"));
+sjekk('… bare naar kalenderen faktisk staar framme',
+    str_contains($sida2, "if (this.state.side !== 'adminkalender' || document.hidden) return;"));
+// Midt i en flytting skal ingenting rykke under fingeren.
+sjekk('… og ikke midt i en flytting',
+    str_contains($sida2, 'if (this.state.klDrag) return;'));
+// Merkene nullstilles, men dataene blir staaende til de nye kommer — ellers
+// ville kalenderen blinket tom hvert minutt.
+sjekk('… uten aa blinke tom',
+    str_contains($sida2, 'this.setState({ kalHentet: {} });'));
+sjekk('… og klokka ryddes naar skjermen forlates',
+    str_contains($sida2, 'clearInterval(this._kalenderur);'));
+
 // ── Betalingene i kassa ────────────────────────────────────────────────
 //
 // Eieren, 1. september: «Jeg mangler og en viktig funksjon som maa ligge i
@@ -3871,35 +3926,38 @@ sjekk('lista strekker lenger enn to hundre rader',
 // ── Tre datoer paa kurskortet ──────────────────────────────────────────
 //
 // Kortet bar foer bare den FOERSTE datoen, og den ble lest som den eneste.
-// Nybegynner dreiekurs gaar 9., 11. og 16. september og ni ganger til; kortet
-// sa «onsdag 9. – torsdag 10. september», og resten fantes ikke for den som
-// saa paa lista. Eieren, 31. august: «paa disse kortene maa vi fjerne dato» —
-// saa datoen ble tatt bort.
+// Nybegynner dreiekurs gaar 9. og 16. september og 7. oktober; kortet sa
+// «onsdag 9. – torsdag 10. september», og oktober fantes ikke for den som saa
+// paa lista. Eieren, 31. august: «paa disse kortene maa vi fjerne dato» — saa
+// datoen ble tatt bort.
 //
 // Men da forsvant ogsaa det folk leter etter. Eieren, 1. september: «paa
 // kortene kurs saa ba jeg deg fjerne datoer, men jeg vil at det skal vises 3
-// planlagte datoer og se fler datoer». Det er den riktige loesningen paa den
-// opprinnelige feilen: tre datoer sier at det finnes flere, én later som den
-// er alene.
+// planlagte datoer og se fler datoer».
+//
+// Foerste forsok la dem som piller UNDER kortet, fordi CourseCard er en ferdig
+// komponent utenfra. Eieren: «Jaevla stoegt» — «de maa jo vaere inni kortet og
+// diskret». Kortet har alt et felt for det: «date» tegnes med kalenderikon ved
+// siden av varigheten, inne i kortet.
 sjekk('kortene har tre datoer', str_contains($sida2, '  kortDatoer(k) {'));
 sjekk('… og den brukes av alle kortlistene',
-    str_contains($sida2, 'this.medServerdata(k0)')
-    && str_contains($sida2, '.map(k => Object.assign({}, k, this.kortDatoer(k), {'));
+    str_contains($sida2, '.map(k => Object.assign({}, k, this.kortDatoer(k), {'));
 // Kortet baerer datoene som «okter»; «datoer» er navnet i katalogen.
 sjekk('… og finner datoene under begge navnene',
     str_contains($sida2, 'const alle = (k.okter || k.datoer || []).filter(d => d && d.dag);'));
 // Tre tider samme dag er én dato paa kortet, ikke tre.
 sjekk('… og teller dager, ikke tidspunkt',
-    str_contains($sida2, "const fra = dager.find(x => x.dag === d.dag);"));
-sjekk('… og viser hoyst tre', str_contains($sida2, 'kdListe: dager.slice(0, 3)'));
-sjekk('… med en vei til resten', str_contains($sida2, "kdFlereTekst: 'Se alle ' + dager.length + ' datoer',"));
-// Datoen skal folge med inn i bookingen. Aapner den bare kurset, er knappen
-// ikke annet enn en omvei til «Book plass».
-sjekk('… og datoen folger med inn i bookingen',
-    str_contains($sida2, "}, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));"));
-// Alle tre kortlistene — forsida, populaere datoer og kurslista — har stripa.
-sjekk('alle tre kortlistene viser datoene',
-    substr_count($sida2, '<sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">') === 3);
+    str_contains($sida2, 'alle.forEach(d => { if (dager.indexOf(d.dag) === -1) dager.push(d.dag); });'));
+sjekk('… viser hoyst tre', str_contains($sida2, 'const vist = dager.slice(0, 3).map(kort).join(\' · \');'));
+sjekk('… og sier hvor mange flere det er',
+    str_contains($sida2, "return { kdDato: flere > 0 ? vist + ' +' + flere : vist };"));
+
+// Inne i kortet, ikke under det. «date» er kortets eget felt.
+sjekk('datoene staar i kortets eget datofelt',
+    substr_count($sida2, 'date="{{ k.kdDato }}"') === 3);
+// Pillene under kortet er borte, og med dem den ekstra ramma rundt.
+sjekk('… og pillestripa under kortet er borte',
+    !str_contains($sida2, 'k.kdListe') && !str_contains($sida2, 'kdSeFlere'));
 
 // ── «Kasse» i kalenderen aapner kassa ──────────────────────────────────
 //
@@ -4571,8 +4629,12 @@ sjekk('… og innstemplinga ogsaa',
 // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen» — og,
 // spurt: «hele kolonnen, jeg vil likevel legge til f eks brenning paa min
 // kalender, en kollone».
-sjekk('«Verkstedet»-kolonnen er borte, og ingen ny satt i stedet',
-    str_contains($sida, 'const alleKolonner = this.klHoldere().map(kn => {')
+// 1. september kom det én spalte tilbake — men ikke «Verkstedet», og ikke
+// som en fast kolonne. «Uten kursholder» staar bare naar den har noe, og
+// finnes fordi en okt uten tildelt holder ellers ikke ble tegnet i det hele
+// tatt. Se «Kalenderen: to feil som gjemte kurs».
+sjekk('«Verkstedet»-kolonnen er borte, og ingen ny fast kolonne satt i stedet',
+    str_contains($sida, 'this.klHoldere().concat([UTEN_HOLDER]).map(kn => {')
     && !str_contains($sida, "concat(['Verkstedet'])")
     && !str_contains($sida, "concat(['Brenning'])"));
 // Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
@@ -4583,7 +4645,7 @@ sjekk('drop-in siles bort der hendelsene hentes',
     str_contains($sida, "const alle = this.klAlle(y, m)\n"
         . "      .filter(e => e.type !== 'dropin' && e.type !== 'verksted' && e.type !== 'brenning')"));
 sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
-    str_contains($sida, "const evs = dagensAlle.filter(e => e.holder === kn);"));
+    str_contains($sida, ": dagensAlle.filter(e => e.holder === kn);"));
 // Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
 // linje med det hvite i kallenderen». Overskriftsrada i kalenderen er ulik
 // hoey i de tre visningene, saa hver visning trenger sitt eget loft. Maalt paa
@@ -4649,9 +4711,14 @@ sjekk('… og sier om standarden brukes eller er overstyrt',
 // bare den foerste av datoene kurset har, og det leses som om det er den
 // eneste — Nybegynner dreiekurs gaar 9. sep, 16. sep og 7. okt, og oktober
 // fantes ikke for den som saa paa lista.
-sjekk('kurskortene staar uten dato',
-    !str_contains($sida, 'title="{{ k.title }}" date="{{ k.date }}"')
-    && substr_count($sida, 'CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}"') === 3);
+//
+// 1. september kom resten av svaret: «jeg vil at det skal vises 3 planlagte
+// datoer». Kortet skal altsaa ikke staa uten dato, men uten den ENE — og
+// aldri med «k.date», som var nettopp den foerste. Se «Tre datoer paa
+// kurskortet» over.
+sjekk('kortet viser aldri bare den forste datoen',
+    !str_contains($sida, 'date="{{ k.date }}"')
+    && substr_count($sida, 'CourseCard" level="{{ k.level }}" title="{{ k.title }}" date="{{ k.kdDato }}" duration="{{ k.duration }}"') === 3);
 // «Teksten onsdag 9 ….. endrer seg ikke til tross for at jeg velger en annen
 // dato». Linja over «Velg dato» sto paa kursets FOERSTE dato. Foerste forsoek
 // leste «valgtKurs.datoer» — feil liste; datovelgeren bruker ekteDatoer().

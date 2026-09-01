@@ -5593,6 +5593,52 @@ if (DB::harTabell('innstillinger')) {
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
 
+// ── To tall som ble blandet sammen ─────────────────────────────────────
+//
+// Brennetida og oppbevaringstida er to forskjellige ting, og de sa hver sin
+// ting flere steder:
+//
+//   brennetid     hvor lenge det tar for keramikken er ferdig — 2–4 uker
+//   oppbevaring   hvor lenge vi tar vare paa den etterpaa — sto som TRE uker
+//                 i SMS-en og TO paa nettsiden
+//
+// En kunde som leste SMS-en trodde hen hadde en uke ekstra. Eieren,
+// 1. september: «to uker».
+$fbFil = file_get_contents(dirname(__DIR__) . '/api/admin/ferdigbrent.php');
+sjekk('arbeidene oppbevares i to uker', str_contains($fbFil, 'const UKER_OPPBEVARING = 2;'));
+sjekk('… og skjermen sier det samme foer serveren svarer',
+    str_contains($sida, 'const uker = (d && d.uker) || 2;'));
+sjekk('… og malen kunden faar sier det ogsaa',
+    str_contains(file_get_contents(dirname(__DIR__) . '/db/migrations/118_oppbevaring_i_to_uker.sql'),
+                 "'Vi oppbevarer den hos oss i to uker.'"));
+sjekk('… og spoersmaal og svar staar som for',
+    str_contains($sida, 'Vi oppbevarer ferdige arbeider i to uker etter at du har fått beskjed'));
+
+// Butikken lover ingen frist i det hele tatt. Eieren, 1. september:
+// «butikken skal ikke si vi holder av varen, fjern det fra systemet».
+// Adressen staar; loftet gjor det ikke.
+// Merknaden i koden siterer setningen, saa proven maa se paa selve punktet
+// og ikke paa fila som helhet.
+sjekk('butikken lover ikke aa holde av varen',
+    !str_contains($sida, 'Nordre Løkkevei 15, 3120 Nøtterøy. Vi holder av varen')
+    && str_contains($sida, "tekst: 'Nordre Løkkevei 15, 3120 Nøtterøy.' }"));
+
+// Brennetida er noe annet, og skal fortsatt vaere to til fire uker.
+sjekk('brennetida er to til fire uker, og staar ett sted',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/kursmal.php'),
+                 "const HENTING = 'Den er normalt klar til henting etter 2–4 uker."));
+// Ingen av de to tallene skal si «tre uker» noe sted i det kunden ser.
+sjekk('ingen tekst lover tre uker lenger',
+    !preg_match('~oppbevar\w*[^.]{0,40}tre uker~iu', $sida)
+    && !preg_match('~oppbevar\w*[^.]{0,40}tre uker~iu', $fbFil));
+
+if (DB::harTabell('notification_templates')) {
+    $fb = (string) DB::verdi("SELECT tekst FROM notification_templates WHERE navn = 'ferdig_brent'");
+    sjekk('malen i basen sier to uker',
+        $fb === '' || (str_contains($fb, 'to uker') && !str_contains($fb, 'tre uker')),
+        mb_substr($fb, 0, 120));
+}
+
 // ── Regnskapsfoereren har sin egen innlogging ──────────────────────────
 //
 // Eieren, 1. september: «jeg oensker aa lage en bruker log in til min

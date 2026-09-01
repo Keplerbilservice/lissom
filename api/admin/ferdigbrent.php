@@ -35,8 +35,17 @@ if (!DB::harKolonne('course_sessions', 'hentemelding_at')) {
 }
 $harDeltakernivaa = DB::harTabell('deltaker_bilder') && DB::harKolonne('bookings', 'internt_notat');
 
-/** Hvor lenge arbeidene oppbevares, og dermed hvor lenge meldingen står. */
-const UKER_OPPBEVARING = 3;
+/**
+ * Hvor lenge arbeidene oppbevares, og dermed hvor lenge meldingen staar.
+ *
+ * To uker. Sto som tre her og i malen, mens spoersmaal og svar paa nettsiden
+ * sa to — en kunde som leste SMS-en trodde hen hadde en uke ekstra. Eieren,
+ * 1. september: «to uker».
+ *
+ * Merk at dette er noe annet enn brennetida. Den er to til fire uker, og
+ * staar i Kursmal::HENTING.
+ */
+const UKER_OPPBEVARING = 2;
 
 /** Malen som sier at keramikken er ferdig. Har ligget i basen siden 002. */
 const MAL = 'ferdig_brent';

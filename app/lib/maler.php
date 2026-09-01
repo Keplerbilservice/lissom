@@ -92,7 +92,12 @@ final class Maler
             'hvor'   => 'Sendes når en plass på et kurs er betalt.',
             'felter' => [
                 'navn'  => 'Navnet på den som meldte seg på',
-                'ordre' => 'Kurset og datoen',
+                'kurs'  => 'Navnet på kurset',
+                'naar'  => 'Dagen og klokkeslettet',
+                // «{ordre}» er kurset og datoen limt sammen. Det var det
+                // eneste feltet for, og staar igjen for at en mal som er
+                // skrevet om for haand ikke skal miste innholdet sitt.
+                'ordre' => 'Kurset og datoen i ett (fra før)',
                 'belop' => 'Det som ble betalt',
             ],
         ],

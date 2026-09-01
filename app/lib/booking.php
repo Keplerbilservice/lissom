@@ -756,7 +756,7 @@ final class Booking
     public static function sendBekreftelse(int $bookingId): void
     {
         $b = DB::en(
-            'SELECT b.*, c.tittel, cs.start_tid,
+            'SELECT b.*, c.tittel, cs.start_tid, cs.slutt_tid,
                     m.navn AS m_navn, m.epost AS m_epost, m.telefon AS m_telefon
                FROM bookings b
                JOIN courses c ON c.id = b.course_id
@@ -769,12 +769,34 @@ final class Booking
             return;
         }
 
+        // ── Kurset og naar, hver for seg ──────────────────────────────
+        //
+        // Her sto alt i ett felt: «{ordre}» ble kursnavnet og datoen limt
+        // sammen med en tankestrek, og malen sa «Vi har mottatt bestillingen
+        // din ({ordre})». Kunden fikk «Vi har mottatt bestillingen din
+        // (Nybegynner dreiekurs — onsdag 9. september, 17:00).» — datoen
+        // gjemt inne i en parentes etter feil ord.
+        //
+        // Eieren, 1. september, om den e-posten: «eposten ser jo helt feil
+        // ut».
+        //
+        // Naa er de to feltene: «{kurs}» og «{naar}». Malen kan sette dem
+        // hvor den vil, og eieren kan flytte dem under Maler.
+        //
+        // «{ordre}» staar igjen med den gamle verdien. Koden rulles ut noen
+        // minutter for migrasjonen kjores, og i det vinduet er malen fortsatt
+        // den gamle — da skal den fortsatt kunne fylles.
+        $naar = $b['start_tid']
+            ? self::norskPeriode((string) $b['start_tid'], $b['slutt_tid'] ?? null)
+            : '';
         Varsel::mal('ordrebekreftelse', [
             'epost'   => $b['m_epost'] ?? $b['gjest_epost'],
             'telefon' => $b['m_telefon'] ?? $b['gjest_telefon'],
         ], [
             'navn'  => (string) ($b['m_navn'] ?: $b['gjest_navn']),
-            'ordre' => (string) $b['tittel'] . ($b['start_tid'] ? ' — ' . self::norskDato((string) $b['start_tid']) : ''),
+            'kurs'  => (string) $b['tittel'],
+            'naar'  => $naar,
+            'ordre' => (string) $b['tittel'] . ($naar !== '' ? ' — ' . $naar : ''),
             'belop' => self::kroner((int) $b['belop_ore']),
         ], 'booking', $bookingId);
     }
@@ -1014,7 +1036,17 @@ final class Booking
 
     public static function kroner(int $ore): string
     {
-        return 'kr. ' . number_format($ore / 100, 0, ',', ' ') . ',-';
+        // Harde mellomrom, begge to. Med vanlige mellomrom faar nettleseren
+        // lov til aa brekke linja midt i belopet: «kr. 2» paa en linje og
+        // «490,-» paa neste. Eieren, 1. september: «ikke bryt beloepe 2490»
+        // og «her maa hele beloepet staa paa en linje».
+        //
+        // Serveren formaterer belopene og sender dem ferdig som tekst, saa
+        // det er her det maa loeses — skjermen far bare en streng.
+        //
+        // CSV-ene til regnskapsforeren har hver sin egen formaterer uten
+        // tusenskille i det hele tatt, og roeres ikke av dette.
+        return "kr.\u{a0}" . number_format($ore / 100, 0, ',', "\u{a0}") . ',-';
     }
 
     /**

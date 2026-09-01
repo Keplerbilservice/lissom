@@ -103,21 +103,47 @@ switch ($jobb) {
             usleep(200_000);
         }
 
-        if ($gjort > 0 || $feilet > 0 || $avsluttet > 0) {
-            logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet, 'avsluttet' => $avsluttet]);
+        // Hvordan gikk trekkene vi ba om?
+        //
+        // Trekket bes om noen dager fram i tid, saa svaret kommer ikke samme
+        // natt. Her sporr vi om dem vi ikke har fatt svar paa enda. Foer dette
+        // ble hver eneste rad staaende paa «venter» for alltid — og de to
+        // malene «Medlemskapet ditt er fornyet» og «Vi fikk ikke trukket
+        // betalingen» ble aldri sendt til noen.
+        $svart = 0;
+        foreach (Medlemskap::trekkUtenSvar() as $p) {
+            try {
+                $utfall = Medlemskap::sjekkTrekk($p);
+                $si('  trekk ' . $p['id'] . ' (' . ($p['navn'] ?? '') . '): ' . $utfall);
+                if ($utfall === 'betalt' || $utfall === 'failed' || $utfall === 'cancelled') {
+                    $svart++;
+                }
+            } catch (Throwable $e) {
+                logg_feil('Statusoppslag feilet for trekk ' . $p['id'], $e);
+            }
+            usleep(300_000);
+        }
+
+        if ($gjort > 0 || $feilet > 0 || $avsluttet > 0 || $svart > 0) {
+            logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet,
+                                        'avsluttet' => $avsluttet, 'gjort_opp' => $svart]);
         }
         $si("Medlemstrekk: {$gjort} trekk, {$feilet} feilet, " . count($venter)
-            . ' avtaler sjekket, ' . $avsluttet . ' avsluttet.');
+            . ' avtaler sjekket, ' . $avsluttet . ' avsluttet, ' . $svart . ' gjort opp.');
         break;
 
     // -----------------------------------------------------------------------
     // Sikkerhetsnett for webhooks som ikke kom fram. Vi spør Vipps direkte om
     // status på betalinger som har hengt i «venter» en stund.
     case 'betalinger':
+        // Maanedstrekkene staar utenfor. De er ikke ePayment og finnes ikke
+        // paa den adressen — hvert oppslag ga 404 og en linje i feilloggen,
+        // hvert femte minutt. De hentes fra avtalen sin, i «medlemstrekk».
         $venter = DB::alle(
             "SELECT id, vipps_reference, belop_ore
                FROM payments
               WHERE status IN ('opprettet','venter','autorisert')
+                AND type <> 'recurring_charge'
                 AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
                 AND updated_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 MINUTE)
               ORDER BY id

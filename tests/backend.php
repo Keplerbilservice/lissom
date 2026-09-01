@@ -2280,6 +2280,81 @@ sjekk('en ny dato arver kursets kursholder, ellers verkstedets standard',
     str_contains($kursFil, "? \$holderId('kursholderId')
                 : Kursholder::forKurs(\$kursId);"));
 
+// ── Hvordan gikk maanedstrekket? ─────────────────────────────────────────
+//
+// Trekket ble bedt om, raden ble lagt i payments med «venter» — og der ble
+// den staaende for alltid. Trekk-ID-en fra Vipps ble kastet, saa det fantes
+// ingen vei tilbake for aa sporre. Regnskapet viste null betalte maanedstrekk
+// uansett hvor mange som gikk gjennom, og de to malene «Medlemskapet ditt er
+// fornyet» og «Vi fikk ikke trukket betalingen» sto i basen uten avsender.
+$medlFil = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('trekk-id-en fra Vipps tas vare paa',
+    str_contains($medlFil, "\$trekkId = Vipps::belastAvtale(")
+    && str_contains($medlFil, "'vipps_psp_ref' => \$trekkId !== '' ? \$trekkId : null,"));
+sjekk('… og et trekk slaas opp under avtalen sin, ikke som en ePayment',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php'),
+                 "'/charges/' . rawurlencode(\$trekkId)"));
+sjekk('CHARGED gjor raden betalt og sender kvitteringen',
+    str_contains($medlFil, "if (\$status === 'CHARGED') {")
+    && str_contains($medlFil, "Varsel::mal('medlemskap_fornyet'"));
+sjekk('FAILED sier fra til medlemmet',
+    str_contains($medlFil, "if (\$status === 'FAILED' || \$status === 'CANCELLED') {")
+    && str_contains($medlFil, "Varsel::mal('betaling_feilet'"));
+$cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+sjekk('cron sporr om trekkene som ikke har fatt svar',
+    str_contains($cronFil, 'foreach (Medlemskap::trekkUtenSvar() as $p) {')
+    && str_contains($cronFil, 'Medlemskap::sjekkTrekk($p)'));
+// ePayment-oppslaget ga 404 paa hvert eneste maanedstrekk, hvert femte
+// minutt, og skrev en linje i feilloggen hver gang.
+sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
+    str_contains($cronFil, "AND type <> 'recurring_charge'"));
+
+// Og selve utvalget: bare trekk med en id aa sporre paa, og bare de som ikke
+// har gjort opp for seg.
+(static function (): void {
+    $medlemId = DB::verdi('SELECT id FROM members ORDER BY id LIMIT 1');
+    if ($medlemId === null) {
+        sjekk('trekkutvalget krever et medlem i basen', false, 'ingen medlemmer');
+        return;
+    }
+    $abo = DB::settInn('subscriptions', [
+        'member_id' => (int) $medlemId, 'plan' => 'Proveplan',
+        'pris_ore' => 50000, 'status' => 'aktiv',
+        'vipps_agreement_id' => 'agr_' . bin2hex(random_bytes(4)),
+        'neste_trekk' => gmdate('Y-m-d', time() + 86400 * 30),
+    ]);
+    $legg = static function (int $abo, int $medlem, string $type, ?string $psp, string $status): int {
+        return DB::settInn('payments', [
+            'vipps_reference' => 'PROVE-' . bin2hex(random_bytes(5)),
+            'type' => $type, 'formal' => 'medlemskap',
+            'member_id' => $medlem, 'subscription_id' => $abo,
+            'belop_ore' => 50000, 'status' => $status,
+            'vipps_psp_ref' => $psp,
+            'idempotency_key' => Vipps::uuid(),
+        ]);
+    };
+    $med    = $legg($abo, (int) $medlemId, 'recurring_charge', 'chg_1', 'venter');
+    $uten   = $legg($abo, (int) $medlemId, 'recurring_charge', null, 'venter');
+    $ferdig = $legg($abo, (int) $medlemId, 'recurring_charge', 'chg_2', 'betalt');
+    $annet  = $legg($abo, (int) $medlemId, 'epayment', 'chg_3', 'venter');
+
+    $funnet = array_map(static fn(array $r): int => (int) $r['id'], Medlemskap::trekkUtenSvar(200));
+    sjekk('et trekk som venter paa svar hentes',        in_array($med, $funnet, true));
+    sjekk('… men ikke et uten trekk-id aa sporre paa',  !in_array($uten, $funnet, true));
+    sjekk('… og ikke et som alt har gjort opp for seg', !in_array($ferdig, $funnet, true));
+    sjekk('… og ikke en vanlig betaling',               !in_array($annet, $funnet, true));
+    // Avtalen og medlemmet folger med, saa meldingen vet hvem den gaar til.
+    $rad = null;
+    foreach (Medlemskap::trekkUtenSvar(200) as $r) {
+        if ((int) $r['id'] === $med) { $rad = $r; }
+    }
+    sjekk('raden vet hvilken avtale og hvilket medlem den hoerer til',
+        $rad !== null && ($rad['vipps_agreement_id'] ?? '') !== '' && array_key_exists('epost', $rad));
+
+    DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $abo]);
+    DB::kjor('DELETE FROM subscriptions WHERE id = :s', ['s' => $abo]);
+})();
+
 // ── Regelen staar ett sted, og alle fire bruker den ──────────────────────
 //
 // Eieren, 1. september: «lag din egen bolle dukker opp i kalenderen naa, uten
@@ -3145,6 +3220,57 @@ sjekk('… og teller opp den samme feilen framfor aa lage en rad til',
     str_contains($fapi, 'ON DUPLICATE KEY UPDATE'));
 sjekk('en melding krever at bryteren staar paa',
     str_contains($fapi, 'innmelding av feil er stengt akkurat nå.'));
+
+// ── Et bilde til feilmeldingen ─────────────────────────────────────────
+//
+// Eieren, 31. august: «paa admin burde man kunne legge inn bilde naar man
+// melder feil, ellers er jeg redd du ikke forstaar hva vi mener».
+//
+// «Listen var tom» kan bety fem ting; et skjermbilde betyr én.
+sjekk('skjemaet har en rute for skjermbilde',
+    str_contains($sida2, '{{ fmBildeVelg }}')
+    && str_contains($sida2, 'Velg et bilde fra maskinen eller telefonen'));
+sjekk('… med forhaandsvisning og en vei til aa fjerne det',
+    str_contains($sida2, '{{ fmHarBilde }}') && str_contains($sida2, '{{ fmFjernBilde }}'));
+sjekk('… og bildet folger med naar meldinga sendes',
+    str_contains($sida2, "bilde: String(this.state.fmBilde || ''),"));
+sjekk('bildet vises igjen paa skjermen som viser rapportene',
+    str_contains($sida2, '{{ r.harBilde }}') && str_contains($sida2, '{{ r.bilde }}'));
+// Bare mennesker legger ved bilde. En sloyfe som kaster den samme feilen
+// tusen ganger skal ikke kunne fylle disken med skjermbilder.
+sjekk('bare en melding fra et menneske kan ha bilde',
+    str_contains($fapi, "if (\$slag === 'melding' && DB::harKolonne('feilrapporter', 'bilde')) {"));
+sjekk('… og bare JPG, PNG og WEBP tas imot',
+    str_contains($fapi, "preg_match('~^data:image/(png|jpe?g|webp);base64,~i', \$data)"));
+sjekk('… med et tak paa stoerrelsen',
+    str_contains($fapi, 'strlen($data) > 10 * 1024 * 1024'));
+// Et skjermbilde fra admin kan vise hva som helst — deltakerlister,
+// e-postadresser, en halvferdig ordre.
+$bildeFil = file_get_contents(__DIR__ . '/../api/bilde.php');
+sjekk('skjermbildet er bare for verkstedet',
+    str_contains($bildeFil, "\$sti = Bilder::sti(\$feil, 'feilrapporter');")
+    && str_contains($bildeFil, 'if ($sti === null || !Sesjon::erAdmin()) {'));
+// En rad som slettes tar ikke fila med seg av seg selv.
+sjekk('ryddingen tar bildene med seg',
+    str_contains($fapi, "Bilder::slett((string) \$g['bilde'], 'feilrapporter');"));
+// Kolonnen kommer med migrasjon 114, og koden ligger ute for den er kjort.
+sjekk('kolonnene settes sammen, saa «bilde» kan mangle',
+    str_contains($fapi, "\$kolonner = array_keys(\$rad);")
+    && str_contains($fapi, "'INSERT INTO feilrapporter (' . implode(', ', \$kolonner) . ')"));
+
+if (DB::harKolonne('feilrapporter', 'bilde')) {
+    // Adressen skal peke gjennom api/bilde.php, ikke paa fila.
+    $rid = DB::settInn('feilrapporter', [
+        'slag' => 'melding', 'melding' => 'Bildeprove',
+        'nettleser' => 'Proven', 'bilde' => 'abc123.jpg',
+        'fingeravtrykk' => sha1('bilde:' . bin2hex(random_bytes(8))),
+    ]);
+    $lest = DB::en('SELECT bilde FROM feilrapporter WHERE id = :i', ['i' => $rid]);
+    sjekk('bildet lagres paa rapporten', ($lest['bilde'] ?? '') === 'abc123.jpg');
+    DB::kjor('DELETE FROM feilrapporter WHERE id = :i', ['i' => $rid]);
+} else {
+    sjekk('bildekolonnen krever migrasjon 114', false, 'kolonnen mangler');
+}
 
 // ── «Sett paa» sa «Fant ikke rapporten» ────────────────────────────────
 //
@@ -4091,12 +4217,11 @@ foreach ($iRegister as $n) {
 }
 sort($utenKall);
 
-// To av dem staar i basen fra 002, men ingen kode sender dem: statusen paa
-// maanedstrekket hentes aldri tilbake fra Vipps, saa ingenting vet naar et
-// trekk gikk gjennom eller feilet. De to er ventet — en tredje er ikke det.
-$venterPaaTrekkstatus = ['betaling_feilet', 'medlemskap_fornyet'];
+// Her sto to navn en stund: «medlemskap_fornyet» og «betaling_feilet» laa i
+// basen fra 002, men ingen kode sendte dem — statusen paa maanedstrekket ble
+// aldri hentet tilbake fra Vipps. Naa gjor den det, og lista er tom igjen.
 sjekk('… og registeret lover ingen mal som ikke kalles',
-    $utenKall === $venterPaaTrekkstatus, implode(', ', $utenKall));
+    $utenKall === [], implode(', ', $utenKall));
 
 // Feltene. Eieren: «jeg vil ha en oversikt over komandoer som jeg kan
 // kopiere, slike som denne {varelinjer}». Et felt som staar i teksten men

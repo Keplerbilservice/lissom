@@ -75,6 +75,12 @@ if (Foresporsel::metode() === 'GET') {
             'antall'    => (int) $r['antall'],
             'status'    => (string) $r['status'],
             'sistSett'  => (string) $r['sist_sett'],
+            // Skjermbildet, om den som meldte fra la ved ett. Adressen gaar
+            // gjennom api/bilde.php: filene ligger utenfor det som
+            // publiseres, og bare verkstedet skal se dem.
+            'bilde'     => ($r['bilde'] ?? null) !== null
+                ? '/api/bilde.php?feil=' . rawurlencode((string) $r['bilde'])
+                : '',
         ];
     }, $rader);
 
@@ -93,6 +99,7 @@ if (Foresporsel::metode() === 'GET') {
         $linjer[] = '  Side: ' . ($r['side'] !== '' ? $r['side'] : 'ukjent')
                   . ' · ' . $r['nettleser']
                   . ($r['skjerm'] !== '' ? ' · ' . $r['skjerm'] : '');
+        if ($r['bilde'] !== '')   { $linjer[] = '  Skjermbilde: ja (ligger i admin)'; }
         if ($r['navn'] !== '')    { $linjer[] = '  Innlogget: ' . $r['navn']; }
         if ($r['kontakt'] !== '') { $linjer[] = '  Kontakt: ' . $r['kontakt']; }
         $linjer[] = '';

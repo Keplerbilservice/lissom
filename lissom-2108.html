@@ -26574,6 +26574,13 @@ class Component extends DCLogic {
             // tre visningene, saa hver visning trenger sitt eget loft. Maalt
             // paa 1500 px: dag laa 48 px for lavt, maaned 21 px for hoeyt,
             // uka stemte alt.
+            //
+            // MERK: loftet paa dagen tar HELE spalta, og det foerste i spalta
+            // er «Viser»-raden med kursholderpillene. De havner derfor 45 px
+            // inni kortene over — likt paa 1200, 1400 og 1700 px. Eieren
+            // sendte bilde 1. september. Linjeringen og pillene kan ikke faa
+            // plass begge to saa lenge raden ligger i den loftede spalta;
+            // hvilken av dem som skal vike, er hans valg.
             : { minWidth: 0, gridColumn: '2', gridRow: '2', marginTop: visning === 'dag' ? '-65px' : visning === 'uke' ? '17px' : '21px' },
           klSideAntall: this.kursData().length + ' kurs',
           // Paa pc ligger kursene to i bredden med typen paa linja under.
@@ -26766,20 +26773,40 @@ class Component extends DCLogic {
               klKursRedStil: this.erSmal()
                 ? {
                     position: 'fixed', zIndex: 78, left: '12px', top: '12px',
-                    width: 'calc(100vw - 24px)', maxHeight: '78vh', overflow: 'auto',
+                    width: 'calc(100vw - 24px)', maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px', overflow: 'auto',
                     overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
                     background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
                     borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
                   }
-                : {
-                    position: 'fixed', zIndex: 78,
-                    left: Math.max(12, Math.min((pos.x || 320), (typeof window !== 'undefined' ? window.innerWidth : 1200) - 432)) + 'px',
-                    top: Math.max(12, Math.min((pos.y || 90), (typeof window !== 'undefined' ? window.innerHeight : 800) - 200)) + 'px',
-                    width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',
-                    overscrollBehavior: 'contain',
-                    background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                    borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
-                  },
+                : (() => {
+                    // Ruta legger seg ved kortet du trykket paa. Klemmen sa
+                    // bare at TOPPEN skulle vaere innenfor skjermen — men ruta
+                    // kan vaere 78 % av skjermhoyden hoy. Trykte du langt nede,
+                    // startet den innenfor og fortsatte langt utenfor, og
+                    // «Lagre» sto under skjermkanten.
+                    //
+                    // Eieren, 1. september: «hele systemet har en tendens til
+                    // aa aapne pop up eller nye vinduer utenfor skjermbildet om
+                    // jeg er langt nede paa siden».
+                    //
+                    // Naa faar hoyden det som er igjen under toppen. Ruta ruller
+                    // inni seg selv, og bunnen staar alltid minst 12 px over
+                    // skjermkanten.
+                    const vb = typeof window !== 'undefined' ? window.innerWidth : 1200;
+                    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+                    const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));
+                    return {
+                      position: 'fixed', zIndex: 78,
+                      left: Math.max(12, Math.min((pos.x || 320), vb - 432)) + 'px',
+                      top: topp + 'px',
+                      width: 'min(420px, calc(100vw - 24px))',
+                      maxHeight: '78vh',
+                      overflow: 'auto',
+                      overscrollBehavior: 'contain',
+                      background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                      borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
+                    };
+                  })(),
               klKursRedLukk: () => this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null }),
               klKursRedLagre: () => {
                 // Bare det som er endret, pluss de to serveren alltid trenger:

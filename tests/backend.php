@@ -5580,6 +5580,43 @@ if (DB::harTabell('innstillinger')) {
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
 
+// ── Ruter som aapner seg utenfor skjermen ──────────────────────────────
+//
+// Eieren, 1. september: «hele systemet har en tendens til aa aapne pop up
+// eller nye vinduer utenfor skjermbildet om jeg er langt nede paa siden».
+//
+// «Sett opp kurset» legger seg ved kortet du trykket paa. Klemmen sa bare at
+// TOPPEN skulle vaere innenfor skjermen — men ruta kan vaere 78 % av
+// skjermhoyden hoy. Trykte du langt nede, startet den innenfor og fortsatte
+// langt utenfor, og «Lagre endringer» sto under skjermkanten.
+//
+// Maalt i nettleseren, klikk paa et kort nederst paa skjermen:
+//   for:   700 px skjerm → bunnen paa 1046   (346 px utenfor)
+//          950 px skjerm → bunnen paa 1491   (541 px utenfor)
+//   etter: 700 px skjerm → bunnen paa 688
+//          950 px skjerm → bunnen paa 938
+sjekk('ruta faar bare den hoyden det er plass til',
+    str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',")
+    && !str_contains($sida, "width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',"));
+// Toppen skal fortsatt legge seg ved kortet, ikke midt paa skjermen.
+sjekk('… og legger seg fortsatt der du trykket',
+    str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
+// Ruta ruller inni seg selv naar innholdet er hoyere enn plassen.
+sjekk('… og ruller inni seg selv naar den ikke faar plass',
+    str_contains($sida, "overflow: 'auto',\n                      overscrollBehavior: 'contain',"));
+
+// ── Pillene laa oppi kortene over ──────────────────────────────────────
+//
+// Dagsvisningen ble loftet 65 px for at rutenettet skulle staa paa linje med
+// kortet til venstre. Loftet tok HELE spalta, og det foerste i spalta er
+// «Viser»-raden med kursholderpillene: de laa 45 px inni kortene over, likt
+// paa 1200, 1400 og 1700 px.
+// Kollisjonen staar igjen med vilje: loftet er noe eieren har bedt om «gang
+// paa gang», og de to kan ikke faa plass begge to saa lenge raden ligger i
+// den loftede spalta. Merknaden i koden sier fra om det.
+sjekk('kollisjonen mellom pillene og kortene er skrevet ned',
+    str_contains($sida, 'De havner derfor 45 px'));
+
 // ── Paint on Pots tar ikke spalta ──────────────────────────────────────
 //
 // Eieren, 1. september: «kortene paint on pots, disse vil jeg skal vises mye

@@ -96,10 +96,10 @@ Ingenting av dette er slettet:
 | Malene | `Kursmal::KATEGORIER` har fortsatt `'Drop-in'` | står |
 
 **Slettet:** de 126 øktene som lå ute framover og som ingen hadde booket
-(migrasjon 110). De lages på nytt av seg selv i det øyeblikket kurset settes
-til `publisert` igjen.
-
-**Ikke rørt:** økter og bookinger noen har betalt for. Se punkt 6.
+(migrasjon 110), og deretter bookingene, betalingene og de siste øktene
+(migrasjon 111 — se punkt 6). Øktene lages på nytt av seg selv i det
+øyeblikket kurset settes til `publisert` igjen; bookingene og betalingene
+kommer ikke tilbake.
 
 ## 4. Hva som ble tatt bort i koden
 
@@ -197,24 +197,57 @@ tidene, regelen, prisen og «legg ut øktene» ligger.
    ```
    Ikke ha begge på samtidig — se migrasjon 102 for hvorfor.
 
-## 6. Det som med vilje ikke er fjernet
+## 6. Historikken er slettet
 
-**Betalte bookinger står.** En kunde som har betalt kr. 490,- for en drop-in
-skal fortsatt se den på Min side, og den skal fortsatt ligge i regnskapet.
-Migrasjon 110 rører ikke økter noen har booket, og disse tre stedene viser
-derfor fortsatt ordet «Drop-in» når det finnes en slik betaling:
+Da drop-in ble tatt ned, ble betalte bookinger stående: en kunde som hadde
+betalt kr. 490,- skulle fortsatt se kjøpet sitt, og linja skulle stå i
+regnskapet. Eieren, 1. september: «Historikken på drop inn skal også bort».
 
-* **Min side** — kundens egne kjøp og plasser
-* **Oversikt** — salg per kurs
-* **Påmeldte** — raden for deltakeren
+`db/migrations/111_drop_in_historikken_slettes.sql` sletter derfor:
 
-Kodestedene som gjør dette er `api/admin/okonomi.php` (`'dropin' => 'Drop-in'`
-i `$FORMAL`) og de tilsvarende etikettene i `lissom-2108.html`. De er der for
-at en historisk betaling skal ha et navn, ikke for at drop-in skal kunne
-selges.
+| Tabell | Hva |
+|---|---|
+| `bookings` | plassene folk hadde på drop-in |
+| `payments` | betalingene for dem |
+| `course_sessions` | øktene som sto igjen fordi noen hadde booket dem |
+| `waitlist` | ventelisteoppføringer på drop-in |
+| `gift_card_uses` | gavekort brukt på en drop-in-booking |
+| `deltaker_bilder` | bilder knyttet til en drop-in-booking |
 
-Skal historikken også bort, er det en egen beslutning — den sletter en
-kvittering kunden har fått og en linje i regnskapet, og bør tas med åpne øyne.
+**Dette kan ikke angres.** Det er den ene delen av nedtakingen som ikke kan
+gjøres om.
+
+En betaling som også henger i en ordre eller et gavekort blir stående — da er
+den ikke bare drop-in, og de to tabellene står med `RESTRICT`.
+
+### Sporet etter pengene
+
+Betalinger som slettes er penger som har vært innom regnskapet. Migrasjonen
+skriver derfor antallet og summen til `audit_log` før den sletter:
+
+```
+handling  dropin_historikk_slettet
+detaljer  {"bookinger":1,"betalinger":1,"belop_ore":49000,"migrasjon":111}
+```
+
+Endrer en omsetning seg, står det altså hvorfor. Slik finner du raden igjen:
+
+```sql
+SELECT * FROM audit_log WHERE handling = 'dropin_historikk_slettet';
+```
+
+I testbasen gikk bookingene fra 35 til 34, betalingene fra 29 til 28, og
+innbetalt fra kr. 29 280,- til kr. 28 790,- — differansen er de kr. 490,-.
+
+### Etikettene i koden er borte med dem
+
+`'dropin' => 'Drop-in'` i `$FORMAL` i `api/admin/okonomi.php`, den samme
+etiketten i betalingslista i `lissom-2108.html`, og `dropin` i kjøpstypene
+som sendes til analysen. De fantes bare for at en historisk betaling skulle
+ha et navn. Det finnes ingen slike betalinger lenger.
+
+Skal drop-in tilbake, må disse etikettene tilbake sammen med resten — se
+punkt 5.
 
 ## 7. Slik sjekkes det at det er borte
 
@@ -225,7 +258,9 @@ node bin/dropinsjekk.mjs
 Skriptet logger inn som admin, åpner 24 skjermer og de to nedlagte adressene i
 en ekte nettleser, og leter etter ordet. Det måler to ting:
 
-* **Ordet** «drop-in» skal ikke stå noe sted.
+* **Ordet** «drop-in» skal ikke stå noe sted. Ikke ett — heller ikke på Min
+  side, Oversikt eller Påmeldte, som hadde unntak fram til historikken ble
+  slettet.
 * **Tallene** skjermen viser. «Planlagte kurs» på Oversikt sto på 165 uten at
   ordet «Drop-in» sto noe sted på den sida — skaden var tallet. Første utgave
   av skriptet ga grønt på akkurat den skjermen med filteret slått av. Derfor

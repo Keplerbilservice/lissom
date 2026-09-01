@@ -3709,10 +3709,40 @@ sjekk('… og kurset gaar ikke ut av api/admin/kurs.php',
 $m110 = file_get_contents(__DIR__ . '/../db/migrations/110_drop_in_tas_ned.sql');
 sjekk('… og migrasjon 110 setter kurset til kladd',
     str_contains($m110, "SET status = 'kladd'"));
-// Ingenting slettes som ikke kan lages igjen: en oekt noen har booket blir
-// staaende, for plassen er betalt.
+// Migrasjon 110 lot oekter noen hadde booket staa, for plassen var betalt.
 sjekk('… uten aa roere oekter noen har booket',
     str_contains($m110, "AND b.status <> 'avbestilt')"));
+// Migrasjon 111 snur den avgjorelsen. Eieren, 1. september: «Historikken paa
+// drop inn skal ogsaa bort». Dette er den ene delen av nedtakingen som ikke
+// kan angres, saa den skal ikke kunne skje ved et uhell heller: sjekkene her
+// passer paa at den gjor akkurat det den sier.
+$m111 = file_get_contents(__DIR__ . '/../db/migrations/111_drop_in_historikken_slettes.sql');
+sjekk('… og migrasjon 111 sletter bookingene og betalingene',
+    str_contains($m111, 'DELETE b FROM bookings b')
+    && str_contains($m111, 'DELETE p FROM payments p'));
+// Bookingene foer betalingene: bookings.payment_id peker paa payments med
+// RESTRICT. Motsatt rekkefolge stopper paa fremmednokkelen.
+sjekk('… i riktig rekkefolge, saa fremmednokkelen ikke stopper den',
+    strpos($m111, 'DELETE b FROM bookings b') < strpos($m111, 'DELETE p FROM payments p'));
+// En betaling som ogsaa henger i en ordre eller et gavekort er ikke bare
+// drop-in, og skal ikke rives med.
+sjekk('… og lar betalinger som henger i en ordre eller et gavekort staa',
+    str_contains($m111, 'NOT EXISTS (SELECT 1 FROM orders o WHERE o.payment_id = p.id)')
+    && str_contains($m111, 'NOT EXISTS (SELECT 1 FROM gift_cards g WHERE g.payment_id = p.id)'));
+// Penger som forsvinner ut av regnskapet skal etterlate et spor.
+sjekk('… og skriver antall og sum til audit_log foerst',
+    str_contains($m111, "'dropin_historikk_slettet'")
+    && strpos($m111, 'INSERT INTO audit_log') < strpos($m111, 'DELETE b FROM bookings b'));
+// Kurset og ukereglene er oppskriften, ikke historikken. De blir staaende, saa
+// drop-in fortsatt kan hentes fram igjen — se docs/DROP-IN.md.
+sjekk('… men roerer verken kurset eller ukereglene',
+    !str_contains($m111, 'DELETE FROM courses')
+    && !str_contains($m111, 'DELETE FROM dropin_tider'));
+// Og etikettene som bare fantes for at en historisk betaling skulle ha et
+// navn, er borte med betalingene.
+sjekk('… og etiketten for drop-in-betalinger er borte',
+    !str_contains(file_get_contents(__DIR__ . '/../api/admin/okonomi.php'), "'dropin'     => 'Drop-in',")
+    && !str_contains($sida2, "dropin: 'Drop-in'"));
 
 // ── Ressursene deles av alle ───────────────────────────────────────────
 //

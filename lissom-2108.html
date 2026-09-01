@@ -15307,7 +15307,17 @@ class Component extends DCLogic {
       .map(k => Object.assign({}, k, this.kortDatoer(k), {
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
-        cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),
+        //
+        // Er kurset fullbooket, sier knappen «Les mer». «Book plass» rett
+        // under merket FULLBOOKET lovet en plass som ikke fantes — Sip &
+        // Clay sto slik 1. september. Eieren: «naar noe er fullbooket, vil
+        // jeg ha knappen les mer og ikke book paa forsiden av kortet».
+        //
+        // Knappen forer samme sted som for: inn paa kurset, der datoene og
+        // ventelista staar. Det er bare loftet som er tatt bort.
+        cta: k.kunKontakt
+          ? 'Kontakt oss'
+          : (k.status === 'Fullbooket' ? 'Les mer' : (k.cta || 'Book plass')),
         // ── «Kontakt oss» aapner det enkle skjemaet ─────────────────
         //
         // Knappen aapnet gruppeforespoerselen: «Antall personer 2–5 / 6–10 /

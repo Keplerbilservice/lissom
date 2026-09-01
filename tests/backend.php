@@ -6026,6 +6026,67 @@ if (DB::harTabell('courses')) {
     }
 }
 
+// ── Fullbooket kurs sier «Les mer», ikke «Book plass» ─────────────────
+//
+// Sip & Clay sto med merket FULLBOOKET oeverst paa bildet og knappen BOOK
+// PLASS nederst paa det samme kortet. To motsatte beskjeder, og det er
+// knappen folk trykker paa.
+//
+// Eieren, 1. september, med bilde av nettopp det kortet: «naar noe er
+// fullbooket, vil jeg ha knappen les mer og ikke book paa forsiden av
+// kortet».
+//
+// Malt i nettleseren for og etter, paa den lokale basen: for sto tre kort
+// med FULLBOOKET og «Book plass» (Sip & Clay, Lag din egen bolle, Liten);
+// etter sier alle tre «Les mer», mens de aatte som har ledige plasser staar
+// urort med «Book plass». Knappen forer samme sted som for — «Les mer» paa
+// Sip & Clay endte paa /kurs/sip-and-clay, der datoene og ventelista staar.
+//
+// Regelen staar i medBooking, som bade kortene i kurslista og de store
+// kortene under «Kursene vaare» henter «cta» fra. Ett sted, saa de to ikke
+// kan bli uenige.
+sjekk('fullbooket kurs faar «Les mer» paa knappen',
+    str_contains($sida, "(k.status === 'Fullbooket' ? 'Les mer' : (k.cta || 'Book plass'))"));
+// Kontrollen: den gamle linja, som ga «Book plass» uansett, skal vaere borte.
+// Uten denne ville proven over vaere gronn ogsaa om noen la den tilbake.
+sjekk('… og den gamle regelen uten unntak er borte',
+    !str_contains($sida, "cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),"));
+// Et kurs uten datoer skal fortsatt si «Kontakt oss». Fullbooket-regelen
+// ligger etter den, saa den kan ikke overta for et kurs som settes opp naar
+// noen sporr.
+sjekk('… mens kurs uten datoer fortsatt sier «Kontakt oss»',
+    str_contains($sida, "cta: k.kunKontakt\n          ? 'Kontakt oss'"));
+// Ordet kommer fra ledigTekst, som er det ene stedet plasstallet blir tekst.
+// Skrives det om der, maa det skrives om her ogsaa — derfor staar de to i
+// samme prove.
+sjekk('… og «Fullbooket» er fortsatt ordet ledigTekst gir',
+    str_contains($sida, "if (isNaN(l) || l <= 0) return 'Fullbooket';"));
+
+// ── Teksten paa Date Night ────────────────────────────────────────────
+//
+// Kortet sto med en linje jeg skrev da kurset ble lagt inn. Eieren,
+// 1. september, med sin egen tekst: «Legg til tekst paa datenight kortet.»
+//
+// Teksten ligger i «05 · Beskrivelse» i kursoppsettet, og vises oeverst paa
+// kurssida og paa det store kortet under «Kursene vaare». Malt i nettleseren
+// etter migrasjonen: begge stedene staar med den nye teksten.
+$mig122 = file_get_contents(dirname(__DIR__) . '/db/migrations/122_teksten_pa_date_night.sql');
+sjekk('migrasjonen skriver den nye teksten paa Date Night',
+    str_contains($mig122, 'En romantisk og kreativ kveld for to.')
+    && str_contains($mig122, 'minnene varer lenge.'));
+// Har verkstedet skrevet noe eget i mellomtida, skal deres ord staa. Uten
+// denne betingelsen ville migrasjonen overkjore dem.
+sjekk('… bare der den gamle linja staar',
+    str_contains($mig122, "AND beskrivelse = 'En kveld for dere to."));
+if (DB::harTabell('courses')) {
+    $dnT = DB::en("SELECT beskrivelse FROM courses WHERE tittel = 'Date Night'");
+    if ($dnT !== null) {
+        sjekk('Date Night har den nye teksten i basen',
+            str_starts_with((string) $dnT['beskrivelse'], 'En romantisk og kreativ kveld for to.'),
+            mb_substr((string) $dnT['beskrivelse'], 0, 40));
+    }
+}
+
 // ── Kalenderen begynner der dagen begynner ────────────────────────────
 //
 // Bade dag- og ukevisningen sto med Math.min(600, ...): visningen kunne bare

@@ -18520,6 +18520,29 @@ class Component extends DCLogic {
     const kurv = this.state.kurv || {};
     const varer = this.state.butikkvareListe || [];
 
+    // Et medlemskap kan aldri bli en ordre: det er en avtale i Vipps som
+    // belastes hver periode. Havner det likevel i kurven — en kurv som stod
+    // aapen fra for rettelsen, eller en vei vi ikke har sett — skal det ikke
+    // meldes som en vare som er borte fra butikken. Da fikk medlemmet beskjed
+    // om aa ta noe ut av kurven som ikke gikk aa ta ut noe sted.
+    const abonnement = Object.keys(kurv).filter(n => String(n).indexOf('Abonnement: ') === 0);
+    if (abonnement.length) {
+      const andre = Object.keys(kurv).filter(n => abonnement.indexOf(n) === -1);
+      if (!andre.length) {
+        this.startAbonnement(abonnement[0]);
+        return;
+      }
+      // Sammen med varer gaar det ikke: to ulike betalinger i ett trykk.
+      // Da sier vi hva som maa gjores, framfor aa velge for medlemmet.
+      this.setState({
+        kvittering: 'Medlemskapet betales for seg',
+        kvitteringDetalj: abonnement[0].replace('Abonnement: ', '')
+          + ' er en avtale i Vipps, ikke en vare. Fullfør handlekurven først, '
+          + 'og opprett avtalen fra Min side etterpå.',
+      });
+      return;
+    }
+
     const linjer = [];
     const ukjente = [];
     Object.keys(kurv).forEach(nokkel => {
@@ -23489,6 +23512,52 @@ class Component extends DCLogic {
         if (d && d.planer) this.setState({ planListe: d.planer, minAvtale: d.min || null });
       })
       .catch(() => { this._medlemskapHentes = false; });
+  }
+
+  /**
+   * Starte eller fornye et medlemskap.
+   *
+   * Eieren, 1. september, med et skjermbilde fra et medlem som ikke fikk
+   * betalt: «Har faatt denne fra et medlem som skal betale!!!!!!!!»
+   *
+   * Kassa sa «Abonnement: Basis 30 finnes ikke i butikken lenger». Den hadde
+   * rett. Tre knapper paa Min side — «Forny» to steder, og «Legg i
+   * handlekurven» paa planene under «Bytt abonnement» — la medlemskapet i
+   * handlekurven som om det var en kopp. Men kjopKurv() slaar hver linje opp
+   * i butikkvarene, og et medlemskap staar ikke der. Det kunne det heller
+   * ikke: et medlemskap er en avtale i Vipps som belastes hver periode, ikke
+   * en ordre som betales én gang.
+   *
+   * Det var altsaa ikke en gammel kurv som hadde blitt staaende. Veien var
+   * stengt fra foerste trykk, for alle, hver gang.
+   *
+   * Riktig vei fantes fra for: den bookingskjermen bruker for kurs merket
+   * «Medlemskap». Naa gaar disse tre samme vei.
+   *
+   * Serveren avgjor om det gaar. Loeper det alt en avtale, svarer den «Du har
+   * alt et medlemskap» — og det er den som skal si det, ikke vi: bare den vet
+   * hva som staar i Vipps. Vi kan aldri opprette to avtaler ved siden av
+   * hverandre herfra.
+   */
+  startAbonnement(planNavn) {
+    const navn = String(planNavn || '').replace(/^Abonnement: /, '').trim()
+      || (this.state.abo || this.aktivPlan().navn || '');
+    if (!navn) {
+      this.setState({ kvittering: 'Velg medlemskap', kvitteringDetalj: 'Vi fant ikke hvilket medlemskap det gjelder.' });
+      return;
+    }
+    // Ligger det et medlemskap i kurven, skal det ut naar avtalen startes.
+    // Ellers ville det blitt staaende og stoppet neste butikkjop.
+    this.setState(st => {
+      const k = Object.assign({}, st.kurv);
+      Object.keys(k).forEach(n => { if (String(n).indexOf('Abonnement: ') === 0) delete k[n]; });
+      return { kurv: k };
+    });
+    if (!this.erPublisert()) {
+      this.setState({ kvittering: 'Avtalen er opprettet i Vipps', abo: navn, aboKjopt: true, oppsagt: false });
+      return;
+    }
+    this.medlemskapKall({ handling: 'start', plan: navn }, 'Avtalen er opprettet i Vipps');
   }
 
   medlemskapKall(kropp, merkelapp) {
@@ -29650,18 +29719,10 @@ class Component extends DCLogic {
                 { navn: 'Inneholder', verdi: p.detalj },
                 { navn: 'Bytte', verdi: 'Gjelder fra neste måned' },
                 { navn: 'Oppsigelse', verdi: 'Måned til måned — si opp når du vil' },
-              ], 'Legg i handlekurven', null, false, () => {
-                this.setState(s2 => {
-                  const k = Object.assign({}, s2.kurv);
-                  // Ett medlemskap om gangen. Navnene sto skrevet inn her,
-                  // saa et omdopt medlemskap ble liggende igjen ved siden av
-                  // det nye — og kunden betalte for begge.
-                  Object.keys(k).forEach(n => { if (n.indexOf('Abonnement: ') === 0) delete k[n]; });
-                  k['Abonnement: ' + p.navn] = 1;
-                  return { kurv: k };
-                });
-                this.apneKurvAuto(200);
-              }),
+              // Knappen sa «Legg i handlekurven», og det var nettopp det
+              // som ikke gikk: kassa kunne ikke bestille et medlemskap.
+              // Naa sier den hva som skjer, og gjor det.
+              ], 'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),
         stil: {
           appearance: 'none', cursor: p.brukt ? 'not-allowed' : 'pointer', textAlign: 'left', fontFamily: 'inherit',
           display: 'flex', flexDirection: 'column', gap: 2,
@@ -35523,7 +35584,7 @@ class Component extends DCLogic {
         };
       })(),
 
-      aFornyAbo: () => this.leggTil('Abonnement: ' + (this.state.abo || this.aktivPlan().navn)),
+      aFornyAbo: () => this.startAbonnement(this.state.abo || this.aktivPlan().navn),
 
       apneManuell: this.apne('Stemple inn manuelt', 'Koden står på skiltet ved døra og byttes hver dag. Glemmer du å stemple ut, stopper telleren automatisk ved stengetid.', [
         { navn: 'Dagens kode', verdi: '' },

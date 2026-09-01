@@ -3798,6 +3798,50 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── Medlemskap kan ikke legges i handlekurven ──────────────────────────
+//
+// Eieren, 1. september, med et skjermbilde fra et medlem som ikke fikk
+// betalt: «Har faatt denne fra et medlem som skal betale!!!!!!!!»
+//
+// Kassa sa «Abonnement: Basis 30 finnes ikke i butikken lenger». Den hadde
+// rett: kjopKurv() slaar hver linje opp i butikkvarene, og et medlemskap
+// staar ikke der. Tre knapper paa Min side la det likevel i kurven. Veien
+// var stengt fra foerste trykk — ikke en gammel kurv som hadde blitt
+// staaende, men en doer som aldri hadde gaatt opp.
+//
+// Et medlemskap er en avtale i Vipps som belastes hver periode. Det kan
+// aldri bli en ordre.
+sjekk('ingen knapp legger et medlemskap i handlekurven',
+    !str_contains($sida2, "leggTil('Abonnement: "));
+sjekk('«Forny» starter avtalen i stedet',
+    str_contains($sida2, "aFornyAbo: () => this.startAbonnement("));
+sjekk('… og det gjor plankortet ogsaa',
+    str_contains($sida2, "'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),"));
+sjekk('… og begge gaar til handling=start',
+    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn }"));
+
+// Kurver som stod aapne da rettelsen gikk ut, skal ikke moete den samme
+// doede enden. De var det eneste stedet en «Abonnement:»-linje kunne
+// komme fra etter dette.
+sjekk('en kurv som alt har et medlemskap i seg blir ikke en blindvei',
+    str_contains($sida2, "const abonnement = Object.keys(kurv).filter(n => String(n).indexOf('Abonnement: ') === 0);"));
+sjekk('… den starter avtalen naar den staar alene',
+    str_contains($sida2, "        this.startAbonnement(abonnement[0]);"));
+// Sammen med varer er det to ulike betalinger i ett trykk. Da skal det staa
+// hva som maa gjores, ikke velges for medlemmet.
+sjekk('… og sier fra naar den staar sammen med varer',
+    str_contains($sida2, "kvittering: 'Medlemskapet betales for seg',"));
+// Blir avtalen startet, skal linja ut av kurven — ellers stopper den neste
+// butikkjop.
+sjekk('… og medlemskapet tas ut av kurven naar avtalen startes',
+    str_contains($sida2, "Object.keys(k).forEach(n => { if (String(n).indexOf('Abonnement: ') === 0) delete k[n]; });\n      return { kurv: k };"));
+
+// Serveren skal fortsatt vaere den som avgjor. Den er den eneste som vet
+// hva som staar i Vipps, og den hindrer to avtaler ved siden av hverandre.
+$mlib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('serveren nekter to avtaler ved siden av hverandre',
+    str_contains($mlib, "throw new RuntimeException('Du har alt et medlemskap."));
+
 // ── GEO: aa bli sitert av en AI ────────────────────────────────────────
 //
 // Eieren, 1. september: «jeg er blitt fortalt at noe heter GEO som er med ai

@@ -4545,6 +4545,51 @@ sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
 
+// ── PHP-en maa la seg lese ─────────────────────────────────────────────
+//
+// 1. september gikk publiseringen til lissom.no i stykker paa
+//
+//     PHP Parse error: syntax error, unexpected token "\\"
+//     in api/apningstider.php on line 123
+//
+// En tekst i fila var byttet med et python-skript, der «\\$linjer» sto i en
+// dobbeltfnuttet streng. «\\$» er ingen escape i python, saa backslashen ble
+// skrevet rett inn i PHP-en. Filene som ble roert samtidig ble kjort gjennom
+// «php -l»; akkurat denne ble det ikke.
+//
+// GitHub-jobben tar det — den kjorer den samme sjekken, og publiseringen
+// stoppet for noe naadde nettsiden. Men da har det alt gaatt inn i main, og
+// da staar hovedgrenen med en fil som ikke lar seg lese. Sjekken hoerer
+// hjemme her, der den koster to sekunder og fanger det for det pushes.
+//
+// Samme utvalg som .github/workflows/deploy.yml: api, app og bin.
+echo "\n== PHP-en lar seg lese ==\n";
+$rot = dirname(__DIR__);
+$phpFiler = [];
+foreach (['api', 'app', 'bin'] as $mappe) {
+    $sti = $rot . '/' . $mappe;
+    if (!is_dir($sti)) { continue; }
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($sti, FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $f) {
+        if ($f->isFile() && strtolower($f->getExtension()) === 'php') { $phpFiler[] = $f->getPathname(); }
+    }
+}
+sort($phpFiler);
+$ulesbare = [];
+foreach ($phpFiler as $f) {
+    $ut = [];
+    $kode = 0;
+    exec('php -l ' . escapeshellarg($f) . ' 2>&1', $ut, $kode);
+    if ($kode !== 0) {
+        $ulesbare[] = substr($f, strlen($rot) + 1) . ': ' . trim((string) ($ut[0] ?? 'ukjent feil'));
+    }
+}
+sjekk('alle PHP-filene lar seg lese',
+    $ulesbare === [],
+    count($phpFiler) . ' filer' . ($ulesbare ? ' — ' . implode(' | ', array_slice($ulesbare, 0, 3)) : ''));
+// En tom liste ville gitt gronn uten aa ha sjekket noe.
+sjekk('… og det er faktisk filer aa sjekke', count($phpFiler) > 50, count($phpFiler) . ' filer');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

@@ -5505,12 +5505,48 @@ sjekk('… og kurspilla er én linje paa mobilen',
     str_contains($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }")
     && str_contains($sida, ": { padding: '6px 8px' }),")
     && str_contains($sida, "this.erSmal() ? { marginLeft: 'auto', flex: '0 0 auto' } : {}),"));
-// Ventelistekortene var tre linjer med stor skrift og tok mest plass av alt i
-// sidemenyen. Paa mobilen er de naa én linje, som kursene.
-sjekk('… og ventelista foelger samme regel',
-    str_contains($sida, "const smal = this.erSmal();")
-    && str_contains($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', borderLeftWidth: '3px', borderRadius: 'var(--radius-sm)', padding: '4px 8px' }")
-    && str_contains($sida, ": { borderLeftWidth: '4px', borderRadius: 'var(--radius-md)', padding: '12px 14px' }),"));
+// ── Ventelistepilla er like stor som kurspilla ────────────────────────
+//
+// Ventelistekortet sto med 16 px display-skrift og 12/14 px luft, mens
+// kurspillene rett over sto med 12 px og 6/8. To lister under hverandre i den
+// samme spalta, i to stoerrelser.
+//
+// Eieren, 1. september: «jeg vil ha samme stoerrelse paa pillen som paa
+// kursene over». Tallene er hentet ordrett fra klSideKurs.
+//
+// Denne staar for at de to ikke skal gli fra hverandre igjen: endrer noen
+// kurspilla, skal ventelistepilla foelge med, eller sjekken bli roed.
+// Uten avsluttende klamme: kurspilla har en opacity til slutt (kladd staar
+// blekt), ventelistepilla har ikke det. Alt foran er likt, og det er formen.
+$kurspille = "borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0";
+sjekk('… og ventelistepilla er like stor som kurspilla',
+    substr_count($sida, $kurspille) === 2
+    && substr_count($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }") === 2
+    && substr_count($sida, ": { padding: '6px 8px' }),") === 2);
+sjekk('… med den samme skrifta i navnet og i det under',
+    substr_count($sida, "navnStil: Object.assign({ fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },") === 2
+    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap' },") === 2);
+// Bare venstrekanten skiller dem, saa man ser hvilken liste man er i.
+sjekk('… men ventelista beholder den terrakotta venstrekanten',
+    str_contains($sida, "borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)'"));
+
+// ── Et klikk aapner henne der plassen gis ─────────────────────────────
+//
+// Pilla kunne bare dras. Eieren, 1. september: «og jeg vil kunne trykke paa
+// den og komme inn for aa tildele eller avslaa ventelisten».
+//
+// Ingen ny skjerm: Venteliste-raden har allerede datoknappene, «Varsle» og
+// «Fjern», og aapnes paa vlApen.
+sjekk('et klikk paa ventelistepilla aapner hennes rad paa Venteliste',
+    str_contains($sida, "this.gaaAdmin('adminventeliste', {")
+    && str_contains($sida, 'vlApen: p.id,'));
+sjekk('… med den samme emnelinja raden setter selv',
+    str_contains($sida, "vlEmne: 'Ledig plass på ' + (p.kurs || ''),"));
+// Et klikk er et trykk uten aa dra. Draget skal fortsatt virke.
+sjekk('… mens draget fortsatt gir plassen paa den okta du slipper paa',
+    str_contains($sida, 'if (!d) return;')
+    && str_contains($sida, 'if (!d.moved) {')
+    && str_contains($sida, "this.setState({ klVlBekreft: { id: p.id, navn: p.navn, malId: malId } });"));
 
 // Eieren, 31. august: «kan kortene altsaa avtalene i kalendere skaleres naar
 // jeg trekker et kort til paa samme tid?» — ja, de deler bredden. Bade i

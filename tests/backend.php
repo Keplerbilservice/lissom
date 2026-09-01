@@ -3798,6 +3798,39 @@ sjekk('… uten aa senke et vindu noen har satt selv',
 sjekk('… og kalenderen sender det ogsaa',
     str_contains($sida2, "ukerFram: this.ukerForSerie(monsterKl, antallGanger, d, 0),"));
 
+// ── Tre datoer paa kurskortet ──────────────────────────────────────────
+//
+// Kortet bar foer bare den FOERSTE datoen, og den ble lest som den eneste.
+// Nybegynner dreiekurs gaar 9., 11. og 16. september og ni ganger til; kortet
+// sa «onsdag 9. – torsdag 10. september», og resten fantes ikke for den som
+// saa paa lista. Eieren, 31. august: «paa disse kortene maa vi fjerne dato» —
+// saa datoen ble tatt bort.
+//
+// Men da forsvant ogsaa det folk leter etter. Eieren, 1. september: «paa
+// kortene kurs saa ba jeg deg fjerne datoer, men jeg vil at det skal vises 3
+// planlagte datoer og se fler datoer». Det er den riktige loesningen paa den
+// opprinnelige feilen: tre datoer sier at det finnes flere, én later som den
+// er alene.
+sjekk('kortene har tre datoer', str_contains($sida2, '  kortDatoer(k) {'));
+sjekk('… og den brukes av alle kortlistene',
+    str_contains($sida2, 'this.medServerdata(k0)')
+    && str_contains($sida2, '.map(k => Object.assign({}, k, this.kortDatoer(k), {'));
+// Kortet baerer datoene som «okter»; «datoer» er navnet i katalogen.
+sjekk('… og finner datoene under begge navnene',
+    str_contains($sida2, 'const alle = (k.okter || k.datoer || []).filter(d => d && d.dag);'));
+// Tre tider samme dag er én dato paa kortet, ikke tre.
+sjekk('… og teller dager, ikke tidspunkt',
+    str_contains($sida2, "const fra = dager.find(x => x.dag === d.dag);"));
+sjekk('… og viser hoyst tre', str_contains($sida2, 'kdListe: dager.slice(0, 3)'));
+sjekk('… med en vei til resten', str_contains($sida2, "kdFlereTekst: 'Se alle ' + dager.length + ' datoer',"));
+// Datoen skal folge med inn i bookingen. Aapner den bare kurset, er knappen
+// ikke annet enn en omvei til «Book plass».
+sjekk('… og datoen folger med inn i bookingen',
+    str_contains($sida2, "}, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));"));
+// Alle tre kortlistene — forsida, populaere datoer og kurslista — har stripa.
+sjekk('alle tre kortlistene viser datoene',
+    substr_count($sida2, '<sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">') === 3);
+
 // ── «Kasse» i kalenderen aapner kassa ──────────────────────────────────
 //
 // Eieren, 1. september, med et skjermbilde av ruta knappen aapnet: «Kasse fra

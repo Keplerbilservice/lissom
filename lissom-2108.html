@@ -1608,7 +1608,19 @@ window.__resources = {
                    Datoene staar inne paa kurset, der alle er med.
                    CourseCard filtrerer bort tomme felt selv — se «meta» i
                    ds-bundle.js — saa raden blir ikke staaende tom. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+              <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <sc-if value="{{ k.kdHar }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                    <sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ k.kdFlere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ k.kdSeFlere }}" style="appearance: none; cursor: pointer; border: none; background: transparent; padding: 5px 4px; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ k.kdFlereTekst }} →</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
             </sc-for>
           </div>
           <div class="lx-kunmobil">
@@ -1862,7 +1874,19 @@ window.__resources = {
           <sc-if value="{{ popHarDatoer }}" hint-placeholder-val="{{ true }}">
             <div class="lx-kortgrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
               <sc-for list="{{ popDatoer }}" as="k" hint-placeholder-count="2">
+                <div style="display: flex; flex-direction: column; gap: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <sc-if value="{{ k.kdHar }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                    <sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ k.kdFlere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ k.kdSeFlere }}" style="appearance: none; cursor: pointer; border: none; background: transparent; padding: 5px 4px; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ k.kdFlereTekst }} →</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
               </sc-for>
             </div>
           </sc-if>
@@ -2013,7 +2037,19 @@ window.__resources = {
       <section id="kursliste" style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8);">
           <sc-for list="{{ kursAlle }}" as="k" hint-placeholder-count="8">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+            <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ k.level }}" title="{{ k.title }}" duration="{{ k.duration }}" price="{{ k.price }}" status="{{ k.status }}" image="{{ k.image }}" cta-label="{{ k.cta }}" on-book="{{ k.book }}" hint-size="100%,400px"></x-import>
+                <sc-if value="{{ k.kdHar }}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px;">
+                    <sc-for list="{{ k.kdListe }}" as="d" hint-placeholder-count="3">
+                      <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.tekst }}</button>
+                    </sc-for>
+                    <sc-if value="{{ k.kdFlere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ k.kdSeFlere }}" style="appearance: none; cursor: pointer; border: none; background: transparent; padding: 5px 4px; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ k.kdFlereTekst }} →</button>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
           </sc-for>
         </div>
       </section>
@@ -15020,7 +15056,7 @@ class Component extends DCLogic {
       // «Book plass» og en gammel dato fra designet, sendte knappen folk til
       // en bookingskjerm uten noe aa velge.
       .filter(k => !k.utenDato)
-      .map(k => Object.assign({}, k, {
+      .map(k => Object.assign({}, k, this.kortDatoer(k), {
         // Uten datoer aapner knappen forespoerselen i stedet. En bookingskjerm
         // uten noe aa velge er en blindvei.
         cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),
@@ -15028,6 +15064,91 @@ class Component extends DCLogic {
           ? () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsType: k.title, fsTop: Math.min(this.topNaa(60), 90) })
           : () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
+  }
+
+  /**
+   * Tre datoer paa kurskortet, og en vei til resten.
+   *
+   * Kortet bar foer bare den FOERSTE datoen, og den ble lest som den eneste.
+   * Nybegynner dreiekurs gaar 9. september, 11. september og 7. oktober;
+   * kortet sa «onsdag 9. – torsdag 10. september», og oktober fantes ikke for
+   * den som saa paa lista. Eieren, 31. august: «paa disse kortene maa vi
+   * fjerne dato» — saa datoen ble tatt bort.
+   *
+   * Men da forsvant ogsaa det folk leter etter. Eieren, 1. september: «paa
+   * kortene kurs saa ba jeg deg fjerne datoer, men jeg vil at det skal vises
+   * 3 planlagte datoer og se fler datoer».
+   *
+   * Det er den riktige loesningen paa den opprinnelige feilen: tre datoer
+   * sier at det finnes flere, én dato later som den er alene.
+   *
+   * Datoene er knapper. Trykker du paa en, aapnes bookingen med den dagen
+   * valgt — ikke bare med kurset. Har dagen bare ett klokkeslett, er hele
+   * valget tatt, og du staar rett paa trinn to.
+   */
+  kortDatoer(k) {
+    // Kortet baerer datoene som «okter» — «datoer» er navnet de har i
+    // katalogen fra serveren. Begge staar her, saa den virker uansett hvilken
+    // av de to listene kortet kom fra.
+    const alle = (k.okter || k.datoer || []).filter(d => d && d.dag);
+    if (!alle.length) {
+      return { kdHar: false, kdListe: [], kdFlere: false, kdFlereTekst: '', kdSeFlere: null };
+    }
+
+    // Én rad per dag. Er det tre tider samme dag, er det fortsatt én dato paa
+    // kortet — ellers ville «tre datoer» vaert samme dag tre ganger.
+    const dager = [];
+    alle.forEach(d => {
+      const fra = dager.find(x => x.dag === d.dag);
+      if (fra) { fra.tider.push(d); return; }
+      dager.push({ dag: d.dag, tider: [d] });
+    });
+
+    const aapne = (rad) => () => {
+      const ledig = rad.tider.filter(t => !t.sperret && (t.ledige == null || t.ledige > 0));
+      const en = ledig.length === 1 ? ledig[0] : (rad.tider.length === 1 ? rad.tider[0] : null);
+      this.setState(Object.assign({
+        side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false,
+        ventelisteBekreftet: null, bDag: rad.dag, bAlleDatoer: false,
+        bDato: null, bOktId: null,
+      }, en ? { bDato: en.dato, bOktId: en.oktId || null } : {}));
+      window.scrollTo(0, 0);
+    };
+
+    return {
+      kdHar: true,
+      kdListe: dager.slice(0, 3).map(rad => {
+        const full = rad.tider.every(t => t.sperret || (t.ledige != null && t.ledige <= 0));
+        return {
+          // «onsdag 9. september» → «ons 9. sep». Kortet har smal plass, og
+          // tre fulle datoer ville brutt over seks linjer.
+          tekst: String(rad.dag)
+            .replace(/^(man|tirs|ons|tors|fre|lør|søn)dag\s/i, (m, d) => d.toLowerCase() + '. ')
+            .replace(/\s(januar|februar|mars|april|mai|juni|juli|august|september|oktober|november|desember)$/i,
+                     (m, mn) => ' ' + mn.slice(0, 3).toLowerCase() + '.'),
+          full,
+          velg: full ? (() => {}) : aapne(rad),
+          stil: {
+            appearance: 'none', cursor: full ? 'default' : 'pointer', whiteSpace: 'nowrap',
+            border: '1px solid ' + (full ? 'var(--border-subtle)' : 'var(--lissom-brown)'),
+            background: 'transparent', color: full ? 'var(--text-muted)' : 'var(--lissom-brown)',
+            borderRadius: 'var(--radius-pill)', padding: '5px 11px', minHeight: 32,
+            font: 'var(--type-body-sm)', fontWeight: 600,
+            textDecoration: full ? 'line-through' : 'none', opacity: full ? .6 : 1,
+          },
+        };
+      }),
+      kdFlere: dager.length > 3,
+      kdFlereTekst: 'Se alle ' + dager.length + ' datoer',
+      // Resten staar paa kurset, der hele velgeren er.
+      kdSeFlere: () => {
+        this.setState({
+          side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false,
+          bDato: null, bOktId: null, bDag: null, bAlleDatoer: true, ventelisteBekreftet: null,
+        });
+        window.scrollTo(0, 0);
+      },
+    };
   }
 
   // Kurs som bare finnes i databasen.

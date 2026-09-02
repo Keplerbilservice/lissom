@@ -23285,7 +23285,13 @@ class Component extends DCLogic {
               // et kurs som alt ligger ute, skal du se at det gikk uten aa bli
               // sendt ut av skjemaet.
               kRed: behold ? true : false,
-              kvittering: framover === 0
+              // «Vises ikke ute» ble regnet av datoene alene, og saa aldri
+              // paa haken «Vis kurset paa nettsiden ogsaa uten datoer».
+              // Eieren, 2. september, etter aa ha huket den av: «fikk beskjed
+              // om at det ikke vises uten datoer». Kurset LAA ute — det var
+              // kvitteringen som sa noe annet enn det som var sant, og han
+              // trodde haken ikke virket.
+              kvittering: (framover === 0 && !rad.utenDato)
                 ? rad.navn + ' er lagret, men vises ikke ute'
                 : rad.navn + ' er lagret',
               // Ble en dato tatt bort, skal det staa. Og ble den avlyst
@@ -23303,9 +23309,15 @@ class Component extends DCLogic {
                 // ikke ute — og den som gikk for aa se etter det, fant
                 // ingenting og ingen forklaring.
                 framover === 0
-                  ? (nye.length
-                      ? 'Men alle datoene har vært, så kurset vises ikke på nettsiden. Legg inn en dato som ligger foran oss.'
-                      : 'Kurset vises ikke på nettsiden før det har en dato som ligger foran oss.')
+                  ? (rad.utenDato
+                      // Haken er paa: kurset staar ute, med «Kontakt oss» der
+                      // datoen ellers ville staatt. Da er det ingenting galt
+                      // aa si fra om — men det er verdt aa si hva som vises,
+                      // saa ingen lurer paa hvorfor det ikke staar en dato.
+                      ? 'Kurset står på nettsiden med «Kontakt oss», siden det ikke har noen dato framover.'
+                      : (nye.length
+                          ? 'Men alle datoene har vært, så kurset vises ikke på nettsiden. Legg inn en dato som ligger foran oss.'
+                          : 'Kurset vises ikke på nettsiden før det har en dato som ligger foran oss.'))
                   : '',
                 (!nye.length && !borte.length && framover > 0) ? '' : '',
               ].filter(Boolean).join(' '),

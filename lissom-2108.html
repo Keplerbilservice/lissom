@@ -2108,7 +2108,22 @@ window.__resources = {
               </div>
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-8) 0 var(--space-3);">{{ bNivaa }}</div>
               <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-4xl);">{{ bTittel }}</h1>
-              <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ bOm }}</p>
+              <!-- Avsnittene i beskrivelsen skal staa som de er skrevet.
+                   Teksten sto som ett avsnitt uansett hvor mange som var
+                   skrevet inn — fire avsnitt ble én klump. Feltet i admin har
+                   vist dem hele tida, saa det man saa i redigeringa var ikke
+                   det kunden fikk.
+                   «white-space: pre-wrap» paa avsnittet er ikke nok: teksten
+                   settes inn i en <span> som skjermkoden lager, og den staar
+                   med «normal». Malt i nettleseren: forelderen fikk
+                   pre-wrap, spanen inni beholdt normal, og linjeskiftene ble
+                   slaatt sammen likevel.
+                   Derfor deles teksten i avsnitt her, og hvert avsnitt faar
+                   sitt eget <p>. Da staar de med luft mellom seg, slik
+                   avsnitt skal, framfor en tom linje. -->
+              <sc-for list="{{ bOmAvsnitt }}" as="a" hint-placeholder-count="2">
+                <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ a.tekst }}</p>
+              </sc-for>
               <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
               <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">
                 <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">
@@ -2413,7 +2428,12 @@ window.__resources = {
       <section style="background: var(--clay-50); padding: 0 var(--space-8) var(--space-12);">
         <div class="lx-kortgrid" style="max-width: var(--width-content); margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8); align-items: stretch;">
           <sc-for list="{{ abonnementer }}" as="a" hint-placeholder-count="3">
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ a.merke }}" title="{{ a.navn }}" text="{{ a.beskrivelse }}" price="{{ a.pris }}" duration="{{ a.periode }}" image="{{ a.bilde }}" cta-label="Velg" on-book="{{ a.kjop }}" hint-size="100%,420px"></x-import>
+            <!-- «Les mer», ikke «Velg». Kortet forteller ikke nok til at
+                 man kan velge fra det: krav, binding, oppsigelse og hva som
+                 foelger med staar paa sida under. Eieren, 2. september: «og
+                 knappene paa alle medlemskapene maa naa hete les mer».
+                 Samme form som kurskortene. -->
+            <x-import component-from-global-scope="LissomDesignSystem_8402ac.CourseCard" level="{{ a.merke }}" title="{{ a.navn }}" text="{{ a.beskrivelse }}" price="{{ a.pris }}" duration="{{ a.periode }}" image="{{ a.bilde }}" cta-label="Les mer" on-book="{{ a.lesMer }}" hint-size="100%,420px"></x-import>
           </sc-for>
         </div>
         
@@ -24292,13 +24312,18 @@ class Component extends DCLogic {
    * som «Lukk», saa den vanlige knappen faller bort og de to valgene under
    * staar alene.
    */
-  apneFornyValg(planNavn) {
+  apneFornyValg(planNavn, harUtloept) {
     const navn = planNavn || this.state.abo || this.aktivPlan().navn;
     const pl = this.aboPlan(navn);
     const felter = [];
+    // Den som har hatt medlemskap for skal vite hvorfor hun staar her.
+    if (harUtloept) {
+      felter.push({ navn: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.', verdi: ' ' });
+    }
     if (pl.pris) felter.push({ navn: 'Pris', verdi: pl.pris + ' ' + pl.intervall });
     Component.BETALINGSTEKST(pl).forEach(f => felter.push(f));
-    return this.apne(pl.navn || 'Forny medlemskapet', 'Hvordan vil du betale?',
+    return this.apne(pl.navn || 'Forny medlemskapet',
+      harUtloept ? 'Forny medlemskapet' : 'Hvordan vil du betale?',
       felter, 'Lukk', null, false, null, this.aboPlanValg(navn));
   }
 
@@ -24338,6 +24363,38 @@ class Component extends DCLogic {
    * samme veien, og en lukking der inne naar ikke ut.
    */
   meldInnPlan(navn) {
+    // ── Den som alt er medlem ────────────────────────────────────────
+    //
+    // Innmeldingsskjemaet paa Min side staar bak «innlogget og ikke medlem»
+    // — se visBliMedlem. Et medlem som trykket «Velg» ble derfor sendt til
+    // Min side, der skjemaet ikke fantes, og det skjedde ingenting. Ingen
+    // beskjed, ingen Vipps, ingen vei videre.
+    //
+    // Eieren, 2. september: «totalslakt av velg knappen, jeg kommer direkte
+    // inn paa min side ingen vippsbetsling».
+    //
+    // Et medlem trenger ikke soke om aa bli medlem. Det som mangler er
+    // avtalen, og den starter samme sted som «Forny»: valget mellom fast
+    // trekk og aa gjore opp selv, og derfra til Vipps. Serveren avgjor som
+    // ellers — loeper det alt en avtale, sier den fra.
+    //
+    // Det samme gjelder den som HAR vaert medlem. Avtalen hennes ligger i
+    // «minAvtale» — serveren sender ogsaa en som er stoppet eller utloept,
+    // nettopp for at Min side skal kunne si hva som gjelder. Hun skal ikke
+    // soke paa nytt om noe hun alt har hatt; hun skal faa vite at
+    // medlemskapet ikke loeper, og kunne fornye det.
+    //
+    // Eieren, 2. september: «man maa jo aldri komme rett inn», og «er du
+    // ikke aktivt medlem saa maa man faa beskjed om aa fornye».
+    //
+    // Den som aldri har vaert medlem gaar fortsatt til innmeldingen: der
+    // staar kravet om kurs hos oss eller erfaring fra for, og det spor vi om
+    // én gang.
+    const gammelAvtale = this.state.minAvtale || null;
+    if (this.state.erMedlemBruker || gammelAvtale) {
+      this.apneFornyValg(navn, gammelAvtale && !this.state.erMedlemBruker)();
+      return;
+    }
     // Valget maa overleve innloggingen: Vipps sender deg ut av sida og
     // tilbake igjen, og alt som ligger i minnet er borte naar du kommer.
     try { sessionStorage.setItem('lissom_medlemsplan', navn); } catch (_) { /* privat modus */ }
@@ -29630,23 +29687,21 @@ class Component extends DCLogic {
       // i feltet ogsaa, staar det to ganger paa sida — se utenGjentakelse().
       const halen = this.utenGjentakelse(o.passerFor, ['passer for', 'for deg som', 'deg som']);
       const passer = halen ? 'Passer for: deg som ' + halen : '';
-      // Salg gjennom lissom.no folger med medlemskapet, ikke proveperioden.
+      // ── Punktlista kommer fra basen, og bare derfra ─────────────
       //
-      // Linja ble lagt paa uansett hva som alt sto i punktlista. Basis 30 har
-      // den skrevet inn i basen fra for, og fikk den derfor to ganger:
+      // «Selg egne arbeider gjennom lissom.no» ble lagt paa av koden, paa
+      // hver loepende plan. Den sto dermed paa tre av fire uansett hva
+      // verkstedet hadde skrevet — og paa Basis 30, som har den i basen fra
+      // for, sto den to ganger.
       //
-      //   ✓ Tilgang 24/7 med dorkode
-      //   ✓ Selg egne arbeider gjennom lissom.no
-      //   ✓ Selg egne arbeider gjennom lissom.no
+      // Eieren, 2. september: «fjern selg egne arbeider gjennom lissom paa
+      // alle medlemskap bortsett fra aarsmedlemskap».
       //
-      // Malt paa kortet og paa infosida under «les mer»: begge steder sto
-      // den dobbelt. Naa legges den bare paa der den ikke staar fra for, saa
-      // verkstedet kan skrive den inn selv uten at den kommer to ganger.
-      const SALG = 'Selg egne arbeider gjennom lissom.no';
-      const fraBasen = o.punkter || [];
-      const punkter = (o.engangs || fraBasen.some(x => String(x).trim() === SALG))
-        ? fraBasen
-        : fraBasen.concat([SALG]);
+      // Da hoerer den hjemme i basen, som alle de andre punktene, og ikke i
+      // koden. Migrasjon 124 tar den av Basis 30 og setter den paa
+      // Aarsmedlemskap. Etter det bestemmer verkstedet selv hvilke planer
+      // som har den, fra Medlemskap i admin.
+      const punkter = o.punkter || [];
       const oppsigelse = o.engangs
         ? 'Stopper av seg selv når perioden er over'
         : (o.binding > 0 ? 'Årsavtale — binding i ' + o.binding + ' måneder' : 'Måned til måned — si opp når du vil');
@@ -29706,7 +29761,10 @@ class Component extends DCLogic {
         // Se CourseCard i ds-bundle.js:
         //   onClick: e => { if (e.target.closest('button')) return; onBook(); }
         //   React.createElement(Button, { onClick: onBook }, ctaLabel)
-        kjop: (e) => (e ? meldInn() : visMer()),
+        // Bade knappen og kortflata forer til sida om medlemskapet. Der
+        // staar «Velg», som er veien inn.
+        lesMer: () => visMer(),
+        kjop: meldInn,
         kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },
       }, o, { passer, punkter });
     };
@@ -31145,6 +31203,20 @@ class Component extends DCLogic {
             || String(k.laererTekst || k.laerer || '').trim()
             || '';
       })(),
+      // Beskrivelsen delt i avsnitt. Verkstedet skriver dem med tomme linjer
+      // mellom, som i et hvilket som helst tekstfelt; her blir hver av dem
+      // sitt eget avsnitt paa sida.
+      //
+      // Ett linjeskift teller ogsaa: den som trykker enter én gang mener et
+      // nytt avsnitt, ikke et mellomrom.
+      bOmAvsnitt: (() => {
+        const k = this.state.valgtKurs || {};
+        const raa = String(k.om || '').trim()
+                 || String(k.kortBeskrivelse || '').trim()
+                 || String(k.laererTekst || k.laerer || '').trim()
+                 || '';
+        return raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ tekst: t }));
+      })(),
       // Er det noe aa betale paa nett?
       //
       // Sto som «price !== 'Gratis'» — en sammenligning mot en tekst. Paint
@@ -31734,7 +31806,13 @@ class Component extends DCLogic {
         'Leire, verktøy, glasur og brenning er inkludert.',
         'Ingen forkunnskaper nødvendig.',
       ]);
-        const p = parseInt(k.plasser, 10) || 0;
+        // «Maks N deltakere» gjelder én kveld med et bestemt antall plasser.
+        // Et kurs som settes opp naar noen sporr har ingen kveld aa fylle, og
+        // tallet kommer da fra kapasiteten som staar i oppsettet — ikke fra
+        // noe som er avtalt. Paa Date Night sto «Maks 12 deltakere» over en
+        // kveld for to. Eieren, 2. september: «datenight fjern maks 12
+        // deltakere».
+        const p = k.kunKontakt ? 0 : (parseInt(k.plasser, 10) || 0);
         return p > 0 ? ['Maks ' + p + ' deltakere.'].concat(fast) : fast;
       })(),
       // Seksjonene fra kursoppsettet, i den rekkefolgen de leses.

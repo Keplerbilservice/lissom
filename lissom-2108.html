@@ -2349,6 +2349,21 @@ window.__resources = {
                 </sc-if>
   
               </sc-if>
+              <!-- Medlemskap: «les mer» forst, «Velg» etterpaa. -->
+              <sc-if value="{{ visVelgMedlemskap }}" hint-placeholder-val="{{ false }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ velgMedlemskapKnapp }}" hint-size="100%,52px">Velg</x-import>
+                <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du velger selv om det skal trekkes fast i Vipps, eller om du vil gjøre opp for hver periode.</p>
+              </sc-if>
+              <!-- Kurs som settes opp naar noen sporr. Her sto hele
+                   bookingskjemaet og en knapp som ikke gjorde noe. -->
+              <sc-if value="{{ visKontaktKurs }}" hint-placeholder-val="{{ false }}">
+                <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-6); margin-bottom: var(--space-6);">
+                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Etter avtale</div>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Dette setter vi opp når det passer dere. Send oss en melding med når dere tenker, så finner vi en kveld sammen.</p>
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ kontaktKursKnapp }}" hint-size="100%,52px">Kontakt oss</x-import>
+                <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du betaler ingenting nå. Vi svarer så fort vi kan.</p>
+              </sc-if>
               <sc-if value="{{ erFullbooket }}" hint-placeholder-val="{{ true }}">
                 <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-6); margin-bottom: var(--space-6);">
                   <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Fullbooket</div>
@@ -3210,6 +3225,11 @@ window.__resources = {
           <sc-if value="{{ visVippsInnlogging }}" hint-placeholder-val="{{ true }}">
             <button type="button" onClick="{{ vippsStart }}" style="width: 100%; box-sizing: border-box; appearance: none; border: none; cursor: pointer; background: #FF5B24; color: #FFFFFF; border-radius: var(--radius-pill); padding: 15px 24px; font-family: var(--font-ui); font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 200ms var(--ease-clay);" style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span></button>
             <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Rask og sikker innlogging med Vipps-appen</p>
+          </sc-if>
+          <!-- «eller» skiller Vipps fra passordskjemaet. Staar bare naar
+               begge finnes; ellers ville det staatt et «eller» uten noe paa
+               den andre sida. -->
+          <sc-if value="{{ visLoginSkille }}" hint-placeholder-val="{{ true }}">
             <div style="display: flex; align-items: center; gap: var(--space-4); margin: var(--space-6) 0;">
               <span style="flex: 1; height: 1px; background: var(--border-subtle);"></span>
               <span style="font-size: var(--text-xs); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">eller</span>
@@ -3217,6 +3237,18 @@ window.__resources = {
             </div>
           </sc-if>
 
+          <!-- Brukernavn og passord er verkstedets egen konto — se hjelpe-
+               teksten under: «Har du glemt passordet, si fra til Monica».
+               Den sto midt paa kundens innloggingsskjerm, rett under Vipps,
+               og var det forste en kunde saa naar hun trykket «Velg» paa et
+               medlemskap. Eieren, 2. september: «naar man trykker velg vil
+               jeg ha en vippslosning kun, ikke som i dag med annen log in
+               info».
+
+               Skjemaet er ikke fjernet. Det staar paa /admin/logg-inn, som
+               ADMIN nederst paa sida forer til, og der er Vipps-knappen
+               borte i stedet. Én skjerm, to utgaver. -->
+          <sc-if value="{{ visPassordinnlogging }}" hint-placeholder-val="{{ true }}">
           <div style="display: flex; flex-direction: column; gap: var(--space-5);">
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Brukernavn" icon="user" placeholder="fornavn" value="{{ liBruker }}" on-change="{{ settLiBruker }}" hint-size="100%,66px"></x-import>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Passord" type="password" placeholder="••••••••" value="{{ liPassord }}" on-change="{{ settLiPassord }}" hint-size="100%,66px"></x-import>
@@ -3226,6 +3258,7 @@ window.__resources = {
             <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">Konto for verkstedet. Har du glemt passordet, si fra til Monica — hun setter et nytt.</p>
             <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ loggInnEpost }}" hint-size="100%,52px">Logg inn</x-import>
           </div>
+          </sc-if>
 
           <sc-if value="{{ visVippsInnlogging }}" hint-placeholder-val="{{ true }}">
             <div style="height: 1px; background: var(--border-subtle); margin: var(--space-8) 0;"></div>
@@ -15322,9 +15355,16 @@ class Component extends DCLogic {
         //
         // Knappen forer samme sted som for: inn paa kurset, der datoene og
         // ventelista staar. Det er bare loftet som er tatt bort.
-        cta: k.kunKontakt
-          ? 'Kontakt oss'
-          : (k.status === 'Fullbooket' ? 'Les mer' : (k.cta || 'Book plass')),
+        // Et kurs uten datoer sier ogsaa «Les mer». Knappen sa «Kontakt
+        // oss» og aapnet foresporselen med det samme — kortet var den
+        // eneste veien inn, og den gikk utenom alt som staar om kurset.
+        //
+        // Eieren, 2. september: «Datenight, mangler info ... bor vel ha
+        // samme vei som de andre», og «da bytte ut kontakt oss paa kortet
+        // med les mer».
+        //
+        // «Kontakt oss» staar naa paa kurssida, der man har lest hva det er.
+        cta: (k.kunKontakt || k.status === 'Fullbooket') ? 'Les mer' : (k.cta || 'Book plass'),
         // ── «Kontakt oss» aapner det enkle skjemaet ─────────────────
         //
         // Knappen aapnet gruppeforespoerselen: «Antall personer 2–5 / 6–10 /
@@ -15337,9 +15377,7 @@ class Component extends DCLogic {
         //
         // Kurset foelger med som emne, saa forespoerselen kommer inn merket
         // med hvilket kurs den gjelder.
-        book: k.kunKontakt
-          ? () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktEmne: k.title, ktTop: Math.min(this.topNaa(60), 90) })
-          : () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
+        book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, bOktId: null, ventelisteBekreftet: null }); window.scrollTo(0, 0); },
       }));
   }
 
@@ -24284,6 +24322,39 @@ class Component extends DCLogic {
     ];
   }
 
+  /**
+   * Veien inn i et medlemskap.
+   *
+   * Den gikk til bookingskjermen, som er en daarligere kopi av innmeldingen:
+   * den opprettet alltid en avtale i Vipps, uten valget mellom fast trekk og
+   * aa ordne selv som eieren ba om (migrasjon 081), og knappen krevde
+   * innlogging etter at hele skjemaet var fylt ut.
+   *
+   * Innmeldingen paa Min side har alt dette fra for — valget, vilkaarene og
+   * begge betalingsveiene, helt ut til kvitteringen. Da skal det vaere én vei
+   * inn, ikke to som maa holdes i synk.
+   *
+   * Sto som en lukking inne i kortlista. Infosida under «les mer» trenger den
+   * samme veien, og en lukking der inne naar ikke ut.
+   */
+  meldInnPlan(navn) {
+    // Valget maa overleve innloggingen: Vipps sender deg ut av sida og
+    // tilbake igjen, og alt som ligger i minnet er borte naar du kommer.
+    try { sessionStorage.setItem('lissom_medlemsplan', navn); } catch (_) { /* privat modus */ }
+    this.setState({
+      side: this.state.innlogget ? 'minside' : 'login',
+      bmType: navn,
+      bmFeil: null,
+    });
+    window.scrollTo(0, 0);
+    // Min side er lang. Uten dette havner man oeverst, og skjemaet man ble
+    // sendt til staar et sted lenger nede.
+    setTimeout(() => {
+      const el = document.getElementById('bli-medlem');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 400);
+  }
+
   medlemskapKall(kropp, merkelapp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._medlemskapLagrer) return Promise.resolve(false);
@@ -29587,23 +29658,7 @@ class Component extends DCLogic {
       // Innmeldingen paa Min side har alt dette fra for — valget, vilkaarene
       // og begge betalingsveiene, helt ut til kvitteringen. Da skal det vaere
       // én vei inn, ikke to som maa holdes i synk.
-      const meldInn = () => {
-        // Valget maa overleve innloggingen: Vipps sender deg ut av sida og
-        // tilbake igjen, og alt som ligger i minnet er borte naar du kommer.
-        try { sessionStorage.setItem('lissom_medlemsplan', o.navn); } catch (_) { /* privat modus */ }
-        this.setState({
-          side: this.state.innlogget ? 'minside' : 'login',
-          bmType: o.navn,
-          bmFeil: null,
-        });
-        window.scrollTo(0, 0);
-        // Min side er lang. Uten dette havner man oeverst, og skjemaet man
-        // ble sendt til staar et sted lenger nede.
-        setTimeout(() => {
-          const el = document.getElementById('bli-medlem');
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 400);
-      };
+      const meldInn = () => this.meldInnPlan(o.navn);
       return Object.assign({
         kortStil: {
           background: m ? 'var(--lissom-brown)' : 'var(--surface-card)',
@@ -29620,8 +29675,23 @@ class Component extends DCLogic {
         prikkFarge: m ? 'var(--lissom-yellow)' : 'var(--terracotta-500)',
         knapp: m ? 'primary' : 'secondary',
         bilde: o.bilde || FOTO + 'handbygging.jpg',
-        // Knappen melder deg inn; et klikk paa kortet viser hva det er.
-        kjop: meldInn,
+        // ── Knappen melder inn; kortet viser hva det er ──────────────
+        //
+        // Det sto her fra for, men bare halvveis: «kjopKort» fantes og var
+        // aldri koblet til noe. Kortet i medlemskapslista sendte «kjop» til
+        // begge, saa et klikk hvor som helst paa kortet meldte deg inn.
+        //
+        // Eieren, 2. september: «klikk paa kortet saa aapnes mer info for man
+        // kan trykke velg».
+        //
+        // De to kan skilles uten aa roere den genererte komponenten:
+        // kortflata kaller onBook() uten noe, mens knappen er en React-
+        // knapp og faar hendelsen med. Har vi en hendelse, er det knappen.
+        //
+        // Se CourseCard i ds-bundle.js:
+        //   onClick: e => { if (e.target.closest('button')) return; onBook(); }
+        //   React.createElement(Button, { onClick: onBook }, ctaLabel)
+        kjop: (e) => (e ? meldInn() : visMer()),
         kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },
       }, o, { passer, punkter });
     };
@@ -30855,7 +30925,47 @@ class Component extends DCLogic {
         { navn: 'Tips', verdi: 'Heng den opp ved vasken og ved ovnen.' },
       ], 'Last ned'),
       erFullbooket: (this.state.valgtKurs && this.state.valgtKurs.status) === 'Fullbooket',
-      erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis',
+      // ── Kurs som settes opp naar noen sporr ──────────────────────────
+      //
+      // Date Night ligger ute uten datoer. Kurssida viste likevel hele
+      // bookingboksen: «Velg dato · Etter avtale», antall plasser, e-post,
+      // telefon, vilkaar og «BOOK PLASS · KR. 2 990,-».
+      //
+      // Malt i nettleseren: fyller man ut alt og trykker, sendes det ingen
+      // ting. Ikke ett kall. Knappen er en blindvei, og den ser ut som
+      // veien inn.
+      //
+      // Eieren, 2. september: «Datenight, mangler info. Naar jeg klikker paa
+      // den kommer jeg rett til foresporsel. Bor vel ha samme vei som de
+      // andre» — og «klikk paa kortet, faa opp info».
+      //
+      // Naa forer kortet hit, som alle andre kurs, og boksen viser det som
+      // faktisk gaar: ta kontakt. Skjemaet er det samme enkle som knappen
+      // paa kortet aapnet for, med kurset som emne.
+      visKontaktKurs: !!(this.state.valgtKurs && this.state.valgtKurs.kunKontakt),
+      // ── Infosida for et medlemskap ──────────────────────────────────
+      //
+      // «Les mer» paa et medlemskapskort aapner denne skjermen. Nederst sto
+      // bookingskjemaet med «Velg dato · Start naar du vil», e-post,
+      // telefon, allergier, vilkaar og «Opprett avtale i Vipps» — den gamle
+      // veien, som alltid lagde en loepende avtale og spurte om innlogging
+      // til slutt.
+      //
+      // Kortets egen «Velg» gaar til innmeldingen, der valget mellom fast
+      // trekk og aa ordne selv staar. Naa gaar knappen her samme vei.
+      visVelgMedlemskap: this.state.fra === 'medlemskap',
+      velgMedlemskapKnapp: () => {
+        const k = this.state.valgtKurs || {};
+        this.meldInnPlan(k.title || k.tittel || '');
+      },
+      kontaktKursKnapp: () => {
+        const k = this.state.valgtKurs || {};
+        this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,
+          ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });
+      },
+      erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis'
+             && !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)
+             && this.state.fra !== 'medlemskap',
       bPrisNote: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis' ? 'for medlemmer' : (this.state.valgtKurs && this.state.valgtKurs.level) === 'Medlemskap' ? ((this.state.valgtKurs.duration || 'per måned')) : ((this.state.valgtKurs || {}).tema !== 'Medlemskap' && (this.state.bAntallN || 1) > 1) ? ('totalt for ' + this.state.bAntallN + ' personer') : 'per person',
       erIntern: (this.state.valgtKurs && this.state.valgtKurs.level) === 'Kun for medlemmer',
       vlNavn: this.state.vlNavn || '',
@@ -31028,6 +31138,10 @@ class Component extends DCLogic {
       // for. Tallet fra katalogen avgjor det, ikke teksten.
       erBetalt: (() => {
         const k = this.state.valgtKurs || {};
+        // Et kurs uten datoer betales ikke her. Det avtales forst.
+        if (k.kunKontakt) return false;
+        // Et medlemskap heller ikke: det gaar gjennom innmeldingen.
+        if (this.state.fra === 'medlemskap') return false;
         const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
         if (kat && kat.prisOre !== undefined && kat.prisOre !== null) {
           // Prisen paa den valgte datoen gaar foran kursets, som ellers.
@@ -31037,7 +31151,11 @@ class Component extends DCLogic {
         }
         return k.price !== 'Gratis';
       })(),
-      harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket',
+      // Uten datoer er det ingen plasser aa velge mellom heller. Da skal
+      // hele datovelgeren og skjemaet under den vaere borte, ikke staa tomt.
+      harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket'
+               && !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)
+               && this.state.fra !== 'medlemskap',
       betalingsvalg: ['Vipps'].map(navn => ({
         navn,
         valgt: (this.state.betaling || 'Vipps') === navn,
@@ -37493,6 +37611,10 @@ class Component extends DCLogic {
       // der som forste valg heller — det ville sendt eieren en tur innom en
       // innlogging som uansett ikke gir tilgang.
       visVippsInnlogging: side !== 'adminlogin',
+      // Passordskjemaet er verkstedets, og staar bare paa verkstedets skjerm.
+      visPassordinnlogging: side === 'adminlogin',
+      // Skillet trengs bare naar det staar noe paa begge sider av det.
+      visLoginSkille: false,
       loginEyebrow: side === 'adminlogin' ? 'For verkstedet' : 'Min side',
       loginTittel: side === 'adminlogin' ? 'Logg inn som admin' : 'Logg inn',
       erPersonvern: side === 'personvern',

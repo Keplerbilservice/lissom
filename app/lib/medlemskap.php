@@ -134,8 +134,23 @@ final class Medlemskap
      */
     public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null): array
     {
-        $ut = static fn(string $t, string $tekst, bool $forfalt = false): array
-            => ['tilstand' => $t, 'tekst' => $tekst, 'forfalt' => $forfalt];
+        // To forskjellige spoersmaal, og de ble blandet:
+        //
+        //   forfalt      — pengene skulle vaert her, og er det ikke. Roedt.
+        //   utestaaende  — pengene er ikke inne. Kan vaere helt i orden
+        //                  (trekket er bestilt, forfallet er ikke naadd), men
+        //                  verkstedet skal likevel se det.
+        //
+        // Eieren, 2. september: «verken hun eller Eirin kommer opp i kortet
+        // ikke betalt paa oversikten, og det maa de jo, helt til pengene er
+        // inne». Eirin sto med et trekk som ikke var forfalt enda, og falt
+        // dermed ut av tellingen — enda ingen krone hadde kommet.
+        //
+        // «utestaaende» folger «forfalt» naar den ikke settes: det som er
+        // forfalt er alltid ogsaa utestaaende.
+        $ut = static fn(string $t, string $tekst, bool $forfalt = false, ?bool $ute = null): array
+            => ['tilstand' => $t, 'tekst' => $tekst, 'forfalt' => $forfalt,
+                'utestaaende' => $ute === null ? $forfalt : $ute];
 
         // Haken gaar foran alt. Et gratismedlem skal aldri lyse roedt.
         if (!empty($medlem['betaler_ikke'])) {
@@ -177,7 +192,7 @@ final class Medlemskap
             if ($tstatus === 'opprettet' || $tstatus === 'venter') {
                 return $ut('bestilt', 'Trekket er bestilt '
                     . $kort(substr((string) $trekk['created_at'], 0, 10))
-                    . ' · venter på Vipps');
+                    . ' · venter på Vipps', false, true);
             }
             if ($tstatus === 'betalt' || $tstatus === 'delvis_refundert') {
                 return $ut('betalt', 'Trukket '
@@ -193,7 +208,11 @@ final class Medlemskap
                 return $ut('betalt', 'Trukket ' . $kort($sist)
                     . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
             }
-            return $ut('venter', $neste !== '' ? 'Trekkes ' . $kort($neste) : 'Venter på første trekk');
+            // Avtalen er godkjent i Vipps, men ingen krone har flyttet seg.
+            // Ikke roedt — det er ikke noe galt — men det skal telles.
+            return $ut('venter',
+                $neste !== '' ? 'Trekkes ' . $kort($neste) : 'Venter på første trekk',
+                false, true);
         }
 
         // ── Gjor opp selv ───────────────────────────────────────────────
@@ -201,7 +220,36 @@ final class Medlemskap
         // Ingen avtale aa spore. Da er den siste registrerte betalingen det
         // eneste vi har — den som huker av i Kassa skriver den inn.
         if ($siste === null) {
-            return $ut('venter', 'Ikke betalt ennå', true);
+            // ── Hvorfor er det ikke betalt? ─────────────────────────────
+            //
+            // Eieren, 2. september, om et medlem som sto som ubetalt: «denne
+            // staar som ubetalt, mens eposten du sendte meg sier dette ...
+            // Betaling: gjor opp selv».
+            //
+            // De to sier ikke det samme. «Gjor opp selv» er MAATEN — hun
+            // betaler én periode om gangen i Vipps i stedet for fast trekk.
+            // «Ikke betalt» er at pengene ikke er kommet. Begge kan vaere
+            // sanne samtidig, og det er nettopp det som er tilfellet her.
+            //
+            // Innmeldingen oppretter betalingen i Vipps med det samme. Ligger
+            // den og henger paa «venter», rakk hun aldri aa fullfore den — og
+            // det er noe helt annet enn at ingen har begynt. Merket sa «Ikke
+            // betalt ennaa» i begge tilfeller, altsaa det samme som merket
+            // over det, og ingenting om hva som faktisk skjedde.
+            $tstatus = $trekk === null ? '' : (string) $trekk['status'];
+            if ($tstatus === 'opprettet' || $tstatus === 'venter') {
+                return $ut('venter', 'Betalingen ble startet i Vipps '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10))
+                    . ', men aldri fullført', true);
+            }
+            if ($tstatus === 'feilet' || $tstatus === 'avbrutt') {
+                return $ut('venter', 'Betalingen gikk ikke gjennom '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
+            }
+            $start = trim((string) ($medlem['start_dato'] ?? ''));
+            return $ut('venter', $start !== ''
+                ? 'Ingen betaling registrert · medlem siden ' . $kort($start)
+                : 'Ingen betaling registrert', true);
         }
         $betaltDen = substr((string) $siste['created_at'], 0, 10);
 

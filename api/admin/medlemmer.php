@@ -874,7 +874,9 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
             $a === null ? null : ($sisteTrekk[(int) $a['id']] ?? null)
         );
         return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst'],
-                'betalingForfalt' => $b['forfalt']];
+                'betalingForfalt' => $b['forfalt'],
+                // «Pengene er ikke inne» — det filteret og kortet teller.
+                'betalingUte' => !empty($b['utestaaende'])];
     })(), $medlemmer),
     // Medlemskapene som finnes, saa innmelding for haand kan tilby de
     // samme valgene som nettsida — ikke en liste skrevet av paa nytt.

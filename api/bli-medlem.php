@@ -187,7 +187,13 @@ Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner
 // Beskjeden til verkstedet gaar paa e-post, og som SMS i tillegg naar det er
 // satt opp. E-posten er den som alltid kommer fram — en soknad som blir
 // liggende fordi ingen fikk vite om den, er verre enn en soknad for mye.
-$betalingTekst = $betaling === 'trekk' ? 'fast trekk i Vipps' : 'gjør opp selv';
+// Betalings MAATEN, ikke en betaling. «Gjor opp selv» ble lest som «hun har
+// ordnet det» — eieren, 2. september: «denne staar som ubetalt, mens eposten
+// du sendte meg sier ... Betaling: gjor opp selv». Begge var sanne: hun
+// betaler én periode om gangen, og hadde ikke betalt enda.
+$betalingTekst = $betaling === 'trekk'
+    ? 'fast trekk i Vipps'
+    : 'betaler i Vipps én periode om gangen';
 
 Varsel::malTilAdmin('intern_nytt_medlem', [
     'navn'     => $navn,

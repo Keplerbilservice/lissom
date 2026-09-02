@@ -4711,12 +4711,12 @@ sjekk('… og sier fra naar det ikke finnes noen betaling i det hele tatt',
 // aldri bli en ordre.
 sjekk('ingen knapp legger et medlemskap i handlekurven',
     !str_contains($sida2, "leggTil('Abonnement: "));
-sjekk('«Forny» starter avtalen i stedet',
-    str_contains($sida2, "aFornyAbo: () => this.startAbonnement("));
+sjekk('«Forny» spor hvordan det skal betales i stedet',
+    str_contains($sida2, "aFornyAbo: this.apneFornyValg("));
 sjekk('… og det gjor plankortet ogsaa',
-    str_contains($sida2, "'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),"));
+    str_contains($sida2, "'Lukk', null, false, null, this.aboPlanValg(p.navn)),"));
 sjekk('… og begge gaar til handling=start',
-    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn }"));
+    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }"));
 
 // Kurver som stod aapne da rettelsen gikk ut, skal ikke moete den samme
 // doede enden. De var det eneste stedet en «Abonnement:»-linje kunne
@@ -6025,6 +6025,75 @@ if (DB::harTabell('courses')) {
             (int) $dn['pris_ore'] . ' oere');
     }
 }
+
+// ── «Forny» lot ingen gjore opp selv ──────────────────────────────────
+//
+// Eieren, 2. september, fra en iPhone paa Min side: «naar jeg skulle betale
+// og valgte forny gikk det bare an aa betale paa Vipps med fast trekk
+// maanedlig. Maatte gaa ut av den og inn paa det andre stedet for aa kunne
+// velge jeg ordner selv».
+//
+// Knappen sendte {handling, plan} — uten «betaling». api/medlemskap.php
+// leser feltet slik at et fravaer blir «trekk», saa den opprettet alltid en
+// loepende avtale. Serveren har stott «selv» siden migrasjon 081; det var
+// skjermen som aldri spurte. «Det andre stedet» er innmeldingsskjemaet paa
+// medlemskapssida, som har sendt feltet hele tida.
+//
+// Malt i nettleseren paa 390 px, med kallet til serveren fanget:
+//
+//   Basis 30      to knapper  → betaling=trekk og betaling=selv
+//   Fri tilgang   to knapper  → betaling=trekk og betaling=selv
+//   Aarsmedlemskap  én knapp  → betaling=trekk
+//   Prov Lissom     én knapp  → «Gjor opp i Vipps»
+//
+// Det samme fra plankortet under «Bytt abonnement».
+sjekk('«Forny» sender betalingsmaaten til serveren',
+    str_contains($sida, "this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }"));
+// Kontrollen: det gamle kallet uten feltet skal vaere borte. Uten denne
+// ville proven over vaere gronn ogsaa om noen la det tilbake ved siden av.
+sjekk('… og det gamle kallet uten feltet er borte',
+    !str_contains($sida, "this.medlemskapKall({ handling: 'start', plan: navn }"));
+sjekk('… og bare «selv» og «trekk» slipper gjennom',
+    str_contains($sida, "const maate = betaling === 'selv' ? 'selv' : 'trekk';"));
+
+// Regelen staar ett sted, saa «Forny» og plankortet ikke kan bli uenige.
+sjekk('planen bestemmer hvilke valg som finnes',
+    str_contains($sida, "if (pl.fastTrekk) return [{ plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' }];")
+    && str_contains($sida, "if (pl.engangs) return [{ plan: pl.navn, navn: 'Gjør opp i Vipps', betaling: 'selv' }];"));
+sjekk('… og begge knappene bruker den samme regelen',
+    substr_count($sida, 'this.aboPlanValg(') === 2);
+// Ordlyden staar ett sted. Sto den to, ville skjemaet og dialogen etter
+// hvert sagt hver sin ting om det samme.
+sjekk('de to setningene om betaling staar ett sted',
+    str_contains($sida, 'static get BETALINGSORD()')
+    && str_contains($sida, "bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,"));
+sjekk('… og dialogen henter dem derfra',
+    str_contains($sida, 'const TREKK = Component.BETALINGSORD.trekk;'));
+
+// Serveren skal fortsatt avgjore. Skjermen kan ta feil; det er bare basen
+// som vet hva planen krever.
+$mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('serveren tvinger fast trekk der planen krever det',
+    str_contains($mapi, 'if (Medlemskap::kreverFastTrekk($plan)) {'));
+sjekk('… og en engangsplan kan ikke faa fast trekk',
+    str_contains($mapi, "if ((int) (\$plan['engangs'] ?? 0) === 1) {"));
+
+// ── Kortet viste et annet medlemskap enn medlemmet har ────────────────
+//
+// aktivPlan() leste bare «state.abo», som settes her paa skjermen naar en
+// avtale opprettes i samme okt. Den som lastet Min side paa nytt hadde den
+// tom, og da falt kortet ned paa «forste loepende plan».
+//
+// Malt i nettleseren med Aarsmedlemskap i basen: kortet sa «Basis 30 · kr.
+// 2 590,-» mens «Neste trekk» rett under leste den ekte avtalen. Etter:
+// «Aarsmedlemskap · kr. 1 990,- · 35 timer i maaneden · aarsavtale».
+//
+// Det avgjor ogsaa betalingsvalget: med feil plan fikk et aarsmedlem tilbud
+// om aa gjore opp selv, noe aarsmedlemskapet ikke tillater.
+sjekk('kortet leser medlemskapet fra avtalen serveren sender',
+    str_contains($sida, "const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');"));
+sjekk('… og faller tilbake til forste loepende plan uten avtale',
+    str_contains($sida, "|| alle.find(p => !p.engangs)"));
 
 // ── Fullbooket kurs sier «Les mer», ikke «Book plass» ─────────────────
 //

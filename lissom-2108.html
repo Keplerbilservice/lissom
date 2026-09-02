@@ -14589,6 +14589,13 @@ window.__resources = {
       <sc-if value="{{ detaljHarHandling }}" hint-placeholder-val="{{ true }}">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ utforDetalj }}" hint-size="auto,40px">{{ detaljHandling }}</x-import>
       </sc-if>
+      <!-- «Forny» spor hvordan medlemskapet skal betales. Knappene staar
+           her fordi handlingen over er «Lukk» naar valget vises. -->
+      <sc-if value="{{ aboValgApen }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ aboValg }}" as="v" hint-placeholder-count="2">
+          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ v.variant }}" size="sm" on-click="{{ v.velg }}" hint-size="auto,40px">{{ v.navn }}</x-import>
+        </sc-for>
+      </sc-if>
       <sc-if value="{{ visDetaljBevis }}" hint-placeholder-val="{{ false }}">
         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="download" on-click="{{ apneDetaljBevis }}" hint-size="auto,40px">Kursbevis</x-import>
       </sc-if>
@@ -16082,8 +16089,8 @@ class Component extends DCLogic {
     return liste.map(x => Object.assign({}, x, { velg: this.apne.apply(this, spec(x)) }));
   }
 
-  apne(tittel, undertittel, felter, handling, maal, skjema, gjor) {
-    return () => this.setState({ detalj: { tittel, undertittel, felter, handling, maal, skjema, gjor }, detaljMva: null, popupTop: this.topNaa(160) });
+  apne(tittel, undertittel, felter, handling, maal, skjema, gjor, aboValg) {
+    return () => this.setState({ detalj: { tittel, undertittel, felter, handling, maal, skjema, gjor, aboValg }, detaljMva: null, popupTop: this.topNaa(160) });
   }
 
   // Bekreftelsesbokser som paastaar noe om penger.
@@ -16360,6 +16367,42 @@ class Component extends DCLogic {
     };
   }
 
+  /**
+   * Hva de to betalingsmaatene betyr, i klartekst.
+   *
+   * Ordlyden er den samme som innmeldingsskjemaet bruker — se
+   * bmBetalingTekst og bmTrekkTekst. Sto den to steder, ville de to etter
+   * hvert sagt hver sin ting om det samme.
+   *
+   * Radene folger formen dialogen leser: staar «verdi» som et mellomrom,
+   * settes «navn» som broedtekst over hele bredden.
+   */
+  static get BETALINGSORD() {
+    return {
+      trekk: 'Du godkjenner én avtale i Vipps. Den trekkes automatisk, og du kan si den opp fra Min side.',
+      selv:  'Du betaler denne perioden i Vipps nå. Vi tar kontakt før neste periode.',
+    };
+  }
+
+  static BETALINGSTEKST(pl) {
+    const TREKK = Component.BETALINGSORD.trekk;
+    const SELV  = Component.BETALINGSORD.selv;
+    if (pl.fastTrekk) {
+      return [
+        { navn: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.', verdi: ' ' },
+        { navn: TREKK, verdi: ' ' },
+      ];
+    }
+    if (pl.engangs) {
+      return [{ navn: SELV, verdi: ' ' }];
+    }
+    return [
+      { navn: 'Slik virker de to', verdi: '' },
+      { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
+      { navn: 'Jeg ordner selv — ' + SELV, verdi: ' ' },
+    ];
+  }
+
   planer() {
     const fra = this.state.planListe;
     if (fra && fra.length) {
@@ -16415,10 +16458,28 @@ class Component extends DCLogic {
     ];
   }
 
+  /**
+   * Medlemskapet medlemmet faktisk har.
+   *
+   * «state.abo» settes bare her paa skjermen, naar en avtale opprettes i
+   * samme okt. Den som lastet Min side paa nytt — eller kom tilbake fra
+   * Vipps — hadde den tom, og da falt kortet ned paa «forste loepende plan».
+   * Testbasen har Aarsmedlemskap; kortet sa Basis 30, med Basis 30 sin pris.
+   *
+   * Avtalen serveren sender er fasiten. «Neste trekk» i det samme kortet
+   * leste den alt; navnet og prisen gjorde det ikke, og de tre sto side om
+   * side og var uenige.
+   *
+   * Det betyr ogsaa noe for «Forny»: knappen fornyer den planen som staar
+   * her, og betalingsvalget under den folger planens regel. Med feil plan
+   * fikk et aarsmedlem tilbud om aa gjore opp selv — noe aarsmedlemskapet
+   * ikke tillater.
+   */
   aktivPlan() {
     const alle = this.planer();
-    const navn = this.state.abo || '';
-    // Uten valgt medlemskap: forste loepende plan, ikke proveperioden.
+    const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');
+    // Uten noen avtale i det hele tatt: forste loepende plan, ikke
+    // proveperioden. Det er kortet til en som ikke er medlem ennaa.
     return alle.find(p => p.navn === navn)
         || alle.find(p => !p.engangs)
         || alle[0]
@@ -24122,7 +24183,7 @@ class Component extends DCLogic {
    * hva som staar i Vipps. Vi kan aldri opprette to avtaler ved siden av
    * hverandre herfra.
    */
-  startAbonnement(planNavn) {
+  startAbonnement(planNavn, betaling) {
     const navn = String(planNavn || '').replace(/^Abonnement: /, '').trim()
       || (this.state.abo || this.aktivPlan().navn || '');
     if (!navn) {
@@ -24140,7 +24201,87 @@ class Component extends DCLogic {
       this.setState({ kvittering: 'Avtalen er opprettet i Vipps', abo: navn, aboKjopt: true, oppsagt: false });
       return;
     }
-    this.medlemskapKall({ handling: 'start', plan: navn }, 'Avtalen er opprettet i Vipps');
+    // ── Fast trekk, eller gjore opp selv ──────────────────────────
+    //
+    // «betaling» sto ikke i kallet i det hele tatt. api/medlemskap.php leser
+    // det slik:
+    //
+    //   $betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';
+    //
+    // Mangler feltet, blir svaret «trekk». Serveren har stott «selv» siden
+    // migrasjon 081 — det var skjermen som aldri spurte. Eieren, 2.
+    // september: «naar jeg skulle betale og valgte forny gikk det bare an aa
+    // betale paa Vipps med fast trekk maanedlig. Maatte gaa ut av den og inn
+    // paa det andre stedet for aa kunne velge jeg ordner selv».
+    //
+    // «Det andre stedet» er innmeldingsskjemaet paa medlemskapssida, som har
+    // sendt feltet hele tida. Naa sender begge det.
+    //
+    // Serveren avgjor fortsatt: krever planen fast trekk, blir det trekk
+    // uansett hva vi sender, og en engangsplan kan ikke ha fast trekk.
+    const maate = betaling === 'selv' ? 'selv' : 'trekk';
+    this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }, 'Avtalen er opprettet i Vipps');
+  }
+
+  /**
+   * Planen slik betalingsvalget trenger den.
+   *
+   * medlemsplaner() baerer «fastTrekk», planer() baerer «engangs» og prisen.
+   * Begge leser den samme lista fra serveren; her staar de tre feltene
+   * sammen, saa dialogen slipper aa spore to steder.
+   */
+  aboPlan(navn) {
+    const n = String(navn || '').replace(/^Abonnement: /, '').trim();
+    const p = (this.state.planListe || []).find(x => x.navn === n);
+    return {
+      navn: n,
+      pris: (p && p.pris) || '',
+      intervall: (p && p.engangs) ? 'engangs' : 'per måned',
+      fastTrekk: !!(p && p.fastTrekk),
+      engangs: !!(p && p.engangs),
+    };
+  }
+
+  /**
+   * «Forny» spor hvordan det skal betales.
+   *
+   * Knappen gikk rett til Vipps og opprettet en loepende avtale. Den som
+   * ville gjore opp for én periode om gangen, maatte ut av Min side og inn
+   * paa innmeldingsskjemaet — som ikke er ment for et medlem som alt er
+   * inne.
+   *
+   * Dialogen er den samme som «Si opp» og «Angre» bruker. Handlingen staar
+   * som «Lukk», saa den vanlige knappen faller bort og de to valgene under
+   * staar alene.
+   */
+  apneFornyValg(planNavn) {
+    const navn = planNavn || this.state.abo || this.aktivPlan().navn;
+    const pl = this.aboPlan(navn);
+    const felter = [];
+    if (pl.pris) felter.push({ navn: 'Pris', verdi: pl.pris + ' ' + pl.intervall });
+    Component.BETALINGSTEKST(pl).forEach(f => felter.push(f));
+    return this.apne(pl.navn || 'Forny medlemskapet', 'Hvordan vil du betale?',
+      felter, 'Lukk', null, false, null, this.aboPlanValg(navn));
+  }
+
+  /**
+   * De to knappene, eller den ene som finnes.
+   *
+   * Serveren avgjor det samme paa nytt — dette er bare for at skjermen og
+   * svaret skal si det samme, som i bmBetalingsvalgt().
+   */
+  aboPlanValg(planNavn) {
+    const pl = this.aboPlan(planNavn);
+    // Aarsmedlemskapet bindes i tolv maaneder, og da er det faste trekket
+    // hele poenget. Da skal det ikke staa et valg som ikke finnes.
+    if (pl.fastTrekk) return [{ plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' }];
+    // Proveperioden betales én gang. En loepende avtale ville trukket hver
+    // maaned for noe som er over.
+    if (pl.engangs) return [{ plan: pl.navn, navn: 'Gjør opp i Vipps', betaling: 'selv' }];
+    return [
+      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' },
+      { plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv', variant: 'secondary' },
+    ];
   }
 
   medlemskapKall(kropp, merkelapp) {
@@ -29570,6 +29711,17 @@ class Component extends DCLogic {
       lukkDetalj: () => this.setState({ detalj: null, kvittering: '' }),
       // Kursbevis fra detaljdialogen. Verkstedet skal kunne skrive ut for
       // noen som ikke faar det til selv.
+      // ── Fast trekk eller ordne selv, i dialogen ──────────────────
+      //
+      // Dialogen har én handlingsknapp. Betalingsvalget trenger to, og de to
+      // skal gjore hver sin ting — ikke gaa gjennom utforDetalj(), som
+      // skriver en kvittering ut fra hva knappen heter.
+      aboValgApen: !!((this.state.detalj || {}).aboValg || []).length,
+      aboValg: (((this.state.detalj || {}).aboValg) || []).map(v => ({
+        navn: v.navn,
+        variant: v.variant || 'primary',
+        velg: () => { this.setState({ detalj: null }); this.startAbonnement(v.plan, v.betaling); },
+      })),
       visDetaljBevis: !!(this.state.detalj && this.state.detalj.kursbevis),
       apneDetaljBevis: () => {
         const u = this.state.detalj && this.state.detalj.kursbevis;
@@ -30541,15 +30693,18 @@ class Component extends DCLogic {
               this.harSagtOpp() ? 'Lukk' : 'Si opp abonnementet',
               null, false,
               this.harSagtOpp() ? null : () => this.siOppAbonnement())
+            // Knappen sa forst «Legg i handlekurven», og det var nettopp
+            // det som ikke gikk: kassa kunne ikke bestille et medlemskap.
+            // Saa sa den «Opprett avtale i Vipps» og gjorde nettopp det —
+            // uten aa spore. Naa staar de to valgene nederst, med samme
+            // regel og samme ord som «Forny» paa Min side.
             : this.apne(p.navn, 'Medlemskap · ' + p.pris + ' ' + p.periode, [
                 { navn: 'Pris', verdi: p.pris + ' ' + p.periode },
                 { navn: 'Inneholder', verdi: p.detalj },
                 { navn: 'Bytte', verdi: 'Gjelder fra neste måned' },
                 { navn: 'Oppsigelse', verdi: 'Måned til måned — si opp når du vil' },
-              // Knappen sa «Legg i handlekurven», og det var nettopp det
-              // som ikke gikk: kassa kunne ikke bestille et medlemskap.
-              // Naa sier den hva som skjer, og gjor det.
-              ], 'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),
+              ].concat(Component.BETALINGSTEKST(this.aboPlan(p.navn))),
+              'Lukk', null, false, null, this.aboPlanValg(p.navn)),
         stil: {
           appearance: 'none', cursor: p.brukt ? 'not-allowed' : 'pointer', textAlign: 'left', fontFamily: 'inherit',
           display: 'flex', flexDirection: 'column', gap: 2,
@@ -36607,7 +36762,7 @@ class Component extends DCLogic {
         };
       })(),
 
-      aFornyAbo: () => this.startAbonnement(this.state.abo || this.aktivPlan().navn),
+      aFornyAbo: this.apneFornyValg(this.state.abo || this.aktivPlan().navn),
 
       apneManuell: this.apne('Stemple inn manuelt', 'Koden står på skiltet ved døra og byttes hver dag. Glemmer du å stemple ut, stopper telleren automatisk ved stengetid.', [
         { navn: 'Dagens kode', verdi: '' },
@@ -41729,14 +41884,14 @@ class Component extends DCLogic {
           bmKanVelgeBetaling: !maa,
           bmMaaHaTrekk: maa,
           bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',
+          // Samme to setninger som dialogen paa Min side bruker. Sto de to
+          // steder, ville de etter hvert sagt hver sin ting om det samme.
           bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Jeg ordner selv')],
           bmBetalingValgt: valgt,
           // Vilkaarene, der de skal staa: for man melder seg inn, ikke etter.
           bmVilkar: 'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '
             + 'og 1 måneds oppsigelsestid. Du sier opp fra Min side.',
-          bmBetalingTekst: valgt === 'trekk'
-            ? 'Du godkjenner én avtale i Vipps. Den trekkes automatisk, og du kan si den opp fra Min side.'
-            : 'Du betaler denne perioden i Vipps nå. Vi tar kontakt før neste periode.',
+          bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,
         };
       })(),
       bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,

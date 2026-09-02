@@ -206,6 +206,31 @@ echo "\n== Aapne plasser (Paint on Pots paa aapningstidene) ==\n";
 // det var aapent, som deretter gjor at det er aapent — og at en plass noen
 // har booket blir ryddet bort under foettene paa dem.
 $folgerFelt = DB::harKolonne('courses', 'folger_apningstid') ? 'folger_apningstid' : 'gjenstand_i_kassa';
+
+// Proven laget seg ikke noe aa prove paa.
+//
+// Blokken under sto bak «finnes det et publisert kurs som foelger
+// aapningstidene?», og i praksis var det Paint on Pots. Da eieren 2.
+// september ba om at det kurset ikke lenger skulle foelge tidene selv, sluttet
+// tolv sjekker aa kjore — stille. Koden var like mye i drift som for; det var
+// bare ingen som saa etter den lenger.
+//
+// Naa lager proven sitt eget kurs naar verkstedet ikke har noe. Da holder den
+// uansett hva som er skrudd paa eller av i admin, som en prove skal.
+$midlKurs = null;
+if (DB::harKolonne('course_sessions', 'fra_apningstid')
+    && DB::en("SELECT id FROM courses WHERE {$folgerFelt} = 1 AND status = 'publisert'") === null) {
+    $midlKurs = DB::settInn('courses', [
+        'tittel'      => 'TESTAPENT — foelger aapningstidene',
+        'slug'        => 'testapent',
+        'type'        => 'kurs',
+        'status'      => 'publisert',
+        'kapasitet'   => 4,
+        'pris_ore'    => 0,
+        $folgerFelt   => 1,
+    ]);
+}
+
 if (DB::harKolonne('course_sessions', 'fra_apningstid')
     && DB::en("SELECT id FROM courses WHERE {$folgerFelt} = 1 AND status = 'publisert'") !== null) {
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
@@ -477,6 +502,12 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
 
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
     Apent::leggUtPaaApneTider();
+}
+
+// Kurset proven laget seg, ryddes bort igjen. Oektene forst: de peker paa det.
+if ($midlKurs !== null) {
+    DB::kjor('DELETE FROM course_sessions WHERE course_id = :c', ['c' => $midlKurs]);
+    DB::kjor('DELETE FROM courses WHERE id = :c', ['c' => $midlKurs]);
 }
 
 echo "\n== Oppfoelgingen etter kurset ==\n";
@@ -7945,6 +7976,56 @@ sjekk('… og navnet paa et medlem er en vei inn til medlemmet',
 sjekk('overskriften sier ikke lenger «plasser» om et medlemskap',
     str_contains($sida, "(liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')")
     && !str_contains($sida, "(liste.length === 1 ? ' plass · ' : ' plasser · ')"));
+
+echo "\n== Paint on Pots settes opp for haand ==\n";
+// Eieren, 2. september: «hvorfor vises paint on pots i kalenderen naar det
+// ikke er kurs?», og «hvordan kan det vises bare paint on pots i kalendern».
+// Deretter: «jeg vil ikke at kurset skal foelge automatisk, kan du slette det
+// og gjore det saa jeg maa legge ut tid selv?»
+//
+// Kurset sto med folger_apningstid = 1, og da satte utleggingen oektene opp
+// selv — halvannen time om gangen gjennom hele den aapne tida. Én aapen dag
+// ga fire til seks linjer i kalenderen, mot én for et ekte kurs.
+$m135 = file_get_contents(dirname(__DIR__) . '/db/migrations/135_paint_on_pots_settes_opp_for_haand.sql');
+
+// Utleggingen henter «WHERE folger_apningstid = 1». Nullen tar kurset ut av
+// den, og ingen nye oekter lages.
+sjekk('migrasjon 135 slaar av automatikken paa Paint on Pots',
+    preg_match("~UPDATE courses\s+SET folger_apningstid = 0\s+WHERE tittel = 'Paint on Pots'~", $m135) === 1);
+// Bare de genererte. En oekt satt opp for haand er noen sin avgjorelse.
+sjekk('… og rydder bare de genererte lukene',
+    str_contains($m135, 'AND cs.fra_apningstid = 1'));
+// En plass noen har kjopt skal ikke forsvinne under foettene paa dem.
+sjekk('… og lar en luke noen har booket staa',
+    str_contains($m135, 'SELECT 1 FROM bookings b')
+    && str_contains($m135, "AND b.status <> 'avbestilt'"));
+// Det som har vaert og gaatt er historikk.
+sjekk('… og roerer ikke det som er over',
+    str_contains($m135, 'AND COALESCE(cs.slutt_tid, cs.start_tid) > UTC_TIMESTAMP()'));
+
+// Og i virkeligheten: staar flagget av, skal utleggingen ikke lage noe.
+if (DB::harKolonne('courses', 'folger_apningstid')) {
+    $pop = DB::en("SELECT id, folger_apningstid FROM courses WHERE tittel = 'Paint on Pots'");
+    if ($pop !== null) {
+        sjekk('Paint on Pots foelger ikke lenger aapningstidene',
+            (int) $pop['folger_apningstid'] === 0);
+        sjekk('… og har ingen genererte luker igjen framover',
+            (int) DB::verdi(
+                'SELECT COUNT(*) FROM course_sessions
+                  WHERE course_id = :i AND fra_apningstid = 1
+                    AND COALESCE(slutt_tid, start_tid) > UTC_TIMESTAMP()',
+                ['i' => (int) $pop['id']]
+            ) === 0);
+        // Uten dette kunne cron lagt dem ut igjen neste natt, og eieren
+        // staatt med den samme kalenderen om et doegn.
+        $forOkter = (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE course_id = :i',
+            ['i' => (int) $pop['id']]);
+        Apent::leggUtPaaApneTider();
+        sjekk('… og utleggingen lager ingen nye',
+            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE course_id = :i',
+                ['i' => (int) $pop['id']]) === $forOkter);
+    }
+}
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);

@@ -4,7 +4,7 @@
  *
  * Reglene staar i vilkaarene, og regnes ut her framfor aa overlates til
  * kunden: mer enn 14 dager for kursstart gir full refusjon, 14 til 7 dager
- * gir halv, naermere enn 7 dager gir ingen. Drop-in foelger et dogn.
+ * gir halv, naermere enn 7 dager gir ingen.
  *
  * Beloepet regnes alltid ut fra det som faktisk ble betalt, aldri fra noe
  * nettleseren sender.
@@ -49,11 +49,6 @@ if ($betalt === 0) {
 } elseif ($timerIgjen === null) {
     $andel = 1.0;
     $regel = 'Kurset har ingen fastsatt dato, saa hele beloepet refunderes.';
-} elseif ($b['type'] === 'dropin') {
-    $andel = $timerIgjen > 24 ? 1.0 : 0.0;
-    $regel = $timerIgjen > 24
-        ? 'Drop-in avbestilt mer enn et dogn for: full refusjon.'
-        : 'Drop-in avbestilt naermere enn et dogn for: ingen refusjon.';
 } elseif ($timerIgjen > 14 * 24) {
     $andel = 1.0;
     $regel = 'Avbestilt mer enn 14 dager for kursstart: full refusjon.';

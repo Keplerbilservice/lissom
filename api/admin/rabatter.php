@@ -35,7 +35,7 @@ if (Foresporsel::metode() === 'GET') {
                 ['verdi' => 'dreiing', 'navn' => 'Alle dreiekurs'],
             ],
             array_map(static fn($k) => ['verdi' => $k['slug'], 'navn' => $k['tittel']],
-                DB::alle("SELECT slug, tittel FROM courses WHERE status = 'publisert' AND type <> 'dropin' ORDER BY tittel"))
+                DB::alle("SELECT slug, tittel FROM courses WHERE status = 'publisert' ORDER BY tittel"))
         ),
     ]);
 }

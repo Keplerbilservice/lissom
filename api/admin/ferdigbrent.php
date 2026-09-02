@@ -236,7 +236,6 @@ if (Foresporsel::metode() === 'GET') {
           WHERE cs.status = 'planlagt'
             AND COALESCE(cs.slutt_tid, cs.start_tid) < UTC_TIMESTAMP()
             AND cs.start_tid > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 16 WEEK)
-            AND c.type <> 'dropin'
        ORDER BY cs.start_tid DESC"
     );
 

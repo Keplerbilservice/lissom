@@ -117,7 +117,6 @@ $sum = static function (string $fra): int {
 // hva pengene kom fra.
 $FORMAL = [
     'booking'    => 'Kurs og events',
-    'dropin'     => 'Drop-in',
     'ordre'      => 'Butikk',
     'gavekort'   => 'Gavekort',
     'medlemskap' => 'Medlemskap',
@@ -425,8 +424,7 @@ Svar::json([
     //
     // Eieren 30. august: «her vil jeg se mine mest populaere kurs». Regnet
     // av plassene som faktisk er solgt siste tolv maaneder, ikke av hvor
-    // mange datoer et kurs har eller hvor ofte det staar i kalenderen —
-    // drop-in ville da ligget oeverst hver eneste gang.
+    // mange datoer et kurs har eller hvor ofte det staar i kalenderen.
     //
     // Avbestilte og avlyste teller ikke: en plass som ble refundert er
     // ikke en plass noen kjopte.
@@ -549,8 +547,6 @@ Svar::json([
         return [
             'oktId'     => (int) $o['id'],
             'tittel'    => $o['tittel'],
-            // Programmet skjuler en drop-in ingen har meldt seg paa. Da maa
-            // det vite hva slags oekt det er.
             'type'      => (string) $o['type'],
             'naar'      => Booking::norskDato((string) $o['start_tid']),
             'startTid'  => $start->format('c'),

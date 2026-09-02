@@ -387,7 +387,7 @@ switch ($handling) {
         $tomme = DB::alle(
             "SELECT c.tittel, cs.id AS okt, cs.start_tid, COALESCE(cs.kapasitet, c.kapasitet) AS kap
                FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
-              WHERE cs.status = 'planlagt' AND c.status = 'publisert' AND c.type <> 'dropin'
+              WHERE cs.status = 'planlagt' AND c.status = 'publisert'
                 AND cs.start_tid > UTC_TIMESTAMP()
                 AND cs.start_tid < DATE_ADD(UTC_TIMESTAMP(), INTERVAL 8 WEEK)
               ORDER BY cs.start_tid LIMIT 20"
@@ -468,7 +468,7 @@ switch ($handling) {
         $tomme = DB::alle(
             "SELECT c.id, c.tittel, cs.id AS okt, cs.start_tid, COALESCE(cs.kapasitet, c.kapasitet) AS kap
                FROM course_sessions cs JOIN courses c ON c.id = cs.course_id
-              WHERE cs.status = 'planlagt' AND c.status = 'publisert' AND c.type <> 'dropin'
+              WHERE cs.status = 'planlagt' AND c.status = 'publisert'
                 AND cs.start_tid > UTC_TIMESTAMP()
                 AND cs.start_tid < DATE_ADD(UTC_TIMESTAMP(), INTERVAL 6 WEEK)
               ORDER BY cs.start_tid LIMIT 15"

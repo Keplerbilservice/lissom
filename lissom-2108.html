@@ -3407,8 +3407,8 @@ window.__resources = {
                   </div>
                 </sc-for>
                 <!-- «Andre kjoper ogsaa» var en fast liste: Gavekort, leire og
-                     en drop-in-time. Leira er en internvare medlemmene handler,
-                     og drop-in er ikke noe man legger i en handlekurv med en
+                     en verkstedtime. Leira er en internvare medlemmene handler,
+                     og en time er ikke noe man legger i en handlekurv med en
                      kopp. Det var heller ingen som hadde kjopt dem sammen —
                      lista var funnet paa. Fjernet 24. august paa bestilling. -->
                 <div class="lx-cols2" style="padding: var(--space-6); display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6);">
@@ -7373,7 +7373,7 @@ window.__resources = {
               </div>
             </sc-if>
 
-            <!-- Kurs, event og drop-in: datoene som ligger ute. -->
+            <!-- Kurs og event: datoene som ligger ute. -->
             <sc-if value="{{ nrErOkt }}" hint-placeholder-val="{{ true }}">
               <div>
                 <label style="{{ nrEtikett }}">{{ nrOktEtikett }}</label>
@@ -7894,7 +7894,7 @@ window.__resources = {
 
                        Plasstallet over sier hvor mange kurset tar imot.
                        Dette sier hva de tar av. Et dreiekurs paa aatte og en
-                       drop-in samtidig kan ikke selge seksten skiver naar
+                       to kurs samtidig kan ikke selge seksten skiver naar
                        verkstedet har aatte. -->
                   <div style="margin-top: var(--space-5);">
                     <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Hva bruker kurset?</div>
@@ -8936,7 +8936,7 @@ window.__resources = {
                Eieren 30. august: «her vil jeg se mine mest populaere kurs».
                Regnet av plassene som faktisk er solgt siste tolv maaneder —
                ikke av hvor mange datoer et kurs har. Talte vi datoer, ville
-               drop-in ligget oeverst hver eneste gang uten at det sa noe om
+               et fast tilbud ligget oeverst hver gang uten at det sa noe om
                hva folk vil ha. Streken bak hver rad er andelen av det
                stoerste, saa forholdet mellom dem er til aa se og ikke bare
                til aa lese. -->
@@ -12086,7 +12086,7 @@ window.__resources = {
           </div>
           </div>
         </div>
-              <!-- Godkjenning av medlemssalg. Laa paa Drop-in-skjermen, som ikke
+              <!-- Godkjenning av medlemssalg. Laa paa en skjerm som ikke
              har noe med saken aa gjore — det er varer i butikken. -->
         <div style="background: var(--surface-card); border: 2px solid var(--terracotta-500); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: var(--space-6);">
           <div style="padding: var(--space-5) var(--space-6); background: var(--terracotta-500); color: var(--clay-50); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
@@ -15122,7 +15122,7 @@ const FOTO = 'assets_photos_';
 const SIDEINNHOLD = {
   // Blokkene staar i samme rekkefolge som seksjonene paa sida, og feltene
   // er de som faktisk finnes der. Lista beskrev tidligere en forside som var
-  // bygget om for lenge siden: «Medlemskap og drop-in» fantes ikke lenger,
+  // bygget om for lenge siden: «Medlemskap» fantes ikke lenger,
   // heroens standardtekster var andre enn de sida viste, og av 19 felter var
   // 6 koblet til noe. Resten kunne endres uten at noe skjedde.
   'Forside': [
@@ -15151,7 +15151,7 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Laget her på verkstedet' },
       { l: 'Knapp', v: 'Til butikken' } ] },
   ],
-  // «Ordensregler og HMS» og «Regler for drop-in» sto her med hver sin
+  // «Ordensregler og HMS» sto her med sin
   // punktliste — de samme punktene som redigeres under Nyttig info →
   // Plakater, og som er de som faktisk vises. To steder for det samme, der
   // bare det ene virket. De staar naa ett sted, og blokka her peker dit.
@@ -15171,7 +15171,7 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Hos Lissom handler keramikk om mye mer enn leire' } ] },
     // «Slik fungerer det» sto her: fire steg fra booking til ferdig brent,
     // «Passer for» og «Ikke ideelt for». Den seksjonen tegnet bare paa
-    // drop-in-visningen av kurssida, og forsvant med den — se
+    // en egen visning av kurssida, og forsvant med den — se
     // docs/DROP-IN.md. Feltene sto igjen uten noe som leste dem.
     { navn: 'Ordensregler og HMS', type: 'Redigeres under Nyttig info → Plakater', synlig: 'Publisert', felter: [] },
     // Staar sist med vilje: numrene paa seksjonene over er noekler nettsiden
@@ -15951,7 +15951,7 @@ class Component extends DCLogic {
   ledigTekst(ledige, kapasitet, sperret) {
     const l = parseInt(ledige, 10);
     // Full fordi noe annet holder ressursen, ikke fordi noen har booket her.
-    // «Fullbooket» paa en drop-in-time der det ikke er én booking, men et
+    // «Fullbooket» paa en aapen time der det ikke er én booking, men et
     // dreiekurs som opptar skivene, er en liten loegn — og den gir en
     // telefon fra en som ikke ser noen i verkstedet. Se «sperret» i
     // api/kurs.php og Booking::sperretAvAnnet().
@@ -16014,7 +16014,7 @@ class Component extends DCLogic {
         // over kurslista, der alle kursene deler én adresse.
         slug: kat.slug || '',
         katId: kat.id,
-        // «Datoene lages av aapningstidene» — Paint on Pots og drop-in.
+        // «Datoene lages av aapningstidene» — Paint on Pots.
         // Kurslista bruker den til aa holde dem utenfor det som vises ved
         // oppstart; de har hver sin knapp og hver sin side.
         folgerApningstid: !!kat.folgerApningstid,
@@ -16166,54 +16166,14 @@ class Component extends DCLogic {
   }
 
   /**
-   * Hoerer oekta hjemme i kurslistene i admin?
-   *
-   * Drop-in gaar hver dag fra aatte til ti om kvelden i plasser paa
-   * halvannen time. Det er 139 datoer i basen mot noen faa titalls
-   * kursdatoer, og under «Kurs og deltakere → Alle kurs» druknet kursene i
-   * dem — bade i lista, i uka og i maaneden. Eieren, 31. august: «drop inn
-   * kurs ligger i oversikten, hallo rydd opp og globalt».
-   *
-   * Drop-in har sin egen skjerm, /admin/drop-in. Der hoerer den hjemme, og
-   * der roeres den ikke.
-   *
-   * Regelen staar her og brukes begge steder — datolista og kalenderen paa
-   * den samme skjermen. Skrives den to steder, blir den ulik.
-   */
-  /** Er dette et kurs som skal staa i listene? Drop-in er tatt ned. */
-  kursIListene(k) {
-    const tema = String((k || {}).tema || '').toLowerCase();
-    const navn = String((k || {}).navn || (k || {}).tittel || (k || {}).title || '');
-    return String((k || {}).type || '') !== 'dropin'
-        && tema !== 'drop-in'
-        && navn !== 'Drop-in i verkstedet';
-  }
-
-  oktIKurslista(o) {
-    const tema = String((o || {}).tema || '').toLowerCase();
-    return String((o || {}).type || '') !== 'dropin' && tema !== 'drop-in';
-  }
-
-  /**
    * Hoerer kurset hjemme i den offentlige kalenderen?
    *
-   * Drop-in gaar hver dag fra aatte om morgenen til ti om kvelden, i plasser
-   * paa halvannen time. I kalenderen ble det ni linjer om dagen, og en uke
-   * med ett kurs saa ut som en uke uten: kurset laa nederst under fjorten
-   * bleke drop-in-rader. Eieren, 31. august: «paa kallender, drop inn skal
-   * ikke vises her».
-   *
-   * Regelen maa gjelde begge steder. Brukes den bare i lista, teller
-   * okterEtterUke() fortsatt drop-in — og siden drop-in finnes hver eneste
-   * dag, ville kalenderen alltid aapnet paa inneverende uke og vist «ingen
-   * kurs» der det faktisk var noe uka etter.
-   *
-   * Det som bare gjelder medlemmer hoerer heller ikke hjemme paa en side
-   * hvem som helst kan se.
+   * Det som bare gjelder medlemmer hoerer ikke hjemme paa en side hvem som
+   * helst kan se. Regelen maa gjelde begge steder — brukes den bare i lista,
+   * teller okterEtterUke() dem likevel, og kalenderen aapner paa feil uke.
    */
   visesIKalenderen(k) {
-    const tema = (k.tema || '').toLowerCase();
-    return k.tema !== 'Kun for medlemmer' && k.type !== 'dropin' && tema !== 'drop-in';
+    return k.tema !== 'Kun for medlemmer';
   }
 
   // Oktene i uke «nr», fordelt paa ukedager. Uketall regnes etter ISO, som
@@ -16243,7 +16203,6 @@ class Component extends DCLogic {
         dager[i].poster.push({
           tekst: k.tittel + ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes()),
           full: o.ledige <= 0,
-          rolig: k.type === 'dropin',
           // Hvilket kurs og hvilken dato oppforingen gjelder.
           //
           // Uten disse matte trykket finne kurset ved aa lese tittelen ut av
@@ -16442,28 +16401,17 @@ class Component extends DCLogic {
    * kurs kunne telle i knappen og mangle i lista.
    */
   kursIKategori(liste, f) {
-    // Drop-in hoerer ikke hjemme i kursoversikten i det hele tatt.
-    //
-    // Eieren, 30. august: «det skal derfor ikke vises paa kursoversikten,
-    // men skal hoere hjemme under medlemskap». Den sto ute av «Kursene», men
-    // «Vis alle» ga hele lista uendret — og der sto den, mellom dreiekursene.
-    //
-    // Vakta staar oeverst, saa den gjelder alle valgene. Drop-in er tatt ned
-    // helt — se docs/DROP-IN.md — men vakta blir staaende: kommer kurset
-    // tilbake i basen uten at noen har lest dokumentet, dukker det ikke opp
-    // i kurslista av seg selv.
-    liste = (liste || []).filter(k => (k.tema || k.level) !== 'Drop-in'
-      && (k.title || k.navn || '') !== 'Drop-in i verkstedet');
+    liste = liste || [];
     if (!f || f === 'Alle' || f === 'Vis alle') return liste;
     // Det kurssida staar med naar man kommer inn: kursene, ikke
     // arrangementene.
     //
-    // Foer sto alt her — Sip & Clay, Date Night, Paint on Pots og drop-in
+    // Foer sto alt her — Sip & Clay, Date Night og Paint on Pots
     // sammen med dreiekursene. De tre forste har sin egen side under Events,
-    // drop-in har sin, og alle har hver sin knapp i rada under. De skal
+    // hver av dem har sin, og alle har hver sin knapp i rada under. De skal
     // velges, ikke komme av seg selv.
     //
-    // Paint on Pots og drop-in kjennes paa at datoene lages av
+    // Paint on Pots kjennes paa at datoene lages av
     // aapningstidene. Det er en egenskap ved dem, ikke et navn jeg har
     // skrevet inn — og et nytt kurs Lissom lager uten aa sette kategori
     // faller derfor inn her, som det skal, framfor aa bli usynlig.
@@ -16474,7 +16422,7 @@ class Component extends DCLogic {
         && !k.folgerApningstid);
     }
     if (f === 'Kurs') {
-      // «Kurs» betyr kurs og workshops — arrangementer og drop-in har egne filtre.
+      // «Kurs» betyr kurs og workshops — arrangementer har sitt eget filter.
       const utenom = ['Events', 'Event'];
       return liste.filter(k => utenom.indexOf(k.tema || k.level) === -1);
     }
@@ -17035,7 +16983,7 @@ class Component extends DCLogic {
   // Adressekartet: hvilken sti hoerer til hvilken skjerm.
   //
   // Flere sider deler samme skjerm og skilles bare av et filter — Events og
-  // Drop-in er kurssiden med ulikt utvalg. Kartet maa derfor bere filteret
+  // Kurssida kan staa med ulikt utvalg. Kartet maa derfor baere filteret
   // ogsaa, ellers havner alt paa /kurs.
   //
   // Rekkefolgen betyr noe: forste treff vinner naar adressen skal skrives.
@@ -18632,13 +18580,8 @@ class Component extends DCLogic {
   // serveren sender. Grensene folger norsk kalender: uka starter mandag.
   programListe() {
     const v = this.state.ovProgram || 'I dag';
-    // En drop-in er en aapen doer, ikke en avtale. Staar det ingen paa den,
-    // skjer det ingenting den timen — og da skal den ikke ta plass i
-    // programmet. Kurs og samlinger staar uansett: de er satt opp, og noen
-    // skal vaere der enten det kommer paameldinger eller ikke.
     const okter = ((this.state.adminData || {}).kommende || [])
-      .filter(o => o.startTid)
-      .filter(o => o.type !== 'dropin' || (o.pameldte || 0) > 0);
+      .filter(o => o.startTid);
 
     if (!okter.length) {
       if (this.erPublisert()) return [];
@@ -23656,20 +23599,9 @@ class Component extends DCLogic {
     }
   }
 
-  /**
-   * Kursene admin jobber med.
-   *
-   * Drop-in staar ikke i lista. Kurset er satt til kladd i basen — se
-   * migrasjon 110 og docs/DROP-IN.md — men adminlistene viser kladder med
-   * vilje, saa «Drop-in i verkstedet» ble staaende igjen i sidemenyen paa
-   * kalenderen, i «Alle kurs», i Paameldte og paa Oversikt. Vakta hoerer
-   * hjemme her, der lista hentes: da gjelder den alle skjermene paa én gang.
-   *
-   * Se ogsaa oktIKurslista(), som gjor det samme for datoene.
-   */
+  /** Kursene admin jobber med. */
   kursData() {
-    const utenDropin = (liste) => (liste || []).filter(k => this.kursIListene(k));
-    if (this.state.adminKursListe) return utenDropin(this.state.adminKursListe);
+    if (this.state.adminKursListe) return this.state.adminKursListe;
     if (this.erPublisert()) return [];
     return [
       { navn: 'Nybegynner dreiekurs', type: 'Kurs', pris: 'kr. 2 800,-', gjentas: 'Ukentlig', pameldte: '3 / 8', andel: 38, neste: 'tir 1. sep 18:00 – 21:00', beskrivelse: 'To økter over to dager. Leire, verktøy, glasur og brenning er inkludert.', datoer: ['tir 1. sep 18:00 – 21:00', 'tir 8. sep 18:00 – 21:00'], okter: [{ dato: '2026-09-01', fra: '18:00', til: '21:00' }, { dato: '2026-09-08', fra: '18:00', til: '21:00' }] },
@@ -23824,7 +23756,7 @@ class Component extends DCLogic {
       forside: 'forside', kurs: 'kurs', medlemskap: 'medlemskap', butikk: 'butikk',
       gavekortside: 'gavekort', omoss: 'omoss', kontakt: 'kontakt', bedrift: 'bedrift',
       paintonpots: 'paintonpots',
-      // Drop-in, kalenderen og «Nyttig info» er offentlige sider folk soker
+      // Kalenderen og «Nyttig info» er offentlige sider folk soker
       // etter, men de manglet oppforing: ingen beskrivelse, ingen canonical,
       // og en generisk fanetittel.
       kalender: 'kalender', nyttig: 'nyttig', nyheter: 'nyheter',
@@ -25729,7 +25661,7 @@ class Component extends DCLogic {
    *
    * Filterknappene paa «Vaare kurs» og valget i kursveiviseren leste to ulike
    * lister: ute sto Dreiing og Plateteknikk, mens du inne bare kunne velge
-   * Kurs, Event, Kun medlemmer og Drop-in. Da fantes det ingen vei til aa
+   * Kurs, Event og Kun medlemmer. Da fantes det ingen vei til aa
    * legge et nytt kurs i en kategori kundene faktisk kan filtrere paa.
    */
   kursKategorier(medInterne) {
@@ -25750,8 +25682,8 @@ class Component extends DCLogic {
     // kategorier to ganger». De tre er borte som valg; kurs som har dem som
     // tema staar som Events, se KATEGORI_ELDRE.
     //
-    // «Kun medlemmer» og «Drop-in» staar med i admin, men ikke i filterrada
-    // ute: de er ikke kategorier kundene skal kunne bla seg inn i.
+    // «Kun medlemmer» staar med i admin, men ikke i filterrada ute: det er
+    // ikke en kategori kundene skal kunne bla seg inn i.
     return medInterne ? ute.concat(['Kun medlemmer']) : ute;
   }
 
@@ -25759,11 +25691,11 @@ class Component extends DCLogic {
    * Hva kategorien betyr for kurset.
    *
    * Foer sto det to rader over hverandre: en typerad med Kurs, Event, Kun
-   * medlemmer og Drop-in, og en kategorirad med det kundene filtrerer paa.
+   * medlemmer, og en kategorirad med det kundene filtrerer paa.
    * To valg for det samme, der bare det ene kom fram ute. Kategorien avgjor
    * naa begge deler.
    *
-   * «type» styrer oppforsel — drop-in gir ikke kursbevis, «Kun for
+   * «type» styrer oppforsel — «Kun for
    * medlemmer» holdes utenfor den offentlige lista. «tema» er filteret.
    */
   static KATEGORI_BETYR = {
@@ -25814,7 +25746,7 @@ class Component extends DCLogic {
    * Én kilde for baade teksten og rekkefolgen. Sto de hver for seg, kunne de
    * si to forskjellige ting — og det gjorde de: «Store fat kurs» staar med
    * temaet «Kurs» i basen, sa «Dreiing» paa seg selv fordi kortet faller
-   * tilbake paa typen, og havnet likevel under Drop-in fordi sorteringa ikke
+   * tilbake paa typen, og havnet likevel feil fordi sorteringa ikke
    * gjorde det.
    *
    * Uten tema er det bare navnet som kan si noe. Paint on Pots sto med tema
@@ -26073,7 +26005,7 @@ class Component extends DCLogic {
    *
    * Flere av fanene gaar til samme skjerm med ulikt utgangspunkt. «Beskjeder»
    * er det samme skjemaet begge steder — men mottakergruppa er valgt paa
-   * forhaand, og «Betalinger» viser kurs og drop-in det ene stedet og
+   * forhaand, og «Betalinger» viser kursene det ene stedet og
    * medlemskapstrekkene det andre.
    */
   static get ADMIN_FANER() {
@@ -26836,18 +26768,13 @@ class Component extends DCLogic {
     const skjulT = this.state.klSkjulType || {}, skjulH = this.state.klSkjulHolder || {};
     const modus = this.state.klFarge || 'type';
     const info = this.klTypeInfo(), hInfo = this.klHolderInfo();
-    // Drop-in, brenning og innstempling staar ikke i kalenderen.
+    // Brenning og innstempling staar ikke i kalenderen.
     //
-    // Eieren, 31. august: «i kalenderen saa er det naa en kollone som heter
-    // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen, jeg
-    // vil ikke se drop in timene i min kallender».
-    //
-    // Forst tok jeg det i spaltene i dagsvisningen. Det var for langt ute:
-    // ukesvisningen tegner hendelsene selv, og der sto drop-in i hver eneste
-    // kolonne, hver nittiende minutt. Filtreringa hoerer hjemme her, der
-    // hendelsene hentes — da gjelder den alle visningene paa én gang.
+    // Filtreringa hoerer hjemme her, der hendelsene hentes — da gjelder den
+    // alle visningene paa én gang. Gjorde vi det i spaltene i dagsvisningen,
+    // tegnet ukesvisningen dem likevel: den bygger hendelsene selv.
     const alle = this.klAlle(y, m)
-      .filter(e => e.type !== 'dropin' && e.type !== 'verksted' && e.type !== 'brenning')
+      .filter(e => e.type !== 'verksted' && e.type !== 'brenning')
       .filter(e => !(e.holder && skjulH[e.holder]));
     const farge = e => (modus === 'holder' && e.holder ? (hInfo[e.holder] || info.verksted) : info[e.type]);
     const pill = (e, blokk) => {
@@ -26873,7 +26800,7 @@ class Component extends DCLogic {
 
     // ── Plassene som er klippet av aapningstida ──────────────────────────
     //
-    // Paint on Pots og drop-in foelger aapningstida, og den klippes i plasser
+    // Paint on Pots foelger aapningstida, og den klippes i plasser
     // paa halvannen time (Apent::PLASS_MINUTTER). Gaar det et kurs 10-13, er
     // verkstedet aapent 10-13, og begge to legges ut som to plasser: 10:00 og
     // 11:30. I kalenderen ble det to like linjer under hverandre — og med to
@@ -26897,8 +26824,7 @@ class Component extends DCLogic {
     //
     // Det som aldri slaas sammen, er en oekt et menneske har satt opp selv.
     // Serveren sender «auto» bare for de to som lages av en regel —
-    // aapningstida og ukereglene under Drop-in. Begge maa vaere med: uten
-    // ukereglene ble drop-in delt i to av sin egen ettermiddagstid.
+    // aapningstida.
     const utvidet = this.state.klUtvid || {};
     const vekslUtvid = id => () => this.setState(st => {
       const n = Object.assign({}, st.klUtvid);
@@ -27085,7 +27011,7 @@ class Component extends DCLogic {
     const bHoyde = (bSluttMin - bStart) / 60 * pxTime;
     // «Verkstedet» sto her og tok imot alt uten kursholder — brenningene,
     // «N medlemmer innsjekket», og etter 30. august ogsaa hver eneste
-    // drop-in-time. Ni plasser om dagen i femten dager druknet resten.
+    // aapen time. Ni plasser om dagen i femten dager druknet resten.
     //
     // Eieren, 31. august: «i kalenderen saa er det naa en kollone som heter
     // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen, jeg
@@ -28045,7 +27971,7 @@ class Component extends DCLogic {
                 // «oktId» er det eneste som trengs, og det eneste som alltid
                 // stemmer: kalenderen setter den bare paa rader som kommer fra
                 // «course_sessions». Det gjelder alle typer likt — kurs, event,
-                // Paint on Pots og drop-in. Foer sto det ogsaa et oppslag i
+                // Paint on Pots. Foer sto det ogsaa et oppslag i
                 // kurslista her, men den lastes av et annet kall: aapnet du
                 // kalenderen direkte, var lista tom, og panelet forsvant fra
                 // alle oktene samtidig. Okta vet selv hva den er.
@@ -30075,7 +30001,7 @@ class Component extends DCLogic {
     if ((side === 'butikk' || side === 'forside') && !this.state.offentligSalg) {
       this.hentOffentligSalg();
     }
-    // Godkjenningslista staar paa Drop-in-skjermen, ikke bare Butikk. Hentes
+    // Godkjenningslista staar flere steder enn Butikk. Hentes
     // paa alle admin-sider — det er ett lite oppslag.
     if (this.erAdminSkjerm(side) && !this.state.adminSalg) {
       this.hentAdminSalg();
@@ -31093,7 +31019,7 @@ class Component extends DCLogic {
         // Date Night og Paint on Pots. Du fikk de samme kursene to ganger i
         // den samme rada, og «Vis alle» gjor jobben til begge.
         //
-        // «Drop-in» sto her ogsaa, og hoerer ikke hjemme i en kategorirad
+        // Et fast tilbud sto her ogsaa, og hoerer ikke hjemme i en kategorirad
         // over kurs: det er ikke et kurs, men halvannen time i verkstedet med ditt
         // eget arbeid. Det har sitt eget menypunkt.
         //
@@ -31120,7 +31046,7 @@ class Component extends DCLogic {
           kursTomTekst: naar
             ? 'Ingen kurs ' + ({ Dagtid: 'på dagtid', Kveldstid: 'på kveldstid', Helg: 'i helgen' }[naar] || '') + ' akkurat nå.'
             : 'Ingen kurs i denne kategorien akkurat nå.',
-          // Rada med kategorier hoerer til kurssida. Events og drop-in er
+          // Rada med kategorier hoerer til kurssida. Events er
           // hver sin side, naadd fra menyen, og der er det ingenting aa
           // filtrere paa.
           // «Events» er en pille i rada naa, ikke en egen side. Da skal rada
@@ -31136,13 +31062,6 @@ class Component extends DCLogic {
               navn,
               valgt: navn === valgt || (navn === 'Vis alle' && erAlle),
               velg: () => {
-                // «Drop-in» hoppet rett til bookingskjermen. Seksjonen som
-                // forklarer hva drop-in er — at det krever kurs hos oss eller
-                // et aktivt medlem, hva som er inkludert, og hvordan det
-                // foregaar — sto bak et flagg som aldri ble sant, og var
-                // derfor umulig aa komme til. Filteret blir staaende paa
-                // kurssida naa, og «Book drop-in» inne i seksjonen tar deg
-                // videre.
                 this.setState({ kursFilter: navn });
                 window.scrollTo(0, 0);
               },
@@ -32094,7 +32013,7 @@ class Component extends DCLogic {
       // nyeste forst, og aapner den samme lenken.
       //
       // Hvilke paameldinger som har bevis, avgjor serveren: kurset maa vaere
-      // holdt og betalt, drop-in gir ikke bevis, og et bevis verkstedet har
+      // holdt og betalt, og et bevis verkstedet har
       // trukket kommer ikke med. Her leses bare det som allerede staar i
       // svaret, saa reglene staar ett sted.
       ...(() => {
@@ -32619,11 +32538,11 @@ class Component extends DCLogic {
           bHarTider: (dagRad.tider || []).length > 0,
           bTiderTittel: 'Velg tidspunkt ' + (dagRad.dag ? '· ' + dagRad.dag : ''),
           // Gjelder der plassen varer en bestemt tid fra tidspunktet man
-          // velger — Paint on Pots og drop-in. Et kurs varer saa lenge kurset
+          // velger, som Paint on Pots. Et kurs varer saa lenge kurset
           // varer, og da staar det ingenting her.
           //
           // Lengden kommer fra serveren. Sto «to timer» skrevet her, ville
-          // teksten sagt to mens drop-in-tidene sa tre.
+          // teksten sagt to mens tidene sa tre.
           bTiderHjelp: (() => {
             const k = this.state.valgtKurs || {};
             const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel)) || {};
@@ -32761,9 +32680,9 @@ class Component extends DCLogic {
         // ble aldri funnet.
         if (erKurs) {
           const kurs = kursData.filter(k => !intern(k));
-          // Uten drop-in, som lista under. Sa kortet 165 mens lista viste
+          // Samme utvalg som lista under. Sa kortet 165 mens lista viste
           // noen faa titalls, telte de to hver sin ting.
-          const okter = (this.state.adminOkter || []).filter(o => this.oktIKurslista(o));
+          const okter = (this.state.adminOkter || []);
           // Kurs som har en dato framfor seg. Det er dette «Planlagte kurs»
           // betyr, og tallet paa kortet skal si det samme som lista viser.
           const idag = new Date(new Date().toDateString());
@@ -34101,13 +34020,7 @@ class Component extends DCLogic {
         if (side !== 'adminoversikt') return { ovKort: [] };
 
         const d = this.state.adminData || null;
-        // «Planlagte kurs» sto paa 165. Det er ikke kurs — det er drop-in.
-        // Drop-in gaar hver dag fra aatte til ti om kvelden i plasser paa
-        // halvannen time, og de 139 av dem druknet de faa titalls
-        // kursdatoene i tallet. Eieren, 31. august: «hvorfor har jeg drop inn
-        // under planlagte kurs?». Samme regel som i kurslistene — se
-        // oktIKurslista().
-        const okter = (this.state.adminOkter || []).filter(o => this.oktIKurslista(o));
+        const okter = (this.state.adminOkter || []);
         const deltakere = this.state.adminDeltakere || [];
         const varer = (this.state.adminProdukter || []);
         // Ventelista. Kortet staar bare naar noen faktisk venter.
@@ -34163,10 +34076,8 @@ class Component extends DCLogic {
           const n = new Date();
           const iso = n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0')
                     + '-' + String(n.getDate()).padStart(2, '0');
-          // Uten drop-in: ni plasser om dagen ville gjort tallet til et
-          // drop-in-tall. Programmet rett over teller det samme.
+          // Programmet rett over teller det samme.
           return (this.state.adminOkter || [])
-            .filter(o => this.oktIKurslista(o))
             .filter(o => String(o.dato || '').slice(0, 10) === iso).length;
         })();
         // Kursdatoer som er gjennomfoert og ikke meldt fra om ennaa.
@@ -34979,7 +34890,7 @@ class Component extends DCLogic {
       // Betalingslista, filtrert til dem man jobber med.
       //
       // «Betalinger» under Kursdeltakere skal vise det de har betalt for
-      // kurs og drop-in; under Medlemmer er det medlemskapstrekkene. Uten
+      // kursene; under Medlemmer er det medlemskapstrekkene. Uten
       // filteret var fanen bare en snarvei til hele oekonomiskjermen, og da
       // hjalp den ikke.
       betalinger: this.klikkbar(
@@ -35194,7 +35105,6 @@ class Component extends DCLogic {
         // skal lista vise samlingene deres, ikke alt.
         const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
         const alle = (this.state.adminOkter || [])
-          .filter(o => this.oktIKurslista(o))
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1);
 
@@ -35205,7 +35115,6 @@ class Component extends DCLogic {
           const tema = (o.tema || '').toLowerCase();
           const tittel = (o.tittel || '').toLowerCase();
           if (tema === 'paint on pots' || tittel.indexOf('paint on pots') === 0) return 'pop';
-          if ((o.type || '') === 'dropin' || tema === 'drop-in') return 'dropin';
           if ((o.type || '') === 'event' || tema === 'events') return 'event';
           return 'kurs';
         };
@@ -35220,7 +35129,7 @@ class Component extends DCLogic {
 
         // ── Tidene som foelger aapningstida ─────────────────────────────
         //
-        // Paint on Pots og drop-in klippes i plasser paa halvannen time. En
+        // Paint on Pots klippes i plasser paa halvannen time. En
         // aapen dag blir seks like linjer under hverandre. Kalenderen slaar
         // dem sammen til én — «6 tider» — og denne lista gjor det samme, med
         // den samme regelen: bare oekter en regel har laget, og bare naar de
@@ -35522,9 +35431,9 @@ class Component extends DCLogic {
                     : 'Ingen kursdatoer i dag.'),
               apnHarKilder: kilder.length > 0,
               apnKilder: kilder.map(o => ({
-                // Hva slags oppforing det er staar forst. «Drop-in i
+                // Hva slags oppforing det er staar forst. «Paint on Pots i
                 // verkstedet» er ikke et kurs man melder seg paa — det er
-                // aapningstidene under Drop-in, lagt ut som oekter. Sto det
+                // aapningstidene, lagt ut som oekter. Sto det
                 // bare et navn her, lette man etter et kurs som ikke finnes.
                 slag: o.slag || 'Kursdato',
                 tekst: o.naar + ' · ' + o.tittel
@@ -35553,7 +35462,7 @@ class Component extends DCLogic {
       ...(() => {
         // Datolista fulgte ikke fanen. Sto du under Medlemmer → Kurs for aa se
         // samlingene deres, fikk du likevel alle seksten datoene under —
-        // drop-in og aapne kurs og alt sammen. Naa viser den datoene til de
+        // aapne kurs og alt sammen. Naa viser den datoene til de
         // kursene som staar i lista over.
         const synlige = this.kursSynlige().map(({ k }) => (k.navn || '').toLowerCase());
 
@@ -35597,7 +35506,6 @@ class Component extends DCLogic {
         };
 
         const raa = (this.state.adminOkter || [])
-          .filter(o => this.oktIKurslista(o))
           .filter(o => (this.state.kursFane || 'alle') === 'alle'
                     || synlige.indexOf((o.tittel || '').toLowerCase()) !== -1)
           .filter(o => !aapentKurs || (o.tittel || '') === aapentKurs)
@@ -36467,8 +36375,7 @@ class Component extends DCLogic {
       // under «I dag»; dette er én setning som sier naar det neste er.
       ...(() => {
         const kommende = ((this.state.adminData || {}).kommende || [])
-          .filter(o => o.startTid)
-          .filter(o => o.type !== 'dropin' || (o.pameldte || 0) > 0);
+          .filter(o => o.startTid);
         if (!kommende.length) {
           return { visProgramNeste: true, programNesteTekst: 'Ingen datoer ligger ute framover. Legg ut en dato under Kurs og medlemskap.' };
         }
@@ -37220,12 +37127,11 @@ class Component extends DCLogic {
       },
       kMva: !!this.state.kMva,
       toggleKMva: () => this.setState(s => ({ kMva: !s.kMva })),
-      // Kategorien kunden filtrerer paa ute. Skjules for «Kun medlemmer» og
-      // «Drop-in» — de to staar ikke i den offentlige kurslista, og har sin
-      // egen kategori av seg selv.
+      // Kategorien kunden filtrerer paa ute. Skjules for «Kun medlemmer» —
+      // det staar ikke i den offentlige kurslista.
       kKategorier: this.kursKategorier(true).map(t => ({
         // Kategorien setter ogsaa typen. «Kun medlemmer» holdes utenfor den
-        // offentlige lista, og drop-in gir ikke kursbevis — det avgjores her.
+        // offentlige lista — det avgjores her.
         navn: t,
         velg: () => this.setState({
           kKategori: t,
@@ -39045,8 +38951,8 @@ class Component extends DCLogic {
           ? { h: rad.slice(0, i).trim(), p: rad.slice(i + 1).trim() }
           : { h: '', p: rad };
       }),
-      // Husreglene. Het «dropinRegler» da de sto paa drop-in-sida; de
-      // gjelder alle som er i verkstedet, og staar naa paa kurssida.
+      // Husreglene. De gjelder alle som er i verkstedet, og staar paa
+      // kurssida.
       husregler: [
         'Du får låne forkle av oss, men regn med å bli litt skitten.',
         'Ta av ringer og armbånd, og sett opp langt hår før du setter deg ved dreieskiva.',
@@ -39096,8 +39002,8 @@ class Component extends DCLogic {
           apningstider: linjer,
           // Sier hva tidene gjelder. Uten den staar det «10–19», og noen
           // kommer for aa handle midt i et kurs.
-          // Staar verkstedet bemannet, er doeren aapen — og da er drop-in en
-          // aapen doer: man kan komme innom uten aa booke.
+          // Staar verkstedet bemannet, er doeren aapen: man kan komme
+          // innom uten aa booke.
           apningsforklaring: (this.state.apningsdager || {}).apenNa
             ? 'Noen er i verkstedet nå, så døra er åpen. Bare kom innom, '
               + 'så finner vi en plass til deg.'
@@ -40792,9 +40698,6 @@ class Component extends DCLogic {
         // 1. september. Butikken er skilt fra medlemskapet «slik at man kan
         // beregne bruttofortjeneste».
         //
-        // Drop-in staar ikke her. Tilbudet ble tatt ned med migrasjon 110 og
-        // 111, og eieren 1. september: «vi har ikke drop-inn ... aldri ha
-        // det med».
         const FELT = [
           ['Kurs og events — konto',   'regnskap_konto_kurs',       '3200'],
           ['Kurs og events — mva-kode','regnskap_mva_kurs',         '6'],
@@ -41370,11 +41273,7 @@ class Component extends DCLogic {
       // «Les mer om vaare kurs»-feltet er tatt bort fra kurssida. Verdiene
       // det brukte laa her.
       ...(side !== 'kursoversikt' ? {} : (() => {
-        const kort = this.kursKort()
-          // Drop-in er ikke et kurs man leser om og melder seg paa; det er
-          // en aapen doer med sin egen side.
-          .filter(k => (k.tema || k.level) !== 'Drop-in')
-          .filter(k => (k.title || '') !== 'Drop-in i verkstedet');
+        const kort = this.kursKort();
 
         return {
           koKicker: this.innh('Kursene våre/0/Kicker'),
@@ -43290,9 +43189,6 @@ class Component extends DCLogic {
               React.createElement(DS.Icon, { name: 'shopping-cart', size: 36 }),
               antall ? React.createElement('span', { key: 'n' + antall, style: { background: 'var(--lissom-brown)', color: 'var(--clay-50)', borderRadius: 999, fontSize: 11, fontWeight: 700, padding: '1px 7px', lineHeight: '16px', display: 'inline-block', animation: 'lissomPuls .45s var(--ease-clay, ease)' } }, antall) : null) }
           : 'Handlekurv';
-        // Drop-in sto her, mellom Events og Medlemskap. Se docs/DROP-IN.md:
-        // hele tilbudet er tatt ned, og med det menypunktet, ruta og
-        // inngangen paa medlemskapssida.
         const lenker = ['Forside', 'Kurs', 'Events', 'Medlemskap', 'Butikk', 'Om oss',
           { value: 'Kurskalender', label: 'Kalender' }];
 
@@ -43332,7 +43228,7 @@ class Component extends DCLogic {
       // ── Kassa ────────────────────────────────────────────────────────
       //
       // Alt som selges i verkstedet gikk to veier: varer over disk laa under
-      // «Uttak butikk», og plasser paa kurs, drop-in og medlemskap laa under
+      // «Uttak butikk», og plasser paa kurs og medlemskap laa under
       // «Ny registrering». Det er den samme jobben — noen staar i doera og
       // skal betale — og da skal det vaere ett sted.
       //
@@ -43355,7 +43251,7 @@ class Component extends DCLogic {
         // Paint on Pots staar i navnet fordi det er slik det heter i doera.
         // Det er lagret som event, og havner samme sted.
         // «Salg» er det kassa gjor mesteparten av tida: ett belop, kontant
-        // eller Vipps, og hva det var. Kurs, event, drop-in og medlemskap
+        // eller Vipps, og hva det var. Kurs, event og medlemskap
         // sto her ogsaa, som hver sin vei inn i paameldingsskjemaet. De er
         // tatt ut 27. august paa bestilling — paameldingene legges inn for
         // haand naar det passer, fra kortet «Meld noen paa» paa Oversikt.

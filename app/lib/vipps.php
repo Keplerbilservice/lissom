@@ -4,7 +4,7 @@
  *
  * Tre produkter i bruk:
  *   Login (OIDC)  — innlogging på Min side
- *   ePayment      — engangskjøp: kurs, events, drop-in, gavekort, butikkordre
+ *   ePayment      — engangskjøp: kurs, events, gavekort, butikkordre
  *   Recurring     — månedstrekk for medlemskap
  *
  * Alle nøkler leses fra app/secrets.php, som ligger utenfor webroten og aldri

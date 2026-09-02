@@ -25,28 +25,14 @@ krev_admin();
 
 // ---------------------------------------------------------------- lesing
 if (Foresporsel::metode() === 'GET') {
-    // Drop-in er tatt ned — se migrasjon 110 og docs/DROP-IN.md. Kurset
-    // staar igjen i basen som kladd, saa ingenting er tapt, men det skal
-    // ikke ut herfra: adminlistene viser kladder med vilje, og «Drop-in i
-    // verkstedet» ble derfor staaende igjen i sidemenyen paa kalenderen,
-    // i Paameldte og paa Oversikt lenge etter at resten var borte.
-    //
-    // Vakta staar her, der lista hentes, saa den gjelder alle skjermene paa
-    // én gang. Skal drop-in tilbake, er dette ett av stedene som maa aapnes.
-    $kurs = array_values(array_filter(
-        DB::alle('SELECT * FROM courses ORDER BY status, tittel'),
-        static fn(array $k): bool => (string) $k['type'] !== 'dropin'
-            && (string) ($k['tema'] ?? '') !== 'Drop-in'
-            && (string) ($k['slug'] ?? '') !== 'drop-in'
-    ));
+    $kurs = DB::alle('SELECT * FROM courses ORDER BY status, tittel');
 
     // ── Datoene, hentet én gang ─────────────────────────────────────────
     //
     // Her sto det én sporring per kurs etter datoene, og deretter ett kall
     // per dato etter ledige plasser og ett etter samlinger. Kursoppsettet er
-    // skjermen Lissom har oppe oftest, og etter at Paint on Pots og drop-in
-    // begynte aa lage datoene sine av aapningstidene teller den fort et par
-    // hundre datoer. Da ble det over 250 sporringer for aa tegne én skjerm.
+    // skjermen Lissom har oppe oftest, og den kan fort telle et par hundre
+    // datoer. Da ble det over 250 sporringer for aa tegne én skjerm.
     $ekstra   = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
     // Kursholderen paa den enkelte datoen (migrasjon 085). Kolonnen kan
     // mangle om vedlikeholdet ikke er kjort — da staar feltet tomt i skjemaet
@@ -256,7 +242,7 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
     $slutt = $slutt ?? date('Y-m-d H:i:s', strtotime($start) + 3600);
     // En ledig tid gjor ingen opptatt.
     //
-    // Paint on Pots og drop-in legges ut automatisk paa hver eneste
+    // Paint on Pots ble lagt ut automatisk paa hver eneste
     // aapningstid. Det er tilbud — «her kan noen komme» — ikke avtaler.
     // Talte de med her, ville hver aapningstid gjort kursholderen «opptatt»,
     // og verkstedet kunne ikke satt opp et kurs paa sine egne aapne kvelder.
@@ -267,9 +253,6 @@ $holderOpptatt = static function (?int $holder, string $start, ?string $slutt, i
     $apenKol = [];
     if (DB::harKolonne('course_sessions', 'fra_apningstid')) {
         $apenKol[] = 'cs.fra_apningstid = 1';
-    }
-    if (DB::harKolonne('course_sessions', 'fra_dropin_tid')) {
-        $apenKol[] = 'cs.fra_dropin_tid IS NOT NULL';
     }
     $ledigTid = $apenKol === [] ? '' :
         "AND (NOT (" . implode(' OR ', $apenKol) . ")
@@ -370,7 +353,7 @@ switch ($handling) {
             $data['ressurs_id'] = $rid > 0 ? $rid : null;
         }
         if ($har('type')) {
-            $data['type'] = in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'dropin', 'workshop'], true)
+            $data['type'] = in_array(Foresporsel::tekst('type'), ['kurs', 'event', 'workshop'], true)
                 ? Foresporsel::tekst('type') : 'kurs';
         }
         if ($har('tema')) {
@@ -586,7 +569,7 @@ switch ($handling) {
         // Uten dette maatte man valgt den samme personen paa hver eneste dato.
         //
         // Trinn 2 og 3 staar i Kursholder::forKurs(), som ogsaa de faste
-        // ukedagene, aapent verksted og drop-in bruker. Trinn 1 hoerer hjemme
+        // ukedagene og aapent verksted bruker. Trinn 1 hoerer hjemme
         // her: det er bare her noen faktisk kan velge.
         if (Kursholder::klar()) {
             $nyOkt['kursholder_id'] = array_key_exists('kursholderId', Foresporsel::kropp())

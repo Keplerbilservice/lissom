@@ -63,10 +63,9 @@ const KART  = sideTilSeo();
 
 // Adresse → SEO-oppforing.
 //
-// De to unntakene staar i seoIdForSide() og gjentas her, for de henger paa
+// Unntaket staar i seoIdForSide() og gjentas her, for det henger paa
 // adressen og ikke paa skjermen: «/events» og «/kurs» er samme skjerm med
-// hvert sitt filter, og «/drop-in» og «/booking» er samme skjerm der bare
-// den forste er en side folk soker etter.
+// hvert sitt filter.
 const stier = {};
 for (const r of STIER) {
   if (r.sti.includes(':')) continue;              // ruter med parameter tas av kurs-oppslaget

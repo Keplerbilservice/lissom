@@ -1,6 +1,6 @@
 <?php
 /**
- * Booking av kurs, events og drop-in.
+ * Booking av kurs og events.
  *
  * Prinsippet gjennom hele fila: nettleseren sier HVA som skal bookes, aldri
  * HVA DET KOSTER. Prisen slås opp i databasen hver gang. Ellers kunne hvem som
@@ -164,7 +164,7 @@ final class Booking
      * Katalogen viser hver eneste kursdato med «N plasser igjen». Ett kall per
      * dato ble tre sporringer per dato: 83 datoer ga 249 sporringer paa én
      * sidevisning, og tallet vokser med hver dato som legges ut. Etter at
-     * Paint on Pots og drop-in begynte aa folge aapningstidene lages datoene
+     * Paint on Pots begynte aa folge aapningstidene lages datoene
      * av seg selv, og da vokser det fort.
      *
      * Samme regnestykke som for, i ett svar:
@@ -238,7 +238,7 @@ final class Booking
         // fella Kursmal::varighetAv alt kjenner.
         //
         // Regnet rett fram holdt kurset tre dreieskiver opptatt gjennom natta
-        // og hele torsdag formiddag, og drop-in torsdag klokka aatte sto med
+        // og hele torsdag formiddag, og en oekt torsdag klokka aatte sto med
         // fem ledige uten at noe skjedde i huset. Sett paa lissom.no like
         // etter at dette ble lagt ut.
         //
@@ -279,7 +279,7 @@ final class Booking
                     ) AS ledige,
                     -- Alt ANNET som legger beslag paa den samme ressursen
                     -- samtidig. Aatte skiver er aatte skiver enten de sitter
-                    -- paa et dreiekurs, en Date Night eller en drop-in.
+                    -- paa et dreiekurs eller en Date Night.
                     --
                     -- Et planlagt kurs holder plasstallet sitt, ikke bare de
                     -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
@@ -291,10 +291,10 @@ final class Booking
                     -- kurset.
                     --
                     -- Med ett unntak, og det er avgjorende: de aapne plassene
-                    -- (fra_apningstid = 1 — drop-in og Paint on Pots) holder
+                    -- (fra_apningstid = 1 — Paint on Pots) holder
                     -- bare det som faktisk er booket. De er et tilbud, ikke en
                     -- plan. Holdt de plasstallet sitt ogsaa, ville en tom
-                    -- drop-in-plass paa aatte sperret dreiekurset ved siden av,
+                    -- aapen plass paa aatte sperret dreiekurset ved siden av,
                     -- og de to hadde tatt livet av hverandre.
                     COALESCE((
                         SELECT SUM(
@@ -350,7 +350,7 @@ final class Booking
 
             $ut[(int) $r['id']] = max(0, min((int) $r['ledige'], $igjen));
             // Full fordi noe annet holder ressursen, ikke fordi noen har
-            // booket her. «Fullbooket» paa en drop-in-time der det ikke er én
+            // booket her. «Fullbooket» paa en aapen time der det ikke er én
             // booking, men et kurs som opptar skivene, er en liten loegn — og
             // den gir en telefon. Se ledigTekst() i nettsida.
             self::$sperret[(int) $r['id']] =
@@ -440,10 +440,9 @@ final class Booking
      */
     public static function rabattProsent(array $kurs, int $antall): float
     {
-        // Medlemskap og drop-in er ikke gruppekjop.
+        // Medlemskap er ikke gruppekjop.
         $tema = (string) ($kurs['tema'] ?? '');
-        $type = (string) ($kurs['type'] ?? '');
-        if ($tema === 'Medlemskap' || $type === 'dropin' || $antall < 2) {
+        if ($tema === 'Medlemskap' || $antall < 2) {
             return 0.0;
         }
 
@@ -586,7 +585,7 @@ final class Booking
                 $felt = [
                     'vipps_reference' => $referanse,
                     'type'            => 'epayment',
-                    'formal'          => $okt['type'] === 'dropin' ? 'dropin' : 'booking',
+                    'formal'          => 'booking',
                     'member_id'       => $medlemId,
                     // Det kunden faktisk skal betale. Beloepet paa bookingen
                     // er hele prisen — differansen er gavekortet.

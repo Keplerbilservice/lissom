@@ -146,11 +146,6 @@ if (Foresporsel::metode() === 'GET') {
            JOIN courses c ON c.id = cs.course_id
           WHERE cs.status = 'planlagt'
             AND c.status = 'publisert'
-            -- Drop-in staar utenfor. Den er walk-in: ledige plasser er
-            -- normaltilstanden, ikke et tegn paa at noe maa markedsfores.
-            -- Tok vi den med, ville de tolv drop-in-tidene begravd de to
-            -- kursene som faktisk trenger hjelp.
-            AND c.type <> 'dropin'
             AND cs.start_tid > UTC_TIMESTAMP()
             AND cs.start_tid < DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 WEEK)
           ORDER BY cs.start_tid"

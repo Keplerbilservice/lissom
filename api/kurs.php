@@ -32,7 +32,7 @@ $tekstFelt = DB::harKolonne('courses', 'nivaa_tekst')
     ? ', nivaa_intern, nivaa_tekst, kort_beskrivelse, lager_du, med_hjem, ferdig_tid, tillegg, varighet_tekst' : '';
 // «Gjenstanden betales i verkstedet». Kom med migrasjon 074.
 $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kassa' : '';
-// «Datoene lages av aapningstidene» — Paint on Pots og drop-in. Kom med
+// «Datoene lages av aapningstidene» — Paint on Pots. Kom med
 // migrasjon 079. Foer laa den inni gjenstand_i_kassa, som gjorde to jobber.
 $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
 // Det faste vinduet — «hver dag 08–22». Kom med migrasjon 102.
@@ -68,7 +68,7 @@ $kurs = DB::alle(
 // visningen — ett kall per dato etter ledige plasser og ett etter samlinger.
 // Tre sporringer per dato: 83 datoer ble 249 sporringer paa én sidevisning.
 //
-// Det tallet vokser av seg selv naa. Paint on Pots og drop-in lager datoene
+// Det tallet vokser av seg selv naa. Paint on Pots lager datoene
 // sine av aapningstidene, og fjorten dager framover blir fort et par hundre.
 // Katalogen er det forste nettsiden henter, saa den betaler alle.
 $ekstra = DB::harKolonne('course_sessions', 'pris_ore') ? ', pris_ore, info' : '';
@@ -176,7 +176,7 @@ foreach ($kurs as $k) {
                 'prisFra'         => $fra > 0 ? Booking::kroner($fra) : 'Gratis',
             ];
         })(),
-        // Kurs der datoene lages av aapningstidene: Paint on Pots og drop-in.
+        // Kurs der datoene lages av aapningstidene, som Paint on Pots.
         //
         // Bestillingen viser dager forst og klokkeslett etterpaa, og maa kunne
         // si hvor lenge man har plassen. Lengden staar ett sted — Apent — og
@@ -296,7 +296,7 @@ foreach ($kurs as $k) {
             // aa sortere okter paa ukedag; norsk datotekst kan ikke regnes paa.
             'startUtc' => $o['start_tid'],
             'ledige'   => $ledigeKart[(int) $o['id']] ?? 0,
-            // Full fordi noe annet holder ressursen. En drop-in-time midt i
+            // Full fordi noe annet holder ressursen. En annen oekt midt i
             // et dreiekurs er ikke «fullbooket» — det gaar et kurs, og
             // skivene staar dekket til det.
             'sperret'  => $sperretKart[(int) $o['id']] ?? false,

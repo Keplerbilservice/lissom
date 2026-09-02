@@ -749,14 +749,14 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 },
                 'betalt'  => (string) $b['status'] === 'betalt',
                 // Samme regel som paa Min side: bevis naar kurset er holdt og
-                // betalt, og drop-in er ikke et kurs.
-                'kursbevis' => ($holdt && (string) $b['status'] === 'betalt' && (string) $b['type'] !== 'dropin'
+                // betalt.
+                'kursbevis' => ($holdt && (string) $b['status'] === 'betalt'
                                 && empty($b['bevis_sperret']))
                     ? '/api/kursbevis.php?booking=' . (int) $b['id']
                     : null,
-                // Kan kurset gi et bevis i det hele tatt? Drop-in gjor det
-                // ikke, og da er det ingenting aa rette heller.
-                'bevisMulig'  => $holdt && (string) $b['type'] !== 'dropin',
+                // Kan kurset gi et bevis i det hele tatt? Er det ikke
+                // gjennomfort, er det ingenting aa rette heller.
+                'bevisMulig'  => $holdt,
                 'bevisSperret' => !empty($b['bevis_sperret']),
                 'bevisNavn'   => (string) ($b['bevis_navn'] ?? ''),
                 'bevisKurs'   => (string) ($b['bevis_kurs'] ?? ''),

@@ -46,17 +46,12 @@ if (Foresporsel::metode() === 'GET') {
         ],
         // Kursene svarene kan peke paa, med navn slik de staar.
         //
-        // Uten drop-in: kursvelgeren skal foreslaa noe man kan melde seg paa,
-        // og drop-in er tatt ned. Se docs/DROP-IN.md. Kurset staar igjen i
-        // basen som kladd, og en kladd kan godt vaere et gyldig svar her —
-        // det er derfor status alene ikke holder som filter.
+        // Kursvelgeren skal foreslaa noe man kan melde seg paa. En kladd kan
+        // godt vaere et gyldig svar her, saa avlyste er det eneste som lukes ut.
         'kurs' => array_map(
             static fn($k) => (string) $k['tittel'],
             DB::alle("SELECT tittel FROM courses
                        WHERE status <> 'avlyst'
-                         AND type <> 'dropin'
-                         AND (tema IS NULL OR tema <> 'Drop-in')
-                         AND slug <> 'drop-in'
                     ORDER BY tittel")
         ),
         'sider' => [

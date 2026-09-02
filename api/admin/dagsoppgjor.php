@@ -99,8 +99,6 @@ $iUtc = static fn(DateTimeImmutable $d): string => $d->setTimezone($utc)->format
 // med regnskapsfoereren 1. september, men staar likevel i basen og ikke her,
 // fordi det er hun som eier dem.
 //
-// Drop-in staar ikke her. Tilbudet ble tatt ned med migrasjon 110 og 111, og
-// eieren 1. september: «vi har ikke drop-inn ... aldri ha det med».
 $OPPSETT = [
     'booking'    => ['navn' => 'Kurs og events', 'konto' => 'regnskap_konto_kurs',       'mva' => 'regnskap_mva_kurs'],
     'medlemskap' => ['navn' => 'Medlemskap',     'konto' => 'regnskap_konto_medlemskap', 'mva' => 'regnskap_mva_medlemskap'],

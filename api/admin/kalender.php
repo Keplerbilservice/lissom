@@ -27,7 +27,7 @@
  *     venteliste: [{ navn, posisjon, varslet }],
  *     nye, avlyst, stengt }
  *
- * «type» er kurs | event | pop | dropin | verksted | vakt | brenning.
+ * «type» er kurs | event | pop | verksted | vakt | brenning.
  */
 
 declare(strict_types=1);
@@ -64,11 +64,10 @@ $iOslo = static function (string $utcTid, string $format) use ($oslo, $utc): str
 
 // ── Oektene ─────────────────────────────────────────────────────────────
 $harAuto   = DB::harKolonne('course_sessions', 'fra_apningstid');
-$harDropinTid = DB::harKolonne('course_sessions', 'fra_dropin_tid');
 $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
 $holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
 $autoKol   = ($harAuto ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
-           . ($harDropinTid ? ', cs.fra_dropin_tid' : ', NULL AS fra_dropin_tid');
+;
 // «aktiv = 1»: en kursholder som har sluttet skal ikke staa paa hendelsene
 // i kalenderen heller. Da faller navnet bort, og oekta viser seg som det den
 // er — uten tildelt holder — framfor aa vise en som ikke er her lenger.
@@ -301,9 +300,6 @@ $typeFor = static function (array $o): string {
     if ($tema === 'paint on pots' || str_starts_with($tittel, 'paint on pots')) {
         return 'pop';
     }
-    if ((string) $o['type'] === 'dropin' || $tema === 'drop-in') {
-        return 'dropin';
-    }
     if ((string) $o['type'] === 'event' || $tema === 'events') {
         return 'event';
     }
@@ -375,14 +371,12 @@ foreach ($okter as $o) {
         //
         // To regler lager oekter: aapningstida, som klippes i plasser paa
         // halvannen time (Apent::PLASS_MINUTTER), og ukereglene under
-        // Drop-in. Begge gir mange like rader paa den samme dagen — en aapen
-        // formiddag 10-13 blir to, en hel dag blir seks.
+        // En aapen formiddag 10-13 blir to rader, en hel dag blir seks.
         //
         // Kalenderen samler dem til én linje per kurs per dag, og trenger aa
         // vite hvilke det gjelder. En oekt noen har lagt inn selv staar
         // alltid for seg: den er noen sin avgjorelse, ikke et utsnitt.
-        'auto'   => ($harAuto && (int) $o['fra_apningstid'] === 1)
-                 || ($harDropinTid && $o['fra_dropin_tid'] !== null),
+        'auto'   => $harAuto && (int) $o['fra_apningstid'] === 1,
         'dato'   => $iOslo((string) $o['start_tid'], 'Y-m-d'),
         'tid'    => $iOslo((string) $o['start_tid'], 'H:i'),
         'slutt'  => $o['slutt_tid'] !== null ? $iOslo((string) $o['slutt_tid'], 'H:i') : '',

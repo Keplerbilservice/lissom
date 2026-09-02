@@ -3654,7 +3654,7 @@ window.__resources = {
                            september: «Ikke pm og am klokkeslett». Det finnes
                            ingen attributt som styrer det, saa feltet maa vaere
                            vaart eget. -->
-                      <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet du gikk" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" style="width: 74px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                      <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet du gikk" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" onBlur="{{ blurMsGlemtTid }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagreMsGlemt }}" hint-size="auto,36px">Lagre</x-import>
                       <button type="button" onClick="{{ lukkMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0 4px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted);">Avbryt</button>
                     </div>
@@ -5873,11 +5873,11 @@ window.__resources = {
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
-                <input type="time" value="{{ klBFra }}" onChange="{{ settKlBFra }}" style="{{ klRFeltStil }}">
+                <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klBFra }}" onChange="{{ settKlBFra }}" onBlur="{{ blurKlBFra }}" style="{{ klRFeltStil }}">
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
-                <input type="time" value="{{ klBTil }}" onChange="{{ settKlBTil }}" style="{{ klRFeltStil }}">
+                <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klBTil }}" onChange="{{ settKlBTil }}" onBlur="{{ blurKlBTil }}" style="{{ klRFeltStil }}">
               </div>
             </div>
             <div style="margin-bottom: var(--space-4);">
@@ -5938,11 +5938,11 @@ window.__resources = {
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
-                <input type="time" value="{{ klRFra }}" onChange="{{ settKlRFra }}" style="{{ klRFeltStil }}">
+                <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klRFra }}" onChange="{{ settKlRFra }}" onBlur="{{ blurKlRFra }}" style="{{ klRFeltStil }}">
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
-                <input type="time" value="{{ klRTil }}" onChange="{{ settKlRTil }}" style="{{ klRFeltStil }}">
+                <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klRTil }}" onChange="{{ settKlRTil }}" onBlur="{{ blurKlRTil }}" style="{{ klRFeltStil }}">
               </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
@@ -5983,8 +5983,8 @@ window.__resources = {
               <sc-if value="{{ klRNyVis }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; padding: 10px 12px; margin-top: var(--space-2); border-radius: var(--radius-md); background: var(--clay-100);">
                   <input type="date" value="{{ klRNyDato }}" onChange="{{ settKlRNyDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                  <input type="time" value="{{ klRNyFra }}" onChange="{{ settKlRNyFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                  <input type="time" value="{{ klRNyTil }}" onChange="{{ settKlRNyTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klRNyFra }}" onChange="{{ settKlRNyFra }}" onBlur="{{ blurKlRNyFra }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klRNyTil }}" onChange="{{ settKlRNyTil }}" onBlur="{{ blurKlRNyTil }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klRNyLagre }}" hint-size="auto,36px">Legg til</x-import>
                 </div>
               </sc-if>
@@ -6198,7 +6198,7 @@ window.__resources = {
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Flytt til ny dato</div>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
                   <input type="date" value="{{ klFlyttDato }}" onChange="{{ settKlFlyttDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
-                  <input type="time" value="{{ klFlyttTid }}" onChange="{{ settKlFlyttTid }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klFlyttTid }}" onChange="{{ settKlFlyttTid }}" onBlur="{{ blurKlFlyttTid }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klFlyttLagre }}" hint-size="auto,36px">Lagre ny dato</x-import>
                 </div>
                 <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">Deltakerne varsles om endringen på e-post og SMS.</div>
@@ -8210,9 +8210,9 @@ window.__resources = {
                     <sc-for list="{{ kDatoer }}" as="d" hint-placeholder-count="1">
                       <div style="display: flex; align-items: center; gap: var(--space-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px;">
                         <span style="flex: 1; font-size: var(--text-sm); color: var(--text-heading);">{{ d.visning }}</span>
-                        <input type="time" value="{{ d.fra }}" onChange="{{ d.settFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 8px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ d.fra }}" onChange="{{ d.settFra }}" onBlur="{{ d.blurFra }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 8px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                         <span style="color: var(--text-muted);">–</span>
-                        <input type="time" value="{{ d.til }}" onChange="{{ d.settTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 8px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                        <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ d.til }}" onChange="{{ d.settTil }}" onBlur="{{ d.blurTil }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 6px 8px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                         <button type="button" onClick="{{ d.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs);">Fjern</button>
                       </div>
                     </sc-for>
@@ -8277,9 +8277,9 @@ window.__resources = {
                       <p style="margin: -4px 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ kSerieDatoHjelp }}</p>
                     </sc-if>
                     <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                      <input type="time" value="{{ kSerieFra }}" onChange="{{ settKSerieFra }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ kSerieFra }}" onChange="{{ settKSerieFra }}" onBlur="{{ blurKSerieFra }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                       <span style="color: var(--text-muted);">–</span>
-                      <input type="time" value="{{ kSerieTil }}" onChange="{{ settKSerieTil }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ kSerieTil }}" onChange="{{ settKSerieTil }}" onBlur="{{ blurKSerieTil }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="secondary" icon="plus" on-click="{{ kLeggTilSerie }}" hint-size="auto,40px">Legg til fast dag</x-import>
                     </div>
                     <!-- Hvor langt fram datoene skal ligge ute. Sto fast paa
@@ -8695,11 +8695,11 @@ window.__resources = {
                     </div>
                     <div style="flex: 0 1 120px;">
                       <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
-                      <input type="time" value="{{ oktFra }}" onChange="{{ settOktFra }}" style="{{ oktFeltStil }}">
+                      <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ oktFra }}" onChange="{{ settOktFra }}" onBlur="{{ blurOktFra }}" style="{{ oktFeltStil }}">
                     </div>
                     <div style="flex: 0 1 120px;">
                       <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
-                      <input type="time" value="{{ oktTil }}" onChange="{{ settOktTil }}" style="{{ oktFeltStil }}">
+                      <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ oktTil }}" onChange="{{ settOktTil }}" onBlur="{{ blurOktTil }}" style="{{ oktFeltStil }}">
                     </div>
                     <div style="display: flex; gap: var(--space-3); align-items: center; margin-left: auto;">
                       <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ oktBeskjed }}</span>
@@ -8747,9 +8747,9 @@ window.__resources = {
                             <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
                               <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ sa.merke }}</span>
                               <input type="date" value="{{ sa.dato }}" onChange="{{ sa.settDato }}" style="{{ oktFeltStil }}">
-                              <input type="time" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" style="{{ oktFeltStil }}">
+                              <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" onBlur="{{ sa.blurFra }}" style="{{ oktFeltStil }}">
                               <span style="color: var(--text-muted);">–</span>
-                              <input type="time" value="{{ sa.til }}" onChange="{{ sa.settTil }}" style="{{ oktFeltStil }}">
+                              <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ sa.til }}" onChange="{{ sa.settTil }}" onBlur="{{ sa.blurTil }}" style="{{ oktFeltStil }}">
                               <button type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
                             </div>
                             <input value="{{ sa.overskrift }}" onChange="{{ sa.settOverskrift }}" placeholder="Overskrift, f.eks. «Sentrering og dreiing»" style="{{ oktBredtFeltStil }}">
@@ -10905,7 +10905,7 @@ window.__resources = {
                 <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Glemt å stemple ut</div>
                 <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personStemplingTekst }}</p>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                  <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" onBlur="{{ blurPersonStemplingTid }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonStempling }}" hint-size="auto,36px">Sett utstemplingen</x-import>
                 </div>
               </div>
@@ -11652,7 +11652,7 @@ window.__resources = {
                   <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Glemt å stemple ut</div>
                   <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personStemplingTekst }}</p>
                   <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                    <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                    <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" onBlur="{{ blurPersonStemplingTid }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonStempling }}" hint-size="auto,36px">Sett utstemplingen</x-import>
                   </div>
                 </div>
@@ -14856,11 +14856,11 @@ window.__resources = {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
           <div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
-            <input type="time" value="{{ ndFra }}" onChange="{{ settNdFra }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
+            <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ ndFra }}" onChange="{{ settNdFra }}" onBlur="{{ blurNdFra }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           </div>
           <div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
-            <input type="time" value="{{ ndTil }}" onChange="{{ settNdTil }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
+            <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ ndTil }}" onChange="{{ settNdTil }}" onBlur="{{ blurNdTil }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
           </div>
         </div>
 
@@ -23547,8 +23547,41 @@ class Component extends DCLogic {
       const [a, b] = t.split(':');
       return a.slice(0, 2) + ':' + (b || '').slice(0, 2);
     }
-    // Skrevet uten: kolonet kommer etter to siffer.
-    return t.length > 2 ? t.slice(0, 2) + ':' + t.slice(2, 4) : t;
+    // Skrevet uten kolon. Hvor det skal settes inn avgjores av om de to
+    // foerste sifrene kan vaere en time: «0930» er halv ti, men «930» er
+    // ogsaa halv ti — og et kolon etter to siffer ville gjort det til
+    // «93:0», som blir kastet naar man forlater feltet. Da mistet man det
+    // man nettopp skrev.
+    if (t.length <= 2) return t;
+    if (t.length === 3) {
+      return Number(t.slice(0, 2)) <= 23 ? t.slice(0, 2) + ':' + t.slice(2)
+                                         : t.slice(0, 1) + ':' + t.slice(1);
+    }
+    return t.slice(0, 2) + ':' + t.slice(2, 4);
+  }
+
+  /**
+   * Klokkeslettet gjort ferdig naar man forlater feltet.
+   *
+   * «type=time» ga alltid enten ingenting eller et helt klokkeslett. Et
+   * tekstfelt kan staa igjen med «14» eller «14:3» midt i en tanke, og det
+   * ville gaatt videre til serveren og blitt et tidspunkt ingen mente.
+   *
+   * Her fylles det ut: «9» blir 09:00, «14» blir 14:00, «14:3» blir 14:30 —
+   * minuttene skrives fra venstre, saa en trettitallsminutt er det man har
+   * begynt paa. Er det ikke et klokkeslett i det hele tatt, toemmes feltet.
+   * Da ser den som skrev det med det samme, og resten av systemet ser det
+   * samme som for: enten ingenting, eller HH:MM.
+   */
+  klokkeslettFerdig(raa) {
+    const t = this.klokkeslettFelt(raa);
+    if (t === '') return '';
+    const [t1, m1] = t.split(':');
+    const timer = Number(t1);
+    // Minuttene skrives fra venstre: «3» er halv, ikke tre over.
+    const min = m1 == null || m1 === '' ? 0 : Number(m1.length === 1 ? m1 + '0' : m1);
+    if (!(timer >= 0 && timer <= 23) || !(min >= 0 && min <= 59)) return '';
+    return String(timer).padStart(2, '0') + ':' + String(min).padStart(2, '0');
   }
 
   stemplingKall(kropp, kvittering) {
@@ -27953,9 +27986,11 @@ class Component extends DCLogic {
               klBDato: this.state.klBDato || '',
               settKlBDato: e => this.setState({ klBDato: e.target.value }),
               klBFra: this.state.klBFra || '',
-              settKlBFra: e => this.setState({ klBFra: e.target.value }),
+              settKlBFra: e => this.setState({ klBFra: this.klokkeslettFelt(e.target.value) }),
+              blurKlBFra: e => this.setState({ klBFra: this.klokkeslettFerdig(e.target.value) }),
               klBTil: this.state.klBTil || '',
-              settKlBTil: e => this.setState({ klBTil: e.target.value }),
+              settKlBTil: e => this.setState({ klBTil: this.klokkeslettFelt(e.target.value) }),
+              blurKlBTil: e => this.setState({ klBTil: this.klokkeslettFerdig(e.target.value) }),
               klBHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klBHolder: n }), stil: chipStil(this.state.klBHolder === n, null) })),
               klBGjentaValg: ['Én gang', 'Hver uke', 'Annenhver uke'].map(n => ({ navn: n, velg: () => this.setState({ klBGjenta: n }), stil: chipStil((this.state.klBGjenta || 'Én gang') === n, null) })),
               klBErGjenta: (this.state.klBGjenta || 'Én gang') !== 'Én gang',
@@ -28207,9 +28242,11 @@ class Component extends DCLogic {
               klRNyDato: this.state.klRNyDato || '',
               settKlRNyDato: e => this.setState({ klRNyDato: e.target.value }),
               klRNyFra: this.state.klRNyFra || '',
-              settKlRNyFra: e => this.setState({ klRNyFra: e.target.value }),
+              settKlRNyFra: e => this.setState({ klRNyFra: this.klokkeslettFelt(e.target.value) }),
+              blurKlRNyFra: e => this.setState({ klRNyFra: this.klokkeslettFerdig(e.target.value) }),
               klRNyTil: this.state.klRNyTil || '',
-              settKlRNyTil: e => this.setState({ klRNyTil: e.target.value }),
+              settKlRNyTil: e => this.setState({ klRNyTil: this.klokkeslettFelt(e.target.value) }),
+              blurKlRNyTil: e => this.setState({ klRNyTil: this.klokkeslettFerdig(e.target.value) }),
               // Datoen legges paa det samme kurset. Nummeret foelger med fra
               // kalenderen — to kurs kan hete nesten det samme, og et navn er
               // ikke en identitet.
@@ -28236,9 +28273,11 @@ class Component extends DCLogic {
               klRDato: this.state.klRDato || '',
               settKlRDato: e => this.setState({ klRDato: e.target.value }),
               klRFra: this.state.klRFra || '',
-              settKlRFra: e => this.setState({ klRFra: e.target.value }),
+              settKlRFra: e => this.setState({ klRFra: this.klokkeslettFelt(e.target.value) }),
+              blurKlRFra: e => this.setState({ klRFra: this.klokkeslettFerdig(e.target.value) }),
               klRTil: this.state.klRTil || '',
-              settKlRTil: e => this.setState({ klRTil: e.target.value }),
+              settKlRTil: e => this.setState({ klRTil: this.klokkeslettFelt(e.target.value) }),
+              blurKlRTil: e => this.setState({ klRTil: this.klokkeslettFerdig(e.target.value) }),
               klRPlasser: this.state.klRPlasser || '',
               settKlRPlasser: e => this.setState({ klRPlasser: e.target.value }),
               klRPris: this.state.klRPris || '',
@@ -28571,7 +28610,8 @@ class Component extends DCLogic {
       klFlyttDato: this.state.klFlyttDato || '',
       settKlFlyttDato: e => this.setState({ klFlyttDato: e.target.value }),
       klFlyttTid: this.state.klFlyttTid || '',
-      settKlFlyttTid: e => this.setState({ klFlyttTid: e.target.value }),
+      settKlFlyttTid: e => this.setState({ klFlyttTid: this.klokkeslettFelt(e.target.value) }),
+      blurKlFlyttTid: e => this.setState({ klFlyttTid: this.klokkeslettFerdig(e.target.value) }),
       // Flyttingen gaar til kurs.php, som ogsaa teller hvor mange som staar
       // paa lista og sier fra om at de ikke faar beskjed av seg selv.
       klFlyttLagre: () => {
@@ -30563,9 +30603,11 @@ class Component extends DCLogic {
       ndDato: this.state.ndDato || '',
       settNdDato: e => this.setState({ ndDato: e.target.value }),
       ndFra: this.state.ndFra || '18:00',
-      settNdFra: e => this.setState({ ndFra: e.target.value }),
+      settNdFra: e => this.setState({ ndFra: this.klokkeslettFelt(e.target.value) }),
+      blurNdFra: e => this.setState({ ndFra: this.klokkeslettFerdig(e.target.value) }),
       ndTil: this.state.ndTil || '21:00',
-      settNdTil: e => this.setState({ ndTil: e.target.value }),
+      settNdTil: e => this.setState({ ndTil: this.klokkeslettFelt(e.target.value) }),
+      blurNdTil: e => this.setState({ ndTil: this.klokkeslettFerdig(e.target.value) }),
       ndSluttdato: this.state.ndSluttdato || '',
       settNdSluttdato: e => this.setState({ ndSluttdato: e.target.value }),
       ndSluttdatoHjelp: (() => {
@@ -33117,7 +33159,8 @@ class Component extends DCLogic {
             const st = p.stempling;
             if (!st) {
               return { personHarGlemt: false, personStemplingTekst: '', personStemplingTid: '',
-                       settPersonStemplingTid: () => {}, lagrePersonStempling: () => {} };
+                       settPersonStemplingTid: () => {}, blurPersonStemplingTid: () => {},
+                       lagrePersonStempling: () => {} };
             }
             const fornavn = (p.navn || '').split(' ')[0] || 'personen';
             const tid = this.state.personStemplingTid === null || this.state.personStemplingTid === undefined
@@ -33135,6 +33178,7 @@ class Component extends DCLogic {
                     + '. Stemmer ikke klokkeslettet, kan du rette det her.',
               personStemplingTid: tid,
               settPersonStemplingTid: e => this.setState({ personStemplingTid: this.klokkeslettFelt(e.target.value) }),
+              blurPersonStemplingTid: e => this.setState({ personStemplingTid: this.klokkeslettFerdig(e.target.value) }),
               lagrePersonStempling: () => {
                 if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(tid)) {
                   this.setState({ kvittering: 'Skriv et klokkeslett', kvitteringDetalj: 'For eksempel 15:30.' });
@@ -35807,8 +35851,10 @@ class Component extends DCLogic {
           oktTil: this.state.oktTil || '',
           oktBeskjed: this.state.oktBeskjed || '',
           settOktDato: e => this.setState({ oktDato: e.target.value, oktBeskjed: '' }),
-          settOktFra:  e => this.setState({ oktFra: e.target.value, oktBeskjed: '' }),
-          settOktTil:  e => this.setState({ oktTil: e.target.value, oktBeskjed: '' }),
+          settOktFra:  e => this.setState({ oktFra: this.klokkeslettFelt(e.target.value), oktBeskjed: '' }),
+          blurOktFra:  e => this.setState({ oktFra: this.klokkeslettFerdig(e.target.value), oktBeskjed: '' }),
+          settOktTil:  e => this.setState({ oktTil: this.klokkeslettFelt(e.target.value), oktBeskjed: '' }),
+          blurOktTil:  e => this.setState({ oktTil: this.klokkeslettFerdig(e.target.value), oktBeskjed: '' }),
           oktFeltStil: {
             boxSizing: 'border-box', width: '100%', border: '1px solid var(--border-subtle)',
             borderRadius: 'var(--radius-md)', padding: '9px 12px',
@@ -35845,8 +35891,10 @@ class Component extends DCLogic {
             dato: sa.dato || '', fra: sa.fra || '', til: sa.til || '',
             overskrift: sa.overskrift || '', tekst: sa.tekst || '',
             settDato: e => this.endreSamling(i, { dato: e.target.value }),
-            settFra: e => this.endreSamling(i, { fra: e.target.value }),
-            settTil: e => this.endreSamling(i, { til: e.target.value }),
+            settFra: e => this.endreSamling(i, { fra: this.klokkeslettFelt(e.target.value) }),
+            settTil: e => this.endreSamling(i, { til: this.klokkeslettFelt(e.target.value) }),
+            blurFra: e => this.endreSamling(i, { fra: this.klokkeslettFerdig(e.target.value) }),
+            blurTil: e => this.endreSamling(i, { til: this.klokkeslettFerdig(e.target.value) }),
             settOverskrift: e => this.endreSamling(i, { overskrift: e.target.value }),
             settTekst: e => this.endreSamling(i, { tekst: e.target.value }),
             fjern: () => this.setState(st => ({
@@ -37321,8 +37369,10 @@ class Component extends DCLogic {
       kDatoer: (this.state.kDatoer ?? []).filter(d => d.dato).map((d, i) => ({
         oktId: d.oktId, dato: d.dato, fra: d.fra, til: d.til,
         visning: (() => { const dt = new Date(d.dato + 'T12:00'); return isNaN(dt) ? d.dato : dt.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' }); })(),
-        settFra: (e) => { const v = e.target.value; this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { fra: v }) : x) })); },
-        settTil: (e) => { const v = e.target.value; this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { til: v }) : x) })); },
+        settFra: (e) => { const v = this.klokkeslettFelt(e.target.value); this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { fra: v }) : x) })); },
+        settTil: (e) => { const v = this.klokkeslettFelt(e.target.value); this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { til: v }) : x) })); },
+        blurFra: (e) => { const v = this.klokkeslettFerdig(e.target.value); this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { fra: v }) : x) })); },
+        blurTil: (e) => { const v = this.klokkeslettFerdig(e.target.value); this.setState(s => ({ kDatoer: s.kDatoer.map((x, j) => j === i ? Object.assign({}, x, { til: v }) : x) })); },
         fjern: () => this.setState(s => ({ kDatoer: s.kDatoer.filter((_, j) => j !== i) })),
       })),
       harOkter: (this.state.kDatoer ?? []).filter(d => d.dato).length > 0,
@@ -37405,9 +37455,11 @@ class Component extends DCLogic {
             return 'omtrent ' + Math.round(u / 4.3) + ' måned' + (u >= 9 ? 'er' : '') + ' fram';
           })(),
           kSerieFra: this.state.kSerieFra || '10:00',
-          settKSerieFra: e => this.setState({ kSerieFra: e.target.value }),
+          settKSerieFra: e => this.setState({ kSerieFra: this.klokkeslettFelt(e.target.value) }),
+          blurKSerieFra: e => this.setState({ kSerieFra: this.klokkeslettFerdig(e.target.value) }),
           kSerieTil: this.state.kSerieTil || '13:00',
-          settKSerieTil: e => this.setState({ kSerieTil: e.target.value }),
+          settKSerieTil: e => this.setState({ kSerieTil: this.klokkeslettFelt(e.target.value) }),
+          blurKSerieTil: e => this.setState({ kSerieTil: this.klokkeslettFerdig(e.target.value) }),
           kLeggTilSerie: () => {
             if (!kurs) return;
             this.kursSerieKall({
@@ -37966,7 +38018,8 @@ class Component extends DCLogic {
           return { msGlemtVis: false, msGlemtApen: false, msGlemtSkjul: false,
                    msGlemtTekst: '', msGlemtTid: '',
                    apneMsGlemt: () => {}, lukkMsGlemt: () => {},
-                   settMsGlemtTid: () => {}, lagreMsGlemt: () => {} };
+                   settMsGlemtTid: () => {}, blurMsGlemtTid: () => {},
+                   lagreMsGlemt: () => {} };
         }
         const apen = !!this.state.msGlemtApen;
         return {
@@ -37989,6 +38042,7 @@ class Component extends DCLogic {
           apneMsGlemt: () => this.setState({ msGlemtApen: true, msGlemtTid: this.state.msGlemtTid ?? si.ut ?? '' }),
           lukkMsGlemt: () => this.setState({ msGlemtApen: false }),
           settMsGlemtTid: e => this.setState({ msGlemtTid: this.klokkeslettFelt(e.target.value) }),
+          blurMsGlemtTid: e => this.setState({ msGlemtTid: this.klokkeslettFerdig(e.target.value) }),
           lagreMsGlemt: () => {
             const tid = this.state.msGlemtTid ?? si.ut ?? '';
             if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(tid)) {

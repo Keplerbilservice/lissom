@@ -3484,10 +3484,10 @@ sjekk('… og serveren regner den ut av den rimeligste varen',
 // (migrasjon 081), og med en knapp som krevde innlogging etter at hele
 // skjemaet var fylt ut. Innmeldingen paa Min side har alt dette fra for.
 sjekk('«Velg» paa medlemskap foerer til innmeldingen',
-    str_contains($sida2, 'const meldInn = () => {')
-    && str_contains($sida2, 'kjop: meldInn,'));
+    str_contains($sida2, 'const meldInn = () => this.meldInnPlan(o.navn);')
+    && str_contains($sida2, 'kjop: (e) => (e ? meldInn() : visMer()),'));
 sjekk('… og valget overlever innloggingen',
-    str_contains($sida2, "sessionStorage.setItem('lissom_medlemsplan', o.navn)")
+    str_contains($sida2, "sessionStorage.setItem('lissom_medlemsplan', navn)")
     && str_contains($sida2, "sessionStorage.getItem('lissom_medlemsplan')"));
 sjekk('… og skjemaet har et anker aa rulle til',
     str_contains($sida2, 'id="bli-medlem"')
@@ -6000,8 +6000,8 @@ sjekk('… mens resten av bunnteksten staar som for',
 // Malt i nettleseren, med Date Night uten datoer slik det staar hos eieren:
 // kortet viser kr. 2 990,-, knappen aapner det enkle skjemaet, det sier
 // «Gjelder: Date Night», og «Antall personer» er ikke der.
-sjekk('kurskortet aapner det enkle skjemaet',
-    str_contains($sida, "? () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktEmne: k.title,"));
+sjekk('kurssida aapner det enkle skjemaet',
+    str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
 sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
     substr_count($sida, 'fsApen: true') === 2
     && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
@@ -6025,6 +6025,125 @@ if (DB::harTabell('courses')) {
             (int) $dn['pris_ore'] . ' oere');
     }
 }
+
+// ── Kortet forer til kurset, ikke rett i skjemaet ─────────────────────
+//
+// Date Night ligger ute uten datoer. Kortet sa «Kontakt oss», og bade
+// knappen og selve kortflata aapnet foresporselen med det samme. Kurssida —
+// bildene, beskrivelsen, «dette laerer du», «dette faar du med hjem» — var
+// det ingen vei til.
+//
+// Eieren, 2. september: «Datenight, mangler info. Naar jeg klikker paa den
+// kommer jeg rett til foresporsel. Bor vel ha samme vei som de andre», og
+// «klikk paa kortet, faa opp info», og «da bytte ut kontakt oss paa kortet
+// med les mer».
+//
+// Verre: kurssida VISTE hele bookingskjemaet for et kurs uten datoer —
+// «Velg dato · Etter avtale», antall plasser, e-post, telefon, vilkaar og
+// «BOOK PLASS · KR. 2 990,-». Malt i nettleseren: fyller man ut alt og
+// trykker, sendes ikke ett eneste kall. Knappen var en blindvei som saa ut
+// som veien inn.
+//
+// Malt for og etter: kortet sier naa «LES MER», kortklikket ender paa
+// /kurs/date-night, boksen der sier «Etter avtale» med «Kontakt oss», og den
+// knappen aapner det enkle skjemaet med «Gjelder: Date Night».
+sjekk('kortet forer til kurssida, ogsaa uten datoer',
+    str_contains($sida, "book: () => { this.setState({ side: 'booking', fra: 'kurs', valgtKurs: k,"));
+// Kontrollen: den gamle grenen, som aapnet skjemaet fra kortet, er borte.
+sjekk('… og kortet aapner ikke skjemaet lenger',
+    !str_contains($sida, "book: k.kunKontakt"));
+// Bookingskjemaet skal ikke staa paa et kurs det ikke gaar an aa booke.
+sjekk('kurs uten datoer har ingen datovelger',
+    str_contains($sida, "&& !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)\n               && this.state.fra !== 'medlemskap',"));
+sjekk('… og ingen betalingsdel',
+    str_contains($sida, "// Et kurs uten datoer betales ikke her. Det avtales forst.\n        if (k.kunKontakt) return false;"));
+sjekk('… men en «Kontakt oss» som staar i stedet',
+    str_contains($sida, 'visKontaktKurs: !!(this.state.valgtKurs && this.state.valgtKurs.kunKontakt),')
+    && str_contains($sida, '<sc-if value="{{ visKontaktKurs }}"'));
+sjekk('… og den tar kurset med som emne',
+    str_contains($sida, "ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
+
+// ── Én linje om salg, ikke to ─────────────────────────────────────────
+//
+// «Selg egne arbeider gjennom lissom.no» ble lagt paa hver loepende plan,
+// uansett hva som alt sto i punktlista. Basis 30 har den skrevet inn i basen
+// fra for, og fikk den dermed to ganger rett under hverandre:
+//
+//   ✓ Tilgang 24/7 med dorkode
+//   ✓ Selg egne arbeider gjennom lissom.no
+//   ✓ Selg egne arbeider gjennom lissom.no
+//
+// Malt i nettleseren paa medlemskapssida, for og etter: fire forekomster ble
+// til tre. Aarsmedlemskap og Fri tilgang har den fortsatt én gang hver, og
+// proveperioden ingen.
+//
+// Verkstedet skal kunne skrive linja inn selv uten at den kommer dobbelt.
+sjekk('salgslinja legges bare paa der den ikke staar fra for',
+    str_contains($sida, "const SALG = 'Selg egne arbeider gjennom lissom.no';")
+    && str_contains($sida, 'fraBasen.some(x => String(x).trim() === SALG)'));
+// Kontrollen: den gamle linja, som la den paa uansett, skal vaere borte.
+sjekk('… og den gamle linja som la den paa uansett er borte',
+    !str_contains($sida, "(o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no'])"));
+// Proveperioden skal fortsatt ikke ha den i det hele tatt: salg gjennom
+// lissom.no folger medlemskapet, ikke de ti timene.
+sjekk('… og proveperioden faar den fortsatt ikke',
+    str_contains($sida, 'const punkter = (o.engangs || fraBasen.some('));
+
+// ── Medlemskapskortet: info forst, «Velg» etterpaa ────────────────────
+//
+// Kortet sendte «kjop» til bade knappen og kortflata, saa et klikk hvor som
+// helst meldte deg inn. «kjopKort», som viser hva medlemskapet er, sto i
+// koden fra for og var aldri koblet til noe.
+//
+// Eieren, 2. september: «klikk paa kortet saa aapnes mer info for man kan
+// trykke velg».
+//
+// De to skilles uten aa roere den genererte komponenten: kortflata kaller
+// onBook() uten argument, mens knappen er en React-knapp og sender
+// hendelsen med. Se CourseCard i ds-bundle.js.
+sjekk('kortflata viser info, knappen melder inn',
+    str_contains($sida, 'kjop: (e) => (e ? meldInn() : visMer()),'));
+// Infosida hadde den gamle veien nederst: «Opprett avtale i Vipps», med
+// e-post, telefon, allergier og vilkaar over. Naa staar «Velg», som gaar
+// samme vei som knappen paa kortet.
+sjekk('infosida for et medlemskap har «Velg»',
+    str_contains($sida, "visVelgMedlemskap: this.state.fra === 'medlemskap',")
+    && str_contains($sida, '<sc-if value="{{ visVelgMedlemskap }}"'));
+sjekk('… og bookingskjemaet staar ikke under den',
+    str_contains($sida, "// Et medlemskap heller ikke: det gaar gjennom innmeldingen.\n        if (this.state.fra === 'medlemskap') return false;"));
+// Veien inn laa som en lukking inne i kortlista, og naadde ikke infosida.
+sjekk('… og begge gaar gjennom den samme metoden',
+    str_contains($sida, 'meldInnPlan(navn) {')
+    && substr_count($sida, 'this.meldInnPlan(') === 2);
+
+// ── Kunden ser bare Vipps ─────────────────────────────────────────────
+//
+// Trykket man «Velg» uten aa vaere innlogget, kom man til en skjerm med
+// «Fortsett med Vipps» oeverst og verkstedets egen konto rett under:
+// «Brukernavn», «Passord», og «Konto for verkstedet. Har du glemt passordet,
+// si fra til Monica — hun setter et nytt.»
+//
+// Eieren, 2. september: «naar man trykker velg vil jeg ha en vippslosning
+// kun, ikke som i dag med annen log in info».
+//
+// Skjemaet er ikke fjernet. Det staar paa /admin/logg-inn, dit ADMIN nederst
+// paa sida forer, og der er Vipps-knappen borte i stedet.
+//
+// Malt i nettleseren: kundeskjermen har naa null skrivefelt; /admin/logg-inn
+// har fortsatt «fornavn» og passordfeltet.
+sjekk('kundeinnloggingen har bare Vipps',
+    str_contains($sida, "visPassordinnlogging: side === 'adminlogin',"));
+sjekk('… og passordskjemaet staar bak den porten',
+    str_contains($sida, '<sc-if value="{{ visPassordinnlogging }}"'));
+// Verkstedet maa fortsatt komme inn. Vipps-porten er uendret, og de to er
+// hverandres motsatte: aldri begge, aldri ingen.
+sjekk('… mens verkstedets egen skjerm staar som for',
+    str_contains($sida, "visVippsInnlogging: side !== 'adminlogin',")
+    && str_contains($sida, "{ sti: '/admin/logg-inn',     side: 'adminlogin' },"));
+// «eller» sto mellom de to. Med bare én av dem ville det staatt et «eller»
+// uten noe paa den andre sida.
+sjekk('… og «eller»-skillet staar ikke alene',
+    str_contains($sida, 'visLoginSkille: false,'));
 
 // ── «Forny» lot ingen gjore opp selv ──────────────────────────────────
 //
@@ -6115,16 +6234,15 @@ sjekk('… og faller tilbake til forste loepende plan uten avtale',
 // kortene under «Kursene vaare» henter «cta» fra. Ett sted, saa de to ikke
 // kan bli uenige.
 sjekk('fullbooket kurs faar «Les mer» paa knappen',
-    str_contains($sida, "(k.status === 'Fullbooket' ? 'Les mer' : (k.cta || 'Book plass'))"));
+    str_contains($sida, "cta: (k.kunKontakt || k.status === 'Fullbooket') ? 'Les mer' : (k.cta || 'Book plass'),"));
 // Kontrollen: den gamle linja, som ga «Book plass» uansett, skal vaere borte.
 // Uten denne ville proven over vaere gronn ogsaa om noen la den tilbake.
 sjekk('… og den gamle regelen uten unntak er borte',
     !str_contains($sida, "cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),"));
-// Et kurs uten datoer skal fortsatt si «Kontakt oss». Fullbooket-regelen
-// ligger etter den, saa den kan ikke overta for et kurs som settes opp naar
-// noen sporr.
-sjekk('… mens kurs uten datoer fortsatt sier «Kontakt oss»',
-    str_contains($sida, "cta: k.kunKontakt\n          ? 'Kontakt oss'"));
+// Et kurs uten datoer sier ogsaa «Les mer» — det staar i regelen over, og
+// «Kontakt oss» skal ikke lenger staa paa noe kurskort.
+sjekk('… og «Kontakt oss» staar ikke lenger paa et kurskort',
+    !str_contains($sida, "cta: k.kunKontakt\n          ? 'Kontakt oss'"));
 // Ordet kommer fra ledigTekst, som er det ene stedet plasstallet blir tekst.
 // Skrives det om der, maa det skrives om her ogsaa — derfor staar de to i
 // samme prove.

@@ -6749,6 +6749,47 @@ sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
 
+// ── Naar gaar pengene? ─────────────────────────────────────────────────
+//
+// Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden her.
+// Saa ut til aa fungere greit. Men pengene er fremdeles paa min konto.»
+//
+// Hun hadde rett, og hun skrev fordi ingen hadde sagt fra. Fast trekk i Vipps
+// er en fullmakt, ikke en betaling: forfallet ligger tre dager fram fordi
+// Vipps krever forvarsel. Sida sa bare «saa er du i gang», og velkomsten sa
+// «du faar beskjed for hvert trekk» — sant, men ikke NAAR.
+echo "\n== Naar gaar pengene ==\n";
+
+$bliTekst = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('sida sier naar forste trekk kommer',
+    str_contains($bliTekst, 'Første trekk kommer om noen dager — du får en e-post fra oss først.'));
+// Bare paa fast trekk. Den som gjor opp selv betaler NAA, i Vipps, og skal
+// ikke faa beskjed om at pengene gaar om noen dager.
+sjekk('… og bare paa fast trekk',
+    str_contains($bliTekst, "        : 'Betal i Vipps, så er du i gang.',"));
+
+$mig132 = file_get_contents(dirname(__DIR__) . '/db/migrations/132_velkomsten_sier_naar_pengene_gaar.sql');
+sjekk('migrasjon 132 retter velkomstmalen',
+    str_contains($mig132, "WHERE navn = 'innmelding_fast_trekk'"));
+
+$velkomst = (string) DB::verdi(
+    "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
+);
+sjekk('velkomsten sier at forste trekk kommer om noen dager',
+    str_contains($velkomst, 'Første trekk kommer om noen dager'), mb_substr($velkomst, 0, 40));
+sjekk('… og hvorfor det tar tid',
+    str_contains($velkomst, 'Vipps krever at vi varsler deg først'));
+// Den gamle setningen lovte noe systemet ikke gjor: medlemmet settes aktivt
+// naar AVTALEN blir aktiv i Vipps, for en eneste krone har flyttet seg.
+sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
+    !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));
+sjekk('… men sier at det er aktivt med det samme',
+    str_contains($velkomst, 'Medlemskapet er aktivt med det samme'));
+// Plassholderne maa staa. Uten dem staar det «Hei {navn}» i e-posten.
+foreach (['{navn}', '{type}'] as $felt) {
+    sjekk('… og «' . $felt . '» staar igjen i malen', str_contains($velkomst, $felt));
+}
+
 // ── Rekkefolgen i medlemstrekket ───────────────────────────────────────
 //
 // Medlemmet Eirin godkjente avtalen i Vipps-appen 1. september og kom aldri

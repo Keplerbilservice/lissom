@@ -200,7 +200,19 @@ revider('medlemsinnmelding', 'membership_application', $id, ['type' => $type, 'b
 Svar::ok([
     'status'  => 'betaler',
     'url'     => $avtale['url'],
+    // ── Naar gaar pengene? ─────────────────────────────────────────────
+    //
+    // Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden
+    // her. Saa ut til aa fungere greit. Men pengene er fremdeles paa min
+    // konto.»
+    //
+    // Her sto bare «saa er du i gang». Fast trekk i Vipps er en fullmakt, ikke
+    // en betaling: trekket bes om av cron, og Vipps krever at kunden varsles
+    // for det skjer — saa forfallet ligger tre dager fram. En som nettopp har
+    // vaert gjennom Vipps leser «du er i gang» som «jeg har betalt», sjekker
+    // kontoen, og skriver til verkstedet.
     'beskjed' => $betaling === 'trekk'
-        ? 'Godkjenn betalingsavtalen i Vipps, så er du i gang.'
+        ? 'Godkjenn betalingsavtalen i Vipps, så er du i gang. '
+          . 'Første trekk kommer om noen dager — du får en e-post fra oss først.'
         : 'Betal i Vipps, så er du i gang.',
 ]);

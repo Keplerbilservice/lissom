@@ -3632,6 +3632,35 @@ window.__resources = {
                 <div style="{{ timerBarStil }}"></div>
               </div>
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ timerUndertekst }}</p>
+              <!-- Glemt aa stemple ut.
+                   Eieren, 2. september: «Naar et medlem glemmer aa stemple ut,
+                   kan vi legge til knappen glemt aa stemple ut. Og mulighet aa
+                   legge til klokkeslett naar de faktisk gikk.»
+                   For dette fantes det ingen vei: sto oekta aapen, gikk den til
+                   stengetid og tok timer medlemmet ikke hadde brukt, og ingen
+                   kunne rette den. Staar bare naar det er noe aa rette — en oekt
+                   som gaar naa, eller en systemet lukket klokka 23. -->
+              <sc-if value="{{ msGlemtVis }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-3);">
+                  <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ msGlemtTekst }}</div>
+                  <sc-if value="{{ msGlemtSkjul }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ apneMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Glemt å stemple ut</button>
+                  </sc-if>
+                  <sc-if value="{{ msGlemtApen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                      <!-- Skrives, ikke plukkes. «type=time» tegner feltet i
+                           NETTLESERENS spraak, ikke sidas: staar nettleseren
+                           paa engelsk, skriver den «11:00 PM» — og eieren, 2.
+                           september: «Ikke pm og am klokkeslett». Det finnes
+                           ingen attributt som styrer det, saa feltet maa vaere
+                           vaart eget. -->
+                      <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet du gikk" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" style="width: 74px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagreMsGlemt }}" hint-size="auto,36px">Lagre</x-import>
+                      <button type="button" onClick="{{ lukkMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0 4px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted);">Avbryt</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
                 <div style="border-top: 1px solid var(--terracotta-500); margin-top: var(--space-4); padding-top: var(--space-3);">
                   <div style="font-weight: 700; font-size: var(--text-xs); color: var(--terracotta-600); margin-bottom: 6px;">Timene er brukt opp</div>
@@ -10862,6 +10891,26 @@ window.__resources = {
               </div>
             </sc-if>
 
+            <!-- Glemt aa stemple ut.
+                 Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan vi
+                 legge til knappen glemt aa stemple ut. Og mulighet aa legge til
+                 klokkeslett naar de faktisk gikk.» Spurt om hvem som skal kunne
+                 sette det: «Begge — medlemmet og du».
+                 Ringer noen og sier at hen glemte seg i gaar, skal verkstedet kunne
+                 rette det derfra. Staar bare naar det er noe aa rette — en oekt som
+                 gaar naa, eller en systemet lukket klokka 23. Stemplet medlemmet seg
+                 ut selv, er tida deres egen. -->
+            <sc-if value="{{ personHarGlemt }}" hint-placeholder-val="{{ false }}">
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Glemt å stemple ut</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personStemplingTekst }}</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                  <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonStempling }}" hint-size="auto,36px">Sett utstemplingen</x-import>
+                </div>
+              </div>
+            </sc-if>
+            
             <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                  innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                  etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -11589,6 +11638,26 @@ window.__resources = {
                 </div>
               </sc-if>
 
+              <!-- Glemt aa stemple ut.
+                   Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan vi
+                   legge til knappen glemt aa stemple ut. Og mulighet aa legge til
+                   klokkeslett naar de faktisk gikk.» Spurt om hvem som skal kunne
+                   sette det: «Begge — medlemmet og du».
+                   Ringer noen og sier at hen glemte seg i gaar, skal verkstedet kunne
+                   rette det derfra. Staar bare naar det er noe aa rette — en oekt som
+                   gaar naa, eller en systemet lukket klokka 23. Stemplet medlemmet seg
+                   ut selv, er tida deres egen. -->
+              <sc-if value="{{ personHarGlemt }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Glemt å stemple ut</div>
+                  <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personStemplingTekst }}</p>
+                  <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                    <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonStempling }}" hint-size="auto,36px">Sett utstemplingen</x-import>
+                  </div>
+                </div>
+              </sc-if>
+              
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                    etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -23460,6 +23529,28 @@ class Component extends DCLogic {
     this.hentApningstider();
   }
 
+  /**
+   * Klokkeslett slik det skrives, ikke slik nettleseren vil ha det.
+   *
+   * «type=time» tegner feltet i nettleserens spraak. Staar den paa engelsk,
+   * blir 23:00 til «11:00 PM», og det finnes ingen attributt som styrer det.
+   * Eieren, 2. september: «Ikke pm og am klokkeslett». Feltet er derfor et
+   * vanlig tekstfelt, og dette holder det paa formen HH:MM.
+   *
+   * Kolonet settes inn selv, saa «1430» blir «14:30» — det er slik folk
+   * skriver et klokkeslett paa en telefon.
+   */
+  klokkeslettFelt(raa) {
+    const t = String(raa == null ? '' : raa).replace(/[^\d:]/g, '').replace(/:+/g, ':');
+    // Skrevet med kolon: la det staa, men klipp til fire siffer.
+    if (t.indexOf(':') >= 0) {
+      const [a, b] = t.split(':');
+      return a.slice(0, 2) + ':' + (b || '').slice(0, 2);
+    }
+    // Skrevet uten: kolonet kommer etter to siffer.
+    return t.length > 2 ? t.slice(0, 2) + ':' + t.slice(2, 4) : t;
+  }
+
   stemplingKall(kropp, kvittering) {
     if (!this.erPublisert()) {
       this.setState(s => ({ innstemplet: !s.innstemplet }));
@@ -23484,12 +23575,19 @@ class Component extends DCLogic {
           });
           return;
         }
-        this.setState(Object.assign({ stempling: d }, kvittering ? {
-          kvittering: d.innstemplet ? 'Du er stemplet inn' : 'Du er stemplet ut',
-          kvitteringDetalj: d.innstemplet
-            ? 'Timen teller fra ' + d.siden + '.'
-            : 'Du har brukt ' + d.timer.brukt + ' timer denne måneden.',
-        } : {}));
+        // Feltet lukkes naar rettingen gikk gjennom. Sto det aapent med det
+        // gamle klokkeslettet i, saa det ut som ingenting hadde skjedd.
+        this.setState(Object.assign({ stempling: d, msGlemtApen: false, msGlemtTid: '' },
+          kvittering ? (kropp.handling === 'glemt' ? {
+            kvittering: 'Utstemplingen er rettet',
+            kvitteringDetalj: 'Du står som stemplet ut ' + (((d.siste || {}).ut) || kropp.tid)
+              + '. Du har brukt ' + d.timer.brukt + ' timer denne måneden.',
+          } : {
+            kvittering: d.innstemplet ? 'Du er stemplet inn' : 'Du er stemplet ut',
+            kvitteringDetalj: d.innstemplet
+              ? 'Timen teller fra ' + d.siden + '.'
+              : 'Du har brukt ' + d.timer.brukt + ' timer denne måneden.',
+          }) : {}));
       })
       .catch(() => {
         this._stempler = false;
@@ -33005,6 +33103,56 @@ class Component extends DCLogic {
                 this.apnePerson(p.id, 0);
               });
           },
+          // ── Glemt aa stemple ut ────────────────────────────────────
+          //
+          // Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan
+          // vi legge til knappen glemt aa stemple ut. Og mulighet aa legge
+          // til klokkeslett naar de faktisk gikk.» Spurt om hvem som skal
+          // kunne sette det: «Begge — medlemmet og du».
+          //
+          // Serveren sender bare den oekta det gaar an aa rette — den som gaar
+          // naa, eller den som tok slutt det siste doegnet. Er den eldre, staar
+          // feltet ikke her.
+          ...(() => {
+            const st = p.stempling;
+            if (!st) {
+              return { personHarGlemt: false, personStemplingTekst: '', personStemplingTid: '',
+                       settPersonStemplingTid: () => {}, lagrePersonStempling: () => {} };
+            }
+            const fornavn = (p.navn || '').split(' ')[0] || 'personen';
+            const tid = this.state.personStemplingTid === null || this.state.personStemplingTid === undefined
+              ? (st.ut || '') : this.state.personStemplingTid;
+            return {
+              personHarGlemt: true,
+              personStemplingTekst: st.apen
+                ? fornavn + ' stemplet inn ' + st.dag + ' kl. ' + st.inn
+                  + ' og står fortsatt inne. Sett klokkeslettet hen faktisk gikk.'
+                : st.auto
+                  ? fornavn + ' stemplet inn ' + st.dag + ' kl. ' + st.inn
+                    + ' og ble stemplet ut kl. ' + st.ut + ', fordi verkstedet stenger kl. 23. '
+                    + 'Sett klokkeslettet hen faktisk gikk.'
+                  : fornavn + ' stemplet inn ' + st.dag + ' kl. ' + st.inn + ' og ut kl. ' + st.ut
+                    + '. Stemmer ikke klokkeslettet, kan du rette det her.',
+              personStemplingTid: tid,
+              settPersonStemplingTid: e => this.setState({ personStemplingTid: this.klokkeslettFelt(e.target.value) }),
+              lagrePersonStempling: () => {
+                if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(tid)) {
+                  this.setState({ kvittering: 'Skriv et klokkeslett', kvitteringDetalj: 'For eksempel 15:30.' });
+                  return;
+                }
+                // «behold» — uten den lukker medlemKall ruta, og oppfriskninga
+                // ville aapnet den igjen med det samme. Det blinker.
+                this.medlemKall({ handling: 'stempling', medlemId: p.id, tid }, true)
+                  .then(ok => {
+                    if (!ok) return;
+                    // Feltet nullstilles, saa teksten over leser det serveren
+                    // naa har — ikke det man nettopp skrev.
+                    this.setState({ personStemplingTid: null });
+                    this.apnePerson(p.id, 0);
+                  });
+              },
+            };
+          })(),
           // Uten konto finnes ingen Min side aa vise, ingen medlemskap aa
           // endre, og notatet hoerer til paameldingen. Skjermen maa vite det
           // — ellers tilbyr den ting som ikke finnes.
@@ -37802,6 +37950,55 @@ class Component extends DCLogic {
       })(),
       stemplingKnapp: this.erInne() ? 'Stemple ut' : 'Stemple inn',
       stemplingVariant: this.erInne() ? 'secondary' : 'primary',
+      // ── Glemt aa stemple ut ──────────────────────────────────────────
+      //
+      // Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan vi
+      // legge til knappen glemt aa stemple ut. Og mulighet aa legge til
+      // klokkeslett naar de faktisk gikk.»
+      //
+      // Serveren sender bare den oekta det gaar an aa rette — den som gaar
+      // naa, eller den som tok slutt det siste doegnet. Skjermen bestemmer
+      // ikke det selv; da ville Min side og medlemsruta i admin kunnet svare
+      // hver sitt om den samme oekta.
+      ...(() => {
+        const si = (this.state.stempling || {}).siste;
+        if (!si) {
+          return { msGlemtVis: false, msGlemtApen: false, msGlemtSkjul: false,
+                   msGlemtTekst: '', msGlemtTid: '',
+                   apneMsGlemt: () => {}, lukkMsGlemt: () => {},
+                   settMsGlemtTid: () => {}, lagreMsGlemt: () => {} };
+        }
+        const apen = !!this.state.msGlemtApen;
+        return {
+          msGlemtVis: true,
+          msGlemtApen: apen,
+          msGlemtSkjul: !apen,
+          msGlemtTekst: si.apen
+            ? 'Du stemplet inn ' + si.dag + ' kl. ' + si.inn + '. Gikk du uten å stemple ut, sett klokkeslettet her.'
+            : si.auto
+              ? 'Du stemplet inn ' + si.dag + ' kl. ' + si.inn + ' og ble stemplet ut kl. '
+                + si.ut + ', fordi verkstedet stenger kl. 23. Gikk du før det, sett klokkeslettet her.'
+              : 'Du stemplet inn ' + si.dag + ' kl. ' + si.inn + ' og ut kl. ' + si.ut
+                + '. Stemmer ikke klokkeslettet, kan du rette det her.',
+          // Feltet aapner paa det som staar fra for, saa man retter et
+          // klokkeslett i stedet for aa skrive et fra bunnen.
+          // «??» og ikke «||»: tommer man feltet, skal det bli staaende tomt
+          // og gi beskjed — ikke lydloest falle tilbake paa klokkeslettet man
+          // nettopp slettet, og lagre det.
+          msGlemtTid: this.state.msGlemtTid ?? si.ut ?? '',
+          apneMsGlemt: () => this.setState({ msGlemtApen: true, msGlemtTid: this.state.msGlemtTid ?? si.ut ?? '' }),
+          lukkMsGlemt: () => this.setState({ msGlemtApen: false }),
+          settMsGlemtTid: e => this.setState({ msGlemtTid: this.klokkeslettFelt(e.target.value) }),
+          lagreMsGlemt: () => {
+            const tid = this.state.msGlemtTid ?? si.ut ?? '';
+            if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(tid)) {
+              this.setState({ kvittering: 'Skriv et klokkeslett', kvitteringDetalj: 'For eksempel 15:30.' });
+              return;
+            }
+            this.stemplingKall({ handling: 'glemt', tid }, true);
+          },
+        };
+      })(),
       // Innstempling, fra basen. Klokkeslettet «13:42 · 1 t 20 min» sto som
       // fast verdi og ble vist til alle, uansett naar de var der.
       stemplingTekst: (() => {

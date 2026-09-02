@@ -54,6 +54,23 @@ final class Tikk
 
         self::sjekkHengendeBetalinger();
 
+        // Stengetid. Eieren, 2. september: «Automatisk utstemplibg kl 23».
+        //
+        // Rettinga skjedde bare naar noen slo opp innstemplinga eller aapnet
+        // medlemslista. Glemte den siste av gaarde seg en fredag kveld, sto
+        // hen innstemplet til noen logget inn — og aapningstida paa nettsida,
+        // som leser om verkstedet er bemannet, sa «aapent naa» hele natta.
+        //
+        // Her er det trafikken paa sida som lukker den, innen minuttet.
+        try {
+            $lukket = Stempling::lukkGlemte();
+            if ($lukket > 0) {
+                logg('Glemte innstemplinger lukket', ['antall' => $lukket]);
+            }
+        } catch (Throwable $e) {
+            logg_feil('Kunne ikke lukke glemte innstemplinger', $e);
+        }
+
         // Paint on Pots og lignende folger aapningstidene. Kalenderen endrer
         // seg — et kurs settes opp, et avlyses, en feriedag legges inn — og
         // da skal de aapne plassene folge etter uten at noen maa trykke paa

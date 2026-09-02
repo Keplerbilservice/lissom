@@ -18,6 +18,7 @@ $jeg = krev_admin();
 //   POST handling=notat      { medlemId, notat }   annen info om personen
 //   POST handling=betaler-ikke { medlemId, paa, grunn }  fritatt fra betaling
 //   POST handling=knytt      { medlemId, bookingId }  gjestepaamelding til konto
+//   POST handling=stempling  { medlemId, tid }  klokkeslettet de faktisk gikk
 //
 // Ikke alle soker paa nett. Noen staar i doera, noen ringer, og noen har
 // vaert paa kurs i et halvt aar for de bestemmer seg. Uten dette matte
@@ -340,6 +341,44 @@ if (Foresporsel::metode() === 'POST') {
                        . Booking::kroner($ore) . ' med ' . mb_strtolower($maate)
                        . '. Det er med i regnskapet.',
         ]);
+    }
+
+    // ── Glemt aa stemple ut ───────────────────────────────────────────
+    //
+    // Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan vi
+    // legge til knappen glemt aa stemple ut. Og mulighet aa legge til
+    // klokkeslett naar de faktisk gikk.» Spurt om hvem som skal kunne det:
+    // «Begge — medlemmet og du».
+    //
+    // Det er den samme rettingen medlemmet gjor fra Min side, gjort herfra:
+    // en som ringer og sier «jeg glemte aa stemple ut i gaar» skal slippe aa
+    // logge inn selv for aa faa timene tilbake.
+    //
+    // Regnestykket ligger i Stempling::rettUtKlokke() — taket paa seks timer,
+    // doegnet oekta begynte, og sperren mot tidspunkt for innstemplinga
+    // gjelder likt for begge veier inn.
+    if ($handling === 'stempling') {
+        $id = Foresporsel::heltall('medlemId');
+        $medlem = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($medlem === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        $klokke = trim(Foresporsel::tekst('tid'));
+        $svar = Stempling::rettUtKlokke($id, $klokke);
+        if (!$svar['ok']) {
+            Svar::feil((string) ($svar['feil'] ?? 'Fikk ikke rettet økta.'));
+        }
+
+        revider('stempling_rettet', 'member', $id, [
+            'okt'      => $svar['id'] ?? 0,
+            'tid'      => $klokke,
+            'minutter' => $svar['minutter'] ?? 0,
+            'av'       => (int) $jeg['id'],
+        ]);
+
+        Svar::ok(['beskjed' => $medlem['navn'] . ' er stemplet ut ' . $klokke
+                             . '. Økta teller ' . Stempling::varighet((int) ($svar['minutter'] ?? 0)) . '.']);
     }
 
     // ── Knytt en gjestepaamelding til kontoen ─────────────────────────
@@ -677,6 +716,11 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
         };
     };
 
+    // Oekter som har staatt over stengetid lukkes for vi viser dem, slik lista
+    // og Min side ogsaa gjor. Ellers ville personruta staatt med «inne naa» om
+    // en som gikk hjem i gaar.
+    Stempling::lukkGlemte();
+
     Svar::json([
         'person' => [
             'id'         => (int) $m['id'],
@@ -697,6 +741,33 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // ikke kan svare hver sitt om den samme personen.
             'betalerIkke'      => !empty($m['betaler_ikke']),
             'betalerIkkeGrunn' => (string) ($m['betaler_ikke_grunn'] ?? ''),
+            // ── Den siste oekta i verkstedet ───────────────────────────
+            //
+            // Til «Glemt aa stemple ut». Eieren, 2. september, spurt om hvem
+            // som skal kunne sette klokkeslettet: «Begge — medlemmet og du».
+            //
+            // Staar bare naar det er noe aa rette: en oekt som gaar naa, eller
+            // en som tok slutt det siste doegnet. Regelen er den samme som paa
+            // Min side — se Stempling::sisteOkt().
+            'stempling'        => (static function () use ($pid) {
+                if ($pid <= 0) {
+                    return null;   // en gjest stempler ikke inn
+                }
+                $o = Stempling::sisteOkt($pid);
+                if ($o === null || !$o['kanRettes']) {
+                    return null;
+                }
+                $kl = static fn(string $utc): string =>
+                    (new DateTimeImmutable($utc, new DateTimeZone('UTC')))
+                        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i');
+                return [
+                    'dag'  => Booking::norskDatoKort($o['inn_tid']),
+                    'inn'  => $kl($o['inn_tid']),
+                    'ut'   => $o['ut_tid'] === null ? '' : $kl($o['ut_tid']),
+                    'apen' => $o['ut_tid'] === null,
+                    'auto' => $o['auto'],
+                ];
+            })(),
             // Naar vilkaarene ble godtatt, og hvilken utgave som gjaldt da.
             // En hake som bare laaser opp en knapp er ikke noe bevis; dette
             // er det, og det skal kunne vises fram.

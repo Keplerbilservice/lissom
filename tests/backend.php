@@ -790,16 +790,28 @@ sjekk('utstempling uten apen okt gir null', Stempling::ut($testMedlem) === null)
 sjekk('minutter denne maaneden teller med',
     Stempling::minutterDenneManeden($testMedlem) >= 94);
 
-// Glemt utstempling skal lukkes, og ikke spise hele maaneden.
+/** «For N doegn siden, kl. HH:MM norsk tid» — som UTC. */
+$osloTilbake = static function (int $doegn, string $kl): string {
+    return (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+        ->modify('-' . $doegn . ' day')
+        ->setTime((int) substr($kl, 0, 2), (int) substr($kl, 3, 2))
+        ->setTimezone(new DateTimeZone('UTC'))
+        ->format('Y-m-d H:i:s');
+};
+
+// Glemt utstempling skal lukkes, og ikke spise hele maaneden. Inn kl. 10,
+// stengetid kl. 23 — tretten timer, seks telles. Eieren, spurt om hva som
+// skal trekkes: «Behold taket paa 6 timer».
 DB::settInn('check_ins', [
     'member_id' => $testMedlem,
-    'inn_tid'   => gmdate('Y-m-d H:i:s', time() - 3 * 86400),
+    'inn_tid'   => $osloTilbake(3, '10:00'),
 ]);
 Stempling::lukkGlemte();
 $glemt = DB::en('SELECT minutter, auto_lukket FROM check_ins WHERE member_id = :m ORDER BY id DESC LIMIT 1',
     ['m' => $testMedlem]);
 sjekk('glemt utstempling lukkes', (int) ($glemt['auto_lukket'] ?? 0) === 1);
-sjekk('glemt okt kappes til seks timer', (int) ($glemt['minutter'] ?? 0) === 360);
+sjekk('glemt okt kappes til seks timer', (int) ($glemt['minutter'] ?? 0) === 360,
+    'fikk ' . var_export($glemt['minutter'] ?? null, true));
 
 // En okt kan aldri telle mer enn taket, selv om den staar lenge aapen.
 $lang = DB::settInn('check_ins', [
@@ -819,6 +831,140 @@ foreach ($inne['synlige'] as $rad) {
 }
 sjekk('skjult medlem telles med', $skjultTelt);
 sjekk('skjult medlem vises ikke i lista', $skjultVist === false);
+
+// ── Stengetid klokka 23 ────────────────────────────────────────────────
+//
+// Eieren, 2. september: «Automatisk utstemplibg kl 23».
+//
+// Foer var regelen en VARIGHET — ti timer aapen — saa en som stemplet inn
+// klokka aatte om kvelden sto inne til seks neste morgen. Naa er det klokka
+// som avgjor. Testene under maaler nettopp det skillet: de holder oekter som
+// er kortere enn det gamle taket, og som likevel skal lukkes.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+
+// Inn kl. 20 i gaar: tre timer til stengetid. Kortere enn det gamle taket paa
+// ti, saa den gamle regelen ville latt den staa aapen.
+$kveld = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '20:00')]);
+Stempling::lukkGlemte();
+$k = DB::en('SELECT ut_tid, minutter, auto_lukket FROM check_ins WHERE id = :i', ['i' => $kveld]);
+sjekk('kveldsokt lukkes ved stengetid', (int) ($k['auto_lukket'] ?? 0) === 1);
+sjekk('kveldsokt teller til klokka 23, ikke til taket', (int) ($k['minutter'] ?? 0) === 180,
+    'fikk ' . var_export($k['minutter'] ?? null, true));
+sjekk('kveldsokta lukkes klokka 23 norsk tid',
+    (new DateTimeImmutable((string) $k['ut_tid'], new DateTimeZone('UTC')))
+        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i') === '23:00');
+
+// Inn etter stengetid: da er det neste kveld som gjelder, ikke den som var.
+$natt = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(2, '23:30')]);
+Stempling::lukkGlemte();
+$n = DB::en('SELECT ut_tid FROM check_ins WHERE id = :i', ['i' => $natt]);
+sjekk('innstemplet etter stengetid lukkes neste kveld',
+    substr((string) $n['ut_tid'], 0, 16) === substr($osloTilbake(1, '23:00'), 0, 16),
+    'fikk ' . var_export($n['ut_tid'] ?? null, true) . ', ventet ' . $osloTilbake(1, '23:00'));
+
+// ── Glemt aa stemple ut: klokkeslettet man faktisk gikk ────────────────
+//
+// Eieren, 2. september: «Og mulighet aa legge til klokkeslett naar de faktisk
+// gikk». Spurt om hvem: «Begge — medlemmet og du». Begge veier inn gaar
+// gjennom denne, saa de kan ikke skille lag.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+$rettes = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+Stempling::lukkGlemte();
+sjekk('okta staar som lukket av systemet foer rettinga',
+    (int) DB::verdi('SELECT auto_lukket FROM check_ins WHERE id = :i', ['i' => $rettes]) === 1);
+
+$r = Stempling::rettUtKlokke($testMedlem, '14:00');
+sjekk('rettinga gaar gjennom', ($r['ok'] ?? false) === true, ($r['feil'] ?? ''));
+sjekk('rettinga regner minutter fra innstemplinga', ($r['minutter'] ?? 0) === 240,
+    'fikk ' . var_export($r['minutter'] ?? null, true));
+$rr = DB::en('SELECT ut_tid, minutter, auto_lukket FROM check_ins WHERE id = :i', ['i' => $rettes]);
+sjekk('rettinga setter klokkeslettet i norsk tid',
+    (new DateTimeImmutable((string) $rr['ut_tid'], new DateTimeZone('UTC')))
+        ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i') === '14:00');
+sjekk('merket om automatisk lukking fjernes naar et menneske retter',
+    (int) ($rr['auto_lukket'] ?? 1) === 0);
+
+sjekk('rettinga avviser tull i klokkeslettet',
+    (Stempling::rettUtKlokke($testMedlem, '25:00')['ok'] ?? true) === false
+    && (Stempling::rettUtKlokke($testMedlem, 'i gaar')['ok'] ?? true) === false
+    && (Stempling::rettUtKlokke($testMedlem, '')['ok'] ?? true) === false);
+
+// Skrivefeil skal ikke bli et doegn. Inn kl. 10, skrevet 09:00 — det kan ikke
+// vaere ni dagen etter, for da hadde verkstedet stengt for lengst.
+sjekk('et klokkeslett foer innstemplinga avvises',
+    (Stempling::rettUtKlokke($testMedlem, '09:00')['ok'] ?? true) === false);
+sjekk('okta staar urort etter et avvist klokkeslett',
+    (int) DB::verdi('SELECT minutter FROM check_ins WHERE id = :i', ['i' => $rettes]) === 240);
+
+// Grensa gaar ved stengetid, ogsaa oppover: kom man kl. 22 og skriver 00:30,
+// hadde verkstedet stengt en og en halv time for. Da er det ikke et
+// klokkeslett vi kan skrive inn.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '22:00')]);
+sjekk('et klokkeslett etter stengetid avvises',
+    (Stempling::rettUtKlokke($testMedlem, '00:30')['ok'] ?? true) === false);
+
+// ... men den som stemplet inn ETTER stengetid, gikk naturligvis etter
+// midnatt. Da er stengetida neste kveld, og klokkeslettet hoerer til der.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '23:30')]);
+$rs = Stempling::rettUtKlokke($testMedlem, '01:00');
+sjekk('gikk man etter midnatt, teller det som samme okt', ($rs['minutter'] ?? 0) === 90,
+    'fikk ' . var_export($rs['minutter'] ?? null, true) . ' ' . ($rs['feil'] ?? ''));
+
+// Taket staar. Eieren, spurt om hva som skal trekkes: «Behold taket paa 6
+// timer». Inn kl. 10, gikk kl. 22 — tolv timer, seks telles.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+sjekk('rettinga holder seg innenfor taket paa seks timer',
+    (Stempling::rettUtKlokke($testMedlem, '22:00')['minutter'] ?? 0) === 360);
+
+// ── Vinduet for rettinga ───────────────────────────────────────────────
+//
+// Rettinga fjerner merket om automatisk lukking — det var jo et menneske som
+// satte klokkeslettet. Sto regelen paa det merket alene, kunne feltet bare
+// brukes én gang, og den som skrev 15:00 i stedet for 16:00 satt igjen med
+// feilen. Derfor gaar vinduet paa naar oekta tok slutt.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+Stempling::lukkGlemte();
+sjekk('rettinga kan gjores om igjen',
+    (Stempling::rettUtKlokke($testMedlem, '15:00')['minutter'] ?? 0) === 300
+    && (Stempling::rettUtKlokke($testMedlem, '16:00')['minutter'] ?? 0) === 360,
+    'andre forsok: ' . var_export(Stempling::rettUtKlokke($testMedlem, '16:00'), true));
+
+// En oekt fra i forfjor er ikke «jeg glemte aa stemple ut» lenger.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::settInn('check_ins', [
+    'member_id' => $testMedlem,
+    'inn_tid'   => $osloTilbake(4, '10:00'),
+    'ut_tid'    => $osloTilbake(4, '13:00'),
+    'minutter'  => 180,
+]);
+sjekk('en gammel okt kan ikke rettes', (Stempling::sisteOkt($testMedlem)['kanRettes'] ?? true) === false);
+sjekk('… og endepunktet slipper den heller ikke gjennom',
+    (Stempling::rettUtKlokke($testMedlem, '14:00')['ok'] ?? true) === false);
+sjekk('… og lar minuttene staa', (int) DB::verdi(
+    'SELECT minutter FROM check_ins WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+    ['m' => $testMedlem]) === 180);
+
+// En apen okt kan alltid rettes, uansett hvor lenge den har staatt.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(9, '10:00')]);
+sjekk('en apen okt kan alltid rettes', (Stempling::sisteOkt($testMedlem)['kanRettes'] ?? false) === true);
+
+// Ingen oekt aa rette: en beskjed, ikke en krasj.
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
+sjekk('retting uten en okt gir beskjed',
+    (Stempling::rettUtKlokke($testMedlem, '14:00')['ok'] ?? true) === false);
+sjekk('siste okt er null naar det ikke finnes noen', Stempling::sisteOkt($testMedlem) === null);
+
+// Skjermen leser «siste»: den bestemmer om «Glemt aa stemple ut» staar der.
+$s1 = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(0, '09:00')]);
+$so = Stempling::sisteOkt($testMedlem);
+sjekk('siste okt peker paa den apne', ($so['id'] ?? 0) === $s1 && $so !== null && $so['ut_tid'] === null);
+sjekk('en apen okt er ikke merket som automatisk lukket', ($so['auto'] ?? true) === false);
+DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
 
 sjekk('varighet skrives paa norsk', Stempling::varighet(80) === '1 t 20 min'
     && Stempling::varighet(45) === '45 min' && Stempling::varighet(120) === '2 t');

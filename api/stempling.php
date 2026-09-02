@@ -5,6 +5,7 @@
  *   GET                     status: er jeg inne, hvor lenge, hvor mange timer
  *                           er brukt denne maaneden, og hvem er der naa
  *   POST handling=inn|ut    stempler inn eller ut
+ *   POST handling=glemt     { tid }  klokkeslettet man faktisk gikk, «14:30»
  *   POST visMeg=ja|nei      om navnet skal vises for de andre medlemmene
  *
  * Krever aktivt medlemskap. Innstempling trekker timer fra abonnementet, og
@@ -56,6 +57,24 @@ if (Foresporsel::metode() === 'POST') {
         if ($min !== null) {
             revider('stemplet_ut', 'member', $id, ['minutter' => $min]);
         }
+    } elseif ($handling === 'glemt') {
+        // ── Glemt aa stemple ut ─────────────────────────────────────────
+        //
+        // Eieren, 2. september: «Naar et medlem glemmer aa stemple ut, kan vi
+        // legge til knappen glemt aa stemple ut. Og mulighet aa legge til
+        // klokkeslett naar de faktisk gikk.»
+        //
+        // Klokkeslettet kommer som «14:30» i norsk tid. Regnestykket ligger i
+        // Stempling — verkstedet kan gjore det samme fra medlemsruta, og to
+        // kopier av det ville skilt lag.
+        $klokke = trim(Foresporsel::tekst('tid'));
+        $svar = Stempling::rettUtKlokke($id, $klokke);
+        if (!$svar['ok']) {
+            Svar::feil((string) ($svar['feil'] ?? 'Fikk ikke rettet økta.'));
+        }
+        revider('stempling_rettet', 'member', $id, [
+            'okt' => $svar['id'] ?? 0, 'tid' => $klokke, 'minutter' => $svar['minutter'] ?? 0,
+        ]);
     } elseif ($visMeg === '') {
         Svar::feil('Ukjent handling.');
     }
@@ -78,6 +97,7 @@ if (Foresporsel::metode() === 'POST') {
 $medlem = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]) ?? $medlem;
 
 $apen = Stempling::apenOkt($id);
+$siste = Stempling::sisteOkt($id);
 $brukt = Stempling::minutterDenneManeden($id);
 $perMnd = Medlemskap::timerFor($medlem);
 $inne = Stempling::inneNa();
@@ -129,6 +149,24 @@ Svar::json([
         'perMnd'   => $perMnd,
         'igjen'    => $perMnd === null ? null : max(0, round(($perMnd * 60 - $brukt) / 60 * 10) / 10),
         'andel'    => $perMnd === null || $perMnd === 0 ? 0 : min(100, (int) round($brukt / ($perMnd * 60) * 100)),
+    ],
+    // ── Den siste oekta ─────────────────────────────────────────────────
+    //
+    // «Glemt aa stemple ut» staar bare naar det er noe aa rette: en oekt som
+    // gaar naa, eller en som tok slutt det siste doegnet. Er den eldre, er
+    // det verkstedet som maa inn — se Stempling::sisteOkt().
+    'siste' => $siste === null || !$siste['kanRettes'] ? null : [
+        'id'   => $siste['id'],
+        'auto' => $siste['auto'],
+        'apen' => $siste['ut_tid'] === null,
+        // Dagen og klokkeslettene i norsk tid, saa skjermen kan si «du
+        // stemplet inn 10:15 i dag» uten aa regne om selv.
+        'dag'  => Booking::norskDatoKort($siste['inn_tid']),
+        'inn'  => (new DateTimeImmutable($siste['inn_tid'], new DateTimeZone('UTC')))
+            ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i'),
+        'ut'   => $siste['ut_tid'] === null ? '' :
+            (new DateTimeImmutable($siste['ut_tid'], new DateTimeZone('UTC')))
+                ->setTimezone(new DateTimeZone('Europe/Oslo'))->format('H:i'),
     ],
     'inne' => [
         'antall'  => $inne['antall'],

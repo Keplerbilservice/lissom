@@ -35,7 +35,7 @@ final class Apent
     /**
      * Hvor lenge én plass varer.
      *
-     * Lissom 27. august: «endre drop in og paint on pots fra 2 timer, til
+     * Lissom 27. august: «endre ... paint on pots fra 2 timer, til
      * 1,5 timer».
      */
     public const PLASS_MINUTTER = 90;

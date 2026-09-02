@@ -3997,6 +3997,13 @@ foreach (['app', 'api'] as $mappe) {
 }
 sjekk('ingen PHP-fil nevner drop-in',
     $phpMedDropin === [], implode(', ', $phpMedDropin));
+// Og hovedfila. Her sto «DROP-IN · HELE UKA · 7 GJESTER» igjen i demodataene
+// og slapp gjennom til lissom.no, fordi jeg lette etter «drop-in» og
+// «Drop-in» — ikke versaler. Sjekken leter uten aa skille paa store og smaa,
+// og taaler baade «drop-in» og «drop in».
+sjekk('… og hovedfila nevner det ikke, uansett hvordan det skrives',
+    preg_match('~drop.?in~i', $sida2) === 0,
+    (string) (preg_match('~.{0,50}drop.?in.{0,50}~i', $sida2, $t) ? $t[0] : ''));
 // Endepunktet som satte opp tidene, reglene og prisen.
 sjekk('… og api/admin/dropin.php finnes ikke',
     !file_exists($rotDi . '/api/admin/dropin.php'));

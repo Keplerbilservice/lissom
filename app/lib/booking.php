@@ -283,7 +283,7 @@ final class Booking
                     --
                     -- Et planlagt kurs holder plasstallet sitt, ikke bare de
                     -- solgte plassene. Eieren, 30. august: «det maa ikke vaere
-                    -- mulig aa booke drop in eller dreieskive paa forhaand for
+                    -- mulig aa booke en plass eller dreieskive paa forhaand for
                     -- medlemmer naar det er planlagt kurs. Da er de ressursene
                     -- booket og opptatt med kurs.» Et dreiekurs med aatte
                     -- plasser tar alle aatte skivene i den tida det gaar, ogsaa

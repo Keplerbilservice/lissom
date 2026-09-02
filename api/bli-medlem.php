@@ -87,6 +87,19 @@ if ($plan === null) {
     Svar::feil('Velg hvilket medlemskap du vil ha.');
 }
 
+// ── Vilkaarene ─────────────────────────────────────────────────────────
+//
+// Eieren, 2. september: «er det mulig aa legge til godta vilkaar for man faar
+// kjopt et medlemskap?»
+//
+// Kravet staar her og ikke bare i skjemaet. Haken i nettleseren er en
+// hoeflighet mot den som fyller ut; det er dette kallet som avgjor om noen
+// blir medlem, og en knapp som er graa kan klikkes av andre enn nettleseren.
+$vilkaar = Foresporsel::tekst('vilkaar') === 'ja';
+if (!$vilkaar) {
+    Svar::feil('Du må godta medlemsvilkårene for å melde deg inn.');
+}
+
 // Fast trekk eller ikke.
 //
 // Krever planen fast trekk, er valget tatt — da er avtalen en forutsetning.
@@ -108,6 +121,29 @@ try {
     Svar::feil($e->getMessage());
 }
 
+// ── Det samme forsoeket to ganger ──────────────────────────────────────
+//
+// Eieren, 2. september: e-posten «Nytt medlem: Anniken Johnsgaard» kom to
+// ganger, og «Varsel maa sendes for haand» like saa — begge 20:42.
+//
+// Her sto ingen vakt. Kom kallet to ganger — et dobbeltklikk, tilbakeknappen
+// fra Vipps, et nettverk som proevde paa nytt — gikk begge gjennom, og det
+// andre lagde en avtale til i Vipps, en soknadsrad til og alle varslene om
+// igjen. To avtaler er verre enn to e-poster: det er to trekk.
+//
+// startAvtale() og startEngangs() svarer naa med det foerste forsoeket naar
+// det er under fem minutter gammelt. Da skal ingenting av det under skje én
+// gang til: soekeren sendes videre til den samme adressen i Vipps, og
+// verkstedet faar ikke beskjed om et medlem det alt har faatt beskjed om.
+if (!empty($avtale['gjentakelse'])) {
+    revider('medlemsinnmelding_gjentatt', 'subscription', (int) $avtale['id'], ['type' => $type]);
+    Svar::ok([
+        'status'  => 'betaler',
+        'url'     => $avtale['url'],
+        'beskjed' => 'Du er på vei til Vipps.',
+    ]);
+}
+
 // Innmeldingen lagres fortsatt i «membership_applications», men ikke som noe
 // som venter paa svar: den staar som godkjent med det samme. Tabellen er
 // historikken over hvem som har meldt seg inn, med erfaring og melding — den
@@ -123,7 +159,12 @@ $id = DB::settInn('membership_applications', [
     'melding'      => $melding !== '' ? $melding : null,
     'status'       => 'godkjent',
     'behandlet_at' => gmdate('Y-m-d H:i:s'),
-]);
+] + (DB::harKolonne('membership_applications', 'vilkaar_godtatt_at') ? [
+    // Naar vilkaarene ble godtatt, og hvilken utgave som gjaldt da. En hake
+    // som bare laaser opp en knapp er ikke noe bevis; dette er det.
+    'vilkaar_godtatt_at' => gmdate('Y-m-d H:i:s'),
+    'vilkaar_versjon'    => Medlemskap::VILKAAR_VERSJON,
+] : []));
 
 // Og den gamle soknaden, om det laa en. Den er ikke lenger til behandling.
 if ($gammel !== null) {
@@ -177,7 +218,19 @@ revider('medlemsinnmelding', 'membership_application', $id, ['type' => $type, 'b
 Svar::ok([
     'status'  => 'betaler',
     'url'     => $avtale['url'],
+    // ── Naar gaar pengene? ─────────────────────────────────────────────
+    //
+    // Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden
+    // her. Saa ut til aa fungere greit. Men pengene er fremdeles paa min
+    // konto.»
+    //
+    // Her sto bare «saa er du i gang». Fast trekk i Vipps er en fullmakt, ikke
+    // en betaling: trekket bes om av cron, og Vipps krever at kunden varsles
+    // for det skjer — saa forfallet ligger tre dager fram. En som nettopp har
+    // vaert gjennom Vipps leser «du er i gang» som «jeg har betalt», sjekker
+    // kontoen, og skriver til verkstedet.
     'beskjed' => $betaling === 'trekk'
-        ? 'Godkjenn betalingsavtalen i Vipps, så er du i gang.'
+        ? 'Godkjenn betalingsavtalen i Vipps, så er du i gang. '
+          . 'Første trekk kommer om noen dager — du får en e-post fra oss først.'
         : 'Betal i Vipps, så er du i gang.',
 ]);

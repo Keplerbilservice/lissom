@@ -2124,15 +2124,31 @@ window.__resources = {
               <sc-for list="{{ bOmAvsnitt }}" as="a" hint-placeholder-count="2">
                 <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ a.tekst }}</p>
               </sc-for>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
-              <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">
-                <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">
-                  <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">
-                    <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">{{ f.merke }}</div>
-                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ f.verdi }}</div>
-                  </div>
-                </sc-for>
-              </div>
+              <!-- Linja og faktaboksene hoerer til kursene.
+                   Sida brukes ogsaa naar man klikker seg inn paa et
+                   medlemskap, og der sa boksen «Varighet · 30 timer i
+                   maaneden» — det samme som staar to linjer over — mens linja
+                   sa «Passer for: Alle — ingen forkunnskaper nodvendig», en
+                   reservetekst som gjelder kurs.
+                   Eieren, 2. september: «firkanten som er paa alle kurs naa,
+                   med Varighet 30 timer i maaneden skal jeg ikke ha» og «jeg
+                   vil heller ikke ha med dette, Passer for: Alle — ingen
+                   forkunnskaper nodvendig». Bare paa medlemskapene; paa
+                   kursene er Nivaa, Varighet, Du laerer og Med hjem felt som
+                   fylles ut i kursoppsettet. -->
+              <sc-if value="{{ bVisPasserFor }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
+              </sc-if>
+              <sc-if value="{{ bVisFakta }}" hint-placeholder-val="{{ true }}">
+                <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">
+                  <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">
+                    <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">
+                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">{{ f.merke }}</div>
+                      <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ f.verdi }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
               <div style="display: flex; flex-direction: column; gap: 10px; max-width: 52ch;">
                 <sc-for list="{{ bookingPunkter }}" as="p" hint-placeholder-count="4">
                   <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);">
@@ -3707,10 +3723,22 @@ window.__resources = {
                   <sc-if value="{{ bmFeil }}" hint-placeholder-val="{{ false }}">
                     <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ bmFeil }}</div>
                   </sc-if>
+                  <!-- Vilkaarene godtas for man melder seg inn, ikke etter.
+                       Her sto bare en graa linje under knappen. Ingen
+                       bekreftelse, ingenting lagret — og ingen kunne i
+                       ettertid vise at medlemmet hadde sett den.
+                       Eieren, 2. september: «er det mulig aa legge til godta
+                       vilkaar for man faar kjopt et medlemskap?»
+                       Samme grep som paa kursbookingen: haken laaser knappen,
+                       og «Les vilkaarene» staar rett under. -->
                   <div>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg godtar medlemsvilkårene" checked="{{ bmVilkaarOk }}" on-change="{{ toggleBmVilkaar }}" hint-size="100%,24px"></x-import>
+                    <button type="button" onClick="{{ goVilkar }}" style="appearance: none; background: transparent; border: none; padding: 0; margin: 6px 0 0 32px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Les vilkårene</button>
                   </div>
-                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ bmVilkar }}</p>
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmVilkar }}</p>
+                  <div>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
+                  </div>
                 </div>
               </sc-if>
             </div>
@@ -7386,6 +7414,24 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Punkter — ett per linje</label>
                   <textarea value="{{ plPunkter }}" onChange="{{ settPlPunkter }}" rows="5" placeholder="30 verkstedtimer i måneden&#10;Egen hylle i verkstedet&#10;Tilgang 24/7 med dørkode" style="{{ plOmradeStil }}"></textarea>
+                  <div style="{{ plHjelp }}">Står både på kortet og på siden man kommer til når man klikker seg inn.</div>
+                </div>
+
+                <!-- Den utfyllende teksten (migrasjon 127).
+                     Beskrivelsen over er én setning paa kortet og rommer 400
+                     tegn. Eieren, 2. september: «jeg vil ha utvidet info paa
+                     medlemskapene» — seks avsnitt som hoerer hjemme paa sida
+                     man kommer til, ikke paa kortet. -->
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Utfyllende informasjon</label>
+                  <textarea value="{{ plLangtekst }}" onChange="{{ settPlLangtekst }}" rows="12" placeholder="Basis 30 – frihet til å skape, når det passer deg&#10;&#10;Basis 30 er vårt mest populære medlemskap …&#10;&#10;Med dette medlemskapet får du 30 verkstedtimer hver måned …" style="{{ plOmradeStil }}"></textarea>
+                  <div style="{{ plHjelp }}">Står på siden man kommer til når man klikker seg inn på medlemskapet. La en tom linje stå mellom avsnittene — de settes som egne avsnitt.</div>
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Viktig å vite — ett per linje</label>
+                  <textarea value="{{ plViktig }}" onChange="{{ settPlViktig }}" rows="4" placeholder="Krever kurs hos oss eller tidligere erfaring&#10;2 måneders bindingstid ved oppstart&#10;Leire, glassur og brenning kjøpes i tillegg" style="{{ plOmradeStil }}"></textarea>
+                  <div style="{{ plHjelp }}">Egen bolk nederst på medlemskapssiden. Står tom om du ikke skriver noe.</div>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
@@ -7398,10 +7444,27 @@ window.__resources = {
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">På nettsiden: <em>{{ plPasserForVis }}</em></p>
                 </div>
 
+                <!-- Bildet velges, ikke skrives.
+                     Her sto et tekstfelt der filnavnet maatte skrives av for
+                     haand fra Nettsiden → Bilder. Eieren, 2. september: «jeg
+                     vil ogsaa ha mulighet aa legge ut bilder direkte i dette
+                     bildet, ikke slik det er naa hvor det staar Bilde /
+                     uploads_shutterstock_2829103797.jpg».
+                     Dette er den samme billedvelgeren kurs, varer, artikler
+                     og referansekunder bruker — der ligger ogsaa opplasting
+                     av egne bilder. -->
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Bilde</label>
-                  <input value="{{ plBilde }}" onChange="{{ settPlBilde }}" placeholder="uploads_shutterstock_2829103797.jpg" style="{{ plFeltStil }}">
-                  <div style="{{ plHjelp }}">Filnavnet på bildet slik det heter under Nettsiden → Bilder.</div>
+                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: 6px;">
+                    <div style="{{ plBildeStil }}"></div>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ plVelgBilde }}" hint-size="auto,38px">{{ plBildeKnapp }}</x-import>
+                      <sc-if value="{{ plHarBilde }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ plFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <div style="{{ plHjelp }}">Står øverst på kortet og på medlemskapssiden. Uten bilde velger nettsiden ett fra biblioteket.</div>
                 </div>
               </div>
             </div>
@@ -7903,6 +7966,18 @@ window.__resources = {
                       </div>
                     </sc-if>
                   </div>
+                </div>
+                <!-- Om kurset i det hele tatt skal ligge ute.
+                     Basen kjente forskjell paa «kladd» og «publisert» hele
+                     tida, og kurslista skriver «Ikke publisert» — men
+                     skjemaet sendte alltid «publisert», saa det fantes ingen
+                     vei tilbake. Et kurs kunne bare tas ned ved aa slette
+                     det, og da fulgte datoene med. -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">14 · Publisering</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Om kurset skal være synlig for kundene. Datoene, påmeldingene og alt du har skrevet blir stående uansett.</p>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Publisert på nettsiden" checked="{{ kPublisert }}" on-change="{{ toggleKPublisert }}" hint-size="auto,28px"></x-import>
+                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">{{ kPublisertTekst }}</p>
                 </div>
               </div>
               </sc-if>
@@ -10449,7 +10524,26 @@ window.__resources = {
                   <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
                 </div>
               </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side.</p>
+              <!-- Et medlem som ikke skal betale.
+                   Eieren, 2. september: «jeg vil ogsaa ha mulighet til aa
+                   opprette et medlem, og tildele de et av mine medlemskap
+                   uten at de maa betale». Selve innmeldingen har alltid vaert
+                   uten betalingskrav — det som manglet var aa kunne SI det,
+                   saa personen ikke staar roedt i lista for alltid.
+                   Skjemaet staar to steder, paa Medlemmer og paa Deltakere,
+                   og deler verdiene. Endres det ene, maa det andre foelge. -->
+              <label style="{{ miAvkryss }}">
+                <input type="checkbox" checked="{{ miFri }}" onChange="{{ vekslMiFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Betaler ikke — medlemskapet er gratis for denne personen
+              </label>
+              <sc-if value="{{ miFri }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="{{ miEtikett }}">Hvorfor?</label>
+                  <input value="{{ miFriGrunn }}" onChange="{{ settMiFriGrunn }}" placeholder="F.eks. bytter mot dugnad, æresmedlem" style="{{ miFeltStil }}">
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Står på medlemsraden, så den som ser lista om et halvt år skjønner hvorfor.</div>
+                </div>
+              </sc-if>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ miBetalingHjelp }}</p>
               <div>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ miLagre }}" hint-size="auto,44px">{{ miKnapp }}</x-import>
               </div>
@@ -10547,6 +10641,37 @@ window.__resources = {
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.linje }}</span>
                   </div>
                 </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Betalingen, oeverst i det som gjelder medlemskapet.
+                 Ruta viste alle betalingene under, men ikke svaret paa
+                 sporsmaalet man kommer hit med: er det gjort opp naa?
+                 Eieren, 2. september: «jeg kan ikke se paa min side paa et
+                 medlem om det er betalt for medlemskapet eller ikke».
+                 Haken under er den samme som i innmeldingsskjemaet, saa et
+                 gratismedlem kan settes ogsaa etterpaa. -->
+            <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                  <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
+                </div>
+                <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
+                </sc-if>
+                <label style="{{ personFriEtikett }}">
+                  <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
+                </label>
+                <sc-if value="{{ personFri }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-3);">
+                    <input value="{{ personFriGrunn }}" onChange="{{ settPersonFriGrunn }}" placeholder="Hvorfor? F.eks. bytter mot dugnad, æresmedlem" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  </div>
+                </sc-if>
+                <div style="margin-top: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
+                </div>
               </div>
             </sc-if>
 
@@ -11047,7 +11172,26 @@ window.__resources = {
                   <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
                 </div>
               </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side.</p>
+              <!-- Et medlem som ikke skal betale.
+                   Eieren, 2. september: «jeg vil ogsaa ha mulighet til aa
+                   opprette et medlem, og tildele de et av mine medlemskap
+                   uten at de maa betale». Selve innmeldingen har alltid vaert
+                   uten betalingskrav — det som manglet var aa kunne SI det,
+                   saa personen ikke staar roedt i lista for alltid.
+                   Skjemaet staar to steder, paa Medlemmer og paa Deltakere,
+                   og deler verdiene. Endres det ene, maa det andre foelge. -->
+              <label style="{{ miAvkryss }}">
+                <input type="checkbox" checked="{{ miFri }}" onChange="{{ vekslMiFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Betaler ikke — medlemskapet er gratis for denne personen
+              </label>
+              <sc-if value="{{ miFri }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="{{ miEtikett }}">Hvorfor?</label>
+                  <input value="{{ miFriGrunn }}" onChange="{{ settMiFriGrunn }}" placeholder="F.eks. bytter mot dugnad, æresmedlem" style="{{ miFeltStil }}">
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Står på medlemsraden, så den som ser lista om et halvt år skjønner hvorfor.</div>
+                </div>
+              </sc-if>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ miBetalingHjelp }}</p>
               <div>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ miLagre }}" hint-size="auto,44px">{{ miKnapp }}</x-import>
               </div>
@@ -11231,6 +11375,33 @@ window.__resources = {
                 </div>
               </sc-if>
 
+              <!-- Betalingen. Samme blokk som i ruta under Deltakere; ruta
+                   staar to steder og deler verdiene, saa endres det ene maa
+                   det andre foelge. -->
+              <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                  <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                    <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
+                    <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
+                  </div>
+                  <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
+                  </sc-if>
+                  <label style="{{ personFriEtikett }}">
+                    <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
+                  </label>
+                  <sc-if value="{{ personFri }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <input value="{{ personFriGrunn }}" onChange="{{ settPersonFriGrunn }}" placeholder="Hvorfor? F.eks. bytter mot dugnad, æresmedlem" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    </div>
+                  </sc-if>
+                  <div style="margin-top: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
+                  </div>
+                </div>
+              </sc-if>
+
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                    etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -11281,11 +11452,29 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.trekkTekst }}</div>
                   </div>
                 </sc-if>
+                <!-- Har hun betalt?
+                     Her sto bare «Fast trekk» eller «Gjor opp selv» — det er
+                     betalingsMAATEN, og den sier ingenting om penger. Eieren,
+                     2. september: «jeg kan ikke se paa min side paa et medlem
+                     om det er betalt for medlemskapet eller ikke».
+                     Roedt fra den dagen betalingen skulle kommet, slik eieren
+                     valgte. Et medlem som er fritatt staar graat, aldri roedt. -->
+                <sc-if value="{{ m.harBetaling }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex: 0 1 200px; min-width: 0;">
+                    <span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.betalingTekst }}</div>
+                  </div>
+                </sc-if>
                 <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 130px; min-width: 105px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ m.barStil }}"></div>
                   </div>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
+                  <div style="min-width: 0;">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
+                    <sc-if value="{{ m.harTimerIgjen }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timerIgjen }}</div>
+                    </sc-if>
+                  </div>
                 </div>
                 <div style="margin-left: auto; flex: 0 0 auto;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
@@ -16516,6 +16705,10 @@ class Component extends DCLogic {
           passerFor: p.passerFor || '',
           bilde: bilde,
           fremhevet: !!p.fremhevet,
+          // Den utfyllende teksten og «Viktig aa vite» (migrasjon 127).
+          // Tomme paa en plan som ikke har faatt tekst — da staar sida som for.
+          langtekst: p.langtekst || '',
+          viktig: (p.viktig && p.viktig.length) ? p.viktig : [],
           // Proveperioden kan bare kjopes én gang.
           brukt: !!p.engangs && !!this.state.innlogget,
         };
@@ -18452,6 +18645,31 @@ class Component extends DCLogic {
       });
   }
 
+  /**
+   * Faktaboksene over punktlista: Nivaa, Varighet, Du laerer, Med hjem.
+   *
+   * Ligger her og ikke i verdilista fordi to steder leser den: «bFakta»
+   * tegner radene, og «bVisFakta» avgjor om ramma rundt dem skal staa i det
+   * hele tatt. Sto regnestykket to ganger, kunne ramma staatt tom.
+   */
+  bFaktaRader() {
+      const k = this.state.valgtKurs || {};
+      const kort = t => String(t || '').split(/[.\n]/)[0].trim();
+      return [
+        { merke: 'Nivå', verdi: k.nivaaTekst || '' },
+        { merke: 'Varighet', verdi: k.duration || '' },
+        // Boksene er smale. «Innføring i plateteknikk og dekor» staar her;
+        // hele setningen staar under «Dette lærer du». Foerste setning av
+        // den lange teksten brakk boksen i fem linjer.
+        { merke: 'Du lærer', verdi: k.laererKort || kort(k.laererTekst) },
+        // Sto som kort(k.lagerDu): faktaboksen leste «Dette lager du»
+        // mens avsnittet under leste «Dette faar du med hjem». To felt for
+        // én ting, og det forste har ikke lenger et felt i kursoppsettet —
+        // da hadde boksen blitt staaende paa en tekst ingen kunne rette.
+        { merke: 'Med hjem', verdi: kort(k.medHjem) },
+      ].filter(f => f.verdi !== '');
+  }
+
   /** Gir en gave til ett medlem eller til alle. Skjermen «Gi gave» i admin. */
   sendGave() {
     if ((this.state.gMottaker || 'Alle medlemmer') === 'Ett medlem' && !this.state.gMedlem) {
@@ -18888,7 +19106,12 @@ class Component extends DCLogic {
 
   medlemsplaner() {
     const fra = this.state.planListe || [];
-    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '', fastTrekk: !!p.fastTrekk }));
+    // Bindingstida og oppsigelsen foelger med: innmeldinga skal si det som
+    // gjelder DET medlemskapet man velger, ikke det samme til alle.
+    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '',
+      fastTrekk: !!p.fastTrekk,
+      binding: p.binding === undefined ? 2 : p.binding,
+      oppsigelse: p.oppsigelse === undefined ? 1 : p.oppsigelse }));
     return [{ navn: 'Prøv Lissom' }, { navn: 'Basis 30' },
             { navn: 'Årsmedlemskap' }, { navn: 'Fri tilgang' }];
   }
@@ -18918,6 +19141,10 @@ class Component extends DCLogic {
       this.setState({ bmFeil: 'Vi trenger en e-postadresse vi kan svare på.' });
       return;
     }
+    if (!this.state.bmVilkaarOk) {
+      this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å melde deg inn.' });
+      return;
+    }
     if (this._soknadPagaar) return;
     this._soknadPagaar = true;
 
@@ -18931,6 +19158,7 @@ class Component extends DCLogic {
         epost: epost,
         erfaring: (this.state.bmErfaring || '').trim(),
         melding: (this.state.bmMelding || '').trim(),
+        vilkaar: this.state.bmVilkaarOk ? 'ja' : 'nei',
       }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
@@ -19778,6 +20006,16 @@ class Component extends DCLogic {
     if (!this.state.bildeliste) this.hentBilder();
   }
 
+  /**
+   * Endrer ett felt i medlemskapsskjemaet.
+   *
+   * Samme grep som endreReferanse(): billedvelgeren maa kunne skrive i
+   * skjemaet, og en ny plan finnes ikke paa serveren foer den er lagret.
+   */
+  endrePlan(endring) {
+    this.setState(st => ({ plRed: Object.assign({}, st.plRed || {}, endring) }));
+  }
+
   /** Endrer ett felt i referansekunde-skjemaet. */
   endreReferanse(endring) {
     this.setState(st => ({
@@ -19883,6 +20121,12 @@ class Component extends DCLogic {
       });
       return;
     }
+    // Medlemskapet lagres naar skjemaet lagres, av samme grunn som
+    // referansekunden under: en ny plan finnes ikke paa serveren enda.
+    if (v.slag === 'plan') {
+      this.endrePlan({ bilde: url || '' });
+      return;
+    }
     // Referansekunden lagres naar skjemaet lagres, ikke med det samme: en ny
     // kunde har ingen id aa lagre paa foer den er opprettet.
     if (v.slag === 'referanse') {
@@ -19970,6 +20214,9 @@ class Component extends DCLogic {
     // kanskje ikke lagret ennaa.
     const valgt = (v && v.slag === 'kurs')
       ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
+      : (v && v.slag === 'plan')
+        ? { tittel: (this.state.plRed || {}).navn || 'medlemskapet',
+            bilde: (this.state.plRed || {}).bilde || '' }
       : (v && v.slag === 'markedbilde')
         ? { tittel: { artikkel: 'artikkelen', brev: 'nyhetsbrevet', sosialt: 'innlegget' }[v.felt] || 'utkastet',
             bilde: this.state[{ artikkel: 'mkArtBilde', brev: 'mkBrevBilde', sosialt: 'mkSosBilde' }[v.felt]] || '' }
@@ -21009,9 +21256,33 @@ class Component extends DCLogic {
         this.meldFeil({ feiltekst: 'Fikk ikke lastet ' + String(mal.tagName).toLowerCase(), kilde: url });
         return;
       }
+      // ── «Script error.» ────────────────────────────────────────────
+      //
+      // Eieren, 2. september, fra Min side paa iPhone: «Fanget automatisk —
+      // Script error.» og ikke et ord mer.
+      //
+      // Det er ikke en feil vi kan slaa opp: nettleseren nekter aa si hva som
+      // skjedde naar unntaket kom fra et skript den regner som et annet
+      // nettsted. Da staar meldinga tom, og fil, linje og kolonne likesaa.
+      // Paa lissom.no kan det bare komme to steder fra: Google Analytics —
+      // det eneste skriptet vi henter utenfra, og bare naar en maale-ID er
+      // satt under Markedsforing OG besokende har sagt ja til
+      // informasjonskapsler — eller noe i selve nettleseren, som en
+      // annonseblokker eller en utvidelse.
+      //
+      // Rapporten sa ingen av delene, og da leter man etter en feil i egen
+      // kode som ikke finnes. Naa staar det hva det betyr, og om analysen
+      // faktisk kjorte i det oyeblikket — det er forskjellen paa de to.
+      const melding = String((e && e.message) || 'Ukjent feil');
+      const skjult = melding === 'Script error.' || melding === 'Script error';
       this.meldFeil({
-        feiltekst: String((e && e.message) || 'Ukjent feil'),
-        kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno : '',
+        feiltekst: skjult
+          ? 'Script error. — nettleseren skjuler detaljene. Feilen kom fra et '
+            + 'skript utenfra, ikke fra sida selv.'
+          : melding,
+        kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno
+          : (skjult ? (this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'
+                                    : 'Analysen kjørte ikke — trolig en utvidelse i nettleseren') : ''),
       });
     };
     // Ressursfeil bobler ikke — de maa fanges paa vei ned.
@@ -22666,6 +22937,7 @@ class Component extends DCLogic {
       navn, type: this.state.kType || 'Kurs',
       kategori: this.state.kKategori || '',
       utenDato: !!this.state.kUtenDato,
+      publisert: this.state.kPublisert !== false,
       pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr.' + ' ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
       gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
       pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
@@ -22709,7 +22981,8 @@ class Component extends DCLogic {
       if (idx >= 0) { nytt.pameldte = alle[idx].pameldte; nytt.andel = alle[idx].andel; alle[idx] = nytt; } else { alle.push(nytt); }
       const pub = this.tilPublisert(nytt);
       const nye = (s.nyeKurs || []).filter(k => k.title !== (idx >= 0 ? (this.kursData()[idx] || {}).navn : navn) && k.title !== navn);
-      return { adminKursListe: alle, kRed: behold ? s.kRed : false, nyeKurs: nye.concat([pub]),
+      return { adminKursListe: alle, kRed: behold ? s.kRed : false,
+               nyeKurs: nytt.publisert === false ? nye : nye.concat([pub]),
                kvittering: navn + ' er lagret' };
     });
   }
@@ -22762,7 +23035,15 @@ class Component extends DCLogic {
             if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
             return m;
           }, {}),
-        status: 'publisert',
+        // Publisert-bryteren i steg 1. Her sto 'publisert' fast, saa et kurs
+        // som var tatt ned kom ut igjen i det du rettet en skrivefeil.
+        //
+        // Et avlyst kurs beholder «avlyst» naar bryteren staar av. Gjorde vi
+        // det om til en kladd, ville vi mistet at det var avlyst — og det er
+        // to forskjellige ting, ogsaa i basen.
+        status: rad.publisert === false
+          ? ((eksisterende && eksisterende.status === 'avlyst') ? 'avlyst' : 'kladd')
+          : 'publisert',
         // «Vis kurset uten datoer, med Kontakt oss». Haken lagret bare rett
         // til serveren, og et kurs som ikke er opprettet ennaa har ingen id
         // aa lagre paa — da lot den seg ikke huke av i det hele tatt.
@@ -24612,6 +24893,9 @@ class Component extends DCLogic {
       // Ressursen kurset deler med alt annet som gaar samtidig.
       kRessursId: raa.ressursId || 0,
       kUtenDato: !!raa.visUtenDato,
+      // Ligger kurset ute? Statusen staar paa den raa raden. Et avlyst kurs
+      // staar ogsaa som «ikke publisert» her — det er det det er ute.
+      kPublisert: (raa.status || 'publisert') === 'publisert',
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
@@ -29106,6 +29390,7 @@ class Component extends DCLogic {
     const noekkel = id > 0 ? 'm' + id : 'b' + bookingId;
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
+      personFri: null, personFriGrunn: null,
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
       // gjenkjennes paa; disse to er det handlingene trenger.
       personMedlemId: id > 0 ? id : 0,
@@ -29268,6 +29553,10 @@ class Component extends DCLogic {
         telefon: (this.state.miTlf || '').trim(),
         type: type,
         notat: (this.state.miNotat || '').trim(),
+        // Haken settes med det samme, saa den som melder inn et gratismedlem
+        // slipper aa gaa inn paa personen etterpaa for aa si det.
+        betalerIkke: this.state.miFri ? 'ja' : 'nei',
+        betalerIkkeGrunn: (this.state.miFriGrunn || '').trim(),
       }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
@@ -29385,10 +29674,45 @@ class Component extends DCLogic {
           : (m.bundet ? 'var(--lissom-brown)' : '#3E6B36'),
       },
       trekkTekst: m.fastTrekk ? 'Fast trekk' : 'Gjør opp selv',
+      // ── Betalt eller ikke ──────────────────────────────────────────
+      //
+      // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
+      // saa denne lista og tallet paa Oversikt ikke kan svare hver sitt om
+      // den samme personen. Her staar bare fargen og ordet.
+      harBetaling: !!m.betaling && m.betaling !== 'ingen',
+      betalingTilstand: m.betaling || 'ingen',
+      // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
+      // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
+      // her, ville verkstedet trodd noe var gjort opp som ikke var det.
+      betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
+                       forfalt: 'Forfalt', venter: 'Ikke betalt' }[m.betaling] || '',
+      betalingTekst: m.betalingTekst || '',
+      betalingForfalt: !!m.betalingForfalt,
+      erFritatt: m.betaling === 'fri',
+      betalingStil: (() => {
+        // Samme form som bindingslappen rett over, saa de to leses som ett
+        // par og ikke som to forskjellige ideer.
+        const F = {
+          fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+          betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+          bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
+          forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+          venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+        }[m.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
+        return {
+          fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+          textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
+          whiteSpace: 'nowrap', background: F[0], color: F[1],
+        };
+      })(),
       abonnement: m.medlemskap || 'Ingen',
       // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
       // viser bare hvor mye som er brukt.
+      // «22 av 30» er brukt av taket. «igjen» staar i teksten under, fordi det
+      // er det man vil vite naar noen ringer og spor om hen har tid igjen.
       timer: m.timer ? (m.bruktTimer + ' / ' + m.timer) : (m.bruktMin > 0 ? m.bruktTimer + ' t' : '—'),
+      timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',
+      harTimerIgjen: !!m.timerIgjen,
       andel: m.timer ? Math.min(100, Math.round((m.bruktMin || 0) / (m.timer * 60) * 100)) : 0,
       status: m.erInne ? 'Inne nå' : (tekst[m.status] || m.status),
       tone: m.erInne ? 'success' : (tone[m.status] || 'neutral'),
@@ -29736,7 +30060,13 @@ class Component extends DCLogic {
         const k = {
           level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
           status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
-          om: (o.beskrivelse || '') + ' ' + passer.replace('Passer for: deg', 'Passer for deg') + '. Krav: kurs hos oss, eller erfaring fra før. ' + oppsigelse + '.',
+          // Har verkstedet skrevet en utfyllende tekst, er det den som staar.
+          // Ellers samme setning som for — en plan uten tekst skal ikke bli
+          // tommere enn den var.
+          om: o.langtekst
+            || ((o.beskrivelse || '') + ' ' + passer.replace('Passer for: deg', 'Passer for deg') + '. Krav: kurs hos oss, eller erfaring fra før. ' + oppsigelse + '.'),
+          // «Viktig aa vite» staar som en egen seksjon lenger nede paa sida.
+          viktig: o.viktig || [],
           punkter,
           datoer: [{ dato: 'Start når du vil', tid: 'Aktiveres ved betaling', plasser: 'Ledig', valgt: true }],
         };
@@ -30809,6 +31139,7 @@ class Component extends DCLogic {
       // ligger her framfor inne i én av skjermene.
       ...this.bildevalgVals(),
       mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
+        : (this.state.bildeFor || {}).slag === 'plan' ? 'Bilde til medlemskapet'
         : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
         : (this.state.bildeFor || {}).slag === 'kurs'
           ? ((this.state.bildeFor || {}).rute === 0 ? 'Hovedbilde til kurset' : 'Bilde til kurset')
@@ -31007,7 +31338,7 @@ class Component extends DCLogic {
         this.setState({
           side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
+          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false, kPublisert: true,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
@@ -31908,6 +32239,10 @@ class Component extends DCLogic {
             ['Når er den ferdig', k.ferdigTid],
             ['Praktisk informasjon', k.praktisk],
             ['Allergener og kommentarer', k.allergener],
+            // «Viktig aa vite» paa medlemskapene (migrasjon 127). Lista
+            // settes sammen med linjeskift, saa den staar under hverandre i
+            // samme avsnittsform som de andre seksjonene.
+            ['Viktig å vite', (k.viktig || []).join('\n')],
           ].filter(([, t]) => String(t || '').trim() !== '')
            .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
           bHarMerker: passer.length > 0,
@@ -32175,7 +32510,7 @@ class Component extends DCLogic {
             || (this.erPublisert() ? [] : [{}, {}]);
           const nyttKurs = {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
+            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
@@ -32318,7 +32653,7 @@ class Component extends DCLogic {
             { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
             { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
-                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
+                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false, kPublisert: true,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
@@ -32421,6 +32756,64 @@ class Component extends DCLogic {
           personNotatKnapp: this._personInfoLagrer ? 'Lagrer …' : 'Lagre info',
           lagrePersonNotat: () => this.lagrePersonInfo(),
           personBeskjed: () => this.beskjedTilPerson(p),
+
+          // ── Har hun betalt, og skal hun betale i det hele tatt ────────
+          //
+          // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
+          // den samme som medlemslista og kortet paa Oversikt bruker.
+          personErMedlem: ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1,
+          personBetalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
+                                 forfalt: 'Forfalt', venter: 'Ikke betalt' }[p.betaling] || '',
+          personBetalingTekst: p.betalingTekst || '',
+          personBetalingStil: (() => {
+            const F = {
+              fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+              betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+              bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
+              forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+              venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+            }[p.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
+            return {
+              fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+              textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
+              whiteSpace: 'nowrap', background: F[0], color: F[1],
+            };
+          })(),
+          // Samtykket til vilkaarene, med dato og utgave. En hake som bare
+          // laaser opp en knapp er ikke noe bevis; dette skal kunne vises fram.
+          personVilkaar: p.vilkaar || '',
+          personHarVilkaar: !!p.vilkaar,
+          personFriEtikett: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                              marginTop: 'var(--space-4)', fontSize: 'var(--text-sm)',
+                              color: 'var(--text-heading)' },
+          // Feltene staar tomme til noe hentes; da faller de tilbake paa basen.
+          personFri: this.state.personFri === null || this.state.personFri === undefined
+            ? !!p.betalerIkke : !!this.state.personFri,
+          vekslPersonFri: () => this.setState(st => ({
+            personFri: !(st.personFri === null || st.personFri === undefined
+              ? !!p.betalerIkke : !!st.personFri),
+          })),
+          personFriGrunn: this.state.personFriGrunn === null || this.state.personFriGrunn === undefined
+            ? (p.betalerIkkeGrunn || '') : this.state.personFriGrunn,
+          settPersonFriGrunn: e => this.setState({ personFriGrunn: e.target.value }),
+          personFriKnapp: 'Lagre',
+          lagrePersonFri: () => {
+            const paa = this.state.personFri === null || this.state.personFri === undefined
+              ? !!p.betalerIkke : !!this.state.personFri;
+            const grunn = this.state.personFriGrunn === null || this.state.personFriGrunn === undefined
+              ? (p.betalerIkkeGrunn || '') : this.state.personFriGrunn;
+            // «behold» — uten den lukker medlemKall ruta, og da ville
+            // oppfriskningen under aapnet den igjen med det samme. Det blinker.
+            this.medlemKall({ handling: 'betaler-ikke', medlemId: p.id,
+                              paa: paa ? 'ja' : 'nei', grunn: (grunn || '').trim() }, true)
+              .then(ok => {
+                if (!ok) return;
+                // Overstyringa i skjemaet nullstilles, saa merket over leser
+                // det serveren naa har — ikke det man nettopp huket av.
+                this.setState({ personFri: null, personFriGrunn: null });
+                this.apnePerson(p.id, 0);
+              });
+          },
           // Uten konto finnes ingen Min side aa vise, ingen medlemskap aa
           // endre, og notatet hoerer til paameldingen. Skjermen maa vite det
           // — ellers tilbyr den ting som ikke finnes.
@@ -33415,6 +33808,37 @@ class Component extends DCLogic {
                  okter.length, 'Se kursene',
                  () => this.gaaAdmin('admin', { kursFane: 'alle' })),
 
+            // ── Hvem har ikke betalt ────────────────────────────────────
+            //
+            // Eieren, 2. september: «jeg kan ikke se paa min side paa et
+            // medlem om det er betalt for medlemskapet eller ikke ... jeg vil
+            // ogsaa kunne se det direkte paa medlemmer».
+            //
+            // Tallet er det samme som medlemslista regner ut — begge kommer
+            // fra Medlemskap::betalingsstatus() paa serveren. «haster» gjor
+            // tallet roedt, som paa de andre kortene, og trykket gaar rett
+            // inn i lista filtrert paa dem som mangler.
+            //
+            // Medlemmer som staar som fritatt fra betaling teller ikke med.
+            ...(d ? [kort('Medlemmer og betaling',
+                 ((d.medlemmer.ubetalte || 0) > 0
+                    ? (d.medlemmer.ubetalte === 1
+                        ? 'Ett medlemskap er ikke betalt. '
+                        : d.medlemmer.ubetalte + ' medlemskap er ikke betalt. ')
+                    : 'Alle medlemskap er gjort opp. ')
+                 + (d.medlemmer.aktive || 0) + ' aktive medlemmer'
+                 + ((d.medlemmer.nyeDenneMnd || 0) > 0
+                        ? ', ' + d.medlemmer.nyeDenneMnd + ' nye denne måneden' : '')
+                 + ((d.medlemmer.fritatt || 0) > 0
+                        ? ', ' + d.medlemmer.fritatt + ' betaler ikke' : '')
+                 + '.',
+                 d.medlemmer.ubetalte || 0, 'Se medlemmene',
+                 () => this.gaaAdmin('adminmedlem',
+                        (d.medlemmer.ubetalte || 0) > 0
+                          ? { medlemFilter: 'Ubetalte', medlemSok: '' }
+                          : { medlemSok: '' }),
+                 (d.medlemmer.ubetalte || 0) > 0)] : []),
+
             // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
             // den veien verkstedet er vant til aa gaa naar noen skal meldes
             // paa — det gaar bare rett inn i kassa naa.
@@ -33869,7 +34293,7 @@ class Component extends DCLogic {
               })),
             };
           })(),
-          miApne: () => this.setState({ miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '' }),
+          miApne: () => this.setState({ miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '', miFri: false, miFriGrunn: '' }),
           miLukk: () => this.setState({ miApen: false }),
           miFeltStil: felt,
           miEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
@@ -33880,6 +34304,15 @@ class Component extends DCLogic {
           miType: valgt, settMiType: e => this.setState({ miType: e.target.value }),
           miTyper: typer,
           miKjent: (this.state.miMedlemId || 0) > 0,
+          miAvkryss: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                       fontSize: 'var(--text-sm)', color: 'var(--text-heading)' },
+          miFri: !!this.state.miFri,
+          vekslMiFri: () => this.setState(st => ({ miFri: !st.miFri })),
+          miFriGrunn: this.state.miFriGrunn || '',
+          settMiFriGrunn: e => this.setState({ miFriGrunn: e.target.value }),
+          miBetalingHjelp: this.state.miFri
+            ? 'Medlemmet lyser ikke rødt i lista, og telles ikke som ubetalt på Oversikt.'
+            : 'Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side — ellers huker du av betalingen i Kassa når pengene kommer.',
           miKnapp: this.state.miLagrer ? 'Melder inn …' : 'Meld inn',
           miLagre: () => this.meldInnMedlem(valgt),
         };
@@ -33890,7 +34323,9 @@ class Component extends DCLogic {
       // Filtrene folger medlemskapene som faktisk finnes. De sto som faste
       // navn, saa et nytt eller omdopt medlemskap ble ikke mulig aa filtrere
       // paa — og et slettet ett sto igjen med null treff.
-      medlemFiltre: ['Alle', 'Aktive', 'Sluttet', 'Kursdeltakere', 'Admin']
+      // «Ubetalte» staar rett etter «Aktive»: det er dem man leter etter naar
+      // man kommer hit fra kortet paa Oversikt.
+      medlemFiltre: ['Alle', 'Aktive', 'Ubetalte', 'Sluttet', 'Kursdeltakere', 'Admin']
         .concat((this.state.adminPlanerRaa || []).map(pl => pl.navn))
         .concat(this.state.adminPlanerRaa ? [] : ['30 timer', 'Fri tilgang', 'Prøv Lissom'])
         .concat(['Inne nå']).map(n => {
@@ -33932,6 +34367,11 @@ class Component extends DCLogic {
         if (fv === 'Alle') return true;
         if (fv === 'Inne nå') return !!m.inne;
         if (fv === 'Aktive') return !!m.erMedlem && !m.erAdmin;
+        // Bare de som faktisk skylder. «betalingForfalt» er det samme flagget
+        // kortet paa Oversikt teller — leste lista noe annet, kunne kortet
+        // sagt seks og lista vist sju. Et medlem som staar som fritatt fra
+        // betaling hoerer ikke hjemme her; det var hele poenget med haken.
+        if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingForfalt;
         if (fv === 'Sluttet') return !!m.harSluttet;
         if (fv === 'Kursdeltakere') return !m.erMedlem && !m.erAdmin && (m.antallKurs || 0) > 0;
         if (fv === 'Admin') return !!m.erAdmin;
@@ -34937,6 +35377,7 @@ class Component extends DCLogic {
                   beskrivelse: pl.beskrivelse || '', punkter: String(pl.punkter || ''),
                   passerFor: pl.passerFor || '', bilde: pl.bilde || '',
                   fremhevet: !!pl.fremhevet,
+                  langtekst: pl.langtekst || '', viktig: pl.viktig || '',
                 } });
                 window.scrollTo(0, 0);
               },
@@ -34957,6 +35398,7 @@ class Component extends DCLogic {
               engangs: false, aktiv: true, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
+              langtekst: '', viktig: '',
             } });
             window.scrollTo(0, 0);
           },
@@ -34983,7 +35425,26 @@ class Component extends DCLogic {
             const t = this.utenGjentakelse(v('passerFor'), ['passer for', 'for deg som', 'deg som']);
             return t ? 'Passer for: deg som ' + t : '(står ikke på kortet)';
           })(),
-          plBilde: v('bilde'),          settPlBilde: sett('bilde'),
+          plLangtekst: v('langtekst'),  settPlLangtekst: sett('langtekst'),
+          plViktig: v('viktig'),        settPlViktig: sett('viktig'),
+
+          // ── Bildet ──
+          //
+          // Samme billedvelger som kurs, varer, artikler og referansekunder.
+          // Planen lagres naar skjemaet lagres — en ny plan finnes ikke paa
+          // serveren enda — saa valget legges i skjemaet, som paa referansene.
+          plBilde: v('bilde'),
+          plHarBilde: !!v('bilde'),
+          plBildeKnapp: v('bilde') ? 'Bytt bilde' : 'Velg bilde',
+          plBildeStil: {
+            width: 168, flex: '0 0 auto', aspectRatio: '16 / 10',
+            borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--clay-200)',
+            backgroundImage: v('bilde') ? "url('" + v('bilde') + "')" : 'none',
+            backgroundSize: 'cover', backgroundPosition: this.fokusFor(v('bilde') || ''),
+          },
+          plVelgBilde: () => this.apneBildevalg({ slag: 'plan' }),
+          plFjernBilde: () => this.endrePlan({ bilde: '' }),
 
           plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
           plAktiv: !!(red && red.aktiv),         vekslPlAktiv: veksle('aktiv'),
@@ -35008,6 +35469,8 @@ class Component extends DCLogic {
               beskrivelse: d.beskrivelse || '', punkter: d.punkter || '',
               passerFor: d.passerFor || '', bilde: d.bilde || '',
               fremhevet: !!d.fremhevet,
+              // Den utfyllende teksten og «Viktig aa vite» (migrasjon 127).
+              langtekst: d.langtekst || '', viktig: d.viktig || '',
             });
           },
         };
@@ -35047,7 +35510,12 @@ class Component extends DCLogic {
         // Linja under navnet. Utenfor basen staar den som for: typen, prisen
         // og hvor mange datoer kurset har.
         if ((this.state.kursFane || 'alle') !== 'maler') {
-          return { under: [k.type, k.pris, k.gjentas].filter(Boolean).join(' · ') };
+          // «Ikke publisert» sto bare i basen-fanen. Tok du et kurs ned og
+          // gikk tilbake hit, saa lista helt lik ut — og du kunne ikke se at
+          // kurset var borte fra nettsida.
+          return { under: [k.type, k.pris, k.gjentas,
+                           k.status && k.status !== 'publisert' ? 'Ikke publisert' : '']
+                          .filter(Boolean).join(' · ') };
         }
         const idag = new Date(new Date().toDateString()).getTime();
         const framover = (k.okter || []).filter(o => {
@@ -35840,7 +36308,7 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kRessursId: 0,
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kRessursId: 0,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
@@ -36528,6 +36996,19 @@ class Component extends DCLogic {
           },
         };
       }),
+      // ── Publisert paa nettsiden ──
+      //
+      // Kurset kan tas ned uten aa slettes. Skjemaet sendte «publisert» fast,
+      // saa den eneste veien vekk fra nettsida var aa slette kurset — og da
+      // fulgte datoene og paameldingene med.
+      //
+      // Verdien staar i skjemaet og lagres sammen med resten naar du trykker
+      // Lagre, som de andre feltene her.
+      kPublisert: this.state.kPublisert !== false,
+      toggleKPublisert: () => this.setState(s => ({ kPublisert: s.kPublisert === false })),
+      kPublisertTekst: this.state.kPublisert === false
+        ? 'Kurset vises ikke under «Våre kurs», i kalenderen eller i åpningstidene. Ingen kan booke det.'
+        : 'Kurset ligger ute på nettsiden og kan bookes.',
       kSteg: this.state.kSteg ?? 1,
       kSteg1: (this.state.kSteg ?? 1) === 1,
       kSteg2: (this.state.kSteg ?? 1) === 2,
@@ -38000,7 +38481,24 @@ class Component extends DCLogic {
         { h: 'Priser og betaling', p: 'Alle priser vises i norske kroner og er inkl. mva der mva gjelder (kurs og undervisning er mva-fritt). Betaling skjer med Vipps ved bestilling. Medlemskap trekkes månedlig via Vipps Recurring.' },
         { h: 'Angrerett', p: 'Du har 14 dagers angrerett etter angrerettloven på varer kjøpt i nettbutikken. Angreretten gjelder ikke kurs og events med fastsatt dato når du har samtykket til at tjenesten starter — men våre avbestillingsregler under gjelder alltid.' },
         { h: 'Avbestilling av kurs og events', p: 'Full refusjon ved avbestilling mer enn 14 dager før kursstart, 50 % inntil 7 dager før. Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen. Refusjon skjer til Vipps innen 3 virkedager.' },
-        { h: 'Medlemskap', p: 'Medlemskap løper måned til måned og fornyes automatisk med trekk i Vipps. Du kan si opp når som helst, og oppsigelsen koster ingenting. Slik sier du opp: logg inn på Min side på lissom.no, åpne medlemskapskortet og trykk «Si opp». Du kan også stoppe avtalen selv i Vipps-appen under Profil → Avtaler og abonnement, eller sende en e-post til post@lissom.no eller ringe +47 94 13 46 01. Oppsigelsen gjelder fra og med neste trekk: du beholder tilgangen ut den perioden du har betalt for, og blir ikke trukket igjen. Du får bekreftelse på e-post, og medlemskapskortet på Min side viser at avtalen er sagt opp. Årsmedlemskap er en årsavtale med binding i 12 måneder; oppsigelsen gjelder da fra bindingstiden er ute. Prøv Lissom stopper av seg selv etter 30 dager og fornyes ikke. Ubrukte timer overføres ikke. Prøv Lissom kan kun benyttes én gang per person.' },
+        // ── Medlemsvilkaarene ────────────────────────────────────────
+        //
+        // Eierens tekst, 2. september, med det praktiske fra den gamle
+        // seksjonen beholdt: HVORDAN man sier opp sto her fra for, og staar
+        // ikke i vilkaarsdokumentet.
+        //
+        // Den gamle teksten sa «oppsigelsen gjelder fra og med neste trekk:
+        // du beholder tilgangen ut den perioden du har betalt for, og blir
+        // ikke trukket igjen». Det stemte ikke med systemet:
+        // Medlemskap::sluttdato() regner fra forste dag i paafolgende maaned
+        // og legger til oppsigelsestida, og trekket gaar som for i den
+        // maaneden. Sida lovte altsaa kunden én maaned gratis som verkstedet
+        // faktisk fakturerer. Naa staar det samme sted som koden gjor.
+        { h: 'Medlemskap — bindingstid', p: 'Prøv Lissom har ingen bindingstid og kan avsluttes uten oppsigelsestid. Årsmedlemskap har 12 måneders bindingstid fra oppstartsdato; etter utløpt bindingstid løper medlemskapet videre automatisk med 1 måneds oppsigelsestid. Alle øvrige medlemskap har 2 måneders bindingstid fra oppstartsdato, og deretter 1 måneds oppsigelsestid.' },
+        { h: 'Medlemskap — oppsigelse', p: 'Oppsigelse skal skje skriftlig. Oppsigelsestiden regnes fra første dag i påfølgende måned etter at oppsigelsen er mottatt, og medlemsavgift belastes ut oppsigelsesperioden. Slik sier du opp: logg inn på Min side på lissom.no, åpne medlemskapskortet og trykk «Si opp». Du kan også sende e-post til post@lissom.no eller ringe +47 94 13 46 01. Du får bekreftelse på e-post, og medlemskapskortet på Min side viser at avtalen er sagt opp. Prøv Lissom stopper av seg selv etter 30 dager og fornyes ikke. Ubrukte timer overføres ikke, og Prøv Lissom kan kun benyttes én gang per person.' },
+        { h: 'Medlemskap — HMS og ordensregler', p: 'Medlemmet plikter å sette seg inn i og følge gjeldende HMS-rutiner, sikkerhetsbestemmelser og ordensregler for verkstedet. Medlemmet er ansvarlig for å bruke utstyr, verktøy og lokaler på en forsvarlig måte. Pålegg fra ansatte eller representanter for Lissom Keramikk & Håndverk AS skal følges.' },
+        { h: 'Medlemskap — mislighold', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å avslutte et medlemskap med umiddelbar virkning og uten varsel dersom medlemmet bryter HMS-regler eller ordensreglement, utsetter andre medlemmer, ansatte eller utstyr for fare, unnlater å betale medlemsavgift, eller på annen måte misligholder medlemsavtalen eller opptrer på en måte som er til skade for virksomheten eller andre medlemmer.' },
+        { h: 'Medlemskap — endringer', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å oppdatere medlemsvilkårene ved behov. Gjeldende vilkår vil alltid være tilgjengelige for medlemmene her.' },
         { h: 'Levering og henting', p: 'Varer hentes i verkstedet på Teie innen to uker, eller sendes med Posten mot frakt. Spesialbestillinger har leveringstid etter avtale.' },
         { h: 'Reklamasjon', p: 'Håndlaget keramikk varierer i farge og form — det er ikke en mangel. Ved skade eller feil, kontakt oss på monica@lissom.no innen rimelig tid, så finner vi en løsning etter forbrukerkjøpsloven.' },
         { h: 'Avlysning fra oss', p: 'Ved for få påmeldte eller sykdom kan vi avlyse kurs. Du får da valget mellom ny dato eller full refusjon.' },
@@ -40007,23 +40505,7 @@ class Component extends DCLogic {
       //
       // En boks uten innhold staar ikke. Fire overskrifter med tre svar ser
       // ut som om noe er i stykker.
-      bFakta: (() => {
-        const k = this.state.valgtKurs || {};
-        const kort = t => String(t || '').split(/[.\n]/)[0].trim();
-        return [
-          { merke: 'Nivå', verdi: k.nivaaTekst || '' },
-          { merke: 'Varighet', verdi: k.duration || '' },
-          // Boksene er smale. «Innføring i plateteknikk og dekor» staar her;
-          // hele setningen staar under «Dette lærer du». Foerste setning av
-          // den lange teksten brakk boksen i fem linjer.
-          { merke: 'Du lærer', verdi: k.laererKort || kort(k.laererTekst) },
-          // Sto som kort(k.lagerDu): faktaboksen leste «Dette lager du»
-          // mens avsnittet under leste «Dette faar du med hjem». To felt for
-          // én ting, og det forste har ikke lenger et felt i kursoppsettet —
-          // da hadde boksen blitt staaende paa en tekst ingen kunne rette.
-          { merke: 'Med hjem', verdi: kort(k.medHjem) },
-        ].filter(f => f.verdi !== '');
-      })(),
+      bFakta: this.bFaktaRader(),
       // Linja over «Velg dato»: naar kurset gaar, hvor lenge det varer og
       // hvilket nivaa det er paa.
       //
@@ -40091,6 +40573,11 @@ class Component extends DCLogic {
         { tittel: 'Hva får du', punkter: ['Tett veiledning i liten gruppe', 'Alt utstyr, leire, glasur og brenning', 'Noe du har laget selv — med hjem'] },
         { tittel: 'Finn kurset som passer', punkter: ['Hvert kurs viser nivå, varighet og innhold', 'Se hva som er inkludert før du booker', 'Usikker? Send oss en forespørsel nederst'] },
       ]),
+      // Se markupen: begge hoerer til kursene, og staar ikke paa medlemskapene.
+      // Tom faktaboks skjules ogsaa — et kurs uten utfylte felt skal ikke ha
+      // en tom rad med luft under seg.
+      bVisFakta: this.state.fra !== 'medlemskap' && this.bFaktaRader().length > 0,
+      bVisPasserFor: this.state.fra !== 'medlemskap',
       bPasserFor: (() => {
         const k = this.state.valgtKurs || {};
         // Markupen skriver «Passer for:» foran. Staar det i verdien ogsaa,
@@ -42164,12 +42651,42 @@ class Component extends DCLogic {
           // steder, ville de etter hvert sagt hver sin ting om det samme.
           bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Jeg ordner selv')],
           bmBetalingValgt: valgt,
-          // Vilkaarene, der de skal staa: for man melder seg inn, ikke etter.
-          bmVilkar: 'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '
-            + 'og 1 måneds oppsigelsestid. Du sier opp fra Min side.',
+          // ── Vilkaarene ──────────────────────────────────────────────
+          //
+          // Her sto én graa linje under knappen, uten bekreftelse: «2
+          // maaneders bindingstid ... 1 maaneds oppsigelsestid». Den var
+          // dessuten feil for halvparten: proveperioden har ingen binding, og
+          // aarsmedlemskapet har tolv maaneder. Naa leses tallene av planen,
+          // slik at linja sier det som faktisk gjelder det medlemskapet man
+          // holder paa aa velge.
+          //
+          // Eieren, 2. september: «er det mulig aa legge til godta vilkaar for
+          // man faar kjopt et medlemskap?»
+          bmVilkar: (() => {
+            const b = parseInt(pl.binding, 10) || 0;
+            const o = parseInt(pl.oppsigelse, 10);
+            const opps = isNaN(o) ? 1 : o;
+            // Eiendomsform: «2 maaneders bindingstid», ikke «2 maaneder».
+            const mnd = n => n === 1 ? '1 måneds' : n + ' måneders';
+            if (b === 0 && opps === 0) {
+              return (pl.navn || 'Medlemskapet') + ' har ingen bindingstid, '
+                   + 'og kan avsluttes uten oppsigelsestid.';
+            }
+            return (pl.navn || 'Medlemskapet') + ' har '
+                 + (b > 0 ? mnd(b) + ' bindingstid fra oppstart, og ' : '')
+                 + (opps > 0 ? mnd(opps) + ' oppsigelsestid. ' : 'ingen oppsigelsestid. ')
+                 + 'Du sier opp fra Min side.';
+          })(),
           bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,
         };
       })(),
+      // Vilkaarene. Samme grep som paa kursbookingen: knappen er laast til
+      // haken staar. Serveren krever den ogsaa — se api/bli-medlem.php. En
+      // graa knapp stopper den som fyller ut skjemaet, ikke den som sender
+      // kallet uten aa gaa veien om nettleseren.
+      bmVilkaarOk: !!this.state.bmVilkaarOk,
+      bmVilkaarMangler: !this.state.bmVilkaarOk,
+      toggleBmVilkaar: () => this.setState(s => ({ bmVilkaarOk: !s.bmVilkaarOk, bmFeil: null })),
       bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,
       settBmEpost: e => this.setState({ bmEpost: e.target.value, bmFeil: null }),
       bmErfaring: this.state.bmErfaring || '',

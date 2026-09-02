@@ -991,7 +991,14 @@ DB::kjor("DELETE FROM discount_tiers");
 // ---------------------------------------------------------------------------
 echo "\n== Medlemskap ==\n";
 
-sjekk('planene ligger i basen', count(Medlemskap::planer()) >= 4);
+// Tallet sto som «minst fire». Da var det bundet til hvor mange planer som
+// tilfeldigvis laa ute, og proven falt den dagen en av dem ble tatt ut av
+// salg. Paastanden er at planene kommer fra basen — og at bare de i salg
+// kommer med.
+sjekk('planene ligger i basen',
+    Medlemskap::planer() !== []
+    && count(Medlemskap::planer())
+       === (int) DB::verdi('SELECT COUNT(*) FROM membership_plans WHERE aktiv = 1'));
 // Navnet paa planen sto her som tekst. Verkstedet doepte «30 timer» om til
 // «Basis 30» i admin — noe de har full rett til — og testen falt. Den skal
 // proeve oppslaget, ikke hva planen heter denne uka.
@@ -1214,10 +1221,16 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMedlem]);
 // ── Fast trekk eller ordne selv ────────────────────────────────────────
 sjekk('aarsmedlemskapet krever fast trekk',
     Medlemskap::kreverFastTrekk(Medlemskap::plan('Årsmedlemskap') ?? []));
-foreach (['Basis 30', 'Fri tilgang', 'Prøv Lissom'] as $fritt) {
-    $pl = Medlemskap::plan($fritt);
-    sjekk('«' . $fritt . '» lar medlemmet velge',
-        $pl !== null && !Medlemskap::kreverFastTrekk($pl));
+// Alle de andre planene i salg lar medlemmet velge selv. Sto navnene i en
+// liste her, ble proven roed den dagen en plan ble tatt ut av salg — og det
+// er en helt lovlig ting aa gjore. Naa gaar den paa planene som faktisk
+// ligger ute.
+foreach (Medlemskap::planer() as $pl) {
+    $fritt = (string) $pl['navn'];
+    if ($fritt === 'Årsmedlemskap') {
+        continue;
+    }
+    sjekk('«' . $fritt . '» lar medlemmet velge', !Medlemskap::kreverFastTrekk($pl));
 }
 
 // Et medlemskap uten fast trekk skal aldri hentes av det automatiske trekket.
@@ -1251,12 +1264,27 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
 // To maaneder fra innmelding, tolv paa aarsavtalen, én maaneds oppsigelse.
 echo "\n== Binding og oppsigelse ==\n";
 
-foreach (['Basis 30' => 2, 'Fri tilgang' => 2, 'Prøv Lissom' => 2, 'Årsmedlemskap' => 12] as $navn => $mnd) {
-    $pl = Medlemskap::plan($navn);
-    sjekk('«' . $navn . '» har ' . $mnd . ' maaneders binding',
-        $pl !== null && (int) $pl['binding_mnd'] === $mnd, (string) ($pl['binding_mnd'] ?? '?'));
-    sjekk('«' . $navn . '» har én maaneds oppsigelse',
-        $pl !== null && (int) $pl['oppsigelse_mnd'] === 1);
+// Samme grunn som over: planene som ligger ute, ikke en fast navneliste.
+//
+// Tallene er eierens egne medlemsvilkaar, 2. september:
+//   «Provemedlemskapet har ingen bindingstid» og «kan avsluttes uten
+//    oppsigelsestid»
+//   «Aarsmedlemskap har 12 maaneders bindingstid ... deretter 1 maaneds
+//    oppsigelsestid»
+//   «Alle ovrige medlemskap har 2 maaneders bindingstid ... 1 maaneds
+//    oppsigelsestid»
+//
+// Sto proveperioden med to maaneders binding i basen, som den gjorde for
+// migrasjon 133, ville hvorforIkkeSiOpp() nektet noen aa avslutte et
+// medlemskap de har full rett til aa gaa ut av naar de vil.
+foreach (Medlemskap::planer() as $pl) {
+    $navn = (string) $pl['navn'];
+    [$bind, $opps] = $navn === 'Prøv Lissom' ? [0, 0]
+        : ($navn === 'Årsmedlemskap' ? [12, 1] : [2, 1]);
+    sjekk('«' . $navn . '» har ' . $bind . ' maaneders binding',
+        (int) $pl['binding_mnd'] === $bind, (string) ($pl['binding_mnd'] ?? '?'));
+    sjekk('«' . $navn . '» har ' . $opps . ' maaneders oppsigelse',
+        (int) $pl['oppsigelse_mnd'] === $opps, (string) ($pl['oppsigelse_mnd'] ?? '?'));
 }
 
 $bMedlem = (int) DB::settInn('members', [
@@ -6239,7 +6267,14 @@ sjekk('… og setter den paa aarsmedlemskapet',
     str_contains($mig124, 'WHERE binding_mnd >= 12')
     && str_contains($mig124, "punkter NOT LIKE '%Selg egne arbeider gjennom lissom.no%'"));
 if (DB::harTabell('membership_plans')) {
-    $med = DB::alle("SELECT navn, punkter FROM membership_plans WHERE punkter LIKE '%Selg egne arbeider%'");
+    // Sto som «Selg egne arbeider» — ordrett den formuleringa migrasjon 124
+    // satte inn. Eieren skrev punktlista om selv i migrasjon 128, og linja
+    // heter naa «Mulighet til aa selge egne arbeider gjennom lissom.no».
+    // Paastanden er hvilken PLAN som har den, ikke hvordan den er formulert.
+    $med = DB::alle(
+        "SELECT navn, punkter FROM membership_plans
+          WHERE punkter LIKE '%elg egne arbeider%' OR punkter LIKE '%elge egne arbeider%'"
+    );
     sjekk('salgslinja staar bare paa aarsmedlemskapet i basen',
         count($med) === 1 && str_contains((string) $med[0]['navn'], 'rsmedlemskap'),
         count($med) . ' plan(er): ' . implode(', ', array_column($med, 'navn')));
@@ -6726,6 +6761,739 @@ sjekk('… og er mye mindre',
 sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
+
+// ── Vilkaarene maa godtas ──────────────────────────────────────────────
+//
+// Eieren, 2. september: «er det mulig aa legge til godta vilkaar for man faar
+// kjopt et medlemskap?»
+//
+// Innmeldingsskjemaet hadde ingen hake. Under knappen sto én graa linje om
+// bindingstid — uten bekreftelse, uten at noe ble skrevet ned, og feil for
+// halvparten av medlemskapene: den sa «2 maaneder» ogsaa om aarsavtalen med
+// tolv, og om proveperioden som ikke har binding i det hele tatt.
+echo "\n== Vilkaarene maa godtas ==\n";
+
+$mig133 = file_get_contents(dirname(__DIR__) . '/db/migrations/133_medlemsvilkar_godtas.sql');
+sjekk('migrasjon 133 lagrer samtykket',
+    str_contains($mig133, 'ADD COLUMN vilkaar_godtatt_at')
+    && str_contains($mig133, 'vilkaar_versjon'));
+sjekk('… og kolonnene staar i basen',
+    DB::harKolonne('membership_applications', 'vilkaar_godtatt_at')
+    && DB::harKolonne('membership_applications', 'vilkaar_versjon'));
+sjekk('utgaven av vilkaarene staar ett sted',
+    preg_match('/^\d{4}-\d{2}-\d{2}$/', Medlemskap::VILKAAR_VERSJON) === 1,
+    Medlemskap::VILKAAR_VERSJON);
+
+// Kravet maa staa paa SERVEREN. Haken i nettleseren er en hoeflighet mot den
+// som fyller ut; det er kallet som avgjor om noen blir medlem, og en graa
+// knapp stopper ikke den som sender kallet utenom nettleseren.
+$bliVilkaar = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('serveren krever samtykket',
+    str_contains($bliVilkaar, "\$vilkaar = Foresporsel::tekst('vilkaar') === 'ja';")
+    && str_contains($bliVilkaar, "Svar::feil('Du må godta medlemsvilkårene for å melde deg inn.');"));
+// Kravet maa staa FOER avtalen opprettes. Sto det etter, ville en innmelding
+// uten samtykke alt ha laget en avtale i Vipps for den ble avvist.
+sjekk('… og kravet staar foer avtalen opprettes i Vipps',
+    strpos($bliVilkaar, "\$vilkaar = Foresporsel::tekst('vilkaar')")
+    < strpos($bliVilkaar, 'Medlemskap::startAvtale($medlem, $type)'));
+sjekk('… og samtykket lagres med dato og utgave',
+    str_contains($bliVilkaar, "'vilkaar_godtatt_at' => gmdate('Y-m-d H:i:s'),")
+    && str_contains($bliVilkaar, "'vilkaar_versjon'    => Medlemskap::VILKAAR_VERSJON,"));
+
+// Skjemaet: haken, lenka til vilkaarene, og knappen som er laast uten den.
+sjekk('skjemaet har haken',
+    str_contains($sida, 'label="Jeg godtar medlemsvilkårene" checked="{{ bmVilkaarOk }}" on-change="{{ toggleBmVilkaar }}"'));
+sjekk('… med lenke til vilkaarene',
+    str_contains($sida, 'onClick="{{ goVilkar }}"'));
+sjekk('… og «Bli medlem» er laast til den staar',
+    str_contains($sida, 'disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}"'));
+sjekk('… og kallet sender samtykket',
+    str_contains($sida, "vilkaar: this.state.bmVilkaarOk ? 'ja' : 'nei',"));
+
+// Bindingslinja skal si det som gjelder DET medlemskapet man velger. Sto den
+// fast paa «2 maaneder», loy den til to av fire.
+sjekk('bindingslinja leses av planen',
+    str_contains($sida, "const b = parseInt(pl.binding, 10) || 0;")
+    && str_contains($sida, "const o = parseInt(pl.oppsigelse, 10);"));
+sjekk('… og den gamle faste linja er borte',
+    !str_contains($sida, "'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '"));
+$medApiV = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('… og serveren sender oppsigelsestida med',
+    str_contains($medApiV, "'oppsigelse' => (int) (\$p['oppsigelse_mnd'] ?? 1),"));
+
+// Samtykket skal kunne vises fram i ettertid. En hake som bare laaser opp en
+// knapp er ikke noe bevis.
+$medlApiV = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemsruta viser naar vilkaarene ble godtatt',
+    str_contains($medlApiV, "'Godtok medlemsvilkårene '"));
+sjekk('… og skjermen tegner den, begge steder',
+    substr_count($sida, '{{ personVilkaar }}') === 2);
+// Og at verdien bak faktisk settes. Foerste forsoek hadde markupen paa plass
+// og props-en ikke — den proven var gronn, mens ruta sto tom. listesjekk
+// fanget det; denne linja gjor at proven gjor det ogsaa.
+sjekk('… og verdien bak den settes',
+    str_contains($sida, "personVilkaar: p.vilkaar || '',")
+    && str_contains($sida, 'personHarVilkaar: !!p.vilkaar,'));
+
+// Vilkaarsteksten maa faktisk staa paa sida haken lenker til. Uten den peker
+// «Les vilkaarene» paa en side der medlemsvilkaarene ikke finnes.
+foreach (['Medlemskap — bindingstid', 'Medlemskap — oppsigelse',
+          'Medlemskap — HMS og ordensregler', 'Medlemskap — mislighold',
+          'Medlemskap — endringer'] as $bolk) {
+    sjekk('«' . $bolk . '» staar paa vilkaarssida',
+        str_contains($sida, "{ h: '" . $bolk . "'"));
+}
+// Den gamle teksten lovte kunden noe systemet ikke gjor: at oppsigelsen
+// gjelder fra neste trekk og at man ikke trekkes igjen.
+// Medlemskap::sluttdato() regner fra forste dag i paafolgende maaned og legger
+// til oppsigelsestida — og trekket gaar som for i den maaneden.
+sjekk('… og den gamle setningen om «ikke trukket igjen» er borte',
+    !str_contains($sida, 'du beholder tilgangen ut den perioden du har betalt for, og blir ikke trukket igjen'));
+
+// Koden og vilkaarene maa gi det samme svaret. Vilkaarene: «Oppsigelsestiden
+// regnes fra forste dag i paafolgende maaned etter at oppsigelsen er mottatt»,
+// pluss én maaned. Sier man opp i dag, skal medlemskapet loepe ut den maaneden.
+$sluttForventet = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+    ->modify('first day of this month')->modify('+2 months')->modify('-1 day')->format('Y-m-d');
+sjekk('koden gir den oppsigelsestida vilkaarene lover',
+    Medlemskap::sluttdato(['plan' => 'Basis 30']) === $sluttForventet,
+    Medlemskap::sluttdato(['plan' => 'Basis 30']));
+
+// ── Naar gaar pengene? ─────────────────────────────────────────────────
+//
+// Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden her.
+// Saa ut til aa fungere greit. Men pengene er fremdeles paa min konto.»
+//
+// Hun hadde rett, og hun skrev fordi ingen hadde sagt fra. Fast trekk i Vipps
+// er en fullmakt, ikke en betaling: forfallet ligger tre dager fram fordi
+// Vipps krever forvarsel. Sida sa bare «saa er du i gang», og velkomsten sa
+// «du faar beskjed for hvert trekk» — sant, men ikke NAAR.
+echo "\n== Naar gaar pengene ==\n";
+
+$bliTekst = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('sida sier naar forste trekk kommer',
+    str_contains($bliTekst, 'Første trekk kommer om noen dager — du får en e-post fra oss først.'));
+// Bare paa fast trekk. Den som gjor opp selv betaler NAA, i Vipps, og skal
+// ikke faa beskjed om at pengene gaar om noen dager.
+sjekk('… og bare paa fast trekk',
+    str_contains($bliTekst, "        : 'Betal i Vipps, så er du i gang.',"));
+
+$mig132 = file_get_contents(dirname(__DIR__) . '/db/migrations/132_velkomsten_sier_naar_pengene_gaar.sql');
+sjekk('migrasjon 132 retter velkomstmalen',
+    str_contains($mig132, "WHERE navn = 'innmelding_fast_trekk'"));
+
+$velkomst = (string) DB::verdi(
+    "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
+);
+sjekk('velkomsten sier at forste trekk kommer om noen dager',
+    str_contains($velkomst, 'Første trekk kommer om noen dager'), mb_substr($velkomst, 0, 40));
+sjekk('… og hvorfor det tar tid',
+    str_contains($velkomst, 'Vipps krever at vi varsler deg først'));
+// Den gamle setningen lovte noe systemet ikke gjor: medlemmet settes aktivt
+// naar AVTALEN blir aktiv i Vipps, for en eneste krone har flyttet seg.
+sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
+    !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));
+sjekk('… men sier at det er aktivt med det samme',
+    str_contains($velkomst, 'Medlemskapet er aktivt med det samme'));
+// Plassholderne maa staa. Uten dem staar det «Hei {navn}» i e-posten.
+foreach (['{navn}', '{type}'] as $felt) {
+    sjekk('… og «' . $felt . '» staar igjen i malen', str_contains($velkomst, $felt));
+}
+
+// ── Rekkefolgen i medlemstrekket ───────────────────────────────────────
+//
+// Medlemmet Eirin godkjente avtalen i Vipps-appen 1. september og kom aldri
+// tilbake til nettsiden. Da sto raden vaar paa «venter» til cron sporte Vipps
+// — men det spørsmålet sto ETTER trekkrunden. Hun ble aktivert klokka 04 den
+// 2., etter at trekkrunden hadde kjort, og trekket kom forst natta etter.
+//
+// Ingen penger gikk tapt. Men hvert medlem som godkjenner i appen tapte et
+// dogn, hver gang. Aktiveringen maa staa foerst.
+echo "\n== Rekkefolgen i medlemstrekket ==\n";
+
+$cronKode = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$posMedlemstrekk = strpos($cronKode, "case 'medlemstrekk':");
+$posAktiver = strpos($cronKode, "WHERE status = 'venter'", $posMedlemstrekk);
+$posTrekk   = strpos($cronKode, 'Medlemskap::tilTrekk()', $posMedlemstrekk);
+sjekk('begge blokkene finnes i medlemstrekket',
+    $posMedlemstrekk !== false && $posAktiver !== false && $posTrekk !== false);
+sjekk('avtalene aktiveres FOER trekkrunden',
+    $posAktiver !== false && $posTrekk !== false && $posAktiver < $posTrekk,
+    'aktiver@' . (int) $posAktiver . ' trekk@' . (int) $posTrekk);
+
+// ── Det samme forsoeket to ganger ──────────────────────────────────────
+//
+// Eieren, 2. september: «nytt medlem har meldt seg inn, faar denne e-posten
+// 2 ganger» — bade «Nytt medlem: Anniken Johnsgaard» og «Varsel maa sendes
+// for haand: Nytt medlem». Begge kom 20:42, samme minutt.
+//
+// api/bli-medlem.php hadde ingen vakt. Vakta i startAvtale() slaar bare til
+// paa en avtale som ER aktiv; en som staar «venter» — den forste klikket
+// nettopp opprettet — stoppet ingenting. Andre kall gikk derfor gjennom og
+// lagde en avtale til i Vipps, en soknadsrad til, og alle varslene om igjen.
+//
+// To e-poster er irriterende. To avtaler er to trekk.
+echo "\n== Det samme forsoeket to ganger ==\n";
+
+$mig131 = file_get_contents(dirname(__DIR__) . '/db/migrations/131_samme_forsok_samme_avtale.sql');
+sjekk('migrasjon 131 husker adressen forsoeket godkjennes paa',
+    str_contains($mig131, 'ADD COLUMN vipps_url'));
+sjekk('… og kolonna staar i basen', DB::harKolonne('subscriptions', 'vipps_url'));
+
+$dMedlem = (int) DB::settInn('members', [
+    'navn' => 'Dobbel Testesen', 'epost' => 'dobbel@example.test',
+    'rolle' => 'medlem', 'status' => 'ingen',
+]);
+$dAvtale = (int) DB::settInn('subscriptions', [
+    'member_id' => $dMedlem, 'plan' => 'Basis 30', 'pris_ore' => 259000,
+    'vipps_agreement_id' => 'agr-dobbel-' . $dMedlem,
+    'vipps_url' => 'https://vipps.example/godkjenn/1', 'status' => 'venter',
+]);
+$funnet = Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30');
+sjekk('det samme forsoeket gjenbrukes',
+    $funnet !== null && (string) $funnet['vipps_url'] === 'https://vipps.example/godkjenn/1');
+// Bytter man medlemskap i mellomtida, er det et annet forsoek.
+sjekk('… men ikke paa en annen plan',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Mini 15') === null);
+// Vinduet er kort med vilje: en som virkelig vil proeve paa nytt skal ikke
+// sitte fast med en adresse som er utloept hos Vipps.
+DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP() - INTERVAL 6 MINUTE WHERE id = :i',
+    ['i' => $dAvtale]);
+sjekk('… og ikke etter fem minutter',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+// Uten lagret adresse er det ingenting aa sende noen til.
+DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP(), vipps_url = NULL WHERE id = :i',
+    ['i' => $dAvtale]);
+sjekk('… og ikke uten en adresse aa gjenbruke',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+// En avtale som alt er aktiv er et helt annet tilfelle — den skal avvises,
+// ikke gjenbrukes.
+DB::kjor("UPDATE subscriptions SET status = 'aktiv', vipps_url = 'https://vipps.example/godkjenn/1',
+          created_at = UTC_TIMESTAMP() WHERE id = :i", ['i' => $dAvtale]);
+sjekk('… og en aktiv avtale gjenbrukes ikke',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $dMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
+
+// Begge veiene inn maa ha vakta. Bare den ene, og halvparten av innmeldingene
+// kunne fortsatt bli dobbelt.
+$mlKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('bade fast trekk og engangs sjekker om forsoeket paagaar',
+    substr_count($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn);") === 2);
+sjekk('… og begge lagrer adressen',
+    substr_count($mlKode, 'self::husk((int) $id,') === 2);
+
+// Endepunktet maa la vaere aa sende varslene om igjen. Uten dette ville
+// avtalen blitt gjenbrukt, men e-postene kommet dobbelt likevel.
+$bliKode = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('innmeldingen sender ikke varslene om igjen',
+    str_contains($bliKode, "if (!empty(\$avtale['gjentakelse'])) {"));
+// Kontrollen: vakta maa staa FOER varslene, ellers rekker de aa gaa ut.
+sjekk('… og vakta staar foer dem',
+    strpos($bliKode, "if (!empty(\$avtale['gjentakelse'])) {")
+    < strpos($bliKode, "Varsel::malTilAdmin('intern_nytt_medlem'"));
+
+// ── Samme nummer to ganger ─────────────────────────────────────────────
+//
+// «Varsel maa sendes for haand» sendes én gang per adminnummer. Sto det
+// samme nummeret der to ganger — «40603093» og «+47 406 03 093» er den samme
+// telefonen — gikk varselet to ganger. Varsel::adminEposter() har hatt den
+// samme regelen for e-postadressene lenge; nummerne manglet den.
+$cfg = file_get_contents(dirname(__DIR__) . '/app/config.php');
+sjekk('adminnumrene telles én gang hver',
+    str_contains($cfg, 'array_values(array_unique(array_filter(array_map('));
+sjekk('… og skrivemaaten avgjor ikke',
+    normaliser_telefon('40603093') === normaliser_telefon('+47 406 03 093'));
+
+// ── «Script error.» ────────────────────────────────────────────────────
+//
+// Eieren, 2. september, fra Min side paa iPhone: «Fanget automatisk — Script
+// error.» og ikke et ord mer. Nettleseren nekter aa si hva som skjedde naar
+// unntaket kom fra et skript den regner som et annet nettsted, og da leter
+// man etter en feil i egen kode som ikke finnes.
+sjekk('rapporten sier hva «Script error.» betyr',
+    str_contains($sida, "const skjult = melding === 'Script error.' || melding === 'Script error';")
+    && str_contains($sida, 'nettleseren skjuler detaljene'));
+// Og om analysen kjorte. Det er forskjellen paa «Google» og «en utvidelse i
+// nettleseren» — uten den staar man like langt neste gang.
+sjekk('… og om analysen kjorte da det skjedde',
+    str_contains($sida, "this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'"));
+
+// ── Har medlemmet betalt? ──────────────────────────────────────────────
+//
+// Eieren, 2. september: «jeg kan ikke se paa min side paa et medlem om det er
+// betalt for medlemskapet eller ikke ... Paa Eirin staar det fast trekk og paa
+// Anniken staar det gjor opp selv».
+//
+// Det er betalingsMAATEN. Skjermen leste vipps_agreement_id og skrev «Fast
+// trekk» eller «Gjor opp selv» — ingen av delene sier at penger er kommet.
+// Tallene laa i basen hele tida; ingen slo dem opp.
+//
+// Regelen staar ETT sted, Medlemskap::betalingsstatus(), fordi tre skjermer
+// spor om den: medlemslista, kortet paa Oversikt og medlemsruta. Sto den tre
+// steder, kunne de svart hver sitt om den samme personen.
+echo "\n== Har medlemmet betalt ==\n";
+
+$mig130 = file_get_contents(dirname(__DIR__) . '/db/migrations/130_medlem_som_ikke_betaler.sql');
+sjekk('migrasjon 130 gir medlemmet «betaler ikke»',
+    str_contains($mig130, 'ADD COLUMN betaler_ikke')
+    && str_contains($mig130, 'betaler_ikke_grunn'));
+sjekk('… og kolonnene staar i basen',
+    DB::harKolonne('members', 'betaler_ikke')
+    && DB::harKolonne('members', 'betaler_ikke_grunn'));
+
+// ── Regelen, tilstand for tilstand ─────────────────────────────────────
+//
+// Fem medlemmer, fem svar. Uten disse ville en endring i regelen kunne
+// snudd et «betalt» til «forfalt» uten at noe sa fra.
+$bMedlem = static function (string $navn, string $plan, int $fri = 0, string $grunn = ''): array {
+    return ['id' => 0, 'navn' => $navn, 'medlemskap_type' => $plan, 'status' => 'aktiv',
+            'betaler_ikke' => $fri, 'betaler_ikke_grunn' => $grunn !== '' ? $grunn : null];
+};
+$bBetaling = static fn(string $dato): array => ['created_at' => $dato . ' 12:00:00', 'belop_ore' => 259000];
+$iDag  = gmdate('Y-m-d');
+$forLenge = gmdate('Y-m-d', strtotime('-3 months'));
+
+$b = Medlemskap::betalingsstatus($bMedlem('Fri', 'Basis 30', 1, 'bytter mot dugnad'), null, null);
+sjekk('haken gaar foran alt — et gratismedlem lyser aldri roedt',
+    $b['tilstand'] === 'fri' && $b['forfalt'] === false
+    && str_contains($b['tekst'], 'bytter mot dugnad'), $b['tilstand'] . ' · ' . $b['tekst']);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Ny', 'Basis 30'), null, null);
+sjekk('aldri betalt staar som forfalt',
+    $b['tilstand'] === 'venter' && $b['forfalt'] === true, $b['tekst']);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Fersk', 'Basis 30'), null, $bBetaling($iDag));
+sjekk('betalt i dag er betalt', $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Gammel', 'Basis 30'), null, $bBetaling($forLenge));
+sjekk('betalt for tre maaneder siden er forfalt',
+    $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+
+// Proveperioden betales én gang og loper til slutt_dato. Uten dette ville den
+// forfalt hver maaned, og et proevemedlem lyst roedt fra dag 31.
+$b = Medlemskap::betalingsstatus($bMedlem('Prove', 'Prøv Lissom'), null, $bBetaling($forLenge));
+sjekk('proveperioden forfaller ikke hver maaned',
+    $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+
+// Fast trekk: «neste_trekk» er fasiten paa om perioden er dekket.
+$avt = static fn(string $neste, string $sist = ''): array => [
+    'vipps_agreement_id' => 'agr-test', 'neste_trekk' => $neste,
+    'siste_trekk' => $sist !== '' ? $sist : null, 'status' => 'aktiv'];
+
+// ── Trekket, slik det faktisk gikk ─────────────────────────────────────
+//
+// Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden her.
+// Saa ut til aa fungere greit. Men pengene er fremdeles paa min konto.»
+//
+// Hun hadde rett. Fast trekk i Vipps er en fullmakt, ikke en betaling: cron
+// ber om trekket, og Vipps krever at kunden varsles for det skjer — saa
+// forfallet ligger tre dager fram (VARSEL_DAGER).
+//
+// «subscriptions.siste_trekk» settes i det trekket BES OM. Leste vi bare den,
+// sto det «Betalt» om noe som bare var bestilt, og det ble staaende ogsaa om
+// trekket senere feilet. Det er den samme forvekslingen Eirin ble utsatt for,
+// bakt inn i verkstedets egen oversikt.
+$tAvt = ['vipps_agreement_id' => 'agr-test', 'status' => 'aktiv',
+         'neste_trekk' => gmdate('Y-m-d', strtotime('+27 days')), 'siste_trekk' => $iDag];
+$tTrekk = static fn(string $st): array
+    => ['status' => $st, 'created_at' => $iDag . ' 04:00:00', 'belop_ore' => 199000];
+$tMedlem = $bMedlem('Trekk', 'Årsmedlemskap');
+
+foreach (['opprettet', 'venter'] as $st) {
+    $b = Medlemskap::betalingsstatus($tMedlem, $tAvt, null, $tTrekk($st));
+    sjekk('et trekk som er bestilt («' . $st . '») staar ikke som betalt',
+        $b['tilstand'] === 'bestilt' && $b['forfalt'] === false, $b['tekst']);
+}
+$b = Medlemskap::betalingsstatus($tMedlem, $tAvt, null, $tTrekk('betalt'));
+sjekk('… og et trekk som gikk gjennom staar som betalt',
+    $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+foreach (['feilet', 'avbrutt'] as $st) {
+    $b = Medlemskap::betalingsstatus($tMedlem, $tAvt, null, $tTrekk($st));
+    sjekk('… og et trekk som ikke gikk («' . $st . '») er forfalt',
+        $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+}
+// Trekkdato passert uten at cron har bedt om noe: da er det noe galt, og det
+// skal sies. Dette er tilfellet der jobben i cPanel har stoppet.
+$b = Medlemskap::betalingsstatus($tMedlem,
+    ['vipps_agreement_id' => 'agr-test', 'status' => 'aktiv',
+     'neste_trekk' => gmdate('Y-m-d', strtotime('-4 days')), 'siste_trekk' => null], null, null);
+sjekk('… og en trekkdato som er passert uten trekk er forfalt',
+    $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+
+// Oppslaget maa hente trekket uansett hvordan det gikk — ogsaa det som feilet.
+// sisteBetalinger() teller bare det som ER betalt, og duger derfor ikke her.
+$tMed = (int) DB::settInn('members', [
+    'navn' => 'Trekkprove Testesen', 'epost' => 'trekkprove@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Årsmedlemskap',
+]);
+$tSub = (int) DB::settInn('subscriptions', [
+    'member_id' => $tMed, 'plan' => 'Årsmedlemskap', 'pris_ore' => 199000,
+    'vipps_agreement_id' => 'agr-trekkprove-' . $tMed, 'status' => 'aktiv',
+]);
+DB::settInn('payments', [
+    'vipps_reference' => 'trekkprove-' . $tMed, 'type' => 'recurring_charge',
+    'formal' => 'medlemskap', 'member_id' => $tMed, 'subscription_id' => $tSub,
+    'belop_ore' => 199000, 'status' => 'venter',
+    'idempotency_key' => bin2hex(random_bytes(18)),
+]);
+$tHentet = Medlemskap::sisteTrekk([$tSub]);
+sjekk('oppslaget finner et trekk som ikke er gjort opp enda',
+    isset($tHentet[$tSub]) && (string) $tHentet[$tSub]['status'] === 'venter');
+sjekk('… mens sisteBetalinger() med rette lar det vaere',
+    Medlemskap::sisteBetalinger([$tMed]) === []);
+sjekk('tomt oppslag gir tom liste, ogsaa her', Medlemskap::sisteTrekk([]) === []);
+DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $tMed]);
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $tSub]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMed]);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
+    $avt(gmdate('Y-m-d', strtotime('+20 days')), $iDag), null);
+sjekk('fast trekk som har gaatt gjennom er betalt',
+    $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+$b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
+    $avt(gmdate('Y-m-d', strtotime('-5 days')), $iDag), null);
+sjekk('… og et trekk som ikke gikk er forfalt',
+    $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+
+// Den som ikke er medlem har ingenting aa betale for.
+$ikkeMedlem = ['id' => 0, 'navn' => 'Kursdeltaker', 'medlemskap_type' => null,
+               'status' => 'ingen', 'betaler_ikke' => 0, 'betaler_ikke_grunn' => null];
+sjekk('en som ikke er medlem har ingen betalingsstatus',
+    Medlemskap::betalingsstatus($ikkeMedlem, null, null)['tilstand'] === 'ingen');
+
+// ── Oppslaget for hele lista ───────────────────────────────────────────
+//
+// Ett kall, ikke ett per medlem. Fem hundre medlemmer ville blitt fem hundre
+// sporringer paa medlemsskjermen.
+sjekk('tomt oppslag gir tom liste', Medlemskap::sisteBetalinger([]) === []);
+$sbMedlem = (int) DB::settInn('members', [
+    'navn' => 'Betalingsprove Testesen', 'epost' => 'betalingsprove@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Basis 30',
+]);
+DB::settInn('payments', [
+    'vipps_reference' => 'prove-gammel-' . $sbMedlem, 'type' => 'manuell',
+    'formal' => 'medlemskap', 'member_id' => $sbMedlem, 'belop_ore' => 100000,
+    'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)),
+    'created_at' => '2026-01-01 10:00:00',
+]);
+$nyBet = (int) DB::settInn('payments', [
+    'vipps_reference' => 'prove-ny-' . $sbMedlem, 'type' => 'manuell',
+    'formal' => 'medlemskap', 'member_id' => $sbMedlem, 'belop_ore' => 259000,
+    'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)),
+    'created_at' => '2026-08-01 10:00:00',
+]);
+$sb = Medlemskap::sisteBetalinger([$sbMedlem]);
+sjekk('oppslaget tar den nyeste betalingen, ikke den forste',
+    isset($sb[$sbMedlem]) && (int) $sb[$sbMedlem]['belop_ore'] === 259000,
+    (string) ((int) ($sb[$sbMedlem]['belop_ore'] ?? 0) / 100) . ' kr');
+// En annullert betaling er ikke en betaling. Uten dette ville en refundert
+// maaned staatt som gjort opp.
+DB::kjor('UPDATE payments SET annullert_at = UTC_TIMESTAMP() WHERE id = :i', ['i' => $nyBet]);
+$sb = Medlemskap::sisteBetalinger([$sbMedlem]);
+sjekk('… og hopper over en annullert betaling',
+    isset($sb[$sbMedlem]) && (int) $sb[$sbMedlem]['belop_ore'] === 100000,
+    (string) ((int) ($sb[$sbMedlem]['belop_ore'] ?? 0) / 100) . ' kr');
+DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $sbMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $sbMedlem]);
+
+// ── Serveren maa sende det ut ──────────────────────────────────────────
+$medlApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemslista regner ut betalingen',
+    str_contains($medlApi, 'Medlemskap::betalingsstatus(')
+    && str_contains($medlApi, "'betaling' => \$b['tilstand'], 'betalingTekst' => \$b['tekst']"));
+// «siste_trekk» manglet i oppslaget, saa et fast trekk som HAR gaatt gjennom
+// sto som «venter paa forste trekk». Malt i nettleseren for og etter.
+sjekk('… og oppslaget henter «siste_trekk»',
+    str_contains($medlApi, 's.neste_trekk, s.siste_trekk, s.vipps_agreement_id'));
+sjekk('… og timer igjen, ikke bare brukt',
+    str_contains($medlApi, "'timerIgjen' =>"));
+sjekk('… og haken staar paa raden',
+    str_contains($medlApi, "'betalerIkke'     => !empty(\$m['betaler_ikke'])"));
+sjekk('medlemsruta svarer paa det samme',
+    str_contains($medlApi, "'betalerIkke'      => !empty(\$m['betaler_ikke'])"));
+sjekk('serveren tar imot haken',
+    str_contains($medlApi, "if (\$handling === 'betaler-ikke') {")
+    && str_contains($medlApi, "'betaler_ikke'       => \$paa ? 1 : 0,"));
+// Grunnen hoerer til haken. Skrus den av, skal ikke en gammel begrunnelse bli
+// staaende og dukke opp igjen neste gang.
+sjekk('… og glemmer grunnen naar haken skrus av',
+    str_contains($medlApi, "'betaler_ikke_grunn' => \$paa && \$grunn !== '' ? \$grunn : null,"));
+sjekk('innmeldingen kan sette haken med det samme',
+    str_contains($medlApi, "\$fri      = Foresporsel::tekst('betalerIkke') === 'ja';"));
+
+$ovApi = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('Oversikt teller de ubetalte med den samme regelen',
+    str_contains($ovApi, 'Medlemskap::betalingsstatus(')
+    && str_contains($ovApi, "'ubetalte'    => \$ubetalte,"));
+sjekk('… og teller ikke dem som er fritatt',
+    str_contains($ovApi, "if (\$b['tilstand'] === 'fri') {"));
+
+// ── Skjermene ──────────────────────────────────────────────────────────
+sjekk('medlemsraden viser om det er betalt',
+    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>')
+    && str_contains($sida, "betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+sjekk('… og timer igjen',
+    str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
+// Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
+// seks og lista vist sju.
+sjekk('filteret «Ubetalte» finnes',
+    str_contains($sida, "'Alle', 'Aktive', 'Ubetalte', 'Sluttet'"));
+sjekk('… og teller det samme som kortet',
+    str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingForfalt;"));
+sjekk('Oversikt har kortet «Medlemmer og betaling»',
+    str_contains($sida, "kort('Medlemmer og betaling',"));
+sjekk('… og det gaar til de ubetalte',
+    str_contains($sida, "{ medlemFilter: 'Ubetalte', medlemSok: '' }"));
+
+// Haken staar begge steder skjemaet staar, og i begge personrutene. Sto den
+// bare det ene stedet, ville de to skjermene sagt forskjellige ting.
+sjekk('haken staar i innmeldingsskjemaet, begge steder',
+    substr_count($sida, 'checked="{{ miFri }}" onChange="{{ vekslMiFri }}"') === 2);
+sjekk('… og i medlemsruta, begge steder',
+    substr_count($sida, 'checked="{{ personFri }}" onChange="{{ vekslPersonFri }}"') === 2);
+sjekk('… og innmeldingen sender den',
+    str_contains($sida, "betalerIkke: this.state.miFri ? 'ja' : 'nei',"));
+sjekk('… og medlemsruta lagrer den',
+    str_contains($sida, "this.medlemKall({ handling: 'betaler-ikke', medlemId: p.id,"));
+
+// ── Utfyllende informasjon paa medlemskapene ───────────────────────────
+//
+// Eieren, 2. september: «jeg vil ha utvidet info paa medlemskapene», og
+// deretter én melding per plan med teksten som skal staa der.
+//
+// «beskrivelse» er én setning paa kortet og rommer 400 tegn. Teksten som skal
+// inn er seks avsnitt lang og hoerer hjemme paa sida man kommer til naar man
+// klikker seg inn. Migrasjon 127 gir den et eget felt, og «Viktig aa vite»
+// et til.
+echo "\n== Utfyllende info paa medlemskapene ==\n";
+
+$mig127 = file_get_contents(dirname(__DIR__) . '/db/migrations/127_utfyllende_info_pa_medlemskap.sql');
+sjekk('migrasjon 127 gir planene langtekst og viktig',
+    str_contains($mig127, 'ADD COLUMN langtekst TEXT')
+    && str_contains($mig127, 'ADD COLUMN viktig    TEXT'));
+sjekk('… og kolonnene staar i basen',
+    DB::harKolonne('membership_plans', 'langtekst')
+    && DB::harKolonne('membership_plans', 'viktig'));
+
+// Teksten er lagret, ikke skrevet inn i koden.
+foreach (['Prøv Lissom', 'Basis 30', 'Årsmedlemskap'] as $navn) {
+    $pl = Medlemskap::plan($navn);
+    sjekk('«' . $navn . '» har utfyllende tekst i basen',
+        $pl !== null && mb_strlen((string) $pl['langtekst']) > 600,
+        mb_strlen((string) ($pl['langtekst'] ?? '')) . ' tegn');
+    sjekk('… og «Viktig aa vite»',
+        $pl !== null && Medlemskap::punkter($pl['viktig']) !== [],
+        count(Medlemskap::punkter($pl['viktig'] ?? null)) . ' punkter');
+    // Avsnittene skal staa som avsnitt. Ett avsnitt betyr at tomlinjene er
+    // borte, og da blir hele teksten én klump paa sida.
+    sjekk('… og teksten staar i flere avsnitt',
+        $pl !== null && count(preg_split('/\r?\n\s*\r?\n/', trim((string) $pl['langtekst']))) >= 4);
+}
+
+// Serveren sender dem ut. Uten dette staar teksten i basen og ingen ser den.
+$medApi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('api/medlemskap.php sender langtekst og viktig',
+    str_contains($medApi, "'langtekst'  => (string) (\$p['langtekst'] ?? '')")
+    && str_contains($medApi, "'viktig'     => Medlemskap::punkter(\$p['viktig'] ?? null)"));
+
+// Nettsida bruker dem: den lange teksten er brodteksten, «Viktig aa vite» er
+// en egen bolk under de andre seksjonene.
+sjekk('medlemskapssida viser den utfyllende teksten',
+    str_contains($sida, 'om: o.langtekst'));
+sjekk('… og «Viktig aa vite» som egen bolk',
+    str_contains($sida, "['Viktig å vite', (k.viktig || []).join('\\n')],"));
+
+// Skjemaet i admin. Uten feltene finnes teksten bare i en migrasjon, og
+// verkstedet maa be om hjelp for aa rette et komma.
+sjekk('planskjemaet har begge feltene',
+    str_contains($sida, 'value="{{ plLangtekst }}" onChange="{{ settPlLangtekst }}"')
+    && str_contains($sida, 'value="{{ plViktig }}" onChange="{{ settPlViktig }}"'));
+sjekk('… og de er koblet til skjemaet',
+    str_contains($sida, "plLangtekst: v('langtekst'),  settPlLangtekst: sett('langtekst'),")
+    && str_contains($sida, "plViktig: v('viktig'),        settPlViktig: sett('viktig'),"));
+// Lagringen maa sende dem, og «Rediger» maa hente dem. Mangler det ene, blir
+// teksten toemt i det noen retter prisen.
+sjekk('… lagringen sender dem',
+    str_contains($sida, "langtekst: d.langtekst || '', viktig: d.viktig || '',"));
+sjekk('… og «Rediger» henter dem',
+    str_contains($sida, "langtekst: pl.langtekst || '', viktig: pl.viktig || '',"));
+$planApi127 = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+sjekk('… og serveren tar dem imot',
+    str_contains($planApi127, "'langtekst'   => mb_substr(trim((string) (\$kropp['langtekst'] ?? '')), 0, 20000),")
+    && str_contains($planApi127, "'viktig'      => implode(\"\\n\", Medlemskap::punkter((string) (\$kropp['viktig'] ?? ''))),"));
+sjekk('… og sender dem tilbake til skjemaet',
+    str_contains($planApi127, "'langtekst'   => (string) (\$p['langtekst'] ?? ''),"));
+
+// ── Bildet velges, det skrives ikke ────────────────────────────────────
+//
+// Eieren, 2. september: «jeg vil ogsaa ha mulighet aa legge ut bilder direkte
+// i dette bildet, ikke slik det er naa hvor det staar Bilde /
+// uploads_shutterstock_2829103797.jpg».
+sjekk('medlemskapet har billedvelger, ikke et filnavnfelt',
+    str_contains($sida, "plVelgBilde: () => this.apneBildevalg({ slag: 'plan' }),")
+    && str_contains($sida, 'on-click="{{ plVelgBilde }}"'));
+sjekk('… og tekstfeltet med filnavnet er borte',
+    !str_contains($sida, 'value="{{ plBilde }}" onChange="{{ settPlBilde }}"')
+    && !str_contains($sida, 'Filnavnet på bildet slik det heter under Nettsiden → Bilder.'));
+sjekk('… og det valgte bildet havner i skjemaet',
+    str_contains($sida, "if (v.slag === 'plan') {\n      this.endrePlan({ bilde: url || '' });"));
+
+// ── Faktaboksen og «Passer for» hoerer til kursene ─────────────────────
+//
+// Eieren, 2. september: «firkanten som er paa alle kurs naa, med Varighet
+// 30 timer i maaneden skal jeg ikke ha» og «jeg vil heller ikke ha med dette,
+// Passer for: Alle — ingen forkunnskaper nodvendig». Bare paa medlemskapene:
+// paa kursene er Nivaa, Varighet, Du laerer og Med hjem felt som fylles ut i
+// kursoppsettet.
+sjekk('faktaboksen staar ikke paa medlemskapene',
+    str_contains($sida, "bVisFakta: this.state.fra !== 'medlemskap' && this.bFaktaRader().length > 0,"));
+sjekk('«Passer for»-linja staar ikke paa medlemskapene',
+    str_contains($sida, "bVisPasserFor: this.state.fra !== 'medlemskap',"));
+sjekk('… og begge staar bak en vakt i markupen',
+    str_contains($sida, '<sc-if value="{{ bVisFakta }}"')
+    && str_contains($sida, '<sc-if value="{{ bVisPasserFor }}"'));
+// Regnestykket staar ett sted, saa ramma ikke kan staa tom.
+sjekk('… og faktaradene regnes ut ett sted',
+    str_contains($sida, 'bFakta: this.bFaktaRader(),')
+    && substr_count($sida, 'bFaktaRader() {') === 1);
+
+// ── «Mini 15» ──────────────────────────────────────────────────────────
+//
+// Eieren, 2. september: «legg til et nytt medlemskap … Pris kr 1790».
+echo "\n== Mini 15 ==\n";
+
+$mini = Medlemskap::plan('Mini 15');
+sjekk('«Mini 15» ligger i basen og er i salg', $mini !== null);
+sjekk('… koster kr 1 790', (int) ($mini['pris_ore'] ?? 0) === 179000,
+    ((int) ($mini['pris_ore'] ?? 0) / 100) . ' kr');
+sjekk('… og gir 15 timer i maaneden', (int) ($mini['timer'] ?? 0) === 15);
+sjekk('… med to maaneders binding og én maaneds oppsigelse',
+    (int) ($mini['binding_mnd'] ?? 0) === 2 && (int) ($mini['oppsigelse_mnd'] ?? 0) === 1);
+sjekk('… er ikke en proveperiode', (int) ($mini['engangs'] ?? 1) === 0);
+sjekk('… og lar medlemmet velge betalingsmaate',
+    $mini !== null && !Medlemskap::kreverFastTrekk($mini));
+sjekk('… har teksten sin', mb_strlen((string) ($mini['langtekst'] ?? '')) > 600
+    && Medlemskap::punkter($mini['punkter'] ?? null) !== []
+    && Medlemskap::punkter($mini['viktig'] ?? null) !== []);
+// Ligger mellom proveperioden og Basis 30 — i pris, i timer og i rekka.
+$rekke = array_column(Medlemskap::planer(), 'navn');
+sjekk('… og staar mellom «Prøv Lissom» og «Basis 30»',
+    array_search('Mini 15', $rekke, true) === array_search('Prøv Lissom', $rekke, true) + 1
+    && array_search('Basis 30', $rekke, true) === array_search('Mini 15', $rekke, true) + 1,
+    implode(' · ', $rekke));
+// To planer paa samme plass i sorteringa gir tilfeldig rekkefolge.
+sjekk('… uten at to planer deler plass i rekka',
+    count(array_unique(array_column(Medlemskap::planer(), 'sortering')))
+    === count(Medlemskap::planer()));
+
+// ── Avpubliser et kurs ─────────────────────────────────────────────────
+//
+// Eieren, 2. september: «nå vil jeg at du legger til så jeg kan avpublisere
+// kurs, altså ikke vis på nettsiden».
+//
+// Basen har kjent forskjell paa «kladd» og «publisert» hele tida, og
+// api/kurs.php henter bare det som staar som publisert. Kurslista i admin
+// skriver til og med «Ikke publisert». Men kursskjemaet sendte
+// «status: 'publisert'» fast, saa det fantes ingen vei tilbake: eneste maaten
+// aa faa et kurs vekk fra nettsida var aa slette det — og da fulgte datoene
+// og paameldingene med.
+echo "\n== Avpubliser et kurs ==\n";
+
+// Bryteren i skjemaet. Samme etikett som paa kalenderdatoene, saa de to
+// stedene sier det samme.
+sjekk('kursskjemaet har «Publisert paa nettsiden»',
+    str_contains($sida, 'checked="{{ kPublisert }}" on-change="{{ toggleKPublisert }}"')
+    && substr_count($sida, 'label="Publisert på nettsiden"') === 2);
+sjekk('… og bryteren er koblet',
+    str_contains($sida, 'kPublisert: this.state.kPublisert !== false,')
+    && str_contains($sida, 'toggleKPublisert: () => this.setState(s => ({ kPublisert: s.kPublisert === false })),'));
+
+// Kjernen: statusen kommer fra skjemaet, ikke fra en fast streng.
+sjekk('lagringen sender statusen fra skjemaet',
+    str_contains($sida, "status: rad.publisert === false"));
+// Kontrollen. Uten denne ville proven over vaere gronn ogsaa om den gamle
+// linja sto igjen ved siden av den nye — og da er det den som gjelder, for
+// den siste tilordningen vinner i objektet som sendes til serveren.
+//
+// Vi ser bare paa kroppen lagreKurs() sender. «status: 'publisert'» staar med
+// full rett andre steder — varer, artikler og medlemssalg har sin egen.
+$kursLagring = (static function (string $kode): string {
+    $fra = strpos($kode, 'lagreKurs(rad, okter, behold) {');
+    if ($fra === false) {
+        return '';
+    }
+    $til = strpos($kode, '.then(r => r.json()', $fra);
+    return $til === false ? '' : substr($kode, $fra, $til - $fra);
+})($sida);
+sjekk('… og kursoppsettet er funnet i det hele tatt', $kursLagring !== '');
+sjekk('… og den faste «publisert» er borte fra kurslagringen',
+    !str_contains($kursLagring, "status: 'publisert',"));
+sjekk('… og et avlyst kurs blir ikke gjort om til en kladd',
+    str_contains($sida, "? ((eksisterende && eksisterende.status === 'avlyst') ? 'avlyst' : 'kladd')"));
+
+// Skjemaet maa vite hva kurset staar som naar det aapnes, ellers slaar
+// bryteren seg paa igjen av seg selv.
+sjekk('skjemaet leser statusen naar kurset aapnes',
+    str_contains($sida, "kPublisert: (raa.status || 'publisert') === 'publisert',"));
+// Et nytt kurs skal alltid starte som publisert. Uten dette hang av-stillingen
+// fra forrige kurs igjen i skjemaet.
+sjekk('… og et nytt kurs starter som publisert',
+    substr_count($sida, 'kUtenDato: false, kPublisert: true,') === 4);
+
+// Lista maa vise det. Merket sto bare i basen-fanen; tok du et kurs ned og
+// gikk tilbake til kurslista, saa den helt lik ut.
+sjekk('kurslista merker det som ikke er publisert',
+    substr_count($sida, "k.status && k.status !== 'publisert' ? 'Ikke publisert' : ''") === 2);
+
+// Serveren tar imot «kladd» — den har gjort det hele tida.
+$kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+sjekk('serveren tar imot kladd, publisert og avlyst',
+    str_contains($kursApi, "in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)"));
+// … og nettsida henter bare det som er publisert. Det er dette som gjor at
+// bryteren faktisk tar kurset ned.
+foreach (['api/kurs.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
+    // booking.php skriver spoersmaalet i en enkeltfnuttet streng, saa fnuttene
+    // rundt «publisert» staar escapet der. Samme krav, annen skrivemaate.
+    $kode = file_get_contents(dirname(__DIR__) . '/' . $fil);
+    sjekk('«' . $fil . '» krever status = publisert',
+        str_contains($kode, "status = 'publisert'")
+        || str_contains($kode, "status = \\'publisert\\'"));
+}
+
+// ── «Fri tilgang» ut av salg ───────────────────────────────────────────
+//
+// Eieren, 2. september: «meldemskapet proff - fri tilgang skal avpubliseres».
+//
+// Planskjemaet har haken «I salg på nettsiden» fra for, og Medlemskap::planer()
+// henter bare rader med aktiv = 1. Migrasjonen setter den av.
+echo "\n== «Fri tilgang» ut av salg ==\n";
+
+$mig126 = file_get_contents(dirname(__DIR__) . '/db/migrations/126_fri_tilgang_ut_av_salg.sql');
+sjekk('migrasjon 126 tar «Fri tilgang» ut av salg',
+    str_contains($mig126, "SET aktiv = 0")
+    && str_contains($mig126, "WHERE navn = 'Fri tilgang'"));
+sjekk('… og planen staar ikke lenger i salg',
+    Medlemskap::plan('Fri tilgang') === null);
+sjekk('… mens de andre planene staar som for',
+    Medlemskap::plan('Basis 30') !== null
+    && Medlemskap::plan('Årsmedlemskap') !== null
+    && Medlemskap::plan('Prøv Lissom') !== null);
+// Raden blir staaende, saa den som alt staar paa den beholder prisen sin —
+// og verkstedet kan legge den ut igjen med haken i planskjemaet.
+sjekk('… men raden er ikke slettet',
+    DB::en('SELECT navn FROM membership_plans WHERE navn = :n', ['n' => 'Fri tilgang']) !== null);
+
+// Haken maa kunne skrus av uten aa dra med seg noe annet.
+//
+// «krever_fast_trekk» ble skrevet ubetinget i api/admin/planer.php, og
+// planskjemaet sender ikke feltet. Aarsmedlemskapet krever fast trekk, og det
+// ville falt bort i det noen rettet en skrivefeil paa planen.
+$planApi = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+sjekk('planlagringen roerer ikke fast trekk naar feltet ikke er med',
+    str_contains($planApi, "if (!array_key_exists('fastTrekk', \$kropp)\n        || !DB::harKolonne('membership_plans', 'krever_fast_trekk')) {"));
+sjekk('… og aarsmedlemskapet krever fortsatt fast trekk',
+    Medlemskap::kreverFastTrekk(Medlemskap::plan('Årsmedlemskap') ?? []));
 
 // ── PHP-en maa la seg lese ─────────────────────────────────────────────
 //

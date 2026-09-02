@@ -20,6 +20,18 @@ final class Medlemskap
     /** Sa mange dager for forfall ber vi Vipps om trekket. */
     private const VARSEL_DAGER = 3;
 
+    /**
+     * Hvilken utgave av medlemsvilkaarene som gjelder naa.
+     *
+     * Lagres sammen med samtykket ved innmelding. Uten den vet vi at noen
+     * huket av, men ikke hva de huket av PAA — og vilkaar som kan endres uten
+     * spor er ikke verdt mye den dagen noen er uenig.
+     *
+     * Datoen er den teksten sist ble endret. Endres vilkaarene, settes denne
+     * opp samtidig, saa en rad fra i fjor peker paa teksten som gjaldt i fjor.
+     */
+    public const VILKAAR_VERSJON = '2026-09-02';
+
     /** @return array<string,mixed>|null */
     public static function plan(string $navn): ?array
     {
@@ -93,6 +105,192 @@ final class Medlemskap
         return $plan === null || $plan['timer'] === null ? null : (int) $plan['timer'];
     }
 
+    /**
+     * Har medlemmet betalt for medlemskapet sitt?
+     *
+     * Skjermen viste «Fast trekk» eller «Gjor opp selv» — det er
+     * betalingsMAATEN, ikke betalingen. Eieren, 2. september: «jeg kan ikke se
+     * paa min side paa et medlem om det er betalt for medlemskapet eller
+     * ikke». Tallene laa i basen hele tida; ingen slo dem opp.
+     *
+     * Regelen staar her og ikke i skjermene fordi tre steder spor om den:
+     * medlemslista, kortet paa Oversikt og medlemsruta. Sto den tre steder,
+     * kunne de svart hver sitt om den samme personen.
+     *
+     * @param array      $medlem  raden fra members
+     * @param array|null $avtale  nyeste subscriptions-rad, eller null
+     * @param array|null $siste   nyeste betalte medlemskapsbetaling, eller null
+     * @param array|null $trekk   nyeste trekk paa avtalen uansett utfall, eller null
+     * @return array{tilstand:string,tekst:string,forfalt:bool}
+     *
+     * tilstand er én av:
+     *   fri         medlemmet skal ikke betale (haken i admin)
+     *   betalt      det er gjort opp for perioden som loper
+     *   bestilt     trekket er bedt om, men pengene har ikke flyttet seg enda
+     *               — Vipps krever forvarsel, saa det tar noen dager
+     *   forfalt     perioden er ute og det er ikke betalt
+     *   venter      meldt inn, men foerste betaling er ikke kommet enda
+     *   ingen       ikke medlem — ingenting aa betale for
+     */
+    public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null): array
+    {
+        $ut = static fn(string $t, string $tekst, bool $forfalt = false): array
+            => ['tilstand' => $t, 'tekst' => $tekst, 'forfalt' => $forfalt];
+
+        // Haken gaar foran alt. Et gratismedlem skal aldri lyse roedt.
+        if (!empty($medlem['betaler_ikke'])) {
+            $grunn = trim((string) ($medlem['betaler_ikke_grunn'] ?? ''));
+            return $ut('fri', $grunn !== '' ? 'Fri — ' . $grunn : 'Betaler ikke');
+        }
+
+        $status = (string) ($medlem['status'] ?? 'ingen');
+        if (!in_array($status, ['prove', 'aktiv', 'pause'], true)) {
+            return $ut('ingen', '');
+        }
+
+        $idag = gmdate('Y-m-d');
+        $kort = static fn(string $d): string => Booking::norskDatoKort($d . ' 12:00:00');
+
+        // ── Fast trekk i Vipps ──────────────────────────────────────────
+        //
+        // Her er det Vipps som trekker, og «neste_trekk» er fasiten paa om
+        // perioden er dekket. Har dagen passert uten at «siste_trekk» fulgte
+        // etter, gikk trekket ikke gjennom.
+        $fastTrekk = $avtale !== null
+            && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== '';
+        if ($fastTrekk) {
+            $neste = (string) ($avtale['neste_trekk'] ?? '');
+            $sist  = (string) ($avtale['siste_trekk'] ?? '');
+
+            // ── Trekket, slik det faktisk gikk ──────────────────────────
+            //
+            // «siste_trekk» settes i det trekket BES OM. Vipps krever at
+            // kunden varsles for et fast trekk, saa forfallet ligger noen
+            // dager fram — og i mellomtida har ingen penger flyttet seg.
+            // Leste vi bare den datoen, sto det «Betalt» om noe som bare var
+            // bestilt, og det ble staaende ogsaa om trekket senere feilet.
+            $tstatus = $trekk === null ? '' : (string) $trekk['status'];
+            if ($tstatus === 'feilet' || $tstatus === 'avbrutt') {
+                return $ut('forfalt', 'Trekket gikk ikke — prøvd '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
+            }
+            if ($tstatus === 'opprettet' || $tstatus === 'venter') {
+                return $ut('bestilt', 'Trekket er bestilt '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10))
+                    . ' · venter på Vipps');
+            }
+            if ($tstatus === 'betalt' || $tstatus === 'delvis_refundert') {
+                return $ut('betalt', 'Trukket '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10))
+                    . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+            }
+
+            // Ingen trekk aa se paa enda. Da er datoene alt vi har.
+            if ($neste !== '' && $neste < $idag) {
+                return $ut('forfalt', 'Skulle vært trukket ' . $kort($neste), true);
+            }
+            if ($sist !== '') {
+                return $ut('betalt', 'Trukket ' . $kort($sist)
+                    . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+            }
+            return $ut('venter', $neste !== '' ? 'Trekkes ' . $kort($neste) : 'Venter på første trekk');
+        }
+
+        // ── Gjor opp selv ───────────────────────────────────────────────
+        //
+        // Ingen avtale aa spore. Da er den siste registrerte betalingen det
+        // eneste vi har — den som huker av i Kassa skriver den inn.
+        if ($siste === null) {
+            return $ut('venter', 'Ikke betalt ennå', true);
+        }
+        $betaltDen = substr((string) $siste['created_at'], 0, 10);
+
+        // Proveperioden betales én gang og loper til slutt_dato. Da er det
+        // ikke noe mer aa betale, og den skal ikke forfalle hver maaned.
+        $plan = self::plan((string) ($medlem['medlemskap_type'] ?? ''));
+        if ($plan !== null && (int) ($plan['engangs'] ?? 0) === 1) {
+            return $ut('betalt', 'Betalt ' . $kort($betaltDen));
+        }
+
+        // Loepende medlemskap: betalingen dekker én maaned fram.
+        $dekkerTil = gmdate('Y-m-d', strtotime($betaltDen . ' +1 month'));
+        if ($dekkerTil < $idag) {
+            return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)
+                . ' · sist betalt ' . $kort($betaltDen), true);
+        }
+        return $ut('betalt', 'Betalt ' . $kort($betaltDen) . ' · neste ' . $kort($dekkerTil));
+    }
+
+    /**
+     * Siste trekk per avtale — uansett hvordan det gikk.
+     *
+     * sisteBetalinger() under teller bare det som ER betalt. Til «har hun
+     * betalt?» trengs ogsaa det som er BESTILT og ikke gjort opp enda, og det
+     * som feilet. «subscriptions.siste_trekk» duger ikke: den settes i det
+     * trekket bes om, ikke naar pengene kommer.
+     *
+     * Uten dette sa admin «BETALT · Trukket 2. september» i de tre-fire
+     * dagene mellom bestilling og oppgjor — og fortsatte aa si det om trekket
+     * senere feilet. Det er den samme forvekslingen medlemmet Eirin ble
+     * utsatt for, bakt inn i verkstedets egen oversikt.
+     *
+     * @param int[] $abonnementIder
+     * @return array<int,array<string,mixed>>
+     */
+    public static function sisteTrekk(array $abonnementIder): array
+    {
+        if ($abonnementIder === []) {
+            return [];
+        }
+        $inn = implode(',', array_map('intval', $abonnementIder));
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT p.subscription_id, p.status, p.created_at, p.belop_ore
+               FROM payments p
+               JOIN (SELECT subscription_id, MAX(id) AS siste
+                       FROM payments
+                      WHERE formal = 'medlemskap'
+                        AND annullert_at IS NULL
+                        AND subscription_id IN ({$inn})
+                   GROUP BY subscription_id) n ON n.siste = p.id"
+        ) as $r) {
+            $ut[(int) $r['subscription_id']] = $r;
+        }
+        return $ut;
+    }
+
+    /**
+     * Siste betalte medlemskapsbetaling, per medlem.
+     *
+     * Ett oppslag for hele lista. Ett per medlem ville blitt fem hundre
+     * sporringer paa medlemsskjermen.
+     *
+     * @param int[] $medlemIder
+     * @return array<int,array<string,mixed>>
+     */
+    public static function sisteBetalinger(array $medlemIder): array
+    {
+        if ($medlemIder === []) {
+            return [];
+        }
+        $inn = implode(',', array_map('intval', $medlemIder));
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT p.member_id, p.created_at, p.belop_ore, p.maate, p.type
+               FROM payments p
+               JOIN (SELECT member_id, MAX(id) AS siste
+                       FROM payments
+                      WHERE formal = 'medlemskap'
+                        AND status IN ('betalt','delvis_refundert')
+                        AND annullert_at IS NULL
+                        AND member_id IN ({$inn})
+                   GROUP BY member_id) n ON n.siste = p.id"
+        ) as $r) {
+            $ut[(int) $r['member_id']] = $r;
+        }
+        return $ut;
+    }
+
     /** Avtalen et medlem har naa, eller null. */
     public static function avtale(int $medlemId): ?array
     {
@@ -113,6 +311,48 @@ final class Medlemskap
      *
      * @return array{url:string,id:int}
      */
+    /**
+     * Et paagaaende innmeldingsforsoek paa den samme planen, eller null.
+     *
+     * Eieren, 2. september: e-posten «Nytt medlem» kom to ganger, i det samme
+     * minuttet. api/bli-medlem.php hadde ingen vakt mot at det samme forsoeket
+     * kom to ganger — vakta under slaar bare til paa en avtale som ER aktiv,
+     * og en avtale som staar «venter» stopper ingenting. Andre gang lagde
+     * derfor en avtale til i Vipps, en soknadsrad til, og alle varslene om
+     * igjen. To avtaler er verre enn to e-poster: det er to trekk.
+     *
+     * Vinduet er kort med vilje. Fem minutter dekker et dobbeltklikk og en
+     * tilbakeknapp fra Vipps. Lenger, og en som virkelig vil proeve paa nytt
+     * ville sittet fast med en adresse som kanskje er utloept hos Vipps.
+     *
+     * Planen er med i oppslaget: bytter man medlemskap i mellomtida, er det
+     * et annet forsoek, og da skal det opprettes paa nytt.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function paagaaendeForsok(int $medlemId, string $planNavn): ?array
+    {
+        if (!DB::harKolonne('subscriptions', 'vipps_url')) {
+            return null;
+        }
+        return DB::en(
+            "SELECT * FROM subscriptions
+              WHERE member_id = :m AND plan = :p AND status = 'venter'
+                AND vipps_url IS NOT NULL AND vipps_url <> ''
+                AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
+           ORDER BY id DESC LIMIT 1",
+            ['m' => $medlemId, 'p' => $planNavn]
+        );
+    }
+
+    /** Lagrer adressen forsoeket godkjennes paa, om kolonna finnes. */
+    private static function husk(int $abonnementId, string $url): void
+    {
+        if ($url !== '' && DB::harKolonne('subscriptions', 'vipps_url')) {
+            DB::oppdater('subscriptions', ['vipps_url' => mb_substr($url, 0, 500)], ['id' => $abonnementId]);
+        }
+    }
+
     public static function startAvtale(array $medlem, string $planNavn): array
     {
         $plan = self::plan($planNavn);
@@ -125,6 +365,13 @@ final class Medlemskap
         $fra = self::avtale((int) $medlem['id']);
         if ($fra !== null && $fra['status'] === 'aktiv') {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
+        }
+
+        // Det samme forsoeket to ganger skal gi den samme avtalen, ikke to.
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn);
+        if ($igjen !== null) {
+            return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'],
+                    'gjentakelse' => true];
         }
 
         $vipps = Vipps::opprettAvtale(
@@ -152,7 +399,8 @@ final class Medlemskap
                 : null,
         ]);
 
-        return ['url' => $vipps['url'], 'id' => $id];
+        self::husk((int) $id, (string) $vipps['url']);
+        return ['url' => $vipps['url'], 'id' => $id, 'gjentakelse' => false];
     }
 
     /**
@@ -178,6 +426,14 @@ final class Medlemskap
         $fra = self::avtale((int) $medlem['id']);
         if ($fra !== null && $fra['status'] === 'aktiv') {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
+        }
+
+        // Samme vakt som i startAvtale(): det samme forsoeket to ganger skal
+        // gi den samme betalingen, ikke to.
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn);
+        if ($igjen !== null) {
+            return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'],
+                    'gjentakelse' => true];
         }
 
         $binding = (int) $plan['binding_mnd'];
@@ -252,7 +508,8 @@ final class Medlemskap
         }
 
         DB::oppdater('payments', ['status' => 'venter'], ['id' => $betalingId]);
-        return ['url' => $betaling['url'], 'id' => $id];
+        self::husk((int) $id, (string) $betaling['url']);
+        return ['url' => $betaling['url'], 'id' => $id, 'gjentakelse' => false];
     }
 
     /**

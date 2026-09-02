@@ -1,0 +1,26 @@
+-- Ett forsoek paa innmelding skal gi ÉN avtale i Vipps.
+--
+-- Eieren, 2. september: «nytt medlem har meldt seg inn, faar denne e-posten
+-- 2 ganger» — bade «Nytt medlem: Anniken Johnsgaard» og «Varsel maa sendes
+-- for haand: Nytt medlem». Begge kom 20:42, samme minutt.
+--
+-- api/bli-medlem.php har ingen vakt mot at det samme forsoeket kommer to
+-- ganger. Vakta i Medlemskap::startAvtale() slaar bare til paa en avtale som
+-- alt er «aktiv»; en avtale som staar «venter» — den forste klikket nettopp
+-- opprettet — stopper ingenting. Andre gang gaar derfor gjennom og lager:
+--
+--   · en avtale til i Vipps
+--   · en rad til i membership_applications
+--   · en kvittering til, til kunden
+--   · en «Nytt medlem» til, til verkstedet
+--   · ett SMS-forsoek til → enda en «maa sendes for haand»
+--
+-- Det er ikke doble e-poster som er det verste her. Det er de to avtalene:
+-- to trekk i Vipps for det samme medlemskapet.
+--
+-- Adressen forsoeket godkjennes paa lagres ikke noe sted i dag. Uten den kan
+-- vi ikke svare det andre kallet med det FOERSTE forsoeket — vi maatte laget
+-- et nytt. Her faar den en kolonne, saa det samme forsoeket kan svares med
+-- den samme adressen.
+ALTER TABLE subscriptions
+  ADD COLUMN vipps_url VARCHAR(500) NULL AFTER vipps_agreement_id;

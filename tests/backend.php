@@ -7868,6 +7868,36 @@ if (DB::harKolonne('courses', 'folger_apningstid')) {
     }
 }
 
+echo "\n== Kvitteringen ser paa haken ==\n";
+// Eieren, 2. september, etter aa ha huket av «Vis kurset paa nettsiden ogsaa
+// uten datoer»: «Huket av paa at det skal vises uten datoer som du ser, men
+// fikk beskjed om at det ikke vises uten datoer».
+//
+// Kurset LAA ute — utenDatoOk var satt, og kortet sto under Events. Det var
+// kvitteringen som sa noe annet enn det som var sant, og han trodde derfor
+// at haken ikke virket.
+//
+// Beskjeden ble regnet av datoene alene:
+//
+//     kvittering: framover === 0 ? '... vises ikke ute' : '... er lagret'
+//
+// «framover» er datoer som ligger foran oss. Haken var aldri med i
+// regnestykket, saa den kunne ikke gjore beskjeden riktig.
+sjekk('«vises ikke ute» sier ikke fra naar haken er paa',
+    str_contains($sida, "kvittering: (framover === 0 && !\$rad->utenDato)")
+    || str_contains($sida, 'kvittering: (framover === 0 && !rad.utenDato)'));
+// Og det motsatte: staar haken av og kurset mangler datoer, skal advarselen
+// staa som for. Det var den som gjorde at et kurs ikke forsvant i stillhet.
+sjekk('… men staar der fortsatt naar haken er av',
+    str_contains($sida, "? rad.navn + ' er lagret, men vises ikke ute'"));
+// Detaljlinja skal si hva som faktisk vises, ikke bare at det gikk bra.
+sjekk('… og detaljen sier at kortet staar med «Kontakt oss»',
+    str_contains($sida, "? 'Kurset står på nettsiden med «Kontakt oss», siden det ikke har noen dato framover.'"));
+// Regelen paa nettsida er den beskjeden skal stemme med: et kurs uten datoer
+// vises naar haken er paa. Staar de to ulikt, lyver den ene.
+sjekk('… og nettsida slipper gjennom et kurs uten datoer naar haken er paa',
+    str_contains($sida, ".filter(k => (k.datoer || []).length > 0 || k.utenDatoOk)"));
+
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
 $phpFiler = [];

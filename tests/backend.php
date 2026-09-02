@@ -991,7 +991,14 @@ DB::kjor("DELETE FROM discount_tiers");
 // ---------------------------------------------------------------------------
 echo "\n== Medlemskap ==\n";
 
-sjekk('planene ligger i basen', count(Medlemskap::planer()) >= 4);
+// Tallet sto som «minst fire». Da var det bundet til hvor mange planer som
+// tilfeldigvis laa ute, og proven falt den dagen en av dem ble tatt ut av
+// salg. Paastanden er at planene kommer fra basen — og at bare de i salg
+// kommer med.
+sjekk('planene ligger i basen',
+    Medlemskap::planer() !== []
+    && count(Medlemskap::planer())
+       === (int) DB::verdi('SELECT COUNT(*) FROM membership_plans WHERE aktiv = 1'));
 // Navnet paa planen sto her som tekst. Verkstedet doepte «30 timer» om til
 // «Basis 30» i admin — noe de har full rett til — og testen falt. Den skal
 // proeve oppslaget, ikke hva planen heter denne uka.
@@ -1214,10 +1221,16 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMedlem]);
 // ── Fast trekk eller ordne selv ────────────────────────────────────────
 sjekk('aarsmedlemskapet krever fast trekk',
     Medlemskap::kreverFastTrekk(Medlemskap::plan('Årsmedlemskap') ?? []));
-foreach (['Basis 30', 'Fri tilgang', 'Prøv Lissom'] as $fritt) {
-    $pl = Medlemskap::plan($fritt);
-    sjekk('«' . $fritt . '» lar medlemmet velge',
-        $pl !== null && !Medlemskap::kreverFastTrekk($pl));
+// Alle de andre planene i salg lar medlemmet velge selv. Sto navnene i en
+// liste her, ble proven roed den dagen en plan ble tatt ut av salg — og det
+// er en helt lovlig ting aa gjore. Naa gaar den paa planene som faktisk
+// ligger ute.
+foreach (Medlemskap::planer() as $pl) {
+    $fritt = (string) $pl['navn'];
+    if ($fritt === 'Årsmedlemskap') {
+        continue;
+    }
+    sjekk('«' . $fritt . '» lar medlemmet velge', !Medlemskap::kreverFastTrekk($pl));
 }
 
 // Et medlemskap uten fast trekk skal aldri hentes av det automatiske trekket.
@@ -1251,12 +1264,14 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
 // To maaneder fra innmelding, tolv paa aarsavtalen, én maaneds oppsigelse.
 echo "\n== Binding og oppsigelse ==\n";
 
-foreach (['Basis 30' => 2, 'Fri tilgang' => 2, 'Prøv Lissom' => 2, 'Årsmedlemskap' => 12] as $navn => $mnd) {
-    $pl = Medlemskap::plan($navn);
+// Samme grunn som over: planene som ligger ute, ikke en fast navneliste.
+foreach (Medlemskap::planer() as $pl) {
+    $navn = (string) $pl['navn'];
+    $mnd  = $navn === 'Årsmedlemskap' ? 12 : 2;
     sjekk('«' . $navn . '» har ' . $mnd . ' maaneders binding',
-        $pl !== null && (int) $pl['binding_mnd'] === $mnd, (string) ($pl['binding_mnd'] ?? '?'));
+        (int) $pl['binding_mnd'] === $mnd, (string) ($pl['binding_mnd'] ?? '?'));
     sjekk('«' . $navn . '» har én maaneds oppsigelse',
-        $pl !== null && (int) $pl['oppsigelse_mnd'] === 1);
+        (int) $pl['oppsigelse_mnd'] === 1);
 }
 
 $bMedlem = (int) DB::settInn('members', [
@@ -6726,6 +6741,114 @@ sjekk('… og er mye mindre',
 sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
+
+// ── Avpubliser et kurs ─────────────────────────────────────────────────
+//
+// Eieren, 2. september: «nå vil jeg at du legger til så jeg kan avpublisere
+// kurs, altså ikke vis på nettsiden».
+//
+// Basen har kjent forskjell paa «kladd» og «publisert» hele tida, og
+// api/kurs.php henter bare det som staar som publisert. Kurslista i admin
+// skriver til og med «Ikke publisert». Men kursskjemaet sendte
+// «status: 'publisert'» fast, saa det fantes ingen vei tilbake: eneste maaten
+// aa faa et kurs vekk fra nettsida var aa slette det — og da fulgte datoene
+// og paameldingene med.
+echo "\n== Avpubliser et kurs ==\n";
+
+// Bryteren i skjemaet. Samme etikett som paa kalenderdatoene, saa de to
+// stedene sier det samme.
+sjekk('kursskjemaet har «Publisert paa nettsiden»',
+    str_contains($sida, 'checked="{{ kPublisert }}" on-change="{{ toggleKPublisert }}"')
+    && substr_count($sida, 'label="Publisert på nettsiden"') === 2);
+sjekk('… og bryteren er koblet',
+    str_contains($sida, 'kPublisert: this.state.kPublisert !== false,')
+    && str_contains($sida, 'toggleKPublisert: () => this.setState(s => ({ kPublisert: s.kPublisert === false })),'));
+
+// Kjernen: statusen kommer fra skjemaet, ikke fra en fast streng.
+sjekk('lagringen sender statusen fra skjemaet',
+    str_contains($sida, "status: rad.publisert === false"));
+// Kontrollen. Uten denne ville proven over vaere gronn ogsaa om den gamle
+// linja sto igjen ved siden av den nye — og da er det den som gjelder, for
+// den siste tilordningen vinner i objektet som sendes til serveren.
+//
+// Vi ser bare paa kroppen lagreKurs() sender. «status: 'publisert'» staar med
+// full rett andre steder — varer, artikler og medlemssalg har sin egen.
+$kursLagring = (static function (string $kode): string {
+    $fra = strpos($kode, 'lagreKurs(rad, okter, behold) {');
+    if ($fra === false) {
+        return '';
+    }
+    $til = strpos($kode, '.then(r => r.json()', $fra);
+    return $til === false ? '' : substr($kode, $fra, $til - $fra);
+})($sida);
+sjekk('… og kursoppsettet er funnet i det hele tatt', $kursLagring !== '');
+sjekk('… og den faste «publisert» er borte fra kurslagringen',
+    !str_contains($kursLagring, "status: 'publisert',"));
+sjekk('… og et avlyst kurs blir ikke gjort om til en kladd',
+    str_contains($sida, "? ((eksisterende && eksisterende.status === 'avlyst') ? 'avlyst' : 'kladd')"));
+
+// Skjemaet maa vite hva kurset staar som naar det aapnes, ellers slaar
+// bryteren seg paa igjen av seg selv.
+sjekk('skjemaet leser statusen naar kurset aapnes',
+    str_contains($sida, "kPublisert: (raa.status || 'publisert') === 'publisert',"));
+// Et nytt kurs skal alltid starte som publisert. Uten dette hang av-stillingen
+// fra forrige kurs igjen i skjemaet.
+sjekk('… og et nytt kurs starter som publisert',
+    substr_count($sida, 'kUtenDato: false, kPublisert: true,') === 4);
+
+// Lista maa vise det. Merket sto bare i basen-fanen; tok du et kurs ned og
+// gikk tilbake til kurslista, saa den helt lik ut.
+sjekk('kurslista merker det som ikke er publisert',
+    substr_count($sida, "k.status && k.status !== 'publisert' ? 'Ikke publisert' : ''") === 2);
+
+// Serveren tar imot «kladd» — den har gjort det hele tida.
+$kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+sjekk('serveren tar imot kladd, publisert og avlyst',
+    str_contains($kursApi, "in_array(Foresporsel::tekst('status'), ['kladd', 'publisert', 'avlyst'], true)"));
+// … og nettsida henter bare det som er publisert. Det er dette som gjor at
+// bryteren faktisk tar kurset ned.
+foreach (['api/kurs.php', 'api/venteliste.php', 'app/lib/apent.php', 'app/lib/booking.php'] as $fil) {
+    // booking.php skriver spoersmaalet i en enkeltfnuttet streng, saa fnuttene
+    // rundt «publisert» staar escapet der. Samme krav, annen skrivemaate.
+    $kode = file_get_contents(dirname(__DIR__) . '/' . $fil);
+    sjekk('«' . $fil . '» krever status = publisert',
+        str_contains($kode, "status = 'publisert'")
+        || str_contains($kode, "status = \\'publisert\\'"));
+}
+
+// ── «Fri tilgang» ut av salg ───────────────────────────────────────────
+//
+// Eieren, 2. september: «meldemskapet proff - fri tilgang skal avpubliseres».
+//
+// Planskjemaet har haken «I salg på nettsiden» fra for, og Medlemskap::planer()
+// henter bare rader med aktiv = 1. Migrasjonen setter den av.
+echo "\n== «Fri tilgang» ut av salg ==\n";
+
+$mig126 = file_get_contents(dirname(__DIR__) . '/db/migrations/126_fri_tilgang_ut_av_salg.sql');
+sjekk('migrasjon 126 tar «Fri tilgang» ut av salg',
+    str_contains($mig126, "SET aktiv = 0")
+    && str_contains($mig126, "WHERE navn = 'Fri tilgang'"));
+sjekk('… og planen staar ikke lenger i salg',
+    Medlemskap::plan('Fri tilgang') === null);
+sjekk('… mens de andre planene staar som for',
+    Medlemskap::plan('Basis 30') !== null
+    && Medlemskap::plan('Årsmedlemskap') !== null
+    && Medlemskap::plan('Prøv Lissom') !== null);
+// Raden blir staaende, saa den som alt staar paa den beholder prisen sin —
+// og verkstedet kan legge den ut igjen med haken i planskjemaet.
+sjekk('… men raden er ikke slettet',
+    DB::en('SELECT navn FROM membership_plans WHERE navn = :n', ['n' => 'Fri tilgang']) !== null);
+
+// Haken maa kunne skrus av uten aa dra med seg noe annet.
+//
+// «krever_fast_trekk» ble skrevet ubetinget i api/admin/planer.php, og
+// planskjemaet sender ikke feltet. Aarsmedlemskapet krever fast trekk, og det
+// ville falt bort i det noen rettet en skrivefeil paa planen.
+$planApi = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+sjekk('planlagringen roerer ikke fast trekk naar feltet ikke er med',
+    str_contains($planApi, "if (!array_key_exists('fastTrekk', \$kropp)\n        || !DB::harKolonne('membership_plans', 'krever_fast_trekk')) {"));
+sjekk('… og aarsmedlemskapet krever fortsatt fast trekk',
+    Medlemskap::kreverFastTrekk(Medlemskap::plan('Årsmedlemskap') ?? []));
 
 // ── PHP-en maa la seg lese ─────────────────────────────────────────────
 //

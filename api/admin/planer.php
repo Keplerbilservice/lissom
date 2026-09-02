@@ -131,6 +131,11 @@ if ($handling === 'lagre') {
         // Maa medlemmet ha fast trekk i Vipps, eller kan hen gjore opp selv?
         // Kolonna kom med migrasjon 081; er den ikke kjort, tas feltet ut
         // lenger nede saa resten av lagringen gaar gjennom.
+        //
+        // Skrives bare naar feltet faktisk er med i kallet. Sto det her
+        // ubetinget, slo planskjemaet — som ikke kjenner feltet — det av
+        // igjen hver gang planen ble lagret. AArsmedlemskapet krever fast
+        // trekk, og det ville falt bort i det noen rettet en skrivefeil.
         'krever_fast_trekk' => !empty($kropp['fastTrekk']) ? 1 : 0,
         'sortering'   => (int) ($kropp['sortering'] ?? 0),
         'merke'       => mb_substr(trim((string) ($kropp['merke'] ?? '')), 0, 40),
@@ -142,7 +147,8 @@ if ($handling === 'lagre') {
         'fremhevet'   => $fremhevet,
     ];
 
-    if (!DB::harKolonne('membership_plans', 'krever_fast_trekk')) {
+    if (!array_key_exists('fastTrekk', $kropp)
+        || !DB::harKolonne('membership_plans', 'krever_fast_trekk')) {
         unset($felter['krever_fast_trekk']);
     }
 

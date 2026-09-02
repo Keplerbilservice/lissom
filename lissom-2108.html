@@ -7904,6 +7904,18 @@ window.__resources = {
                     </sc-if>
                   </div>
                 </div>
+                <!-- Om kurset i det hele tatt skal ligge ute.
+                     Basen kjente forskjell paa «kladd» og «publisert» hele
+                     tida, og kurslista skriver «Ikke publisert» — men
+                     skjemaet sendte alltid «publisert», saa det fantes ingen
+                     vei tilbake. Et kurs kunne bare tas ned ved aa slette
+                     det, og da fulgte datoene med. -->
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-6);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 2px;">14 · Publisering</div>
+                  <p style="margin: 0 0 var(--space-4); font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">Om kurset skal være synlig for kundene. Datoene, påmeldingene og alt du har skrevet blir stående uansett.</p>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Publisert på nettsiden" checked="{{ kPublisert }}" on-change="{{ toggleKPublisert }}" hint-size="auto,28px"></x-import>
+                  <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); max-width: 62ch; text-wrap: pretty;">{{ kPublisertTekst }}</p>
+                </div>
               </div>
               </sc-if>
               <sc-if value="{{ kSteg2 }}" hint-placeholder-val="{{ false }}">
@@ -22666,6 +22678,7 @@ class Component extends DCLogic {
       navn, type: this.state.kType || 'Kurs',
       kategori: this.state.kKategori || '',
       utenDato: !!this.state.kUtenDato,
+      publisert: this.state.kPublisert !== false,
       pris: !prisRaa || prisRaa === '0' || /gratis/i.test(prisRaa) ? 'Gratis' : 'kr.' + ' ' + prisRaa.replace(/[^\d ]/g, '').trim() + ',-',
       gjentas: gjentak === 'Ingen' ? 'Engangs' : gjentak,
       pameldte: '0 / ' + (this.state.kPlasser || '8'), andel: 0,
@@ -22709,7 +22722,8 @@ class Component extends DCLogic {
       if (idx >= 0) { nytt.pameldte = alle[idx].pameldte; nytt.andel = alle[idx].andel; alle[idx] = nytt; } else { alle.push(nytt); }
       const pub = this.tilPublisert(nytt);
       const nye = (s.nyeKurs || []).filter(k => k.title !== (idx >= 0 ? (this.kursData()[idx] || {}).navn : navn) && k.title !== navn);
-      return { adminKursListe: alle, kRed: behold ? s.kRed : false, nyeKurs: nye.concat([pub]),
+      return { adminKursListe: alle, kRed: behold ? s.kRed : false,
+               nyeKurs: nytt.publisert === false ? nye : nye.concat([pub]),
                kvittering: navn + ' er lagret' };
     });
   }
@@ -22762,7 +22776,15 @@ class Component extends DCLogic {
             if (Object.prototype.hasOwnProperty.call(rad, n)) m[n] = rad[n] || '';
             return m;
           }, {}),
-        status: 'publisert',
+        // Publisert-bryteren i steg 1. Her sto 'publisert' fast, saa et kurs
+        // som var tatt ned kom ut igjen i det du rettet en skrivefeil.
+        //
+        // Et avlyst kurs beholder «avlyst» naar bryteren staar av. Gjorde vi
+        // det om til en kladd, ville vi mistet at det var avlyst — og det er
+        // to forskjellige ting, ogsaa i basen.
+        status: rad.publisert === false
+          ? ((eksisterende && eksisterende.status === 'avlyst') ? 'avlyst' : 'kladd')
+          : 'publisert',
         // «Vis kurset uten datoer, med Kontakt oss». Haken lagret bare rett
         // til serveren, og et kurs som ikke er opprettet ennaa har ingen id
         // aa lagre paa — da lot den seg ikke huke av i det hele tatt.
@@ -24612,6 +24634,9 @@ class Component extends DCLogic {
       // Ressursen kurset deler med alt annet som gaar samtidig.
       kRessursId: raa.ressursId || 0,
       kUtenDato: !!raa.visUtenDato,
+      // Ligger kurset ute? Statusen staar paa den raa raden. Et avlyst kurs
+      // staar ogsaa som «ikke publisert» her — det er det det er ute.
+      kPublisert: (raa.status || 'publisert') === 'publisert',
       kPris: k.pris.replace(/[^\d ]/g, '').trim(),
       kPlasser: (k.pameldte.split('/')[1] || '8').trim(),
       kBeskrivelse: k.beskrivelse || '', kBekreftelse: k.bekreftelse || '',
@@ -31007,7 +31032,7 @@ class Component extends DCLogic {
         this.setState({
           side: 'admin', kursFane: 'interne',
           kRed: true, kSteg: 1, kIndeks: -1,
-          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
+          kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false, kPublisert: true,
           kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
@@ -32175,7 +32200,7 @@ class Component extends DCLogic {
             || (this.erPublisert() ? [] : [{}, {}]);
           const nyttKurs = {
             kursFane: 'alle', kRed: true, kSteg: 1, kIndeks: -1,
-            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false,
+            kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true,
             kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
@@ -32318,7 +32343,7 @@ class Component extends DCLogic {
             { navn: 'Send beskjed', velg: () => this.gaaAdmin('adminbeskjeder', { motValg: 'Alle aktive medlemmer' }) },
             { navn: 'Ny samling', velg: () => this.gaaAdmin('admin', {
                 kursFane: 'interne', kRed: true, kSteg: 1, kIndeks: -1,
-                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false,
+                kNavn: '', kType: 'Kun medlemmer', kKategori: '', kPris: '0', kPlasser: '10', kBilder: [], kUtenDato: false, kPublisert: true,
                 kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
@@ -35047,7 +35072,12 @@ class Component extends DCLogic {
         // Linja under navnet. Utenfor basen staar den som for: typen, prisen
         // og hvor mange datoer kurset har.
         if ((this.state.kursFane || 'alle') !== 'maler') {
-          return { under: [k.type, k.pris, k.gjentas].filter(Boolean).join(' · ') };
+          // «Ikke publisert» sto bare i basen-fanen. Tok du et kurs ned og
+          // gikk tilbake hit, saa lista helt lik ut — og du kunne ikke se at
+          // kurset var borte fra nettsida.
+          return { under: [k.type, k.pris, k.gjentas,
+                           k.status && k.status !== 'publisert' ? 'Ikke publisert' : '']
+                          .filter(Boolean).join(' · ') };
         }
         const idag = new Date(new Date().toDateString()).getTime();
         const framover = (k.okter || []).filter(o => {
@@ -35840,7 +35870,7 @@ class Component extends DCLogic {
       },
       kRed: !!this.state.kRed,
       kTittel: (this.state.kIndeks ?? -1) >= 0 ? 'Rediger kurs' : 'Nytt kurs',
-      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kRessursId: 0,
+      nyttKurs: () => this.setState({ kRed: true, kSteg: 1, kIndeks: -1, kNavn: '', kType: 'Kurs', kKategori: '', kPris: '', kPlasser: '8', kBilder: [], kUtenDato: false, kPublisert: true, kBeskrivelse: '', kBekreftelse: this.state.bekreftelseStandard || '', kMva: false, kRessursId: 0,
             kPunkter: '', kLaerer: '', kPraktisk: '', kAllergener: '',
             kRessursId: 0,
             kNivaaIntern: 'nybegynner', kNivaaTekst: '', kKortBeskrivelse: '',
@@ -36528,6 +36558,19 @@ class Component extends DCLogic {
           },
         };
       }),
+      // ── Publisert paa nettsiden ──
+      //
+      // Kurset kan tas ned uten aa slettes. Skjemaet sendte «publisert» fast,
+      // saa den eneste veien vekk fra nettsida var aa slette kurset — og da
+      // fulgte datoene og paameldingene med.
+      //
+      // Verdien staar i skjemaet og lagres sammen med resten naar du trykker
+      // Lagre, som de andre feltene her.
+      kPublisert: this.state.kPublisert !== false,
+      toggleKPublisert: () => this.setState(s => ({ kPublisert: s.kPublisert === false })),
+      kPublisertTekst: this.state.kPublisert === false
+        ? 'Kurset vises ikke under «Våre kurs», i kalenderen eller i åpningstidene. Ingen kan booke det.'
+        : 'Kurset ligger ute på nettsiden og kan bookes.',
       kSteg: this.state.kSteg ?? 1,
       kSteg1: (this.state.kSteg ?? 1) === 1,
       kSteg2: (this.state.kSteg ?? 1) === 2,

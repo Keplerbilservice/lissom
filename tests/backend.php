@@ -7682,6 +7682,199 @@ sjekk('… og aarsmedlemskapet krever fortsatt fast trekk',
 // hjemme her, der den koster to sekunder og fanger det for det pushes.
 //
 // Samme utvalg som .github/workflows/deploy.yml: api, app og bin.
+echo "\n== Delt betaling og to slag gavekort ==\n";
+// Eieren: «hva i huleste gjor jeg naar noen skal betale paa stedet og jeg maa
+// registrere salget manuelt, og de har et gavekort, men ikke paa hele
+// beloepet? jeg maa kunne taste inn gavekort, kontant og vipps, de maa kunne
+// dele opp. og regnskapsmessig, saa vil jeg ha to typer gavekort, et som er
+// ting vi gir ut som ikke skal skatteberegnes og et som faktisk er kjopt av
+// oss.»
+$m134 = file_get_contents(dirname(__DIR__) . '/db/migrations/134_delt_betaling_og_gavekort.sql');
+
+// «payments.order_id» er det som gjor at flere betalinger kan hore til det
+// samme salget. Uten den er et delt oppgjor bare tre lose rader.
+sjekk('migrasjon 134 gir payments en order_id',
+    str_contains($m134, 'ALTER TABLE payments')
+    && preg_match('~ADD COLUMN IF NOT EXISTS order_id\s+BIGINT UNSIGNED NULL~', $m134) === 1);
+sjekk('… med indeks, saa dagens salg ikke leser hele tabellen',
+    str_contains($m134, 'CREATE INDEX IF NOT EXISTS ix_payments_order ON payments (order_id)'));
+// Uten dette ville historikken paa alle gamle salg staatt tom.
+sjekk('… og kobler betalingene som alt finnes',
+    str_contains($m134, 'UPDATE payments p')
+    && str_contains($m134, 'JOIN orders o ON o.payment_id = p.id')
+    && str_contains($m134, 'SET p.order_id = o.id'));
+sjekk('migrasjon 134 skiller kjopte gavekort fra dem som ble gitt bort',
+    preg_match("~ADD COLUMN IF NOT EXISTS opprinnelse ENUM\('kjopt','gitt'\) NOT NULL DEFAULT 'kjopt'~", $m134) === 1);
+sjekk('… og husker hvem som utstedte det over disk',
+    str_contains($m134, 'ADD COLUMN IF NOT EXISTS utstedt_av'));
+
+$utFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
+
+// Gavekortet er ikke en betalingsmaate — det er ingen penger inn — men det er
+// en del av oppgjoret. Derfor to lister.
+sjekk('kassa har egne maater for delene av et oppgjor',
+    str_contains($utFil, "const DELMAATER = ['Gavekort', 'Kontant', 'Vipps'];")
+    && str_contains($utFil, "const MAATER = ['Kontant', 'Vipps'];"));
+sjekk('gavekortdelen foeres med null i penger og beloepet i gavekort_ore',
+    str_contains($utFil, "'belop_ore'       => \$erGavekort ? 0 : \$r['ore'],")
+    && str_contains($utFil, "\$felt['gavekort_ore'] = \$r['ore'];"));
+// Uten dette havner kontantdelen paa Vipps-kontoen: ordren kan bare baere én
+// maate, radene kan baere hver sin.
+sjekk('hver del baerer sin egen betalingsmaate',
+    str_contains($utFil, "\$felt['maate'] = \$r['maate'];"));
+// Hovedraden skal ha penger i seg. Peker den paa gavekortraden, staar salget
+// med null kroner for alt som leser orders.payment_id.
+sjekk('hovedraden er en pengedel, ikke gavekortraden',
+    str_contains($utFil, "['payment_id' => \$pengerad ?? \$ider[0]]"));
+// Ett salg maa kunne annulleres i ett grep. Strykes bare hovedraden, staar
+// kontantdelen igjen som betalt og dagen summerer til for mye.
+sjekk('annullering tar alle delene av salget',
+    str_contains($utFil, "'SELECT id, belop_ore, refundert_ore FROM payments WHERE order_id = :o'")
+    && str_contains($utFil, 'foreach ($deler as $d) {'));
+sjekk('… og legger gavekortet tilbake',
+    str_contains($utFil, '$tilbake += Booking::angreGavekort((int) $d[\'id\']);'));
+// Uten kolonnen henger ikke delene sammen, og en annullering ville latt
+// resten staa som betalt. Da er det bedre aa ikke ta imot salget.
+sjekk('delt oppgjor nektes naar basen ikke er oppdatert',
+    str_contains($utFil, "if (!DB::harKolonne('payments', 'order_id')) {"));
+// Alle salg skal ha koblingen, ikke bare de delte. Ellers betyr kolonnen
+// noe forskjellig fra rad til rad.
+sjekk('ogsaa vanlige kassesalg kobler betalingen til ordren',
+    substr_count($utFil, "DB::oppdater('payments', ['order_id' => \$id], ['id' => \$betalingId]);") === 4);
+
+// Et kort som gis bort har ingen penger bak seg. En betalingsrad paa null
+// ville sagt at det kom inn noe som aldri kom.
+sjekk('et bortgitt gavekort lager ingen betaling',
+    str_contains($utFil, "if (\$opprinnelse === 'kjopt') {")
+    && str_contains($utFil, '$betalingId = null;'));
+sjekk('et solgt gavekort foeres som gavekort, ikke som salg',
+    str_contains($utFil, "'formal'          => 'gavekort',"));
+
+$bokFil = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+// Gavekortraden i et delt oppgjor er ikke orders.payment_id. Uten oppslaget
+// paa order_id ville uttaket blitt staaende uloggfoert.
+sjekk('gavekorttrekket finner ordren gjennom payments.order_id',
+    str_contains($bokFil, "elseif ((int) (\$eget['order_id'] ?? 0) > 0) {"));
+sjekk('et kort utstedt over disk uten adresse maser ikke paa admin',
+    str_contains($bokFil, 'public static function aktiverGavekort(int $kortId, bool $varsle = true): void')
+    && str_contains($bokFil, 'if (!$varsle || !$til) {'));
+
+$doFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+// Ordren staar én gang for hele salget og kan ikke skille kontantdelen fra
+// Vipps-delen. Raden kan.
+sjekk('dagsoppgjoret leser maaten paa raden foer den paa ordren',
+    str_contains($doFil2, "\$m = (string) (\$r['radmaate'] ?? '');")
+    && str_contains($doFil2, "\$m = (string) (\$r['betalt_maate'] ?? '');"));
+// Et bortgitt kort ble aldri bokfoert som gjeld. Trekker vi ned gjelden naar
+// det loeses inn, gaar kontoen i minus av kort ingen har betalt for.
+sjekk('et bortgitt gavekort foeres mot kostnad, ikke mot gjelden',
+    str_contains($doFil2, "'Gavekort (gitt)' => 'regnskap_konto_gavekort_gitt',")
+    && str_contains($doFil2, "? 'Gavekort (gitt)'"));
+sjekk('… og kontoen kan settes av regnskapsfoereren',
+    str_contains($doFil2, "'regnskap_konto_gavekort_gitt',"));
+// Config leser bare noekler som staar paa lista. Uten denne ville kontoen
+// vaert lagret, men aldri lest — og bilaget sagt MANGLER.
+$cfgFil = file_get_contents(dirname(__DIR__) . '/app/config.php');
+sjekk('… og leses faktisk ut av basen',
+    str_contains($cfgFil, "'regnskap_konto_gavekort_gitt',"));
+sjekk('… og staar som felt under OEkonomi',
+    str_contains($sida, "'regnskap_konto_gavekort_gitt', '7320'"));
+
+// Skjermen: delingen ligger i det samme salget, ikke i et eget skjema.
+sjekk('kassa kan dele opp betalingen',
+    str_contains($sida, "utDeltByttTekst: delt ? 'Tilbake til ett beløp' : 'Del opp betalingen',")
+    && str_contains($sida, "handling: 'delt',"));
+// Beloepsfeltet og QR-en leser ett belop. Staar de framme mens man deler,
+// ville de sendt et krav paa ingenting.
+sjekk('… og skjuler enkeltbeloepet mens man deler',
+    str_contains($sida, '<sc-if value="{{ utEnkeltPaa }}" hint-placeholder-val="{{ true }}">'));
+// Saldoen maa vaere kjent FOER delingen skrives inn — det er hele poenget.
+sjekk('saldoen paa kortet slaas opp mens man skriver',
+    str_contains($sida, 'gavekortSaldo(kode) {')
+    && str_contains($sida, 'this.gavekortSaldo(v);'));
+sjekk('kassa kan utstede gavekort, solgt eller gitt bort',
+    str_contains($sida, "handling: 'gavekort',")
+    && str_contains($sida, "opprinnelse: gvSolgt ? 'kjopt' : 'gitt',"));
+
+// ── Og saa i virkeligheten ────────────────────────────────────────────
+//
+// Det over er tekst i filer. Dette er det som faktisk skjer med et kort.
+if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'opprinnelse')) {
+    DB::kjor("DELETE FROM gift_card_uses WHERE gift_card_id IN (SELECT id FROM gift_cards WHERE kode LIKE 'LIS-TEST%')");
+    DB::kjor("DELETE FROM payments WHERE vipps_reference LIKE 'KASSE-TEST%'");
+    DB::kjor("DELETE FROM gift_cards WHERE kode LIKE 'LIS-TEST%'");
+
+    $kortId = DB::settInn('gift_cards', [
+        'kode' => 'LIS-TEST-DEL-ING', 'opprinnelig_ore' => 50000, 'saldo_ore' => 50000,
+        'gyldig_til' => gmdate('Y-m-d', strtotime('+1 year')),
+        'status' => 'aktivt', 'opprinnelse' => 'kjopt',
+    ]);
+    $ordreId = DB::settInn('orders', [
+        'ordrenr' => 'TEST-DELT', 'kunde_navn' => 'Testkunde', 'sum_ore' => 69000,
+        'status' => 'hentet', 'betalt_maate' => 'Gavekort + Kontant', 'payment_id' => null,
+    ]);
+    // Gavekortdelen: ingen penger inn, 300 kroner av kortet.
+    $gkRad = DB::settInn('payments', [
+        'vipps_reference' => 'KASSE-TEST-1', 'type' => 'manuell', 'formal' => 'booking',
+        'belop_ore' => 0, 'status' => 'betalt', 'idempotency_key' => Vipps::uuid(),
+        'order_id' => $ordreId, 'maate' => 'Gavekort',
+        'gavekort_id' => $kortId, 'gavekort_ore' => 30000,
+    ]);
+    // Kontantdelen, og det er DEN ordren peker paa.
+    //
+    // Dette er hele poenget: gavekortraden er ikke orders.payment_id. Sto den
+    // der, ville det gamle oppslaget funnet ordren likevel, og testen vaert
+    // gronn uten aa ha proevd den nye veien i det hele tatt.
+    $kontantRad = DB::settInn('payments', [
+        'vipps_reference' => 'KASSE-TEST-2', 'type' => 'manuell', 'formal' => 'booking',
+        'belop_ore' => 39000, 'status' => 'betalt', 'idempotency_key' => Vipps::uuid(),
+        'order_id' => $ordreId, 'maate' => 'Kontant',
+    ]);
+    DB::oppdater('orders', ['payment_id' => $kontantRad], ['id' => $ordreId]);
+
+    Booking::trekkGavekort($gkRad);
+    sjekk('gavekortet trekkes ned av en del som ikke er ordrens hovedrad',
+        (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $kortId]) === 20000,
+        'saldo ' . DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $kortId]));
+    // Sporet skal si hva kortet ble brukt paa, ikke «betaling nr. 7».
+    $bruk = DB::en('SELECT ref_type, ref_id, belop_ore FROM gift_card_uses WHERE gift_card_id = :k', ['k' => $kortId]);
+    sjekk('… og uttaket loggfoeres mot ordren',
+        $bruk !== null && (string) $bruk['ref_type'] === 'ordre'
+        && (int) $bruk['ref_id'] === $ordreId && (int) $bruk['belop_ore'] === 30000);
+
+    // Webhooken og returen kan begge komme, og begge flere ganger.
+    Booking::trekkGavekort($gkRad);
+    sjekk('… og trekkes ikke to ganger',
+        (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $kortId]) === 20000);
+
+    // Annulleres salget, er pengene paa kortet ikke brukt.
+    $tilbake = Booking::angreGavekort($gkRad);
+    sjekk('annullering legger beloepet tilbake paa kortet',
+        $tilbake === 30000
+        && (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $kortId]) === 50000);
+    // Angres det som alt er angret, skal kunden ikke faa beloepet i gave.
+    sjekk('… men bare én gang', Booking::angreGavekort($gkRad) === 0
+        && (int) DB::verdi('SELECT saldo_ore FROM gift_cards WHERE id = :i', ['i' => $kortId]) === 50000);
+
+    // Et kort som gikk tomt ble satt til «brukt». Kommer saldoen tilbake,
+    // skal det virke igjen.
+    DB::oppdater('gift_cards', ['saldo_ore' => 0, 'status' => 'brukt'], ['id' => $kortId]);
+    DB::settInn('gift_card_uses', [
+        'gift_card_id' => $kortId, 'belop_ore' => 30000,
+        'ref_type' => 'ordre', 'ref_id' => $ordreId,
+    ]);
+    Booking::angreGavekort($gkRad);
+    $etter = DB::en('SELECT saldo_ore, status FROM gift_cards WHERE id = :i', ['i' => $kortId]);
+    sjekk('et oppbrukt kort blir gyldig igjen naar saldoen kommer tilbake',
+        (int) $etter['saldo_ore'] === 30000 && (string) $etter['status'] === 'aktivt',
+        $etter['saldo_ore'] . ' / ' . $etter['status']);
+
+    DB::kjor('DELETE FROM gift_card_uses WHERE gift_card_id = :k', ['k' => $kortId]);
+    DB::kjor('DELETE FROM orders WHERE id = :i', ['i' => $ordreId]);
+    DB::kjor('DELETE FROM payments WHERE id IN (:i, :j)', ['i' => $gkRad, 'j' => $kontantRad]);
+    DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
+}
+
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
 $phpFiler = [];

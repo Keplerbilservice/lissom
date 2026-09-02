@@ -35,6 +35,7 @@ const REGNSKAPSFELTER = [
     'regnskap_konto_medlemskap', 'regnskap_mva_medlemskap',
     'regnskap_konto_butikk', 'regnskap_mva_butikk',
     'regnskap_konto_gavekort', 'regnskap_mva_gavekort',
+    'regnskap_konto_gavekort_gitt',
     'regnskap_motkonto_vipps', 'regnskap_motkonto_kontant',
     'regnskap_motkonto_faktura',
 ];
@@ -114,6 +115,12 @@ $MOTKONTO = [
     // Et gavekort som loeses inn er ingen innbetaling. Det trekker ned
     // gjelden fra den dagen kortet ble solgt — samme konto, andre vei.
     'Gavekort' => 'regnskap_konto_gavekort',
+    // Et kort verkstedet ga bort har ingen gjeld bak seg: det kom aldri
+    // penger inn for det, saa det ble aldri bokfoert noe aa trekke ned.
+    // Tjenesten er levert og skal inntektsfoeres, men motposten er en
+    // kostnad. Foert mot gjeldskontoen ville den gaatt i minus av kort
+    // ingen har betalt for.
+    'Gavekort (gitt)' => 'regnskap_konto_gavekort_gitt',
 ];
 
 // ── Salgene ────────────────────────────────────────────────────────────
@@ -124,11 +131,38 @@ $MOTKONTO = [
 $gavekortFelt = DB::harKolonne('payments', 'gavekort_ore')
     ? 'p.gavekort_ore' : '0 AS gavekort_ore';
 
+// Maaten paa selve betalingsraden. Kom med migrasjon 084 og settes paa alt
+// som slaas inn i kassa. Et delt oppgjor har én rad per del, og hver av dem
+// baerer sin egen maate — kontantdelen sin og Vipps-delen sin. Uten denne
+// ville begge blitt lest av «orders.betalt_maate», som staar én gang for hele
+// salget og da ikke kan si annet enn det samme om begge.
+$maateFelt = DB::harKolonne('payments', 'maate')
+    ? 'p.maate AS radmaate' : 'NULL AS radmaate';
+
+// Var kortet kjopt eller gitt bort? Kom med migrasjon 134. De to har hver sin
+// motkonto, og uten kolonnen er alt kjopt, slik det var for.
+$opprinnelseFelt = DB::harKolonne('gift_cards', 'opprinnelse')
+    ? 'g.opprinnelse' : "'kjopt' AS opprinnelse";
+$gavekortJoin = DB::harKolonne('payments', 'gavekort_id')
+    ? 'LEFT JOIN gift_cards g ON g.id = p.gavekort_id' : '';
+if ($gavekortJoin === '') {
+    $opprinnelseFelt = "'kjopt' AS opprinnelse";
+}
+
+// «orders.payment_id» peker bare paa hovedraden. Delene av et delt oppgjor
+// ville derfor mistet ordren sin i join-en under, og «betalt_maate» blitt
+// NULL paa dem. «payments.order_id» fra migrasjon 134 kobler alle radene, og
+// brukes naar den finnes.
+$ordreJoin = DB::harKolonne('payments', 'order_id')
+    ? 'LEFT JOIN orders o ON o.id = p.order_id OR o.payment_id = p.id'
+    : 'LEFT JOIN orders o ON o.payment_id = p.id';
+
 $rader = DB::alle(
     "SELECT p.id, p.formal, p.type, p.belop_ore, p.refundert_ore, p.created_at,
-            {$gavekortFelt}, o.betalt_maate
+            {$gavekortFelt}, {$maateFelt}, {$opprinnelseFelt}, o.betalt_maate
        FROM payments p
-  LEFT JOIN orders o ON o.payment_id = p.id
+       {$ordreJoin}
+       {$gavekortJoin}
       WHERE p.status IN ('betalt', 'delvis_refundert')
         AND p.created_at >= :fra AND p.created_at < :til
    ORDER BY p.created_at",
@@ -143,7 +177,17 @@ $rader = DB::alle(
  * hverandre — ellers gaar ikke bilaget i balanse.
  */
 $maate = static function (array $r): string {
-    $m = (string) ($r['betalt_maate'] ?? '');
+    // Raden sier det selv naar den kan.
+    //
+    // Et delt oppgjor har én rad per del — kontanter paa én, Vipps paa en
+    // annen — og de deler den samme ordren. «orders.betalt_maate» staar én
+    // gang for hele salget og kan ikke skille dem; «payments.maate» staar paa
+    // hver rad og kan. Uten dette ville kontantdelen av et delt salg havnet
+    // paa Vipps-kontoen, og bilaget ikke gaatt i balanse.
+    $m = (string) ($r['radmaate'] ?? '');
+    if ($m === '') {
+        $m = (string) ($r['betalt_maate'] ?? '');
+    }
     if ($m === 'Kontant') {
         return 'Kontant';
     }
@@ -152,6 +196,20 @@ $maate = static function (array $r): string {
     }
     // «Vipps i verkstedet» og en vanlig nettbetaling lander samme sted.
     return 'Vipps';
+};
+
+/**
+ * Hvilken konto et innloest gavekort skal foeres mot.
+ *
+ * Et kort noen har betalt for ble bokfoert som gjeld den dagen det ble solgt,
+ * og innloesningen trekker den gjelden ned. Et kort verkstedet ga bort ble
+ * aldri bokfoert i det hele tatt — det kom ingen penger inn — saa det finnes
+ * ingen gjeld aa trekke ned. Der er motposten en kostnad.
+ */
+$gavekortMotkonto = static function (array $r): string {
+    return (string) ($r['opprinnelse'] ?? 'kjopt') === 'gitt'
+        ? 'Gavekort (gitt)'
+        : 'Gavekort';
 };
 
 // ── Paameldinger lagt inn for haand ────────────────────────────────────
@@ -215,7 +273,8 @@ foreach ($rader as $r) {
         $dager[$d]['inn'][$m] = ($dager[$d]['inn'][$m] ?? 0) + $penger;
     }
     if ($gavekort !== 0) {
-        $dager[$d]['inn']['Gavekort'] = ($dager[$d]['inn']['Gavekort'] ?? 0) + $gavekort;
+        $gk = $gavekortMotkonto($r);
+        $dager[$d]['inn'][$gk] = ($dager[$d]['inn'][$gk] ?? 0) + $gavekort;
     }
 }
 
@@ -308,7 +367,11 @@ if (Foresporsel::tekst('csv') === 'ja') {
         foreach ($b['inn'] as $i) {
             fputcsv($f, [$b['dato'], $b['bilagstekst'], $i['konto'] ?: 'MANGLER',
                          '', $kr($i['belopOre']),
-                         $i['maate'] === 'Gavekort' ? 'Gavekort innløst' : 'Innbetalt · ' . $i['maate']], ';', '"', '');
+                         str_starts_with($i['maate'], 'Gavekort')
+                            ? ($i['maate'] === 'Gavekort (gitt)'
+                                ? 'Gavekort innløst · gitt bort'
+                                : 'Gavekort innløst')
+                            : 'Innbetalt · ' . $i['maate']], ';', '"', '');
         }
     }
     if ($ut === []) {

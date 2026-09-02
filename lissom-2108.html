@@ -3648,7 +3648,13 @@ window.__resources = {
                   </sc-if>
                   <sc-if value="{{ msGlemtApen }}" hint-placeholder-val="{{ false }}">
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                      <input type="time" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <!-- Skrives, ikke plukkes. «type=time» tegner feltet i
+                           NETTLESERENS spraak, ikke sidas: staar nettleseren
+                           paa engelsk, skriver den «11:00 PM» — og eieren, 2.
+                           september: «Ikke pm og am klokkeslett». Det finnes
+                           ingen attributt som styrer det, saa feltet maa vaere
+                           vaart eget. -->
+                      <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet du gikk" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" style="width: 74px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
                       <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagreMsGlemt }}" hint-size="auto,36px">Lagre</x-import>
                       <button type="button" onClick="{{ lukkMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0 4px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted);">Avbryt</button>
                     </div>
@@ -10899,7 +10905,7 @@ window.__resources = {
                 <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Glemt å stemple ut</div>
                 <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personStemplingTekst }}</p>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                  <input type="time" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonStempling }}" hint-size="auto,36px">Sett utstemplingen</x-import>
                 </div>
               </div>
@@ -11646,7 +11652,7 @@ window.__resources = {
                   <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Glemt å stemple ut</div>
                   <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personStemplingTekst }}</p>
                   <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                    <input type="time" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet hen gikk" value="{{ personStemplingTid }}" onChange="{{ settPersonStemplingTid }}" style="width: 82px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonStempling }}" hint-size="auto,36px">Sett utstemplingen</x-import>
                   </div>
                 </div>
@@ -23523,6 +23529,28 @@ class Component extends DCLogic {
     this.hentApningstider();
   }
 
+  /**
+   * Klokkeslett slik det skrives, ikke slik nettleseren vil ha det.
+   *
+   * «type=time» tegner feltet i nettleserens spraak. Staar den paa engelsk,
+   * blir 23:00 til «11:00 PM», og det finnes ingen attributt som styrer det.
+   * Eieren, 2. september: «Ikke pm og am klokkeslett». Feltet er derfor et
+   * vanlig tekstfelt, og dette holder det paa formen HH:MM.
+   *
+   * Kolonet settes inn selv, saa «1430» blir «14:30» — det er slik folk
+   * skriver et klokkeslett paa en telefon.
+   */
+  klokkeslettFelt(raa) {
+    const t = String(raa == null ? '' : raa).replace(/[^\d:]/g, '').replace(/:+/g, ':');
+    // Skrevet med kolon: la det staa, men klipp til fire siffer.
+    if (t.indexOf(':') >= 0) {
+      const [a, b] = t.split(':');
+      return a.slice(0, 2) + ':' + (b || '').slice(0, 2);
+    }
+    // Skrevet uten: kolonet kommer etter to siffer.
+    return t.length > 2 ? t.slice(0, 2) + ':' + t.slice(2, 4) : t;
+  }
+
   stemplingKall(kropp, kvittering) {
     if (!this.erPublisert()) {
       this.setState(s => ({ innstemplet: !s.innstemplet }));
@@ -33106,7 +33134,7 @@ class Component extends DCLogic {
                   : fornavn + ' stemplet inn ' + st.dag + ' kl. ' + st.inn + ' og ut kl. ' + st.ut
                     + '. Stemmer ikke klokkeslettet, kan du rette det her.',
               personStemplingTid: tid,
-              settPersonStemplingTid: e => this.setState({ personStemplingTid: e.target.value }),
+              settPersonStemplingTid: e => this.setState({ personStemplingTid: this.klokkeslettFelt(e.target.value) }),
               lagrePersonStempling: () => {
                 if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(tid)) {
                   this.setState({ kvittering: 'Skriv et klokkeslett', kvitteringDetalj: 'For eksempel 15:30.' });
@@ -37954,12 +37982,15 @@ class Component extends DCLogic {
                 + '. Stemmer ikke klokkeslettet, kan du rette det her.',
           // Feltet aapner paa det som staar fra for, saa man retter et
           // klokkeslett i stedet for aa skrive et fra bunnen.
-          msGlemtTid: this.state.msGlemtTid || si.ut || '',
-          apneMsGlemt: () => this.setState({ msGlemtApen: true, msGlemtTid: this.state.msGlemtTid || si.ut || '' }),
+          // «??» og ikke «||»: tommer man feltet, skal det bli staaende tomt
+          // og gi beskjed — ikke lydloest falle tilbake paa klokkeslettet man
+          // nettopp slettet, og lagre det.
+          msGlemtTid: this.state.msGlemtTid ?? si.ut ?? '',
+          apneMsGlemt: () => this.setState({ msGlemtApen: true, msGlemtTid: this.state.msGlemtTid ?? si.ut ?? '' }),
           lukkMsGlemt: () => this.setState({ msGlemtApen: false }),
-          settMsGlemtTid: e => this.setState({ msGlemtTid: e.target.value }),
+          settMsGlemtTid: e => this.setState({ msGlemtTid: this.klokkeslettFelt(e.target.value) }),
           lagreMsGlemt: () => {
-            const tid = this.state.msGlemtTid || si.ut || '';
+            const tid = this.state.msGlemtTid ?? si.ut ?? '';
             if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(tid)) {
               this.setState({ kvittering: 'Skriv et klokkeslett', kvitteringDetalj: 'For eksempel 15:30.' });
               return;

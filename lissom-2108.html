@@ -24340,7 +24340,15 @@ class Component extends DCLogic {
     if (pl.fastTrekk) return [{ plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' }];
     // Proveperioden betales én gang. En loepende avtale ville trukket hver
     // maaned for noe som er over.
-    if (pl.engangs) return [{ plan: pl.navn, navn: 'Gjør opp i Vipps', betaling: 'selv' }];
+    //
+    // Knappen sa «Gjor opp i Vipps» — et navn jeg fant paa. Systemet har
+    // hatt sitt eget ord for det samme hele tida, i innmeldingsskjemaet:
+    // «Jeg ordner selv». Eieren, 2. september: «hvorfor gjor opp i vipps paa
+    // denne maaten, kan du ikke bare ha det likt som ellers da?» og «hvorfor
+    // lager du ting paa nytt, naar det allerede finnes i systemet».
+    //
+    // Nummeret som sendes til serveren er det samme som for: «selv».
+    if (pl.engangs) return [{ plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv' }];
     return [
       { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' },
       { plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv', variant: 'secondary' },

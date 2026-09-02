@@ -6186,9 +6186,12 @@ sjekk('… mens et kurs med datoer fortsatt sier det',
 // forelderen fikk pre-wrap, spanen inni beholdt normal, og linjeskiftene ble
 // slaatt sammen likevel. Derfor deles teksten i avsnitt, og hvert avsnitt
 // faar sitt eget <p>. Malt etter: fire avsnitt paa sida, med luft mellom.
+// Sto laast til den ene kodelinja som gjorde delinga. Paastanden er at
+// teksten DELES og at hvert avsnitt faar sitt eget <p> — ikke hvordan.
 sjekk('kurssida deler beskrivelsen i avsnitt',
     str_contains($sida, '<sc-for list="{{ bOmAvsnitt }}" as="a"')
-    && str_contains($sida, 'raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ tekst: t }));'));
+    && str_contains($sida, 'const deler = raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean);')
+    && str_contains($sida, 'bOmAvsnitt: deler.map((t, i) => ({'));
 // Kontrollen: det ene avsnittet som tok hele teksten skal vaere borte.
 sjekk('… og det ene avsnittet som tok alt er borte',
     !str_contains($sida, 'text-wrap: pretty;">{{ bOm }}</p>'));
@@ -6375,13 +6378,19 @@ sjekk('… og bare «selv» og «trekk» slipper gjennom',
 // Regelen staar ett sted, saa «Forny» og plankortet ikke kan bli uenige.
 sjekk('planen bestemmer hvilke valg som finnes',
     str_contains($sida, "if (pl.fastTrekk) return [{ plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' }];")
-    && str_contains($sida, "if (pl.engangs) return [{ plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv' }];"));
-// Ordet er systemets eget, fra innmeldingsskjemaet — ikke et nytt jeg fant
-// paa. Eieren, 2. september: «hvorfor lager du ting paa nytt, naar det
-// allerede finnes i systemet».
-sjekk('… og knappen bruker ordet systemet alt har',
+    && str_contains($sida, "if (pl.engangs) return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];"));
+// Knappen het «Jeg ordner selv». Pengene gaar gjennom Vipps ogsaa den veien —
+// det er én betaling i stedet for en staaende avtale — saa navnet leste som
+// «utenom Vipps», og det er feil. Eieren, 2. september: «bytt fra jeg ordner
+// selv paa alle steder til vanlig vipps knapp».
+sjekk('… og knappen sier at det er Vipps',
     !str_contains($sida, 'Gjør opp i Vipps')
-    && str_contains($sida, "knapp('selv', 'Jeg ordner selv')"));
+    && str_contains($sida, "knapp('selv', 'Betal i Vipps')"));
+// Bare knappetekstene — kommentaren i koden forteller hvorfor navnet ble
+// byttet, og den skal faa staa.
+sjekk('… og «Jeg ordner selv» staar ikke igjen som knappetekst',
+    !str_contains($sida, "'Jeg ordner selv'")
+    && !str_contains($sida, "'Jeg ordner selv — '"));
 sjekk('… og begge knappene bruker den samme regelen',
     substr_count($sida, 'this.aboPlanValg(') === 2);
 // Ordlyden staar ett sted. Sto den to, ville skjemaet og dialogen etter
@@ -6761,6 +6770,101 @@ sjekk('… og er mye mindre',
 sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
+
+// ── Kassa viser dagen i dag ────────────────────────────────────────────
+//
+// Eieren, 2. september: «oversikt - kasse - betalinger, her vises alt i en
+// streng, jeg vil ha default dagens transaksjoner». Lista sto med alt, tusen
+// rader tilbake, i én lang streng.
+echo "\n== Kassa viser dagen i dag ==\n";
+
+sjekk('betalingene staar paa dagen i dag som standard',
+    str_contains($sida, "const periode = sokB ? 'Alt' : (st.btPeriode || 'I dag');")
+    && str_contains($sida, "return periode === 'Alt' || b.dato === idagIso;"));
+sjekk('… med brikker for aa se resten',
+    str_contains($sida, "btPerioder: ['I dag', 'Alt'].map(n => {")
+    && str_contains($sida, '<sc-for list="{{ btPerioder }}" as="pb"'));
+// Soeket maa gaa gjennom ALT. En betaling fra forrige maaned skal kunne
+// finnes, ellers er soekefeltet en felle.
+sjekk('… mens soeket gaar gjennom alt',
+    str_contains($sida, "              if (sokB) {\n                return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',"));
+sjekk('… og en tom dag sier hvor resten er',
+    str_contains($sida, "'Ingen betalinger i dag ennå. Trykk «Alt» for å se resten.'"));
+
+// ── Forsida viser fire ekte kurs ───────────────────────────────────────
+//
+// Fire kursnavn sto skrevet inn i fila, og hvert ble slaatt opp paa TITTEL.
+// Fant den ikke tittelen, sto designraden igjen — med oppdiktet dato, pris og
+// «3 plasser igjen». «Kurs boller» finnes ikke lenger paa lissom.no, og
+// forsida viste det likevel.
+//
+// Eieren, 2. september: «forside kurs og events kommende datoer, jeg vil du
+// skal vise 4 kort her».
+echo "\n== Forsida viser fire ekte kurs ==\n";
+
+sjekk('forsida tar de fire som gaar naermest',
+    str_contains($sida, 'kursForside: this.kursKort().slice(0, 4),'));
+// Fire, ikke tre og ikke ni. Rutenettet er repeat(4, 1fr) — et annet tall
+// gir enten en tom rute eller en rad til.
+sjekk('… og det er fire',
+    preg_match('/kursForside: this\.kursKort\(\)\.slice\(0, (\d+)\),/', $sida, $mF) === 1
+    && $mF[1] === '4', $mF[1] ?? '?');
+// Kontrollen: de fire navnene som sto skrevet inn skal vaere borte herfra.
+sjekk('… og navnene som var skrevet inn er borte',
+    !str_contains($sida, "kursForside: this.medBooking(["));
+// kursKort() er alt sortert etter naar kursene gaar — det er den sorteringa
+// som gjor «de fire forste» til «kommende datoer».
+sjekk('… og kursKort() er sortert etter naar de gaar',
+    str_contains($sida, 'const naar = (k) => this.forsteOktTid(k);')
+    && str_contains($sida, '.sort((a, b) => (a.n - b.n) || (a.i - b.i))'));
+
+// ── «Passer for» og betalingsknappen ───────────────────────────────────
+//
+// Eieren, 2. september: «fjern dette du har lagt ut under passer deg og ikke
+// for deg» — linja sto mellom navnet og punktlista i «Alt som er inkludert»,
+// og sa det samme som punktene under, bare vagere.
+sjekk('«Passer for»-linja er borte fra «Alt som er inkludert»',
+    !str_contains($sida, '{{ a.passer }}'));
+// Feltet lever videre — det brukes paa medlemskapskortene lenger opp, og
+// staar fortsatt i planskjemaet.
+sjekk('… men feltet finnes fortsatt',
+    str_contains($sida, "plPasserFor: v('passerFor'),"));
+
+// ── Den utfyllende teksten skal vaere til aa lese ──────────────────────
+//
+// Eieren, 2. september: «teksten som er inne paa medlemskapene, den utvidede,
+// kan formateres penere».
+//
+// Ti avsnitt i samme storrelse paa rad er en vegg. Foerste linje var dessuten
+// en overskrift — «Mini 15 – fleksibelt medlemskap for deg som vil skape
+// jevnlig» — satt som broedtekst rett under <h1>Mini 15</h1>, saa halve linja
+// sto to ganger. Og «Viktig aa vite» var en LISTE som sto som én klump med
+// linjeskift inni.
+echo "\n== Den utfyllende teksten ==\n";
+
+sjekk('overskriftslinja blir en ingress',
+    str_contains($sida, 'bOmHarIngress: !!ingress,')
+    && str_contains($sida, '<sc-if value="{{ bOmHarIngress }}"'));
+// Navnet staar alt i <h1>. Ingressen skal vaere halen, ikke hele linja.
+sjekk('… og navnet gjentas ikke i den',
+    str_contains($sida, "const halen = f.slice(tittel.length).replace(/^\\s*[–—-]\\s*/, '').trim();"));
+// Bare naar den faktisk ER en overskrift. Et kurs der forste avsnitt er en
+// vanlig setning skal ikke faa den lofta ut av teksten.
+sjekk('… bare naar forste linje ser ut som en overskrift',
+    str_contains($sida, "if (f.indexOf(tittel) === 0 && f.length < 130 && !/[.!?]\$/.test(f)) {"));
+sjekk('avsnittene faar ulik vekt',
+    str_contains($sida, "fontSize: i === 0 ? 'var(--text-lg)' : 'var(--text-base)',")
+    && str_contains($sida, '<p style="{{ a.stil }}">{{ a.tekst }}</p>'));
+sjekk('«Viktig aa vite» tegnes som punkter',
+    str_contains($sida, '<sc-if value="{{ sk.erListe }}"')
+    && str_contains($sida, '<sc-for list="{{ sk.punkter }}" as="pp"'));
+// Kontrollen: de andre seksjonene er fortsatt tekst, ikke lister.
+sjekk('… mens de andre seksjonene fortsatt er tekst',
+    str_contains($sida, '<sc-if value="{{ sk.erTekst }}"')
+    && str_contains($sida, "erTekst: true, erListe: false, punkter: [] }))"));
+// Og at klumpen med linjeskift er borte.
+sjekk('… og klumpen med linjeskift er borte',
+    !str_contains($sida, "['Viktig å vite', (k.viktig || []).join('\\n')],"));
 
 // ── Vilkaarene maa godtas ──────────────────────────────────────────────
 //
@@ -7162,6 +7266,71 @@ $ikkeMedlem = ['id' => 0, 'navn' => 'Kursdeltaker', 'medlemskap_type' => null,
 sjekk('en som ikke er medlem har ingen betalingsstatus',
     Medlemskap::betalingsstatus($ikkeMedlem, null, null)['tilstand'] === 'ingen');
 
+// ── Forfalt og utestaaende er to forskjellige ting ─────────────────────
+//
+// Eieren, 2. september: «verken hun eller Eirin kommer opp i kortet ikke
+// betalt paa oversikten, og det maa de jo, helt til pengene er inne».
+//
+// Eirin hadde godkjent avtalen i Vipps, men trekket var ikke forfalt enda —
+// og falt dermed ut av tellingen, enda ingen krone hadde kommet. Tellingen
+// gikk paa «forfalt». Den skal gaa paa «pengene er ikke inne».
+//
+//   forfalt      pengene skulle vaert her. Roedt merke.
+//   utestaaende  pengene er ikke inne. Kan vaere helt i orden, men skal telles.
+$uMedlem = static fn(string $plan): array => ['id' => 0, 'navn' => 'U',
+    'medlemskap_type' => $plan, 'status' => 'aktiv', 'betaler_ikke' => 0,
+    'betaler_ikke_grunn' => null, 'start_dato' => $iDag];
+
+// Avtalen er godkjent, ingenting trukket enda: ikke roedt, men utestaaende.
+$b = Medlemskap::betalingsstatus($uMedlem('Årsmedlemskap'),
+    ['vipps_agreement_id' => 'agr', 'neste_trekk' => $iDag,
+     'siste_trekk' => null, 'status' => 'aktiv'], null, null);
+sjekk('en godkjent avtale uten trekk er utestaaende, men ikke forfalt',
+    $b['utestaaende'] === true && $b['forfalt'] === false, $b['tekst']);
+
+// Trekket er bestilt: heller ikke roedt, men pengene er ikke inne.
+$b = Medlemskap::betalingsstatus($uMedlem('Årsmedlemskap'),
+    ['vipps_agreement_id' => 'agr', 'neste_trekk' => gmdate('Y-m-d', strtotime('+27 days')),
+     'siste_trekk' => $iDag, 'status' => 'aktiv'], null,
+    ['status' => 'venter', 'created_at' => $iDag . ' 04:00:00', 'belop_ore' => 199000]);
+sjekk('… og et bestilt trekk likesaa',
+    $b['tilstand'] === 'bestilt' && $b['utestaaende'] === true && $b['forfalt'] === false,
+    $b['tekst']);
+
+// Pengene er inne: ikke utestaaende.
+$b = Medlemskap::betalingsstatus($uMedlem('Årsmedlemskap'),
+    ['vipps_agreement_id' => 'agr', 'neste_trekk' => gmdate('Y-m-d', strtotime('+27 days')),
+     'siste_trekk' => $iDag, 'status' => 'aktiv'], null,
+    ['status' => 'betalt', 'created_at' => $iDag . ' 04:00:00', 'belop_ore' => 199000]);
+sjekk('… mens et gjennomfort trekk ikke er noen av delene',
+    $b['utestaaende'] === false && $b['forfalt'] === false, $b['tekst']);
+
+// Den som betaler selv og aldri fullforte i Vipps: begge deler, og teksten
+// sier HVA som skjedde. «Ikke betalt ennaa» sa det samme som merket over.
+$b = Medlemskap::betalingsstatus($uMedlem('Prøv Lissom'), null, null,
+    ['status' => 'venter', 'created_at' => $iDag . ' 20:42:00', 'belop_ore' => 99000]);
+sjekk('en betaling som ble startet men ikke fullfort sier det',
+    $b['utestaaende'] === true && $b['forfalt'] === true
+    && str_contains($b['tekst'], 'aldri fullført'), $b['tekst']);
+$b = Medlemskap::betalingsstatus($uMedlem('Prøv Lissom'), null, null,
+    ['status' => 'feilet', 'created_at' => $iDag . ' 20:42:00', 'belop_ore' => 99000]);
+sjekk('… og en som gikk i staa sier det',
+    str_contains($b['tekst'], 'gikk ikke gjennom'), $b['tekst']);
+
+// Fritatt teller aldri.
+$b = Medlemskap::betalingsstatus(
+    ['id' => 0, 'navn' => 'F', 'medlemskap_type' => 'Basis 30', 'status' => 'aktiv',
+     'betaler_ikke' => 1, 'betaler_ikke_grunn' => 'dugnad'], null, null, null);
+sjekk('… og et fritatt medlem er hverken forfalt eller utestaaende',
+    $b['utestaaende'] === false && $b['forfalt'] === false);
+
+// Kortet og filteret maa telle det samme — og det maa vaere «utestaaende».
+$ovU = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('Oversikt teller det som er utestaaende',
+    str_contains($ovU, "} elseif (!empty(\$b['utestaaende'])) {"));
+sjekk('… og filteret «Ubetalte» det samme',
+    str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;"));
+
 // ── Oppslaget for hele lista ───────────────────────────────────────────
 //
 // Ett kall, ikke ett per medlem. Fem hundre medlemmer ville blitt fem hundre
@@ -7240,7 +7409,7 @@ sjekk('… og timer igjen',
 sjekk('filteret «Ubetalte» finnes',
     str_contains($sida, "'Alle', 'Aktive', 'Ubetalte', 'Sluttet'"));
 sjekk('… og teller det samme som kortet',
-    str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingForfalt;"));
+    str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;"));
 sjekk('Oversikt har kortet «Medlemmer og betaling»',
     str_contains($sida, "kort('Medlemmer og betaling',"));
 sjekk('… og det gaar til de ubetalte',
@@ -7302,7 +7471,7 @@ sjekk('api/medlemskap.php sender langtekst og viktig',
 sjekk('medlemskapssida viser den utfyllende teksten',
     str_contains($sida, 'om: o.langtekst'));
 sjekk('… og «Viktig aa vite» som egen bolk',
-    str_contains($sida, "['Viktig å vite', (k.viktig || []).join('\\n')],"));
+    str_contains($sida, "tittel: 'Viktig å vite', tekst: '', erTekst: false,"));
 
 // Skjemaet i admin. Uten feltene finnes teksten bare i en migrasjon, og
 // verkstedet maa be om hjelp for aa rette et komma.

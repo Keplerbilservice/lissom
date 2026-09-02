@@ -335,12 +335,15 @@ Svar::json([
             );
             if ($b['tilstand'] === 'fri') {
                 $fri++;
-            } elseif ($b['forfalt']) {
+            } elseif (!empty($b['utestaaende'])) {
+                // «utestaaende», ikke «forfalt». Eieren, 2. september: de skal
+                // telles «helt til pengene er inne» — ogsaa et trekk som er
+                // bestilt og ikke forfalt enda.
                 $ubetalte++;
             }
             if ((string) ($m['start_dato'] ?? '') >= $mndStart) {
                 $nye++;
-                if ($b['forfalt']) {
+                if (!empty($b['utestaaende'])) {
                     $nyeUbet++;
                 }
             }

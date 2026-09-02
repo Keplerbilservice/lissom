@@ -2121,8 +2121,20 @@ window.__resources = {
                    Derfor deles teksten i avsnitt her, og hvert avsnitt faar
                    sitt eget <p>. Da staar de med luft mellom seg, slik
                    avsnitt skal, framfor en tom linje. -->
+              <!-- Ingressen: foerste linje i den utfyllende teksten er som
+                   regel en overskrift — «Mini 15 – fleksibelt medlemskap for
+                   deg som vil skape jevnlig». Navnet staar alt i <h1> rett
+                   over, saa halve linja var dobbelt opp. Her staar bare den
+                   halvdelen som sier noe nytt, i displayskrift.
+                   Eieren, 2. september: «teksten som er inne paa
+                   medlemskapene ... kan formateres penere». -->
+              <sc-if value="{{ bOmHarIngress }}" hint-placeholder-val="{{ false }}">
+                <p style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); line-height: 1.35; color: var(--text-heading); max-width: 46ch; text-wrap: balance;">{{ bOmIngress }}</p>
+              </sc-if>
+              <!-- Ti like avsnitt paa rad blir en vegg. Det foerste staar
+                   stort som en inngang, resten i broedtekst med luft. -->
               <sc-for list="{{ bOmAvsnitt }}" as="a" hint-placeholder-count="2">
-                <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ a.tekst }}</p>
+                <p style="{{ a.stil }}">{{ a.tekst }}</p>
               </sc-for>
               <!-- Linja og faktaboksene hoerer til kursene.
                    Sida brukes ogsaa naar man klikker seg inn paa et
@@ -2164,7 +2176,22 @@ window.__resources = {
               <sc-for list="{{ bSeksjoner }}" as="sk" hint-placeholder-count="2">
                 <div style="margin-top: var(--space-8); max-width: 60ch;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ sk.tittel }}</div>
-                  <p style="margin: 0; font-size: var(--text-base); line-height: 1.7; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ sk.tekst }}</p>
+                  <!-- «Viktig aa vite» er en liste, og sto som én klump med
+                       linjeskift inni. Er seksjonen punkter, tegnes den som
+                       punkter — samme form som «Dette faar du» lenger opp. -->
+                  <sc-if value="{{ sk.erListe }}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: var(--space-3);">
+                      <sc-for list="{{ sk.punkter }}" as="pp" hint-placeholder-count="3">
+                        <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);">
+                          <span style="width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-500); flex: 0 0 auto; margin-top: 9px;"></span>
+                          <span style="text-wrap: pretty;">{{ pp }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ sk.erTekst }}" hint-placeholder-val="{{ true }}">
+                    <p style="margin: 0; font-size: var(--text-base); line-height: 1.7; color: var(--text-body); white-space: pre-wrap; text-wrap: pretty;">{{ sk.tekst }}</p>
+                  </sc-if>
                 </div>
               </sc-for>
 
@@ -2531,7 +2558,14 @@ window.__resources = {
               <div>
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ a.merke }}</div>
                 <h3 style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); margin: 0 0 var(--space-4);">{{ a.navn }} · {{ a.pris }}</h3>
-                <p style="margin: -6px 0 var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">{{ a.passer }}</p>
+                <!-- «Passer for: deg som ...» sto her.
+                     Eieren, 2. september: «fjern dette du har lagt ut under
+                     passer deg og ikke for deg». Linja sto mellom navnet og
+                     punktlista i «Alt som er inkludert», og sa det samme som
+                     punktene under den — bare vagere.
+                     Feltet ligger fortsatt i planskjemaet og brukes paa
+                     medlemskapskortene lenger opp; det er bare denne
+                     seksjonen linja er tatt ut av. -->
                 <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">
                   <sc-for list="{{ a.punkter }}" as="p" hint-placeholder-count="3">
                     <li style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-sm); color: var(--text-body);">
@@ -6794,6 +6828,20 @@ window.__resources = {
 
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
               <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100);">
+                <!-- Perioden. Lista sto med alt fra tusen rader tilbake i én
+                     lang streng, og det man staar og trenger ved disken er
+                     dagen i dag. Eieren, 2. september: «oversikt - kasse -
+                     betalinger, her vises alt i en streng, jeg vil ha default
+                     dagens transaksjoner».
+                     Soeker du, gjelder soeket ALT uansett hvilken brikke som
+                     staar — en betaling fra forrige maaned skal kunne finnes.
+                     Da hopper brikkene til «Alt» selv, saa det ikke ser ut som
+                     lista lyver. -->
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-3);">
+                  <sc-for list="{{ btPerioder }}" as="pb" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ pb.velg }}" style="{{ pb.stil }}">{{ pb.navn }}</button>
+                  </sc-for>
+                </div>
                 <label style="{{ utEtikett }}">Søk i betalinger</label>
                 <input value="{{ btSok }}" onChange="{{ settBtSok }}" placeholder="Navn, beløp, dato eller referanse" style="{{ utFeltStil }}">
                 <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Viser {{ btAntall }}</div>
@@ -16671,7 +16719,7 @@ class Component extends DCLogic {
     return [
       { navn: 'Slik virker de to', verdi: '' },
       { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
-      { navn: 'Jeg ordner selv — ' + SELV, verdi: ' ' },
+      { navn: 'Betal i Vipps — ' + SELV, verdi: ' ' },
     ];
   }
 
@@ -24649,10 +24697,10 @@ class Component extends DCLogic {
     // lager du ting paa nytt, naar det allerede finnes i systemet».
     //
     // Nummeret som sendes til serveren er det samme som for: «selv».
-    if (pl.engangs) return [{ plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv' }];
+    if (pl.engangs) return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];
     return [
       { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' },
-      { plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv', variant: 'secondary' },
+      { plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv', variant: 'secondary' },
     ];
   }
 
@@ -29688,6 +29736,7 @@ class Component extends DCLogic {
                        forfalt: 'Forfalt', venter: 'Ikke betalt' }[m.betaling] || '',
       betalingTekst: m.betalingTekst || '',
       betalingForfalt: !!m.betalingForfalt,
+      betalingUte: !!m.betalingUte,
       erFritatt: m.betaling === 'fri',
       betalingStil: (() => {
         // Samme form som bindingslappen rett over, saa de to leses som ett
@@ -31601,13 +31650,51 @@ class Component extends DCLogic {
       //
       // Ett linjeskift teller ogsaa: den som trykker enter én gang mener et
       // nytt avsnitt, ikke et mellomrom.
-      bOmAvsnitt: (() => {
+      // ── Brodteksten, satt som tekst og ikke som en vegg ──────────────
+      //
+      // Eieren, 2. september: «teksten som er inne paa medlemskapene, den
+      // utvidede, kan formateres penere».
+      //
+      // Ti like avsnitt paa rad i samme storrelse er en vegg. Her deles den i
+      // tre: overskriftslinja blir en ingress, foerste avsnitt staar litt
+      // storre som en inngang, og resten er broedtekst.
+      ...(() => {
         const k = this.state.valgtKurs || {};
         const raa = String(k.om || '').trim()
                  || String(k.kortBeskrivelse || '').trim()
                  || String(k.laererTekst || k.laerer || '').trim()
                  || '';
-        return raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ tekst: t }));
+        const deler = raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean);
+
+        // Foerste linje er ofte «Mini 15 – fleksibelt medlemskap for deg som
+        // vil skape jevnlig». Navnet staar alt i <h1> rett over, saa halve
+        // linja er dobbelt opp. Vi beholder den halvdelen som sier noe nytt.
+        let ingress = '';
+        const tittel = String(k.title || k.tittel || '').trim();
+        if (deler.length > 1 && tittel) {
+          const f = deler[0];
+          // Bare naar den faktisk ser ut som en overskrift: begynner med
+          // navnet, er kort, og slutter ikke som en setning.
+          if (f.indexOf(tittel) === 0 && f.length < 130 && !/[.!?]$/.test(f)) {
+            const halen = f.slice(tittel.length).replace(/^\s*[–—-]\s*/, '').trim();
+            if (halen) { ingress = halen.charAt(0).toUpperCase() + halen.slice(1); deler.shift(); }
+          }
+        }
+        return {
+          bOmIngress: ingress,
+          bOmHarIngress: !!ingress,
+          bOmAvsnitt: deler.map((t, i) => ({
+            tekst: t,
+            stil: {
+              margin: '0 0 var(--space-5)',
+              color: i === 0 ? 'var(--text-heading)' : 'var(--text-body)',
+              fontSize: i === 0 ? 'var(--text-lg)' : 'var(--text-base)',
+              lineHeight: i === 0 ? 1.6 : 1.75,
+              maxWidth: '58ch',
+              textWrap: 'pretty',
+            },
+          })),
+        };
       })(),
       // Er det noe aa betale paa nett?
       //
@@ -32239,12 +32326,17 @@ class Component extends DCLogic {
             ['Når er den ferdig', k.ferdigTid],
             ['Praktisk informasjon', k.praktisk],
             ['Allergener og kommentarer', k.allergener],
-            // «Viktig aa vite» paa medlemskapene (migrasjon 127). Lista
-            // settes sammen med linjeskift, saa den staar under hverandre i
-            // samme avsnittsform som de andre seksjonene.
-            ['Viktig å vite', (k.viktig || []).join('\n')],
           ].filter(([, t]) => String(t || '').trim() !== '')
-           .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
+           .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim(),
+                                        erTekst: true, erListe: false, punkter: [] }))
+           // «Viktig aa vite» (migrasjon 127) er en LISTE. Den sto som én
+           // klump med linjeskift inni, og linjeskift midt i et avsnitt ser ut
+           // som et uhell. Naa tegnes den som punkter — samme form som «Dette
+           // faar du» lenger opp paa sida.
+           .concat((k.viktig || []).length
+             ? [{ tittel: 'Viktig å vite', tekst: '', erTekst: false,
+                  erListe: true, punkter: k.viktig }]
+             : []),
           bHarMerker: passer.length > 0,
           bMerker: passer,
         };
@@ -33245,11 +33337,23 @@ class Component extends DCLogic {
               .filter(r => r.sum > 0)
               .map(r => ({ navn: r.navn, sum: this.kroner(r.sum) }));
 
+            // ── Perioden ────────────────────────────────────────────────
+            //
+            // Lista sto med alt, tusen rader tilbake, i én lang streng. Det
+            // man staar og trenger ved disken er dagen i dag.
+            //
+            // Soeket gaar alltid gjennom ALT: en betaling fra forrige maaned
+            // skal kunne finnes. Skriver du noe, staar det derfor «Alt» paa
+            // brikkene — ellers ville lista sett ut som den skjulte noe.
+            const periode = sokB ? 'Alt' : (st.btPeriode || 'I dag');
+
             const treff = alle.filter(b => {
-              if (!sokB) return true;
-              return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',
-                      b.formal || '', b.maate || '', b.status || ''
-              ].join(' ').toLowerCase().indexOf(sokB) !== -1;
+              if (sokB) {
+                return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',
+                        b.formal || '', b.maate || '', b.status || ''
+                ].join(' ').toLowerCase().indexOf(sokB) !== -1;
+              }
+              return periode === 'Alt' || b.dato === idagIso;
             });
 
             const STATUSTEKST = {
@@ -33271,11 +33375,31 @@ class Component extends DCLogic {
 
               btSok: st.btSok || '',
               settBtSok: e => this.setState({ btSok: e.target.value }),
-              btAntall: treff.length + ' av ' + alle.length,
+              btPerioder: ['I dag', 'Alt'].map(n => {
+                const paa = periode === n;
+                return {
+                  navn: n,
+                  velg: () => this.setState({ btPeriode: n, btSok: '' }),
+                  stil: {
+                    appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                    padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 600,
+                    border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                    background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
+                    color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
+                  },
+                };
+              }),
+              btAntall: sokB
+                ? treff.length + ' av ' + alle.length
+                : (periode === 'Alt'
+                    ? treff.length + ' av ' + alle.length
+                    : treff.length + (treff.length === 1 ? ' betaling i dag' : ' betalinger i dag')),
               btIngen: treff.length === 0,
               btIngenTekst: sokB
                 ? 'Ingen betalinger passer «' + (st.btSok || '').trim() + '».'
-                : 'Ingen betalinger ennå.',
+                : (periode === 'Alt'
+                    ? 'Ingen betalinger ennå.'
+                    : 'Ingen betalinger i dag ennå. Trykk «Alt» for å se resten.'),
 
               btListe: treff.slice(0, 200).map(b => {
                 const igjen = Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));
@@ -34371,7 +34495,7 @@ class Component extends DCLogic {
         // kortet paa Oversikt teller — leste lista noe annet, kunne kortet
         // sagt seks og lista vist sju. Et medlem som staar som fritatt fra
         // betaling hoerer ikke hjemme her; det var hele poenget med haken.
-        if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingForfalt;
+        if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;
         if (fv === 'Sluttet') return !!m.harSluttet;
         if (fv === 'Kursdeltakere') return !m.erMedlem && !m.erAdmin && (m.antallKurs || 0) > 0;
         if (fv === 'Admin') return !!m.erAdmin;
@@ -42649,7 +42773,7 @@ class Component extends DCLogic {
           bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',
           // Samme to setninger som dialogen paa Min side bruker. Sto de to
           // steder, ville de etter hvert sagt hver sin ting om det samme.
-          bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Jeg ordner selv')],
+          bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Betal i Vipps')],
           bmBetalingValgt: valgt,
           // ── Vilkaarene ──────────────────────────────────────────────
           //
@@ -43154,15 +43278,27 @@ class Component extends DCLogic {
           ? 'Én dato er satt opp framover.'
           : datoer + ' datoer er satt opp framover, fordelt på ' + kat.length + (kat.length === 1 ? ' kurs.' : ' kurs og events.');
       })(),
-      kursForside: this.medBooking([
-        { level: 'Nybegynner', title: 'Nybegynner dreiekurs', date: 'Starter 19. aug', duration: '2 økter, 2 dager', price: 'Fra kr. 2 800,-', status: '3 plasser igjen', image: 'uploads_shutterstock_2630283113.jpg' },
-        { level: 'Kurs', title: 'Kurs boller', date: 'man. 24. aug', duration: '17:00 – 20:00', price: 'Fra kr. 1 490,-', status: '3 plasser igjen', image: FOTO + 'handbygging.jpg' },
-        { level: 'Event', title: 'Date Night', date: 'fre. 28. aug', duration: '18:00 – 21:00', price: 'Fra kr. 1 190,-', status: 'Fullbooket', image: 'uploads_655787162_26415535508077928_8440401554777300898_n.jpg' },
-        { level: 'Event', title: 'Paint on Pots', date: 'søn. 6. sep', duration: '12:00 – 15:00', price: 'Fra kr. 690,-', status: '7 plasser igjen', image: 'uploads_shutterstock_2830576853.jpg' },
-      ].map(f => {
-        const full = (this._kursListe || []).find(x => x.title === f.title);
-        return full ? Object.assign({}, full) : f;
-      }).concat(this.state.nyeKurs || [])),
+      // ── De fire kursene som gaar naermest ────────────────────────────
+      //
+      // Her sto fire kursnavn skrevet inn i fila, og hvert av dem ble slaatt
+      // opp i katalogen paa TITTEL. Fant den ikke tittelen, sto designraden
+      // igjen — med oppdiktet dato, pris og «3 plasser igjen».
+      //
+      // «Kurs boller» finnes ikke lenger paa lissom.no. Forsida viste det
+      // likevel, som «man. 24. aug · Fra kr. 1 490,- · 3 plasser igjen», og
+      // et trykk forte ingen steder. De andre tre var ekte ved en tilfeldighet
+      // — de hadde ikke skiftet navn.
+      //
+      // Eieren, 2. september: «forside kurs og events kommende datoer, jeg vil
+      // du skal vise 4 kort her».
+      //
+      // kursKort() er alt sortert etter naar kursene gaar, med de datolose
+      // sist — se forsteOktTid(). Da er de fire forste noeyaktig «kommende
+      // datoer», og lista kan aldri vise noe som ikke finnes.
+      // kursKort() er den samme lista kurssida bruker: designraden naar det
+      // ikke finnes noen server, katalogen naar den gjor. Fire foerste er
+      // altsaa fire ekte kurs begge veier.
+      kursForside: this.kursKort().slice(0, 4),
       // Gavekortet ligger ikke i butikken — det har sin egen side. Knappen sa
       // «Se i butikken», og der var det ingenting aa finne.
       // Produktet som staar fram paa mobil akkurat naa.

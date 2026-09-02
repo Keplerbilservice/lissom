@@ -6063,6 +6063,32 @@ sjekk('… men en «Kontakt oss» som staar i stedet',
 sjekk('… og den tar kurset med som emne',
     str_contains($sida, "ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
 
+// ── Én linje om salg, ikke to ─────────────────────────────────────────
+//
+// «Selg egne arbeider gjennom lissom.no» ble lagt paa hver loepende plan,
+// uansett hva som alt sto i punktlista. Basis 30 har den skrevet inn i basen
+// fra for, og fikk den dermed to ganger rett under hverandre:
+//
+//   ✓ Tilgang 24/7 med dorkode
+//   ✓ Selg egne arbeider gjennom lissom.no
+//   ✓ Selg egne arbeider gjennom lissom.no
+//
+// Malt i nettleseren paa medlemskapssida, for og etter: fire forekomster ble
+// til tre. Aarsmedlemskap og Fri tilgang har den fortsatt én gang hver, og
+// proveperioden ingen.
+//
+// Verkstedet skal kunne skrive linja inn selv uten at den kommer dobbelt.
+sjekk('salgslinja legges bare paa der den ikke staar fra for',
+    str_contains($sida, "const SALG = 'Selg egne arbeider gjennom lissom.no';")
+    && str_contains($sida, 'fraBasen.some(x => String(x).trim() === SALG)'));
+// Kontrollen: den gamle linja, som la den paa uansett, skal vaere borte.
+sjekk('… og den gamle linja som la den paa uansett er borte',
+    !str_contains($sida, "(o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no'])"));
+// Proveperioden skal fortsatt ikke ha den i det hele tatt: salg gjennom
+// lissom.no folger medlemskapet, ikke de ti timene.
+sjekk('… og proveperioden faar den fortsatt ikke',
+    str_contains($sida, 'const punkter = (o.engangs || fraBasen.some('));
+
 // ── Medlemskapskortet: info forst, «Velg» etterpaa ────────────────────
 //
 // Kortet sendte «kjop» til bade knappen og kortflata, saa et klikk hvor som

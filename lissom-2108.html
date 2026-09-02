@@ -29631,7 +29631,22 @@ class Component extends DCLogic {
       const halen = this.utenGjentakelse(o.passerFor, ['passer for', 'for deg som', 'deg som']);
       const passer = halen ? 'Passer for: deg som ' + halen : '';
       // Salg gjennom lissom.no folger med medlemskapet, ikke proveperioden.
-      const punkter = o.engangs ? (o.punkter || []) : (o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no']);
+      //
+      // Linja ble lagt paa uansett hva som alt sto i punktlista. Basis 30 har
+      // den skrevet inn i basen fra for, og fikk den derfor to ganger:
+      //
+      //   ✓ Tilgang 24/7 med dorkode
+      //   ✓ Selg egne arbeider gjennom lissom.no
+      //   ✓ Selg egne arbeider gjennom lissom.no
+      //
+      // Malt paa kortet og paa infosida under «les mer»: begge steder sto
+      // den dobbelt. Naa legges den bare paa der den ikke staar fra for, saa
+      // verkstedet kan skrive den inn selv uten at den kommer to ganger.
+      const SALG = 'Selg egne arbeider gjennom lissom.no';
+      const fraBasen = o.punkter || [];
+      const punkter = (o.engangs || fraBasen.some(x => String(x).trim() === SALG))
+        ? fraBasen
+        : fraBasen.concat([SALG]);
       const oppsigelse = o.engangs
         ? 'Stopper av seg selv når perioden er over'
         : (o.binding > 0 ? 'Årsavtale — binding i ' + o.binding + ' måneder' : 'Måned til måned — si opp når du vil');

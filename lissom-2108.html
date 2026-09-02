@@ -15171,8 +15171,8 @@ const SIDEINNHOLD = {
       { l: 'Overskrift', v: 'Hos Lissom handler keramikk om mye mer enn leire' } ] },
     // «Slik fungerer det» sto her: fire steg fra booking til ferdig brent,
     // «Passer for» og «Ikke ideelt for». Den seksjonen tegnet bare paa
-    // en egen visning av kurssida, og forsvant med den — se
-    // docs/DROP-IN.md. Feltene sto igjen uten noe som leste dem.
+    // en egen visning av kurssida, og forsvant med den. Feltene sto igjen
+    // uten noe som leste dem.
     { navn: 'Ordensregler og HMS', type: 'Redigeres under Nyttig info → Plakater', synlig: 'Publisert', felter: [] },
     // Staar sist med vilje: numrene paa seksjonene over er noekler nettsiden
     // slaar opp paa, og en ny seksjon i midten ville flyttet alle sammen.
@@ -15613,12 +15613,6 @@ const TALLDETALJER = {
     { navn: 'Silje Bratt', verdi: '2 plasser · betalt kr. 2 380,-' },
     { navn: 'Anne Five', verdi: '2 plasser · betalt kr. 2 380,-' },
     { navn: 'Fem øvrige par', verdi: 'Alle betalt' },
-    { navn: 'DROP-IN · HELE UKA · 7 GJESTER', verdi: '' },
-    { navn: 'Emma Bjørnstad', verdi: 'Tir 10:00 · godkjent · kr. 490,-' },
-    { navn: 'Håkon Five', verdi: 'Tir 10:00 · godkjent · kr. 490,-' },
-    { navn: 'Line Sørhaug', verdi: 'Tir 16:00 · med Ingrid Hansen' },
-    { navn: 'Aksel Berg', verdi: 'Ons 10:00 · med Silje Bratt' },
-    { navn: 'Tuva Aas', verdi: 'Tor 16:00 · ikke godkjent ennå' },
     { navn: 'SAMMENDRAG', verdi: '' },
     { navn: 'Mot forrige uke', verdi: '+6 påmeldte' },
     { navn: 'Avbestillinger', verdi: '2, begge refundert' },
@@ -27014,8 +27008,7 @@ class Component extends DCLogic {
     // aapen time. Ni plasser om dagen i femten dager druknet resten.
     //
     // Eieren, 31. august: «i kalenderen saa er det naa en kollone som heter
-    // verkstedet, hvor alle drop in timene ligger, fjern denne kolonnen, jeg
-    // vil ikke se drop in timene i min kallender» — og, spurt: «hele
+    // verkstedet ... fjern denne kolonnen» — og, spurt: «hele
     // kolonnen, jeg vil likevel legge til f eks brenning paa min kalender, en
     // kollone».
     //

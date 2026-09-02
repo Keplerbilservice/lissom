@@ -599,6 +599,27 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // ikke kan svare hver sitt om den samme personen.
             'betalerIkke'      => !empty($m['betaler_ikke']),
             'betalerIkkeGrunn' => (string) ($m['betaler_ikke_grunn'] ?? ''),
+            // Naar vilkaarene ble godtatt, og hvilken utgave som gjaldt da.
+            // En hake som bare laaser opp en knapp er ikke noe bevis; dette
+            // er det, og det skal kunne vises fram.
+            'vilkaar' => (static function () use ($m): string {
+                if (!DB::harKolonne('membership_applications', 'vilkaar_godtatt_at')) {
+                    return '';
+                }
+                $r = DB::en(
+                    "SELECT vilkaar_godtatt_at, vilkaar_versjon
+                       FROM membership_applications
+                      WHERE member_id = :m AND vilkaar_godtatt_at IS NOT NULL
+                   ORDER BY id DESC LIMIT 1",
+                    ['m' => (int) $m['id']]
+                );
+                if ($r === null) {
+                    return '';
+                }
+                return 'Godtok medlemsvilkårene '
+                    . Booking::norskDato((string) $r['vilkaar_godtatt_at'])
+                    . ' (utgave ' . (string) $r['vilkaar_versjon'] . ')';
+            })(),
         ] + (static function () use ($m): array {
             if ($m === null || (int) ($m['id'] ?? 0) <= 0) {
                 return ['betaling' => 'ingen', 'betalingTekst' => ''];

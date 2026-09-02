@@ -20,6 +20,18 @@ final class Medlemskap
     /** Sa mange dager for forfall ber vi Vipps om trekket. */
     private const VARSEL_DAGER = 3;
 
+    /**
+     * Hvilken utgave av medlemsvilkaarene som gjelder naa.
+     *
+     * Lagres sammen med samtykket ved innmelding. Uten den vet vi at noen
+     * huket av, men ikke hva de huket av PAA — og vilkaar som kan endres uten
+     * spor er ikke verdt mye den dagen noen er uenig.
+     *
+     * Datoen er den teksten sist ble endret. Endres vilkaarene, settes denne
+     * opp samtidig, saa en rad fra i fjor peker paa teksten som gjaldt i fjor.
+     */
+    public const VILKAAR_VERSJON = '2026-09-02';
+
     /** @return array<string,mixed>|null */
     public static function plan(string $navn): ?array
     {

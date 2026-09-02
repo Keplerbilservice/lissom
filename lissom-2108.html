@@ -3723,10 +3723,22 @@ window.__resources = {
                   <sc-if value="{{ bmFeil }}" hint-placeholder-val="{{ false }}">
                     <div style="font-size: var(--text-sm); color: var(--terracotta-600);">{{ bmFeil }}</div>
                   </sc-if>
+                  <!-- Vilkaarene godtas for man melder seg inn, ikke etter.
+                       Her sto bare en graa linje under knappen. Ingen
+                       bekreftelse, ingenting lagret — og ingen kunne i
+                       ettertid vise at medlemmet hadde sett den.
+                       Eieren, 2. september: «er det mulig aa legge til godta
+                       vilkaar for man faar kjopt et medlemskap?»
+                       Samme grep som paa kursbookingen: haken laaser knappen,
+                       og «Les vilkaarene» staar rett under. -->
                   <div>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg godtar medlemsvilkårene" checked="{{ bmVilkaarOk }}" on-change="{{ toggleBmVilkaar }}" hint-size="100%,24px"></x-import>
+                    <button type="button" onClick="{{ goVilkar }}" style="appearance: none; background: transparent; border: none; padding: 0; margin: 6px 0 0 32px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Les vilkårene</button>
                   </div>
-                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted);">{{ bmVilkar }}</p>
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmVilkar }}</p>
+                  <div>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
+                  </div>
                 </div>
               </sc-if>
             </div>
@@ -10645,6 +10657,9 @@ window.__resources = {
                   <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
                   <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
                 </div>
+                <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
+                </sc-if>
                 <label style="{{ personFriEtikett }}">
                   <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                   Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
@@ -11369,6 +11384,9 @@ window.__resources = {
                     <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
                     <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
                   </div>
+                  <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
+                    <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
+                  </sc-if>
                   <label style="{{ personFriEtikett }}">
                     <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                     Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
@@ -19088,7 +19106,12 @@ class Component extends DCLogic {
 
   medlemsplaner() {
     const fra = this.state.planListe || [];
-    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '', fastTrekk: !!p.fastTrekk }));
+    // Bindingstida og oppsigelsen foelger med: innmeldinga skal si det som
+    // gjelder DET medlemskapet man velger, ikke det samme til alle.
+    if (fra.length) return fra.map(p => ({ navn: p.navn, pris: p.pris || '',
+      fastTrekk: !!p.fastTrekk,
+      binding: p.binding === undefined ? 2 : p.binding,
+      oppsigelse: p.oppsigelse === undefined ? 1 : p.oppsigelse }));
     return [{ navn: 'Prøv Lissom' }, { navn: 'Basis 30' },
             { navn: 'Årsmedlemskap' }, { navn: 'Fri tilgang' }];
   }
@@ -19118,6 +19141,10 @@ class Component extends DCLogic {
       this.setState({ bmFeil: 'Vi trenger en e-postadresse vi kan svare på.' });
       return;
     }
+    if (!this.state.bmVilkaarOk) {
+      this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å melde deg inn.' });
+      return;
+    }
     if (this._soknadPagaar) return;
     this._soknadPagaar = true;
 
@@ -19131,6 +19158,7 @@ class Component extends DCLogic {
         epost: epost,
         erfaring: (this.state.bmErfaring || '').trim(),
         melding: (this.state.bmMelding || '').trim(),
+        vilkaar: this.state.bmVilkaarOk ? 'ja' : 'nei',
       }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
@@ -32751,6 +32779,10 @@ class Component extends DCLogic {
               whiteSpace: 'nowrap', background: F[0], color: F[1],
             };
           })(),
+          // Samtykket til vilkaarene, med dato og utgave. En hake som bare
+          // laaser opp en knapp er ikke noe bevis; dette skal kunne vises fram.
+          personVilkaar: p.vilkaar || '',
+          personHarVilkaar: !!p.vilkaar,
           personFriEtikett: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                               marginTop: 'var(--space-4)', fontSize: 'var(--text-sm)',
                               color: 'var(--text-heading)' },
@@ -38449,7 +38481,24 @@ class Component extends DCLogic {
         { h: 'Priser og betaling', p: 'Alle priser vises i norske kroner og er inkl. mva der mva gjelder (kurs og undervisning er mva-fritt). Betaling skjer med Vipps ved bestilling. Medlemskap trekkes månedlig via Vipps Recurring.' },
         { h: 'Angrerett', p: 'Du har 14 dagers angrerett etter angrerettloven på varer kjøpt i nettbutikken. Angreretten gjelder ikke kurs og events med fastsatt dato når du har samtykket til at tjenesten starter — men våre avbestillingsregler under gjelder alltid.' },
         { h: 'Avbestilling av kurs og events', p: 'Full refusjon ved avbestilling mer enn 14 dager før kursstart, 50 % inntil 7 dager før. Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen. Refusjon skjer til Vipps innen 3 virkedager.' },
-        { h: 'Medlemskap', p: 'Medlemskap løper måned til måned og fornyes automatisk med trekk i Vipps. Du kan si opp når som helst, og oppsigelsen koster ingenting. Slik sier du opp: logg inn på Min side på lissom.no, åpne medlemskapskortet og trykk «Si opp». Du kan også stoppe avtalen selv i Vipps-appen under Profil → Avtaler og abonnement, eller sende en e-post til post@lissom.no eller ringe +47 94 13 46 01. Oppsigelsen gjelder fra og med neste trekk: du beholder tilgangen ut den perioden du har betalt for, og blir ikke trukket igjen. Du får bekreftelse på e-post, og medlemskapskortet på Min side viser at avtalen er sagt opp. Årsmedlemskap er en årsavtale med binding i 12 måneder; oppsigelsen gjelder da fra bindingstiden er ute. Prøv Lissom stopper av seg selv etter 30 dager og fornyes ikke. Ubrukte timer overføres ikke. Prøv Lissom kan kun benyttes én gang per person.' },
+        // ── Medlemsvilkaarene ────────────────────────────────────────
+        //
+        // Eierens tekst, 2. september, med det praktiske fra den gamle
+        // seksjonen beholdt: HVORDAN man sier opp sto her fra for, og staar
+        // ikke i vilkaarsdokumentet.
+        //
+        // Den gamle teksten sa «oppsigelsen gjelder fra og med neste trekk:
+        // du beholder tilgangen ut den perioden du har betalt for, og blir
+        // ikke trukket igjen». Det stemte ikke med systemet:
+        // Medlemskap::sluttdato() regner fra forste dag i paafolgende maaned
+        // og legger til oppsigelsestida, og trekket gaar som for i den
+        // maaneden. Sida lovte altsaa kunden én maaned gratis som verkstedet
+        // faktisk fakturerer. Naa staar det samme sted som koden gjor.
+        { h: 'Medlemskap — bindingstid', p: 'Prøv Lissom har ingen bindingstid og kan avsluttes uten oppsigelsestid. Årsmedlemskap har 12 måneders bindingstid fra oppstartsdato; etter utløpt bindingstid løper medlemskapet videre automatisk med 1 måneds oppsigelsestid. Alle øvrige medlemskap har 2 måneders bindingstid fra oppstartsdato, og deretter 1 måneds oppsigelsestid.' },
+        { h: 'Medlemskap — oppsigelse', p: 'Oppsigelse skal skje skriftlig. Oppsigelsestiden regnes fra første dag i påfølgende måned etter at oppsigelsen er mottatt, og medlemsavgift belastes ut oppsigelsesperioden. Slik sier du opp: logg inn på Min side på lissom.no, åpne medlemskapskortet og trykk «Si opp». Du kan også sende e-post til post@lissom.no eller ringe +47 94 13 46 01. Du får bekreftelse på e-post, og medlemskapskortet på Min side viser at avtalen er sagt opp. Prøv Lissom stopper av seg selv etter 30 dager og fornyes ikke. Ubrukte timer overføres ikke, og Prøv Lissom kan kun benyttes én gang per person.' },
+        { h: 'Medlemskap — HMS og ordensregler', p: 'Medlemmet plikter å sette seg inn i og følge gjeldende HMS-rutiner, sikkerhetsbestemmelser og ordensregler for verkstedet. Medlemmet er ansvarlig for å bruke utstyr, verktøy og lokaler på en forsvarlig måte. Pålegg fra ansatte eller representanter for Lissom Keramikk & Håndverk AS skal følges.' },
+        { h: 'Medlemskap — mislighold', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å avslutte et medlemskap med umiddelbar virkning og uten varsel dersom medlemmet bryter HMS-regler eller ordensreglement, utsetter andre medlemmer, ansatte eller utstyr for fare, unnlater å betale medlemsavgift, eller på annen måte misligholder medlemsavtalen eller opptrer på en måte som er til skade for virksomheten eller andre medlemmer.' },
+        { h: 'Medlemskap — endringer', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å oppdatere medlemsvilkårene ved behov. Gjeldende vilkår vil alltid være tilgjengelige for medlemmene her.' },
         { h: 'Levering og henting', p: 'Varer hentes i verkstedet på Teie innen to uker, eller sendes med Posten mot frakt. Spesialbestillinger har leveringstid etter avtale.' },
         { h: 'Reklamasjon', p: 'Håndlaget keramikk varierer i farge og form — det er ikke en mangel. Ved skade eller feil, kontakt oss på monica@lissom.no innen rimelig tid, så finner vi en løsning etter forbrukerkjøpsloven.' },
         { h: 'Avlysning fra oss', p: 'Ved for få påmeldte eller sykdom kan vi avlyse kurs. Du får da valget mellom ny dato eller full refusjon.' },
@@ -42602,12 +42651,42 @@ class Component extends DCLogic {
           // steder, ville de etter hvert sagt hver sin ting om det samme.
           bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Jeg ordner selv')],
           bmBetalingValgt: valgt,
-          // Vilkaarene, der de skal staa: for man melder seg inn, ikke etter.
-          bmVilkar: 'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '
-            + 'og 1 måneds oppsigelsestid. Du sier opp fra Min side.',
+          // ── Vilkaarene ──────────────────────────────────────────────
+          //
+          // Her sto én graa linje under knappen, uten bekreftelse: «2
+          // maaneders bindingstid ... 1 maaneds oppsigelsestid». Den var
+          // dessuten feil for halvparten: proveperioden har ingen binding, og
+          // aarsmedlemskapet har tolv maaneder. Naa leses tallene av planen,
+          // slik at linja sier det som faktisk gjelder det medlemskapet man
+          // holder paa aa velge.
+          //
+          // Eieren, 2. september: «er det mulig aa legge til godta vilkaar for
+          // man faar kjopt et medlemskap?»
+          bmVilkar: (() => {
+            const b = parseInt(pl.binding, 10) || 0;
+            const o = parseInt(pl.oppsigelse, 10);
+            const opps = isNaN(o) ? 1 : o;
+            // Eiendomsform: «2 maaneders bindingstid», ikke «2 maaneder».
+            const mnd = n => n === 1 ? '1 måneds' : n + ' måneders';
+            if (b === 0 && opps === 0) {
+              return (pl.navn || 'Medlemskapet') + ' har ingen bindingstid, '
+                   + 'og kan avsluttes uten oppsigelsestid.';
+            }
+            return (pl.navn || 'Medlemskapet') + ' har '
+                 + (b > 0 ? mnd(b) + ' bindingstid fra oppstart, og ' : '')
+                 + (opps > 0 ? mnd(opps) + ' oppsigelsestid. ' : 'ingen oppsigelsestid. ')
+                 + 'Du sier opp fra Min side.';
+          })(),
           bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,
         };
       })(),
+      // Vilkaarene. Samme grep som paa kursbookingen: knappen er laast til
+      // haken staar. Serveren krever den ogsaa — se api/bli-medlem.php. En
+      // graa knapp stopper den som fyller ut skjemaet, ikke den som sender
+      // kallet uten aa gaa veien om nettleseren.
+      bmVilkaarOk: !!this.state.bmVilkaarOk,
+      bmVilkaarMangler: !this.state.bmVilkaarOk,
+      toggleBmVilkaar: () => this.setState(s => ({ bmVilkaarOk: !s.bmVilkaarOk, bmFeil: null })),
       bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,
       settBmEpost: e => this.setState({ bmEpost: e.target.value, bmFeil: null }),
       bmErfaring: this.state.bmErfaring || '',

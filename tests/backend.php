@@ -1265,13 +1265,26 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
 echo "\n== Binding og oppsigelse ==\n";
 
 // Samme grunn som over: planene som ligger ute, ikke en fast navneliste.
+//
+// Tallene er eierens egne medlemsvilkaar, 2. september:
+//   «Provemedlemskapet har ingen bindingstid» og «kan avsluttes uten
+//    oppsigelsestid»
+//   «Aarsmedlemskap har 12 maaneders bindingstid ... deretter 1 maaneds
+//    oppsigelsestid»
+//   «Alle ovrige medlemskap har 2 maaneders bindingstid ... 1 maaneds
+//    oppsigelsestid»
+//
+// Sto proveperioden med to maaneders binding i basen, som den gjorde for
+// migrasjon 133, ville hvorforIkkeSiOpp() nektet noen aa avslutte et
+// medlemskap de har full rett til aa gaa ut av naar de vil.
 foreach (Medlemskap::planer() as $pl) {
     $navn = (string) $pl['navn'];
-    $mnd  = $navn === 'Årsmedlemskap' ? 12 : 2;
-    sjekk('«' . $navn . '» har ' . $mnd . ' maaneders binding',
-        (int) $pl['binding_mnd'] === $mnd, (string) ($pl['binding_mnd'] ?? '?'));
-    sjekk('«' . $navn . '» har én maaneds oppsigelse',
-        (int) $pl['oppsigelse_mnd'] === 1);
+    [$bind, $opps] = $navn === 'Prøv Lissom' ? [0, 0]
+        : ($navn === 'Årsmedlemskap' ? [12, 1] : [2, 1]);
+    sjekk('«' . $navn . '» har ' . $bind . ' maaneders binding',
+        (int) $pl['binding_mnd'] === $bind, (string) ($pl['binding_mnd'] ?? '?'));
+    sjekk('«' . $navn . '» har ' . $opps . ' maaneders oppsigelse',
+        (int) $pl['oppsigelse_mnd'] === $opps, (string) ($pl['oppsigelse_mnd'] ?? '?'));
 }
 
 $bMedlem = (int) DB::settInn('members', [
@@ -6748,6 +6761,103 @@ sjekk('… og er mye mindre',
 sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
+
+// ── Vilkaarene maa godtas ──────────────────────────────────────────────
+//
+// Eieren, 2. september: «er det mulig aa legge til godta vilkaar for man faar
+// kjopt et medlemskap?»
+//
+// Innmeldingsskjemaet hadde ingen hake. Under knappen sto én graa linje om
+// bindingstid — uten bekreftelse, uten at noe ble skrevet ned, og feil for
+// halvparten av medlemskapene: den sa «2 maaneder» ogsaa om aarsavtalen med
+// tolv, og om proveperioden som ikke har binding i det hele tatt.
+echo "\n== Vilkaarene maa godtas ==\n";
+
+$mig133 = file_get_contents(dirname(__DIR__) . '/db/migrations/133_medlemsvilkar_godtas.sql');
+sjekk('migrasjon 133 lagrer samtykket',
+    str_contains($mig133, 'ADD COLUMN vilkaar_godtatt_at')
+    && str_contains($mig133, 'vilkaar_versjon'));
+sjekk('… og kolonnene staar i basen',
+    DB::harKolonne('membership_applications', 'vilkaar_godtatt_at')
+    && DB::harKolonne('membership_applications', 'vilkaar_versjon'));
+sjekk('utgaven av vilkaarene staar ett sted',
+    preg_match('/^\d{4}-\d{2}-\d{2}$/', Medlemskap::VILKAAR_VERSJON) === 1,
+    Medlemskap::VILKAAR_VERSJON);
+
+// Kravet maa staa paa SERVEREN. Haken i nettleseren er en hoeflighet mot den
+// som fyller ut; det er kallet som avgjor om noen blir medlem, og en graa
+// knapp stopper ikke den som sender kallet utenom nettleseren.
+$bliVilkaar = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('serveren krever samtykket',
+    str_contains($bliVilkaar, "\$vilkaar = Foresporsel::tekst('vilkaar') === 'ja';")
+    && str_contains($bliVilkaar, "Svar::feil('Du må godta medlemsvilkårene for å melde deg inn.');"));
+// Kravet maa staa FOER avtalen opprettes. Sto det etter, ville en innmelding
+// uten samtykke alt ha laget en avtale i Vipps for den ble avvist.
+sjekk('… og kravet staar foer avtalen opprettes i Vipps',
+    strpos($bliVilkaar, "\$vilkaar = Foresporsel::tekst('vilkaar')")
+    < strpos($bliVilkaar, 'Medlemskap::startAvtale($medlem, $type)'));
+sjekk('… og samtykket lagres med dato og utgave',
+    str_contains($bliVilkaar, "'vilkaar_godtatt_at' => gmdate('Y-m-d H:i:s'),")
+    && str_contains($bliVilkaar, "'vilkaar_versjon'    => Medlemskap::VILKAAR_VERSJON,"));
+
+// Skjemaet: haken, lenka til vilkaarene, og knappen som er laast uten den.
+sjekk('skjemaet har haken',
+    str_contains($sida, 'label="Jeg godtar medlemsvilkårene" checked="{{ bmVilkaarOk }}" on-change="{{ toggleBmVilkaar }}"'));
+sjekk('… med lenke til vilkaarene',
+    str_contains($sida, 'onClick="{{ goVilkar }}"'));
+sjekk('… og «Bli medlem» er laast til den staar',
+    str_contains($sida, 'disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}"'));
+sjekk('… og kallet sender samtykket',
+    str_contains($sida, "vilkaar: this.state.bmVilkaarOk ? 'ja' : 'nei',"));
+
+// Bindingslinja skal si det som gjelder DET medlemskapet man velger. Sto den
+// fast paa «2 maaneder», loy den til to av fire.
+sjekk('bindingslinja leses av planen',
+    str_contains($sida, "const b = parseInt(pl.binding, 10) || 0;")
+    && str_contains($sida, "const o = parseInt(pl.oppsigelse, 10);"));
+sjekk('… og den gamle faste linja er borte',
+    !str_contains($sida, "'Medlemskapet har 2 måneders bindingstid fra du melder deg inn, '"));
+$medApiV = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('… og serveren sender oppsigelsestida med',
+    str_contains($medApiV, "'oppsigelse' => (int) (\$p['oppsigelse_mnd'] ?? 1),"));
+
+// Samtykket skal kunne vises fram i ettertid. En hake som bare laaser opp en
+// knapp er ikke noe bevis.
+$medlApiV = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemsruta viser naar vilkaarene ble godtatt',
+    str_contains($medlApiV, "'Godtok medlemsvilkårene '"));
+sjekk('… og skjermen tegner den, begge steder',
+    substr_count($sida, '{{ personVilkaar }}') === 2);
+// Og at verdien bak faktisk settes. Foerste forsoek hadde markupen paa plass
+// og props-en ikke — den proven var gronn, mens ruta sto tom. listesjekk
+// fanget det; denne linja gjor at proven gjor det ogsaa.
+sjekk('… og verdien bak den settes',
+    str_contains($sida, "personVilkaar: p.vilkaar || '',")
+    && str_contains($sida, 'personHarVilkaar: !!p.vilkaar,'));
+
+// Vilkaarsteksten maa faktisk staa paa sida haken lenker til. Uten den peker
+// «Les vilkaarene» paa en side der medlemsvilkaarene ikke finnes.
+foreach (['Medlemskap — bindingstid', 'Medlemskap — oppsigelse',
+          'Medlemskap — HMS og ordensregler', 'Medlemskap — mislighold',
+          'Medlemskap — endringer'] as $bolk) {
+    sjekk('«' . $bolk . '» staar paa vilkaarssida',
+        str_contains($sida, "{ h: '" . $bolk . "'"));
+}
+// Den gamle teksten lovte kunden noe systemet ikke gjor: at oppsigelsen
+// gjelder fra neste trekk og at man ikke trekkes igjen.
+// Medlemskap::sluttdato() regner fra forste dag i paafolgende maaned og legger
+// til oppsigelsestida — og trekket gaar som for i den maaneden.
+sjekk('… og den gamle setningen om «ikke trukket igjen» er borte',
+    !str_contains($sida, 'du beholder tilgangen ut den perioden du har betalt for, og blir ikke trukket igjen'));
+
+// Koden og vilkaarene maa gi det samme svaret. Vilkaarene: «Oppsigelsestiden
+// regnes fra forste dag i paafolgende maaned etter at oppsigelsen er mottatt»,
+// pluss én maaned. Sier man opp i dag, skal medlemskapet loepe ut den maaneden.
+$sluttForventet = (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
+    ->modify('first day of this month')->modify('+2 months')->modify('-1 day')->format('Y-m-d');
+sjekk('koden gir den oppsigelsestida vilkaarene lover',
+    Medlemskap::sluttdato(['plan' => 'Basis 30']) === $sluttForventet,
+    Medlemskap::sluttdato(['plan' => 'Basis 30']));
 
 // ── Naar gaar pengene? ─────────────────────────────────────────────────
 //

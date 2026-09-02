@@ -21,6 +21,10 @@ $planer = static fn(): array => array_map(static fn($p) => [
     'periode'  => (int) $p['engangs'] === 1 ? 'engangs' : 'per måned',
     'timer'    => $p['timer'] === null ? null : (int) $p['timer'],
     'binding'  => (int) $p['binding_mnd'],
+    // Oppsigelsestida hoerer sammen med bindingstida, og innmeldinga skal si
+    // begge — riktig for det medlemskapet man holder paa aa velge. Den sto
+    // som «2 maaneder» for alle, ogsaa for aarsavtalen med tolv.
+    'oppsigelse' => (int) ($p['oppsigelse_mnd'] ?? 1),
     'engangs'  => (bool) $p['engangs'],
     // Krever planen fast trekk, faar ikke medlemmet velge betalingsmaate.
     'fastTrekk' => Medlemskap::kreverFastTrekk($p),

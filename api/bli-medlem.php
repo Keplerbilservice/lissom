@@ -87,6 +87,19 @@ if ($plan === null) {
     Svar::feil('Velg hvilket medlemskap du vil ha.');
 }
 
+// ── Vilkaarene ─────────────────────────────────────────────────────────
+//
+// Eieren, 2. september: «er det mulig aa legge til godta vilkaar for man faar
+// kjopt et medlemskap?»
+//
+// Kravet staar her og ikke bare i skjemaet. Haken i nettleseren er en
+// hoeflighet mot den som fyller ut; det er dette kallet som avgjor om noen
+// blir medlem, og en knapp som er graa kan klikkes av andre enn nettleseren.
+$vilkaar = Foresporsel::tekst('vilkaar') === 'ja';
+if (!$vilkaar) {
+    Svar::feil('Du må godta medlemsvilkårene for å melde deg inn.');
+}
+
 // Fast trekk eller ikke.
 //
 // Krever planen fast trekk, er valget tatt — da er avtalen en forutsetning.
@@ -146,7 +159,12 @@ $id = DB::settInn('membership_applications', [
     'melding'      => $melding !== '' ? $melding : null,
     'status'       => 'godkjent',
     'behandlet_at' => gmdate('Y-m-d H:i:s'),
-]);
+] + (DB::harKolonne('membership_applications', 'vilkaar_godtatt_at') ? [
+    // Naar vilkaarene ble godtatt, og hvilken utgave som gjaldt da. En hake
+    // som bare laaser opp en knapp er ikke noe bevis; dette er det.
+    'vilkaar_godtatt_at' => gmdate('Y-m-d H:i:s'),
+    'vilkaar_versjon'    => Medlemskap::VILKAAR_VERSJON,
+] : []));
 
 // Og den gamle soknaden, om det laa en. Den er ikke lenger til behandling.
 if ($gammel !== null) {

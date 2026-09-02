@@ -6082,18 +6082,38 @@ if (DB::harTabell('subscriptions')) {
 // admin, med kallet fanget: dialogen «Hvordan vil du betale?» aapner, og
 // «Fast trekk i Vipps» sender {handling:start, plan:«Fri tilgang»,
 // betaling:trekk}.
+// Betalingsvalget staar paa sida, ikke i en dialog. Eieren, 2. september:
+// «hvorfor lager du ting paa nytt, naar det allerede finnes i systemet» og
+// «den maa jo vaere helt identisk som naar man betaler for et kurs».
+//
+// Malt i nettleseren: ingen dialog spretter opp; boksen viser «Betaling»,
+// de to pillene, teksten under, og knappen «Bli medlem · kr. 990,-» som
+// sender {handling:start, plan:«Prov Lissom», betaling:trekk}.
 sjekk('«Velg» gaar til betaling for den som alt er medlem',
-    str_contains($sida, 'if (this.state.erMedlemBruker || gammelAvtale) {')
-    && str_contains($sida, 'this.apneFornyValg(navn, gammelAvtale && !this.state.erMedlemBruker)();'));
+    str_contains($sida, 'const kanBetaleNaa = this.state.fra === \'medlemskap\'')
+    && str_contains($sida, '&& !!(this.state.erMedlemBruker || gammel);'));
+// Pillene er skjemaets egne, ikke nye. Da kan de to ikke bli uenige.
+sjekk('… med de samme pillene som innmeldingsskjemaet',
+    str_contains($sida, '<sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">')
+    && substr_count($sida, '{{ bmBetalingsvalg }}') === 2);
+// Kontrollen: medlemskapssida skal ikke aapne noen dialog. «Forny» paa Min
+// side bruker den fortsatt — der er en dialog systemets egen form, som paa
+// «Si opp» og «Angre» — men veien fra medlemskapssida gaar rett paa sida.
+sjekk('… og medlemskapssida aapner ingen dialog',
+    !str_contains($sida, 'this.apneFornyValg(navn, gammelAvtale')
+    && !str_contains($sida, 'velgMedlemskapKnapp: () => {\n        const k = this.state.valgtKurs || {};\n        this.apneFornyValg'));
 // Den som har vaert medlem for skal ikke soke paa nytt om noe hun alt har
 // hatt. Serveren sender ogsaa en avtale som er stoppet eller utloept, og den
-// er nok til aa vite det. Eieren, 2. september: «er du ikke aktivt medlem saa
-// maa man faa beskjed om aa fornye».
+// er nok til aa vite det. Eieren: «er du ikke aktivt medlem saa maa man faa
+// beskjed om aa fornye».
 sjekk('… og den som har vaert medlem far beskjed om aa fornye',
-    str_contains($sida, 'const gammelAvtale = this.state.minAvtale || null;')
+    str_contains($sida, 'const gammel = this.state.minAvtale || null;')
     && str_contains($sida, 'Medlemskapet ditt løper ikke lenger. Forny det her'));
-sjekk('… med «Forny medlemskapet» som overskrift',
-    str_contains($sida, "harUtloept ? 'Forny medlemskapet' : 'Hvordan vil du betale?',"));
+sjekk('… og knappen sier «Forny medlemskapet» da',
+    str_contains($sida, "medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')"));
+// Knappen gaar samme vei som «Forny» paa Min side.
+sjekk('… og knappen gaar til startAbonnement, som «Forny»',
+    str_contains($sida, "this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt());"));
 // Den som ikke er medlem skal fortsatt til innmeldingen, med planen med seg
 // gjennom innloggingen.
 sjekk('… og den som ikke er medlem gaar til innmeldingen som for',

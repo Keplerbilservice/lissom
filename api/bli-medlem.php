@@ -108,6 +108,29 @@ try {
     Svar::feil($e->getMessage());
 }
 
+// ── Det samme forsoeket to ganger ──────────────────────────────────────
+//
+// Eieren, 2. september: e-posten «Nytt medlem: Anniken Johnsgaard» kom to
+// ganger, og «Varsel maa sendes for haand» like saa — begge 20:42.
+//
+// Her sto ingen vakt. Kom kallet to ganger — et dobbeltklikk, tilbakeknappen
+// fra Vipps, et nettverk som proevde paa nytt — gikk begge gjennom, og det
+// andre lagde en avtale til i Vipps, en soknadsrad til og alle varslene om
+// igjen. To avtaler er verre enn to e-poster: det er to trekk.
+//
+// startAvtale() og startEngangs() svarer naa med det foerste forsoeket naar
+// det er under fem minutter gammelt. Da skal ingenting av det under skje én
+// gang til: soekeren sendes videre til den samme adressen i Vipps, og
+// verkstedet faar ikke beskjed om et medlem det alt har faatt beskjed om.
+if (!empty($avtale['gjentakelse'])) {
+    revider('medlemsinnmelding_gjentatt', 'subscription', (int) $avtale['id'], ['type' => $type]);
+    Svar::ok([
+        'status'  => 'betaler',
+        'url'     => $avtale['url'],
+        'beskjed' => 'Du er på vei til Vipps.',
+    ]);
+}
+
 // Innmeldingen lagres fortsatt i «membership_applications», men ikke som noe
 // som venter paa svar: den staar som godkjent med det samme. Tabellen er
 // historikken over hvem som har meldt seg inn, med erfaring og melding — den

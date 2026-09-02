@@ -6749,6 +6749,104 @@ sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
 
+// ── Det samme forsoeket to ganger ──────────────────────────────────────
+//
+// Eieren, 2. september: «nytt medlem har meldt seg inn, faar denne e-posten
+// 2 ganger» — bade «Nytt medlem: Anniken Johnsgaard» og «Varsel maa sendes
+// for haand: Nytt medlem». Begge kom 20:42, samme minutt.
+//
+// api/bli-medlem.php hadde ingen vakt. Vakta i startAvtale() slaar bare til
+// paa en avtale som ER aktiv; en som staar «venter» — den forste klikket
+// nettopp opprettet — stoppet ingenting. Andre kall gikk derfor gjennom og
+// lagde en avtale til i Vipps, en soknadsrad til, og alle varslene om igjen.
+//
+// To e-poster er irriterende. To avtaler er to trekk.
+echo "\n== Det samme forsoeket to ganger ==\n";
+
+$mig131 = file_get_contents(dirname(__DIR__) . '/db/migrations/131_samme_forsok_samme_avtale.sql');
+sjekk('migrasjon 131 husker adressen forsoeket godkjennes paa',
+    str_contains($mig131, 'ADD COLUMN vipps_url'));
+sjekk('… og kolonna staar i basen', DB::harKolonne('subscriptions', 'vipps_url'));
+
+$dMedlem = (int) DB::settInn('members', [
+    'navn' => 'Dobbel Testesen', 'epost' => 'dobbel@example.test',
+    'rolle' => 'medlem', 'status' => 'ingen',
+]);
+$dAvtale = (int) DB::settInn('subscriptions', [
+    'member_id' => $dMedlem, 'plan' => 'Basis 30', 'pris_ore' => 259000,
+    'vipps_agreement_id' => 'agr-dobbel-' . $dMedlem,
+    'vipps_url' => 'https://vipps.example/godkjenn/1', 'status' => 'venter',
+]);
+$funnet = Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30');
+sjekk('det samme forsoeket gjenbrukes',
+    $funnet !== null && (string) $funnet['vipps_url'] === 'https://vipps.example/godkjenn/1');
+// Bytter man medlemskap i mellomtida, er det et annet forsoek.
+sjekk('… men ikke paa en annen plan',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Mini 15') === null);
+// Vinduet er kort med vilje: en som virkelig vil proeve paa nytt skal ikke
+// sitte fast med en adresse som er utloept hos Vipps.
+DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP() - INTERVAL 6 MINUTE WHERE id = :i',
+    ['i' => $dAvtale]);
+sjekk('… og ikke etter fem minutter',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+// Uten lagret adresse er det ingenting aa sende noen til.
+DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP(), vipps_url = NULL WHERE id = :i',
+    ['i' => $dAvtale]);
+sjekk('… og ikke uten en adresse aa gjenbruke',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+// En avtale som alt er aktiv er et helt annet tilfelle — den skal avvises,
+// ikke gjenbrukes.
+DB::kjor("UPDATE subscriptions SET status = 'aktiv', vipps_url = 'https://vipps.example/godkjenn/1',
+          created_at = UTC_TIMESTAMP() WHERE id = :i", ['i' => $dAvtale]);
+sjekk('… og en aktiv avtale gjenbrukes ikke',
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $dMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
+
+// Begge veiene inn maa ha vakta. Bare den ene, og halvparten av innmeldingene
+// kunne fortsatt bli dobbelt.
+$mlKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('bade fast trekk og engangs sjekker om forsoeket paagaar',
+    substr_count($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn);") === 2);
+sjekk('… og begge lagrer adressen',
+    substr_count($mlKode, 'self::husk((int) $id,') === 2);
+
+// Endepunktet maa la vaere aa sende varslene om igjen. Uten dette ville
+// avtalen blitt gjenbrukt, men e-postene kommet dobbelt likevel.
+$bliKode = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+sjekk('innmeldingen sender ikke varslene om igjen',
+    str_contains($bliKode, "if (!empty(\$avtale['gjentakelse'])) {"));
+// Kontrollen: vakta maa staa FOER varslene, ellers rekker de aa gaa ut.
+sjekk('… og vakta staar foer dem',
+    strpos($bliKode, "if (!empty(\$avtale['gjentakelse'])) {")
+    < strpos($bliKode, "Varsel::malTilAdmin('intern_nytt_medlem'"));
+
+// ── Samme nummer to ganger ─────────────────────────────────────────────
+//
+// «Varsel maa sendes for haand» sendes én gang per adminnummer. Sto det
+// samme nummeret der to ganger — «40603093» og «+47 406 03 093» er den samme
+// telefonen — gikk varselet to ganger. Varsel::adminEposter() har hatt den
+// samme regelen for e-postadressene lenge; nummerne manglet den.
+$cfg = file_get_contents(dirname(__DIR__) . '/app/config.php');
+sjekk('adminnumrene telles én gang hver',
+    str_contains($cfg, 'array_values(array_unique(array_filter(array_map('));
+sjekk('… og skrivemaaten avgjor ikke',
+    normaliser_telefon('40603093') === normaliser_telefon('+47 406 03 093'));
+
+// ── «Script error.» ────────────────────────────────────────────────────
+//
+// Eieren, 2. september, fra Min side paa iPhone: «Fanget automatisk — Script
+// error.» og ikke et ord mer. Nettleseren nekter aa si hva som skjedde naar
+// unntaket kom fra et skript den regner som et annet nettsted, og da leter
+// man etter en feil i egen kode som ikke finnes.
+sjekk('rapporten sier hva «Script error.» betyr',
+    str_contains($sida, "const skjult = melding === 'Script error.' || melding === 'Script error';")
+    && str_contains($sida, 'nettleseren skjuler detaljene'));
+// Og om analysen kjorte. Det er forskjellen paa «Google» og «en utvidelse i
+// nettleseren» — uten den staar man like langt neste gang.
+sjekk('… og om analysen kjorte da det skjedde',
+    str_contains($sida, "this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'"));
+
 // ── Har medlemmet betalt? ──────────────────────────────────────────────
 //
 // Eieren, 2. september: «jeg kan ikke se paa min side paa et medlem om det er

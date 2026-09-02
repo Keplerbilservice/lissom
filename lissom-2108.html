@@ -21228,9 +21228,33 @@ class Component extends DCLogic {
         this.meldFeil({ feiltekst: 'Fikk ikke lastet ' + String(mal.tagName).toLowerCase(), kilde: url });
         return;
       }
+      // ── «Script error.» ────────────────────────────────────────────
+      //
+      // Eieren, 2. september, fra Min side paa iPhone: «Fanget automatisk —
+      // Script error.» og ikke et ord mer.
+      //
+      // Det er ikke en feil vi kan slaa opp: nettleseren nekter aa si hva som
+      // skjedde naar unntaket kom fra et skript den regner som et annet
+      // nettsted. Da staar meldinga tom, og fil, linje og kolonne likesaa.
+      // Paa lissom.no kan det bare komme to steder fra: Google Analytics —
+      // det eneste skriptet vi henter utenfra, og bare naar en maale-ID er
+      // satt under Markedsforing OG besokende har sagt ja til
+      // informasjonskapsler — eller noe i selve nettleseren, som en
+      // annonseblokker eller en utvidelse.
+      //
+      // Rapporten sa ingen av delene, og da leter man etter en feil i egen
+      // kode som ikke finnes. Naa staar det hva det betyr, og om analysen
+      // faktisk kjorte i det oyeblikket — det er forskjellen paa de to.
+      const melding = String((e && e.message) || 'Ukjent feil');
+      const skjult = melding === 'Script error.' || melding === 'Script error';
       this.meldFeil({
-        feiltekst: String((e && e.message) || 'Ukjent feil'),
-        kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno : '',
+        feiltekst: skjult
+          ? 'Script error. — nettleseren skjuler detaljene. Feilen kom fra et '
+            + 'skript utenfra, ikke fra sida selv.'
+          : melding,
+        kilde: e && e.filename ? e.filename + ':' + e.lineno + ':' + e.colno
+          : (skjult ? (this._gaSatt ? 'Analysen (Google) kjørte da det skjedde'
+                                    : 'Analysen kjørte ikke — trolig en utvidelse i nettleseren') : ''),
       });
     };
     // Ressursfeil bobler ikke — de maa fanges paa vei ned.

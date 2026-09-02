@@ -233,6 +233,48 @@ final class Medlemskap
      *
      * @return array{url:string,id:int}
      */
+    /**
+     * Et paagaaende innmeldingsforsoek paa den samme planen, eller null.
+     *
+     * Eieren, 2. september: e-posten «Nytt medlem» kom to ganger, i det samme
+     * minuttet. api/bli-medlem.php hadde ingen vakt mot at det samme forsoeket
+     * kom to ganger — vakta under slaar bare til paa en avtale som ER aktiv,
+     * og en avtale som staar «venter» stopper ingenting. Andre gang lagde
+     * derfor en avtale til i Vipps, en soknadsrad til, og alle varslene om
+     * igjen. To avtaler er verre enn to e-poster: det er to trekk.
+     *
+     * Vinduet er kort med vilje. Fem minutter dekker et dobbeltklikk og en
+     * tilbakeknapp fra Vipps. Lenger, og en som virkelig vil proeve paa nytt
+     * ville sittet fast med en adresse som kanskje er utloept hos Vipps.
+     *
+     * Planen er med i oppslaget: bytter man medlemskap i mellomtida, er det
+     * et annet forsoek, og da skal det opprettes paa nytt.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function paagaaendeForsok(int $medlemId, string $planNavn): ?array
+    {
+        if (!DB::harKolonne('subscriptions', 'vipps_url')) {
+            return null;
+        }
+        return DB::en(
+            "SELECT * FROM subscriptions
+              WHERE member_id = :m AND plan = :p AND status = 'venter'
+                AND vipps_url IS NOT NULL AND vipps_url <> ''
+                AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
+           ORDER BY id DESC LIMIT 1",
+            ['m' => $medlemId, 'p' => $planNavn]
+        );
+    }
+
+    /** Lagrer adressen forsoeket godkjennes paa, om kolonna finnes. */
+    private static function husk(int $abonnementId, string $url): void
+    {
+        if ($url !== '' && DB::harKolonne('subscriptions', 'vipps_url')) {
+            DB::oppdater('subscriptions', ['vipps_url' => mb_substr($url, 0, 500)], ['id' => $abonnementId]);
+        }
+    }
+
     public static function startAvtale(array $medlem, string $planNavn): array
     {
         $plan = self::plan($planNavn);
@@ -245,6 +287,13 @@ final class Medlemskap
         $fra = self::avtale((int) $medlem['id']);
         if ($fra !== null && $fra['status'] === 'aktiv') {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
+        }
+
+        // Det samme forsoeket to ganger skal gi den samme avtalen, ikke to.
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn);
+        if ($igjen !== null) {
+            return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'],
+                    'gjentakelse' => true];
         }
 
         $vipps = Vipps::opprettAvtale(
@@ -272,7 +321,8 @@ final class Medlemskap
                 : null,
         ]);
 
-        return ['url' => $vipps['url'], 'id' => $id];
+        self::husk((int) $id, (string) $vipps['url']);
+        return ['url' => $vipps['url'], 'id' => $id, 'gjentakelse' => false];
     }
 
     /**
@@ -298,6 +348,14 @@ final class Medlemskap
         $fra = self::avtale((int) $medlem['id']);
         if ($fra !== null && $fra['status'] === 'aktiv') {
             throw new RuntimeException('Du har alt et medlemskap. Si det opp først, eller bytt fra Min side.');
+        }
+
+        // Samme vakt som i startAvtale(): det samme forsoeket to ganger skal
+        // gi den samme betalingen, ikke to.
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn);
+        if ($igjen !== null) {
+            return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'],
+                    'gjentakelse' => true];
         }
 
         $binding = (int) $plan['binding_mnd'];
@@ -372,7 +430,8 @@ final class Medlemskap
         }
 
         DB::oppdater('payments', ['status' => 'venter'], ['id' => $betalingId]);
-        return ['url' => $betaling['url'], 'id' => $id];
+        self::husk((int) $id, (string) $betaling['url']);
+        return ['url' => $betaling['url'], 'id' => $id, 'gjentakelse' => false];
     }
 
     /**

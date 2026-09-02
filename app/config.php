@@ -171,10 +171,14 @@ final class Config
     public static function adminNumre(): array
     {
         $r = self::$s['admin_telefoner'] ?? [];
-        return array_values(array_filter(array_map(
+        // Samme nummer skal telle som ett, ogsaa naar det staar med ulik
+        // skrivemaate. «40603093» og «+47 406 03 093» er den samme telefonen —
+        // de sto som to, og da gikk hvert varsel til verkstedet to ganger.
+        // Samme regel som Varsel::adminEposter() har for e-postadressene.
+        return array_values(array_unique(array_filter(array_map(
             static fn($t) => normaliser_telefon((string) $t),
             is_array($r) ? $r : []
-        )));
+        ))));
     }
 }
 

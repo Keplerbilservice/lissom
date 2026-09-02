@@ -49,13 +49,9 @@ $kursbevis = static function (array $b, bool $betalt): ?string {
     if (!empty($b['bevis_sperret'])) {
         return null;
     }
-    // Drop-in er ikke et kurs — det er halvannen time i verkstedet med ditt eget
-    // arbeid, og det er ingenting aa bevise. Interne samlinger er kurs, og
-    // de gir bevis som alle andre: et medlem som har vaert paa glasurkveld
-    // har vaert paa kurs, selv om samlingen ikke sto i den aapne lista.
-    if ((string) ($b['tema'] ?? '') === 'Drop-in') {
-        return null;
-    }
+    // Interne samlinger er kurs, og de gir bevis som alle andre: et medlem
+    // som har vaert paa glasurkveld har vaert paa kurs, selv om samlingen
+    // ikke sto i den aapne lista.
     $slutt = $b['slutt_tid'] ?: $b['start_tid'];
     if ($slutt === null || strtotime((string) $slutt) > time()) {
         return null;
@@ -112,7 +108,7 @@ foreach ($bookinger as $b) {
         'kanAvbestille' => $betalt && $kanAvbestille,
         'referanse'     => $b['vipps_reference'],
         // Kursbeviset dukker opp av seg selv naar kurset er gjennomfort og
-        // betalt. Drop-in er ikke et kurs, saa der gis det ikke bevis.
+        // betalt.
         'kursbevis'     => $kursbevis($b, $betalt),
         // Bildene deltakeren har tatt av keramikken sin. Verkstedet bruker dem
         // til aa finne ut hvem som har laget hva for de sier fra om henting.

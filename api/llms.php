@@ -14,10 +14,10 @@
  *
  * ── Hvorfor den er generert ────────────────────────────────────────────
  *
- * Den var en fil i rota, skrevet for haand i august. Da drop-in ble tatt ned
+ * Den var en fil i rota, skrevet for haand i august. Da et tilbud ble tatt ned
  * 1. september, ble den staaende og fortelle AI-ene om et tilbud som ikke
- * finnes lenger — i to avsnitt. Vakta bin/dropinsjekk.mjs aapner skjermer i
- * en nettleser og saa den ikke.
+ * finnes lenger — i to avsnitt. Vaktene aapner skjermer i en nettleser og
+ * saa den ikke.
  *
  * Det er den samme lærdommen som sidekartet: en fil noen maa huske aa
  * redigere, blir feil samme dagen noen glemmer det. Derfor bygges den av det

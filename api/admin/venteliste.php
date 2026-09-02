@@ -54,7 +54,6 @@ if (Foresporsel::metode() === 'GET') {
                JOIN courses c ON c.id = cs.course_id
               WHERE cs.status = 'planlagt'
                 AND cs.start_tid > UTC_TIMESTAMP()
-                AND c.type <> 'dropin'
            ORDER BY cs.start_tid
               LIMIT 60"
         );

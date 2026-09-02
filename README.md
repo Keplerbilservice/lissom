@@ -64,7 +64,7 @@ Førstegangsoppsett er beskrevet steg for steg i
 |---|---|---|
 | 0 | Database, sesjoner, innlogging med Vipps | Bygget, ikke satt i drift |
 | 1 | Booking av kurs med ePayment | Ikke startet |
-| 2 | Gavekort, butikk, drop-in | Ikke startet |
+| 2 | Gavekort og butikk | Ikke startet |
 | 3 | Medlemskap med månedstrekk | Ikke startet |
 | 4 | Admin koblet til ekte data | Ikke startet |
 

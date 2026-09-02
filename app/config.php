@@ -40,7 +40,6 @@ final class Config
         'regnskap_konto_kurs', 'regnskap_mva_kurs',
         'regnskap_konto_medlemskap', 'regnskap_mva_medlemskap',
         'regnskap_konto_butikk', 'regnskap_mva_butikk',
-        'regnskap_konto_dropin', 'regnskap_mva_dropin',
         'regnskap_konto_gavekort', 'regnskap_mva_gavekort',
         // Kostnadskontoen for et gavekort verkstedet ga bort. Kortet ble
         // aldri bokfoert som gjeld, saa innloesningen kan ikke trekke ned

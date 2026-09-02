@@ -151,16 +151,6 @@ final class Kursmal
                 'ferdigTid'       => self::HENTING,
             ],
 
-            'Drop-in' => [
-                'nivaaTekst'      => 'Krever kurs hos oss, eller et medlem med deg',
-                'laererKort'      => 'Du jobber selvstendig',
-                'kortBeskrivelse' => 'Halvannen time i verkstedet der du jobber med dine egne prosjekter.',
-                'laerer'          => 'Du jobber selvstendig. Vi hjelper når du trenger det.',
-                'lagerDu'         => 'Det du selv vil lage.',
-                'medHjem'         => 'Du får med deg det du lager. Vi glaserer og brenner det for deg.',
-                'ferdigTid'       => self::HENTING,
-            ],
-
             '*' => [
                 'nivaaTekst'      => self::NIVAA_UTE,
                 'laererKort'      => 'Innføring i plateteknikk og dekor',
@@ -189,7 +179,7 @@ final class Kursmal
     public const EGNE_FELT = ['punkter', 'praktisk', 'ferdigTid'];
 
     /** Kategoriene en standardtekst kan settes for. */
-    public const KATEGORIER = ['Dreiing', 'Håndbygging', 'Events', 'Kun medlemmer', 'Drop-in'];
+    public const KATEGORIER = ['Dreiing', 'Håndbygging', 'Events', 'Kun medlemmer'];
 
     /** @var array<string, array<string, string>>|null */
     private static ?array $standard = null;
@@ -259,7 +249,6 @@ final class Kursmal
             'Events' => 'Events',
             'Kun for medlemmer' => 'Kun medlemmer',
             'Kun medlemmer' => 'Kun medlemmer',
-            'Drop-in' => 'Drop-in',
             // Temaer som ikke lenger er egne kategorier.
             'Workshop' => 'Håndbygging',
             'Plateteknikk' => 'Håndbygging',
@@ -274,7 +263,7 @@ final class Kursmal
         }
         $tittel = mb_strtolower(trim((string) ($kurs['tittel'] ?? '')));
         foreach (['paint on pots' => 'Events', 'date night' => 'Events', 'sip & clay' => 'Events',
-                  'drop-in' => 'Drop-in', 'dreie' => 'Dreiing'] as $del => $til) {
+                  'dreie' => 'Dreiing'] as $del => $til) {
             if ($del !== '' && mb_strpos($tittel, $del) !== false) {
                 return $til;
             }
@@ -316,7 +305,7 @@ final class Kursmal
         if ($tema === '') {
             $tittel = mb_strtolower(trim((string) ($kurs['tittel'] ?? '')));
             foreach (['paint on pots' => 'Paint on pots', 'date night' => 'Events',
-                      'sip & clay' => 'Events', 'drop-in' => 'Drop-in',
+                      'sip & clay' => 'Events',
                       'workshop' => 'Plateteknikk', 'dreie' => 'Dreiing'] as $del => $til) {
                 if (mb_strpos($tittel, $del) !== false) {
                     $tema = $til;

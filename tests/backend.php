@@ -70,8 +70,6 @@ nullstill();
 
 echo "\n== Katalog ==\n";
 $kurs = DB::alle("SELECT * FROM courses WHERE status='publisert'");
-// Var 9. Drop-in er tatt ned og staar som kladd — se migrasjon 110 og
-// docs/DROP-IN.md — saa det publiserte er ett faerre.
 sjekk('kurs er publisert', count($kurs) >= 8, count($kurs) . ' stk');
 $pop = DB::en("SELECT * FROM courses WHERE slug='paint-on-pots'");
 // Paint on Pots kostet 690 — prisen med gjenstanden inkludert. Etter
@@ -119,26 +117,6 @@ sjekk('kursteksten folger med det nye navnet',
 sjekk('bollekurset beholder sin egen tekst etter navnebyttet',
     Kursmal::forKurs(['tittel' => 'Lag din egen bolle', 'tema' => 'Plateteknikk'])['lagerDu']
         === 'To personlige boller i keramikk.');
-// ── Drop-in er tatt ned ─────────────────────────────────────────────
-//
-// Eieren, 31. august: «fjern det som har med drop in, i admin, min side, og
-// nettsiden globalt i alle steder, alle kalendere». Kurset staar igjen i
-// basen som kladd, saa ingenting er tapt — se docs/DROP-IN.md — men det skal
-// verken ligge ute eller lage nye datoer av seg selv.
-//
-// Her sto motsatt test: «drop-in har datoer», med 126 oekter. Den er snudd,
-// ikke slettet: skrus drop-in paa igjen, er det denne som skal snus tilbake.
-$dropinKurs = DB::en("SELECT status FROM courses WHERE slug='drop-in'");
-sjekk('drop-in ligger ikke ute',
-    $dropinKurs === null || (string) $dropinKurs['status'] !== 'publisert',
-    $dropinKurs === null ? 'kurset finnes ikke' : (string) $dropinKurs['status']);
-$dropin = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c.id=cs.course_id WHERE c.slug='drop-in'");
-// Oekter noen har booket blir staaende — plassen er betalt. Det som ikke
-// skal finnes er nye datoer framover.
-$dropinFram = DB::verdi("SELECT COUNT(*) FROM course_sessions cs JOIN courses c ON c.id=cs.course_id
-                          WHERE c.slug='drop-in' AND cs.start_tid > UTC_TIMESTAMP()");
-sjekk('drop-in lager ingen nye datoer', (int) $dropinFram === 0, $dropinFram . ' okter framover');
-
 echo "\n== Kapasitet ==\n";
 // Testen laante en oekt fra katalogen (Paint on Pots). Da verkstedet endret
 // datoene sine, sto kurset uten oekter — og testen sammenlignet null med null
@@ -206,6 +184,31 @@ echo "\n== Aapne plasser (Paint on Pots paa aapningstidene) ==\n";
 // det var aapent, som deretter gjor at det er aapent — og at en plass noen
 // har booket blir ryddet bort under foettene paa dem.
 $folgerFelt = DB::harKolonne('courses', 'folger_apningstid') ? 'folger_apningstid' : 'gjenstand_i_kassa';
+
+// Proven laget seg ikke noe aa prove paa.
+//
+// Blokken under sto bak «finnes det et publisert kurs som foelger
+// aapningstidene?», og i praksis var det Paint on Pots. Da eieren 2.
+// september ba om at det kurset ikke lenger skulle foelge tidene selv, sluttet
+// tolv sjekker aa kjore — stille. Koden var like mye i drift som for; det var
+// bare ingen som saa etter den lenger.
+//
+// Naa lager proven sitt eget kurs naar verkstedet ikke har noe. Da holder den
+// uansett hva som er skrudd paa eller av i admin, som en prove skal.
+$midlKurs = null;
+if (DB::harKolonne('course_sessions', 'fra_apningstid')
+    && DB::en("SELECT id FROM courses WHERE {$folgerFelt} = 1 AND status = 'publisert'") === null) {
+    $midlKurs = DB::settInn('courses', [
+        'tittel'      => 'TESTAPENT — foelger aapningstidene',
+        'slug'        => 'testapent',
+        'type'        => 'kurs',
+        'status'      => 'publisert',
+        'kapasitet'   => 4,
+        'pris_ore'    => 0,
+        $folgerFelt   => 1,
+    ]);
+}
+
 if (DB::harKolonne('course_sessions', 'fra_apningstid')
     && DB::en("SELECT id FROM courses WHERE {$folgerFelt} = 1 AND status = 'publisert'") !== null) {
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
@@ -268,24 +271,8 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
             $dagerRad[(string) $d['dato']] = ['fra' => (string) $d['fra'], 'til' => (string) $d['til']];
         }
     }
-    // Kurs med sitt eget vindu foelger ikke aapningstidene i det hele tatt —
-    // det er hele poenget med dem. De maales for seg lenger nede.
-    //
-    // Bare publiserte teller. Apent::leggUtPaaApneTider() lager ikke oekter
-    // for en kladd, saa et upublisert kurs med vindu har ingen datoer aa
-    // maale. Drop-in var det eneste kurset med vindu, og staar naa som
-    // kladd — se migrasjon 110 og docs/DROP-IN.md.
-    $medVindu = array_column(
-        DB::alle("SELECT id FROM courses
-                   WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL
-                     AND status = 'publisert'"),
-        'id'
-    );
     foreach (DB::alle('SELECT course_id, start_tid, slutt_tid FROM course_sessions
                         WHERE fra_apningstid = 1') as $r) {
-        if (in_array((int) $r['course_id'], array_map('intval', $medVindu), true)) {
-            continue;
-        }
         $a = new DateTimeImmutable((string) $r['start_tid'], $utc2);
         $b2 = new DateTimeImmutable((string) $r['slutt_tid'], $utc2);
         if ($b2->getTimestamp() - $a->getTimestamp() > Apent::PLASS_MINUTTER * 60) {
@@ -293,7 +280,7 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         }
         $lokal = $a->setTimezone($oslo2);
         $dag = $lokal->format('Y-m-d');
-        // Taket gjelder per kurs. Paint on Pots og drop-in staar begge ute
+        // Taket gjelder per kurs. Flere kurs kan staa ute
         // paa den samme dagen, og til sammen er de flere enn taket sier.
         $nokkel2 = $r['course_id'] . ' ' . $dag;
         $perDag[$nokkel2] = ($perDag[$nokkel2] ?? 0) + 1;
@@ -313,48 +300,10 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
         'flest paa en dag: ' . max($perDag ?: [0]));
     sjekk('ingen plass ligger utenfor aapningstida', $iHull === 0, $iHull . ' utenfor');
 
-    // ── Kurs med sitt eget vindu ────────────────────────────────────────
-    //
-    // Eieren, 30. august, om drop-in: «det skal ikke foelge kurs eller
-    // aapningstider» og «det skal kunne bookes tid mellom kl 08:00 og
-    // 22:00». Sto drop-in paa aapningstidene, var den bare bookbar de dagene
-    // det tilfeldigvis gikk et kurs — for det er kursene som lager
-    // aapningstida.
-    if ($medVindu !== []) {
-        $vindu = DB::en("SELECT id, fast_fra, fast_til FROM courses
-                          WHERE fast_fra IS NOT NULL AND fast_til IS NOT NULL
-                            AND status = 'publisert' LIMIT 1");
-        $fraKl = substr((string) $vindu['fast_fra'], 0, 5);
-        $tilKl = substr((string) $vindu['fast_til'], 0, 5);
-        $dagerMedPlass = [];
-        $utenfor = 0;
-        foreach (DB::alle('SELECT start_tid, slutt_tid FROM course_sessions
-                            WHERE course_id = :c AND fra_apningstid = 1',
-                          ['c' => (int) $vindu['id']]) as $r) {
-            $a2 = (new DateTimeImmutable((string) $r['start_tid'], $utc2))->setTimezone($oslo2);
-            $b3 = (new DateTimeImmutable((string) $r['slutt_tid'], $utc2))->setTimezone($oslo2);
-            $dagerMedPlass[$a2->format('Y-m-d')] = ($dagerMedPlass[$a2->format('Y-m-d')] ?? 0) + 1;
-            if ($a2->format('H:i') < $fraKl || $b3->format('H:i') > $tilKl) {
-                $utenfor++;
-            }
-        }
-        sjekk('kurs med eget vindu ligger inne i vinduet, ikke i aapningstida',
-            $utenfor === 0, $utenfor . ' utenfor ' . $fraKl . '-' . $tilKl);
-        // Dagen i dag har faerre plasser: de som alt er passert lages ikke.
-        // Derfor maales dagene framover.
-        $framover = array_slice($dagerMedPlass, 1);
-        sjekk('… og staar hver dag framover, ikke bare de dagene det gaar kurs',
-            count($framover) >= Apent::DAGER_FRAM - 1,
-            count($framover) . ' dager av ' . Apent::DAGER_FRAM);
-        sjekk('… med like mange plasser hver dag',
-            $framover === [] || count(array_unique($framover)) === 1,
-            'ulike: ' . implode(', ', array_unique($framover)));
-    }
-
     // Flere kurs samme dag: timene mellom dem er ogsaa bookbare.
     //
-    // 3. september i testdataene: Store fat 10-13, drop-in 16-19, Store fat
-    // 17-20, Date Night 18-21. Dagen er aapen 10-21, og mellom 13 og 16 er
+    // 3. september i testdataene: Store fat 10-13, Store fat 17-20 og
+    // Date Night 18-21. Dagen er aapen 10-21, og mellom 13 og 17 er
     // hun der uansett. Lissom 27. august: «husk tiden som er mellom kurs
     // ogsaa skal vaere tilgjengelig aa booke».
     $medFlere = null;
@@ -418,65 +367,14 @@ if (DB::harKolonne('course_sessions', 'fra_apningstid')
             $dagTo . ': ' . ($radTo === null ? 'dagen mangler' : $radTo['fra'] . '-' . $radTo['til']));
     }
 
-    // Drop-in gaar paa det samme (27. august): samme bestilling, med datoer
-    // og tider, og tilgjengeligheten folger kursene og innstemplinga.
-    //
-    // Det som kan gaa galt her er dubletter. Drop-in har egne tider fra
-    // ukereglene — tirsdag 10-13 — og laa de to oppi hverandre, sto den
-    // samme timen to ganger i bestillingen, med hvert sitt plasstall.
-    $dropinKurs = DB::en("SELECT id FROM courses
-                           WHERE type = 'dropin' AND status = 'publisert'"
-                        . (DB::harKolonne('courses', 'folger_apningstid')
-                            ? ' AND folger_apningstid = 1' : ''));
-    if ($dropinKurs !== null) {
-        $dId = (int) $dropinKurs['id'];
-        sjekk('drop-in faar plasser paa de aapne dagene',
-            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions
-                              WHERE course_id = :c AND fra_apningstid = 1', ['c' => $dId]) > 0);
-
-        $egne = DB::alle('SELECT start_tid, slutt_tid FROM course_sessions
-                           WHERE course_id = :c AND fra_apningstid = 0
-                             AND slutt_tid IS NOT NULL
-                             AND COALESCE(slutt_tid, start_tid) > UTC_TIMESTAMP()', ['c' => $dId]);
-        $dubletter = [];
-        foreach (DB::alle('SELECT start_tid, slutt_tid FROM course_sessions
-                            WHERE course_id = :c AND fra_apningstid = 1', ['c' => $dId]) as $g) {
-            foreach ($egne as $e) {
-                if ($g['start_tid'] < $e['slutt_tid'] && $e['start_tid'] < $g['slutt_tid']) {
-                    $dubletter[] = $g['start_tid'];
-                }
-            }
-        }
-        sjekk('ingen plass legges oppi drop-in-tidene som alt staar',
-            $dubletter === [],
-            count($egne) . ' egne tider' . ($dubletter ? ' — dublett ' . $dubletter[0] : ''));
-
-        // Og en tid fra ukereglene staar urort. Migrasjon 102 satte reglene
-        // inaktive da drop-in fikk sitt eget vindu, saa det ligger ingen
-        // igjen i testdataene — men utleggingen skal fortsatt aldri roere en
-        // oekt den ikke har laget selv. Vi setter inn én og ser at den staar.
-        // Et minutt som ikke ligger paa rutenettet: plassene begynner hele
-        // og halve timer, og (course_id, start_tid) er unik — traff vi en
-        // plass som alt sto der, ble raden aldri satt inn og proven sa
-        // ingenting.
-        $enTid = (new DateTimeImmutable('now', new DateTimeZone('UTC')))
-            ->modify('+3 days')->setTime(9, 17);
-        DB::kjor(
-            "INSERT IGNORE INTO course_sessions
-                (course_id, start_tid, slutt_tid, kapasitet, status, fra_dropin_tid)
-             VALUES (:c, :s, :e, 4, 'planlagt', 999999)",
-            ['c' => $dId, 's' => $enTid->format('Y-m-d H:i:s'),
-             'e' => $enTid->modify('+2 hours')->format('Y-m-d H:i:s')]
-        );
-        Apent::leggUtPaaApneTider();
-        sjekk('drop-in-tidene fra ukereglene roeres ikke',
-            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions
-                              WHERE course_id = :c AND fra_dropin_tid = 999999', ['c' => $dId]) === 1);
-        DB::kjor('DELETE FROM course_sessions WHERE fra_dropin_tid = 999999');
-    }
-
     DB::kjor('DELETE FROM course_sessions WHERE fra_apningstid = 1');
     Apent::leggUtPaaApneTider();
+}
+
+// Kurset proven laget seg, ryddes bort igjen. Oektene forst: de peker paa det.
+if ($midlKurs !== null) {
+    DB::kjor('DELETE FROM course_sessions WHERE course_id = :c', ['c' => $midlKurs]);
+    DB::kjor('DELETE FROM courses WHERE id = :c', ['c' => $midlKurs]);
 }
 
 echo "\n== Oppfoelgingen etter kurset ==\n";
@@ -811,7 +709,7 @@ echo "\n== Kursbevis ==\n";
 // betingelsene, som er der det gaar galt.
 $bevis = static function (array $b, bool $betalt): ?string {
     if (!$betalt) return null;
-    if (in_array((string) ($b['tema'] ?? ''), ['Drop-in', 'Kun for medlemmer'], true)) return null;
+    if ((string) ($b['tema'] ?? '') === 'Kun for medlemmer') return null;
     $slutt = $b['slutt_tid'] ?: $b['start_tid'];
     if ($slutt === null || strtotime((string) $slutt) > time()) return null;
     return '/api/kursbevis.php?booking=1';
@@ -825,8 +723,6 @@ sjekk('kurs som ikke har vaert gir ikke bevis',
     $bevis(['tema' => 'Dreiing', 'start_tid' => $imorgen, 'slutt_tid' => $imorgen], true) === null);
 sjekk('ubetalt kurs gir ikke bevis',
     $bevis(['tema' => 'Dreiing', 'start_tid' => $igaar, 'slutt_tid' => $igaar], false) === null);
-sjekk('drop-in gir ikke kursbevis',
-    $bevis(['tema' => 'Drop-in', 'start_tid' => $igaar, 'slutt_tid' => $igaar], true) === null);
 sjekk('kurs uten dato gir ikke bevis',
     $bevis(['tema' => 'Dreiing', 'start_tid' => null, 'slutt_tid' => null], true) === null);
 
@@ -954,7 +850,6 @@ DB::settInn('discount_tiers', ['min_antall' => 4, 'prosent' => 30, 'gjelder' => 
 
 $vanlig  = ['pris_ore' => 100000, 'tema' => 'Handbygging', 'type' => 'kurs',    'slug' => 'test-kurs', 'tittel' => 'Testkurs'];
 $dreie   = ['pris_ore' => 100000, 'tema' => 'Dreiing',     'type' => 'kurs',    'slug' => 'dreietest', 'tittel' => 'Dreiekurs test'];
-$dropin  = ['pris_ore' => 49000,  'tema' => 'Drop-in',     'type' => 'dropin',  'slug' => 'drop-in',   'tittel' => 'Drop-in'];
 $medlem  = ['pris_ore' => 259000, 'tema' => 'Medlemskap',  'type' => 'kurs',    'slug' => 'medlem',    'tittel' => 'Medlemskap'];
 
 sjekk('én plass gir ingen rabatt', Booking::rabattProsent($vanlig, 1) === 0.0);
@@ -968,7 +863,6 @@ sjekk('dreiekurs faar det beste nivaaet', Booking::rabattProsent($dreie, 3) === 
 // Et inaktivt nivaa skal ikke telle, selv om det passer.
 sjekk('inaktivt nivaa teller ikke', Booking::rabattProsent($vanlig, 4) === 10.0);
 
-sjekk('drop-in har ingen grupperabatt', Booking::rabattProsent($dropin, 5) === 0.0);
 sjekk('medlemskap har ingen grupperabatt', Booking::rabattProsent($medlem, 5) === 0.0);
 
 // Belopet: det som vises og det som trekkes maa vaere samme tall.
@@ -1829,10 +1723,10 @@ sjekk('draing fra ventelista aapner bekreftelsen framfor aa gi plassen',
 
 // ── Ledige tider er ikke avtaler ─────────────────────────────────────────
 //
-// Paint on Pots og drop-in legges ut automatisk paa hver eneste aapningstid
+// Paint on Pots ble lagt ut automatisk paa hver eneste aapningstid
 // (migrasjon 076). Det er tilbud — «her kan noen komme» — ikke noe som skjer.
 // Kalenderabonnementet tok med hver av dem, og telefonen til eieren fylte seg
-// med tomme oppforinger: 25 Paint on Pots og 17 drop-in i basen her, ingen med
+// med tomme oppforinger: 25 Paint on Pots i basen her, ingen med
 // paameldte. Da druknet de ekte kursene.
 $icsFil = file_get_contents(dirname(__DIR__) . '/api/kalender-abonnement.php');
 sjekk('tomme aapningstider staar ikke i kalenderabonnementet',
@@ -1917,7 +1811,7 @@ sjekk('bare delingsbildet mangler en webp-tvilling', (static function (): bool {
 // kurs, ikke vises som opptatt».
 //
 // Konfliktsjekken fra fase 6 talte hver eneste oekt kursholderen sto paa —
-// ogsaa de Paint on Pots- og drop-in-tidene som legges ut automatisk paa hver
+// ogsaa de Paint on Pots-tidene som legges ut automatisk paa hver
 // aapningstid. Setter noen en kursholder paa dem, ville verkstedet ikke
 // kunnet legge et kurs paa sine egne aapne kvelder. Det er nettopp da de skal
 // settes opp: doeren er aapen og noen er der.
@@ -1925,11 +1819,6 @@ $kursFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
 sjekk('en tom aapningstid gjor ikke kursholderen opptatt',
     str_contains($kursFil2, "\$apenKol[] = 'cs.fra_apningstid = 1';")
     && str_contains($kursFil2, '"AND (NOT (" . implode(\' OR \', $apenKol) . ")'));
-// Drop-in legges ut paa hver aapningstid, akkurat som Paint on Pots. Fra og
-// med kursholder-runden har ogsaa de et navn paa seg — og da ville de gjort
-// Monica opptatt hver eneste kveld verkstedet er aapent, om de talte med.
-sjekk('en tom drop-in-time gjor heller ikke kursholderen opptatt',
-    str_contains($kursFil2, "\$apenKol[] = 'cs.fra_dropin_tid IS NOT NULL';"));
 // Har noen booket, er den en avtale med et menneske, og to ting samtidig er
 // en ekte kollisjon.
 sjekk('en booket aapningstid teller likevel som opptatt',
@@ -2193,7 +2082,7 @@ foreach (['detaljSkjema:', 'detaljBilder:', 'adminFokusValg:', 'settNdKurs:',
 }
 sjekk('kursvelgeren i «Ny kursdato» staar', str_contains($sida, 'ndKursListe:'));
 // To attrapper: dialoger som beskrev en funksjon i stedet for aa gjore den
-// («Type: Kurs, event, drop-in eller workshop»), og som ingen knapp aapnet.
+// («Type: Kurs, event eller workshop»), og som ingen knapp aapnet.
 // Begge funksjonene finnes for ekte naa, saa beskrivelsene er bare i veien.
 sjekk('attrappdialogene «Ny serie» og «Endre aapningstider» er borte',
     !str_contains($sida, 'aNySerie:') && !str_contains($sida, 'aEndreTider:'));
@@ -2202,7 +2091,7 @@ sjekk('attrappdialogene «Ny serie» og «Endre aapningstider» er borte',
 sjekk('kursserien lages for ekte',
     str_contains($sida, "handling: 'serie',")
     && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php'), "case 'serie':"));
-// Aapningstidene redigeres for ekte fra kalenderen. Skjermen «Drop-in» var
+// Aapningstidene redigeres for ekte fra kalenderen. En egen skjerm var
 // den andre veien inn; den er borte — se docs/DROP-IN.md.
 sjekk('aapningstidene redigeres for ekte',
     str_contains($sida, "this.klKall('/api/admin/apningstider.php'"));
@@ -2411,7 +2300,7 @@ sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
 // og default?» — og: «det gjelder saa klart ogsaa paa alle paint on pots».
 //
 // Fire steder lager kursdatoer. Bare «ny dato» i admin satte kursholder; de
-// faste ukedagene, aapent verksted og drop-in la dem ut tomme. Naa gaar alle
+// faste ukedagene og aapent verksted la dem ut tomme. Naa gaar alle
 // fire gjennom Kursholder::forKurs().
 (static function (): void {
     if (!DB::harKolonne('course_sessions', 'kursholder_id')
@@ -2527,7 +2416,7 @@ foreach (glob(dirname(__DIR__) . '/{api,api/admin,app/lib}/*.php', GLOB_BRACE) a
     }
 }
 sjekk('alle stedene som lager kursdatoer er funnet',
-    count($lagerDatoer) >= 4, implode(', ', $lagerDatoer));
+    count($lagerDatoer) >= 3, implode(', ', $lagerDatoer));
 sjekk('… og hvert av dem setter kursholder',
     $utenHolder === [], implode(', ', $utenHolder));
 sjekk('kursholderen er et valg i kursoppsettet',
@@ -2863,7 +2752,9 @@ sjekk('valget paa okta er kortet ned til det som brukes',
 // kortet».
 $ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt vet om de ubetalte',
-    str_contains($ovFil, "'ubetalte' => array_map("));
+    // Kursplassene som for, men slaatt sammen med medlemskapene: kortet
+    // holder begge slag siden eieren spurte om dem 2. september.
+    str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
 // En nettbestilling som staar som reservert venter paa Vipps og ordner seg
 // selv. Bare det som er lagt inn for haand skal staa paa kortet.
 sjekk('… og bare de som er lagt inn for haand',
@@ -2904,21 +2795,16 @@ sjekk('utkastet toemmes naar en annen okt aapnes',
 sjekk('kalenderen hentes paa nytt saa belegget stemmer',
     str_contains($sida2, "this.setState({ kdUtkast: {}, kdVarsle: false, kdApen: false });"));
 
-// ── Drop-in og Paint on Pots samlet til én linje ───────────────────────
+// ── Aapningstidene samlet til én linje ─────────────────────────────────
 //
-// Begge foelger aapningstida, og den klippes i plasser paa halvannen time.
-// En aapen dag ble til seks like rader per kurs i kalenderen. Eieren, 29.
+// Paint on Pots foelger aapningstida, og den klippes i plasser paa halvannen
+// time. En aapen dag ble til seks like rader i kalenderen. Eieren, 29.
 // august: «jeg vil ikke at det skal splittes».
 $kalFil3 = file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php');
 sjekk('kalenderen faar vite hvilke oekter en regel har laget',
-    str_contains($kalFil3, "'auto'   => (\$harAuto && (int) \$o['fra_apningstid'] === 1)"));
-// Uten ukereglene ble drop-in delt i to av sin egen ettermiddagstid: de
-// maskinklipte plassene stoppet der ukeregelen tok over.
-sjekk('begge reglene teller som laget av en regel',
-    str_contains($kalFil3, "\$harDropinTid && \$o['fra_dropin_tid'] !== null"));
-sjekk('kolonnene kan mangle uten at kalenderen doer',
-    str_contains($kalFil3, "DB::harKolonne('course_sessions', 'fra_apningstid')")
-    && str_contains($kalFil3, "DB::harKolonne('course_sessions', 'fra_dropin_tid')"));
+    str_contains($kalFil3, "'auto'   => \$harAuto && (int) \$o['fra_apningstid'] === 1,"));
+sjekk('kolonnen kan mangle uten at kalenderen doer',
+    str_contains($kalFil3, "DB::harKolonne('course_sessions', 'fra_apningstid')"));
 sjekk('kalenderen samler plassene til én linje',
     str_contains($sida2, 'const samle = evts =>') && str_contains($sida2, 'gruppeAv'));
 // Tid mellom to kurs deler ikke linja — aapningstida gaar i ett spenn fra
@@ -3680,7 +3566,7 @@ sjekk('… og ukevisningen viser ogsaa de tomme dagene',
 sjekk('et trykk paa en dato aapner kurset',
     str_contains($sida2, "this.setState({ datoerFor: o.tittel, kRed: false, oktRediger: null });"));
 // Aapningstida klippes i plasser paa halvannen time. Uten sammenslaaingen sto
-// den samme drop-inen i seks like linjer, slik den gjorde i kalenderen for.
+// det samme tilbudet i seks like linjer, slik den gjorde i kalenderen for.
 sjekk('planlagte kurs samler tidene som foelger en regel',
     str_contains($pameldteFil, "'auto'      => (int) (\$o['fra_apningstid'] ?? 0) === 1")
     && str_contains($sida2, "if (o.auto) { (perKurs[o.tittel] = perKurs[o.tittel] || []).push(o); }"));
@@ -3868,7 +3754,7 @@ sjekk('… og den lagrede signaturen rettes med',
 // Eieren, 30. august: «du har lagt inn kategorier to ganger». To steder:
 // «Events» sto ved siden av de tre som utgjor Events, og «Metode» gjentok
 // Dreiing og Haandbygging rett under kategorien.
-// Var fem. Drop-in er tatt ned — se docs/DROP-IN.md — saa den interne
+// Var fem. Drop-in er revet ut — se «Drop-in finnes ikke» — saa den interne
 // brikka som var igjen er «Kun medlemmer».
 sjekk('kategorivalget er fire brikker, uten dublettene',
     str_contains($sida2, "return medInterne ? ute.concat(['Kun medlemmer']) : ute;")
@@ -3891,7 +3777,7 @@ sjekk('rekkefolgen staar ett sted',
     && str_contains($sida2, 'sorterKurs(liste, hent) {'));
 // Teksten paa kortet og plassen i lista leste hver sin regel. «Store fat
 // kurs» staar med temaet «Kurs» i basen: kortet falt tilbake paa typen og sa
-// «Dreiing», sorteringa gjorde det ikke og la kurset under Drop-in. Naa er
+// «Dreiing», sorteringa gjorde det ikke og la kurset feil. Naa er
 // det én funksjon, og de kan ikke si to forskjellige ting.
 sjekk('kategorien paa kortet og plassen i lista er samme regel',
     str_contains($sida2, 'kategoriVist(tema, tittel, type) {')
@@ -4056,111 +3942,100 @@ sjekk('haandbyggingskurs finner malen sin',
 sjekk('… og faar en beskrivelse, ikke reservemalen',
     trim((string) (Kursmal::forKurs(['tema' => 'Håndbygging', 'tittel' => 'Nytt kurs'])['beskrivelse'] ?? '')) !== '');
 
-// ── Drop-in staar for seg ──────────────────────────────────────────────
+// ── Drop-in finnes ikke ────────────────────────────────────────────────
 //
-// Eieren, 30. august:
-//   «1. det kan bookes hele doegnet
-//    2. det skal ikke foelge kurs eller aapningstider
-//    3. det skal derfor ikke vises paa kursoversikten, men skal hoere hjemme
-//       under medlemskap»
-// og, presisert: «det skal kunne bookes tid mellom kl 08:00 og 22:00».
-$m102 = file_get_contents(__DIR__ . '/../db/migrations/102_dropin_eget_vindu.sql');
-sjekk('drop-in staar 08-22 hver dag',
-    str_contains($m102, "fast_fra = '08:00:00'")
-    && str_contains($m102, "fast_til = '22:00:00'")
-    && str_contains($m102, "WHERE type = 'dropin' OR tema = 'Drop-in'"));
-// To generatorer paa det samme kurset ville lagt plasser oppi hverandre.
-sjekk('… og ukereglene staar stille saa lenge vinduet gjelder',
-    str_contains($m102, 'UPDATE dropin_tider SET aktiv = 0'));
-// En oekt noen har booket blir staaende. Plassen er deres.
-sjekk('… men en booket regelplass ryddes ikke bort',
-    str_contains($m102, "AND b.status <> 'avbestilt')"));
-$apent = file_get_contents(__DIR__ . '/../app/lib/apent.php');
-sjekk('kurs med eget vindu spor ikke aapningstidene',
-    str_contains($apent, '$mineVinduer = $egetVindu ?? $vinduer;')
-    && str_contains($apent, 'public const PLASSER_TAK'));
-$adropin = file_get_contents(__DIR__ . '/../api/admin/dropin.php');
-sjekk('vinduet kan endres fra admin',
-    str_contains($adropin, "case 'lagreVindu':")
-    && str_contains($adropin, "'fastFra'   => substr((string) (\$kurs['fast_fra'] ?? ''), 0, 5),"));
-// Et vindu kortere enn én plass gir ingen plasser i det hele tatt, og da ser
-// det ut som om noe er i stykker.
-sjekk('… med vakt mot tull',
-    str_contains($adropin, "preg_match('/^([01]\\d|2[0-3]):[0-5]\\d$/', \$t)")
-    && str_contains($adropin, '$minutter < Apent::PLASS_MINUTTER'));
-sjekk('… og ukereglene legges ikke ut oppi vinduet',
-    str_contains($adropin, "if ((\$kurs['fast_fra'] ?? null) !== null && (\$kurs['fast_til'] ?? null) !== null) {"));
-// ── Drop-in er tatt ned ────────────────────────────────────────────────
+// Eieren, 2. september: «Det skal heller ikke vaere noe som heter drop inn.»
 //
-// Eieren, 31. august: «nå vil jeg at du fjerner det som har med drop in, i
-// admin, min side, og nettsiden globalt i alle steder, alle kalendere, og du
-// skal faktisk sjekke at det er borte».
+// Her sto det forst ni sjekker paa at drop-in VAR paa plass. Da tilbudet ble
+// tatt ned 31. august ble de snudd til det motsatte, men beholdt — som kartet
+// tilbake, fordi han samtidig ba om aa «lagre hvordan drop inn virker slik at
+// jeg kan be deg hente det frem senere».
 //
-// Her sto ni sjekker som passet paa at drop-in VAR paa plass: i kurslista, i
-// toppmenyen, paa medlemskapssida, med klokkeslettene fra basen. De er byttet
-// med det motsatte. Sjekkene er ikke slettet, for de er kartet tilbake: skal
-// drop-in opp igjen, er det disse som skal snus. Se docs/DROP-IN.md.
+// Naa er kartet revet med. Migrasjon 136 fjerner kurset, ukereglene,
+// kolonnene og verdiene i enum-ene; koden som leste dem er borte. Skal
+// drop-in tilbake, maa det bygges paa nytt.
 //
-// Den ekte proeven er bin/dropinsjekk.mjs, som aapner skjermene i en
-// nettleser og leser hva som faktisk staar der. Dette er bare vakta paa
-// kildekoden, saa en gjeninnfoering ikke sklir inn ubemerket.
-sjekk('drop-in er ute av kursoversikten',
-    str_contains($sida2, "liste = (liste || []).filter(k => (k.tema || k.level) !== 'Drop-in'"));
-sjekk('… og ute av toppmenyen',
-    str_contains($sida2, "const lenker = ['Forside', 'Kurs', 'Events', 'Medlemskap', 'Butikk', 'Om oss',")
+// Vakta staar igjen her og i bin/dropinsjekk.mjs. Den siste aapner skjermene
+// i en nettleser og leser hva som faktisk staar; denne passer paa kildekoden,
+// saa en gjeninnfoering ikke sklir inn ubemerket.
+$m136 = file_get_contents(__DIR__ . '/../db/migrations/136_drop_in_finnes_ikke.sql');
+sjekk('migrasjon 136 fjerner kurset',
+    str_contains($m136, 'DELETE c' . PHP_EOL . '  FROM courses c')
+    && str_contains($m136, "c.type = 'dropin' OR c.slug = 'drop-in' OR c.tema = 'Drop-in'"));
+// En rad et bilag peker paa, slettes ikke.
+sjekk('… men lar et kurs med bookinger staa',
+    str_contains($m136, 'NOT EXISTS (SELECT 1 FROM bookings b  WHERE b.course_id = c.id)'));
+sjekk('… og fjerner ukereglene',
+    str_contains($m136, 'DROP TABLE IF EXISTS dropin_tider;'));
+// «fast_fra»/«fast_til» var drop-ins eget vindu, «fra_dropin_tid» pekeren
+// tilbake til ukeregelen. Ingen andre kurs har brukt dem.
+sjekk('… og kolonnene som bare drop-in brukte',
+    str_contains($m136, 'DROP COLUMN IF EXISTS fast_fra')
+    && str_contains($m136, 'DROP COLUMN IF EXISTS fast_til')
+    && str_contains($m136, 'DROP COLUMN IF EXISTS fra_dropin_tid'));
+// Saa lenge «dropin» staar som lovlig verdi, kan et nytt drop-in-kurs lages
+// ved et uhell — og da ville alt som nettopp ble fjernet trengtes igjen.
+sjekk('… og verdien i enum-ene, saa det ikke kan lages paa nytt',
+    str_contains($m136, "MODIFY COLUMN type ENUM('kurs','event','workshop')")
+    && str_contains($m136, "MODIFY COLUMN formal ENUM('booking','gavekort','ordre','medlemskap')"));
+
+// Koden: ingen PHP-fil skal nevne drop-in lenger.
+$rotDi = dirname(__DIR__);
+$phpMedDropin = [];
+foreach (['app', 'api'] as $mappe) {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($rotDi . '/' . $mappe));
+    foreach ($it as $fil) {
+        if ($fil->isFile() && $fil->getExtension() === 'php') {
+            $innhold = (string) file_get_contents($fil->getPathname());
+            // llms.php nevner vaktskriptet ved navn. Det er ikke drop-in.
+            $innhold = str_replace('bin/dropinsjekk.mjs', '', $innhold);
+            if (stripos($innhold, 'dropin') !== false || stripos($innhold, 'drop-in') !== false) {
+                $phpMedDropin[] = substr($fil->getPathname(), strlen($rotDi) + 1);
+            }
+        }
+    }
+}
+sjekk('ingen PHP-fil nevner drop-in',
+    $phpMedDropin === [], implode(', ', $phpMedDropin));
+// Endepunktet som satte opp tidene, reglene og prisen.
+sjekk('… og api/admin/dropin.php finnes ikke',
+    !file_exists($rotDi . '/api/admin/dropin.php'));
+// Oppskriften paa aa hente det fram igjen. Den var hele grunnen til at
+// nedtakingen i august ikke var en sletting.
+sjekk('… og docs/DROP-IN.md er borte',
+    !file_exists($rotDi . '/docs/DROP-IN.md'));
+
+// Skjermen: hverken rute, meny eller kategori.
+sjekk('drop-in er ute av kursoversikten og toppmenyen',
+    !str_contains($sida2, "{ sti: '/drop-in',")
     && !str_contains($sida2, "'Drop-in': ['kurs', 'Drop-in'],"));
-sjekk('… og ruta /drop-in finnes ikke lenger',
-    !str_contains($sida2, "{ sti: '/drop-in',"));
 sjekk('… og adminskjermen /admin/drop-in er borte',
     !str_contains($sida2, "{ sti: '/admin/drop-in',")
     && !str_contains($sida2, "['Drop-in',       'admindropin'],"));
 sjekk('… og inngangen paa medlemskapssida er borte',
     !str_contains($sida2, 'mdiTittel:') && !str_contains($sida2, '>Book drop-in</x-import>'));
-// Adminlistene viser kladder med vilje. Uten vakta i api/admin/kurs.php sto
-// «Drop-in i verkstedet» igjen i sidemenyen paa kalenderen, i Paameldte og
-// paa Oversikt lenge etter at resten var borte.
-sjekk('… og kurset gaar ikke ut av api/admin/kurs.php',
-    str_contains(file_get_contents(__DIR__ . '/../api/admin/kurs.php'),
-        "static fn(array \$k): bool => (string) \$k['type'] !== 'dropin'"));
-// Migrasjon 110 er selve bryteren: status = kladd stopper baade
-// Apent::leggUtPaaApneTider() og den offentlige katalogen med én rad.
-$m110 = file_get_contents(__DIR__ . '/../db/migrations/110_drop_in_tas_ned.sql');
-sjekk('… og migrasjon 110 setter kurset til kladd',
-    str_contains($m110, "SET status = 'kladd'"));
-// Migrasjon 110 lot oekter noen hadde booket staa, for plassen var betalt.
-sjekk('… uten aa roere oekter noen har booket',
-    str_contains($m110, "AND b.status <> 'avbestilt')"));
-// Migrasjon 111 snur den avgjorelsen. Eieren, 1. september: «Historikken paa
-// drop inn skal ogsaa bort». Dette er den ene delen av nedtakingen som ikke
-// kan angres, saa den skal ikke kunne skje ved et uhell heller: sjekkene her
-// passer paa at den gjor akkurat det den sier.
-$m111 = file_get_contents(__DIR__ . '/../db/migrations/111_drop_in_historikken_slettes.sql');
-sjekk('… og migrasjon 111 sletter bookingene og betalingene',
-    str_contains($m111, 'DELETE b FROM bookings b')
-    && str_contains($m111, 'DELETE p FROM payments p'));
-// Bookingene foer betalingene: bookings.payment_id peker paa payments med
-// RESTRICT. Motsatt rekkefolge stopper paa fremmednokkelen.
-sjekk('… i riktig rekkefolge, saa fremmednokkelen ikke stopper den',
-    strpos($m111, 'DELETE b FROM bookings b') < strpos($m111, 'DELETE p FROM payments p'));
-// En betaling som ogsaa henger i en ordre eller et gavekort er ikke bare
-// drop-in, og skal ikke rives med.
-sjekk('… og lar betalinger som henger i en ordre eller et gavekort staa',
-    str_contains($m111, 'NOT EXISTS (SELECT 1 FROM orders o WHERE o.payment_id = p.id)')
-    && str_contains($m111, 'NOT EXISTS (SELECT 1 FROM gift_cards g WHERE g.payment_id = p.id)'));
-// Penger som forsvinner ut av regnskapet skal etterlate et spor.
-sjekk('… og skriver antall og sum til audit_log foerst',
-    str_contains($m111, "'dropin_historikk_slettet'")
-    && strpos($m111, 'INSERT INTO audit_log') < strpos($m111, 'DELETE b FROM bookings b'));
-// Kurset og ukereglene er oppskriften, ikke historikken. De blir staaende, saa
-// drop-in fortsatt kan hentes fram igjen — se docs/DROP-IN.md.
-sjekk('… men roerer verken kurset eller ukereglene',
-    !str_contains($m111, 'DELETE FROM courses')
-    && !str_contains($m111, 'DELETE FROM dropin_tider'));
-// Og etikettene som bare fantes for at en historisk betaling skulle ha et
-// navn, er borte med betalingene.
-sjekk('… og etiketten for drop-in-betalinger er borte',
-    !str_contains(file_get_contents(__DIR__ . '/../api/admin/okonomi.php'), "'dropin'     => 'Drop-in',")
-    && !str_contains($sida2, "dropin: 'Drop-in'"));
+// «Drop-in» sto som en kurskategori man kunne velge i admin.
+sjekk('… og «Drop-in» er ikke lenger en kategori',
+    !in_array('Drop-in', Kursmal::KATEGORIER, true));
+
+// Og i basen, naar migrasjonen er kjort.
+if (!DB::harTabell('dropin_tider')) {
+    sjekk('basen har ingen drop-in-kurs igjen',
+        (int) DB::verdi("SELECT COUNT(*) FROM courses
+                          WHERE slug = 'drop-in' OR tema = 'Drop-in' OR tittel LIKE '%rop-in%'") === 0);
+    sjekk('… og hverken fast_fra, fast_til eller fra_dropin_tid',
+        !DB::harKolonne('courses', 'fast_fra')
+        && !DB::harKolonne('courses', 'fast_til')
+        && !DB::harKolonne('course_sessions', 'fra_dropin_tid'));
+    // Uten verdien i enum-et kan et drop-in-kurs ikke lages, heller ikke ved
+    // et uhell eller rett i basen.
+    $typeKol = (string) DB::verdi(
+        "SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'courses' AND COLUMN_NAME = 'type'"
+    );
+    sjekk('… og «dropin» er ikke en lovlig kurstype lenger',
+        stripos($typeKol, 'dropin') === false, $typeKol);
+}
 
 // ── Gjentakelsen i kursveiviseren setter opp en ekte regel ─────────────
 //
@@ -4853,12 +4728,12 @@ sjekk('… og slaar opp kursadressene paa tittelen',
 //
 // Eieren, 30. august: «maa ta plasser fra de samme ressursene. Altsaa om det
 // er kurs eller andre medlemmer, vi maa tenke at alle disse har tilgang til
-// de samme 8 dreieskivene», «1 dreieskive = 1 ressurs = 1 plass», og «kurs /
-// medlembooking / drop-in maa alle hente fra tilgjengelige ressurser».
+// de samme 8 dreieskivene», «1 dreieskive = 1 ressurs = 1 plass», og «kurs og
+// medlembooking maa alle hente fra tilgjengelige ressurser».
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
     $skive = DB::en("SELECT id, antall FROM ressurser WHERE navn = 'Dreieskive'");
     sjekk('dreieskivene staar i basen, ikke i koden', $skive !== null && (int) $skive['antall'] > 0);
-    sjekk('… og dreiekursene, Date Night og drop-in peker paa dem',
+    sjekk('… og dreiekursene og Date Night peker paa dem',
         (int) DB::verdi('SELECT COUNT(*) FROM courses WHERE ressurs_id = :i', ['i' => (int) $skive['id']]) >= 3);
 
     // Selve regnestykket: to ting som gaar samtidig og deler ressursen, skal
@@ -5010,7 +4885,7 @@ sjekk('… og en ukjent ressurs stopper ikke innstemplinga',
 // verkstedet, det er to kvelder á tre.
 //
 // Regnet rett fram holdt kurset tre dreieskiver opptatt gjennom natta og hele
-// torsdag formiddag, og drop-in torsdag klokka aatte sto med fem ledige uten
+// torsdag formiddag, og en aapen plass torsdag klokka aatte sto med fem ledige uten
 // at noe skjedde i huset. Sett paa lissom.no like etter at delte ressurser
 // ble lagt ut.
 if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
@@ -5113,24 +4988,24 @@ if (DB::harTabell('ressurser') && DB::harKolonne('courses', 'ressurs_id')) {
         if ($aapne !== [] && $tak > 0) {
             $led = Booking::ledigePlasserFlere(array_column($aapne, 'id'));
             $ventet = max(0, $tak - (int) $kurs['kap']);
-            sjekk('drop-in er stengt mens kurset gaar',
+            sjekk('en aapen plass er stengt mens kurset gaar',
                 max($led) === $ventet,
                 'ventet ' . $ventet . ' ledige (' . $tak . ' minus kursets '
                 . $kurs['kap'] . '), fikk ' . max($led));
         }
         // Men kurset selv skal ikke sperre for seg selv: det er nettopp det
-        // som skjer om en tom drop-in-plass paa aatte holder plasstallet sitt
+        // som skjer om en tom aapen plass paa aatte holder plasstallet sitt
         // ogsaa. Da tar de to livet av hverandre.
         $egen = Booking::ledigePlasserFlere([(int) $kurs['id']])[(int) $kurs['id']];
         sjekk('… men kurset sperrer ikke for seg selv',
             $egen > 0, 'kurset sto med ' . $egen . ' ledige');
 
-        // Og kunden skal faa vite hvorfor. «Fullbooket» paa en drop-in-time
+        // Og kunden skal faa vite hvorfor. «Fullbooket» paa en aapen time
         // der det ikke er én booking, men et kurs, gir en telefon fra en som
         // ikke ser noen i verkstedet.
         if (isset($aapne) && $aapne !== [] && ($ventet ?? 1) === 0) {
             $sp = Booking::sperretAvAnnet(array_column($aapne, 'id'));
-            sjekk('… og en stengt drop-in-time sier at det gaar kurs',
+            sjekk('… og en stengt aapen time sier at det gaar kurs',
                 in_array(true, $sp, true), 'ingen av dem er merket sperret');
         }
     }
@@ -5247,13 +5122,13 @@ sjekk('«Verkstedet»-kolonnen er borte, og ingen ny fast kolonne satt i stedet'
     str_contains($sida, 'this.klHoldere().concat([UTEN_HOLDER]).map(kn => {')
     && !str_contains($sida, "concat(['Verkstedet'])")
     && !str_contains($sida, "concat(['Brenning'])"));
-// Drop-in har ingen kursholder og laa derfor i den gamle kolonnen — ni
-// plasser om dagen i femten dager druknet alt annet. Foerst sila jeg dem bort
-// i dagsvisninga alene, og da stod ukesvisninga full av dem. Sila hoerer
-// hjemme der hendelsene hentes, saa gjelder den alle visningene.
-sjekk('drop-in siles bort der hendelsene hentes',
+// Brenning og innstempling har ingen kursholder og laa derfor i den gamle
+// kolonnen. Foerst sila jeg dem bort i dagsvisninga alene, og da stod
+// ukesvisninga full av dem. Sila hoerer hjemme der hendelsene hentes, saa
+// gjelder den alle visningene.
+sjekk('brenning og verksted siles bort der hendelsene hentes',
     str_contains($sida, "const alle = this.klAlle(y, m)\n"
-        . "      .filter(e => e.type !== 'dropin' && e.type !== 'verksted' && e.type !== 'brenning')"));
+        . "      .filter(e => e.type !== 'verksted' && e.type !== 'brenning')"));
 sjekk('… og kolonnene tar da alt som hoerer kursholderen til',
     str_contains($sida, ": dagensAlle.filter(e => e.holder === kn);"));
 // Eieren, gang paa gang: «det hvite feltet under alle kurs skulle staa paa
@@ -5285,12 +5160,13 @@ sjekk('ruta fra kalenderen viser ikke feltene som er fjernet',
 // «2–3 uker» og «2-4 uker». Eieren, 31. august: «2-4 uker er riktig».
 $mal = file_get_contents(__DIR__ . '/../app/lib/kursmal.php');
 sjekk('hentetiden staar bare i «Naar er den ferdig»',
-    substr_count($mal, 'self::HENTING') === 7
+    substr_count($mal, 'self::HENTING') === 6
     && !preg_match("~'medHjem'[^\n]*(\n\s*\.[^\n]*)*self::HENTING~", $mal));
-// Alle seks kategoriene maa ha den. Uten en standard staar feltet tomt, og
-// da sier kurssida ingenting om naar keramikken er klar.
-sjekk('… og alle seks kategoriene har den',
-    substr_count($mal, "'ferdigTid'       => self::HENTING,") === 7);
+// Alle malene maa ha den. Uten en standard staar feltet tomt, og da sier
+// kurssida ingenting om naar keramikken er klar. Det var seks; «Drop-in» gikk
+// ut da tilbudet ble revet ut 2. september.
+sjekk('… og alle fem malene har den, med reservemalen',
+    substr_count($mal, "'ferdigTid'       => self::HENTING,") === 6);
 // Og eieren ba om at det skal staa hvor man ser det selv.
 sjekk('… og teksten sier hvor man kan se det selv',
     str_contains($mal, '2–4 uker')
@@ -5352,19 +5228,14 @@ sjekk('kurs sorteres paa dato, ikke paa navn',
 sjekk('… og datoregelen staar ett sted',
     str_contains($sida, 'forsteOktTid(k) {')
     && substr_count($sida, 'this.forsteOktTid(') === 3);
-// «Drop inn kurs ligger i oversikten, hallo rydd opp og globalt». 139 datoer
-// drop-in mot noen faa titalls kursdatoer — kursene druknet i lista, i uka og
-// i maaneden under «Kurs og deltakere → Alle kurs». Drop-in har sin egen
-// skjerm.
-sjekk('drop-in staar ikke i kurslistene i admin',
-    str_contains($sida, 'oktIKurslista(o) {')
-    && substr_count($sida, '.filter(o => this.oktIKurslista(o))') === 5);
-// «Planlagte kurs» paa Oversikt sto paa 165. Det er ikke kurs — det er
-// drop-in. Eieren, 31. august: «hvorfor har jeg drop inn under planlagte
-// kurs?». Samme tall staar to steder, og begge maa telle det samme.
-sjekk('… heller ikke i tallene paa Oversikt og Kurs og deltakere',
-    str_contains($sida, "const okter = (this.state.adminOkter || []).filter(o => this.oktIKurslista(o));")
-    && str_contains($sida, '.filter(o => String(o.dato || \'\').slice(0, 10) === iso).length;'));
+// Filteret som holdt drop-in ute av kurslistene og av tallene, er borte
+// sammen med drop-in selv — se «Drop-in finnes ikke» lenger nede. Lista er
+// naa alle oektene, og tallet teller de samme.
+sjekk('kurslistene i admin er alle oektene',
+    str_contains($sida, "const okter = (this.state.adminOkter || []);")
+    && !str_contains($sida, 'oktIKurslista'));
+sjekk('… og tallet paa Oversikt teller de samme',
+    str_contains($sida, '.filter(o => String(o.dato || \'\').slice(0, 10) === iso).length;'));
 
 // Eieren, 31. august: «jeg faar ikke scrollet tilbake, da virker det som
 // siden under er den som scroller». Det er nettopp det som skjer: naar ruta
@@ -5475,21 +5346,18 @@ sjekk('… og kolonnen staar av som standard',
     && str_contains(file_get_contents(__DIR__ . '/../db/migrations/106_sms_er_av_som_standard.sql'),
                  'UPDATE courses SET sms_paaminnelse = 0 WHERE sms_paaminnelse <> 0;'));
 
-// Eieren, 31. august, paa den offentlige kalenderen: «paa kallender, drop
-// inn skal ikke vises her». Drop-in gaar hver dag fra aatte til ti om
-// kvelden i plasser paa halvannen time — femtifire linjer i uka 36, mot ni
-// kurs. Kursene laa nederst under dem.
-sjekk('drop-in staar ikke i den offentlige kalenderen',
+// Det som bare gjelder medlemmer hoerer ikke hjemme paa en side hvem som
+// helst kan se.
+sjekk('interne samlinger staar ikke i den offentlige kalenderen',
     str_contains($sida, 'visesIKalenderen(k) {')
-    && str_contains($sida, "return k.tema !== 'Kun for medlemmer' && k.type !== 'dropin' && tema !== 'drop-in';"));
+    && str_contains($sida, "return k.tema !== 'Kun for medlemmer';"));
 // Regelen maa gjelde begge steder. Brukes den bare i lista, teller
-// okterEtterUke() fortsatt drop-in — og siden drop-in finnes hver eneste dag,
-// ville kalenderen alltid aapnet paa inneverende uke.
+// okterEtterUke() dem likevel, og kalenderen aapner paa feil uke.
 sjekk('… ogsaa naar det regnes ut hvilken uke den aapner paa',
     substr_count($sida, 'if (!this.visesIKalenderen(k)) return;') === 2
     && !str_contains($sida, "if (k.tema === 'Kun for medlemmer') return;"));
 // Sida lovet «kurs, events og drop-in samlet». Det stemte ikke lenger.
-sjekk('… og teksten lover ikke drop-in lenger',
+sjekk('… og teksten lover ikke et tilbud som ikke finnes',
     !str_contains($sida, 'Kurs, events og drop-in samlet')
     && str_contains($sida, 'Kurs og events samlet, uke for uke.'));
 
@@ -5637,9 +5505,8 @@ sjekk('inntekt staar negativt, innbetalinger positivt',
 sjekk('butikken har sin egen konto',
     str_contains($doFil, "'ordre'      => ['navn' => 'Varer i butikk',"));
 
-// Drop-in ble tatt ned med migrasjon 110 og 111. Eieren, 1. september: «vi
-// har ikke drop-inn ... aldri ha det med».
-sjekk('drop-in staar ikke i regnskapsoppsettet',
+// Kontoene for et tilbud som ikke finnes.
+sjekk('det revne tilbudet staar ikke i regnskapsoppsettet',
     !str_contains($doFil, 'regnskap_konto_dropin')
     && !str_contains($doFil, 'regnskap_mva_dropin'));
 sjekk('… og ikke blant feltene i admin heller',
@@ -5657,7 +5524,7 @@ foreach ([['regnskap_konto_kurs', '3200'], ['regnskap_mva_kurs', '6'],
     sjekk('migrasjon 116 setter ' . $n . ' = ' . $v,
         preg_match("~'" . $n . "',\s*'" . $v . "'~", $m116) === 1);
 }
-sjekk('… og rydder bort drop-in-kontoen om den sto der',
+sjekk('… og rydder bort kontoen om den sto der',
     str_contains($m116, "WHERE nokkel IN ('regnskap_konto_dropin', 'regnskap_mva_dropin')"));
 
 // Er kontoene faktisk satt i basen, skal bilaget ikke si at noe mangler.
@@ -5674,7 +5541,7 @@ if (DB::harTabell('innstillinger')) {
     }
     sjekk('kontoene i basen er dem regnskapsfoereren oppga',
         $sattFeil === [], implode(', ', $sattFeil));
-    sjekk('… og drop-in-kontoen ligger ikke igjen',
+    sjekk('… og kontoen ligger ikke igjen',
         DB::en("SELECT nokkel FROM innstillinger WHERE nokkel LIKE 'regnskap%dropin'") === null);
 }
 
@@ -7394,7 +7261,10 @@ sjekk('innmeldingen kan sette haken med det samme',
 $ovApi = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt teller de ubetalte med den samme regelen',
     str_contains($ovApi, 'Medlemskap::betalingsstatus(')
-    && str_contains($ovApi, "'ubetalte'    => \$ubetalte,"));
+    // Tallet og radene i «Ikke betalt» leser det samme regnestykket, som
+    // gjores én gang. Hvert sitt sted kunne de svart hver sitt om det samme
+    // medlemmet.
+    && str_contains($ovApi, "'ubetalte'    => \$medlemsstatus['ubetalte'],"));
 sjekk('… og teller ikke dem som er fritatt',
     str_contains($ovApi, "if (\$b['tilstand'] === 'fri') {"));
 
@@ -7873,6 +7743,122 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM orders WHERE id = :i', ['i' => $ordreId]);
     DB::kjor('DELETE FROM payments WHERE id IN (:i, :j)', ['i' => $gkRad, 'j' => $kontantRad]);
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
+}
+
+echo "\n== Medlemskapene i «Ikke betalt» ==\n";
+// Eieren, 2. september: «dverken hun eller eiriin kommer opp i kortet ikke
+// betalt paa oversikten, og det maa de jo gjore, helt til pengene er inne».
+// Og da det fortsatt ikke sto der: «hvorfor vises ikke de to som er ubetalte
+// i oversikten, altsaa eirin og ida».
+//
+// Kortet ble bygget 29. august for kursplasser lagt inn for haand, for
+// medlemmene hadde noen betalingsstatus i det hele tatt. Forste gang han
+// spurte, endret jeg telleren i Medlemmer-kortet og ikke kortet han pekte paa.
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+
+// To steder trenger regnestykket: tallet og radene. Regnet hvert sitt sted
+// kunne de svart hver sitt om det samme medlemmet.
+sjekk('betalingsstatusen for medlemmene regnes ett sted',
+    str_contains($ovFil, '$medlemsstatus = (static function (): array {')
+    // Kallet, ikke omtalen: kommentarene nevner den ogsaa.
+    && substr_count($ovFil, '= Medlemskap::betalingsstatus(') === 1);
+sjekk('… og telleren leser den',
+    str_contains($ovFil, "'ubetalte'    => \$medlemsstatus['ubetalte'],"));
+sjekk('… og kortet leser de samme radene',
+    str_contains($ovFil, "}, \$medlemsstatus['rader'])),"));
+// Uten dette staar kursplassene alene i kortet, som for.
+sjekk('kortet slaar sammen kursplasser og medlemskap',
+    str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
+// Skjermen maa vite hvilket slag raden er: de to gjores opp hvert sitt sted.
+sjekk('radene sier hvilket slag de er',
+    str_contains($ovFil, "'slag'    => 'booking',")
+    && str_contains($ovFil, "'slag'  => 'medlem',"));
+// «Alle med utestaaende», ikke bare de forfalte: et trekk som er bestilt og
+// ikke landet enda skal ogsaa staa der.
+sjekk('alle med utestaaende kommer med, ikke bare de forfalte',
+    str_contains($ovFil, "} elseif (!empty(\$b['utestaaende'])) {"));
+// «kr. 0,-» leses som «skylder ingenting».
+sjekk('ukjent pris staar tomt, ikke som null kroner',
+    str_contains($ovFil, "'belop' => \$m['pris'] > 0 ? Booking::kroner(\$m['pris']) : '',"));
+
+$mFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+// Knappene i kortet gjorde opp en kursplass. For et medlemskap fantes det
+// ikke noe sted i systemet aa registrere at pengene kom.
+sjekk('et medlemskap kan registreres betalt',
+    str_contains($mFil, "if (\$handling === 'betaling') {"));
+sjekk('… som en ekte betaling, ikke et flagg',
+    str_contains($mFil, "'formal'          => 'medlemskap',")
+    && str_contains($mFil, "'type'            => 'manuell',")
+    && str_contains($mFil, "'status'          => 'betalt',"));
+// Uten member_id teller den ikke i Medlemskap::sisteBetalinger(), og medlemmet
+// ville staatt som ubetalt selv etter at pengene var talt opp.
+sjekk('… knyttet til medlemmet, saa merket slaar om',
+    str_contains($mFil, "'member_id'       => \$id,"));
+sjekk('… med hvem som registrerte den',
+    str_contains($mFil, "\$felt['registrert_av'] = (int) \$jeg['id'];"));
+// Prisen da avtalen ble inngaatt, ikke dagens.
+sjekk('… til prisen som ble avtalt',
+    str_contains($mFil, "\$ore = (int) \$avtale['pris_ore'];"));
+
+// Skjermen
+sjekk('medlemsrader gjores opp mot medlemmet, kursplasser mot paameldingen',
+    str_contains($sida, "? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })")
+    && str_contains($sida, ": this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })"));
+sjekk('… og navnet paa et medlem er en vei inn til medlemmet',
+    str_contains($sida, "this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })"));
+// «plasser» sto der fra den gang kortet bare hadde kursplasser.
+sjekk('overskriften sier ikke lenger «plasser» om et medlemskap',
+    str_contains($sida, "(liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')")
+    && !str_contains($sida, "(liste.length === 1 ? ' plass · ' : ' plasser · ')"));
+
+echo "\n== Paint on Pots settes opp for haand ==\n";
+// Eieren, 2. september: «hvorfor vises paint on pots i kalenderen naar det
+// ikke er kurs?», og «hvordan kan det vises bare paint on pots i kalendern».
+// Deretter: «jeg vil ikke at kurset skal foelge automatisk, kan du slette det
+// og gjore det saa jeg maa legge ut tid selv?»
+//
+// Kurset sto med folger_apningstid = 1, og da satte utleggingen oektene opp
+// selv — halvannen time om gangen gjennom hele den aapne tida. Én aapen dag
+// ga fire til seks linjer i kalenderen, mot én for et ekte kurs.
+$m135 = file_get_contents(dirname(__DIR__) . '/db/migrations/135_paint_on_pots_settes_opp_for_haand.sql');
+
+// Utleggingen henter «WHERE folger_apningstid = 1». Nullen tar kurset ut av
+// den, og ingen nye oekter lages.
+sjekk('migrasjon 135 slaar av automatikken paa Paint on Pots',
+    preg_match("~UPDATE courses\s+SET folger_apningstid = 0\s+WHERE tittel = 'Paint on Pots'~", $m135) === 1);
+// Bare de genererte. En oekt satt opp for haand er noen sin avgjorelse.
+sjekk('… og rydder bare de genererte lukene',
+    str_contains($m135, 'AND cs.fra_apningstid = 1'));
+// En plass noen har kjopt skal ikke forsvinne under foettene paa dem.
+sjekk('… og lar en luke noen har booket staa',
+    str_contains($m135, 'SELECT 1 FROM bookings b')
+    && str_contains($m135, "AND b.status <> 'avbestilt'"));
+// Det som har vaert og gaatt er historikk.
+sjekk('… og roerer ikke det som er over',
+    str_contains($m135, 'AND COALESCE(cs.slutt_tid, cs.start_tid) > UTC_TIMESTAMP()'));
+
+// Og i virkeligheten: staar flagget av, skal utleggingen ikke lage noe.
+if (DB::harKolonne('courses', 'folger_apningstid')) {
+    $pop = DB::en("SELECT id, folger_apningstid FROM courses WHERE tittel = 'Paint on Pots'");
+    if ($pop !== null) {
+        sjekk('Paint on Pots foelger ikke lenger aapningstidene',
+            (int) $pop['folger_apningstid'] === 0);
+        sjekk('… og har ingen genererte luker igjen framover',
+            (int) DB::verdi(
+                'SELECT COUNT(*) FROM course_sessions
+                  WHERE course_id = :i AND fra_apningstid = 1
+                    AND COALESCE(slutt_tid, start_tid) > UTC_TIMESTAMP()',
+                ['i' => (int) $pop['id']]
+            ) === 0);
+        // Uten dette kunne cron lagt dem ut igjen neste natt, og eieren
+        // staatt med den samme kalenderen om et doegn.
+        $forOkter = (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE course_id = :i',
+            ['i' => (int) $pop['id']]);
+        Apent::leggUtPaaApneTider();
+        sjekk('… og utleggingen lager ingen nye',
+            (int) DB::verdi('SELECT COUNT(*) FROM course_sessions WHERE course_id = :i',
+                ['i' => (int) $pop['id']]) === $forOkter);
+    }
 }
 
 echo "\n== PHP-en lar seg lese ==\n";

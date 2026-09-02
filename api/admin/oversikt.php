@@ -117,7 +117,6 @@ $sum = static function (string $fra): int {
 // hva pengene kom fra.
 $FORMAL = [
     'booking'    => 'Kurs og events',
-    'dropin'     => 'Drop-in',
     'ordre'      => 'Butikk',
     'gavekort'   => 'Gavekort',
     'medlemskap' => 'Medlemskap',
@@ -245,6 +244,111 @@ $nyeste = DB::alle(
       LIMIT 12"
 );
 
+// ── Betalingsstatus per medlem, regnet én gang ─────────────────────────
+//
+// To steder trenger den: tallet i «Medlemmer»-kortet, og radene i «Ikke
+// betalt». Regnet hvert sitt sted kunne de svart hver sitt om det samme
+// medlemmet — kortet sagt at Eirin skylder, tallet sagt at ingen gjor det.
+//
+// Selve regelen ligger i Medlemskap::betalingsstatus(), som medlemslista
+// ogsaa bruker. Den staar ett sted, og bare der.
+$medlemsstatus = (static function (): array {
+    $aktive = DB::alle(
+        "SELECT id, navn, epost, status, medlemskap_type, start_dato"
+        . (DB::harKolonne('members', 'betaler_ikke')
+            ? ', betaler_ikke, betaler_ikke_grunn'
+            : ', 0 AS betaler_ikke, NULL AS betaler_ikke_grunn')
+        . " FROM members
+            WHERE status IN ('prove','aktiv','pause') AND anonymisert_at IS NULL"
+    );
+    $ider = array_map(static fn(array $m): int => (int) $m['id'], $aktive);
+    $siste = Medlemskap::sisteBetalinger($ider);
+
+    // Nyeste avtale per medlem, i ett oppslag. «pris_ore» er prisen da
+    // avtalen ble inngaatt — den, ikke dagens pris, er det medlemmet skylder.
+    $avtaler = [];
+    if ($ider !== []) {
+        $inn = implode(',', $ider);
+        foreach (DB::alle(
+            "SELECT s.id, s.member_id, s.plan, s.pris_ore, s.vipps_agreement_id,
+                    s.neste_trekk, s.siste_trekk, s.status
+               FROM subscriptions s
+               JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions
+                      WHERE member_id IN ({$inn}) GROUP BY member_id) n ON n.siste = s.id"
+        ) as $r) {
+            $avtaler[(int) $r['member_id']] = $r;
+        }
+    }
+
+    // Se kommentaren i Medlemskap::sisteTrekk(): «siste_trekk» settes naar
+    // trekket BES OM, ikke naar pengene kommer.
+    $trekkene = Medlemskap::sisteTrekk(
+        array_map(static fn(array $a): int => (int) $a['id'], $avtaler)
+    );
+
+    // Prisen paa planen, for medlemmer uten avtale — de som gjor opp selv.
+    $planpris = [];
+    foreach (DB::alle('SELECT navn, pris_ore FROM membership_plans') as $p) {
+        $planpris[(string) $p['navn']] = (int) $p['pris_ore'];
+    }
+
+    $mndStart = gmdate('Y-m-01');
+    $ut = ['ubetalte' => 0, 'fri' => 0, 'nye' => 0, 'nyeUbet' => 0, 'rader' => []];
+
+    foreach ($aktive as $m) {
+        $a = $avtaler[(int) $m['id']] ?? null;
+        $b = Medlemskap::betalingsstatus(
+            $m,
+            $a,
+            $siste[(int) $m['id']] ?? null,
+            $a === null ? null : ($trekkene[(int) $a['id']] ?? null)
+        );
+
+        if ($b['tilstand'] === 'fri') {
+            $ut['fri']++;
+        } elseif (!empty($b['utestaaende'])) {
+            // «utestaaende», ikke «forfalt». Eieren, 2. september: de skal
+            // telles «helt til pengene er inne» — ogsaa et trekk som er
+            // bestilt og ikke forfalt enda.
+            $ut['ubetalte']++;
+
+            // Samme regel gir raden i «Ikke betalt». Eieren spurte om dem to
+            // ganger: forst «det maa de jo gjore, helt til pengene er inne»,
+            // og saa «hvorfor vises ikke de to som er ubetalte i oversikten».
+            $plan = (string) ($a['plan'] ?? $m['medlemskap_type'] ?? '');
+            $pris = $a !== null
+                ? (int) $a['pris_ore']
+                : ($planpris[$plan] ?? 0);
+            $ut['rader'][] = [
+                'id'    => (int) $m['id'],
+                'navn'  => (string) $m['navn'],
+                'plan'  => $plan,
+                'pris'  => $pris,
+                // Det betalingsstatusen sier: «Skulle vaert trukket 1.
+                // september», «Ingen betaling registrert», og saa videre.
+                // Uten den staar raden der uten aa si hvorfor.
+                'hvorfor'   => (string) $b['tekst'],
+                'forfalt'   => !empty($b['forfalt']),
+                'startDato' => (string) ($m['start_dato'] ?? ''),
+            ];
+        }
+
+        if ((string) ($m['start_dato'] ?? '') >= $mndStart) {
+            $ut['nye']++;
+            if (!empty($b['utestaaende'])) {
+                $ut['nyeUbet']++;
+            }
+        }
+    }
+
+    // De forfalte forst: der har pengene faktisk gaatt over tiden.
+    usort($ut['rader'], static fn(array $x, array $y): int
+        => ($y['forfalt'] <=> $x['forfalt']) ?: strcmp($x['navn'], $y['navn']));
+
+    return $ut;
+})();
+
+
 Svar::json([
     // Hva som faktisk er skrudd paa.
     //
@@ -287,76 +391,17 @@ Svar::json([
     //
     // Regnestykket er Medlemskap::betalingsstatus(), det samme som
     // medlemslista bruker. To regnestykker ville kunne svare hver sitt.
-    'medlemmer' => (static function (): array {
-        $aktive = DB::alle(
-            "SELECT id, status, medlemskap_type, start_dato"
-            . (DB::harKolonne('members', 'betaler_ikke')
-                ? ', betaler_ikke, betaler_ikke_grunn'
-                : ', 0 AS betaler_ikke, NULL AS betaler_ikke_grunn')
-            . " FROM members
-                WHERE status IN ('prove','aktiv','pause') AND anonymisert_at IS NULL"
-        );
-        $ider = array_map(static fn(array $m): int => (int) $m['id'], $aktive);
-        $siste = Medlemskap::sisteBetalinger($ider);
-
-        // Nyeste avtale per medlem, i ett oppslag.
-        $avtaler = [];
-        if ($ider !== []) {
-            $inn = implode(',', $ider);
-            foreach (DB::alle(
-                "SELECT s.id, s.member_id, s.vipps_agreement_id, s.neste_trekk, s.siste_trekk, s.status
-                   FROM subscriptions s
-                   JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions
-                          WHERE member_id IN ({$inn}) GROUP BY member_id) n ON n.siste = s.id"
-            ) as $r) {
-                $avtaler[(int) $r['member_id']] = $r;
-            }
-        }
-
-        // Trekkene, for dem som har fast trekk. Se kommentaren i
-        // Medlemskap::sisteTrekk(): «siste_trekk» settes naar trekket BES OM,
-        // ikke naar pengene kommer.
-        $trekkene = Medlemskap::sisteTrekk(
-            array_map(static fn(array $a): int => (int) $a['id'], $avtaler)
-        );
-
-        $mndStart  = gmdate('Y-m-01');
-        $ubetalte  = 0;
-        $fri       = 0;
-        $nye       = 0;
-        $nyeUbet   = 0;
-        foreach ($aktive as $m) {
-            $a = $avtaler[(int) $m['id']] ?? null;
-            $b = Medlemskap::betalingsstatus(
-                $m,
-                $a,
-                $siste[(int) $m['id']] ?? null,
-                $a === null ? null : ($trekkene[(int) $a['id']] ?? null)
-            );
-            if ($b['tilstand'] === 'fri') {
-                $fri++;
-            } elseif (!empty($b['utestaaende'])) {
-                // «utestaaende», ikke «forfalt». Eieren, 2. september: de skal
-                // telles «helt til pengene er inne» — ogsaa et trekk som er
-                // bestilt og ikke forfalt enda.
-                $ubetalte++;
-            }
-            if ((string) ($m['start_dato'] ?? '') >= $mndStart) {
-                $nye++;
-                if (!empty($b['utestaaende'])) {
-                    $nyeUbet++;
-                }
-            }
-        }
-        return [
-            'aktive'      => (int) DB::verdi("SELECT COUNT(*) FROM members WHERE status = 'aktiv'"),
-            'totalt'      => (int) DB::verdi('SELECT COUNT(*) FROM members WHERE anonymisert_at IS NULL'),
-            'ubetalte'    => $ubetalte,
-            'fritatt'     => $fri,
-            'nyeDenneMnd' => $nye,
-            'nyeUbetalte' => $nyeUbet,
-        ];
-    })(),
+    'medlemmer' => [
+        'aktive'      => (int) DB::verdi("SELECT COUNT(*) FROM members WHERE status = 'aktiv'"),
+        'totalt'      => (int) DB::verdi('SELECT COUNT(*) FROM members WHERE anonymisert_at IS NULL'),
+        // Alle fire kommer fra $medlemsstatus, som er regnet én gang lenger
+        // oppe. Kortet «Ikke betalt» leser de samme radene, saa tallet og
+        // lista aldri kan si hver sitt om det samme medlemmet.
+        'ubetalte'    => $medlemsstatus['ubetalte'],
+        'fritatt'     => $medlemsstatus['fri'],
+        'nyeDenneMnd' => $medlemsstatus['nye'],
+        'nyeUbetalte' => $medlemsstatus['nyeUbet'],
+    ],
     // ── Koer ingen sto vakt over ──────────────────────────────────────
     //
     // To ting kunne bli liggende i ukevis uten at noe sa fra: et medlem som
@@ -379,8 +424,7 @@ Svar::json([
     //
     // Eieren 30. august: «her vil jeg se mine mest populaere kurs». Regnet
     // av plassene som faktisk er solgt siste tolv maaneder, ikke av hvor
-    // mange datoer et kurs har eller hvor ofte det staar i kalenderen —
-    // drop-in ville da ligget oeverst hver eneste gang.
+    // mange datoer et kurs har eller hvor ofte det staar i kalenderen.
     //
     // Avbestilte og avlyste teller ikke: en plass som ble refundert er
     // ikke en plass noen kjopte.
@@ -431,13 +475,26 @@ Svar::json([
     // Bare det som er lagt inn for haand. En nettbestilling som staar som
     // reservert venter paa Vipps og ordner seg selv — eller faller bort naar
     // reservasjonen gaar ut.
-    'ubetalte' => array_map(static function (array $r) use ($oslo, $utc): array {
+    //
+    // Medlemskapene staar her ogsaa. Eieren spurte om dem to ganger — forst
+    // «dverken hun eller eiriin kommer opp i kortet ikke betalt paa
+    // oversikten, og det maa de jo gjore, helt til pengene er inne», og saa
+    // «hvorfor vises ikke de to som er ubetalte i oversikten». Kortet var
+    // bygget 29. august for kursplasser alene, for medlemmene hadde noen
+    // betalingsstatus i det hele tatt.
+    //
+    // «slag» skiller dem: en kursplass merkes betalt med paameldingen sin,
+    // et medlemskap med en betalingsrad paa medlemmet. Skjermen trenger aa
+    // vite hvilken av delene raden er.
+    'ubetalte' => array_merge(array_map(static function (array $r) use ($oslo, $utc): array {
         return [
+            'slag'    => 'booking',
             'id'      => (int) $r['id'],
             'navn'    => (string) $r['gjest_navn'],
             'kurs'    => (string) $r['tittel'],
             'naar'    => Booking::norskDato((string) $r['start_tid']),
             'belop'   => Booking::kroner((int) $r['belop_ore']),
+            'belopOre' => (int) $r['belop_ore'],
             'telefon' => (string) ($r['gjest_telefon'] ?? ''),
             'maate'   => (string) ($r['betalt_maate'] ?? ''),
             'dager'   => (int) $r['dager'],
@@ -454,7 +511,33 @@ Svar::json([
             AND b.lagt_inn_av IS NOT NULL
             AND b.belop_ore > 0
        ORDER BY b.created_at"
-    )),
+    )), array_map(static function (array $m): array {
+        return [
+            'slag'  => 'medlem',
+            'id'    => $m['id'],
+            'navn'  => $m['navn'],
+            // Der kursraden sier hvilket kurs og naar, sier medlemsraden
+            // hvilket medlemskap og hvorfor den staar her: «Skulle vaert
+            // trukket 1. september», «Ingen betaling registrert».
+            'kurs'  => $m['plan'],
+            'naar'  => $m['hvorfor'],
+            // Finner vi ingen pris — medlemmet har hverken avtale eller en
+            // plan vi kjenner igjen — skal det staa tomt, ikke «kr. 0,-».
+            // Null kroner leses som «skylder ingenting», og det er det
+            // motsatte av hva raden staar her for aa si.
+            'belop' => $m['pris'] > 0 ? Booking::kroner($m['pris']) : '',
+            'belopOre' => $m['pris'],
+            'telefon' => '',
+            'maate'   => '',
+            // Hvor lenge medlemskapet har loept. Kursraden teller dager siden
+            // paameldingen; her er det dager siden medlemmet startet.
+            'dager' => $m['startDato'] !== ''
+                ? max(0, (int) ((new DateTimeImmutable('today'))
+                    ->diff(new DateTimeImmutable($m['startDato']))->days))
+                : 0,
+            'forfalt' => $m['forfalt'],
+        ];
+    }, $medlemsstatus['rader'])),
 
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren
@@ -464,8 +547,6 @@ Svar::json([
         return [
             'oktId'     => (int) $o['id'],
             'tittel'    => $o['tittel'],
-            // Programmet skjuler en drop-in ingen har meldt seg paa. Da maa
-            // det vite hva slags oekt det er.
             'type'      => (string) $o['type'],
             'naar'      => Booking::norskDato((string) $o['start_tid']),
             'startTid'  => $start->format('c'),

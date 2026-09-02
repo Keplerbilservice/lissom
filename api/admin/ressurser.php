@@ -12,7 +12,7 @@
  * endringer i verkstedet».
  *
  * Alt som skjer samtidig og bruker den samme ressursen deler taket — kurs,
- * medlemsbooking og drop-in. Regnestykket staar i Booking::ledigePlasserFlere.
+ * og medlemsbooking. Regnestykket staar i Booking::ledigePlasserFlere.
  */
 
 declare(strict_types=1);

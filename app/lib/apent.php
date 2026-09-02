@@ -21,8 +21,8 @@
  * teller ikke — den kan ikke si noe om naar det er aapent.
  *
  * Og: en oekt som selv er laget AV en aapningstid teller ikke. Paint on Pots
- * og drop-in legges ut paa de aapne vinduene; talte de med, ville verkstedet
- * holdt seg aapent av sin egen skygge.
+ * ble lagt ut paa de aapne vinduene; talte de med, ville verkstedet holdt seg
+ * aapent av sin egen skygge.
  */
 
 declare(strict_types=1);
@@ -36,10 +36,7 @@ final class Apent
      * Hvor lenge én plass varer.
      *
      * Lissom 27. august: «endre drop in og paint on pots fra 2 timer, til
-     * 1,5 timer». Gjelder begge — de deler den samme bestillingen.
-     *
-     * Ikke aa forveksle med drop-in-tidene 10-13 under Kurs og medlemskap →
-     * Drop-in. De sier naar doeren staar aapen, ikke hvor lenge man sitter.
+     * 1,5 timer».
      */
     public const PLASS_MINUTTER = 90;
 
@@ -56,15 +53,6 @@ final class Apent
      * en lang dag.
      */
     public const PLASSER_PER_DAG = 8;
-
-    /**
-     * Vakten for et kurs med sitt eget vindu.
-     *
-     * Der er det vinduet som bestemmer — 08 til 22 med halvannen time per
-     * plass blir ni. Dette tallet er bare der saa en feil i et klokkeslett
-     * ikke kan lage tusen rader i basen.
-     */
-    public const PLASSER_TAK = 24;
 
     /**
      * Dagene med aapningstid, og hvilke oekter tallene er regnet av.
@@ -88,10 +76,9 @@ final class Apent
         // ── Kursene ────────────────────────────────────────────────────────────────
         //
         // Bare det som faktisk gaar: planlagt, paa et kurs som er publisert, og med
-        // et tidspunkt. En drop-in ingen har meldt seg paa er en aapen doer og
-        // teller med — den er nettopp en aapningstid.
+        // et tidspunkt.
         $okter = DB::alle(
-            "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.fra_dropin_tid, c.tittel, c.tema, c.type,
+            "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.tema, c.type,
                     (SELECT COUNT(*) FROM bookings b
                       WHERE b.course_session_id = cs.id
                         AND b.status IN ('betalt','reservert')) AS pameldte
@@ -114,42 +101,6 @@ final class Apent
         // blir borte. Ellers ville nettsida sagt «aapent 10–13» paa en dag
         // ingen er der.
         $okter = Ferie::utenom($okter);
-
-        // ── Drop-in-oekter som ikke svarer til en aapningstid lenger ───────────────
-        //
-        // Drop-in-tidene lages av ukereglene den dagen noen trykker «Legg ut tidene»,
-        // og blir liggende. Endres reglene etterpaa, ryddes bare de framtidige som
-        // ingen har booket — og en oekt lagt inn for haand ryddes aldri.
-        //
-        // Da sa nettsiden «aapent til 19» av en oekt som ikke sto noe sted: skjermen
-        // viste reglene, basen hadde noe annet. Verkstedet lette etter et kurs som
-        // ikke fantes.
-        //
-        // Her gjelder reglene. En drop-in-oekt teller bare med naar den svarer til en
-        // aapningstid som staar oppe naa — eller naar noen faktisk har booket den,
-        // for da er doeren aapen uansett hva reglene sier.
-        $regler = [];
-        if (DB::harTabell('dropin_tider')) {
-            foreach (DB::alle('SELECT ukedag, fra, til FROM dropin_tider WHERE aktiv = 1') as $r) {
-                $regler[(int) $r['ukedag'] . ' ' . substr((string) $r['fra'], 0, 5)
-                      . '-' . substr((string) $r['til'], 0, 5)] = true;
-            }
-        }
-
-        $okter = array_values(array_filter($okter, static function (array $o) use ($regler, $oslo, $utc): bool {
-            $erDropin = (string) ($o['type'] ?? '') === 'dropin' || $o['fra_dropin_tid'] !== null;
-            if (!$erDropin || (int) $o['pameldte'] > 0) {
-                return true;
-            }
-            $start = (new DateTimeImmutable((string) $o['start_tid'], $utc))->setTimezone($oslo);
-            $stopp = $o['slutt_tid'] !== null
-                ? (new DateTimeImmutable((string) $o['slutt_tid'], $utc))->setTimezone($oslo)
-                : null;
-            $nokkel = $start->format('N') . ' ' . $start->format('H:i')
-                    . '-' . ($stopp !== null ? $stopp->format('H:i') : '');
-
-            return isset($regler[$nokkel]);
-        }));
 
         /** @var array<string, array{fra: string, til: string}> */
         $avKurs = [];
@@ -209,16 +160,9 @@ final class Apent
                     $avKurs[$nokkel]['til'] = max($avKurs[$nokkel]['til'], $til);
                 }
                 // Hva slags oppforing det er, og hvor den settes.
-                //
-                // «Drop-in i verkstedet» er ikke et kurs man melder seg paa — det er
-                // aapningstidene under Drop-in, lagt ut som bookbare oekter. Staar
-                // det bare et kursnavn her, leter man etter et kurs som ikke finnes.
                 $slag = 'Kursdato';
                 $satt  = 'Kurs og medlemskap → kurset';
-                if ((string) ($o['type'] ?? '') === 'dropin' || $o['fra_dropin_tid'] !== null) {
-                    $slag = 'Drop-in-tid';
-                    $satt = 'Kurs og medlemskap → Drop-in';
-                } elseif ((string) ($o['tema'] ?? '') === 'Kun for medlemmer') {
+                if ((string) ($o['tema'] ?? '') === 'Kun for medlemmer') {
                     $slag = 'Intern samling';
                     $satt = 'Medlemmer → Kurs';
                 }
@@ -315,24 +259,21 @@ final class Apent
     }
 
     /**
-     * Paint on Pots, drop-in og lignende, lagt ut paa de aapne tidene.
+     * Paint on Pots og lignende, lagt ut paa de aapne tidene.
      *
      * Lissom ba om at Paint on Pots skal kunne bookes naar hun allerede er
      * der: naar det gaar et planlagt kurs, eller naar hun har stemplet inn.
-     * Den 27. august kom drop-in med paa det samme — samme bestilling, med
-     * datoer og tider, og tilgjengeligheten folger kursene og innstemplinga.
      *
      * Hvilke kurs det gjelder staar i courses.folger_apningstid. Foer sto det
      * i gjenstand_i_kassa, som gjorde to jobber paa én gang: «gjenstanden
-     * betales i verkstedet» OG «datoene lages av aapningstidene». Drop-in
-     * betales paa nett som for, og trengte bare den andre halvdelen.
+     * betales i verkstedet» OG «datoene lages av aapningstidene».
      *
      * Plassene klippes ut av den aapne tida, halvannen time om gangen —
      * ogsaa timene mellom to kurs, for da er hun der. Er verkstedet stemplet
      * inn paa en dag det ellers ikke skjer noe, aapnes det tre timer fram.
      *
-     * Kursets egne oekter gaar foran: gaar drop-in 10-13 paa tirsdag fra
-     * ukereglene, lages det ingen plass oppi den. Ellers ville den samme
+     * Kursets egne oekter gaar foran: staar det alt en oekt paa tirsdag,
+     * lages det ingen plass oppi den. Ellers ville den samme
      * timen ligget to ganger i bestillingen, med hvert sitt plasstall.
      *
      * Ryddingen: en generert oekt som ingen har booket, og som ikke lenger
@@ -356,12 +297,8 @@ final class Apent
             return ['laget' => 0, 'fjernet' => 0];
         }
 
-        // Kurs med sitt eget vindu staar hver dag mellom to klokkeslett,
-        // uavhengig av kurs og aapningstider. Se «Drop-in foelger sitt eget
-        // vindu» lenger nede, og migrasjon 102.
-        $fast = DB::harKolonne('courses', 'fast_fra') && DB::harKolonne('courses', 'fast_til');
         $kurs = DB::alle(
-            'SELECT id, kapasitet' . ($fast ? ', fast_fra, fast_til' : '') . " FROM courses
+            "SELECT id, kapasitet FROM courses
               WHERE {$felt} = 1 AND status = 'publisert'"
         );
         if ($kurs === []) {
@@ -443,37 +380,9 @@ final class Apent
         foreach ($kurs as $k) {
             $kursId = (int) $k['id'];
 
-            // ── Kursets eget vindu ─────────────────────────────────────────
-            //
-            // Eieren, 30. august, om drop-in: «det skal ikke foelge kurs
-            // eller aapningstider» og «det skal kunne bookes tid mellom kl
-            // 08:00 og 22:00».
-            //
-            // Sto drop-in paa aapningstidene, var den bare bookbar de dagene
-            // det tilfeldigvis gikk et kurs — for det er kursene som lager
-            // aapningstida. Det er den motsatte logikken av hva drop-in er.
-            //
-            // Med to klokkeslett paa kurset staar det hver dag, DAGER_FRAM
-            // dager fram, uten aa spoerre noen. Innstemplinga teller ikke:
-            // vinduet er avgjort paa forhaand.
-            $egetVindu = null;
-            if (($k['fast_fra'] ?? null) !== null && ($k['fast_til'] ?? null) !== null) {
-                $fra = substr((string) $k['fast_fra'], 0, 5);
-                $til = substr((string) $k['fast_til'], 0, 5);
-                if ($fra < $til) {
-                    $egetVindu = [];
-                    for ($d = 0; $d <= self::DAGER_FRAM; $d++) {
-                        $dag = $naa->modify('+' . $d . ' days')->format('Y-m-d');
-                        $egetVindu[$dag] = [['fra' => $fra, 'til' => $til]];
-                    }
-                }
-            }
-            $mineVinduer = $egetVindu ?? $vinduer;
-            // Taket paa plasser per dag er satt for aapningstidene, der
-            // vinduet aldri blir lengre enn en arbeidsdag. Et eget vindu paa
-            // fjorten timer er lengre enn det, og da skal vinduet bestemme —
-            // ikke et tall som var ment som en vakt.
-            $takPerDag = $egetVindu === null ? self::PLASSER_PER_DAG : self::PLASSER_TAK;
+            // Vinduene er aapningstidene, og bare dem.
+            $mineVinduer = $vinduer;
+            $takPerDag = self::PLASSER_PER_DAG;
 
             // Kursets egne oekter, lagt inn for haand eller av ukereglene.
             // De gaar foran: det lages ingen plass oppi en tid kurset alt

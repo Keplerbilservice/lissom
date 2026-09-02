@@ -3,7 +3,7 @@
  * Hvem holder kurset.
  *
  * Fire steder i systemet lager kursdatoer: «ny dato» i admin, faste ukedager
- * (serier), aapent verksted, og drop-in. Bare det forste satte kursholder.
+ * (serier) og aapent verksted. Bare det forste satte kursholder.
  * De tre andre la datoene ut med tomt felt, og da sto de i kalenderen som
  * «Uten kursholder» — ogsaa naar verkstedet bare har én, og hun er standard.
  *

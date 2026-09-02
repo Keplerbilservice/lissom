@@ -49,11 +49,11 @@ $harEndret = DB::harKolonne('course_sessions', 'updated_at');
 
 // Ledige tider er ikke avtaler.
 //
-// Paint on Pots og drop-in legges ut automatisk paa hver eneste aapningstid
+// Paint on Pots ble lagt ut automatisk paa hver eneste aapningstid
 // (migrasjon 076). Det er tilbud — «her kan noen komme» — ikke noe som skjer.
 // Feeden tok med hver av dem, og telefonen til eieren fylte seg med tomme
-// oppforinger: 25 Paint on Pots og 17 drop-in i basen her, ingen med
-// paameldte. Da druknet de ekte kursene, og kalenderen ble ubrukelig som det
+// oppforinger: 25 Paint on Pots i basen her, ingen med paameldte. Da druknet
+// de ekte kursene, og kalenderen ble ubrukelig som det
 // den er til: aa se hva som faktisk skjer.
 //
 // Er noen paameldt, staar oekta der — da er den en avtale. Vanlige kurs staar
@@ -148,14 +148,7 @@ $linjer = [
 ];
 
 foreach ($okter as $o) {
-    $type     = (string) $o['type'];
     $pameldte = (int) $o['pameldte'];
-
-    // Samme regel som Program paa Oversikt: en drop-in ingen har meldt seg
-    // paa er en aapen dor, ikke en avtale. Kurs og samlinger staar uansett.
-    if ($type === 'dropin' && $pameldte === 0) {
-        continue;
-    }
 
     $start = new DateTimeImmutable((string) $o['start_tid'], $utc);
     $slutt = $o['slutt_tid'] !== null

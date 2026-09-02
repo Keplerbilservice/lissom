@@ -75,7 +75,6 @@ $rader = DB::alle(
 
 $FORMAL = [
     'booking'    => 'Kurs og events',
-    'dropin'     => 'Drop-in',
     'gavekort'   => 'Gavekort',
     'ordre'      => 'Butikk',
     'medlemskap' => 'Medlemskap',

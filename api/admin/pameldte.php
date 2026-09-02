@@ -39,8 +39,6 @@ if (Foresporsel::heltall('bevis') === 1) {
       LEFT JOIN course_sessions cs ON cs.id = b.course_session_id
       LEFT JOIN members m ON m.id = b.member_id
           WHERE b.status = 'betalt'
-            AND c.type <> 'dropin'
-            AND (c.tema IS NULL OR c.tema <> 'Drop-in')
             AND COALESCE(cs.slutt_tid, cs.start_tid) IS NOT NULL
             AND COALESCE(cs.slutt_tid, cs.start_tid) < UTC_TIMESTAMP()
        ORDER BY COALESCE(cs.slutt_tid, cs.start_tid) DESC, b.id DESC
@@ -68,7 +66,7 @@ if (Foresporsel::heltall('bevis') === 1) {
     ]);
 }
 
-/** Samme regel som paa Min side: betalt, gjennomfort, og ikke drop-in. */
+/** Samme regel som paa Min side: betalt og gjennomfort. */
 $kursbevis = static function (array $d): ?string {
     if (($d['status'] ?? '') !== 'betalt') {
         return null;
@@ -78,13 +76,9 @@ $kursbevis = static function (array $d): ?string {
     if (!empty($d['bevis_sperret'])) {
         return null;
     }
-    // Drop-in er ikke et kurs — det er to timer i verkstedet med ditt eget
-    // arbeid, og det er ingenting aa bevise. Interne samlinger er kurs, og
-    // de gir bevis som alle andre: et medlem som har vaert paa glasurkveld
-    // har vaert paa kurs, selv om samlingen ikke sto i den aapne lista.
-    if ((string) ($d['tema'] ?? '') === 'Drop-in') {
-        return null;
-    }
+    // Interne samlinger er kurs, og de gir bevis som alle andre: et medlem
+    // som har vaert paa glasurkveld har vaert paa kurs, selv om samlingen
+    // ikke sto i den aapne lista.
     $slutt = $d['slutt_tid'] ?: $d['start_tid'];
     if ($slutt === null || strtotime((string) $slutt) > time()) {
         return null;
@@ -105,10 +99,8 @@ if ($oktId <= 0) {
     // nettsida. Begge to trengs for aa vise «Planlagte kurs» slik kalenderen
     // viser det samme: de automatiske tidene samles til én linje, og en dato
     // paa et kurs som ikke er publisert sier fra om at den ikke er ute.
-    $autoKol = (DB::harKolonne('course_sessions', 'fra_apningstid')
-                    ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
-             . (DB::harKolonne('course_sessions', 'fra_dropin_tid')
-                    ? ', cs.fra_dropin_tid' : ', NULL AS fra_dropin_tid');
+    $autoKol = DB::harKolonne('course_sessions', 'fra_apningstid')
+        ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid';
 
     $okter = DB::alle(
         "SELECT cs.id, cs.start_tid, cs.slutt_tid, c.tittel, c.type, c.tema,
@@ -195,8 +187,7 @@ if ($oktId <= 0) {
             // Og rette det. Beviset bygges av paameldingen, saa et navn som
             // ble stavet feil ved paamelding sto feil paa arket. Rettingen
             // laa bare inne i personruta — og en gjest uten konto har ingen.
-            'bevisMulig'   => (string) ($d['tema'] ?? '') !== 'Drop-in'
-                && $d['start_tid'] !== null
+            'bevisMulig'   => $d['start_tid'] !== null
                 && strtotime((string) ($d['slutt_tid'] ?: $d['start_tid'])) < time(),
             'bevisNavn'    => (string) ($d['bevis_navn'] ?? ''),
             'bevisKurs'    => (string) ($d['bevis_kurs'] ?? ''),
@@ -213,9 +204,9 @@ if ($oktId <= 0) {
         'reservert' => (int) $o['reservert'],
         'kapasitet' => (int) $o['kapasitet'],
         'ledige'    => $ledigeKart[(int) $o['id']] ?? 0,
-        // Hva slags oekt det er. Uten dette kunne ikke admin skille kurs,
-        // event og drop-in fra hverandre naar noen skal registreres paa én
-        // av dem — alt sto i én lang liste.
+        // Hva slags oekt det er. Uten dette kunne ikke admin skille kurs og
+        // event fra hverandre naar noen skal registreres paa én av dem — alt
+        // sto i én lang liste.
         'type'      => (string) ($o['type'] ?? 'kurs'),
         'tema'      => (string) ($o['tema'] ?? ''),
         // Datoen og klokkeslettet slik de staar i et dato- og et tidsfelt,
@@ -226,10 +217,9 @@ if ($oktId <= 0) {
         'dato'      => $iOslo((string) $o['start_tid'], 'Y-m-d'),
         'fra'       => $iOslo((string) $o['start_tid'], 'H:i'),
         'til'       => $o['slutt_tid'] === null ? '' : $iOslo((string) $o['slutt_tid'], 'H:i'),
-        // Laget av en regel — aapningstida eller ukereglene under Drop-in.
-        // De gir mange like rader paa samme dag, og samles til én linje.
-        'auto'      => (int) ($o['fra_apningstid'] ?? 0) === 1
-                    || ($o['fra_dropin_tid'] ?? null) !== null,
+        // Laget av aapningstida. Den gir mange like rader paa samme dag,
+        // og de samles til én linje.
+        'auto'      => (int) ($o['fra_apningstid'] ?? 0) === 1,
         // Er kurset ute paa nettsida? To datoer som ser like ut, der den ene
         // hoerer til et kurs som ligger som utkast, er ikke to like datoer.
         'publisert' => (string) ($o['kurs_status'] ?? 'publisert') === 'publisert',

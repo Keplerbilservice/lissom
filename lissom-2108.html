@@ -2364,10 +2364,35 @@ window.__resources = {
                 </sc-if>
   
               </sc-if>
-              <!-- Medlemskap: «les mer» forst, «Velg» etterpaa. -->
+              <!-- Medlemskap: «les mer» forst, betalingen her.
+                   Betalingsvalget sto i en dialog jeg lagde. Naa staar det
+                   her, med de samme pillene som innmeldingsskjemaet paa Min
+                   side bruker — samme sted som datoene og knappen staar paa
+                   et kurs. -->
               <sc-if value="{{ visVelgMedlemskap }}" hint-placeholder-val="{{ false }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ velgMedlemskapKnapp }}" hint-size="100%,52px">Velg</x-import>
-                <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du velger selv om det skal trekkes fast i Vipps, eller om du vil gjøre opp for hver periode.</p>
+                <sc-if value="{{ visMedlemsFornyLinje }}" hint-placeholder-val="{{ false }}">
+                  <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ medlemsFornyLinje }}</div>
+                </sc-if>
+                <sc-if value="{{ visMedlemsbetaling }}" hint-placeholder-val="{{ true }}">
+                  <sc-if value="{{ bmKanVelgeBetaling }}" hint-placeholder-val="{{ true }}">
+                    <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">Betaling</div>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                      <sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                      </sc-for>
+                    </div>
+                    <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmBetalingTekst }}</p>
+                  </sc-if>
+                  <sc-if value="{{ bmMaaHaTrekk }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ bmTrekkTekst }}</p>
+                  </sc-if>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ bmVilkar }}</p>
+                </sc-if>
+                <sc-if value="{{ visMedlemsVelg }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ velgMedlemskapKnapp }}" hint-size="100%,52px">Velg</x-import>
+                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du velger selv om det skal trekkes fast i Vipps, eller om du vil gjøre opp for hver periode.</p>
+                </sc-if>
               </sc-if>
               <!-- Kurs som settes opp naar noen sporr. Her sto hele
                    bookingskjemaet og en knapp som ikke gjorde noe. -->
@@ -24312,18 +24337,13 @@ class Component extends DCLogic {
    * som «Lukk», saa den vanlige knappen faller bort og de to valgene under
    * staar alene.
    */
-  apneFornyValg(planNavn, harUtloept) {
+  apneFornyValg(planNavn) {
     const navn = planNavn || this.state.abo || this.aktivPlan().navn;
     const pl = this.aboPlan(navn);
     const felter = [];
-    // Den som har hatt medlemskap for skal vite hvorfor hun staar her.
-    if (harUtloept) {
-      felter.push({ navn: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.', verdi: ' ' });
-    }
     if (pl.pris) felter.push({ navn: 'Pris', verdi: pl.pris + ' ' + pl.intervall });
     Component.BETALINGSTEKST(pl).forEach(f => felter.push(f));
-    return this.apne(pl.navn || 'Forny medlemskapet',
-      harUtloept ? 'Forny medlemskapet' : 'Hvordan vil du betale?',
+    return this.apne(pl.navn || 'Forny medlemskapet', 'Hvordan vil du betale?',
       felter, 'Lukk', null, false, null, this.aboPlanValg(navn));
   }
 
@@ -24386,23 +24406,21 @@ class Component extends DCLogic {
     // trekk og aa gjore opp selv, og derfra til Vipps. Serveren avgjor som
     // ellers — loeper det alt en avtale, sier den fra.
     //
-    // Det samme gjelder den som HAR vaert medlem. Avtalen hennes ligger i
-    // «minAvtale» — serveren sender ogsaa en som er stoppet eller utloept,
-    // nettopp for at Min side skal kunne si hva som gjelder. Hun skal ikke
-    // soke paa nytt om noe hun alt har hatt; hun skal faa vite at
-    // medlemskapet ikke loeper, og kunne fornye det.
+    // Her sto en dialog jeg lagde: «Hvordan vil du betale?» med de to
+    // knappene i en boks som spratt opp. Eieren, 2. september: «hvorfor gjor
+    // opp i vipps paa denne maaten, kan du ikke bare ha det likt som ellers
+    // da?», «hvorfor lager du ting paa nytt, naar det allerede finnes i
+    // systemet», og «den maa jo vaere helt identisk som naar man betaler for
+    // et kurs».
     //
-    // Eieren, 2. september: «man maa jo aldri komme rett inn», og «er du
-    // ikke aktivt medlem saa maa man faa beskjed om aa fornye».
+    // Betalingsvalget staar naa paa sida, i boksen ved siden av teksten —
+    // samme sted som datoene og knappen staar paa et kurs, og med de samme
+    // pillene innmeldingsskjemaet har brukt hele tida. Se
+    // «visMedlemsbetaling» i bookingboksen.
     //
-    // Den som aldri har vaert medlem gaar fortsatt til innmeldingen: der
-    // staar kravet om kurs hos oss eller erfaring fra for, og det spor vi om
-    // én gang.
-    const gammelAvtale = this.state.minAvtale || null;
-    if (this.state.erMedlemBruker || gammelAvtale) {
-      this.apneFornyValg(navn, gammelAvtale && !this.state.erMedlemBruker)();
-      return;
-    }
+    // Denne metoden er dermed bare veien for den som ikke er innlogget, og
+    // for den som aldri har vaert medlem: da gaar hun til innmeldingen, der
+    // kravet om kurs hos oss eller erfaring fra for staar.
     // Valget maa overleve innloggingen: Vipps sender deg ut av sida og
     // tilbake igjen, og alt som ligger i minnet er borte naar du kommer.
     try { sessionStorage.setItem('lissom_medlemsplan', navn); } catch (_) { /* privat modus */ }
@@ -29722,7 +29740,12 @@ class Component extends DCLogic {
           punkter,
           datoer: [{ dato: 'Start når du vil', tid: 'Aktiveres ved betaling', plasser: 'Ledig', valgt: true }],
         };
-        this.setState({ side: 'booking', fra: 'medlemskap', valgtKurs: k, bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
+        // «bmType» er planen resten av systemet regner med. Settes den her,
+        // gjelder bmBetalingsvalg, bmBetalingTekst, bmKanVelgeBetaling og
+        // bmMaaHaTrekk denne planen — de samme feltene innmeldingsskjemaet
+        // bruker. Da slipper sida aa ha sine egne.
+        this.setState({ side: 'booking', fra: 'medlemskap', valgtKurs: k, bmType: o.navn, bmFeil: null,
+          bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
         window.scrollTo(0, 0);
       };
 
@@ -31039,6 +31062,36 @@ class Component extends DCLogic {
         const k = this.state.valgtKurs || {};
         this.meldInnPlan(k.title || k.tittel || '');
       },
+      // ── Betalingen paa medlemskapssida ──────────────────────────────
+      //
+      // Den som alt er medlem, eller har vaert det, trenger ingen soknad —
+      // hun trenger en avtale. Da staar betalingsvalget og knappen her, med
+      // de samme feltene innmeldingsskjemaet bruker, og knappen gaar samme
+      // vei som «Forny»: startAbonnement, og derfra til Vipps.
+      //
+      // Alle andre far «Velg», som for: ikke innlogget gaar til Vipps-
+      // innlogging, og den som aldri har vaert medlem til innmeldingen, der
+      // kravet om kurs hos oss eller erfaring fra for staar.
+      ...(() => {
+        const gammel = this.state.minAvtale || null;
+        const kanBetaleNaa = this.state.fra === 'medlemskap'
+          && !!this.state.innlogget
+          && !!(this.state.erMedlemBruker || gammel);
+        const utloept = kanBetaleNaa && gammel && !this.state.erMedlemBruker;
+        const pl = this.aboPlan((this.state.valgtKurs || {}).title || '');
+        return {
+          visMedlemsbetaling: kanBetaleNaa,
+          visMedlemsVelg: this.state.fra === 'medlemskap' && !kanBetaleNaa,
+          visMedlemsFornyLinje: !!utloept,
+          medlemsFornyLinje: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.',
+          medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')
+            + (pl.pris ? ' · ' + pl.pris : ''),
+          medlemsBetalKnapp: () => {
+            const k = this.state.valgtKurs || {};
+            this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt());
+          },
+        };
+      })(),
       kontaktKursKnapp: () => {
         const k = this.state.valgtKurs || {};
         this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,

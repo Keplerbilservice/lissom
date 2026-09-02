@@ -4711,12 +4711,12 @@ sjekk('… og sier fra naar det ikke finnes noen betaling i det hele tatt',
 // aldri bli en ordre.
 sjekk('ingen knapp legger et medlemskap i handlekurven',
     !str_contains($sida2, "leggTil('Abonnement: "));
-sjekk('«Forny» starter avtalen i stedet',
-    str_contains($sida2, "aFornyAbo: () => this.startAbonnement("));
+sjekk('«Forny» spor hvordan det skal betales i stedet',
+    str_contains($sida2, "aFornyAbo: this.apneFornyValg("));
 sjekk('… og det gjor plankortet ogsaa',
-    str_contains($sida2, "'Opprett avtale i Vipps', null, false, () => this.startAbonnement(p.navn)),"));
+    str_contains($sida2, "'Lukk', null, false, null, this.aboPlanValg(p.navn)),"));
 sjekk('… og begge gaar til handling=start',
-    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn }"));
+    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }"));
 
 // Kurver som stod aapne da rettelsen gikk ut, skal ikke moete den samme
 // doede enden. De var det eneste stedet en «Abonnement:»-linje kunne
@@ -6023,6 +6023,136 @@ if (DB::harTabell('courses')) {
     if ($dn !== null) {
         sjekk('Date Night koster 2990 i basen', (int) $dn['pris_ore'] === 299000,
             (int) $dn['pris_ore'] . ' oere');
+    }
+}
+
+// ── «Forny» lot ingen gjore opp selv ──────────────────────────────────
+//
+// Eieren, 2. september, fra en iPhone paa Min side: «naar jeg skulle betale
+// og valgte forny gikk det bare an aa betale paa Vipps med fast trekk
+// maanedlig. Maatte gaa ut av den og inn paa det andre stedet for aa kunne
+// velge jeg ordner selv».
+//
+// Knappen sendte {handling, plan} — uten «betaling». api/medlemskap.php
+// leser feltet slik at et fravaer blir «trekk», saa den opprettet alltid en
+// loepende avtale. Serveren har stott «selv» siden migrasjon 081; det var
+// skjermen som aldri spurte. «Det andre stedet» er innmeldingsskjemaet paa
+// medlemskapssida, som har sendt feltet hele tida.
+//
+// Malt i nettleseren paa 390 px, med kallet til serveren fanget:
+//
+//   Basis 30      to knapper  → betaling=trekk og betaling=selv
+//   Fri tilgang   to knapper  → betaling=trekk og betaling=selv
+//   Aarsmedlemskap  én knapp  → betaling=trekk
+//   Prov Lissom     én knapp  → «Gjor opp i Vipps»
+//
+// Det samme fra plankortet under «Bytt abonnement».
+sjekk('«Forny» sender betalingsmaaten til serveren',
+    str_contains($sida, "this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }"));
+// Kontrollen: det gamle kallet uten feltet skal vaere borte. Uten denne
+// ville proven over vaere gronn ogsaa om noen la det tilbake ved siden av.
+sjekk('… og det gamle kallet uten feltet er borte',
+    !str_contains($sida, "this.medlemskapKall({ handling: 'start', plan: navn }"));
+sjekk('… og bare «selv» og «trekk» slipper gjennom',
+    str_contains($sida, "const maate = betaling === 'selv' ? 'selv' : 'trekk';"));
+
+// Regelen staar ett sted, saa «Forny» og plankortet ikke kan bli uenige.
+sjekk('planen bestemmer hvilke valg som finnes',
+    str_contains($sida, "if (pl.fastTrekk) return [{ plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' }];")
+    && str_contains($sida, "if (pl.engangs) return [{ plan: pl.navn, navn: 'Gjør opp i Vipps', betaling: 'selv' }];"));
+sjekk('… og begge knappene bruker den samme regelen',
+    substr_count($sida, 'this.aboPlanValg(') === 2);
+// Ordlyden staar ett sted. Sto den to, ville skjemaet og dialogen etter
+// hvert sagt hver sin ting om det samme.
+sjekk('de to setningene om betaling staar ett sted',
+    str_contains($sida, 'static get BETALINGSORD()')
+    && str_contains($sida, "bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,"));
+sjekk('… og dialogen henter dem derfra',
+    str_contains($sida, 'const TREKK = Component.BETALINGSORD.trekk;'));
+
+// Serveren skal fortsatt avgjore. Skjermen kan ta feil; det er bare basen
+// som vet hva planen krever.
+$mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('serveren tvinger fast trekk der planen krever det',
+    str_contains($mapi, 'if (Medlemskap::kreverFastTrekk($plan)) {'));
+sjekk('… og en engangsplan kan ikke faa fast trekk',
+    str_contains($mapi, "if ((int) (\$plan['engangs'] ?? 0) === 1) {"));
+
+// ── Kortet viste et annet medlemskap enn medlemmet har ────────────────
+//
+// aktivPlan() leste bare «state.abo», som settes her paa skjermen naar en
+// avtale opprettes i samme okt. Den som lastet Min side paa nytt hadde den
+// tom, og da falt kortet ned paa «forste loepende plan».
+//
+// Malt i nettleseren med Aarsmedlemskap i basen: kortet sa «Basis 30 · kr.
+// 2 590,-» mens «Neste trekk» rett under leste den ekte avtalen. Etter:
+// «Aarsmedlemskap · kr. 1 990,- · 35 timer i maaneden · aarsavtale».
+//
+// Det avgjor ogsaa betalingsvalget: med feil plan fikk et aarsmedlem tilbud
+// om aa gjore opp selv, noe aarsmedlemskapet ikke tillater.
+sjekk('kortet leser medlemskapet fra avtalen serveren sender',
+    str_contains($sida, "const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');"));
+sjekk('… og faller tilbake til forste loepende plan uten avtale',
+    str_contains($sida, "|| alle.find(p => !p.engangs)"));
+
+// ── Fullbooket kurs sier «Les mer», ikke «Book plass» ─────────────────
+//
+// Sip & Clay sto med merket FULLBOOKET oeverst paa bildet og knappen BOOK
+// PLASS nederst paa det samme kortet. To motsatte beskjeder, og det er
+// knappen folk trykker paa.
+//
+// Eieren, 1. september, med bilde av nettopp det kortet: «naar noe er
+// fullbooket, vil jeg ha knappen les mer og ikke book paa forsiden av
+// kortet».
+//
+// Malt i nettleseren for og etter, paa den lokale basen: for sto tre kort
+// med FULLBOOKET og «Book plass» (Sip & Clay, Lag din egen bolle, Liten);
+// etter sier alle tre «Les mer», mens de aatte som har ledige plasser staar
+// urort med «Book plass». Knappen forer samme sted som for — «Les mer» paa
+// Sip & Clay endte paa /kurs/sip-and-clay, der datoene og ventelista staar.
+//
+// Regelen staar i medBooking, som bade kortene i kurslista og de store
+// kortene under «Kursene vaare» henter «cta» fra. Ett sted, saa de to ikke
+// kan bli uenige.
+sjekk('fullbooket kurs faar «Les mer» paa knappen',
+    str_contains($sida, "(k.status === 'Fullbooket' ? 'Les mer' : (k.cta || 'Book plass'))"));
+// Kontrollen: den gamle linja, som ga «Book plass» uansett, skal vaere borte.
+// Uten denne ville proven over vaere gronn ogsaa om noen la den tilbake.
+sjekk('… og den gamle regelen uten unntak er borte',
+    !str_contains($sida, "cta: k.kunKontakt ? 'Kontakt oss' : (k.cta || 'Book plass'),"));
+// Et kurs uten datoer skal fortsatt si «Kontakt oss». Fullbooket-regelen
+// ligger etter den, saa den kan ikke overta for et kurs som settes opp naar
+// noen sporr.
+sjekk('… mens kurs uten datoer fortsatt sier «Kontakt oss»',
+    str_contains($sida, "cta: k.kunKontakt\n          ? 'Kontakt oss'"));
+// Ordet kommer fra ledigTekst, som er det ene stedet plasstallet blir tekst.
+// Skrives det om der, maa det skrives om her ogsaa — derfor staar de to i
+// samme prove.
+sjekk('… og «Fullbooket» er fortsatt ordet ledigTekst gir',
+    str_contains($sida, "if (isNaN(l) || l <= 0) return 'Fullbooket';"));
+
+// ── Teksten paa Date Night ────────────────────────────────────────────
+//
+// Kortet sto med en linje jeg skrev da kurset ble lagt inn. Eieren,
+// 1. september, med sin egen tekst: «Legg til tekst paa datenight kortet.»
+//
+// Teksten ligger i «05 · Beskrivelse» i kursoppsettet, og vises oeverst paa
+// kurssida og paa det store kortet under «Kursene vaare». Malt i nettleseren
+// etter migrasjonen: begge stedene staar med den nye teksten.
+$mig122 = file_get_contents(dirname(__DIR__) . '/db/migrations/122_teksten_pa_date_night.sql');
+sjekk('migrasjonen skriver den nye teksten paa Date Night',
+    str_contains($mig122, 'En romantisk og kreativ kveld for to.')
+    && str_contains($mig122, 'minnene varer lenge.'));
+// Har verkstedet skrevet noe eget i mellomtida, skal deres ord staa. Uten
+// denne betingelsen ville migrasjonen overkjore dem.
+sjekk('… bare der den gamle linja staar',
+    str_contains($mig122, "AND beskrivelse = 'En kveld for dere to."));
+if (DB::harTabell('courses')) {
+    $dnT = DB::en("SELECT beskrivelse FROM courses WHERE tittel = 'Date Night'");
+    if ($dnT !== null) {
+        sjekk('Date Night har den nye teksten i basen',
+            str_starts_with((string) $dnT['beskrivelse'], 'En romantisk og kreativ kveld for to.'),
+            mb_substr((string) $dnT['beskrivelse'], 0, 40));
     }
 }
 

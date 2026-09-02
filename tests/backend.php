@@ -3485,7 +3485,7 @@ sjekk('… og serveren regner den ut av den rimeligste varen',
 // skjemaet var fylt ut. Innmeldingen paa Min side har alt dette fra for.
 sjekk('«Velg» paa medlemskap foerer til innmeldingen',
     str_contains($sida2, 'const meldInn = () => this.meldInnPlan(o.navn);')
-    && str_contains($sida2, 'kjop: (e) => (e ? meldInn() : visMer()),'));
+    && str_contains($sida2, 'kjop: meldInn,'));
 sjekk('… og valget overlever innloggingen',
     str_contains($sida2, "sessionStorage.setItem('lissom_medlemsplan', navn)")
     && str_contains($sida2, "sessionStorage.getItem('lissom_medlemsplan')"));
@@ -6026,6 +6026,98 @@ if (DB::harTabell('courses')) {
     }
 }
 
+// ── «Velg» endte paa Min side uten noe der ────────────────────────────
+//
+// Innmeldingsskjemaet paa Min side staar bak «innlogget og ikke medlem» — se
+// visBliMedlem. Og er_aktivt_medlem() i app/lib/auth.php sier at admin ALLTID
+// teller som medlem:
+//
+//   if ((string) ($medlem['rolle'] ?? '') === 'admin') { return true; }
+//
+// Eieren er admin. For ham fantes skjemaet aldri: «Velg» sendte ham til Min
+// side, der sto ingenting, og det skjedde ingenting. Ingen beskjed, ingen
+// Vipps, ingen vei videre.
+//
+// Eieren, 2. september: «totalslakt av velg knappen, jeg kommer direkte inn
+// paa min side ingen vippsbetsling», og «jeg kommer altsaa rett inn paa min
+// side naar jeg proever aa betale for mitt medlemskap».
+//
+// Et medlem trenger ikke soke om aa bli medlem. Det som mangler er avtalen,
+// og den starter samme sted som «Forny». Malt i nettleseren som innlogget
+// admin, med kallet fanget: dialogen «Hvordan vil du betale?» aapner, og
+// «Fast trekk i Vipps» sender {handling:start, plan:«Fri tilgang»,
+// betaling:trekk}.
+sjekk('«Velg» gaar til betaling for den som alt er medlem',
+    str_contains($sida, 'if (this.state.erMedlemBruker || gammelAvtale) {')
+    && str_contains($sida, 'this.apneFornyValg(navn, gammelAvtale && !this.state.erMedlemBruker)();'));
+// Den som har vaert medlem for skal ikke soke paa nytt om noe hun alt har
+// hatt. Serveren sender ogsaa en avtale som er stoppet eller utloept, og den
+// er nok til aa vite det. Eieren, 2. september: «er du ikke aktivt medlem saa
+// maa man faa beskjed om aa fornye».
+sjekk('… og den som har vaert medlem far beskjed om aa fornye',
+    str_contains($sida, 'const gammelAvtale = this.state.minAvtale || null;')
+    && str_contains($sida, 'Medlemskapet ditt løper ikke lenger. Forny det her'));
+sjekk('… med «Forny medlemskapet» som overskrift',
+    str_contains($sida, "harUtloept ? 'Forny medlemskapet' : 'Hvordan vil du betale?',"));
+// Den som ikke er medlem skal fortsatt til innmeldingen, med planen med seg
+// gjennom innloggingen.
+sjekk('… og den som ikke er medlem gaar til innmeldingen som for',
+    str_contains($sida, "sessionStorage.setItem('lissom_medlemsplan', navn)")
+    && str_contains($sida, "side: this.state.innlogget ? 'minside' : 'login',"));
+// Regelen som gjorde det usynlig staar urort: admin skal fortsatt komme inn
+// paa medlemsdelen. Det var skjemaets port som var feil sted aa lande.
+sjekk('… og admin teller fortsatt som medlem paa serveren',
+    str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/auth.php'),
+                 "if ((string) (\$medlem['rolle'] ?? '') === 'admin') {"));
+
+// ── «Maks 12 deltakere» over en kveld for to ──────────────────────────
+//
+// Tallet gjelder én kveld med et bestemt antall plasser. Et kurs som settes
+// opp naar noen sporr har ingen kveld aa fylle — tallet kom da fra
+// kapasiteten i oppsettet, ikke fra noe som var avtalt.
+//
+// Eieren, 2. september: «datenight fjern maks 12 deltakere».
+//
+// Malt paa kurssida for og etter: linja er borte.
+sjekk('kurs uten datoer sier ikke «Maks N deltakere»',
+    str_contains($sida, 'const p = k.kunKontakt ? 0 : (parseInt(k.plasser, 10) || 0);'));
+// Kontrollen: den gamle linja, som tok tallet uansett, skal vaere borte.
+sjekk('… og den gamle linja er borte',
+    !str_contains($sida, "const p = parseInt(k.plasser, 10) || 0;\n        return p > 0 ? ['Maks '"));
+// Et vanlig kurs skal fortsatt si det. Tallet er det eneste stedet kunden
+// ser hvor mange som er med.
+sjekk('… mens et kurs med datoer fortsatt sier det',
+    str_contains($sida, "return p > 0 ? ['Maks ' + p + ' deltakere.'].concat(fast) : fast;"));
+
+// ── Avsnittene i beskrivelsen ─────────────────────────────────────────
+//
+// Eierens tekst paa Date Night har fire avsnitt. Uten «pre-wrap» slaar
+// nettleseren linjeskiftene sammen, og teksten blir én klump — mens feltet i
+// admin har vist den med avsnitt hele tida. Det man saa i redigeringa var
+// altsaa ikke det kunden fikk.
+//
+// Malt i nettleseren: seks linjeskift i teksten paa sida, og «white-space:
+// pre-wrap» paa avsnittet.
+// «white-space: pre-wrap» er ikke nok: teksten settes inn i en <span> som
+// skjermkoden lager, og den staar med «normal». Malt i nettleseren:
+// forelderen fikk pre-wrap, spanen inni beholdt normal, og linjeskiftene ble
+// slaatt sammen likevel. Derfor deles teksten i avsnitt, og hvert avsnitt
+// faar sitt eget <p>. Malt etter: fire avsnitt paa sida, med luft mellom.
+sjekk('kurssida deler beskrivelsen i avsnitt',
+    str_contains($sida, '<sc-for list="{{ bOmAvsnitt }}" as="a"')
+    && str_contains($sida, 'raa.split(/\r?\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ tekst: t }));'));
+// Kontrollen: det ene avsnittet som tok hele teksten skal vaere borte.
+sjekk('… og det ene avsnittet som tok alt er borte',
+    !str_contains($sida, 'text-wrap: pretty;">{{ bOm }}</p>'));
+$mig123 = file_get_contents(dirname(__DIR__) . '/db/migrations/123_eierens_tekst_pa_date_night.sql');
+sjekk('migrasjonen skriver eierens tekst med avsnitt',
+    str_contains($mig123, "'Date Night i keramikkverkstedet 💕'")
+    && str_contains($mig123, 'CHAR(10)')
+    && str_contains($mig123, 'Den perfekte daten for dere'));
+// Har verkstedet skrevet noe eget etter 122, skal deres ord staa.
+sjekk('… bare der teksten fra 122 staar',
+    str_contains($mig123, "AND beskrivelse = 'En romantisk og kreativ kveld for to."));
+
 // ── Kortet forer til kurset, ikke rett i skjemaet ─────────────────────
 //
 // Date Night ligger ute uten datoer. Kortet sa «Kontakt oss», og bade
@@ -6078,16 +6170,25 @@ sjekk('… og den tar kurset med som emne',
 // proveperioden ingen.
 //
 // Verkstedet skal kunne skrive linja inn selv uten at den kommer dobbelt.
-sjekk('salgslinja legges bare paa der den ikke staar fra for',
-    str_contains($sida, "const SALG = 'Selg egne arbeider gjennom lissom.no';")
-    && str_contains($sida, 'fraBasen.some(x => String(x).trim() === SALG)'));
-// Kontrollen: den gamle linja, som la den paa uansett, skal vaere borte.
-sjekk('… og den gamle linja som la den paa uansett er borte',
-    !str_contains($sida, "(o.punkter || []).concat(['Selg egne arbeider gjennom lissom.no'])"));
-// Proveperioden skal fortsatt ikke ha den i det hele tatt: salg gjennom
-// lissom.no folger medlemskapet, ikke de ti timene.
-sjekk('… og proveperioden faar den fortsatt ikke',
-    str_contains($sida, 'const punkter = (o.engangs || fraBasen.some('));
+sjekk('punktlista kommer fra basen, ikke fra koden',
+    str_contains($sida, 'const punkter = o.punkter || [];'));
+// Kontrollen: koden skal ikke legge paa noen linje selv lenger.
+sjekk('… og koden legger ikke paa salgslinja',
+    !str_contains($sida, "concat(['Selg egne arbeider gjennom lissom.no'])")
+    && !str_contains($sida, "const SALG = 'Selg egne arbeider gjennom lissom.no';"));
+// Migrasjonen flytter den dit den hoerer hjemme.
+$mig124 = file_get_contents(dirname(__DIR__) . '/db/migrations/124_salgslinja_bare_pa_arsmedlemskap.sql');
+sjekk('… migrasjonen tar den av alt som ikke er aarsavtale',
+    str_contains($mig124, 'WHERE binding_mnd < 12'));
+sjekk('… og setter den paa aarsmedlemskapet',
+    str_contains($mig124, 'WHERE binding_mnd >= 12')
+    && str_contains($mig124, "punkter NOT LIKE '%Selg egne arbeider gjennom lissom.no%'"));
+if (DB::harTabell('membership_plans')) {
+    $med = DB::alle("SELECT navn, punkter FROM membership_plans WHERE punkter LIKE '%Selg egne arbeider%'");
+    sjekk('salgslinja staar bare paa aarsmedlemskapet i basen',
+        count($med) === 1 && str_contains((string) $med[0]['navn'], 'rsmedlemskap'),
+        count($med) . ' plan(er): ' . implode(', ', array_column($med, 'navn')));
+}
 
 // ── Medlemskapskortet: info forst, «Velg» etterpaa ────────────────────
 //
@@ -6101,8 +6202,14 @@ sjekk('… og proveperioden faar den fortsatt ikke',
 // De to skilles uten aa roere den genererte komponenten: kortflata kaller
 // onBook() uten argument, mens knappen er en React-knapp og sender
 // hendelsen med. Se CourseCard i ds-bundle.js.
-sjekk('kortflata viser info, knappen melder inn',
-    str_contains($sida, 'kjop: (e) => (e ? meldInn() : visMer()),'));
+// Kortet forteller ikke nok til at man kan velge fra det: krav, binding,
+// oppsigelse og hva som foelger med staar paa sida under. Eieren, 2.
+// september: «og knappene paa alle medlemskapene maa naa hete les mer».
+sjekk('medlemskapskortet sier «Les mer», som kurskortene',
+    str_contains($sida, 'cta-label="Les mer" on-book="{{ a.lesMer }}"')
+    && str_contains($sida, 'lesMer: () => visMer(),'));
+sjekk('… og kortflata forer samme sted',
+    str_contains($sida, "kjopKort: (e) => { if (e && e.target && e.target.closest && e.target.closest('button')) return; visMer(); },"));
 // Infosida hadde den gamle veien nederst: «Opprett avtale i Vipps», med
 // e-post, telefon, allergier og vilkaar over. Naa staar «Velg», som gaar
 // samme vei som knappen paa kortet.
@@ -6268,8 +6375,8 @@ sjekk('… bare der den gamle linja staar',
 if (DB::harTabell('courses')) {
     $dnT = DB::en("SELECT beskrivelse FROM courses WHERE tittel = 'Date Night'");
     if ($dnT !== null) {
-        sjekk('Date Night har den nye teksten i basen',
-            str_starts_with((string) $dnT['beskrivelse'], 'En romantisk og kreativ kveld for to.'),
+        sjekk('Date Night har eierens egen tekst i basen',
+            str_starts_with((string) $dnT['beskrivelse'], 'Date Night i keramikkverkstedet'),
             mb_substr((string) $dnT['beskrivelse'], 0, 40));
     }
 }

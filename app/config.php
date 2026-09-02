@@ -42,6 +42,10 @@ final class Config
         'regnskap_konto_butikk', 'regnskap_mva_butikk',
         'regnskap_konto_dropin', 'regnskap_mva_dropin',
         'regnskap_konto_gavekort', 'regnskap_mva_gavekort',
+        // Kostnadskontoen for et gavekort verkstedet ga bort. Kortet ble
+        // aldri bokfoert som gjeld, saa innloesningen kan ikke trekke ned
+        // gjeldskontoen — den ville gaatt i minus.
+        'regnskap_konto_gavekort_gitt',
         'regnskap_motkonto_vipps', 'regnskap_motkonto_kontant',
         'regnskap_motkonto_faktura',
         // Noekkelen kalenderabonnementet ligger bak. Den lages naar eieren

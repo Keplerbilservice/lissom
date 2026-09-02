@@ -6,6 +6,8 @@
  *   POST handling=salg       { belop, maate, slag, kunde }   ett belop, ett trykk
  *   POST handling=vippskrav  { belop, slag, kunde, telefon }  krav rett i Vipps
  *   POST handling=selg       { linjer: [{id, antall}], maate, kunde }
+ *   POST handling=delt       { slag, kunde, gavekortKode, deler: [{maate, belop}] }
+ *   POST handling=gavekort   { belop, opprinnelse, maate, mottakerEpost, hilsen }
  *   POST handling=annuller   { ordreId }
  *
  * Butikken kunne bare selge gjennom nettbutikken, med Vipps. Selger Monica
@@ -25,10 +27,44 @@ declare(strict_types=1);
 
 require __DIR__ . '/../_boot.php';
 
-krev_admin();
+$admin = krev_admin();
 
 /** Maatene et salg kan gjores opp paa. Samme liste som paameldingene bruker. */
 const MAATER = ['Kontant', 'Vipps'];
+
+/**
+ * Maatene en DEL av et oppgjor kan vaere.
+ *
+ * Gavekortet staar her og ikke i MAATER, fordi det ikke er en maate aa
+ * betale paa: det er ingen penger inn. Et salg som gjores opp med ett
+ * beloep kan ikke vaere «Gavekort» alene uten en kode aa trekke fra, og
+ * derfor er lista delt i to.
+ */
+const DELMAATER = ['Gavekort', 'Kontant', 'Vipps'];
+
+/**
+ * Leser et beloep slik det ble tastet, og gir oere.
+ *
+ * Kassa tastes paa i en fart, og «690», «690,-», «kr. 690» og «690.50» er
+ * alle det samme. Regningen gjores her og ikke i nettleseren, der den kan
+ * endres paa veien.
+ *
+ * @return int|null null naar det ikke er et tall i det hele tatt. Et tomt
+ *                 felt gir 0 — skjermen har flere felter, og de fleste salg
+ *                 bruker ikke alle.
+ */
+function les_belop(mixed $raa): ?int
+{
+    $t = str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) $raa);
+    $t = trim(str_replace(',', '.', $t));
+    if ($t === '') {
+        return 0;
+    }
+    if (!is_numeric($t)) {
+        return null;
+    }
+    return (int) round((float) $t * 100);
+}
 
 /**
  * Hva et salg over disk er, regnskapsmessig.
@@ -70,6 +106,14 @@ if (Foresporsel::metode() === 'GET') {
 
     Svar::json([
         'maater' => MAATER,
+        // Delene et oppgjor kan settes sammen av. Skjermen bygger ett felt
+        // per maate, og gavekortet er den som ogsaa trenger en kode.
+        'delmaater' => DELMAATER,
+        // Uten kolonnene fra migrasjon 134 kan hverken delt oppgjor eller
+        // utstedelse foeres riktig. Da skal knappene si fra framfor aa lage
+        // en betaling regnskapet ikke kan tolke.
+        'kanDele'     => DB::harKolonne('payments', 'order_id'),
+        'kanUtstede'  => DB::harKolonne('gift_cards', 'opprinnelse'),
         'slag'   => array_map(
             static fn(string $n): array => ['verdi' => $n, 'navn' => ucfirst($n)],
             array_keys(SLAG)
@@ -123,7 +167,36 @@ if ($handling === 'annuller') {
         Svar::feil('Salget er alt annullert.');
     }
 
-    DB::iTransaksjon(static function () use ($ordre): void {
+    // Alle delene salget ble gjort opp med.
+    //
+    // Et delt oppgjor har én rad per del, og «orders.payment_id» peker bare
+    // paa den forste. Annullerte vi den alene, ville kontantdelen staatt igjen
+    // som betalt og dagen summert til for mye. «payments.order_id» kom med
+    // migrasjon 134 og finner dem alle; finnes ikke kolonnen, er det ett salg
+    // med én rad, slik det alltid har vaert.
+    $deler = DB::harKolonne('payments', 'order_id')
+        ? DB::alle(
+            'SELECT id, belop_ore, refundert_ore FROM payments WHERE order_id = :o',
+            ['o' => (int) $ordre['id']]
+        )
+        : [];
+    if ($deler === []) {
+        $deler = [[
+            'id'            => (int) $ordre['betaling_id'],
+            'belop_ore'     => (int) $ordre['belop_ore'],
+            'refundert_ore' => 0,
+        ]];
+    }
+
+    // Gavekortet forst, og utenfor transaksjonen under: trekket ble gjort med
+    // Booking::trekkGavekort(), og motstykket hoerer sammen med den — ikke med
+    // lageret.
+    $tilbake = 0;
+    foreach ($deler as $d) {
+        $tilbake += Booking::angreGavekort((int) $d['id']);
+    }
+
+    DB::iTransaksjon(static function () use ($ordre, $deler): void {
         // Varene tilbake paa lager. Bare der lager telles.
         foreach (DB::alle('SELECT product_id, antall FROM order_lines WHERE order_id = :o',
                           ['o' => (int) $ordre['id']]) as $l) {
@@ -136,14 +209,23 @@ if ($handling === 'annuller') {
             );
         }
         DB::oppdater('orders', ['status' => 'kansellert'], ['id' => (int) $ordre['id']]);
-        DB::oppdater('payments', [
-            'status'         => 'refundert',
-            'refundert_ore'  => (int) $ordre['belop_ore'],
-        ], ['id' => (int) $ordre['betaling_id']]);
+        foreach ($deler as $d) {
+            DB::oppdater('payments', [
+                'status'         => 'refundert',
+                'refundert_ore'  => (int) $d['belop_ore'],
+            ], ['id' => (int) $d['id']]);
+        }
     });
 
-    revider('uttak_annullert', 'ordre', (int) $ordre['id'], ['ordrenr' => $ordre['ordrenr']]);
-    Svar::ok(['beskjed' => 'Salget er annullert, og varene er lagt tilbake på lager.']);
+    revider('uttak_annullert', 'ordre', (int) $ordre['id'], [
+        'ordrenr'         => $ordre['ordrenr'],
+        'deler'           => count($deler),
+        'gavekort_ore'    => $tilbake,
+    ]);
+    Svar::ok(['beskjed' => 'Salget er annullert, og varene er lagt tilbake på lager.'
+        . ($tilbake > 0
+            ? ' ' . Booking::kroner($tilbake) . ' er lagt tilbake på gavekortet.'
+            : '')]);
 }
 
 // ────────────────────────────────────────────────────────────── salg
@@ -207,6 +289,17 @@ if ($handling === 'vippsqr') {
             'betalt_maate' => 'Vipps',
             'payment_id'   => $betalingId,
         ]);
+
+        // Betalingen peker tilbake paa ordren.
+        //
+        // Raden lages foer ordren — den maa finnes for ordren kan peke paa
+        // den — saa koblingen settes her. «payments.order_id» kom med
+        // migrasjon 134, og skal bety det samme paa alle salg: alle radene
+        // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
+        // kassesalg vaert usynlig for alt som leser den.
+        if (DB::harKolonne('payments', 'order_id')) {
+            DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
+        }
         DB::settInn('order_lines', [
             'order_id' => $id, 'product_id' => null,
             'tittel' => $tittel, 'antall' => 1, 'pris_ore' => $sum,
@@ -335,6 +428,17 @@ if ($handling === 'vippskrav') {
             'betalt_maate' => 'Vipps',
             'payment_id'   => $betalingId,
         ]);
+
+        // Betalingen peker tilbake paa ordren.
+        //
+        // Raden lages foer ordren — den maa finnes for ordren kan peke paa
+        // den — saa koblingen settes her. «payments.order_id» kom med
+        // migrasjon 134, og skal bety det samme paa alle salg: alle radene
+        // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
+        // kassesalg vaert usynlig for alt som leser den.
+        if (DB::harKolonne('payments', 'order_id')) {
+            DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
+        }
         DB::settInn('order_lines', [
             'order_id' => $id, 'product_id' => null,
             'tittel' => $tittel, 'antall' => 1, 'pris_ore' => $sum,
@@ -426,6 +530,17 @@ if ($handling === 'salg') {
             'payment_id'   => $betalingId,
         ]);
 
+        // Betalingen peker tilbake paa ordren.
+        //
+        // Raden lages foer ordren — den maa finnes for ordren kan peke paa
+        // den — saa koblingen settes her. «payments.order_id» kom med
+        // migrasjon 134, og skal bety det samme paa alle salg: alle radene
+        // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
+        // kassesalg vaert usynlig for alt som leser den.
+        if (DB::harKolonne('payments', 'order_id')) {
+            DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
+        }
+
         // Én linje, saa salget staar med et navn i «Solgt i dag» og paa
         // kvitteringen. Ingen product_id: dette er ikke en vare fra hylla,
         // og lageret skal ikke roeres.
@@ -453,6 +568,348 @@ if ($handling === 'salg') {
         'ordrenr' => $ordrenr,
         'beskjed' => $tittel . ' · ' . $belopTekst . ' · ' . $maate
                    . '. Det er med i regnskapet.',
+    ]);
+}
+
+// ─────────────────────────────────────────────────────────────── delt
+//
+// Ett salg, gjort opp i flere deler.
+//
+// Eieren: «de har et gavekort, men ikke paa hele beloepet ... jeg maa kunne
+// taste inn gavekort, kontant og vipps, de maa kunne dele opp.»
+//
+// «salg» tar ett beloep med én maate. Skulle noen betale 300 med gavekort,
+// 200 kontant og resten i Vipps, matte det slaas inn som tre salg — og da
+// stemte verken ordrenummeret eller kvitteringen.
+//
+// Her blir det én ordre med én rad i payments per del. Radene henger sammen
+// gjennom «payments.order_id» fra migrasjon 134, og hver av dem sier selv
+// hvordan pengene kom inn, i «payments.maate». Dagsoppgjoret leser den, saa
+// kontantdelen og Vipps-delen havner paa hver sin motkonto slik de skal.
+//
+// Gavekortdelen er ikke penger inn. Den staar med belop_ore = 0 og
+// gavekort_ore = det kortet dekket, akkurat som en betaling fra nettsida —
+// og trekkes fra kortet med Booking::trekkGavekort(), som er den samme
+// koden nettsida har brukt hele tiden.
+if ($handling === 'delt') {
+    // Uten «payments.order_id» henger ikke delene sammen. Salget ville blitt
+    // registrert, men en annullering hadde bare strøket den forste raden og
+    // latt resten staa som betalt. Da er det bedre aa ikke ta imot det.
+    if (!DB::harKolonne('payments', 'order_id')) {
+        Svar::feil('Delt betaling krever en oppdatering av databasen. '
+                 . 'Kjør «Kjør oppdateringer» under Vedlikehold først.', 503);
+    }
+
+    $slag = (string) ($kropp['slag'] ?? 'produkt');
+    if (!isset(SLAG[$slag])) {
+        Svar::feil('Velg om det er kurs, medlemskap eller produkt.');
+    }
+
+    $deler = $kropp['deler'] ?? [];
+    if (!is_array($deler) || $deler === []) {
+        Svar::feil('Legg inn minst én del av oppgjøret.');
+    }
+    if (count($deler) > 5) {
+        Svar::feil('Et salg kan deles i høyst fem.');
+    }
+
+    // Delene leses ut for noe skrives. Gaar én av dem ikke opp, skal
+    // ingenting ligge igjen i basen.
+    $rene = [];
+    $sum = 0;
+    $gavekortOre = 0;
+    foreach ($deler as $d) {
+        if (!is_array($d)) {
+            Svar::feil('En av delene ser ikke riktig ut.');
+        }
+        $m = (string) ($d['maate'] ?? '');
+        if (!in_array($m, DELMAATER, true)) {
+            Svar::feil('«' . $m . '» er ikke en betalingsmåte vi kan føre.');
+        }
+        $ore = les_belop($d['belop'] ?? '');
+        if ($ore === null) {
+            Svar::feil('Skriv inn et beløp på hver del du bruker.');
+        }
+        if ($ore <= 0) {
+            // En tom del er ikke en feil — skjermen har tre felter, og de
+            // fleste salg bruker to. Den hoppes bare over.
+            continue;
+        }
+        if ($m === 'Gavekort') {
+            if ($gavekortOre > 0) {
+                Svar::feil('Bare ett gavekort per salg.');
+            }
+            $gavekortOre = $ore;
+        }
+        $sum += $ore;
+        $rene[] = ['maate' => $m, 'ore' => $ore];
+    }
+
+    if ($rene === []) {
+        Svar::feil('Skriv inn et beløp på minst én del.');
+    }
+    if ($sum > 10000000) {
+        Svar::feil('Beløpet må være under 100 000 kroner.');
+    }
+
+    // Gavekortet slaas opp for noe skrives, slik at et salg aldri blir
+    // registrert med et kort som ikke finnes eller ikke har daekning.
+    $kort = null;
+    if ($gavekortOre > 0) {
+        $kode = trim((string) ($kropp['gavekortKode'] ?? ''));
+        if ($kode === '') {
+            Svar::feil('Skriv inn koden på gavekortet.');
+        }
+        $kort = Booking::finnGavekort($kode);
+        if ($kort === null) {
+            Svar::feil('Fant ikke gavekortet, eller det er brukt opp.');
+        }
+        if ($gavekortOre > $kort['saldo_ore']) {
+            Svar::feil('Gavekortet har bare ' . Booking::kroner($kort['saldo_ore'])
+                     . ' igjen. Sett ned beløpet på gavekortdelen.');
+        }
+    }
+
+    $kunde   = mb_substr(trim((string) ($kropp['kunde'] ?? '')), 0, 191);
+    $ordrenr = 'D-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+    $formal  = SLAG[$slag]['formal'];
+    $tittel  = SLAG[$slag]['tittel'];
+    $adminId = (int) ($admin['id'] ?? 0);
+    // Maatene slik de sto, i den rekkefolgen de ble tastet. «betalt_maate» er
+    // VARCHAR(32), saa den kappes — den fulle sannheten staar paa radene.
+    $maateTekst = mb_substr(implode(' + ', array_column($rene, 'maate')), 0, 32);
+
+    $laget = DB::iTransaksjon(
+        static function () use ($rene, $sum, $kunde, $ordrenr, $formal, $tittel,
+                                $kort, $adminId, $maateTekst): array {
+            // Ordren opprettes med hovedraden som mangler, og fylles inn
+            // etterpaa: radene trenger ordrens id, og ordren trenger den
+            // forste raden. Én av dem maa komme forst.
+            $ordreId = DB::settInn('orders', [
+                'ordrenr'      => $ordrenr,
+                'kunde_navn'   => $kunde !== '' ? $kunde : 'Salg over disk',
+                'sum_ore'      => $sum,
+                'status'       => 'hentet',
+                'betalt_maate' => $maateTekst,
+                'payment_id'   => null,
+            ]);
+
+            $ider = [];
+            $pengerad = null;
+            $gavekortRad = null;
+            foreach ($rene as $i => $r) {
+                $erGavekort = $r['maate'] === 'Gavekort';
+                $felt = [
+                    // Referansen er paakrevd og unik. Et disksalg har ingen
+                    // fra Vipps, saa den lages her — med delnummeret bakerst,
+                    // for at fem deler paa samme ordre ikke skal kollidere.
+                    'vipps_reference' => 'KASSE-' . $ordrenr . '-' . ($i + 1),
+                    'type'            => 'manuell',
+                    'formal'          => $formal,
+                    // Gavekortet er ingen innbetaling. Beloepet staar i
+                    // gavekort_ore, og penger inn er null.
+                    'belop_ore'       => $erGavekort ? 0 : $r['ore'],
+                    'status'          => 'betalt',
+                    'idempotency_key' => Vipps::uuid(),
+                ];
+                if (DB::harKolonne('payments', 'order_id')) {
+                    $felt['order_id'] = $ordreId;
+                }
+                if (DB::harKolonne('payments', 'maate')) {
+                    $felt['maate'] = $r['maate'];
+                }
+                if (DB::harKolonne('payments', 'registrert_av') && $adminId > 0) {
+                    $felt['registrert_av'] = $adminId;
+                }
+                if ($erGavekort && DB::harKolonne('payments', 'gavekort_id')) {
+                    $felt['gavekort_id']  = $kort['id'];
+                    $felt['gavekort_ore'] = $r['ore'];
+                }
+                $id = DB::settInn('payments', $felt);
+                $ider[] = $id;
+                if ($erGavekort) {
+                    $gavekortRad = $id;
+                } elseif ($pengerad === null) {
+                    $pengerad = $id;
+                }
+            }
+
+            // Hovedraden er den forste pengedelen om det finnes en. Ellers
+            // gavekortraden. Alt som leser «orders.payment_id» — annullering,
+            // kvittering, refusjon — foelger den, og da skal den peke paa en
+            // rad med penger i, ikke paa gavekortraden som staar med null.
+            DB::oppdater('orders', ['payment_id' => $pengerad ?? $ider[0]], ['id' => $ordreId]);
+
+            DB::settInn('order_lines', [
+                'order_id'   => $ordreId,
+                'product_id' => null,
+                'tittel'     => $tittel,
+                'antall'     => 1,
+                'pris_ore'   => $sum,
+            ]);
+
+            return ['ordreId' => $ordreId, 'gavekortRad' => $gavekortRad];
+        }
+    );
+
+    // Trekket skjer etter at salget staar. Gaar det galt her, er salget
+    // registrert og kortet urort — det er den veien som kan rettes for haand.
+    if ($laget['gavekortRad'] !== null) {
+        Booking::trekkGavekort((int) $laget['gavekortRad']);
+    }
+
+    revider('kassesalg_delt', 'ordre', (int) $laget['ordreId'], [
+        'ordrenr'  => $ordrenr,
+        'sum'      => $sum,
+        'slag'     => $slag,
+        'deler'    => $rene,
+        'gavekort' => $kort['kode'] ?? null,
+    ]);
+
+    $biter = array_map(
+        static fn(array $r): string => mb_strtolower($r['maate']) . ' ' . Booking::kroner($r['ore']),
+        $rene
+    );
+
+    Svar::ok([
+        'ordrenr' => $ordrenr,
+        'sum'     => Booking::kroner($sum),
+        'beskjed' => $tittel . ' · ' . Booking::kroner($sum) . ' · '
+                   . implode(', ', $biter) . '. Det er med i regnskapet.',
+        'gavekortIgjen' => $kort === null ? null
+            : Booking::kroner(max(0, $kort['saldo_ore'] - $gavekortOre)),
+    ]);
+}
+
+// ────────────────────────────────────────────────────── utsted gavekort
+//
+// Eieren: «jeg vil ha to typer gavekort, et som er ting vi gir ut som ikke
+// skal skatteberegnes og et som faktisk er kjopt av oss, da maa det vaere
+// online og det maa vaere nummerert.»
+//
+// Begge deler er det samme kortet: samme nummererte kode, samme saldo, samme
+// uttakslogg, og begge virker i kassa og paa nettsida. Forskjellen er hva som
+// skjer i regnskapet.
+//
+//   Solgt   Noen betalte for kortet. Pengene er inne, men tjenesten er ikke
+//           levert. Det blir en betaling med formal «gavekort», som
+//           dagsoppgjoret forer som gjeld — ikke inntekt. Inntekten kommer
+//           den dagen kortet loeses inn.
+//
+//   Gitt    Verkstedet ga det bort. Ingen penger kom inn, og det opprettes
+//           ingen betaling. Da finnes det heller ingen gjeld aa foere.
+//           Innloesningen inntektsfoeres mot en kostnadskonto i stedet.
+//
+// Kortet aktiveres med det samme og faar koden sin. Det er forskjellen fra et
+// kjop paa nettsida, der koden holdes tilbake til Vipps har bekreftet — her
+// staar kunden foran disken, og pengene er alt talt opp.
+if ($handling === 'gavekort') {
+    if (!DB::harKolonne('gift_cards', 'opprinnelse')) {
+        Svar::feil('Gavekort i kassa krever en oppdatering av databasen. '
+                 . 'Kjør «Kjør oppdateringer» under Vedlikehold først.', 503);
+    }
+
+    $opprinnelse = (string) ($kropp['opprinnelse'] ?? 'kjopt');
+    if (!in_array($opprinnelse, ['kjopt', 'gitt'], true)) {
+        Svar::feil('Velg om kortet er solgt eller gitt bort.');
+    }
+
+    $ore = les_belop($kropp['belop'] ?? '');
+    if ($ore === null || $ore <= 0) {
+        Svar::feil('Skriv inn beløpet kortet skal lyde på.');
+    }
+    // Samme grenser som paa nettsida, saa et kort utstedt over disk ikke kan
+    // vaere noe nettsida ville avvist.
+    if ($ore < 10000 || $ore > 2000000) {
+        Svar::feil('Velg et beløp mellom 100 og 20 000 kroner.');
+    }
+
+    $maate = (string) ($kropp['maate'] ?? MAATER[0]);
+    if ($opprinnelse === 'kjopt' && !in_array($maate, MAATER, true)) {
+        Svar::feil('Velg om kortet ble betalt kontant eller med Vipps.');
+    }
+
+    $mNavn  = mb_substr(trim((string) ($kropp['mottakerNavn'] ?? '')), 0, 191);
+    $mEpost = mb_substr(trim((string) ($kropp['mottakerEpost'] ?? '')), 0, 191);
+    $hilsen = mb_substr(trim((string) ($kropp['hilsen'] ?? '')), 0, 500);
+    if ($mEpost !== '' && !filter_var($mEpost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Adressen til mottakeren ser ikke riktig ut.');
+    }
+
+    $adminId = (int) ($admin['id'] ?? 0);
+    $ordrenr = 'G-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+
+    $kortId = DB::iTransaksjon(
+        static function () use ($ore, $opprinnelse, $maate, $mNavn, $mEpost,
+                                $hilsen, $adminId, $ordrenr): int {
+            $betalingId = null;
+
+            // Bare det som er solgt gir en betaling. Et kort vi gir bort har
+            // ingen penger bak seg, og en betalingsrad paa null kroner ville
+            // sagt at det kom inn noe som aldri kom.
+            if ($opprinnelse === 'kjopt') {
+                $felt = [
+                    'vipps_reference' => 'KASSE-' . $ordrenr,
+                    'type'            => 'manuell',
+                    'formal'          => 'gavekort',
+                    'belop_ore'       => $ore,
+                    'status'          => 'betalt',
+                    'idempotency_key' => Vipps::uuid(),
+                ];
+                if (DB::harKolonne('payments', 'maate')) {
+                    $felt['maate'] = $maate;
+                }
+                if (DB::harKolonne('payments', 'registrert_av') && $adminId > 0) {
+                    $felt['registrert_av'] = $adminId;
+                }
+                $betalingId = DB::settInn('payments', $felt);
+            }
+
+            // Kortet legges inn som ubetalt og aktiveres rett etterpaa.
+            // Booking::aktiverGavekort() er den som lager koden og sender
+            // e-posten, og den krever at kortet staar som ubetalt naar den
+            // kalles — samme vei som et kjop paa nettsida gaar.
+            return DB::settInn('gift_cards', [
+                'kode'            => 'UBETALT-' . strtoupper(bin2hex(random_bytes(6))),
+                'opprinnelig_ore' => $ore,
+                'saldo_ore'       => 0,
+                'gyldig_til'      => gmdate('Y-m-d', strtotime('+3 years')),
+                // Staar det ingen kjoper, er det verkstedet som staar bak.
+                // Hilsenen i e-posten signeres med dette navnet.
+                'kjoper_navn'     => $mNavn !== '' ? $mNavn : 'Lissom Keramikk',
+                'kjoper_epost'    => null,
+                'mottaker_epost'  => $mEpost !== '' ? $mEpost : null,
+                'hilsen'          => $hilsen !== '' ? $hilsen : null,
+                'payment_id'      => $betalingId,
+                'status'          => 'ubetalt',
+                'opprinnelse'     => $opprinnelse,
+                'utstedt_av'      => $adminId > 0 ? $adminId : null,
+            ]);
+        }
+    );
+
+    // E-post bare naar det er en adresse. Et kort som rekkes over disken
+    // har koden paa skjermen, og skal ikke utloese et krav til admin om
+    // aa sende noe for haand.
+    Booking::aktiverGavekort($kortId, $mEpost !== '');
+
+    $kode = (string) DB::verdi('SELECT kode FROM gift_cards WHERE id = :i', ['i' => $kortId]);
+
+    revider('gavekort_utstedt', 'gift_card', $kortId, [
+        'belop'       => $ore,
+        'opprinnelse' => $opprinnelse,
+        'maate'       => $opprinnelse === 'kjopt' ? $maate : null,
+    ]);
+
+    Svar::ok([
+        'kode'    => $kode,
+        'belop'   => Booking::kroner($ore),
+        'beskjed' => $opprinnelse === 'kjopt'
+            ? 'Gavekort på ' . Booking::kroner($ore) . ' er solgt og betalt med '
+              . mb_strtolower($maate) . '. Koden er ' . $kode . '.'
+            : 'Gavekort på ' . Booking::kroner($ore) . ' er gitt bort. Koden er '
+              . $kode . '. Det står som kostnad, ikke som salg.',
+        'sendt'   => $mEpost !== '' ? $mEpost : null,
     ]);
 }
 
@@ -523,6 +980,17 @@ $ordreId = DB::iTransaksjon(static function () use ($rader, $sum, $maate, $kunde
         'betalt_maate' => $maate,
         'payment_id'   => $betalingId,
     ]);
+
+    // Betalingen peker tilbake paa ordren.
+    //
+    // Raden lages foer ordren — den maa finnes for ordren kan peke paa
+    // den — saa koblingen settes her. «payments.order_id» kom med
+    // migrasjon 134, og skal bety det samme paa alle salg: alle radene
+    // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
+    // kassesalg vaert usynlig for alt som leser den.
+    if (DB::harKolonne('payments', 'order_id')) {
+        DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
+    }
 
     foreach ($rader as $r) {
         DB::settInn('order_lines', [

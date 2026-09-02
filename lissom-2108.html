@@ -6915,6 +6915,7 @@ window.__resources = {
 
               <div style="display: flex; flex-direction: column; gap: var(--space-6); max-width: 520px;">
 
+                <sc-if value="{{ utEnkeltPaa }}" hint-placeholder-val="{{ true }}">
                 <div>
                   <label for="ut-belop" style="{{ utEtikett }}">Beløp</label>
                   <input id="ut-belop" inputmode="decimal" value="{{ utBelop }}" onChange="{{ settUtBelop }}" placeholder="F.eks. 690" style="{{ utBelopStil }}">
@@ -6929,6 +6930,55 @@ window.__resources = {
                     </sc-for>
                   </div>
                 </div>
+                </sc-if>
+
+                <!-- Delt oppgjor.
+                     Eieren: «de har et gavekort, men ikke paa hele beloepet
+                     ... jeg maa kunne taste inn gavekort, kontant og vipps,
+                     de maa kunne dele opp.»
+
+                     Delingen ligger inne i det samme salget og ikke i et eget
+                     skjema: «Hva var det» og kunden er de samme. Det er ett
+                     salg som gjores opp, bare med flere sedler paa disken. -->
+                <sc-if value="{{ utKanDele }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-top: calc(var(--space-4) * -1);">
+                    <button type="button" onClick="{{ utDeltBytt }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px;">{{ utDeltByttTekst }}</button>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ utDeltPaa }}" hint-placeholder-val="{{ false }}">
+                  <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-5);">
+                    <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utDeltForklaring }}</p>
+
+                    <div>
+                      <label for="ut-delt-kode" style="{{ utEtikett }}">Gavekortkode</label>
+                      <input id="ut-delt-kode" value="{{ utDeltKode }}" onChange="{{ settUtDeltKode }}" placeholder="LIS-XXX-XXX-XXX" style="{{ utFeltStil }}">
+                      <sc-if value="{{ utDeltHarSvar }}" hint-placeholder-val="{{ false }}">
+                        <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-body);">{{ utDeltKodeSvar }}</p>
+                      </sc-if>
+                    </div>
+
+                    <sc-for list="{{ utDeltRader }}" as="dr" hint-placeholder-count="3">
+                      <div>
+                        <label for="{{ dr.felt }}" style="{{ utEtikett }}">{{ dr.navn }}</label>
+                        <input id="{{ dr.felt }}" inputmode="decimal" value="{{ dr.verdi }}" onChange="{{ dr.settVerdi }}" placeholder="0" style="{{ dr.stil }}">
+                        <sc-if value="{{ dr.harHjelp }}" hint-placeholder-val="{{ false }}">
+                          <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ dr.hjelp }}</p>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+
+                    <div style="border-top: 2px solid var(--lissom-brown); padding-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4);">
+                      <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Til sammen</span>
+                      <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ utDeltSum }}</span>
+                    </div>
+
+                    <sc-if value="{{ utDeltHarAdvarsel }}" hint-placeholder-val="{{ false }}">
+                      <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); text-wrap: pretty;">{{ utDeltAdvarsel }}</p>
+                    </sc-if>
+                  </div>
+                </sc-if>
+
 
                 <div>
                   <div style="{{ utEtikett }}">Hva var det?</div>
@@ -6953,9 +7003,14 @@ window.__resources = {
                 </div>
 
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utRegistrerSalg }}" hint-size="auto,52px">Registrer salget</x-import>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ utRegistrerSalg }}" hint-size="auto,52px">{{ utSalgKnapp }}</x-import>
+                  <!-- QR-en og kravet leser beloepsfeltet, som staar skjult
+                       naar oppgjoret deles. Da ville de sendt et krav paa
+                       ingenting. -->
+                  <sc-if value="{{ utEnkeltPaa }}" hint-placeholder-val="{{ true }}">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="qr-code" on-click="{{ utQrLag }}" hint-size="auto,52px">Vis Vipps-QR</x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" icon="send" on-click="{{ utSendKrav }}" hint-size="auto,52px">Send Vipps-krav</x-import>
+                  </sc-if>
                   <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utSalgBeskjed }}</span>
                 </div>
 
@@ -6999,6 +7054,74 @@ window.__resources = {
 
               </div>
             </div>
+          </sc-if>
+
+          <!-- Utsted gavekort.
+               Eieren: «jeg vil ha to typer gavekort, et som er ting vi gir ut
+               som ikke skal skatteberegnes og et som faktisk er kjopt av oss,
+               da maa det vaere online og det maa vaere nummerert.»
+
+               Begge er det samme kortet: samme nummererte kode, samme saldo,
+               og begge virker i kassa og paa nettsida. Forskjellen er hva som
+               skjer i regnskapet — gjeld naar det er solgt, kostnad naar det
+               er gitt bort. Kontoene staar under Okonomi. -->
+          <sc-if value="{{ utKanUtstede }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Utsted gavekort</div>
+
+            <div style="display: flex; flex-direction: column; gap: var(--space-5); max-width: 520px;">
+              <div>
+                <label for="ut-gv-belop" style="{{ utEtikett }}">Beløp</label>
+                <input id="ut-gv-belop" inputmode="decimal" value="{{ utGvBelop }}" onChange="{{ settUtGvBelop }}" placeholder="F.eks. 1000" style="{{ utFeltStil }}">
+              </div>
+
+              <div>
+                <div style="{{ utEtikett }}">Solgt eller gitt bort?</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <sc-for list="{{ utGvTypeValg }}" as="gt" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ gt.velg }}" style="{{ gt.stil }}">{{ gt.navn }}</button>
+                  </sc-for>
+                </div>
+                <p style="margin: 8px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utGvHva }}</p>
+              </div>
+
+              <sc-if value="{{ utGvSolgt }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="{{ utEtikett }}">Betalt med</div>
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <sc-for list="{{ utGvMaater }}" as="gm" hint-placeholder-count="2">
+                      <button type="button" onClick="{{ gm.velg }}" style="{{ gm.stil }}">{{ gm.navn }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div>
+                <label for="ut-gv-epost" style="{{ utEtikett }}">E-post til mottakeren</label>
+                <input id="ut-gv-epost" inputmode="email" value="{{ utGvEpost }}" onChange="{{ settUtGvEpost }}" placeholder="Valgfritt" style="{{ utFeltStil }}">
+                <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ utGvEpostHjelp }}</p>
+              </div>
+
+              <div>
+                <label for="ut-gv-hilsen" style="{{ utEtikett }}">Hilsen</label>
+                <input id="ut-gv-hilsen" value="{{ utGvHilsen }}" onChange="{{ settUtGvHilsen }}" placeholder="Valgfritt — f.eks. «Gratulerer med dagen!»" style="{{ utFeltStil }}">
+              </div>
+
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="gift" on-click="{{ utGvUtsted }}" hint-size="auto,48px">Lag gavekortet</x-import>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ utGvBeskjed }}</span>
+              </div>
+
+              <!-- Koden blir staaende til neste kort lages. Den skal kunne
+                   leses av og skrives ned i ro. -->
+              <sc-if value="{{ utGvHarKode }}" hint-placeholder-val="{{ false }}">
+                <div style="border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); background: var(--clay-50); padding: var(--space-5); text-align: center;">
+                  <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Koden på kortet</div>
+                  <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); letter-spacing: 0.06em;">{{ utGvKode }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
           </sc-if>
 
           <!-- Varene. Soekefeltet er der fordi 21 varer er for mange aa lete
@@ -25481,6 +25604,42 @@ class Component extends DCLogic {
     if (this._utQrTimer) { clearInterval(this._utQrTimer); this._utQrTimer = null; }
   }
 
+  /**
+   * Slaar opp hva som staar igjen paa et gavekort.
+   *
+   * Uten dette maatte den som staar i kassa gjette hvor mye kortet dekker,
+   * taste et beloep og faa nei fra serveren. Saldoen maa vaere kjent FOER
+   * delingen skrives inn — det er hele poenget med aa dele.
+   *
+   * Endepunktet er det nettsida bruker fra for, og det svarer likt paa
+   * ukjent, tomt og utloept kort, saa ingen kan gjette seg fram til koder.
+   */
+  gavekortSaldo(kode) {
+    const ren = String(kode || '').trim();
+    if (ren.length < 6) {
+      this.setState({ utDeltKodeSvar: '', utDeltSaldoOre: 0 });
+      return;
+    }
+    // Bare det siste svaret gjelder. Skriver man videre mens et oppslag er
+    // underveis, skal ikke det gamle svaret komme og legge seg over.
+    this._gkSpor = ren;
+    fetch('/api/gavekort.php?kode=' + encodeURIComponent(ren), {
+      credentials: 'same-origin', cache: 'no-store',
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (this._gkSpor !== ren) return;
+        this.setState({
+          utDeltKodeSvar: (d && d.beskjed) || '',
+          utDeltSaldoOre: (d && d.gyldig) ? (d.saldo_ore || 0) : 0,
+        });
+      })
+      .catch(() => {
+        if (this._gkSpor !== ren) return;
+        this.setState({ utDeltKodeSvar: 'Fikk ikke sjekket kortet.', utDeltSaldoOre: 0 });
+      });
+  }
+
   uttakKall(kropp) {
     if (!this.erPublisert()) return Promise.resolve(false);
     if (this._uttakLagrer) return Promise.resolve(false);
@@ -33292,6 +33451,38 @@ class Component extends DCLogic {
               + 'bestemt vare trekkes fra lageret, bruk «Varer i butikken».',
         };
 
+
+        // ── Delt oppgjor ──────────────────────────────────────────────
+        //
+        // Eieren: «de har et gavekort, men ikke paa hele beloepet ... jeg maa
+        // kunne taste inn gavekort, kontant og vipps, de maa kunne dele opp.»
+        //
+        // Delingen ligger inne i det samme salget, ikke i et eget skjema:
+        // «Hva var det» og kunden er de samme, og det er ett salg som gjores
+        // opp — bare med flere sedler paa disken.
+        const delt = !!st.utDelt;
+        const DELMAATER = (data && data.delmaater) || ['Gavekort', 'Kontant', 'Vipps'];
+        const deltBelop = st.utDeltBelop || {};
+        // Ett sted aa lese et tastet beloep. Kassa tastes paa i en fart, og
+        // «300», «300,-» og «300,50» er alle det samme.
+        const lesOre = (v) => {
+          const n = parseFloat(String(v || '').replace(/\s/g, '').replace(',', '.'));
+          return isFinite(n) && n > 0 ? Math.round(n * 100) : 0;
+        };
+        const deltSum = DELMAATER.reduce((n, m) => n + lesOre(deltBelop[m]), 0);
+        const gkOre = lesOre(deltBelop['Gavekort']);
+        const gkSaldo = st.utDeltSaldoOre || 0;
+        // For mye tastet paa kortet stoppes her, ikke naar serveren svarer
+        // nei. Da staar det aldri en sum paa skjermen som ikke kan bli et
+        // salg.
+        const gkForMye = gkOre > 0 && gkSaldo > 0 && gkOre > gkSaldo;
+
+        // ── Utsted gavekort ───────────────────────────────────────────
+        //
+        // To slag, og forskjellen er regnskapet: et solgt kort er gjeld til
+        // den som eier det, et bortgitt er en kostnad for verkstedet. Kortet
+        // selv er likt — samme nummererte kode, og virker begge steder.
+        const gvSolgt = (st.utGvType || 'kjopt') === 'kjopt';
         return {
           erAdminUttak: true,
           adminNavUttak: this.adminMeny(),
@@ -33606,7 +33797,41 @@ class Component extends DCLogic {
             : 'Venter på at kunden betaler …',
           utQrLukk: () => { this.utQrStopp(); this.setState({ utQr: null }); },
 
+          utSalgKnapp: delt ? 'Registrer delt oppgjør' : 'Registrer salget',
           utRegistrerSalg: () => {
+            // Delt oppgjor gaar en annen vei: én rad per del, med hver sin
+            // maate, saa dagsoppgjoret kan foere kontantene og Vipps-pengene
+            // paa hver sin motkonto.
+            if (delt) {
+              if (deltSum <= 0) {
+                this.setState({ utSalgBeskjed: 'Skriv inn et beløp på minst én del.' });
+                return;
+              }
+              if (gkForMye) {
+                this.setState({ utSalgBeskjed: 'Gavekortet har ikke så mye igjen.' });
+                return;
+              }
+              if (gkOre > 0 && !String(st.utDeltKode || '').trim()) {
+                this.setState({ utSalgBeskjed: 'Skriv inn koden på gavekortet.' });
+                return;
+              }
+              this.uttakKall({
+                handling: 'delt',
+                slag,
+                kunde: (st.utKunde || '').trim(),
+                gavekortKode: (st.utDeltKode || '').trim(),
+                deler: DELMAATER
+                  .filter(m => lesOre(deltBelop[m]) > 0)
+                  .map(m => ({ maate: m, belop: String(deltBelop[m]) })),
+              }).then(ok => {
+                if (ok) this.setState({
+                  utDeltBelop: {}, utDeltKode: '', utDeltKodeSvar: '', utDeltSaldoOre: 0,
+                  utKunde: '', utSalgBeskjed: '',
+                });
+              });
+              return;
+            }
+
             const raa = String(st.utBelop || '').trim();
             if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
               this.setState({ utSalgBeskjed: 'Skriv inn et beløp først.' });
@@ -33620,6 +33845,141 @@ class Component extends DCLogic {
               kunde: (st.utKunde || '').trim(),
             }).then(ok => {
               if (ok) this.setState({ utBelop: '', utKunde: '', utSalgBeskjed: '' });
+            });
+          },
+
+          // ── Delt oppgjor ────────────────────────────────────────────
+          //
+          // Knappen staar bare naar basen kan baere det. Uten
+          // «payments.order_id» henger ikke delene sammen, og en annullering
+          // ville strøket den forste og latt resten staa som betalt.
+          utKanDele: !!(data && data.kanDele),
+          utDeltPaa: delt,
+          utEnkeltPaa: !delt,
+          utDeltBytt: () => this.setState({
+            utDelt: !delt, utSalgBeskjed: '',
+            // Feltene toemmes ved bytte. Ellers ville et gammelt beloep fra
+            // forrige kunde ligget igjen i et felt man ikke ser.
+            utDeltBelop: {}, utDeltKode: '', utDeltKodeSvar: '', utDeltSaldoOre: 0,
+          }),
+          utDeltByttTekst: delt ? 'Tilbake til ett beløp' : 'Del opp betalingen',
+          utDeltForklaring: 'Skriv beløpet på hver måte kunden bruker. Feltene du lar '
+            + 'stå tomme telles ikke med.',
+          utDeltKode: st.utDeltKode || '',
+          settUtDeltKode: e => {
+            const v = e.target.value;
+            this.setState({ utDeltKode: v, utSalgBeskjed: '' });
+            this.gavekortSaldo(v);
+          },
+          utDeltKodeSvar: st.utDeltKodeSvar || '',
+          utDeltHarSvar: !!(st.utDeltKodeSvar || ''),
+          utDeltRader: DELMAATER.map(m => ({
+            navn: m,
+            felt: 'ut-delt-' + m.toLowerCase(),
+            verdi: deltBelop[m] || '',
+            settVerdi: e => {
+              const v = e.target.value;
+              this.setState(s2 => {
+                const b = Object.assign({}, s2.utDeltBelop || {});
+                b[m] = v;
+                return { utDeltBelop: b, utSalgBeskjed: '' };
+              });
+            },
+            stil: Object.assign({}, felt, {
+              // Gavekortdelen faar en ramme naar den er storre enn saldoen,
+              // saa feilen vises der den er gjort.
+              border: (m === 'Gavekort' && gkForMye)
+                ? '2px solid var(--terracotta-600)' : felt.border,
+            }),
+            hjelp: m === 'Gavekort'
+              ? (gkSaldo > 0
+                  ? 'Kortet har ' + kr(gkSaldo) + ' igjen.'
+                  : 'Skriv koden over først.')
+              : '',
+            harHjelp: m === 'Gavekort',
+          })),
+          utDeltSum: kr(deltSum),
+          utDeltHarSum: deltSum > 0,
+          utDeltAdvarsel: gkForMye
+            ? 'Gavekortet har bare ' + kr(gkSaldo) + ' igjen. Sett ned beløpet på gavekortdelen.'
+            : '',
+          utDeltHarAdvarsel: gkForMye,
+
+          // ── Utsted gavekort ─────────────────────────────────────────
+          utKanUtstede: !!(data && data.kanUtstede),
+          utGvBelop: st.utGvBelop || '',
+          settUtGvBelop: e => this.setState({ utGvBelop: e.target.value, utGvBeskjed: '' }),
+          utGvSolgt: gvSolgt,
+          utGvGitt: !gvSolgt,
+          utGvTypeValg: [
+            ['kjopt', 'Solgt', 'Kunden betaler for kortet. Det føres som gjeld til '
+                             + 'kortholderen, og blir inntekt først når kortet løses inn.'],
+            ['gitt', 'Gitt bort', 'Verkstedet gir kortet bort. Ingen penger kommer inn, '
+                                + 'og det føres som kostnad når det løses inn — ikke som salg.'],
+          ].map(([v, navn, hva]) => ({
+            navn,
+            hva,
+            velg: () => this.setState({ utGvType: v, utGvBeskjed: '' }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)',
+              fontWeight: 600, padding: '11px 20px', minHeight: 44,
+              borderRadius: 'var(--radius-pill)',
+              border: '1px solid ' + ((gvSolgt ? 'kjopt' : 'gitt') === v
+                ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: (gvSolgt ? 'kjopt' : 'gitt') === v
+                ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: (gvSolgt ? 'kjopt' : 'gitt') === v
+                ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
+          utGvHva: gvSolgt
+            ? 'Kunden betaler for kortet. Det føres som gjeld til kortholderen, og blir '
+            + 'inntekt først den dagen kortet løses inn.'
+            : 'Verkstedet gir kortet bort. Ingen penger kommer inn, og det føres som '
+            + 'kostnad når det løses inn — ikke som salg.',
+          utGvMaater: ((data && data.maater) || ['Kontant', 'Vipps']).map(n => ({
+            navn: n,
+            velg: () => this.setState({ utGvMaate: n, utGvBeskjed: '' }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '9px 18px', borderRadius: 'var(--radius-pill)',
+              border: '1px solid ' + ((st.utGvMaate || 'Kontant') === n
+                ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: (st.utGvMaate || 'Kontant') === n
+                ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: (st.utGvMaate || 'Kontant') === n ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
+          utGvEpost: st.utGvEpost || '',
+          settUtGvEpost: e => this.setState({ utGvEpost: e.target.value, utGvBeskjed: '' }),
+          utGvHilsen: st.utGvHilsen || '',
+          settUtGvHilsen: e => this.setState({ utGvHilsen: e.target.value, utGvBeskjed: '' }),
+          utGvEpostHjelp: 'Står den tom, får du bare koden på skjermen — skriv den på '
+            + 'kortet du gir fra deg.',
+          utGvBeskjed: st.utGvBeskjed || '',
+          // Koden blir staaende til neste kort utstedes. Den maa kunne leses
+          // av og skrives ned i ro, ikke forsvinne naar skjermen tegnes om.
+          utGvKode: st.utGvKode || '',
+          utGvHarKode: !!(st.utGvKode || ''),
+          utGvUtsted: () => {
+            const raa = String(st.utGvBelop || '').trim();
+            if (!lesOre(raa)) {
+              this.setState({ utGvBeskjed: 'Skriv inn beløpet kortet skal lyde på.' });
+              return;
+            }
+            this.uttakKall({
+              handling: 'gavekort',
+              belop: raa,
+              opprinnelse: gvSolgt ? 'kjopt' : 'gitt',
+              maate: st.utGvMaate || 'Kontant',
+              mottakerEpost: (st.utGvEpost || '').trim(),
+              hilsen: (st.utGvHilsen || '').trim(),
+            }).then(d => {
+              if (!d || !d.kode) return;
+              this.setState({
+                utGvKode: d.kode, utGvBelop: '', utGvEpost: '', utGvHilsen: '',
+                utGvBeskjed: '',
+              });
             });
           },
 
@@ -40394,6 +40754,11 @@ class Component extends DCLogic {
           ['Varer i butikk — mva-kode','regnskap_mva_butikk',       '3'],
           ['Gavekort — konto (gjeld)',  'regnskap_konto_gavekort',  '2905'],
           ['Gavekort — mva-kode',       'regnskap_mva_gavekort',    'ingen'],
+          // Kort verkstedet gir bort er ingen gjeld: det kom aldri penger
+          // inn for dem. Naar et slikt kort loeses inn, er tjenesten levert
+          // og skal inntektsfoeres, men motposten er en kostnad — foert mot
+          // 2905 ville gjelden gaatt i minus av kort ingen har betalt for.
+          ['Gavekort gitt bort — kostnadskonto', 'regnskap_konto_gavekort_gitt', '7320'],
           ['Motkonto Vipps',            'regnskap_motkonto_vipps',  '1510'],
           ['Motkonto kontant',          'regnskap_motkonto_kontant','1900'],
           ['Motkonto faktura',          'regnskap_motkonto_faktura','1920'],

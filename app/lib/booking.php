@@ -866,20 +866,52 @@ final class Booking
         // 001_init med akkurat disse tre verdiene.
         $refType = 'ordre';
         $refId = 0;
-        $b = DB::en('SELECT id FROM bookings WHERE payment_id = :p', ['p' => $paymentId]);
-        if ($b !== null) {
+
+        // Betalingen sier det selv, naar den kan.
+        //
+        // «orders.payment_id» peker bare paa den ene raden som staar som
+        // salgets hovedrad. I et delt oppgjor er gavekortet en egen rad ved
+        // siden av kontantene, og den er ikke hovedraden — saa oppslaget
+        // nedenfor ville ikke funnet noen ordre, og uttaket blitt staaende
+        // uloggfoert med refId 0. «payments.order_id» kom med migrasjon 134
+        // og peker riktig vei for alle delene.
+        $eget = DB::en(
+            'SELECT ' . (DB::harKolonne('payments', 'order_id') ? 'order_id' : 'NULL AS order_id')
+            . ', ' . (DB::harKolonne('payments', 'booking_id') ? 'booking_id' : 'NULL AS booking_id')
+            . ' FROM payments WHERE id = :i',
+            ['i' => $paymentId]
+        );
+        if ((int) ($eget['booking_id'] ?? 0) > 0) {
             $refType = 'booking';
-            $refId = (int) $b['id'];
-        } else {
+            $refId = (int) $eget['booking_id'];
+        } elseif ((int) ($eget['order_id'] ?? 0) > 0) {
+            $refId = (int) $eget['order_id'];
+        }
+
+        // Rader laget for kolonnene fantes, finnes fortsatt. De maa slaas
+        // opp den gamle veien.
+        if ($refId === 0) {
+            $b = DB::en('SELECT id FROM bookings WHERE payment_id = :p', ['p' => $paymentId]);
+            if ($b !== null) {
+                $refType = 'booking';
+                $refId = (int) $b['id'];
+            }
+        }
+        if ($refId === 0) {
             $o = DB::en('SELECT id FROM orders WHERE payment_id = :p', ['p' => $paymentId]);
             if ($o !== null) {
                 $refId = (int) $o['id'];
-            } else {
-                $s = DB::en('SELECT id FROM subscriptions WHERE id = (SELECT subscription_id FROM payments WHERE id = :p)', ['p' => $paymentId]);
-                if ($s !== null) {
-                    $refType = 'medlemskap';
-                    $refId = (int) $s['id'];
-                }
+            }
+        }
+        if ($refId === 0) {
+            $s = DB::en(
+                'SELECT id FROM subscriptions
+                  WHERE id = (SELECT subscription_id FROM payments WHERE id = :p)',
+                ['p' => $paymentId]
+            );
+            if ($s !== null) {
+                $refType = 'medlemskap';
+                $refId = (int) $s['id'];
             }
         }
 
@@ -921,12 +953,79 @@ final class Booking
     }
 
     /**
+     * Legger beloepet tilbake paa kortet.
+     *
+     * Annulleres et salg som ble gjort opp med gavekort, er pengene paa
+     * kortet ikke brukt. Uten dette ville kunden mistet dem: salget ble
+     * strøket, men saldoen sto igjen nedtrukket.
+     *
+     * Uttaksraden slettes, og det er med vilje. «gift_card_uses.belop_ore» er
+     * INT UNSIGNED — et negativt motstykke finnes ikke aa skrive. Sporet
+     * ligger i revisjonsloggen, som er stedet for hvem som angret hva.
+     *
+     * @return int Beloepet som ble lagt tilbake, i oere. 0 om ingenting ble gjort.
+     */
+    public static function angreGavekort(int $paymentId): int
+    {
+        if (!DB::harKolonne('payments', 'gavekort_id')) {
+            return 0;
+        }
+        $p = DB::en(
+            'SELECT gavekort_id, gavekort_ore FROM payments WHERE id = :i',
+            ['i' => $paymentId]
+        );
+        $kortId = (int) ($p['gavekort_id'] ?? 0);
+        $belop  = (int) ($p['gavekort_ore'] ?? 0);
+        if ($kortId <= 0 || $belop <= 0) {
+            return 0;
+        }
+
+        // Aldri trukket? Da er det ingenting aa legge tilbake. Uten denne
+        // ville en betaling som ble annullert for pengene kom inn — der
+        // trekket aldri skjedde — gitt kunden beloepet i gave.
+        if (DB::harTabell('gift_card_uses')) {
+            $bruk = DB::en(
+                'SELECT id FROM gift_card_uses
+                  WHERE gift_card_id = :k AND belop_ore = :b
+                  ORDER BY id DESC LIMIT 1',
+                ['k' => $kortId, 'b' => $belop]
+            );
+            if ($bruk === null) {
+                return 0;
+            }
+            DB::kjor('DELETE FROM gift_card_uses WHERE id = :i', ['i' => (int) $bruk['id']]);
+        }
+
+        DB::kjor(
+            'UPDATE gift_cards SET saldo_ore = saldo_ore + :b WHERE id = :i',
+            ['b' => $belop, 'i' => $kortId]
+        );
+        // Kortet ble satt til «brukt» da det gikk tomt. Naa har det saldo
+        // igjen, og skal virke i kassa — men bare hvis det ikke er annullert
+        // eller utloept av andre grunner.
+        DB::kjor(
+            "UPDATE gift_cards SET status = 'aktivt'
+              WHERE id = :i AND status = 'brukt' AND saldo_ore > 0",
+            ['i' => $kortId]
+        );
+
+        return $belop;
+    }
+
+    /**
      * Gir gavekortet en kode og gjor det gyldig.
      *
      * Koden settes forst her, ikke ved kjop: ellers kunne noen faatt en
      * gyldig kode ved aa starte en betaling og avbryte den.
+     *
+     * @param bool $varsle Om kortet skal sendes paa e-post. Et kort utstedt
+     *                     over disk uten adresse skal ikke det: koden staar
+     *                     paa skjermen og skrives paa kortet i handa. Uten
+     *                     dette havner den i «Varsel maa sendes for haand»
+     *                     hos admin hver eneste gang — et krav om aa gjore
+     *                     noe som alt er gjort.
      */
-    public static function aktiverGavekort(int $kortId): void
+    public static function aktiverGavekort(int $kortId, bool $varsle = true): void
     {
         $k = DB::en('SELECT * FROM gift_cards WHERE id = :i', ['i' => $kortId]);
         if ($k === null || $k['status'] !== 'ubetalt') {
@@ -957,6 +1056,12 @@ final class Booking
 
         // Til mottakeren, om det er oppgitt en. Ellers til kjoperen.
         $til = $k['mottaker_epost'] ?: $k['kjoper_epost'];
+
+        // Kortet er gyldig og har koden sin. Skal det ikke sendes, eller
+        // finnes det ingen adresse aa sende til, er vi ferdige her.
+        if (!$varsle || !$til) {
+            return;
+        }
         $hilsen = $k['hilsen'] ? "\n\n«" . $k['hilsen'] . "»\n— " . $k['kjoper_navn'] : '';
 
         Varsel::mal('gavekort_mottaker', ['epost' => (string) $til], [

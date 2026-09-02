@@ -2863,7 +2863,9 @@ sjekk('valget paa okta er kortet ned til det som brukes',
 // kortet».
 $ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt vet om de ubetalte',
-    str_contains($ovFil, "'ubetalte' => array_map("));
+    // Kursplassene som for, men slaatt sammen med medlemskapene: kortet
+    // holder begge slag siden eieren spurte om dem 2. september.
+    str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
 // En nettbestilling som staar som reservert venter paa Vipps og ordner seg
 // selv. Bare det som er lagt inn for haand skal staa paa kortet.
 sjekk('… og bare de som er lagt inn for haand',
@@ -7394,7 +7396,10 @@ sjekk('innmeldingen kan sette haken med det samme',
 $ovApi = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
 sjekk('Oversikt teller de ubetalte med den samme regelen',
     str_contains($ovApi, 'Medlemskap::betalingsstatus(')
-    && str_contains($ovApi, "'ubetalte'    => \$ubetalte,"));
+    // Tallet og radene i «Ikke betalt» leser det samme regnestykket, som
+    // gjores én gang. Hvert sitt sted kunne de svart hver sitt om det samme
+    // medlemmet.
+    && str_contains($ovApi, "'ubetalte'    => \$medlemsstatus['ubetalte'],"));
 sjekk('… og teller ikke dem som er fritatt',
     str_contains($ovApi, "if (\$b['tilstand'] === 'fri') {"));
 
@@ -7874,6 +7879,72 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM payments WHERE id IN (:i, :j)', ['i' => $gkRad, 'j' => $kontantRad]);
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
+
+echo "\n== Medlemskapene i «Ikke betalt» ==\n";
+// Eieren, 2. september: «dverken hun eller eiriin kommer opp i kortet ikke
+// betalt paa oversikten, og det maa de jo gjore, helt til pengene er inne».
+// Og da det fortsatt ikke sto der: «hvorfor vises ikke de to som er ubetalte
+// i oversikten, altsaa eirin og ida».
+//
+// Kortet ble bygget 29. august for kursplasser lagt inn for haand, for
+// medlemmene hadde noen betalingsstatus i det hele tatt. Forste gang han
+// spurte, endret jeg telleren i Medlemmer-kortet og ikke kortet han pekte paa.
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+
+// To steder trenger regnestykket: tallet og radene. Regnet hvert sitt sted
+// kunne de svart hver sitt om det samme medlemmet.
+sjekk('betalingsstatusen for medlemmene regnes ett sted',
+    str_contains($ovFil, '$medlemsstatus = (static function (): array {')
+    // Kallet, ikke omtalen: kommentarene nevner den ogsaa.
+    && substr_count($ovFil, '= Medlemskap::betalingsstatus(') === 1);
+sjekk('… og telleren leser den',
+    str_contains($ovFil, "'ubetalte'    => \$medlemsstatus['ubetalte'],"));
+sjekk('… og kortet leser de samme radene',
+    str_contains($ovFil, "}, \$medlemsstatus['rader'])),"));
+// Uten dette staar kursplassene alene i kortet, som for.
+sjekk('kortet slaar sammen kursplasser og medlemskap',
+    str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
+// Skjermen maa vite hvilket slag raden er: de to gjores opp hvert sitt sted.
+sjekk('radene sier hvilket slag de er',
+    str_contains($ovFil, "'slag'    => 'booking',")
+    && str_contains($ovFil, "'slag'  => 'medlem',"));
+// «Alle med utestaaende», ikke bare de forfalte: et trekk som er bestilt og
+// ikke landet enda skal ogsaa staa der.
+sjekk('alle med utestaaende kommer med, ikke bare de forfalte',
+    str_contains($ovFil, "} elseif (!empty(\$b['utestaaende'])) {"));
+// «kr. 0,-» leses som «skylder ingenting».
+sjekk('ukjent pris staar tomt, ikke som null kroner',
+    str_contains($ovFil, "'belop' => \$m['pris'] > 0 ? Booking::kroner(\$m['pris']) : '',"));
+
+$mFil = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+// Knappene i kortet gjorde opp en kursplass. For et medlemskap fantes det
+// ikke noe sted i systemet aa registrere at pengene kom.
+sjekk('et medlemskap kan registreres betalt',
+    str_contains($mFil, "if (\$handling === 'betaling') {"));
+sjekk('… som en ekte betaling, ikke et flagg',
+    str_contains($mFil, "'formal'          => 'medlemskap',")
+    && str_contains($mFil, "'type'            => 'manuell',")
+    && str_contains($mFil, "'status'          => 'betalt',"));
+// Uten member_id teller den ikke i Medlemskap::sisteBetalinger(), og medlemmet
+// ville staatt som ubetalt selv etter at pengene var talt opp.
+sjekk('… knyttet til medlemmet, saa merket slaar om',
+    str_contains($mFil, "'member_id'       => \$id,"));
+sjekk('… med hvem som registrerte den',
+    str_contains($mFil, "\$felt['registrert_av'] = (int) \$jeg['id'];"));
+// Prisen da avtalen ble inngaatt, ikke dagens.
+sjekk('… til prisen som ble avtalt',
+    str_contains($mFil, "\$ore = (int) \$avtale['pris_ore'];"));
+
+// Skjermen
+sjekk('medlemsrader gjores opp mot medlemmet, kursplasser mot paameldingen',
+    str_contains($sida, "? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })")
+    && str_contains($sida, ": this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })"));
+sjekk('… og navnet paa et medlem er en vei inn til medlemmet',
+    str_contains($sida, "this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })"));
+// «plasser» sto der fra den gang kortet bare hadde kursplasser.
+sjekk('overskriften sier ikke lenger «plasser» om et medlemskap',
+    str_contains($sida, "(liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')")
+    && !str_contains($sida, "(liste.length === 1 ? ' plass · ' : ' plasser · ')"));
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);

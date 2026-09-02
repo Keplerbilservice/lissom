@@ -244,6 +244,104 @@ if (Foresporsel::metode() === 'POST') {
             : 'Medlemmet skal betale som vanlig igjen.']);
     }
 
+    // ── Medlemskapet betalt i verkstedet ──────────────────────────────
+    //
+    // Kortet «Ikke betalt» paa Oversikt viste kursplasser, og hver rad hadde
+    // «Kontant» og «Vipps» som gjorde opp plassen med ett trykk. Medlemskap
+    // sto i det samme kortet uten aa kunne gjores opp: det fantes ikke noe
+    // sted i systemet aa registrere at et medlem betalte over disk.
+    //
+    // Betalingen blir en helt vanlig rad i payments, med formal
+    // «medlemskap» — den samme kassa bruker for et medlemskap solgt i
+    // verkstedet. Da teller den i omsetningen, i dagsoppgjoret og i
+    // Medlemskap::sisteBetalinger(), som er den merket paa medlemmet leser.
+    // Uten den siste ville medlemmet blitt staaende som ubetalt selv etter at
+    // pengene var talt opp.
+    if ($handling === 'betaling') {
+        $id = Foresporsel::heltall('medlemId');
+        $medlem = DB::en('SELECT id, navn FROM members WHERE id = :i', ['i' => $id]);
+        if ($medlem === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        $maate = Foresporsel::tekst('maate');
+        if (!in_array($maate, ['Kontant', 'Vipps'], true)) {
+            Svar::feil('Velg kontant eller Vipps.');
+        }
+
+        // Nyeste avtale, om det finnes en. Prisen er den som ble avtalt —
+        // ikke dagens pris, som kan ha endret seg siden.
+        $avtale = DB::en(
+            'SELECT id, plan, pris_ore FROM subscriptions
+              WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+            ['m' => $id]
+        );
+
+        // Beloepet kan overstyres: en avtalt delbetaling, eller et medlemskap
+        // uten avtale. Staar feltet tomt, er det avtalen eller planen som
+        // gjelder.
+        $skrevet = trim(Foresporsel::tekst('belop'));
+        if ($skrevet !== '') {
+            $raa = str_replace([' ', "\u{a0}", 'kr', ',-'], '', $skrevet);
+            $raa = trim(str_replace(',', '.', $raa));
+            if (!is_numeric($raa)) {
+                Svar::feil('Skriv inn et beløp.');
+            }
+            $ore = (int) round((float) $raa * 100);
+        } elseif ($avtale !== null) {
+            $ore = (int) $avtale['pris_ore'];
+        } else {
+            $plan = (string) DB::verdi(
+                'SELECT medlemskap_type FROM members WHERE id = :i', ['i' => $id]
+            );
+            $ore = (int) DB::verdi(
+                'SELECT pris_ore FROM membership_plans WHERE navn = :n', ['n' => $plan]
+            );
+        }
+        if ($ore <= 0) {
+            Svar::feil('Fant ingen pris på medlemskapet. Skriv inn beløpet.');
+        }
+        if ($ore > 10000000) {
+            Svar::feil('Beløpet må være under 100 000 kroner.');
+        }
+
+        $felt = [
+            // Referansen er paakrevd og unik. En betaling som ikke kom fra
+            // Vipps har ingen derfra, saa den lages her — med en egen
+            // forstavelse, saa det er tydelig hvor den kommer fra.
+            'vipps_reference' => 'MEDL-' . $id . '-' . gmdate('ymdHis')
+                               . '-' . strtoupper(bin2hex(random_bytes(2))),
+            'type'            => 'manuell',
+            'formal'          => 'medlemskap',
+            'member_id'       => $id,
+            'belop_ore'       => $ore,
+            'status'          => 'betalt',
+            'idempotency_key' => Vipps::uuid(),
+        ];
+        if ($avtale !== null) {
+            $felt['subscription_id'] = (int) $avtale['id'];
+        }
+        if (DB::harKolonne('payments', 'maate')) {
+            $felt['maate'] = $maate;
+        }
+        if (DB::harKolonne('payments', 'registrert_av')) {
+            $felt['registrert_av'] = (int) $jeg['id'];
+        }
+        $betalingId = DB::settInn('payments', $felt);
+
+        revider('medlem_betaling_registrert', 'member', $id, [
+            'betaling' => $betalingId,
+            'belop'    => $ore,
+            'maate'    => $maate,
+        ]);
+
+        Svar::ok([
+            'beskjed' => $medlem['navn'] . ' er registrert betalt '
+                       . Booking::kroner($ore) . ' med ' . mb_strtolower($maate)
+                       . '. Det er med i regnskapet.',
+        ]);
+    }
+
     // ── Knytt en gjestepaamelding til kontoen ─────────────────────────
     //
     // Bestilte noen plassen for de opprettet konto — eller la verkstedet dem

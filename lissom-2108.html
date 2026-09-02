@@ -8886,10 +8886,26 @@ window.__resources = {
                den samme ramma som resten. Se ovSkylderRamme og ovPopRamme. -->
           <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
           <!-- Ikke betalt.
-               Plasser lagt inn for haand som staar som reservert: noen har
-               faatt plassen, pengene er ikke kommet. Eieren, 29. august: han
-               vil ha et kort som varsler om dem, saa han kan kreve dem inn
-               derfra. «Betalt» merker den av med ett trykk. -->
+               To slag i samme kort:
+
+                 kursplasser   lagt inn for haand og staar som reservert —
+                               noen har faatt plassen, pengene er ikke kommet.
+                               Eieren, 29. august: han vil ha et kort som
+                               varsler om dem, saa han kan kreve dem inn
+                               derfra.
+
+                 medlemskap    som ikke er gjort opp. Eieren spurte om dem to
+                               ganger — «dverken hun eller eiriin kommer opp i
+                               kortet ikke betalt paa oversikten, og det maa de
+                               jo gjore, helt til pengene er inne», og senere
+                               «hvorfor vises ikke de to som er ubetalte i
+                               oversikten». Kortet var bygget for kursplasser
+                               alene, for medlemmene hadde noen betalingsstatus
+                               i det hele tatt.
+
+               «Kontant» og «Vipps» merker begge slag betalt med ett trykk.
+               Paa et medlemskap er navnet i tillegg en lenke inn til
+               medlemmet. -->
           <sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">
             <div style="{{ ovSkylderRamme }}">
               <div style="{{ ovSkylderHode }}">
@@ -8899,7 +8915,7 @@ window.__resources = {
               <sc-for list="{{ ovSkylder }}" as="u" hint-placeholder-count="3">
                 <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
                   <span style="min-width: 0; flex: 1 1 220px;">
-                    <span style="display: block; font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ u.navn }}</span>
+                    <button type="button" onClick="{{ u.aapne }}" style="{{ u.navnStil }}"><span style="display: block; font-size: var(--text-sm);">{{ u.navn }}</span></button>
                     <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
                   </span>
                   <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
@@ -34241,25 +34257,59 @@ class Component extends DCLogic {
             padding: 'var(--space-5) var(--space-5) var(--space-4)',
             color: liste.length ? 'var(--terracotta-600)' : 'var(--text-muted)',
           },
+          // «plasser» sto her fra den gang kortet bare hadde kursplasser.
+          // Naa staar medlemskapene her ogsaa, og et medlemskap er ingen
+          // plass.
           ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
-            : liste.length + (liste.length === 1 ? ' plass · ' : ' plasser · ')
+            : liste.length + (liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
               + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
-          ovSkylder: liste.map(u => ({
+          ovSkylder: liste.map(u => {
+            const erMedlem = u.slag === 'medlem';
+            return {
             navn: u.navn,
-            // Hvor lenge den har staatt er det som avgjor om den haster.
-            under: [u.kurs, u.naar, u.dager > 0 ? u.dager + ' dager' : 'i dag'].filter(Boolean).join(' · '),
-            belop: u.belop,
-            // Ett trykk merker den betalt, med maaten. Samme endepunkt som
-            // deltakerlista bruker — «status» finnes fra for.
+            // Kursraden sier hvilket kurs, naar det er, og hvor lenge plassen
+            // har staatt ubetalt — det siste avgjor om den haster.
+            //
+            // Medlemsraden sier hvilket medlemskap og HVORFOR den staar her:
+            // «Skulle vaert trukket 1. september», «Ingen betaling
+            // registrert». Dager siden innmelding ville bare gjentatt det
+            // teksten alt sier, med et annet tall.
+            under: erMedlem
+              ? [u.kurs, u.naar].filter(Boolean).join(' · ')
+              : [u.kurs, u.naar, u.dager > 0 ? u.dager + ' dager' : 'i dag'].filter(Boolean).join(' · '),
+            // Tomt naar prisen ikke er kjent. «kr. 0,-» leses som «skylder
+            // ingenting», og det er det motsatte av det raden staar her for.
+            belop: u.belop || '',
+            // Navnet er en vei inn til medlemmet. Eieren ba om begge deler:
+            // knappene for ett trykk, og lenka naar han trenger aa se mer enn
+            // raden viser.
+            erMedlem,
+            aapne: erMedlem
+              ? () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })
+              : () => {},
+            navnStil: {
+              appearance: 'none', background: 'transparent', border: 'none', padding: 0,
+              font: 'inherit', fontWeight: 700, color: 'var(--text-heading)', textAlign: 'left',
+              cursor: erMedlem ? 'pointer' : 'default',
+              textDecoration: erMedlem ? 'underline' : 'none', textUnderlineOffset: '3px',
+            },
+            // Ett trykk merker den betalt, med maaten.
+            //
+            // De to slagene gjores opp hvert sitt sted: en kursplass paa
+            // paameldingen sin, et medlemskap som en betalingsrad paa
+            // medlemmet. Samme knapp, to endepunkt.
             maater: ['Kontant', 'Vipps'].map(m => ({
               navn: m,
               stil: knapp,
-              velg: () => this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
-                // pameldingKall henter admin paa nytt av seg selv naar det
-                // gikk bra, saa kortet oppdaterer seg.
-                .then(() => {}),
+              // Begge henter admin paa nytt av seg selv naar det gikk bra, saa
+              // kortet oppdaterer seg.
+              velg: () => (erMedlem
+                ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
+                : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
+              ).then(() => {}),
             })),
-          })),
+          };
+          }),
         };
       })(),
 

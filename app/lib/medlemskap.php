@@ -108,16 +108,19 @@ final class Medlemskap
      * @param array      $medlem  raden fra members
      * @param array|null $avtale  nyeste subscriptions-rad, eller null
      * @param array|null $siste   nyeste betalte medlemskapsbetaling, eller null
+     * @param array|null $trekk   nyeste trekk paa avtalen uansett utfall, eller null
      * @return array{tilstand:string,tekst:string,forfalt:bool}
      *
      * tilstand er én av:
      *   fri         medlemmet skal ikke betale (haken i admin)
      *   betalt      det er gjort opp for perioden som loper
+     *   bestilt     trekket er bedt om, men pengene har ikke flyttet seg enda
+     *               — Vipps krever forvarsel, saa det tar noen dager
      *   forfalt     perioden er ute og det er ikke betalt
      *   venter      meldt inn, men foerste betaling er ikke kommet enda
      *   ingen       ikke medlem — ingenting aa betale for
      */
-    public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste): array
+    public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste, ?array $trekk = null): array
     {
         $ut = static fn(string $t, string $tekst, bool $forfalt = false): array
             => ['tilstand' => $t, 'tekst' => $tekst, 'forfalt' => $forfalt];
@@ -146,8 +149,33 @@ final class Medlemskap
         if ($fastTrekk) {
             $neste = (string) ($avtale['neste_trekk'] ?? '');
             $sist  = (string) ($avtale['siste_trekk'] ?? '');
+
+            // ── Trekket, slik det faktisk gikk ──────────────────────────
+            //
+            // «siste_trekk» settes i det trekket BES OM. Vipps krever at
+            // kunden varsles for et fast trekk, saa forfallet ligger noen
+            // dager fram — og i mellomtida har ingen penger flyttet seg.
+            // Leste vi bare den datoen, sto det «Betalt» om noe som bare var
+            // bestilt, og det ble staaende ogsaa om trekket senere feilet.
+            $tstatus = $trekk === null ? '' : (string) $trekk['status'];
+            if ($tstatus === 'feilet' || $tstatus === 'avbrutt') {
+                return $ut('forfalt', 'Trekket gikk ikke — prøvd '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
+            }
+            if ($tstatus === 'opprettet' || $tstatus === 'venter') {
+                return $ut('bestilt', 'Trekket er bestilt '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10))
+                    . ' · venter på Vipps');
+            }
+            if ($tstatus === 'betalt' || $tstatus === 'delvis_refundert') {
+                return $ut('betalt', 'Trukket '
+                    . $kort(substr((string) $trekk['created_at'], 0, 10))
+                    . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+            }
+
+            // Ingen trekk aa se paa enda. Da er datoene alt vi har.
             if ($neste !== '' && $neste < $idag) {
-                return $ut('forfalt', 'Trekket gikk ikke — forfalt ' . $kort($neste), true);
+                return $ut('forfalt', 'Skulle vært trukket ' . $kort($neste), true);
             }
             if ($sist !== '') {
                 return $ut('betalt', 'Trukket ' . $kort($sist)
@@ -179,6 +207,44 @@ final class Medlemskap
                 . ' · sist betalt ' . $kort($betaltDen), true);
         }
         return $ut('betalt', 'Betalt ' . $kort($betaltDen) . ' · neste ' . $kort($dekkerTil));
+    }
+
+    /**
+     * Siste trekk per avtale — uansett hvordan det gikk.
+     *
+     * sisteBetalinger() under teller bare det som ER betalt. Til «har hun
+     * betalt?» trengs ogsaa det som er BESTILT og ikke gjort opp enda, og det
+     * som feilet. «subscriptions.siste_trekk» duger ikke: den settes i det
+     * trekket bes om, ikke naar pengene kommer.
+     *
+     * Uten dette sa admin «BETALT · Trukket 2. september» i de tre-fire
+     * dagene mellom bestilling og oppgjor — og fortsatte aa si det om trekket
+     * senere feilet. Det er den samme forvekslingen medlemmet Eirin ble
+     * utsatt for, bakt inn i verkstedets egen oversikt.
+     *
+     * @param int[] $abonnementIder
+     * @return array<int,array<string,mixed>>
+     */
+    public static function sisteTrekk(array $abonnementIder): array
+    {
+        if ($abonnementIder === []) {
+            return [];
+        }
+        $inn = implode(',', array_map('intval', $abonnementIder));
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT p.subscription_id, p.status, p.created_at, p.belop_ore
+               FROM payments p
+               JOIN (SELECT subscription_id, MAX(id) AS siste
+                       FROM payments
+                      WHERE formal = 'medlemskap'
+                        AND annullert_at IS NULL
+                        AND subscription_id IN ({$inn})
+                   GROUP BY subscription_id) n ON n.siste = p.id"
+        ) as $r) {
+            $ut[(int) $r['subscription_id']] = $r;
+        }
+        return $ut;
     }
 
     /**

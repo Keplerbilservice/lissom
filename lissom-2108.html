@@ -29653,8 +29653,11 @@ class Component extends DCLogic {
       // den samme personen. Her staar bare fargen og ordet.
       harBetaling: !!m.betaling && m.betaling !== 'ingen',
       betalingTilstand: m.betaling || 'ingen',
-      betalingMerke: { fri: 'Fri', betalt: 'Betalt', forfalt: 'Forfalt',
-                       venter: 'Ikke betalt' }[m.betaling] || '',
+      // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
+      // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
+      // her, ville verkstedet trodd noe var gjort opp som ikke var det.
+      betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
+                       forfalt: 'Forfalt', venter: 'Ikke betalt' }[m.betaling] || '',
       betalingTekst: m.betalingTekst || '',
       betalingForfalt: !!m.betalingForfalt,
       erFritatt: m.betaling === 'fri',
@@ -29664,6 +29667,7 @@ class Component extends DCLogic {
         const F = {
           fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
           betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+          bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
           forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
           venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
         }[m.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
@@ -32730,13 +32734,14 @@ class Component extends DCLogic {
           // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
           // den samme som medlemslista og kortet paa Oversikt bruker.
           personErMedlem: ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1,
-          personBetalingMerke: { fri: 'Fri', betalt: 'Betalt', forfalt: 'Forfalt',
-                                 venter: 'Ikke betalt' }[p.betaling] || '',
+          personBetalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
+                                 forfalt: 'Forfalt', venter: 'Ikke betalt' }[p.betaling] || '',
           personBetalingTekst: p.betalingTekst || '',
           personBetalingStil: (() => {
             const F = {
               fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
               betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+              bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
               forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
               venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
             }[p.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];

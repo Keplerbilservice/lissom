@@ -604,10 +604,12 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 return ['betaling' => 'ingen', 'betalingTekst' => ''];
             }
             $id = (int) $m['id'];
+            $a = DB::en("SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1", ['m' => $id]);
             $b = Medlemskap::betalingsstatus(
                 $m,
-                DB::en("SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1", ['m' => $id]),
-                Medlemskap::sisteBetalinger([$id])[$id] ?? null
+                $a,
+                Medlemskap::sisteBetalinger([$id])[$id] ?? null,
+                $a === null ? null : (Medlemskap::sisteTrekk([(int) $a['id']])[(int) $a['id']] ?? null)
             );
             return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst']];
         })(),
@@ -753,7 +755,7 @@ foreach (DB::alle('SELECT member_id FROM check_ins WHERE ut_tid IS NULL') as $r)
 // er den som loper.
 $avtaler = [];
 foreach (DB::alle(
-    "SELECT s.member_id, s.plan, s.status, s.binding_til, s.sagt_opp_at, s.slutter,
+    "SELECT s.id, s.member_id, s.plan, s.status, s.binding_til, s.sagt_opp_at, s.slutter,
             s.neste_trekk, s.siste_trekk, s.vipps_agreement_id
        FROM subscriptions s
        JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions GROUP BY member_id) n
@@ -774,6 +776,14 @@ foreach (DB::alle(
 // Ett oppslag for hele lista, ikke ett per medlem.
 $sisteBetaling = Medlemskap::sisteBetalinger(
     array_map(static fn(array $m): int => (int) $m['id'], $medlemmer)
+);
+// Og trekkene, for dem som har fast trekk. «siste_trekk» paa avtalen settes i
+// det trekket BES OM — Vipps krever forvarsel, saa pengene flytter seg forst
+// noen dager senere. Uten dette sto det «Betalt» om et trekk som bare var
+// bestilt, og det ble staaende ogsaa om trekket feilet.
+$sisteTrekk = Medlemskap::sisteTrekk(
+    array_map(static fn(array $a): int => (int) $a['id'],
+        array_filter($avtaler, static fn($a): bool => isset($a['id'])))
 );
 
 $idag = gmdate('Y-m-d');
@@ -835,10 +845,12 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
         ? Booking::kroner((int) $sisteBetaling[(int) $m['id']]['belop_ore']) : null,
 ] + $avtaleInfo((int) $m['id'])
   + (static function () use ($m, $avtaler, $sisteBetaling): array {
+        $a = $avtaler[(int) $m['id']] ?? null;
         $b = Medlemskap::betalingsstatus(
             $m,
-            $avtaler[(int) $m['id']] ?? null,
-            $sisteBetaling[(int) $m['id']] ?? null
+            $a,
+            $sisteBetaling[(int) $m['id']] ?? null,
+            $a === null ? null : ($sisteTrekk[(int) $a['id']] ?? null)
         );
         return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst'],
                 'betalingForfalt' => $b['forfalt']];

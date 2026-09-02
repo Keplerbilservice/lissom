@@ -304,7 +304,7 @@ Svar::json([
         if ($ider !== []) {
             $inn = implode(',', $ider);
             foreach (DB::alle(
-                "SELECT s.member_id, s.vipps_agreement_id, s.neste_trekk, s.siste_trekk, s.status
+                "SELECT s.id, s.member_id, s.vipps_agreement_id, s.neste_trekk, s.siste_trekk, s.status
                    FROM subscriptions s
                    JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions
                           WHERE member_id IN ({$inn}) GROUP BY member_id) n ON n.siste = s.id"
@@ -313,16 +313,25 @@ Svar::json([
             }
         }
 
+        // Trekkene, for dem som har fast trekk. Se kommentaren i
+        // Medlemskap::sisteTrekk(): «siste_trekk» settes naar trekket BES OM,
+        // ikke naar pengene kommer.
+        $trekkene = Medlemskap::sisteTrekk(
+            array_map(static fn(array $a): int => (int) $a['id'], $avtaler)
+        );
+
         $mndStart  = gmdate('Y-m-01');
         $ubetalte  = 0;
         $fri       = 0;
         $nye       = 0;
         $nyeUbet   = 0;
         foreach ($aktive as $m) {
+            $a = $avtaler[(int) $m['id']] ?? null;
             $b = Medlemskap::betalingsstatus(
                 $m,
-                $avtaler[(int) $m['id']] ?? null,
-                $siste[(int) $m['id']] ?? null
+                $a,
+                $siste[(int) $m['id']] ?? null,
+                $a === null ? null : ($trekkene[(int) $a['id']] ?? null)
             );
             if ($b['tilstand'] === 'fri') {
                 $fri++;

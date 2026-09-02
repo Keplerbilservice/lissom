@@ -63,6 +63,37 @@ switch ($jobb) {
     // Trygg aa kjore flere ganger: idempotensnokkelen bygges av avtalen og
     // maaneden, saa to kjoringer samme natt gir ett trekk.
     case 'medlemstrekk':
+        // ── Foerst: hvem er blitt godkjent siden sist ────────────────────
+        //
+        // Kunden kan ha godkjent avtalen i Vipps-appen uten aa komme tilbake
+        // til nettsiden. Da staar raden vaar paa «venter» til vi sporr Vipps,
+        // og det er dette som gjor det.
+        //
+        // Dette sto ETTER trekkrunden under. Rekkefolgen var feil: en avtale
+        // som ble aktivert her fikk «neste_trekk» satt til i dag — men da
+        // hadde trekkrunden alt kjort, og hun var ikke med. Trekket kom
+        // foerst natta etter.
+        //
+        // Eirin, medlem, 2. september: «Jeg betalte med vipps i gaar via siden
+        // her. Saa ut til aa fungere greit. Men pengene er fremdeles paa min
+        // konto». Hun hadde godkjent i appen kvelden for. Hun sto ikke i
+        // betalingene, og hadde ikke gjort det for natta etter heller.
+        //
+        // Ingen penger gikk tapt av dette — men hvert medlem som godkjenner i
+        // appen tapte et dogn, hver gang. Naa aktiveres de foer trekkrunden,
+        // saa de trekkes den samme natta som alle andre.
+        $venter = DB::alle(
+            "SELECT * FROM subscriptions
+              WHERE status = 'venter'
+                AND vipps_agreement_id IS NOT NULL
+                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)"
+        );
+        foreach ($venter as $a) {
+            Medlemskap::oppdaterFraVipps($a);
+            usleep(200_000);
+        }
+
+        // ── Saa: trekk alle som er forfalt, de nettopp aktiverte med ─────
         $avtaler = Medlemskap::tilTrekk();
         $gjort = 0;
         $feilet = 0;
@@ -78,19 +109,6 @@ switch ($jobb) {
                 $feilet++;
             }
             usleep(300_000);
-        }
-
-        // Avtaler som venter paa godkjenning: kunden kan ha godkjent i appen
-        // uten aa komme tilbake til nettsiden. Vi sporr Vipps.
-        $venter = DB::alle(
-            "SELECT * FROM subscriptions
-              WHERE status = 'venter'
-                AND vipps_agreement_id IS NOT NULL
-                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)"
-        );
-        foreach ($venter as $a) {
-            Medlemskap::oppdaterFraVipps($a);
-            usleep(200_000);
         }
 
         // Oppsigelsestida ute: her stoppes avtalen i Vipps og tilgangen tas

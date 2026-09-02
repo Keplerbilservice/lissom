@@ -6749,6 +6749,27 @@ sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
 
+// ── Rekkefolgen i medlemstrekket ───────────────────────────────────────
+//
+// Medlemmet Eirin godkjente avtalen i Vipps-appen 1. september og kom aldri
+// tilbake til nettsiden. Da sto raden vaar paa «venter» til cron sporte Vipps
+// — men det spørsmålet sto ETTER trekkrunden. Hun ble aktivert klokka 04 den
+// 2., etter at trekkrunden hadde kjort, og trekket kom forst natta etter.
+//
+// Ingen penger gikk tapt. Men hvert medlem som godkjenner i appen tapte et
+// dogn, hver gang. Aktiveringen maa staa foerst.
+echo "\n== Rekkefolgen i medlemstrekket ==\n";
+
+$cronKode = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$posMedlemstrekk = strpos($cronKode, "case 'medlemstrekk':");
+$posAktiver = strpos($cronKode, "WHERE status = 'venter'", $posMedlemstrekk);
+$posTrekk   = strpos($cronKode, 'Medlemskap::tilTrekk()', $posMedlemstrekk);
+sjekk('begge blokkene finnes i medlemstrekket',
+    $posMedlemstrekk !== false && $posAktiver !== false && $posTrekk !== false);
+sjekk('avtalene aktiveres FOER trekkrunden',
+    $posAktiver !== false && $posTrekk !== false && $posAktiver < $posTrekk,
+    'aktiver@' . (int) $posAktiver . ' trekk@' . (int) $posTrekk);
+
 // ── Det samme forsoeket to ganger ──────────────────────────────────────
 //
 // Eieren, 2. september: «nytt medlem har meldt seg inn, faar denne e-posten
@@ -6908,6 +6929,73 @@ sjekk('proveperioden forfaller ikke hver maaned',
 $avt = static fn(string $neste, string $sist = ''): array => [
     'vipps_agreement_id' => 'agr-test', 'neste_trekk' => $neste,
     'siste_trekk' => $sist !== '' ? $sist : null, 'status' => 'aktiv'];
+
+// ── Trekket, slik det faktisk gikk ─────────────────────────────────────
+//
+// Medlemmet Eirin, 2. september: «Jeg betalte med vipps i gaar via siden her.
+// Saa ut til aa fungere greit. Men pengene er fremdeles paa min konto.»
+//
+// Hun hadde rett. Fast trekk i Vipps er en fullmakt, ikke en betaling: cron
+// ber om trekket, og Vipps krever at kunden varsles for det skjer — saa
+// forfallet ligger tre dager fram (VARSEL_DAGER).
+//
+// «subscriptions.siste_trekk» settes i det trekket BES OM. Leste vi bare den,
+// sto det «Betalt» om noe som bare var bestilt, og det ble staaende ogsaa om
+// trekket senere feilet. Det er den samme forvekslingen Eirin ble utsatt for,
+// bakt inn i verkstedets egen oversikt.
+$tAvt = ['vipps_agreement_id' => 'agr-test', 'status' => 'aktiv',
+         'neste_trekk' => gmdate('Y-m-d', strtotime('+27 days')), 'siste_trekk' => $iDag];
+$tTrekk = static fn(string $st): array
+    => ['status' => $st, 'created_at' => $iDag . ' 04:00:00', 'belop_ore' => 199000];
+$tMedlem = $bMedlem('Trekk', 'Årsmedlemskap');
+
+foreach (['opprettet', 'venter'] as $st) {
+    $b = Medlemskap::betalingsstatus($tMedlem, $tAvt, null, $tTrekk($st));
+    sjekk('et trekk som er bestilt («' . $st . '») staar ikke som betalt',
+        $b['tilstand'] === 'bestilt' && $b['forfalt'] === false, $b['tekst']);
+}
+$b = Medlemskap::betalingsstatus($tMedlem, $tAvt, null, $tTrekk('betalt'));
+sjekk('… og et trekk som gikk gjennom staar som betalt',
+    $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+foreach (['feilet', 'avbrutt'] as $st) {
+    $b = Medlemskap::betalingsstatus($tMedlem, $tAvt, null, $tTrekk($st));
+    sjekk('… og et trekk som ikke gikk («' . $st . '») er forfalt',
+        $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+}
+// Trekkdato passert uten at cron har bedt om noe: da er det noe galt, og det
+// skal sies. Dette er tilfellet der jobben i cPanel har stoppet.
+$b = Medlemskap::betalingsstatus($tMedlem,
+    ['vipps_agreement_id' => 'agr-test', 'status' => 'aktiv',
+     'neste_trekk' => gmdate('Y-m-d', strtotime('-4 days')), 'siste_trekk' => null], null, null);
+sjekk('… og en trekkdato som er passert uten trekk er forfalt',
+    $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+
+// Oppslaget maa hente trekket uansett hvordan det gikk — ogsaa det som feilet.
+// sisteBetalinger() teller bare det som ER betalt, og duger derfor ikke her.
+$tMed = (int) DB::settInn('members', [
+    'navn' => 'Trekkprove Testesen', 'epost' => 'trekkprove@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Årsmedlemskap',
+]);
+$tSub = (int) DB::settInn('subscriptions', [
+    'member_id' => $tMed, 'plan' => 'Årsmedlemskap', 'pris_ore' => 199000,
+    'vipps_agreement_id' => 'agr-trekkprove-' . $tMed, 'status' => 'aktiv',
+]);
+DB::settInn('payments', [
+    'vipps_reference' => 'trekkprove-' . $tMed, 'type' => 'recurring_charge',
+    'formal' => 'medlemskap', 'member_id' => $tMed, 'subscription_id' => $tSub,
+    'belop_ore' => 199000, 'status' => 'venter',
+    'idempotency_key' => bin2hex(random_bytes(18)),
+]);
+$tHentet = Medlemskap::sisteTrekk([$tSub]);
+sjekk('oppslaget finner et trekk som ikke er gjort opp enda',
+    isset($tHentet[$tSub]) && (string) $tHentet[$tSub]['status'] === 'venter');
+sjekk('… mens sisteBetalinger() med rette lar det vaere',
+    Medlemskap::sisteBetalinger([$tMed]) === []);
+sjekk('tomt oppslag gir tom liste, ogsaa her', Medlemskap::sisteTrekk([]) === []);
+DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $tMed]);
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $tSub]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $tMed]);
+
 $b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
     $avt(gmdate('Y-m-d', strtotime('+20 days')), $iDag), null);
 sjekk('fast trekk som har gaatt gjennom er betalt',
@@ -6993,7 +7081,7 @@ sjekk('… og teller ikke dem som er fritatt',
 // ── Skjermene ──────────────────────────────────────────────────────────
 sjekk('medlemsraden viser om det er betalt',
     str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>')
-    && str_contains($sida, "betalingMerke: { fri: 'Fri', betalt: 'Betalt', forfalt: 'Forfalt',"));
+    && str_contains($sida, "betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
 sjekk('… og timer igjen',
     str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
 // Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt

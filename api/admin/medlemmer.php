@@ -16,6 +16,7 @@ $jeg = krev_admin();
 //   POST handling=gjenapne   { medlemId }   aktivt igjen
 //   POST handling=slett      { medlemId }   personopplysningene fjernes
 //   POST handling=notat      { medlemId, notat }   annen info om personen
+//   POST handling=betaler-ikke { medlemId, paa, grunn }  fritatt fra betaling
 //   POST handling=knytt      { medlemId, bookingId }  gjestepaamelding til konto
 //
 // Ikke alle soker paa nett. Noen staar i doera, noen ringer, og noen har
@@ -209,6 +210,40 @@ if (Foresporsel::metode() === 'POST') {
         Svar::ok(['beskjed' => $tekst !== '' ? 'Infoen er lagret.' : 'Infoen er fjernet.']);
     }
 
+    // ── Medlemmet skal ikke betale ────────────────────────────────────
+    //
+    // Eieren, 2. september: «jeg vil ogsaa ha mulighet til aa opprette et
+    // medlem, og tildele de et av mine medlemskap uten at de maa betale».
+    //
+    // Selve innmeldingen gikk fra for — «meld-inn» under oppretter hverken
+    // avtale eller betalingskrav. Det som manglet var aa kunne SI det. Uten
+    // haken ville et gratismedlem staatt roedt i lista for alltid, og druknet
+    // dem som faktisk skylder penger.
+    //
+    // Medlemskapet, timene og doerkoden er urort. Dette sier bare at det ikke
+    // skal komme penger.
+    if ($handling === 'betaler-ikke') {
+        if (!DB::harKolonne('members', 'betaler_ikke')) {
+            Svar::feil('Vedlikeholdet må kjøres først (oppdatering 130).');
+        }
+        $id = Foresporsel::heltall('medlemId');
+        if (DB::en('SELECT id FROM members WHERE id = :i', ['i' => $id]) === null) {
+            Svar::feil('Fant ikke personen.', 404);
+        }
+        $paa   = Foresporsel::tekst('paa') === 'ja';
+        $grunn = mb_substr(trim(Foresporsel::tekst('grunn')), 0, 200);
+        DB::oppdater('members', [
+            'betaler_ikke'       => $paa ? 1 : 0,
+            // Grunnen hoerer til haken. Skrus den av, skal ikke en gammel
+            // begrunnelse bli staaende og dukke opp igjen neste gang.
+            'betaler_ikke_grunn' => $paa && $grunn !== '' ? $grunn : null,
+        ], ['id' => $id]);
+        revider('medlem_betaler_ikke', 'member', $id, ['paa' => $paa, 'grunn' => $grunn]);
+        Svar::ok(['beskjed' => $paa
+            ? 'Medlemmet står nå som fritatt fra betaling.'
+            : 'Medlemmet skal betale som vanlig igjen.']);
+    }
+
     // ── Knytt en gjestepaamelding til kontoen ─────────────────────────
     //
     // Bestilte noen plassen for de opprettet konto — eller la verkstedet dem
@@ -293,6 +328,11 @@ if (Foresporsel::metode() === 'POST') {
     // som aktiv for alltid, og «Prov Lissom» ble et gratis medlemskap.
     $prove = $plan !== null && (int) ($plan['engangs'] ?? 0) === 1;
 
+    // Haken kan settes med det samme, saa den som melder inn et gratismedlem
+    // slipper aa gaa inn paa personen etterpaa for aa si det.
+    $friGrunn = mb_substr(trim(Foresporsel::tekst('betalerIkkeGrunn')), 0, 200);
+    $fri      = Foresporsel::tekst('betalerIkke') === 'ja';
+
     $felter = [
         'medlemskap_type' => $type !== '' ? $type : null,
         'status'          => $prove ? 'prove' : 'aktiv',
@@ -309,6 +349,10 @@ if (Foresporsel::metode() === 'POST') {
         // vi timetallet inn her, ville medlemmet beholdt det gamle den dagen
         // planen endres fra 30 til 35 timer.
     ];
+    if (DB::harKolonne('members', 'betaler_ikke')) {
+        $felter['betaler_ikke']       = $fri ? 1 : 0;
+        $felter['betaler_ikke_grunn'] = $fri && $friGrunn !== '' ? $friGrunn : null;
+    }
     if ($navn !== '')    { $felter['navn'] = $navn; }
     if ($epost !== '')   { $felter['epost'] = $epost; }
     if ($telefon !== '') { $felter['telefon'] = $telefon; }
@@ -331,7 +375,9 @@ if (Foresporsel::metode() === 'POST') {
         'id'      => $medlemId,
         'nytt'    => $nytt,
         'beskjed' => ($nytt ? 'Medlemmet er lagt inn.' : 'Personen sto der fra før og er nå medlem.')
-                   . ' Betalingen går ikke av seg selv — den avtaler dere selv.',
+                   . ($fri
+                        ? ' Medlemmet står som fritatt fra betaling, og lyser ikke rødt i lista.'
+                        : ' Betalingen går ikke av seg selv — den avtaler dere selv.'),
     ]);
 }
 
@@ -358,7 +404,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
     // samme feltene deltakerlista gjenkjenner folk paa fra for.
     $erGjest = false;
     if ($pid > 0) {
-        $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status, notat FROM members WHERE id = :i', ['i' => $pid]);
+        $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $pid]);
         if ($m === null) {
             Svar::feil('Fant ikke personen.', 404);
         }
@@ -375,7 +421,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
         // den samme personen, og hen skal ikke staa to steder.
         if ($b['member_id'] !== null) {
             $pid = (int) $b['member_id'];
-            $m = DB::en('SELECT id, navn, epost, telefon, rolle, medlemskap_type, status, notat FROM members WHERE id = :i', ['i' => $pid]);
+            $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $pid]);
         }
         if ($pid <= 0 || $m === null) {
             $erGjest = true;
@@ -547,7 +593,24 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'gjest'      => $erGjest,
             // Det verkstedet selv har notert. Internt, og bare her.
             'notat'      => (string) ($m['notat'] ?? ''),
-        ],
+            // ── Har hun betalt? ────────────────────────────────────────
+            //
+            // Samme regel som lista og kortet paa Oversikt bruker, saa de tre
+            // ikke kan svare hver sitt om den samme personen.
+            'betalerIkke'      => !empty($m['betaler_ikke']),
+            'betalerIkkeGrunn' => (string) ($m['betaler_ikke_grunn'] ?? ''),
+        ] + (static function () use ($m): array {
+            if ($m === null || (int) ($m['id'] ?? 0) <= 0) {
+                return ['betaling' => 'ingen', 'betalingTekst' => ''];
+            }
+            $id = (int) $m['id'];
+            $b = Medlemskap::betalingsstatus(
+                $m,
+                DB::en("SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1", ['m' => $id]),
+                Medlemskap::sisteBetalinger([$id])[$id] ?? null
+            );
+            return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst']];
+        })(),
         'historikk' => array_map(static function (array $b) use ($naa): array {
             $holdt = $b['start_tid'] !== null
                 && new DateTimeImmutable((string) $b['start_tid'], new DateTimeZone('UTC')) < $naa;
@@ -625,9 +688,15 @@ if ($sok !== '') {
     $param['s'] = '%' . $sok . '%';
 }
 
+// Haken «Betaler ikke» (migrasjon 130). Staar migrasjonen ukjort, leser vi
+// nuller i stedet for aa la hele skjermen falle paa «Unknown column».
+$betalerKol = DB::harKolonne('members', 'betaler_ikke')
+    ? 'betaler_ikke, betaler_ikke_grunn'
+    : '0 AS betaler_ikke, NULL AS betaler_ikke_grunn';
+
 $medlemmer = DB::alle(
     "SELECT id, navn, epost, telefon, rolle, medlemskap_type, status,
-            start_dato, timer_per_mnd, created_at
+            start_dato, timer_per_mnd, created_at, {$betalerKol}
        FROM members
       WHERE {$hvor}
       ORDER BY navn
@@ -685,13 +754,27 @@ foreach (DB::alle('SELECT member_id FROM check_ins WHERE ut_tid IS NULL') as $r)
 $avtaler = [];
 foreach (DB::alle(
     "SELECT s.member_id, s.plan, s.status, s.binding_til, s.sagt_opp_at, s.slutter,
-            s.neste_trekk, s.vipps_agreement_id
+            s.neste_trekk, s.siste_trekk, s.vipps_agreement_id
        FROM subscriptions s
        JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions GROUP BY member_id) n
          ON n.siste = s.id"
 ) as $r) {
     $avtaler[(int) $r['member_id']] = $r;
 }
+
+// ── Har de betalt? ─────────────────────────────────────────────────────
+//
+// Eieren, 2. september: «jeg kan ikke se paa min side paa et medlem om det er
+// betalt for medlemskapet eller ikke ... Paa Eirin staar det fast trekk og paa
+// Anniken staar det gjor opp selv». Det er betalingsMAATEN — den sier
+// ingenting om penger.
+//
+// Regelen staar i Medlemskap::betalingsstatus(), saa denne lista, kortet paa
+// Oversikt og medlemsruta ikke kan svare hver sitt om den samme personen.
+// Ett oppslag for hele lista, ikke ett per medlem.
+$sisteBetaling = Medlemskap::sisteBetalinger(
+    array_map(static fn(array $m): int => (int) $m['id'], $medlemmer)
+);
 
 $idag = gmdate('Y-m-d');
 $dato = static fn(?string $d): ?string => $d ? Booking::norskDatoKort($d . ' 12:00:00') : null;
@@ -733,7 +816,33 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'bruktMin'   => $brukt[(int) $m['id']] ?? 0,
     'erInne'     => isset($inne[(int) $m['id']]),
     'antallKurs' => $kurs[(int) $m['id']] ?? 0,
-] + $avtaleInfo((int) $m['id']), $medlemmer),
+    // Timer igjen, ikke bare brukt. «22 av 30» er det man vil vite naar noen
+    // ringer og spor om hen har tid igjen denne maaneden.
+    'timerIgjen' => (static function () use ($m, $brukt): ?string {
+        $tak = Medlemskap::timerFor($m);
+        if ($tak === null) {
+            return null;
+        }
+        $igjen = max(0, $tak * 60 - ($brukt[(int) $m['id']] ?? 0));
+        return Stempling::timer($igjen);
+    })(),
+    // Haken i admin. Et gratismedlem skal aldri lyse roedt.
+    'betalerIkke'     => !empty($m['betaler_ikke']),
+    'betalerIkkeGrunn'=> (string) ($m['betaler_ikke_grunn'] ?? ''),
+    'sisteBetaling'   => isset($sisteBetaling[(int) $m['id']])
+        ? $dato(substr((string) $sisteBetaling[(int) $m['id']]['created_at'], 0, 10)) : null,
+    'sisteBelop'      => isset($sisteBetaling[(int) $m['id']])
+        ? Booking::kroner((int) $sisteBetaling[(int) $m['id']]['belop_ore']) : null,
+] + $avtaleInfo((int) $m['id'])
+  + (static function () use ($m, $avtaler, $sisteBetaling): array {
+        $b = Medlemskap::betalingsstatus(
+            $m,
+            $avtaler[(int) $m['id']] ?? null,
+            $sisteBetaling[(int) $m['id']] ?? null
+        );
+        return ['betaling' => $b['tilstand'], 'betalingTekst' => $b['tekst'],
+                'betalingForfalt' => $b['forfalt']];
+    })(), $medlemmer),
     // Medlemskapene som finnes, saa innmelding for haand kan tilby de
     // samme valgene som nettsida — ikke en liste skrevet av paa nytt.
     'planer' => array_map(static fn($p) => [

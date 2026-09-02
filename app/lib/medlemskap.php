@@ -93,6 +93,126 @@ final class Medlemskap
         return $plan === null || $plan['timer'] === null ? null : (int) $plan['timer'];
     }
 
+    /**
+     * Har medlemmet betalt for medlemskapet sitt?
+     *
+     * Skjermen viste «Fast trekk» eller «Gjor opp selv» — det er
+     * betalingsMAATEN, ikke betalingen. Eieren, 2. september: «jeg kan ikke se
+     * paa min side paa et medlem om det er betalt for medlemskapet eller
+     * ikke». Tallene laa i basen hele tida; ingen slo dem opp.
+     *
+     * Regelen staar her og ikke i skjermene fordi tre steder spor om den:
+     * medlemslista, kortet paa Oversikt og medlemsruta. Sto den tre steder,
+     * kunne de svart hver sitt om den samme personen.
+     *
+     * @param array      $medlem  raden fra members
+     * @param array|null $avtale  nyeste subscriptions-rad, eller null
+     * @param array|null $siste   nyeste betalte medlemskapsbetaling, eller null
+     * @return array{tilstand:string,tekst:string,forfalt:bool}
+     *
+     * tilstand er én av:
+     *   fri         medlemmet skal ikke betale (haken i admin)
+     *   betalt      det er gjort opp for perioden som loper
+     *   forfalt     perioden er ute og det er ikke betalt
+     *   venter      meldt inn, men foerste betaling er ikke kommet enda
+     *   ingen       ikke medlem — ingenting aa betale for
+     */
+    public static function betalingsstatus(array $medlem, ?array $avtale, ?array $siste): array
+    {
+        $ut = static fn(string $t, string $tekst, bool $forfalt = false): array
+            => ['tilstand' => $t, 'tekst' => $tekst, 'forfalt' => $forfalt];
+
+        // Haken gaar foran alt. Et gratismedlem skal aldri lyse roedt.
+        if (!empty($medlem['betaler_ikke'])) {
+            $grunn = trim((string) ($medlem['betaler_ikke_grunn'] ?? ''));
+            return $ut('fri', $grunn !== '' ? 'Fri — ' . $grunn : 'Betaler ikke');
+        }
+
+        $status = (string) ($medlem['status'] ?? 'ingen');
+        if (!in_array($status, ['prove', 'aktiv', 'pause'], true)) {
+            return $ut('ingen', '');
+        }
+
+        $idag = gmdate('Y-m-d');
+        $kort = static fn(string $d): string => Booking::norskDatoKort($d . ' 12:00:00');
+
+        // ── Fast trekk i Vipps ──────────────────────────────────────────
+        //
+        // Her er det Vipps som trekker, og «neste_trekk» er fasiten paa om
+        // perioden er dekket. Har dagen passert uten at «siste_trekk» fulgte
+        // etter, gikk trekket ikke gjennom.
+        $fastTrekk = $avtale !== null
+            && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== '';
+        if ($fastTrekk) {
+            $neste = (string) ($avtale['neste_trekk'] ?? '');
+            $sist  = (string) ($avtale['siste_trekk'] ?? '');
+            if ($neste !== '' && $neste < $idag) {
+                return $ut('forfalt', 'Trekket gikk ikke — forfalt ' . $kort($neste), true);
+            }
+            if ($sist !== '') {
+                return $ut('betalt', 'Trukket ' . $kort($sist)
+                    . ($neste !== '' ? ' · neste ' . $kort($neste) : ''));
+            }
+            return $ut('venter', $neste !== '' ? 'Trekkes ' . $kort($neste) : 'Venter på første trekk');
+        }
+
+        // ── Gjor opp selv ───────────────────────────────────────────────
+        //
+        // Ingen avtale aa spore. Da er den siste registrerte betalingen det
+        // eneste vi har — den som huker av i Kassa skriver den inn.
+        if ($siste === null) {
+            return $ut('venter', 'Ikke betalt ennå', true);
+        }
+        $betaltDen = substr((string) $siste['created_at'], 0, 10);
+
+        // Proveperioden betales én gang og loper til slutt_dato. Da er det
+        // ikke noe mer aa betale, og den skal ikke forfalle hver maaned.
+        $plan = self::plan((string) ($medlem['medlemskap_type'] ?? ''));
+        if ($plan !== null && (int) ($plan['engangs'] ?? 0) === 1) {
+            return $ut('betalt', 'Betalt ' . $kort($betaltDen));
+        }
+
+        // Loepende medlemskap: betalingen dekker én maaned fram.
+        $dekkerTil = gmdate('Y-m-d', strtotime($betaltDen . ' +1 month'));
+        if ($dekkerTil < $idag) {
+            return $ut('forfalt', 'Forfalt ' . $kort($dekkerTil)
+                . ' · sist betalt ' . $kort($betaltDen), true);
+        }
+        return $ut('betalt', 'Betalt ' . $kort($betaltDen) . ' · neste ' . $kort($dekkerTil));
+    }
+
+    /**
+     * Siste betalte medlemskapsbetaling, per medlem.
+     *
+     * Ett oppslag for hele lista. Ett per medlem ville blitt fem hundre
+     * sporringer paa medlemsskjermen.
+     *
+     * @param int[] $medlemIder
+     * @return array<int,array<string,mixed>>
+     */
+    public static function sisteBetalinger(array $medlemIder): array
+    {
+        if ($medlemIder === []) {
+            return [];
+        }
+        $inn = implode(',', array_map('intval', $medlemIder));
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT p.member_id, p.created_at, p.belop_ore, p.maate, p.type
+               FROM payments p
+               JOIN (SELECT member_id, MAX(id) AS siste
+                       FROM payments
+                      WHERE formal = 'medlemskap'
+                        AND status IN ('betalt','delvis_refundert')
+                        AND annullert_at IS NULL
+                        AND member_id IN ({$inn})
+                   GROUP BY member_id) n ON n.siste = p.id"
+        ) as $r) {
+            $ut[(int) $r['member_id']] = $r;
+        }
+        return $ut;
+    }
+
     /** Avtalen et medlem har naa, eller null. */
     public static function avtale(int $medlemId): ?array
     {

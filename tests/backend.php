@@ -6749,6 +6749,177 @@ sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
 
+// ── Har medlemmet betalt? ──────────────────────────────────────────────
+//
+// Eieren, 2. september: «jeg kan ikke se paa min side paa et medlem om det er
+// betalt for medlemskapet eller ikke ... Paa Eirin staar det fast trekk og paa
+// Anniken staar det gjor opp selv».
+//
+// Det er betalingsMAATEN. Skjermen leste vipps_agreement_id og skrev «Fast
+// trekk» eller «Gjor opp selv» — ingen av delene sier at penger er kommet.
+// Tallene laa i basen hele tida; ingen slo dem opp.
+//
+// Regelen staar ETT sted, Medlemskap::betalingsstatus(), fordi tre skjermer
+// spor om den: medlemslista, kortet paa Oversikt og medlemsruta. Sto den tre
+// steder, kunne de svart hver sitt om den samme personen.
+echo "\n== Har medlemmet betalt ==\n";
+
+$mig130 = file_get_contents(dirname(__DIR__) . '/db/migrations/130_medlem_som_ikke_betaler.sql');
+sjekk('migrasjon 130 gir medlemmet «betaler ikke»',
+    str_contains($mig130, 'ADD COLUMN betaler_ikke')
+    && str_contains($mig130, 'betaler_ikke_grunn'));
+sjekk('… og kolonnene staar i basen',
+    DB::harKolonne('members', 'betaler_ikke')
+    && DB::harKolonne('members', 'betaler_ikke_grunn'));
+
+// ── Regelen, tilstand for tilstand ─────────────────────────────────────
+//
+// Fem medlemmer, fem svar. Uten disse ville en endring i regelen kunne
+// snudd et «betalt» til «forfalt» uten at noe sa fra.
+$bMedlem = static function (string $navn, string $plan, int $fri = 0, string $grunn = ''): array {
+    return ['id' => 0, 'navn' => $navn, 'medlemskap_type' => $plan, 'status' => 'aktiv',
+            'betaler_ikke' => $fri, 'betaler_ikke_grunn' => $grunn !== '' ? $grunn : null];
+};
+$bBetaling = static fn(string $dato): array => ['created_at' => $dato . ' 12:00:00', 'belop_ore' => 259000];
+$iDag  = gmdate('Y-m-d');
+$forLenge = gmdate('Y-m-d', strtotime('-3 months'));
+
+$b = Medlemskap::betalingsstatus($bMedlem('Fri', 'Basis 30', 1, 'bytter mot dugnad'), null, null);
+sjekk('haken gaar foran alt — et gratismedlem lyser aldri roedt',
+    $b['tilstand'] === 'fri' && $b['forfalt'] === false
+    && str_contains($b['tekst'], 'bytter mot dugnad'), $b['tilstand'] . ' · ' . $b['tekst']);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Ny', 'Basis 30'), null, null);
+sjekk('aldri betalt staar som forfalt',
+    $b['tilstand'] === 'venter' && $b['forfalt'] === true, $b['tekst']);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Fersk', 'Basis 30'), null, $bBetaling($iDag));
+sjekk('betalt i dag er betalt', $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+
+$b = Medlemskap::betalingsstatus($bMedlem('Gammel', 'Basis 30'), null, $bBetaling($forLenge));
+sjekk('betalt for tre maaneder siden er forfalt',
+    $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+
+// Proveperioden betales én gang og loper til slutt_dato. Uten dette ville den
+// forfalt hver maaned, og et proevemedlem lyst roedt fra dag 31.
+$b = Medlemskap::betalingsstatus($bMedlem('Prove', 'Prøv Lissom'), null, $bBetaling($forLenge));
+sjekk('proveperioden forfaller ikke hver maaned',
+    $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+
+// Fast trekk: «neste_trekk» er fasiten paa om perioden er dekket.
+$avt = static fn(string $neste, string $sist = ''): array => [
+    'vipps_agreement_id' => 'agr-test', 'neste_trekk' => $neste,
+    'siste_trekk' => $sist !== '' ? $sist : null, 'status' => 'aktiv'];
+$b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
+    $avt(gmdate('Y-m-d', strtotime('+20 days')), $iDag), null);
+sjekk('fast trekk som har gaatt gjennom er betalt',
+    $b['tilstand'] === 'betalt' && $b['forfalt'] === false, $b['tekst']);
+$b = Medlemskap::betalingsstatus($bMedlem('Trekk', 'Årsmedlemskap'),
+    $avt(gmdate('Y-m-d', strtotime('-5 days')), $iDag), null);
+sjekk('… og et trekk som ikke gikk er forfalt',
+    $b['tilstand'] === 'forfalt' && $b['forfalt'] === true, $b['tekst']);
+
+// Den som ikke er medlem har ingenting aa betale for.
+$ikkeMedlem = ['id' => 0, 'navn' => 'Kursdeltaker', 'medlemskap_type' => null,
+               'status' => 'ingen', 'betaler_ikke' => 0, 'betaler_ikke_grunn' => null];
+sjekk('en som ikke er medlem har ingen betalingsstatus',
+    Medlemskap::betalingsstatus($ikkeMedlem, null, null)['tilstand'] === 'ingen');
+
+// ── Oppslaget for hele lista ───────────────────────────────────────────
+//
+// Ett kall, ikke ett per medlem. Fem hundre medlemmer ville blitt fem hundre
+// sporringer paa medlemsskjermen.
+sjekk('tomt oppslag gir tom liste', Medlemskap::sisteBetalinger([]) === []);
+$sbMedlem = (int) DB::settInn('members', [
+    'navn' => 'Betalingsprove Testesen', 'epost' => 'betalingsprove@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Basis 30',
+]);
+DB::settInn('payments', [
+    'vipps_reference' => 'prove-gammel-' . $sbMedlem, 'type' => 'manuell',
+    'formal' => 'medlemskap', 'member_id' => $sbMedlem, 'belop_ore' => 100000,
+    'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)),
+    'created_at' => '2026-01-01 10:00:00',
+]);
+$nyBet = (int) DB::settInn('payments', [
+    'vipps_reference' => 'prove-ny-' . $sbMedlem, 'type' => 'manuell',
+    'formal' => 'medlemskap', 'member_id' => $sbMedlem, 'belop_ore' => 259000,
+    'status' => 'betalt', 'idempotency_key' => bin2hex(random_bytes(18)),
+    'created_at' => '2026-08-01 10:00:00',
+]);
+$sb = Medlemskap::sisteBetalinger([$sbMedlem]);
+sjekk('oppslaget tar den nyeste betalingen, ikke den forste',
+    isset($sb[$sbMedlem]) && (int) $sb[$sbMedlem]['belop_ore'] === 259000,
+    (string) ((int) ($sb[$sbMedlem]['belop_ore'] ?? 0) / 100) . ' kr');
+// En annullert betaling er ikke en betaling. Uten dette ville en refundert
+// maaned staatt som gjort opp.
+DB::kjor('UPDATE payments SET annullert_at = UTC_TIMESTAMP() WHERE id = :i', ['i' => $nyBet]);
+$sb = Medlemskap::sisteBetalinger([$sbMedlem]);
+sjekk('… og hopper over en annullert betaling',
+    isset($sb[$sbMedlem]) && (int) $sb[$sbMedlem]['belop_ore'] === 100000,
+    (string) ((int) ($sb[$sbMedlem]['belop_ore'] ?? 0) / 100) . ' kr');
+DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $sbMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $sbMedlem]);
+
+// ── Serveren maa sende det ut ──────────────────────────────────────────
+$medlApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemslista regner ut betalingen',
+    str_contains($medlApi, 'Medlemskap::betalingsstatus(')
+    && str_contains($medlApi, "'betaling' => \$b['tilstand'], 'betalingTekst' => \$b['tekst']"));
+// «siste_trekk» manglet i oppslaget, saa et fast trekk som HAR gaatt gjennom
+// sto som «venter paa forste trekk». Malt i nettleseren for og etter.
+sjekk('… og oppslaget henter «siste_trekk»',
+    str_contains($medlApi, 's.neste_trekk, s.siste_trekk, s.vipps_agreement_id'));
+sjekk('… og timer igjen, ikke bare brukt',
+    str_contains($medlApi, "'timerIgjen' =>"));
+sjekk('… og haken staar paa raden',
+    str_contains($medlApi, "'betalerIkke'     => !empty(\$m['betaler_ikke'])"));
+sjekk('medlemsruta svarer paa det samme',
+    str_contains($medlApi, "'betalerIkke'      => !empty(\$m['betaler_ikke'])"));
+sjekk('serveren tar imot haken',
+    str_contains($medlApi, "if (\$handling === 'betaler-ikke') {")
+    && str_contains($medlApi, "'betaler_ikke'       => \$paa ? 1 : 0,"));
+// Grunnen hoerer til haken. Skrus den av, skal ikke en gammel begrunnelse bli
+// staaende og dukke opp igjen neste gang.
+sjekk('… og glemmer grunnen naar haken skrus av',
+    str_contains($medlApi, "'betaler_ikke_grunn' => \$paa && \$grunn !== '' ? \$grunn : null,"));
+sjekk('innmeldingen kan sette haken med det samme',
+    str_contains($medlApi, "\$fri      = Foresporsel::tekst('betalerIkke') === 'ja';"));
+
+$ovApi = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('Oversikt teller de ubetalte med den samme regelen',
+    str_contains($ovApi, 'Medlemskap::betalingsstatus(')
+    && str_contains($ovApi, "'ubetalte'    => \$ubetalte,"));
+sjekk('… og teller ikke dem som er fritatt',
+    str_contains($ovApi, "if (\$b['tilstand'] === 'fri') {"));
+
+// ── Skjermene ──────────────────────────────────────────────────────────
+sjekk('medlemsraden viser om det er betalt',
+    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>')
+    && str_contains($sida, "betalingMerke: { fri: 'Fri', betalt: 'Betalt', forfalt: 'Forfalt',"));
+sjekk('… og timer igjen',
+    str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
+// Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
+// seks og lista vist sju.
+sjekk('filteret «Ubetalte» finnes',
+    str_contains($sida, "'Alle', 'Aktive', 'Ubetalte', 'Sluttet'"));
+sjekk('… og teller det samme som kortet',
+    str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingForfalt;"));
+sjekk('Oversikt har kortet «Medlemmer og betaling»',
+    str_contains($sida, "kort('Medlemmer og betaling',"));
+sjekk('… og det gaar til de ubetalte',
+    str_contains($sida, "{ medlemFilter: 'Ubetalte', medlemSok: '' }"));
+
+// Haken staar begge steder skjemaet staar, og i begge personrutene. Sto den
+// bare det ene stedet, ville de to skjermene sagt forskjellige ting.
+sjekk('haken staar i innmeldingsskjemaet, begge steder',
+    substr_count($sida, 'checked="{{ miFri }}" onChange="{{ vekslMiFri }}"') === 2);
+sjekk('… og i medlemsruta, begge steder',
+    substr_count($sida, 'checked="{{ personFri }}" onChange="{{ vekslPersonFri }}"') === 2);
+sjekk('… og innmeldingen sender den',
+    str_contains($sida, "betalerIkke: this.state.miFri ? 'ja' : 'nei',"));
+sjekk('… og medlemsruta lagrer den',
+    str_contains($sida, "this.medlemKall({ handling: 'betaler-ikke', medlemId: p.id,"));
+
 // ── Utfyllende informasjon paa medlemskapene ───────────────────────────
 //
 // Eieren, 2. september: «jeg vil ha utvidet info paa medlemskapene», og

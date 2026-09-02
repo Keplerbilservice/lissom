@@ -10512,7 +10512,26 @@ window.__resources = {
                   <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
                 </div>
               </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side.</p>
+              <!-- Et medlem som ikke skal betale.
+                   Eieren, 2. september: «jeg vil ogsaa ha mulighet til aa
+                   opprette et medlem, og tildele de et av mine medlemskap
+                   uten at de maa betale». Selve innmeldingen har alltid vaert
+                   uten betalingskrav — det som manglet var aa kunne SI det,
+                   saa personen ikke staar roedt i lista for alltid.
+                   Skjemaet staar to steder, paa Medlemmer og paa Deltakere,
+                   og deler verdiene. Endres det ene, maa det andre foelge. -->
+              <label style="{{ miAvkryss }}">
+                <input type="checkbox" checked="{{ miFri }}" onChange="{{ vekslMiFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Betaler ikke — medlemskapet er gratis for denne personen
+              </label>
+              <sc-if value="{{ miFri }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="{{ miEtikett }}">Hvorfor?</label>
+                  <input value="{{ miFriGrunn }}" onChange="{{ settMiFriGrunn }}" placeholder="F.eks. bytter mot dugnad, æresmedlem" style="{{ miFeltStil }}">
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Står på medlemsraden, så den som ser lista om et halvt år skjønner hvorfor.</div>
+                </div>
+              </sc-if>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ miBetalingHjelp }}</p>
               <div>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ miLagre }}" hint-size="auto,44px">{{ miKnapp }}</x-import>
               </div>
@@ -10610,6 +10629,34 @@ window.__resources = {
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ l.linje }}</span>
                   </div>
                 </sc-for>
+              </div>
+            </sc-if>
+
+            <!-- Betalingen, oeverst i det som gjelder medlemskapet.
+                 Ruta viste alle betalingene under, men ikke svaret paa
+                 sporsmaalet man kommer hit med: er det gjort opp naa?
+                 Eieren, 2. september: «jeg kan ikke se paa min side paa et
+                 medlem om det er betalt for medlemskapet eller ikke».
+                 Haken under er den samme som i innmeldingsskjemaet, saa et
+                 gratismedlem kan settes ogsaa etterpaa. -->
+            <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                  <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
+                </div>
+                <label style="{{ personFriEtikett }}">
+                  <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                  Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
+                </label>
+                <sc-if value="{{ personFri }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-3);">
+                    <input value="{{ personFriGrunn }}" onChange="{{ settPersonFriGrunn }}" placeholder="Hvorfor? F.eks. bytter mot dugnad, æresmedlem" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  </div>
+                </sc-if>
+                <div style="margin-top: var(--space-3);">
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
+                </div>
               </div>
             </sc-if>
 
@@ -11110,7 +11157,26 @@ window.__resources = {
                   <input value="{{ miNotat }}" onChange="{{ settMiNotat }}" placeholder="Internt — f.eks. «betaler med faktura»" style="{{ miFeltStil }}">
                 </div>
               </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side.</p>
+              <!-- Et medlem som ikke skal betale.
+                   Eieren, 2. september: «jeg vil ogsaa ha mulighet til aa
+                   opprette et medlem, og tildele de et av mine medlemskap
+                   uten at de maa betale». Selve innmeldingen har alltid vaert
+                   uten betalingskrav — det som manglet var aa kunne SI det,
+                   saa personen ikke staar roedt i lista for alltid.
+                   Skjemaet staar to steder, paa Medlemmer og paa Deltakere,
+                   og deler verdiene. Endres det ene, maa det andre foelge. -->
+              <label style="{{ miAvkryss }}">
+                <input type="checkbox" checked="{{ miFri }}" onChange="{{ vekslMiFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Betaler ikke — medlemskapet er gratis for denne personen
+              </label>
+              <sc-if value="{{ miFri }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <label style="{{ miEtikett }}">Hvorfor?</label>
+                  <input value="{{ miFriGrunn }}" onChange="{{ settMiFriGrunn }}" placeholder="F.eks. bytter mot dugnad, æresmedlem" style="{{ miFeltStil }}">
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Står på medlemsraden, så den som ser lista om et halvt år skjønner hvorfor.</div>
+                </div>
+              </sc-if>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ miBetalingHjelp }}</p>
               <div>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ miLagre }}" hint-size="auto,44px">{{ miKnapp }}</x-import>
               </div>
@@ -11294,6 +11360,30 @@ window.__resources = {
                 </div>
               </sc-if>
 
+              <!-- Betalingen. Samme blokk som i ruta under Deltakere; ruta
+                   staar to steder og deler verdiene, saa endres det ene maa
+                   det andre foelge. -->
+              <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
+                <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                  <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+                    <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
+                    <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
+                  </div>
+                  <label style="{{ personFriEtikett }}">
+                    <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                    Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
+                  </label>
+                  <sc-if value="{{ personFri }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <input value="{{ personFriGrunn }}" onChange="{{ settPersonFriGrunn }}" placeholder="Hvorfor? F.eks. bytter mot dugnad, æresmedlem" style="width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    </div>
+                  </sc-if>
+                  <div style="margin-top: var(--space-3);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
+                  </div>
+                </div>
+              </sc-if>
+
               <!-- Annen info om personen. Feltet «notat» fantes fra for, men bare i
                    innmeldingsskjemaet: sto det noe der, kunne det ikke endres
                    etterpaa. Dette er internt — det staar ikke paa Min side. -->
@@ -11344,11 +11434,29 @@ window.__resources = {
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.trekkTekst }}</div>
                   </div>
                 </sc-if>
+                <!-- Har hun betalt?
+                     Her sto bare «Fast trekk» eller «Gjor opp selv» — det er
+                     betalingsMAATEN, og den sier ingenting om penger. Eieren,
+                     2. september: «jeg kan ikke se paa min side paa et medlem
+                     om det er betalt for medlemskapet eller ikke».
+                     Roedt fra den dagen betalingen skulle kommet, slik eieren
+                     valgte. Et medlem som er fritatt staar graat, aldri roedt. -->
+                <sc-if value="{{ m.harBetaling }}" hint-placeholder-val="{{ true }}">
+                  <div style="flex: 0 1 200px; min-width: 0;">
+                    <span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.betalingTekst }}</div>
+                  </div>
+                </sc-if>
                 <div style="display: flex; align-items: center; gap: 10px; flex: 0 1 130px; min-width: 105px;">
                   <div style="flex: 1; height: 6px; border-radius: 999px; background: var(--clay-200); overflow: hidden;">
                     <div style="{{ m.barStil }}"></div>
                   </div>
-                  <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
+                  <div style="min-width: 0;">
+                    <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timer }}</span>
+                    <sc-if value="{{ m.harTimerIgjen }}" hint-placeholder-val="{{ true }}">
+                      <div style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ m.timerIgjen }}</div>
+                    </sc-if>
+                  </div>
                 </div>
                 <div style="margin-left: auto; flex: 0 0 auto;">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ m.tone }}" hint-size="auto,24px">{{ m.status }}</x-import>
@@ -29230,6 +29338,7 @@ class Component extends DCLogic {
     const noekkel = id > 0 ? 'm' + id : 'b' + bookingId;
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
+      personFri: null, personFriGrunn: null,
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
       // gjenkjennes paa; disse to er det handlingene trenger.
       personMedlemId: id > 0 ? id : 0,
@@ -29392,6 +29501,10 @@ class Component extends DCLogic {
         telefon: (this.state.miTlf || '').trim(),
         type: type,
         notat: (this.state.miNotat || '').trim(),
+        // Haken settes med det samme, saa den som melder inn et gratismedlem
+        // slipper aa gaa inn paa personen etterpaa for aa si det.
+        betalerIkke: this.state.miFri ? 'ja' : 'nei',
+        betalerIkkeGrunn: (this.state.miFriGrunn || '').trim(),
       }),
     })
       .then(r => r.json().then(d => ({ ok: r.ok, d })))
@@ -29509,10 +29622,41 @@ class Component extends DCLogic {
           : (m.bundet ? 'var(--lissom-brown)' : '#3E6B36'),
       },
       trekkTekst: m.fastTrekk ? 'Fast trekk' : 'Gjør opp selv',
+      // ── Betalt eller ikke ──────────────────────────────────────────
+      //
+      // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
+      // saa denne lista og tallet paa Oversikt ikke kan svare hver sitt om
+      // den samme personen. Her staar bare fargen og ordet.
+      harBetaling: !!m.betaling && m.betaling !== 'ingen',
+      betalingTilstand: m.betaling || 'ingen',
+      betalingMerke: { fri: 'Fri', betalt: 'Betalt', forfalt: 'Forfalt',
+                       venter: 'Ikke betalt' }[m.betaling] || '',
+      betalingTekst: m.betalingTekst || '',
+      betalingForfalt: !!m.betalingForfalt,
+      erFritatt: m.betaling === 'fri',
+      betalingStil: (() => {
+        // Samme form som bindingslappen rett over, saa de to leses som ett
+        // par og ikke som to forskjellige ideer.
+        const F = {
+          fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+          betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+          forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+          venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+        }[m.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
+        return {
+          fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+          textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
+          whiteSpace: 'nowrap', background: F[0], color: F[1],
+        };
+      })(),
       abonnement: m.medlemskap || 'Ingen',
       // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
       // viser bare hvor mye som er brukt.
+      // «22 av 30» er brukt av taket. «igjen» staar i teksten under, fordi det
+      // er det man vil vite naar noen ringer og spor om hen har tid igjen.
       timer: m.timer ? (m.bruktTimer + ' / ' + m.timer) : (m.bruktMin > 0 ? m.bruktTimer + ' t' : '—'),
+      timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',
+      harTimerIgjen: !!m.timerIgjen,
       andel: m.timer ? Math.min(100, Math.round((m.bruktMin || 0) / (m.timer * 60) * 100)) : 0,
       status: m.erInne ? 'Inne nå' : (tekst[m.status] || m.status),
       tone: m.erInne ? 'success' : (tone[m.status] || 'neutral'),
@@ -32556,6 +32700,59 @@ class Component extends DCLogic {
           personNotatKnapp: this._personInfoLagrer ? 'Lagrer …' : 'Lagre info',
           lagrePersonNotat: () => this.lagrePersonInfo(),
           personBeskjed: () => this.beskjedTilPerson(p),
+
+          // ── Har hun betalt, og skal hun betale i det hele tatt ────────
+          //
+          // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
+          // den samme som medlemslista og kortet paa Oversikt bruker.
+          personErMedlem: ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1,
+          personBetalingMerke: { fri: 'Fri', betalt: 'Betalt', forfalt: 'Forfalt',
+                                 venter: 'Ikke betalt' }[p.betaling] || '',
+          personBetalingTekst: p.betalingTekst || '',
+          personBetalingStil: (() => {
+            const F = {
+              fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+              betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+              forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+              venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+            }[p.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
+            return {
+              fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+              textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
+              whiteSpace: 'nowrap', background: F[0], color: F[1],
+            };
+          })(),
+          personFriEtikett: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                              marginTop: 'var(--space-4)', fontSize: 'var(--text-sm)',
+                              color: 'var(--text-heading)' },
+          // Feltene staar tomme til noe hentes; da faller de tilbake paa basen.
+          personFri: this.state.personFri === null || this.state.personFri === undefined
+            ? !!p.betalerIkke : !!this.state.personFri,
+          vekslPersonFri: () => this.setState(st => ({
+            personFri: !(st.personFri === null || st.personFri === undefined
+              ? !!p.betalerIkke : !!st.personFri),
+          })),
+          personFriGrunn: this.state.personFriGrunn === null || this.state.personFriGrunn === undefined
+            ? (p.betalerIkkeGrunn || '') : this.state.personFriGrunn,
+          settPersonFriGrunn: e => this.setState({ personFriGrunn: e.target.value }),
+          personFriKnapp: 'Lagre',
+          lagrePersonFri: () => {
+            const paa = this.state.personFri === null || this.state.personFri === undefined
+              ? !!p.betalerIkke : !!this.state.personFri;
+            const grunn = this.state.personFriGrunn === null || this.state.personFriGrunn === undefined
+              ? (p.betalerIkkeGrunn || '') : this.state.personFriGrunn;
+            // «behold» — uten den lukker medlemKall ruta, og da ville
+            // oppfriskningen under aapnet den igjen med det samme. Det blinker.
+            this.medlemKall({ handling: 'betaler-ikke', medlemId: p.id,
+                              paa: paa ? 'ja' : 'nei', grunn: (grunn || '').trim() }, true)
+              .then(ok => {
+                if (!ok) return;
+                // Overstyringa i skjemaet nullstilles, saa merket over leser
+                // det serveren naa har — ikke det man nettopp huket av.
+                this.setState({ personFri: null, personFriGrunn: null });
+                this.apnePerson(p.id, 0);
+              });
+          },
           // Uten konto finnes ingen Min side aa vise, ingen medlemskap aa
           // endre, og notatet hoerer til paameldingen. Skjermen maa vite det
           // — ellers tilbyr den ting som ikke finnes.
@@ -33550,6 +33747,37 @@ class Component extends DCLogic {
                  okter.length, 'Se kursene',
                  () => this.gaaAdmin('admin', { kursFane: 'alle' })),
 
+            // ── Hvem har ikke betalt ────────────────────────────────────
+            //
+            // Eieren, 2. september: «jeg kan ikke se paa min side paa et
+            // medlem om det er betalt for medlemskapet eller ikke ... jeg vil
+            // ogsaa kunne se det direkte paa medlemmer».
+            //
+            // Tallet er det samme som medlemslista regner ut — begge kommer
+            // fra Medlemskap::betalingsstatus() paa serveren. «haster» gjor
+            // tallet roedt, som paa de andre kortene, og trykket gaar rett
+            // inn i lista filtrert paa dem som mangler.
+            //
+            // Medlemmer som staar som fritatt fra betaling teller ikke med.
+            ...(d ? [kort('Medlemmer og betaling',
+                 ((d.medlemmer.ubetalte || 0) > 0
+                    ? (d.medlemmer.ubetalte === 1
+                        ? 'Ett medlemskap er ikke betalt. '
+                        : d.medlemmer.ubetalte + ' medlemskap er ikke betalt. ')
+                    : 'Alle medlemskap er gjort opp. ')
+                 + (d.medlemmer.aktive || 0) + ' aktive medlemmer'
+                 + ((d.medlemmer.nyeDenneMnd || 0) > 0
+                        ? ', ' + d.medlemmer.nyeDenneMnd + ' nye denne måneden' : '')
+                 + ((d.medlemmer.fritatt || 0) > 0
+                        ? ', ' + d.medlemmer.fritatt + ' betaler ikke' : '')
+                 + '.',
+                 d.medlemmer.ubetalte || 0, 'Se medlemmene',
+                 () => this.gaaAdmin('adminmedlem',
+                        (d.medlemmer.ubetalte || 0) > 0
+                          ? { medlemFilter: 'Ubetalte', medlemSok: '' }
+                          : { medlemSok: '' }),
+                 (d.medlemmer.ubetalte || 0) > 0)] : []),
+
             // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
             // den veien verkstedet er vant til aa gaa naar noen skal meldes
             // paa — det gaar bare rett inn i kassa naa.
@@ -34004,7 +34232,7 @@ class Component extends DCLogic {
               })),
             };
           })(),
-          miApne: () => this.setState({ miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '' }),
+          miApne: () => this.setState({ miApen: true, miMedlemId: 0, miNavn: '', miEpost: '', miTlf: '', miNotat: '', miFri: false, miFriGrunn: '' }),
           miLukk: () => this.setState({ miApen: false }),
           miFeltStil: felt,
           miEtikett: { display: 'block', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-heading)', marginBottom: 6 },
@@ -34015,6 +34243,15 @@ class Component extends DCLogic {
           miType: valgt, settMiType: e => this.setState({ miType: e.target.value }),
           miTyper: typer,
           miKjent: (this.state.miMedlemId || 0) > 0,
+          miAvkryss: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                       fontSize: 'var(--text-sm)', color: 'var(--text-heading)' },
+          miFri: !!this.state.miFri,
+          vekslMiFri: () => this.setState(st => ({ miFri: !st.miFri })),
+          miFriGrunn: this.state.miFriGrunn || '',
+          settMiFriGrunn: e => this.setState({ miFriGrunn: e.target.value }),
+          miBetalingHjelp: this.state.miFri
+            ? 'Medlemmet lyser ikke rødt i lista, og telles ikke som ubetalt på Oversikt.'
+            : 'Betalingen går ikke av seg selv. Skal trekket skje automatisk, må medlemmet sette det opp med Vipps fra Min side — ellers huker du av betalingen i Kassa når pengene kommer.',
           miKnapp: this.state.miLagrer ? 'Melder inn …' : 'Meld inn',
           miLagre: () => this.meldInnMedlem(valgt),
         };
@@ -34025,7 +34262,9 @@ class Component extends DCLogic {
       // Filtrene folger medlemskapene som faktisk finnes. De sto som faste
       // navn, saa et nytt eller omdopt medlemskap ble ikke mulig aa filtrere
       // paa — og et slettet ett sto igjen med null treff.
-      medlemFiltre: ['Alle', 'Aktive', 'Sluttet', 'Kursdeltakere', 'Admin']
+      // «Ubetalte» staar rett etter «Aktive»: det er dem man leter etter naar
+      // man kommer hit fra kortet paa Oversikt.
+      medlemFiltre: ['Alle', 'Aktive', 'Ubetalte', 'Sluttet', 'Kursdeltakere', 'Admin']
         .concat((this.state.adminPlanerRaa || []).map(pl => pl.navn))
         .concat(this.state.adminPlanerRaa ? [] : ['30 timer', 'Fri tilgang', 'Prøv Lissom'])
         .concat(['Inne nå']).map(n => {
@@ -34067,6 +34306,11 @@ class Component extends DCLogic {
         if (fv === 'Alle') return true;
         if (fv === 'Inne nå') return !!m.inne;
         if (fv === 'Aktive') return !!m.erMedlem && !m.erAdmin;
+        // Bare de som faktisk skylder. «betalingForfalt» er det samme flagget
+        // kortet paa Oversikt teller — leste lista noe annet, kunne kortet
+        // sagt seks og lista vist sju. Et medlem som staar som fritatt fra
+        // betaling hoerer ikke hjemme her; det var hele poenget med haken.
+        if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingForfalt;
         if (fv === 'Sluttet') return !!m.harSluttet;
         if (fv === 'Kursdeltakere') return !m.erMedlem && !m.erAdmin && (m.antallKurs || 0) > 0;
         if (fv === 'Admin') return !!m.erAdmin;

@@ -278,10 +278,73 @@ Svar::json([
         'sisteUke' => $nyeBookinger,
         'ubetalte' => $ubetalte,
     ],
-    'medlemmer' => [
-        'aktive' => (int) DB::verdi("SELECT COUNT(*) FROM members WHERE status = 'aktiv'"),
-        'totalt' => (int) DB::verdi('SELECT COUNT(*) FROM members WHERE anonymisert_at IS NULL'),
-    ],
+    // ── Medlemmene, og hvem som ikke har betalt ───────────────────────
+    //
+    // Eieren, 2. september: «jeg kan ikke se paa min side paa et medlem om det
+    // er betalt for medlemskapet eller ikke». Tallet hoerer hjemme her, der
+    // han ser det uten aa gaa og lete — «Aktive medlemmer» sto med «N
+    // registrerte totalt» under seg, som ingen trenger aa vite hver dag.
+    //
+    // Regnestykket er Medlemskap::betalingsstatus(), det samme som
+    // medlemslista bruker. To regnestykker ville kunne svare hver sitt.
+    'medlemmer' => (static function (): array {
+        $aktive = DB::alle(
+            "SELECT id, status, medlemskap_type, start_dato"
+            . (DB::harKolonne('members', 'betaler_ikke')
+                ? ', betaler_ikke, betaler_ikke_grunn'
+                : ', 0 AS betaler_ikke, NULL AS betaler_ikke_grunn')
+            . " FROM members
+                WHERE status IN ('prove','aktiv','pause') AND anonymisert_at IS NULL"
+        );
+        $ider = array_map(static fn(array $m): int => (int) $m['id'], $aktive);
+        $siste = Medlemskap::sisteBetalinger($ider);
+
+        // Nyeste avtale per medlem, i ett oppslag.
+        $avtaler = [];
+        if ($ider !== []) {
+            $inn = implode(',', $ider);
+            foreach (DB::alle(
+                "SELECT s.member_id, s.vipps_agreement_id, s.neste_trekk, s.siste_trekk, s.status
+                   FROM subscriptions s
+                   JOIN (SELECT member_id, MAX(id) AS siste FROM subscriptions
+                          WHERE member_id IN ({$inn}) GROUP BY member_id) n ON n.siste = s.id"
+            ) as $r) {
+                $avtaler[(int) $r['member_id']] = $r;
+            }
+        }
+
+        $mndStart  = gmdate('Y-m-01');
+        $ubetalte  = 0;
+        $fri       = 0;
+        $nye       = 0;
+        $nyeUbet   = 0;
+        foreach ($aktive as $m) {
+            $b = Medlemskap::betalingsstatus(
+                $m,
+                $avtaler[(int) $m['id']] ?? null,
+                $siste[(int) $m['id']] ?? null
+            );
+            if ($b['tilstand'] === 'fri') {
+                $fri++;
+            } elseif ($b['forfalt']) {
+                $ubetalte++;
+            }
+            if ((string) ($m['start_dato'] ?? '') >= $mndStart) {
+                $nye++;
+                if ($b['forfalt']) {
+                    $nyeUbet++;
+                }
+            }
+        }
+        return [
+            'aktive'      => (int) DB::verdi("SELECT COUNT(*) FROM members WHERE status = 'aktiv'"),
+            'totalt'      => (int) DB::verdi('SELECT COUNT(*) FROM members WHERE anonymisert_at IS NULL'),
+            'ubetalte'    => $ubetalte,
+            'fritatt'     => $fri,
+            'nyeDenneMnd' => $nye,
+            'nyeUbetalte' => $nyeUbet,
+        ];
+    })(),
     // ── Koer ingen sto vakt over ──────────────────────────────────────
     //
     // To ting kunne bli liggende i ukevis uten at noe sa fra: et medlem som

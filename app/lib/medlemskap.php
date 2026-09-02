@@ -185,7 +185,30 @@ final class Medlemskap
             'member_id'          => (int) $medlem['id'],
             'plan'               => $planNavn,
             'pris_ore'           => (int) $plan['pris_ore'],
-            'vipps_agreement_id' => '',
+            // NULL, ikke tom streng.
+            //
+            // Kolonna har UNIQUE KEY uq_subs_agreement. To rader med '' er
+            // to like verdier, og den andre avvises:
+            //
+            //   SQLSTATE[23000]: Integrity constraint violation: 1062
+            //   Duplicate entry '' for key 'uq_subs_agreement'
+            //
+            // NULL teller ikke som en verdi i en unik noekkel, saa flere
+            // rader kan staa uten avtale — som er nettopp det som gjelder
+            // her: en engangsbetaling har ingen avtale i Vipps.
+            //
+            // Feilen slo inn fra og med den ANDRE gangen noen betalte paa
+            // denne maaten. Den forste raden gikk gjennom og ble staaende;
+            // alle etter den traff den. Eieren, 2. september, da han provde
+            // aa betale for medlemskapet sitt.
+            //
+            // Alle stedene som leser kolonna taaler NULL fra for: de gjor
+            // enten «if ($avtale['vipps_agreement_id'])» eller
+            // «trim((string) ($p['vipps_agreement_id'] ?? ''))».
+            //
+            // Migrasjon 125 setter den ene raden som alt staar med '' til
+            // NULL, saa den slutter aa sperre.
+            'vipps_agreement_id' => null,
             'status'             => 'venter',
             'binding_til'        => $binding > 0
                 ? (new DateTimeImmutable('now'))->modify('+' . $binding . ' months')->format('Y-m-d')

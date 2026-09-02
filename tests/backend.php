@@ -6026,6 +6026,41 @@ if (DB::harTabell('courses')) {
     }
 }
 
+// ── Den tomme avtale-ID-en sperret betalingen ─────────────────────────
+//
+// «subscriptions.vipps_agreement_id» har UNIQUE KEY uq_subs_agreement.
+// Medlemskap::startEngangs() satte den til tom streng i stedet for NULL. To
+// rader med '' er to like verdier, og den andre ble avvist:
+//
+//   SQLSTATE[23000]: Integrity constraint violation: 1062
+//   Duplicate entry '' for key 'uq_subs_agreement'
+//
+// Feilen slo inn fra og med den ANDRE gangen noen betalte paa denne maaten:
+// den forste raden gikk gjennom og ble staaende, og alle etter den traff
+// den. Eieren fikk den 2. september da han skulle betale for medlemskapet
+// sitt.
+//
+// En engangsbetaling har ingen avtale i Vipps, og skal staa uten. NULL
+// teller ikke som en verdi i en unik noekkel, saa flere rader kan staa slik.
+$mlib2 = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('engangsbetalingen staar uten avtale-id, ikke med tom streng',
+    str_contains($mlib2, "'vipps_agreement_id' => null,"));
+// Kontrollen: den tomme strengen skal vaere borte.
+sjekk('… og den tomme strengen er borte',
+    !str_contains($mlib2, "'vipps_agreement_id' => '',"));
+// Avtalen som VIRKELIG finnes i Vipps skal fortsatt lagres.
+sjekk('… mens en ekte avtale fortsatt lagres',
+    str_contains($mlib2, "'vipps_agreement_id' => \$vipps['avtaleId'],"));
+// Raden som alt staar med '' sperrer for alle andre til den ryddes.
+$mig125 = file_get_contents(dirname(__DIR__) . '/db/migrations/125_tom_avtale_id_sperret_betaling.sql');
+sjekk('migrasjonen rydder raden som sperrer',
+    str_contains($mig125, 'SET vipps_agreement_id = NULL')
+    && str_contains($mig125, "WHERE vipps_agreement_id = ''"));
+if (DB::harTabell('subscriptions')) {
+    $tomme = DB::verdi("SELECT COUNT(*) FROM subscriptions WHERE vipps_agreement_id = ''");
+    sjekk('ingen rad staar med tom avtale-id i basen', (int) $tomme === 0, $tomme . ' rader');
+}
+
 // ── «Velg» endte paa Min side uten noe der ────────────────────────────
 //
 // Innmeldingsskjemaet paa Min side staar bak «innlogget og ikke medlem» — se
@@ -6285,7 +6320,13 @@ sjekk('… og bare «selv» og «trekk» slipper gjennom',
 // Regelen staar ett sted, saa «Forny» og plankortet ikke kan bli uenige.
 sjekk('planen bestemmer hvilke valg som finnes',
     str_contains($sida, "if (pl.fastTrekk) return [{ plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' }];")
-    && str_contains($sida, "if (pl.engangs) return [{ plan: pl.navn, navn: 'Gjør opp i Vipps', betaling: 'selv' }];"));
+    && str_contains($sida, "if (pl.engangs) return [{ plan: pl.navn, navn: 'Jeg ordner selv', betaling: 'selv' }];"));
+// Ordet er systemets eget, fra innmeldingsskjemaet — ikke et nytt jeg fant
+// paa. Eieren, 2. september: «hvorfor lager du ting paa nytt, naar det
+// allerede finnes i systemet».
+sjekk('… og knappen bruker ordet systemet alt har',
+    !str_contains($sida, 'Gjør opp i Vipps')
+    && str_contains($sida, "knapp('selv', 'Jeg ordner selv')"));
 sjekk('… og begge knappene bruker den samme regelen',
     substr_count($sida, 'this.aboPlanValg(') === 2);
 // Ordlyden staar ett sted. Sto den to, ville skjemaet og dialogen etter

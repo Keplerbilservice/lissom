@@ -1200,6 +1200,22 @@ window.__resources = {
      som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
      si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
      spalter, saa hele menyen faar plass uten aa rulle. */
+  /* ── Kalenderknappen i datofeltene ────────────────────────────────
+     Datoen leses og skrives i tekstfeltet ved siden av, paa norsk. Dette
+     feltet er bare der for velgeren, saa selve datoteksten skjules — det
+     maa gjores paa pseudoelementet, en innebygd stil naar den ikke.
+     «color: transparent» alene holdt ikke: naar feltet fikk fokus,
+     markerte nettleseren et av tallene og en blaa flik dukket opp. */
+  .lx-datoknapp::-webkit-datetime-edit,
+  .lx-datoknapp::-webkit-inner-spin-button,
+  .lx-datoknapp::-webkit-clear-button { display: none; }
+  .lx-datoknapp::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; padding: 0; }
+  .lx-datoknapp:hover::-webkit-calendar-picker-indicator { opacity: 1; }
+  /* Firefox tegner ingen egen knapp; der er feltet selv velgeren. */
+  @supports not selector(::-webkit-calendar-picker-indicator) {
+    .lx-datoknapp { color: transparent; }
+  }
+
   .lx-admmob, .lx-admmobpanel { display: none !important; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
@@ -3858,11 +3874,17 @@ window.__resources = {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
                   <div>
                     <label for="frys-fra" style="{{ frysEtikett }}">Fra og med</label>
-                    <input id="frys-fra" type="date" value="{{ frysFra }}" onChange="{{ settFrysFra }}" style="{{ frysDatoStil }}">
+                    <span style="{{ datoRammeStil }}">
+                      <input id="frys-fra" type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ frysFraVis }}" onChange="{{ settFrysFraVis }}" onBlur="{{ blurFrysFra }}" style="{{ frysDatoStil }}">
+                      <input class="lx-datoknapp" type="date" value="{{ frysFra }}" onChange="{{ settFrysFra }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                    </span>
                   </div>
                   <div>
                     <label for="frys-til" style="{{ frysEtikett }}">Til og med</label>
-                    <input id="frys-til" type="date" value="{{ frysTil }}" onChange="{{ settFrysTil }}" style="{{ frysDatoStil }}">
+                    <span style="{{ datoRammeStil }}">
+                      <input id="frys-til" type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ frysTilVis }}" onChange="{{ settFrysTilVis }}" onBlur="{{ blurFrysTil }}" style="{{ frysDatoStil }}">
+                      <input class="lx-datoknapp" type="date" value="{{ frysTil }}" onChange="{{ settFrysTil }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                    </span>
                   </div>
                 </div>
                 <label for="frys-grunn" style="{{ frysEtikett }}">Hvorfor — valgfritt</label>
@@ -5869,7 +5891,10 @@ window.__resources = {
             <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
-                <input type="date" value="{{ klBDato }}" onChange="{{ settKlBDato }}" style="{{ klRFeltStil }}">
+                <span style="{{ datoRammeStil }}">
+                  <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ klBDatoVis }}" onChange="{{ settKlBDatoVis }}" onBlur="{{ blurKlBDato }}" style="{{ klRFeltStil }}">
+                  <input class="lx-datoknapp" type="date" value="{{ klBDato }}" onChange="{{ settKlBDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                </span>
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
@@ -5934,7 +5959,16 @@ window.__resources = {
             <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
-                <input type="date" value="{{ klRDato }}" onChange="{{ settKlRDato }}" style="{{ klRFeltStil }}">
+                <!-- Dato: skrives paa norsk, og kalenderen staar der fortsatt.
+                     «type=date» tegnes i nettleserens spraak — «09/02/2026» paa
+                     en engelsk nettleser. Eieren, 2. september: «Ja gjør om
+                     datofeltene også», og bedt om at kalenderen ble staaende.
+                     Tekstfeltet er vaart; datofeltet ved siden av er krympet
+                     til ikonet sitt og aapner den samme velgeren som for. -->
+                <span style="{{ datoRammeStil }}">
+                  <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ klRDatoVis }}" onChange="{{ settKlRDatoVis }}" onBlur="{{ blurKlRDato }}" style="{{ klRFeltStil }}">
+                  <input class="lx-datoknapp" type="date" value="{{ klRDato }}" onChange="{{ settKlRDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                </span>
               </div>
               <div>
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
@@ -5982,7 +6016,10 @@ window.__resources = {
               </div>
               <sc-if value="{{ klRNyVis }}" hint-placeholder-val="{{ false }}">
                 <div style="display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; padding: 10px 12px; margin-top: var(--space-2); border-radius: var(--radius-md); background: var(--clay-100);">
-                  <input type="date" value="{{ klRNyDato }}" onChange="{{ settKlRNyDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <span style="{{ datoRammeSmalStil }}">
+                    <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ klRNyDatoVis }}" onChange="{{ settKlRNyDatoVis }}" onBlur="{{ blurKlRNyDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    <input class="lx-datoknapp" type="date" value="{{ klRNyDato }}" onChange="{{ settKlRNyDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                  </span>
                   <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klRNyFra }}" onChange="{{ settKlRNyFra }}" onBlur="{{ blurKlRNyFra }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klRNyTil }}" onChange="{{ settKlRNyTil }}" onBlur="{{ blurKlRNyTil }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klRNyLagre }}" hint-size="auto,36px">Legg til</x-import>
@@ -6197,7 +6234,10 @@ window.__resources = {
               <div style="border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-4);">
                 <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: var(--space-3);">Flytt til ny dato</div>
                 <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: center;">
-                  <input type="date" value="{{ klFlyttDato }}" onChange="{{ settKlFlyttDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                  <span style="{{ datoRammeSmalStil }}">
+                    <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ klFlyttDatoVis }}" onChange="{{ settKlFlyttDatoVis }}" onBlur="{{ blurKlFlyttDato }}" style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                    <input class="lx-datoknapp" type="date" value="{{ klFlyttDato }}" onChange="{{ settKlFlyttDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                  </span>
                   <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ klFlyttTid }}" onChange="{{ settKlFlyttTid }}" onBlur="{{ blurKlFlyttTid }}" style="box-sizing: border-box; width: 92px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ klFlyttLagre }}" hint-size="auto,36px">Lagre ny dato</x-import>
                 </div>
@@ -6720,7 +6760,10 @@ window.__resources = {
               </div>
               <div style="flex: 0 1 150px;">
                 <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Dato</label>
-                <input type="date" value="{{ khTimeDato }}" onChange="{{ settKhTimeDato }}" style="{{ khFeltStil }}">
+                <span style="{{ datoRammeStil }}">
+                  <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ khTimeDatoVis }}" onChange="{{ settKhTimeDatoVis }}" onBlur="{{ blurKhTimeDato }}" style="{{ khFeltStil }}">
+                  <input class="lx-datoknapp" type="date" value="{{ khTimeDato }}" onChange="{{ settKhTimeDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                </span>
               </div>
               <div style="flex: 0 1 100px;">
                 <label style="display: block; font-size: var(--text-xs); font-weight: 600; margin-bottom: 6px;">Timer</label>
@@ -8691,7 +8734,10 @@ window.__resources = {
                   <div style="flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); padding-top: var(--space-4); border-top: 1px dashed var(--border-subtle);">
                     <div style="flex: 0 1 180px;">
                       <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
-                      <input type="date" value="{{ oktDato }}" onChange="{{ settOktDato }}" style="{{ oktFeltStil }}">
+                      <span style="{{ datoRammeStil }}">
+                        <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ oktDatoVis }}" onChange="{{ settOktDatoVis }}" onBlur="{{ blurOktDato }}" style="{{ oktFeltStil }}">
+                        <input class="lx-datoknapp" type="date" value="{{ oktDato }}" onChange="{{ settOktDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                      </span>
                     </div>
                     <div style="flex: 0 1 120px;">
                       <label style="display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
@@ -8746,7 +8792,10 @@ window.__resources = {
                           <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
                             <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
                               <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ sa.merke }}</span>
-                              <input type="date" value="{{ sa.dato }}" onChange="{{ sa.settDato }}" style="{{ oktFeltStil }}">
+                              <span style="{{ datoRammeStil }}">
+                                <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ sa.datoVis }}" onChange="{{ sa.settDatoVis }}" onBlur="{{ sa.blurDato }}" style="{{ oktFeltStil }}">
+                                <input class="lx-datoknapp" type="date" value="{{ sa.dato }}" onChange="{{ sa.settDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+                              </span>
                               <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" onBlur="{{ sa.blurFra }}" style="{{ oktFeltStil }}">
                               <span style="color: var(--text-muted);">–</span>
                               <input type="text" placeholder="15:30" inputmode="numeric" maxlength="5" value="{{ sa.til }}" onChange="{{ sa.settTil }}" onBlur="{{ sa.blurTil }}" style="{{ oktFeltStil }}">
@@ -14814,7 +14863,10 @@ window.__resources = {
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
           <div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
-            <input type="date" value="{{ ndDato }}" onChange="{{ settNdDato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
+            <span style="{{ datoRammeStil }}">
+              <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ ndDatoVis }}" onChange="{{ settNdDatoVis }}" onBlur="{{ blurNdDato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
+              <input class="lx-datoknapp" type="date" value="{{ ndDato }}" onChange="{{ settNdDato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+            </span>
           </div>
           <div>
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Plasser</label>
@@ -14870,7 +14922,10 @@ window.__resources = {
              fantes ikke noe sted. Tomt betyr at kurset gaar samme dag. -->
         <div>
           <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Sluttdato</label>
-          <input type="date" value="{{ ndSluttdato }}" onChange="{{ settNdSluttdato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
+          <span style="{{ datoRammeStil }}">
+            <input type="text" inputmode="numeric" maxlength="10" placeholder="02.09.2026" value="{{ ndSluttdatoVis }}" onChange="{{ settNdSluttdatoVis }}" onBlur="{{ blurNdSluttdato }}" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); color: var(--text-heading);">
+            <input class="lx-datoknapp" type="date" value="{{ ndSluttdato }}" onChange="{{ settNdSluttdato }}" aria-label="Velg dato i kalenderen" style="{{ datoKnappStil }}">
+          </span>
           <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ ndSluttdatoHjelp }}</p>
         </div>
         <sc-if value="{{ ndHarLagtTil }}" hint-placeholder-val="{{ false }}">
@@ -23584,6 +23639,60 @@ class Component extends DCLogic {
     return String(timer).padStart(2, '0') + ':' + String(min).padStart(2, '0');
   }
 
+  /**
+   * 2026-09-02 → «02.09.2026».
+   *
+   * «type=date» tegnes av nettleseren, i nettleserens eget spraak, akkurat
+   * som «type=time» gjorde. Staar den paa engelsk, skriver den «09/02/2026»
+   * — samme dato, motsatt rekkefolge, og ingen maate aa se hvilken det er.
+   * Eieren, 2. september: «Ja gjør om datofeltene også».
+   *
+   * Verdien systemet regner med er fortsatt ISO. Det er bare det man ser og
+   * skriver som er norsk.
+   */
+  norskDato(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso == null ? '' : iso));
+    return m ? m[3] + '.' + m[2] + '.' + m[1] : '';
+  }
+
+  /**
+   * «2.9», «02.09.26», «2/9-2026» → 2026-09-02. Tom naar det ikke er en dato.
+   *
+   * Aaret kan utelates — da er det inneverende. Det er slik man sier en dato
+   * i verkstedet: «sett den opp 12. oktober», ikke «12.10.2026».
+   */
+  isoDato(tekst) {
+    const t = String(tekst == null ? '' : tekst).trim();
+    if (t === '') return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;          // limt inn som den ligger
+    const d = t.split(/[^\d]+/).filter(x => x !== '');
+    if (d.length < 2) return '';
+    const dag = Number(d[0]);
+    const mnd = Number(d[1]);
+    let aar = d.length > 2 ? Number(d[2]) : new Date().getFullYear();
+    if (aar < 100) aar += 2000;
+    if (!(dag >= 1 && dag <= 31) || !(mnd >= 1 && mnd <= 12) || !(aar >= 2000 && aar <= 2100)) return '';
+    const to = n => String(n).padStart(2, '0');
+    const iso = aar + '-' + to(mnd) + '-' + to(dag);
+    // 31. februar finnes ikke. Date ville rettet den til 3. mars i stillhet.
+    const k = new Date(iso + 'T00:00:00Z');
+    return k.getUTCFullYear() === aar && k.getUTCMonth() + 1 === mnd && k.getUTCDate() === dag ? iso : '';
+  }
+
+  /**
+   * Hva som skal staa i datofeltet.
+   *
+   * Mens man skriver er det det man har skrevet; ellers er det datoen
+   * systemet har. «raa.for» sier hvilken dato teksten ble skrevet mot — blir
+   * datoen satt et annet sted, fra kalenderknappen eller fordi en annen okt
+   * ble aapnet, stemmer den ikke lenger, og feltet viser den nye datoen.
+   * Uten det maatte hvert eneste sted som setter en dato ogsaa ha ryddet
+   * bort teksten, og det ene som ble glemt ville vist feil dato.
+   */
+  datoVis(iso, raa) {
+    return raa && raa.for === (iso || '') ? raa.tekst : this.norskDato(iso);
+  }
+
   stemplingKall(kropp, kvittering) {
     if (!this.erPublisert()) {
       this.setState(s => ({ innstemplet: !s.innstemplet }));
@@ -27985,6 +28094,9 @@ class Component extends DCLogic {
               klBTittel: b ? b.kursNavn : '',
               klBDato: this.state.klBDato || '',
               settKlBDato: e => this.setState({ klBDato: e.target.value }),
+              klBDatoVis: this.datoVis(this.state.klBDato, this.state.klBDatoRaa),
+              settKlBDatoVis: e => this.setState({ klBDatoRaa: { for: this.state.klBDato || '', tekst: e.target.value } }),
+              blurKlBDato: e => this.setState({ klBDato: this.isoDato(e.target.value), klBDatoRaa: null }),
               klBFra: this.state.klBFra || '',
               settKlBFra: e => this.setState({ klBFra: this.klokkeslettFelt(e.target.value) }),
               blurKlBFra: e => this.setState({ klBFra: this.klokkeslettFerdig(e.target.value) }),
@@ -28241,6 +28353,9 @@ class Component extends DCLogic {
               klRNyToggle: () => this.setState(s => ({ klRNyVis: !s.klRNyVis })),
               klRNyDato: this.state.klRNyDato || '',
               settKlRNyDato: e => this.setState({ klRNyDato: e.target.value }),
+              klRNyDatoVis: this.datoVis(this.state.klRNyDato, this.state.klRNyDatoRaa),
+              settKlRNyDatoVis: e => this.setState({ klRNyDatoRaa: { for: this.state.klRNyDato || '', tekst: e.target.value } }),
+              blurKlRNyDato: e => this.setState({ klRNyDato: this.isoDato(e.target.value), klRNyDatoRaa: null }),
               klRNyFra: this.state.klRNyFra || '',
               settKlRNyFra: e => this.setState({ klRNyFra: this.klokkeslettFelt(e.target.value) }),
               blurKlRNyFra: e => this.setState({ klRNyFra: this.klokkeslettFerdig(e.target.value) }),
@@ -28272,6 +28387,9 @@ class Component extends DCLogic {
               settKlRNavn: e => this.setState({ klRNavn: e.target.value }),
               klRDato: this.state.klRDato || '',
               settKlRDato: e => this.setState({ klRDato: e.target.value }),
+              klRDatoVis: this.datoVis(this.state.klRDato, this.state.klRDatoRaa),
+              settKlRDatoVis: e => this.setState({ klRDatoRaa: { for: this.state.klRDato || '', tekst: e.target.value } }),
+              blurKlRDato: e => this.setState({ klRDato: this.isoDato(e.target.value), klRDatoRaa: null }),
               klRFra: this.state.klRFra || '',
               settKlRFra: e => this.setState({ klRFra: this.klokkeslettFelt(e.target.value) }),
               blurKlRFra: e => this.setState({ klRFra: this.klokkeslettFerdig(e.target.value) }),
@@ -28609,6 +28727,9 @@ class Component extends DCLogic {
       klVisFlytt: () => this.setState(s => ({ klFlyttVis: !s.klFlyttVis, klBekreftAvlys: false, klFlyttDato: valgt ? valgt.dato : '', klFlyttTid: valgt ? valgt.tid : '' })),
       klFlyttDato: this.state.klFlyttDato || '',
       settKlFlyttDato: e => this.setState({ klFlyttDato: e.target.value }),
+      klFlyttDatoVis: this.datoVis(this.state.klFlyttDato, this.state.klFlyttDatoRaa),
+      settKlFlyttDatoVis: e => this.setState({ klFlyttDatoRaa: { for: this.state.klFlyttDato || '', tekst: e.target.value } }),
+      blurKlFlyttDato: e => this.setState({ klFlyttDato: this.isoDato(e.target.value), klFlyttDatoRaa: null }),
       klFlyttTid: this.state.klFlyttTid || '',
       settKlFlyttTid: e => this.setState({ klFlyttTid: this.klokkeslettFelt(e.target.value) }),
       blurKlFlyttTid: e => this.setState({ klFlyttTid: this.klokkeslettFerdig(e.target.value) }),
@@ -30470,6 +30591,20 @@ class Component extends DCLogic {
     const vals = {
       sider,
       sant: true,
+      // ── Datofeltene ──────────────────────────────────────────────────
+      //
+      // Ett tekstfelt med den norske datoen, og kalenderen krympet til
+      // ikonet sitt oppe i hoeyre hjoerne av det. To elementer, én kontroll
+      // aa se paa. Stilene staar her og ikke ved hvert felt, saa de elleve
+      // datofeltene ikke kan drive fra hverandre.
+      datoRammeStil: { position: 'relative', display: 'inline-flex', alignItems: 'center',
+                       width: '100%', minWidth: 0 },
+      datoRammeSmalStil: { position: 'relative', display: 'inline-flex', alignItems: 'center' },
+      // Gjennomsiktig tekst: da staar bare kalenderikonet igjen. Datoen selv
+      // leses i tekstfeltet under, som er vaart eget.
+      datoKnappStil: { position: 'absolute', right: '8px', width: '22px', height: '22px',
+                       padding: 0, border: 'none', background: 'transparent',
+                       cursor: 'pointer' },
       detaljApen: !!this.state.detalj,
       detaljTittel: (this.state.detalj && this.state.detalj.tittel) || '',
       detaljUnder: (this.state.detalj && this.state.detalj.undertittel) || '',
@@ -30602,6 +30737,9 @@ class Component extends DCLogic {
       ndKurs: this.ndValgtKurs(),
       ndDato: this.state.ndDato || '',
       settNdDato: e => this.setState({ ndDato: e.target.value }),
+      ndDatoVis: this.datoVis(this.state.ndDato, this.state.ndDatoRaa),
+      settNdDatoVis: e => this.setState({ ndDatoRaa: { for: this.state.ndDato || '', tekst: e.target.value } }),
+      blurNdDato: e => this.setState({ ndDato: this.isoDato(e.target.value), ndDatoRaa: null }),
       ndFra: this.state.ndFra || '18:00',
       settNdFra: e => this.setState({ ndFra: this.klokkeslettFelt(e.target.value) }),
       blurNdFra: e => this.setState({ ndFra: this.klokkeslettFerdig(e.target.value) }),
@@ -30610,6 +30748,9 @@ class Component extends DCLogic {
       blurNdTil: e => this.setState({ ndTil: this.klokkeslettFerdig(e.target.value) }),
       ndSluttdato: this.state.ndSluttdato || '',
       settNdSluttdato: e => this.setState({ ndSluttdato: e.target.value }),
+      ndSluttdatoVis: this.datoVis(this.state.ndSluttdato, this.state.ndSluttdatoRaa),
+      settNdSluttdatoVis: e => this.setState({ ndSluttdatoRaa: { for: this.state.ndSluttdato || '', tekst: e.target.value } }),
+      blurNdSluttdato: e => this.setState({ ndSluttdato: this.isoDato(e.target.value), ndSluttdatoRaa: null }),
       ndSluttdatoHjelp: (() => {
         const a = this.state.ndDato || '';
         const b = this.state.ndSluttdato || '';
@@ -35851,6 +35992,9 @@ class Component extends DCLogic {
           oktTil: this.state.oktTil || '',
           oktBeskjed: this.state.oktBeskjed || '',
           settOktDato: e => this.setState({ oktDato: e.target.value, oktBeskjed: '' }),
+          oktDatoVis: this.datoVis(this.state.oktDato, this.state.oktDatoRaa),
+          settOktDatoVis: e => this.setState({ oktDatoRaa: { for: this.state.oktDato || '', tekst: e.target.value } }),
+          blurOktDato: e => this.setState({ oktDato: this.isoDato(e.target.value), oktDatoRaa: null, oktBeskjed: '' }),
           settOktFra:  e => this.setState({ oktFra: this.klokkeslettFelt(e.target.value), oktBeskjed: '' }),
           blurOktFra:  e => this.setState({ oktFra: this.klokkeslettFerdig(e.target.value), oktBeskjed: '' }),
           settOktTil:  e => this.setState({ oktTil: this.klokkeslettFelt(e.target.value), oktBeskjed: '' }),
@@ -35891,6 +36035,19 @@ class Component extends DCLogic {
             dato: sa.dato || '', fra: sa.fra || '', til: sa.til || '',
             overskrift: sa.overskrift || '', tekst: sa.tekst || '',
             settDato: e => this.endreSamling(i, { dato: e.target.value }),
+            datoVis: this.datoVis(sa.dato, (this.state.samlingDatoRaa || {})[i]),
+            settDatoVis: e => this.setState(st => ({
+              samlingDatoRaa: Object.assign({}, st.samlingDatoRaa, { [i]: { for: sa.dato || '', tekst: e.target.value } }),
+            })),
+            blurDato: e => {
+              const iso = this.isoDato(e.target.value);
+              this.setState(st => {
+                const r = Object.assign({}, st.samlingDatoRaa);
+                delete r[i];
+                return { samlingDatoRaa: r };
+              });
+              this.endreSamling(i, { dato: iso });
+            },
             settFra: e => this.endreSamling(i, { fra: this.klokkeslettFelt(e.target.value) }),
             settTil: e => this.endreSamling(i, { til: this.klokkeslettFelt(e.target.value) }),
             blurFra: e => this.endreSamling(i, { fra: this.klokkeslettFerdig(e.target.value) }),
@@ -36715,6 +36872,9 @@ class Component extends DCLogic {
           settKhTimeHvem: e => this.setState({ khTimeHvem: e.target.value, khTimeBeskjed: '' }),
           khTimeDato: this.state.khTimeDato || new Date().toISOString().slice(0, 10),
           settKhTimeDato: e => this.setState({ khTimeDato: e.target.value, khTimeBeskjed: '' }),
+          khTimeDatoVis: this.datoVis(this.state.khTimeDato, this.state.khTimeDatoRaa),
+          settKhTimeDatoVis: e => this.setState({ khTimeDatoRaa: { for: this.state.khTimeDato || '', tekst: e.target.value } }),
+          blurKhTimeDato: e => this.setState({ khTimeDato: this.isoDato(e.target.value), khTimeDatoRaa: null, khTimeBeskjed: '' }),
           khTimeAntall: this.state.khTimeAntall || '',
           settKhTimeAntall: e => this.setState({ khTimeAntall: e.target.value, khTimeBeskjed: '' }),
           khTimeHva: this.state.khTimeHva || '',
@@ -38193,8 +38353,14 @@ class Component extends DCLogic {
           frysOmraadeStil: Object.assign({}, felt, { resize: 'vertical' }),
           frysFra: this.state.frysFra || '',
           settFrysFra: e => this.setState({ frysFra: e.target.value }),
+          frysFraVis: this.datoVis(this.state.frysFra, this.state.frysFraRaa),
+          settFrysFraVis: e => this.setState({ frysFraRaa: { for: this.state.frysFra || '', tekst: e.target.value } }),
+          blurFrysFra: e => this.setState({ frysFra: this.isoDato(e.target.value), frysFraRaa: null }),
           frysTil: this.state.frysTil || '',
           settFrysTil: e => this.setState({ frysTil: e.target.value }),
+          frysTilVis: this.datoVis(this.state.frysTil, this.state.frysTilRaa),
+          settFrysTilVis: e => this.setState({ frysTilRaa: { for: this.state.frysTil || '', tekst: e.target.value } }),
+          blurFrysTil: e => this.setState({ frysTil: this.isoDato(e.target.value), frysTilRaa: null }),
           frysGrunn: this.state.frysGrunn || '',
           settFrysGrunn: e => this.setState({ frysGrunn: e.target.value }),
           frysBeskjed: this.state.frysBeskjed || '',

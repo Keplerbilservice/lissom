@@ -34,6 +34,14 @@ krev_admin();
  */
 const TEKSTKOLONNER = ['merke', 'undertekst', 'beskrivelse', 'punkter', 'passer_for', 'bilde', 'fremhevet'];
 
+/**
+ * Kolonnene migrasjon 127 la til: den lange teksten og «Viktig aa vite».
+ *
+ * Samme vakt som over, av samme grunn — de kom senere enn resten, og en
+ * migrasjon kan staa ukjort. Skjermen virker som for uten dem.
+ */
+const LANGKOLONNER = ['langtekst', 'viktig'];
+
 $harTekst = static function (): bool {
     static $svar = null;
     if ($svar === null) {
@@ -82,6 +90,10 @@ if (Foresporsel::metode() === 'GET') {
             'passerFor'   => (string) ($p['passer_for'] ?? ''),
             'bilde'       => (string) ($p['bilde'] ?? ''),
             'fremhevet'   => !empty($p['fremhevet']),
+            // Den utfyllende teksten paa medlemskapssida, og «Viktig aa vite»
+            // under den (migrasjon 127).
+            'langtekst'   => (string) ($p['langtekst'] ?? ''),
+            'viktig'      => (string) ($p['viktig'] ?? ''),
         ], $rader),
     ]);
 }
@@ -145,7 +157,20 @@ if ($handling === 'lagre') {
         'passer_for'  => mb_substr(trim((string) ($kropp['passerFor'] ?? '')), 0, 200),
         'bilde'       => mb_substr(trim((string) ($kropp['bilde'] ?? '')), 0, 200),
         'fremhevet'   => $fremhevet,
+        // Avsnittene paa medlemskapssida. TEXT i basen, saa den kan vaere lang
+        // — men ikke uendelig; 20 000 tegn er godt over det noen skriver, og
+        // stopper en klipp-og-lim som har gaatt galt.
+        'langtekst'   => mb_substr(trim((string) ($kropp['langtekst'] ?? '')), 0, 20000),
+        // «Viktig aa vite» — én linje per punkt, samme behandling som punkter.
+        'viktig'      => implode("\n", Medlemskap::punkter((string) ($kropp['viktig'] ?? ''))),
     ];
+
+    // Mangler migrasjon 127, lagrer vi resten framfor aa la alt falle.
+    if (!DB::harKolonne('membership_plans', 'langtekst')) {
+        foreach (LANGKOLONNER as $k) {
+            unset($felter[$k]);
+        }
+    }
 
     if (!array_key_exists('fastTrekk', $kropp)
         || !DB::harKolonne('membership_plans', 'krever_fast_trekk')) {

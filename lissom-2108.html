@@ -2124,15 +2124,31 @@ window.__resources = {
               <sc-for list="{{ bOmAvsnitt }}" as="a" hint-placeholder-count="2">
                 <p style="margin: 0 0 var(--space-5); color: var(--text-body); font-size: var(--text-lg); max-width: 56ch; text-wrap: pretty;">{{ a.tekst }}</p>
               </sc-for>
-              <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
-              <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">
-                <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">
-                  <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">
-                    <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">{{ f.merke }}</div>
-                    <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ f.verdi }}</div>
-                  </div>
-                </sc-for>
-              </div>
+              <!-- Linja og faktaboksene hoerer til kursene.
+                   Sida brukes ogsaa naar man klikker seg inn paa et
+                   medlemskap, og der sa boksen «Varighet · 30 timer i
+                   maaneden» — det samme som staar to linjer over — mens linja
+                   sa «Passer for: Alle — ingen forkunnskaper nodvendig», en
+                   reservetekst som gjelder kurs.
+                   Eieren, 2. september: «firkanten som er paa alle kurs naa,
+                   med Varighet 30 timer i maaneden skal jeg ikke ha» og «jeg
+                   vil heller ikke ha med dette, Passer for: Alle — ingen
+                   forkunnskaper nodvendig». Bare paa medlemskapene; paa
+                   kursene er Nivaa, Varighet, Du laerer og Med hjem felt som
+                   fylles ut i kursoppsettet. -->
+              <sc-if value="{{ bVisPasserFor }}" hint-placeholder-val="{{ true }}">
+                <p style="margin: 0 0 var(--space-6); font-size: var(--text-base); color: var(--text-heading); max-width: 56ch;"><strong>Passer for:</strong> {{ bPasserFor }}</p>
+              </sc-if>
+              <sc-if value="{{ bVisFakta }}" hint-placeholder-val="{{ true }}">
+                <div class="lx-cols4" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: 0 0 var(--space-6); max-width: 56ch;">
+                  <sc-for list="{{ bFakta }}" as="f" hint-placeholder-count="4">
+                    <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);">
+                      <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px;">{{ f.merke }}</div>
+                      <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading);">{{ f.verdi }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
               <div style="display: flex; flex-direction: column; gap: 10px; max-width: 52ch;">
                 <sc-for list="{{ bookingPunkter }}" as="p" hint-placeholder-count="4">
                   <div style="display: flex; gap: 10px; align-items: flex-start; font-size: var(--text-base); color: var(--text-body);">
@@ -7386,6 +7402,24 @@ window.__resources = {
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Punkter — ett per linje</label>
                   <textarea value="{{ plPunkter }}" onChange="{{ settPlPunkter }}" rows="5" placeholder="30 verkstedtimer i måneden&#10;Egen hylle i verkstedet&#10;Tilgang 24/7 med dørkode" style="{{ plOmradeStil }}"></textarea>
+                  <div style="{{ plHjelp }}">Står både på kortet og på siden man kommer til når man klikker seg inn.</div>
+                </div>
+
+                <!-- Den utfyllende teksten (migrasjon 127).
+                     Beskrivelsen over er én setning paa kortet og rommer 400
+                     tegn. Eieren, 2. september: «jeg vil ha utvidet info paa
+                     medlemskapene» — seks avsnitt som hoerer hjemme paa sida
+                     man kommer til, ikke paa kortet. -->
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Utfyllende informasjon</label>
+                  <textarea value="{{ plLangtekst }}" onChange="{{ settPlLangtekst }}" rows="12" placeholder="Basis 30 – frihet til å skape, når det passer deg&#10;&#10;Basis 30 er vårt mest populære medlemskap …&#10;&#10;Med dette medlemskapet får du 30 verkstedtimer hver måned …" style="{{ plOmradeStil }}"></textarea>
+                  <div style="{{ plHjelp }}">Står på siden man kommer til når man klikker seg inn på medlemskapet. La en tom linje stå mellom avsnittene — de settes som egne avsnitt.</div>
+                </div>
+
+                <div style="margin-top: var(--space-4);">
+                  <label style="{{ plEtikett }}">Viktig å vite — ett per linje</label>
+                  <textarea value="{{ plViktig }}" onChange="{{ settPlViktig }}" rows="4" placeholder="Krever kurs hos oss eller tidligere erfaring&#10;2 måneders bindingstid ved oppstart&#10;Leire, glassur og brenning kjøpes i tillegg" style="{{ plOmradeStil }}"></textarea>
+                  <div style="{{ plHjelp }}">Egen bolk nederst på medlemskapssiden. Står tom om du ikke skriver noe.</div>
                 </div>
 
                 <div style="margin-top: var(--space-4);">
@@ -7398,10 +7432,27 @@ window.__resources = {
                   <p style="margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted);">På nettsiden: <em>{{ plPasserForVis }}</em></p>
                 </div>
 
+                <!-- Bildet velges, ikke skrives.
+                     Her sto et tekstfelt der filnavnet maatte skrives av for
+                     haand fra Nettsiden → Bilder. Eieren, 2. september: «jeg
+                     vil ogsaa ha mulighet aa legge ut bilder direkte i dette
+                     bildet, ikke slik det er naa hvor det staar Bilde /
+                     uploads_shutterstock_2829103797.jpg».
+                     Dette er den samme billedvelgeren kurs, varer, artikler
+                     og referansekunder bruker — der ligger ogsaa opplasting
+                     av egne bilder. -->
                 <div style="margin-top: var(--space-4);">
                   <label style="{{ plEtikett }}">Bilde</label>
-                  <input value="{{ plBilde }}" onChange="{{ settPlBilde }}" placeholder="uploads_shutterstock_2829103797.jpg" style="{{ plFeltStil }}">
-                  <div style="{{ plHjelp }}">Filnavnet på bildet slik det heter under Nettsiden → Bilder.</div>
+                  <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; margin-top: 6px;">
+                    <div style="{{ plBildeStil }}"></div>
+                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="image" on-click="{{ plVelgBilde }}" hint-size="auto,38px">{{ plBildeKnapp }}</x-import>
+                      <sc-if value="{{ plHarBilde }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" onClick="{{ plFjernBilde }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Fjern bildet</button>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <div style="{{ plHjelp }}">Står øverst på kortet og på medlemskapssiden. Uten bilde velger nettsiden ett fra biblioteket.</div>
                 </div>
               </div>
             </div>
@@ -16528,6 +16579,10 @@ class Component extends DCLogic {
           passerFor: p.passerFor || '',
           bilde: bilde,
           fremhevet: !!p.fremhevet,
+          // Den utfyllende teksten og «Viktig aa vite» (migrasjon 127).
+          // Tomme paa en plan som ikke har faatt tekst — da staar sida som for.
+          langtekst: p.langtekst || '',
+          viktig: (p.viktig && p.viktig.length) ? p.viktig : [],
           // Proveperioden kan bare kjopes én gang.
           brukt: !!p.engangs && !!this.state.innlogget,
         };
@@ -18464,6 +18519,31 @@ class Component extends DCLogic {
       });
   }
 
+  /**
+   * Faktaboksene over punktlista: Nivaa, Varighet, Du laerer, Med hjem.
+   *
+   * Ligger her og ikke i verdilista fordi to steder leser den: «bFakta»
+   * tegner radene, og «bVisFakta» avgjor om ramma rundt dem skal staa i det
+   * hele tatt. Sto regnestykket to ganger, kunne ramma staatt tom.
+   */
+  bFaktaRader() {
+      const k = this.state.valgtKurs || {};
+      const kort = t => String(t || '').split(/[.\n]/)[0].trim();
+      return [
+        { merke: 'Nivå', verdi: k.nivaaTekst || '' },
+        { merke: 'Varighet', verdi: k.duration || '' },
+        // Boksene er smale. «Innføring i plateteknikk og dekor» staar her;
+        // hele setningen staar under «Dette lærer du». Foerste setning av
+        // den lange teksten brakk boksen i fem linjer.
+        { merke: 'Du lærer', verdi: k.laererKort || kort(k.laererTekst) },
+        // Sto som kort(k.lagerDu): faktaboksen leste «Dette lager du»
+        // mens avsnittet under leste «Dette faar du med hjem». To felt for
+        // én ting, og det forste har ikke lenger et felt i kursoppsettet —
+        // da hadde boksen blitt staaende paa en tekst ingen kunne rette.
+        { merke: 'Med hjem', verdi: kort(k.medHjem) },
+      ].filter(f => f.verdi !== '');
+  }
+
   /** Gir en gave til ett medlem eller til alle. Skjermen «Gi gave» i admin. */
   sendGave() {
     if ((this.state.gMottaker || 'Alle medlemmer') === 'Ett medlem' && !this.state.gMedlem) {
@@ -19790,6 +19870,16 @@ class Component extends DCLogic {
     if (!this.state.bildeliste) this.hentBilder();
   }
 
+  /**
+   * Endrer ett felt i medlemskapsskjemaet.
+   *
+   * Samme grep som endreReferanse(): billedvelgeren maa kunne skrive i
+   * skjemaet, og en ny plan finnes ikke paa serveren foer den er lagret.
+   */
+  endrePlan(endring) {
+    this.setState(st => ({ plRed: Object.assign({}, st.plRed || {}, endring) }));
+  }
+
   /** Endrer ett felt i referansekunde-skjemaet. */
   endreReferanse(endring) {
     this.setState(st => ({
@@ -19895,6 +19985,12 @@ class Component extends DCLogic {
       });
       return;
     }
+    // Medlemskapet lagres naar skjemaet lagres, av samme grunn som
+    // referansekunden under: en ny plan finnes ikke paa serveren enda.
+    if (v.slag === 'plan') {
+      this.endrePlan({ bilde: url || '' });
+      return;
+    }
     // Referansekunden lagres naar skjemaet lagres, ikke med det samme: en ny
     // kunde har ingen id aa lagre paa foer den er opprettet.
     if (v.slag === 'referanse') {
@@ -19982,6 +20078,9 @@ class Component extends DCLogic {
     // kanskje ikke lagret ennaa.
     const valgt = (v && v.slag === 'kurs')
       ? { tittel: this.state.kNavn || 'kurset', bilde: (this.state.kBilder || [])[v.rute] || '' }
+      : (v && v.slag === 'plan')
+        ? { tittel: (this.state.plRed || {}).navn || 'medlemskapet',
+            bilde: (this.state.plRed || {}).bilde || '' }
       : (v && v.slag === 'markedbilde')
         ? { tittel: { artikkel: 'artikkelen', brev: 'nyhetsbrevet', sosialt: 'innlegget' }[v.felt] || 'utkastet',
             bilde: this.state[{ artikkel: 'mkArtBilde', brev: 'mkBrevBilde', sosialt: 'mkSosBilde' }[v.felt]] || '' }
@@ -29761,7 +29860,13 @@ class Component extends DCLogic {
         const k = {
           level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
           status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
-          om: (o.beskrivelse || '') + ' ' + passer.replace('Passer for: deg', 'Passer for deg') + '. Krav: kurs hos oss, eller erfaring fra før. ' + oppsigelse + '.',
+          // Har verkstedet skrevet en utfyllende tekst, er det den som staar.
+          // Ellers samme setning som for — en plan uten tekst skal ikke bli
+          // tommere enn den var.
+          om: o.langtekst
+            || ((o.beskrivelse || '') + ' ' + passer.replace('Passer for: deg', 'Passer for deg') + '. Krav: kurs hos oss, eller erfaring fra før. ' + oppsigelse + '.'),
+          // «Viktig aa vite» staar som en egen seksjon lenger nede paa sida.
+          viktig: o.viktig || [],
           punkter,
           datoer: [{ dato: 'Start når du vil', tid: 'Aktiveres ved betaling', plasser: 'Ledig', valgt: true }],
         };
@@ -30834,6 +30939,7 @@ class Component extends DCLogic {
       // ligger her framfor inne i én av skjermene.
       ...this.bildevalgVals(),
       mkBildevalgHva: (this.state.bildeFor || {}).slag === 'vare' ? 'Bilde til varen'
+        : (this.state.bildeFor || {}).slag === 'plan' ? 'Bilde til medlemskapet'
         : (this.state.bildeFor || {}).slag === 'artikkelbilde' ? 'Bilde i artikkelteksten'
         : (this.state.bildeFor || {}).slag === 'kurs'
           ? ((this.state.bildeFor || {}).rute === 0 ? 'Hovedbilde til kurset' : 'Bilde til kurset')
@@ -31933,6 +32039,10 @@ class Component extends DCLogic {
             ['Når er den ferdig', k.ferdigTid],
             ['Praktisk informasjon', k.praktisk],
             ['Allergener og kommentarer', k.allergener],
+            // «Viktig aa vite» paa medlemskapene (migrasjon 127). Lista
+            // settes sammen med linjeskift, saa den staar under hverandre i
+            // samme avsnittsform som de andre seksjonene.
+            ['Viktig å vite', (k.viktig || []).join('\n')],
           ].filter(([, t]) => String(t || '').trim() !== '')
            .map(([tittel, tekst]) => ({ tittel, tekst: String(tekst).trim() })),
           bHarMerker: passer.length > 0,
@@ -34962,6 +35072,7 @@ class Component extends DCLogic {
                   beskrivelse: pl.beskrivelse || '', punkter: String(pl.punkter || ''),
                   passerFor: pl.passerFor || '', bilde: pl.bilde || '',
                   fremhevet: !!pl.fremhevet,
+                  langtekst: pl.langtekst || '', viktig: pl.viktig || '',
                 } });
                 window.scrollTo(0, 0);
               },
@@ -34982,6 +35093,7 @@ class Component extends DCLogic {
               engangs: false, aktiv: true, sortering: '0',
               merke: '', undertekst: '', beskrivelse: '', punkter: '',
               passerFor: '', bilde: '', fremhevet: false,
+              langtekst: '', viktig: '',
             } });
             window.scrollTo(0, 0);
           },
@@ -35008,7 +35120,26 @@ class Component extends DCLogic {
             const t = this.utenGjentakelse(v('passerFor'), ['passer for', 'for deg som', 'deg som']);
             return t ? 'Passer for: deg som ' + t : '(står ikke på kortet)';
           })(),
-          plBilde: v('bilde'),          settPlBilde: sett('bilde'),
+          plLangtekst: v('langtekst'),  settPlLangtekst: sett('langtekst'),
+          plViktig: v('viktig'),        settPlViktig: sett('viktig'),
+
+          // ── Bildet ──
+          //
+          // Samme billedvelger som kurs, varer, artikler og referansekunder.
+          // Planen lagres naar skjemaet lagres — en ny plan finnes ikke paa
+          // serveren enda — saa valget legges i skjemaet, som paa referansene.
+          plBilde: v('bilde'),
+          plHarBilde: !!v('bilde'),
+          plBildeKnapp: v('bilde') ? 'Bytt bilde' : 'Velg bilde',
+          plBildeStil: {
+            width: 168, flex: '0 0 auto', aspectRatio: '16 / 10',
+            borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)',
+            backgroundColor: 'var(--clay-200)',
+            backgroundImage: v('bilde') ? "url('" + v('bilde') + "')" : 'none',
+            backgroundSize: 'cover', backgroundPosition: this.fokusFor(v('bilde') || ''),
+          },
+          plVelgBilde: () => this.apneBildevalg({ slag: 'plan' }),
+          plFjernBilde: () => this.endrePlan({ bilde: '' }),
 
           plEngangs: !!(red && red.engangs),     vekslPlEngangs: veksle('engangs'),
           plAktiv: !!(red && red.aktiv),         vekslPlAktiv: veksle('aktiv'),
@@ -35033,6 +35164,8 @@ class Component extends DCLogic {
               beskrivelse: d.beskrivelse || '', punkter: d.punkter || '',
               passerFor: d.passerFor || '', bilde: d.bilde || '',
               fremhevet: !!d.fremhevet,
+              // Den utfyllende teksten og «Viktig aa vite» (migrasjon 127).
+              langtekst: d.langtekst || '', viktig: d.viktig || '',
             });
           },
         };
@@ -40050,23 +40183,7 @@ class Component extends DCLogic {
       //
       // En boks uten innhold staar ikke. Fire overskrifter med tre svar ser
       // ut som om noe er i stykker.
-      bFakta: (() => {
-        const k = this.state.valgtKurs || {};
-        const kort = t => String(t || '').split(/[.\n]/)[0].trim();
-        return [
-          { merke: 'Nivå', verdi: k.nivaaTekst || '' },
-          { merke: 'Varighet', verdi: k.duration || '' },
-          // Boksene er smale. «Innføring i plateteknikk og dekor» staar her;
-          // hele setningen staar under «Dette lærer du». Foerste setning av
-          // den lange teksten brakk boksen i fem linjer.
-          { merke: 'Du lærer', verdi: k.laererKort || kort(k.laererTekst) },
-          // Sto som kort(k.lagerDu): faktaboksen leste «Dette lager du»
-          // mens avsnittet under leste «Dette faar du med hjem». To felt for
-          // én ting, og det forste har ikke lenger et felt i kursoppsettet —
-          // da hadde boksen blitt staaende paa en tekst ingen kunne rette.
-          { merke: 'Med hjem', verdi: kort(k.medHjem) },
-        ].filter(f => f.verdi !== '');
-      })(),
+      bFakta: this.bFaktaRader(),
       // Linja over «Velg dato»: naar kurset gaar, hvor lenge det varer og
       // hvilket nivaa det er paa.
       //
@@ -40134,6 +40251,11 @@ class Component extends DCLogic {
         { tittel: 'Hva får du', punkter: ['Tett veiledning i liten gruppe', 'Alt utstyr, leire, glasur og brenning', 'Noe du har laget selv — med hjem'] },
         { tittel: 'Finn kurset som passer', punkter: ['Hvert kurs viser nivå, varighet og innhold', 'Se hva som er inkludert før du booker', 'Usikker? Send oss en forespørsel nederst'] },
       ]),
+      // Se markupen: begge hoerer til kursene, og staar ikke paa medlemskapene.
+      // Tom faktaboks skjules ogsaa — et kurs uten utfylte felt skal ikke ha
+      // en tom rad med luft under seg.
+      bVisFakta: this.state.fra !== 'medlemskap' && this.bFaktaRader().length > 0,
+      bVisPasserFor: this.state.fra !== 'medlemskap',
       bPasserFor: (() => {
         const k = this.state.valgtKurs || {};
         // Markupen skriver «Passer for:» foran. Staar det i verdien ogsaa,

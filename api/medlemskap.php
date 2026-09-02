@@ -33,6 +33,11 @@ $planer = static fn(): array => array_map(static fn($p) => [
     'passerFor'  => (string) ($p['passer_for'] ?? ''),
     'bilde'      => (string) ($p['bilde'] ?? ''),
     'fremhevet'  => !empty($p['fremhevet']),
+    // Den utfyllende teksten paa medlemskapssida, og «Viktig aa vite» under
+    // den (migrasjon 127). Staar de tomt — eller staar migrasjonen ukjort —
+    // ser sida ut noeyaktig som for.
+    'langtekst'  => (string) ($p['langtekst'] ?? ''),
+    'viktig'     => Medlemskap::punkter($p['viktig'] ?? null),
 ], Medlemskap::planer());
 
 // ------------------------------------------------------------------ lesing

@@ -6254,7 +6254,14 @@ sjekk('… og setter den paa aarsmedlemskapet',
     str_contains($mig124, 'WHERE binding_mnd >= 12')
     && str_contains($mig124, "punkter NOT LIKE '%Selg egne arbeider gjennom lissom.no%'"));
 if (DB::harTabell('membership_plans')) {
-    $med = DB::alle("SELECT navn, punkter FROM membership_plans WHERE punkter LIKE '%Selg egne arbeider%'");
+    // Sto som «Selg egne arbeider» — ordrett den formuleringa migrasjon 124
+    // satte inn. Eieren skrev punktlista om selv i migrasjon 128, og linja
+    // heter naa «Mulighet til aa selge egne arbeider gjennom lissom.no».
+    // Paastanden er hvilken PLAN som har den, ikke hvordan den er formulert.
+    $med = DB::alle(
+        "SELECT navn, punkter FROM membership_plans
+          WHERE punkter LIKE '%elg egne arbeider%' OR punkter LIKE '%elge egne arbeider%'"
+    );
     sjekk('salgslinja staar bare paa aarsmedlemskapet i basen',
         count($med) === 1 && str_contains((string) $med[0]['navn'], 'rsmedlemskap'),
         count($med) . ' plan(er): ' . implode(', ', array_column($med, 'navn')));
@@ -6741,6 +6748,136 @@ sjekk('… og er mye mindre',
 sjekk('… uten prisen paa kortet',
     !str_contains($sida, '<span >{{ k.pris }}</span>')
     && str_contains($sida, '>{{ k.navn }}</div>'));
+
+// ── Utfyllende informasjon paa medlemskapene ───────────────────────────
+//
+// Eieren, 2. september: «jeg vil ha utvidet info paa medlemskapene», og
+// deretter én melding per plan med teksten som skal staa der.
+//
+// «beskrivelse» er én setning paa kortet og rommer 400 tegn. Teksten som skal
+// inn er seks avsnitt lang og hoerer hjemme paa sida man kommer til naar man
+// klikker seg inn. Migrasjon 127 gir den et eget felt, og «Viktig aa vite»
+// et til.
+echo "\n== Utfyllende info paa medlemskapene ==\n";
+
+$mig127 = file_get_contents(dirname(__DIR__) . '/db/migrations/127_utfyllende_info_pa_medlemskap.sql');
+sjekk('migrasjon 127 gir planene langtekst og viktig',
+    str_contains($mig127, 'ADD COLUMN langtekst TEXT')
+    && str_contains($mig127, 'ADD COLUMN viktig    TEXT'));
+sjekk('… og kolonnene staar i basen',
+    DB::harKolonne('membership_plans', 'langtekst')
+    && DB::harKolonne('membership_plans', 'viktig'));
+
+// Teksten er lagret, ikke skrevet inn i koden.
+foreach (['Prøv Lissom', 'Basis 30', 'Årsmedlemskap'] as $navn) {
+    $pl = Medlemskap::plan($navn);
+    sjekk('«' . $navn . '» har utfyllende tekst i basen',
+        $pl !== null && mb_strlen((string) $pl['langtekst']) > 600,
+        mb_strlen((string) ($pl['langtekst'] ?? '')) . ' tegn');
+    sjekk('… og «Viktig aa vite»',
+        $pl !== null && Medlemskap::punkter($pl['viktig']) !== [],
+        count(Medlemskap::punkter($pl['viktig'] ?? null)) . ' punkter');
+    // Avsnittene skal staa som avsnitt. Ett avsnitt betyr at tomlinjene er
+    // borte, og da blir hele teksten én klump paa sida.
+    sjekk('… og teksten staar i flere avsnitt',
+        $pl !== null && count(preg_split('/\r?\n\s*\r?\n/', trim((string) $pl['langtekst']))) >= 4);
+}
+
+// Serveren sender dem ut. Uten dette staar teksten i basen og ingen ser den.
+$medApi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('api/medlemskap.php sender langtekst og viktig',
+    str_contains($medApi, "'langtekst'  => (string) (\$p['langtekst'] ?? '')")
+    && str_contains($medApi, "'viktig'     => Medlemskap::punkter(\$p['viktig'] ?? null)"));
+
+// Nettsida bruker dem: den lange teksten er brodteksten, «Viktig aa vite» er
+// en egen bolk under de andre seksjonene.
+sjekk('medlemskapssida viser den utfyllende teksten',
+    str_contains($sida, 'om: o.langtekst'));
+sjekk('… og «Viktig aa vite» som egen bolk',
+    str_contains($sida, "['Viktig å vite', (k.viktig || []).join('\\n')],"));
+
+// Skjemaet i admin. Uten feltene finnes teksten bare i en migrasjon, og
+// verkstedet maa be om hjelp for aa rette et komma.
+sjekk('planskjemaet har begge feltene',
+    str_contains($sida, 'value="{{ plLangtekst }}" onChange="{{ settPlLangtekst }}"')
+    && str_contains($sida, 'value="{{ plViktig }}" onChange="{{ settPlViktig }}"'));
+sjekk('… og de er koblet til skjemaet',
+    str_contains($sida, "plLangtekst: v('langtekst'),  settPlLangtekst: sett('langtekst'),")
+    && str_contains($sida, "plViktig: v('viktig'),        settPlViktig: sett('viktig'),"));
+// Lagringen maa sende dem, og «Rediger» maa hente dem. Mangler det ene, blir
+// teksten toemt i det noen retter prisen.
+sjekk('… lagringen sender dem',
+    str_contains($sida, "langtekst: d.langtekst || '', viktig: d.viktig || '',"));
+sjekk('… og «Rediger» henter dem',
+    str_contains($sida, "langtekst: pl.langtekst || '', viktig: pl.viktig || '',"));
+$planApi127 = file_get_contents(dirname(__DIR__) . '/api/admin/planer.php');
+sjekk('… og serveren tar dem imot',
+    str_contains($planApi127, "'langtekst'   => mb_substr(trim((string) (\$kropp['langtekst'] ?? '')), 0, 20000),")
+    && str_contains($planApi127, "'viktig'      => implode(\"\\n\", Medlemskap::punkter((string) (\$kropp['viktig'] ?? ''))),"));
+sjekk('… og sender dem tilbake til skjemaet',
+    str_contains($planApi127, "'langtekst'   => (string) (\$p['langtekst'] ?? ''),"));
+
+// ── Bildet velges, det skrives ikke ────────────────────────────────────
+//
+// Eieren, 2. september: «jeg vil ogsaa ha mulighet aa legge ut bilder direkte
+// i dette bildet, ikke slik det er naa hvor det staar Bilde /
+// uploads_shutterstock_2829103797.jpg».
+sjekk('medlemskapet har billedvelger, ikke et filnavnfelt',
+    str_contains($sida, "plVelgBilde: () => this.apneBildevalg({ slag: 'plan' }),")
+    && str_contains($sida, 'on-click="{{ plVelgBilde }}"'));
+sjekk('… og tekstfeltet med filnavnet er borte',
+    !str_contains($sida, 'value="{{ plBilde }}" onChange="{{ settPlBilde }}"')
+    && !str_contains($sida, 'Filnavnet på bildet slik det heter under Nettsiden → Bilder.'));
+sjekk('… og det valgte bildet havner i skjemaet',
+    str_contains($sida, "if (v.slag === 'plan') {\n      this.endrePlan({ bilde: url || '' });"));
+
+// ── Faktaboksen og «Passer for» hoerer til kursene ─────────────────────
+//
+// Eieren, 2. september: «firkanten som er paa alle kurs naa, med Varighet
+// 30 timer i maaneden skal jeg ikke ha» og «jeg vil heller ikke ha med dette,
+// Passer for: Alle — ingen forkunnskaper nodvendig». Bare paa medlemskapene:
+// paa kursene er Nivaa, Varighet, Du laerer og Med hjem felt som fylles ut i
+// kursoppsettet.
+sjekk('faktaboksen staar ikke paa medlemskapene',
+    str_contains($sida, "bVisFakta: this.state.fra !== 'medlemskap' && this.bFaktaRader().length > 0,"));
+sjekk('«Passer for»-linja staar ikke paa medlemskapene',
+    str_contains($sida, "bVisPasserFor: this.state.fra !== 'medlemskap',"));
+sjekk('… og begge staar bak en vakt i markupen',
+    str_contains($sida, '<sc-if value="{{ bVisFakta }}"')
+    && str_contains($sida, '<sc-if value="{{ bVisPasserFor }}"'));
+// Regnestykket staar ett sted, saa ramma ikke kan staa tom.
+sjekk('… og faktaradene regnes ut ett sted',
+    str_contains($sida, 'bFakta: this.bFaktaRader(),')
+    && substr_count($sida, 'bFaktaRader() {') === 1);
+
+// ── «Mini 15» ──────────────────────────────────────────────────────────
+//
+// Eieren, 2. september: «legg til et nytt medlemskap … Pris kr 1790».
+echo "\n== Mini 15 ==\n";
+
+$mini = Medlemskap::plan('Mini 15');
+sjekk('«Mini 15» ligger i basen og er i salg', $mini !== null);
+sjekk('… koster kr 1 790', (int) ($mini['pris_ore'] ?? 0) === 179000,
+    ((int) ($mini['pris_ore'] ?? 0) / 100) . ' kr');
+sjekk('… og gir 15 timer i maaneden', (int) ($mini['timer'] ?? 0) === 15);
+sjekk('… med to maaneders binding og én maaneds oppsigelse',
+    (int) ($mini['binding_mnd'] ?? 0) === 2 && (int) ($mini['oppsigelse_mnd'] ?? 0) === 1);
+sjekk('… er ikke en proveperiode', (int) ($mini['engangs'] ?? 1) === 0);
+sjekk('… og lar medlemmet velge betalingsmaate',
+    $mini !== null && !Medlemskap::kreverFastTrekk($mini));
+sjekk('… har teksten sin', mb_strlen((string) ($mini['langtekst'] ?? '')) > 600
+    && Medlemskap::punkter($mini['punkter'] ?? null) !== []
+    && Medlemskap::punkter($mini['viktig'] ?? null) !== []);
+// Ligger mellom proveperioden og Basis 30 — i pris, i timer og i rekka.
+$rekke = array_column(Medlemskap::planer(), 'navn');
+sjekk('… og staar mellom «Prøv Lissom» og «Basis 30»',
+    array_search('Mini 15', $rekke, true) === array_search('Prøv Lissom', $rekke, true) + 1
+    && array_search('Basis 30', $rekke, true) === array_search('Mini 15', $rekke, true) + 1,
+    implode(' · ', $rekke));
+// To planer paa samme plass i sorteringa gir tilfeldig rekkefolge.
+sjekk('… uten at to planer deler plass i rekka',
+    count(array_unique(array_column(Medlemskap::planer(), 'sortering')))
+    === count(Medlemskap::planer()));
 
 // ── Avpubliser et kurs ─────────────────────────────────────────────────
 //

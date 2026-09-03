@@ -20,9 +20,14 @@ if (Foresporsel::metode() === 'GET') {
     // Eieren, 1. september, om kassa: «her maa betalinger ses» — og paa
     // sporsmaalet om omfang: alt, med sok. Et sok som bare naar to hundre
     // rader tilbake finner ikke betalingen fra forrige maaned.
+    // Maaten pengene kom inn paa staar paa raden. Kolonnen kom med delt
+    // betaling i kassa; er den ikke kjort, faller vi tilbake paa «type» slik
+    // det var for.
+    $maateFelt = DB::harKolonne('payments', 'maate') ? 'p.maate' : 'NULL AS maate';
+
     $betalinger = DB::alle(
         "SELECT p.id, p.vipps_reference, p.formal, p.type, p.belop_ore, p.refundert_ore,
-                p.status, p.created_at, m.navn AS medlem,
+                p.status, p.created_at, m.navn AS medlem, {$maateFelt},
                 (SELECT b.id FROM bookings b WHERE b.payment_id = p.id LIMIT 1) AS booking_id,
                 (SELECT o.id FROM orders o WHERE o.payment_id = p.id LIMIT 1) AS ordre_id
            FROM payments p
@@ -30,6 +35,28 @@ if (Foresporsel::metode() === 'GET') {
           ORDER BY p.id DESC
           LIMIT 1000"
     );
+
+    // ── Hvordan kom pengene inn? ────────────────────────────────────────
+    //
+    // Kolonnen «maate» staar paa raden og sier det: «Kontant», «Vipps», eller
+    // et gavekort. Den er det dagsoppgjoret til regnskapet leser — se
+    // api/admin/dagsoppgjor.php, «p.maate AS radmaate».
+    //
+    // Her ble maaten regnet ut av «type» i stedet: alt som var fort for haand
+    // ble til kontant. Et medlemskap betalt med Vipps over disk havnet dermed
+    // i kontantkolonnen paa kortet i Kassa, mens dagsoppgjoret la det under
+    // Vipps. De to sa ikke det samme om den samme dagen.
+    //
+    // Eieren, 4. september, etter aa ha registrert kr 500 med Vipps og sett
+    // dem staa under Kontant.
+    //
+    // Gamle rader har ingen «maate». Da gjelder den gamle regelen, saa
+    // historikken staar som for.
+    $maateAv = static function (array $p): string {
+        $m = trim((string) ($p['maate'] ?? ''));
+        if ($m !== '') { return $m; }
+        return (string) $p['type'] === 'manuell' ? 'Kontant' : 'Vipps';
+    };
 
     Svar::json(['betalinger' => array_map(static fn($p) => [
         'id'         => (int) $p['id'],
@@ -46,12 +73,18 @@ if (Foresporsel::metode() === 'GET') {
         'tidspunkt'  => Booking::norskDato((string) $p['created_at']),
         // ── Det kassa trenger i tillegg ─────────────────────────────────
         //
-        // «manuell» er kontant over disk; resten gikk gjennom Vipps. Uten
-        // dette kan ikke dagsoppgjoret dele dagen i kontant og Vipps, og en
-        // refusjonsknapp kan ikke si fra om at det ikke finnes penger aa
-        // sende tilbake paa et kontantsalg.
-        'maate'      => (string) $p['type'] === 'manuell' ? 'Kontant' : 'Vipps',
-        'erVipps'    => (string) $p['type'] !== 'manuell',
+        // To spoersmaal som saa like ut og ble besvart med det samme feltet:
+        //
+        //   Kom pengene inn paa Vipps?     → deler dagen i kassa
+        //   Kan de sendes tilbake dit?     → om refusjonsknappen skal staa
+        //
+        // De er ikke det samme. En Vipps-betaling tatt over disk og fort inn
+        // for haand kom inn paa Vipps, men har ingen referanse hos oss aa
+        // refundere paa — den ble aldri opprettet gjennom integrasjonen vaar.
+        // Skal pengene tilbake, gjores det i Vipps.
+        'maate'         => $maateAv($p),
+        'medVipps'      => $maateAv($p) === 'Vipps',
+        'kanRefunderes' => (string) $p['type'] !== 'manuell',
         // Datoen som tall, saa skjermen kan skille «i dag» fra resten uten
         // aa tolke «1. september 2026, 10:41» tilbake til en dato.
         'dato'       => substr((string) $p['created_at'], 0, 10),

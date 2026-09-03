@@ -211,6 +211,89 @@ if (Foresporsel::metode() === 'POST') {
         Svar::ok(['beskjed' => $tekst !== '' ? 'Infoen er lagret.' : 'Infoen er fjernet.']);
     }
 
+    // ── Bytte medlemskap paa et medlem ────────────────────────────────
+    //
+    // Eieren, 4. september: «jeg vil i admin kunne endre medlemskap for
+    // medlemmene».
+    //
+    // Det gikk ikke herfra. «meld-inn» under kan sette en type, men den
+    // melder INN: status settes til «aktiv» (eller «prove»), start_dato til
+    // i dag og sluttdatoen paa nytt. Brukt paa et medlem som alt er inne,
+    // ville en som sto i pause blitt aktiv igjen, og «medlem siden mai»
+    // blitt til «medlem siden i dag» — det er datoen betalingsstatusen
+    // skriver ut naar ingen betaling er registrert (Medlemskap::
+    // betalingsstatus).
+    //
+    // Dette bytter planen, og bare den.
+    //
+    // Sluttdatoen foelger med, for den hoerer til planen og ikke til
+    // personen: en engangsplan varer en maaned, en loepende har ingen slutt.
+    // Uten det ville «Prov Lissom» blitt et gratis medlemskap uten ende, og
+    // en som gikk fra proeveperiode til Basis 30 ville mistet medlemskapet
+    // den dagen proeveperioden skulle vaert ute.
+    //
+    // Vipps-avtalen kan vi ikke roere. Den er godkjent av medlemmet paa et
+    // beloep, og API-et har ingen vei til aa endre det — se app/lib/vipps.php.
+    // Byttet gaar likevel gjennom; svaret sier fra om at avtalen trekker det
+    // gamle beloepet, saa verkstedet vet hva som maa gjores.
+    if ($handling === 'bytt-plan') {
+        $id = Foresporsel::heltall('medlemId');
+        $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+
+        $type = mb_substr(trim(Foresporsel::tekst('type')), 0, 64);
+        $plan = $type === '' ? null : Medlemskap::plan($type);
+        if ($plan === null) {
+            Svar::feil('Velg hvilket medlemskap det skal byttes til.');
+        }
+
+        $fra = (string) ($m['medlemskap_type'] ?? '');
+        if ($fra === $type) {
+            Svar::ok(['beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står på ' . $type . ' fra før.']);
+        }
+
+        // En engangsplan varer en maaned fra i dag. Byttes det TIL en
+        // loepende plan, skal den gamle sluttdatoen bort — ellers stopper
+        // medlemskapet paa en dato som hoerte til proeveperioden.
+        $engangs = (int) ($plan['engangs'] ?? 0) === 1;
+        DB::oppdater('members', [
+            'medlemskap_type' => $type,
+            'slutt_dato'      => $engangs ? date('Y-m-d', strtotime('+1 month')) : null,
+            // «timer_per_mnd» settes ikke. Den staar paa medlemmet som en
+            // overstyring for én person; er den tom, bestemmer planen. Se
+            // Medlemskap::timerFor(). Kopierte vi timetallet inn her, ville
+            // medlemmet beholdt det gamle den dagen planen endres.
+        ], ['id' => $id]);
+
+        revider('medlem_plan_byttet', 'member', $id,
+                ['fra' => $fra, 'til' => $type, 'av' => (int) $jeg['id']]);
+
+        // Loeper det en avtale i Vipps, trekker den fortsatt det gamle
+        // beloepet. Det skal staa i klartekst, ikke oppdages naar pengene
+        // kommer.
+        $avtale = DB::en(
+            "SELECT plan, pris_ore FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' LIMIT 1",
+            ['m' => $id]
+        );
+
+        Svar::ok([
+            'beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står nå på ' . $type . '.'
+                . ($fra !== '' ? ' Byttet fra ' . $fra . '.' : '')
+                . ($engangs
+                    ? ' Det er en engangsperiode, og den varer én måned.'
+                    : '')
+                . ($avtale !== null
+                    ? ' Merk: Vipps-avtalen er godkjent på '
+                      . Booking::kroner((int) $avtale['pris_ore'])
+                      . ' og trekker fortsatt det. Skal beløpet endres, må avtalen sies opp'
+                      . ' og medlemmet sette opp en ny fra Min side.'
+                    : ' Betalingen avtaler dere selv — det opprettes ingen Vipps-avtale her.'),
+        ]);
+    }
+
     // ── Medlemmet skal ikke betale ────────────────────────────────────
     //
     // Eieren, 2. september: «jeg vil ogsaa ha mulighet til aa opprette et
@@ -712,6 +795,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'medlem_meldt_inn'      => 'Meldt inn som medlem',
             'medlem_avsluttet'      => 'Medlemskapet avsluttet',
             'medlem_notat'          => 'Notat endret',
+            'medlem_plan_byttet'    => 'Byttet medlemskap',
             default                 => ucfirst(str_replace('_', ' ', $h)),
         };
     };
@@ -1082,5 +1166,8 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
         // saa innmelding for haand tilbod medlemskap uten timetall.
         'timer' => $p['timer'] !== null ? (int) $p['timer'] : null,
         'pris'  => Booking::kroner((int) $p['pris_ore']),
+        // Skjermen skal kunne si hva byttet betyr for den er gjort: en
+        // engangsplan varer en maaned, en loepende har ingen slutt.
+        'engangs' => (int) ($p['engangs'] ?? 0) === 1,
     ], Medlemskap::planer()),
 ]);

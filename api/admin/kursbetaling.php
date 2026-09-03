@@ -234,8 +234,26 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
         if ($p['annullert_at'] !== null) {
             Svar::feil('Denne er alt annullert.');
         }
-        if ($p['booking_id'] === null) {
-            Svar::feil('Denne betalingen hører ikke til en påmelding.');
+        // Et medlemskap har ingen paamelding. Betalingen staar paa
+        // medlemmet, ikke paa en booking — og den maa kunne angres.
+        //
+        // Eieren, 4. september: «jeg klarte aa registrere at hun har betalt
+        // paa vipps, men det har hun ikke. Kan du reversere».
+        //
+        // Knappen som registrerer betalingen paa medlemmet ble lagt inn
+        // samme dag. Den kunne opprette penger, men ingenting kunne ta dem
+        // tilbake: annulleringen krevde en booking, og et medlemskap har
+        // ingen. Da sto det en feilfoering ingen kunne rette.
+        //
+        // En butikkordre annulleres et annet sted — se api/admin/uttak.php,
+        // som ogsaa legger varene tilbake paa lageret. Den skal ikke tas
+        // herfra.
+        $erMedlemskap = $p['booking_id'] === null
+            && (string) ($p['formal'] ?? '') === 'medlemskap';
+        if ($p['booking_id'] === null && !$erMedlemskap) {
+            Svar::feil((string) ($p['formal'] ?? '') === 'ordre'
+                ? 'Dette er et butikksalg. Det annulleres under Kassa → Salg.'
+                : 'Denne betalingen hører ikke til en påmelding.');
         }
 
         $grunn = mb_substr(trim(Foresporsel::tekst('grunn')), 0, 300);
@@ -250,6 +268,23 @@ switch (Foresporsel::tekst('handling', 'registrer')) {
                 ? trim((string) ($p['kommentar'] ?? '') . ' · Annullert: ' . $grunn)
                 : $p['kommentar'],
         ], ['id' => $betalingId]);
+
+        if ($erMedlemskap) {
+            // Ingen booking aa regne om. Merket paa medlemmet leser
+            // betalingene paa nytt av seg selv — Medlemskap::sisteBetalinger
+            // hopper over det som er annullert — saa det slaar tilbake til
+            // «Ikke betalt» uten at noe mer settes her.
+            revider('betaling_annullert', 'member', (int) $p['member_id'], [
+                'betaling' => $betalingId, 'belop_ore' => (int) $p['belop_ore'],
+            ]);
+
+            Svar::ok([
+                'status'  => 'avbrutt',
+                'beskjed' => Booking::kroner((int) $p['belop_ore']) . ' er annullert. '
+                           . 'Medlemmet står som ubetalt igjen, og beløpet er ute av '
+                           . 'dagsoppgjøret og regnskapet.',
+            ]);
+        }
 
         $bookingId = (int) $p['booking_id'];
         $etter = Booking::settBetaltStatus($bookingId);

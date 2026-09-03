@@ -3382,7 +3382,7 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Samtykke til månedstrekk</div>
               <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">30 timer</h3>
               <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-6);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">kr. 2 590,-</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">kr. 2 590,-</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">per måned</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: var(--space-7);">
@@ -3418,7 +3418,7 @@ window.__resources = {
               <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">
                 <div style="display: flex; justify-content: space-between;"><span>Betalt med</span><span style="color: var(--text-heading);">Vipps</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Referanse</span><span style="color: var(--text-heading);">LIS-10482</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>Beløp</span><span style="color: var(--text-heading);">kr. 2 800,-</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>Beløp</span><span style="color: var(--text-heading);">kr. 2 800,-</span></div>
               </div>
               <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ goMinside }}" hint-size="100%,44px">Gå til Min side</x-import>
@@ -7130,6 +7130,24 @@ window.__resources = {
 
                       <sc-if value="{{ b.refSperret }}" hint-placeholder-val="{{ false }}">
                         <div style="font-size: var(--text-sm); color: var(--text-body); max-width: 62ch;">{{ b.refSperreTekst }}</div>
+                      </sc-if>
+
+                      <!-- Angre en feilfoering.
+                           Eieren, 4. september: «jeg klarte aa registrere at
+                           hun har betalt paa vipps, men det har hun ikke. Kan
+                           du reversere».
+                           Knappen som registrerer betalingen paa et medlem kom
+                           samme dag. Den kunne opprette penger, men ingenting
+                           kunne ta dem tilbake — annulleringen krevde en
+                           paamelding, og et medlemskap har ingen. Da sto det
+                           en feilfoering ingen kunne rette.
+                           Raden slettes ikke: den blir staaende som annullert,
+                           med grunnen. Det er bokforing. -->
+                      <sc-if value="{{ b.kanAnnullere }}" hint-placeholder-val="{{ false }}">
+                        <div>
+                          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="rotate-ccw" on-click="{{ b.annuller }}" hint-size="auto,38px">Annuller betalingen</x-import>
+                          <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted); max-width: 56ch;">{{ b.annullerHjelp }}</div>
+                        </div>
                       </sc-if>
 
                       <sc-if value="{{ b.harKvittering }}" hint-placeholder-val="{{ true }}">
@@ -18909,7 +18927,7 @@ class Component extends DCLogic {
       navn: k.tittel,
       type: FRA_TEMA[k.tema] || TYPE[k.type] || 'Kurs',
       tema: k.tema || '',
-      pris: 'kr.' + ' ' + String(k.pris || 0).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
+      pris: 'kr.' + ' ' + String(k.pris || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',-',
       gjentas: datoer.length > 1 ? datoer.length + ' datoer' : 'Engangs',
       pameldte: pameldte + ' / ' + kapasitet,
       andel: kapasitet ? Math.round(pameldte / kapasitet * 100) : 0,
@@ -34382,7 +34400,28 @@ class Component extends DCLogic {
             // brikkene — ellers ville lista sett ut som den skjulte noe.
             const periode = sokB ? 'Alt' : (st.btPeriode || 'I dag');
 
-            const treff = alle.filter(b => {
+            // ── Bare det som ble et salg ─────────────────────────────
+            //
+            // Lista tok alt som sto i payments. Et forsok som ble avbrutt i
+            // Vipps lager ogsaa en rad — den staar «avbrutt» og har aldri
+            // vaert penger — og den sto i kassa ved siden av dagens salg.
+            //
+            // Eieren, 4. september, med sitt eget avbrutte forsok i lista:
+            // «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal
+            // ikke vises noen sted».
+            //
+            // Det som teller er det som faktisk ble penger: betalt, og det
+            // som er sendt helt eller delvis tilbake etterpaa — en refusjon
+            // hoerer til et salg som skjedde. «opprettet», «venter»,
+            // «avbrutt» og «feilet» er forsok.
+            //
+            // Det samme skillet dagsoppgjoret over gjor, og av samme grunn.
+            // En annullert betaling faller ogsaa ut her: den er ikke lenger
+            // et salg. Hva som er gjort staar i endringsloggen paa personen.
+            const PENGER = ['betalt', 'delvis_refundert', 'refundert'];
+            const ekte = alle.filter(b => PENGER.indexOf(String(b.status || '')) !== -1);
+
+            const treff = ekte.filter(b => {
               if (sokB) {
                 return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',
                         b.formal || '', b.maate || '', b.status || ''
@@ -34500,6 +34539,27 @@ class Component extends DCLogic {
                   // «kontantsalg» over en betaling som ble tatt paa Vipps over
                   // disk, ville den sagt noe som ikke er sant — og eieren
                   // ville lett etter penger som er der.
+                  // ── Angre en feilfoering ──────────────────────
+                  //
+                  // Bare det som er fort inn for haand. En betaling som gikk
+                  // gjennom Vipps refunderes; den annulleres ikke.
+                  //
+                  // Et butikksalg annulleres under Salg, som ogsaa legger
+                  // varene tilbake paa lageret. Serveren sier det samme —
+                  // se api/admin/kursbetaling.php.
+                  kanAnnullere: !b.kanRefunderes && b.formal !== 'ordre'
+                    && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1,
+                  annullerHjelp: 'Raden slettes ikke — den blir stående som '
+                    + 'annullert, med grunnen du skriver. Beløpet går ut av '
+                    + 'dagsoppgjøret og regnskapet.',
+                  annuller: () => {
+                    const grunn = window.prompt('Hvorfor annulleres ' + b.belop + '?\n\n'
+                      + 'Betalingen slettes ikke — den blir stående som annullert, '
+                      + 'med det du skriver her.', '');
+                    if (grunn === null) return;
+                    this.betalingKall({ handling: 'annuller', betalingId: b.id, grunn: grunn })
+                      .then(ok => { if (ok) this.setState({ btApen: null }); });
+                  },
                   refSperreTekst: b.medVipps
                     ? 'Denne ble tatt på Vipps over disk og ført inn her, så den '
                       + 'har ingen referanse hos oss å refundere på. Send pengene '
@@ -35089,9 +35149,18 @@ class Component extends DCLogic {
           // «plasser» sto her fra den gang kortet bare hadde kursplasser.
           // Naa staar medlemskapene her ogsaa, og et medlemskap er ingen
           // plass.
+          // Beloepet brekker ikke midt i tallet.
+          //
+          // Mellomrommet etter «kr.» var hardt fra for, men tusenskillet var
+          // et vanlig mellomrom. Paa en telefon brakk «kr. 5 470,-» derfor i
+          // to: «kr. 5» paa én linje og «470,- utestaaende» paa neste.
+          // Eieren, 4. september, med bilde: «feil deling av tall her ogsaa».
+          //
+          // Samme regel som Booking::kroner() foelger paa serveren: begge
+          // mellomrommene er harde.
           ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
             : liste.length + (liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
-              + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',- utestående',
+              + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',- utestående',
           ovSkylder: liste.map(u => {
             const erMedlem = u.slag === 'medlem';
             return {
@@ -41426,7 +41495,7 @@ class Component extends DCLogic {
             .filter(v => (this.state.butikkFane === 'Medlemssalg') ? v.kunMedlemmer : !v.kunMedlemmer)
             .map(v => ({
             navn: v.tittel,
-            pris: v.pris === 0 ? 'Gratis' : 'kr.' + ' ' + String(v.pris).replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',-',
+            pris: v.pris === 0 ? 'Gratis' : 'kr.' + ' ' + String(v.pris).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',-',
             antall: v.lager,
             status: v.status === 'kladd' ? 'Kladd' : (v.lager === null ? 'Ubegrenset' : (v.lager === 0 ? 'Utsolgt' : (v.lager <= 3 ? 'Få igjen' : 'På lager'))),
             tone: v.status === 'kladd' ? 'neutral' : (v.lager === 0 ? 'danger' : (v.lager !== null && v.lager <= 3 ? 'warning' : 'success')),

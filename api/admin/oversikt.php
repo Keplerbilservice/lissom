@@ -330,8 +330,20 @@ $medlemsstatus = (static function (): array {
             // Samme regel gir raden i «Ikke betalt». Eieren spurte om dem to
             // ganger: forst «det maa de jo gjore, helt til pengene er inne»,
             // og saa «hvorfor vises ikke de to som er ubetalte i oversikten».
-            $plan = (string) ($a['plan'] ?? $m['medlemskap_type'] ?? '');
-            $pris = $a !== null
+            // Prisen paa avtalen gjelder bare naar avtalen loeper.
+            //
+            // «pris_ore» er det medlemmet godkjente i Vipps, og den gaar
+            // foran dagens pris — men bare saa lenge avtalen faktisk
+            // trekker. En rad som staar «venter» ble aldri godkjent, og en
+            // som er stoppet trekker ingenting. Da er det medlemskapet
+            // personen staar paa som gjelder.
+            //
+            // Eieren, 4. september: «jeg byttet medlemskap for eirin, men
+            // det endrer ikke pris». Byttet virket; det var denne raden som
+            // fortsatte aa svare for den gamle avtalen.
+            $loeper = $a !== null && (string) $a['status'] === 'aktiv';
+            $plan = (string) (($loeper ? $a['plan'] : null) ?? $m['medlemskap_type'] ?? '');
+            $pris = $loeper
                 ? (int) $a['pris_ore']
                 : ($planpris[$plan] ?? 0);
             $ut['rader'][] = [

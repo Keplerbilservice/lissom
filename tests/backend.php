@@ -8117,6 +8117,95 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== Kassa viser bare det som ble et salg ==\n";
+// Eieren, 4. september, med sitt eget avbrutte Vipps-forsok staaende i
+// kassa: «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal ikke
+// vises noen sted».
+//
+// Lista tok alt som sto i payments. Et forsok som ble avbrutt i Vipps lager
+// ogsaa en rad, og den sto ved siden av dagens salg.
+//
+// Det som teller er det som faktisk ble penger: betalt, og det som er sendt
+// helt eller delvis tilbake etterpaa — en refusjon hoerer til et salg som
+// skjedde. Samme skille dagsoppgjoret over lista gjor.
+$sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kassa teller bare det som ble penger',
+    str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
+    && str_contains($sidaS, 'const ekte = alle.filter(b => PENGER.indexOf(String(b.status || \'\')) !== -1);'));
+// Ogsaa naar man soker. «Skal ikke vises noen sted.»
+sjekk('… ogsaa naar man soker',
+    str_contains($sidaS, 'const treff = ekte.filter(b => {'));
+
+echo "\n== En feilført betaling kan angres ==\n";
+// Eieren, 4. september: «jeg klarte aa registrere at hun har betalt paa
+// vipps, men det har hun ikke. Kan du reversere».
+//
+// Knappen som registrerer betalingen paa et medlem kom samme dag. Den kunne
+// opprette penger, men ingenting kunne ta dem tilbake: annulleringen krevde
+// en paamelding, og et medlemskap har ingen. Da sto det en feilfoering ingen
+// kunne rette — heller ikke fra admin.
+$kbApi = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+sjekk('et medlemskap kan annulleres, selv om det ikke har en paamelding',
+    str_contains($kbApi, "\$erMedlemskap = \$p['booking_id'] === null")
+    && str_contains($kbApi, "&& (string) (\$p['formal'] ?? '') === 'medlemskap';"));
+// Et butikksalg annulleres et annet sted — der varene ogsaa legges tilbake
+// paa lageret. Det skal ikke tas herfra.
+sjekk('… mens et butikksalg fortsatt sendes dit det hoerer hjemme',
+    str_contains($kbApi, 'Dette er et butikksalg. Det annulleres under Kassa → Salg.'));
+// Raden slettes ikke. Den blir staaende som annullert, med grunnen — det er
+// bokforing.
+sjekk('… og raden blir staaende som annullert, ikke slettet',
+    str_contains($kbApi, "'status'       => 'avbrutt',")
+    && str_contains($kbApi, "'annullert_at' => gmdate('Y-m-d H:i:s'),"));
+// Ingen booking aa regne om, og merket paa medlemmet leser betalingene paa
+// nytt av seg selv.
+sjekk('… og annulleringen foeres paa medlemmet',
+    str_contains($kbApi, "revider('betaling_annullert', 'member', (int) \$p['member_id'], ["));
+
+$sidaA = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kassa har knappen for aa angre',
+    str_contains($sidaA, '>Annuller betalingen</x-import>')
+    && str_contains($sidaA, "this.betalingKall({ handling: 'annuller', betalingId: b.id, grunn: grunn })"));
+// Bare det som er fort inn for haand. En Vipps-betaling refunderes.
+sjekk('… bare paa det som er fort inn for haand',
+    str_contains($sidaA, 'kanAnnullere: !b.kanRefunderes && b.formal !== \'ordre\''));
+// Medlemskapsmerket leser betalingene paa nytt, og hopper over det som er
+// annullert. Uten det ville medlemmet staatt som betalt etterpaa.
+$medLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('… og merket paa medlemmet hopper over det som er annullert',
+    str_contains($medLib, 'AND annullert_at IS NULL'));
+
+echo "\n== Beløp brekker ikke midt i tallet ==\n";
+// Eieren, 4. september, med bilde av «kr. 5» paa én linje og «470,-
+// utestaaende» paa neste: «feil deling av tall her ogsaa» — og da han maatte
+// peke paa det andre gang: «maa jeg si dette flere ganger?».
+//
+// Mellomrommet etter «kr.» var hardt fra for. Tusenskillet var det ikke, og
+// da har nettleseren lov til aa brekke midt i tallet.
+//
+// Booking::kroner() paa serveren har brukt harde mellomrom hele tida. De tre
+// stedene som regner ut beloepet i nettleseren gjorde det ikke.
+$sidaT = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('ingen regner ut tusenskillet med et vanlig mellomrom',
+    !str_contains($sidaT, "(?=(\\d{3})+(?!\\d))/g, ' ')"));
+// Fem, ikke fire: konustabellen regner ut to tall paa den samme linja.
+sjekk('… og alle fem stedene bruker et hardt',
+    substr_count($sidaT, "(?=(\\d{3})+(?!\\d))/g, '\\u00A0')") === 5);
+// Vakta som fanger den neste. Den leser teksten slik den staar paa skjermen,
+// saa den finner et mykt mellomrom uansett hvor i koden det kom fra.
+$bredde = file_get_contents(dirname(__DIR__) . '/bin/breddesjekk.mjs');
+sjekk('breddesjekken fanger beloep som kan brekke',
+    str_contains($bredde, 'const myktTall = () => {')
+    && str_contains($bredde, 'const mt = await p.evaluate(myktTall);'));
+// Og den som fanger tall som blir klippet av et kort — se «kutter tall».
+sjekk('… og innhold som blir klippet av et kort',
+    str_contains($bredde, 'const klippet = () => {')
+    && str_contains($bredde, "if (KLIPPER.has(o)) { ramme = f; break; }"));
+// Fanene i Kassa har ingen egen adresse, og det var i én av dem tallet ble
+// klippet. Uten dette maaler vakta bare sida slik den staar naar den lastes.
+sjekk('… og skjermene som ligger bak et trykk',
+    str_contains($bredde, "{ sti: '/admin/uttak', klikk: ['Betalinger'] },"));
+
 echo "\n== Kassa deler dagen på måten, ikke på refusjonsevnen ==\n";
 // Eieren, 4. september, etter aa ha registrert kr 500 med Vipps og sett dem
 // staa under Kontant.
@@ -8206,7 +8295,92 @@ sjekk('… og maaten lagres paa raden',
 // Prisen foelger med i personruta, saa skjermen kan si hva «tomt felt» betyr.
 sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
-    && str_contains($medApiB, 'SELECT pris_ore FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1'));
+    && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
+
+echo "\n== En avtale som aldri ble godkjent slipper taket ==\n";
+// Eieren, 4. september: «jeg byttet medlemskap for eirin, men det endrer ikke
+// pris. Fra basis 30 som stod ubetalt», og «hun fikk jo aldri betalt eller har
+// aldri godkjent saa nullstill denne».
+//
+// Eirin ble sendt til Vipps for aa godkjenne fast trekk, og snudde. Raden ble
+// staaende paa «venter» — for alltid, for det er godkjenningen som gjor den
+// «aktiv». Den raden fortsatte aa svare for hva hun sto paa og hva hun
+// skyldte: byttet medlemskap traff «members», mens prisen ble lest av avtalen.
+//
+// Skillet er nytt: avtale() svarer «hva er i spill hos Vipps naa» (og maa ha
+// «venter» med, ellers finner ikke Min side avtalen kunden nettopp godkjente
+// i appen), loepende() svarer «hva trekker faktisk».
+$eMed = (int) DB::settInn('members', [
+    'navn' => 'Forlatt Testesen', 'epost' => 'forlatt@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Årsmedlemskap',
+]);
+$eSub = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMed, 'plan' => 'Basis 30', 'pris_ore' => 130000,
+    'vipps_agreement_id' => 'agr-forlatt-' . $eMed, 'status' => 'venter',
+]);
+sjekk('et forlatt forsok teller ikke som en avtale som loeper',
+    Medlemskap::loepende($eMed) === null);
+sjekk('… men Vipps-flyten finner den fortsatt',
+    ($x = Medlemskap::avtale($eMed)) !== null && (int) $x['id'] === $eSub);
+
+// Godkjenner hun senere, er det den samme raden — og da skal den telle.
+DB::oppdater('subscriptions', ['status' => 'aktiv'], ['id' => $eSub]);
+sjekk('… og i det hun godkjenner, loeper den',
+    ($x = Medlemskap::loepende($eMed)) !== null && (int) $x['id'] === $eSub);
+DB::oppdater('subscriptions', ['status' => 'venter'], ['id' => $eSub]);
+
+// En stoppet avtale trekker ingenting, og skal heller ikke sette prisen.
+DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => $eSub]);
+sjekk('… og en stoppet avtale gjor det ikke', Medlemskap::loepende($eMed) === null);
+DB::oppdater('subscriptions', ['status' => 'venter'], ['id' => $eSub]);
+
+// Merket sa «Fast trekk» paa en avtale-id som aldri ble godkjent. Eieren,
+// 3. september: «hun staar oppfort med fast trekk, men ikke trukket».
+$b = Medlemskap::betalingsstatus(
+    ['id' => $eMed, 'navn' => 'Forlatt', 'medlemskap_type' => 'Basis 30', 'status' => 'aktiv',
+     'betaler_ikke' => 0, 'betaler_ikke_grunn' => null, 'start_dato' => gmdate('Y-m-d')],
+    ['id' => $eSub, 'vipps_agreement_id' => 'agr-forlatt', 'status' => 'venter',
+     'neste_trekk' => null, 'siste_trekk' => null],
+    null,
+    null
+);
+sjekk('en avtale-id uten godkjenning er ikke fast trekk',
+    !str_contains($b['tekst'], 'Trekkes') && !str_contains($b['tekst'], 'første trekk')
+    && $b['forfalt'] === true, $b['tilstand'] . ' · ' . $b['tekst']);
+
+// … men raden skal fortsatt fortelle hvorfor det ikke er betalt. Teksten
+// «startet i Vipps, men aldri fullfort» finner betalingen gjennom avtale-id-en,
+// saa den maa fortsatt sendes inn — det er statusen som avgjor, ikke om raden
+// er der.
+$b = Medlemskap::betalingsstatus(
+    ['id' => $eMed, 'navn' => 'Forlatt', 'medlemskap_type' => 'Basis 30', 'status' => 'aktiv',
+     'betaler_ikke' => 0, 'betaler_ikke_grunn' => null, 'start_dato' => gmdate('Y-m-d')],
+    ['id' => $eSub, 'vipps_agreement_id' => 'agr-forlatt', 'status' => 'venter',
+     'neste_trekk' => null, 'siste_trekk' => null],
+    null,
+    ['status' => 'venter', 'created_at' => gmdate('Y-m-d') . ' 10:00:00']
+);
+sjekk('… og den forteller fortsatt at betalingen ble startet og aldri fullfort',
+    str_contains($b['tekst'], 'aldri fullført'), $b['tekst']);
+
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eSub]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMed]);
+
+// Kortet «Ikke betalt» paa Oversikt leste prisen av avtalen uansett status.
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('«Ikke betalt» henter plan og pris av avtalen bare naar den loeper',
+    str_contains($ovFil, "\$loeper = \$a !== null && (string) \$a['status'] === 'aktiv';")
+    && str_contains($ovFil, "\$plan = (string) ((\$loeper ? \$a['plan'] : null) ?? \$m['medlemskap_type'] ?? '');")
+    && str_contains($ovFil, "\$pris = \$loeper"));
+
+// Lista sa «Fast trekk» og «Bundet til» paa forsok som aldri ble godkjent.
+$medFilA = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemslista krever at avtalen loeper for den sier «fast trekk»',
+    str_contains($medFilA, "\$loeper = (string) \$a['status'] === 'aktiv';")
+    && str_contains($medFilA, "'fastTrekk'   => \$loeper"));
+sjekk('… og for den sier at medlemmet er bundet',
+    str_contains($medFilA, "\$bundet = \$loeper && \$a['binding_til'] !== null")
+    && str_contains($medFilA, "'bundetTil'   => \$loeper ? \$dato(\$a['binding_til']) : null,"));
 
 echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
 // Eieren, 4. september, med bilde av «kr 99» der det skulle staa «kr 990»:

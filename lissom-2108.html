@@ -2429,7 +2429,33 @@ window.__resources = {
                   <sc-if value="{{ bmMaaHaTrekk }}" hint-placeholder-val="{{ false }}">
                     <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ bmTrekkTekst }}</p>
                   </sc-if>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
+                  <!-- Samme kort som paa et kurs.
+                       Eieren, 3. september, med bilde av begge: «men kan du se
+                       at bilde to som er medlemskap har en helt annen layout?
+                       her er det ikke vilkaar, navn telefon osv» — og «er det
+                       mulig aa faa samme kort paa medlemskap som paa kurs?»
+                       Datoene, tidene og antall plasser hoerer til et kurs og
+                       finnes ikke her; e-posten, telefonen og vilkaarshaken
+                       gjor det. Naa staar de i samme rekkefolge som der.
+
+                       Feltene betyr noe: medlemsvarslene gaar til
+                       members.epost, og nummeret Vipps faar ved betaling er
+                       members.telefon. Se api/medlemskap.php, «start». -->
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}" hint-size="100%,66px"></x-import>
+                  <div style="height: var(--space-4);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ bmTelefon }}" on-change="{{ settBmTelefon }}" hint-size="100%,66px"></x-import>
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted);">Vi bruker det bare hvis vi må få tak i deg om medlemskapet.</div>
+                  <div style="height: var(--space-5);"></div>
+                  <!-- Haken laaser knappen, som paa kursbookingen. «Les
+                       medlemsvilkaarene» gaar rett til medlemsdelen av
+                       vilkaarssida — kursvilkaarene staar for seg. -->
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Checkbox" label="Jeg godtar medlemsvilkårene" checked="{{ bmVilkaarOk }}" on-change="{{ toggleBmVilkaar }}" hint-size="100%,24px"></x-import>
+                  <button type="button" onClick="{{ goVilkarMedlem }}" style="appearance: none; background: transparent; border: none; padding: 0; margin: 6px 0 0 32px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Les medlemsvilkårene</button>
+                  <sc-if value="{{ bmFeil }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-600);">{{ bmFeil }}</p>
+                  </sc-if>
+                  <div style="height: var(--space-5);"></div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
                   <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ bmVilkar }}</p>
                 </sc-if>
                 <sc-if value="{{ visMedlemsVelg }}" hint-placeholder-val="{{ false }}">
@@ -2468,7 +2494,10 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ bekreftVenteliste }}" hint-size="100%,52px">Sett meg på venteliste</x-import>
                 <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Ingen betaling før plassen er bekreftet.</p>
               </sc-if>
-              <sc-if value="{{ erBetalt }}" hint-placeholder-val="{{ true }}">
+              <!-- Linja nederst sto bak «erBetalt», som er av paa et
+                   medlemskap. Da manglet den paa det ene kortet som ogsaa
+                   betales med Vipps. Naa staar den begge steder. -->
+              <sc-if value="{{ visVippsTrygt }}" hint-placeholder-val="{{ true }}">
                 <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
                 <div style="display: flex; gap: 10px; align-items: center; font-size: var(--text-sm); color: var(--text-muted);">
                   <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--sage-500);"></span>Du betaler trygt med Vipps.
@@ -19362,6 +19391,30 @@ class Component extends DCLogic {
     return ut;
   }
 
+  /**
+   * Er det noe aa betale paa nett for dette kurset?
+   *
+   * Sto som en regel midt i renderVals(), og kunne bare leses der. «Du
+   * betaler trygt med Vipps» nederst paa kortet trenger det samme svaret,
+   * og det staar lenger opp i den samme objektet — det kan ikke lese noe
+   * som regnes ut under. Derfor staar regelen her, ett sted.
+   */
+  erBetaltKurs() {
+    const k = this.state.valgtKurs || {};
+    // Et kurs uten datoer betales ikke her. Det avtales forst.
+    if (k.kunKontakt) return false;
+    // Et medlemskap heller ikke: det gaar gjennom innmeldingen.
+    if (this.state.fra === 'medlemskap') return false;
+    const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
+    if (kat && kat.prisOre !== undefined && kat.prisOre !== null) {
+      // Prisen paa den valgte datoen gaar foran kursets, som ellers.
+      const d = (kat.datoer || []).find(x => x.oktId === this.state.bOktId);
+      const ore = (d && d.prisOre !== null && d.prisOre !== undefined) ? d.prisOre : kat.prisOre;
+      return ore > 0;
+    }
+    return k.price !== 'Gratis';
+  }
+
   medlemsplaner() {
     const fra = this.state.planListe || [];
     // Bindingstida og oppsigelsen foelger med: innmeldinga skal si det som
@@ -24835,7 +24888,7 @@ class Component extends DCLogic {
    * hva som staar i Vipps. Vi kan aldri opprette to avtaler ved siden av
    * hverandre herfra.
    */
-  startAbonnement(planNavn, betaling) {
+  startAbonnement(planNavn, betaling, kontakt) {
     const navn = String(planNavn || '').replace(/^Abonnement: /, '').trim()
       || (this.state.abo || this.aktivPlan().navn || '');
     if (!navn) {
@@ -24872,7 +24925,15 @@ class Component extends DCLogic {
     // Serveren avgjor fortsatt: krever planen fast trekk, blir det trekk
     // uansett hva vi sender, og en engangsplan kan ikke ha fast trekk.
     const maate = betaling === 'selv' ? 'selv' : 'trekk';
-    this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }, 'Avtalen er opprettet i Vipps');
+    // ── E-posten og telefonen fra kortet ──────────────────────────
+    //
+    // Bare medlemskapskortet har feltene. «Forny» paa Min side og
+    // medlemskapet i kassa gaar samme vei uten dem, og da roeres kontoen
+    // ikke — serveren lar feltene vaere naar de ikke staar i kallet.
+    const kropp = { handling: 'start', plan: navn, betaling: maate };
+    if (kontakt && kontakt.epost)   { kropp.epost = kontakt.epost; }
+    if (kontakt && kontakt.telefon) { kropp.telefon = kontakt.telefon; }
+    this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps');
   }
 
   /**
@@ -31743,14 +31804,40 @@ class Component extends DCLogic {
         const pl = this.aboPlan((this.state.valgtKurs || {}).title || '');
         return {
           visMedlemsbetaling: kanBetaleNaa,
+          // «Du betaler trygt med Vipps» nederst paa kortet. Sto bare paa
+          // kurs; medlemskapet betales med Vipps det ogsaa.
+          visVippsTrygt: kanBetaleNaa || this.erBetaltKurs(),
           visMedlemsVelg: this.state.fra === 'medlemskap' && !kanBetaleNaa,
           visMedlemsFornyLinje: !!utloept,
           medlemsFornyLinje: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.',
           medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')
             + (pl.pris ? ' · ' + pl.pris : ''),
+          // Knappen sender det som staar i feltene.
+          //
+          // Samme kontroll som kursbookingen gjor: en tom eller ugyldig
+          // adresse skal stoppes her, ikke etter turen til Vipps. Serveren
+          // sjekker det samme paa nytt — se api/medlemskap.php.
           medlemsBetalKnapp: () => {
             const k = this.state.valgtKurs || {};
-            this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt());
+            const epost = (this.state.bmEpost === undefined
+              ? (this.state.medlemEpost || '') : this.state.bmEpost).trim();
+            const telefon = (this.state.bmTelefon === undefined
+              ? (this.state.medlemTelefon || '') : this.state.bmTelefon).trim();
+            if (!epost || epost.indexOf('@') < 1) {
+              this.setState({ bmFeil: 'Vi trenger en gyldig e-postadresse.' });
+              return;
+            }
+            if (!telefon) {
+              this.setState({ bmFeil: 'Vi trenger et mobilnummer.' });
+              return;
+            }
+            if (!this.state.bmVilkaarOk) {
+              this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å bli medlem.' });
+              return;
+            }
+            this.setState({ bmFeil: null });
+            this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt(),
+              { epost: epost, telefon: telefon });
           },
         };
       })(),
@@ -31984,21 +32071,7 @@ class Component extends DCLogic {
       // on Pots staar uten pris paa kortet (den staar i bestillingen), og da
       // ble betalingsvalget staaende paa et kurs det ikke er noe aa betale
       // for. Tallet fra katalogen avgjor det, ikke teksten.
-      erBetalt: (() => {
-        const k = this.state.valgtKurs || {};
-        // Et kurs uten datoer betales ikke her. Det avtales forst.
-        if (k.kunKontakt) return false;
-        // Et medlemskap heller ikke: det gaar gjennom innmeldingen.
-        if (this.state.fra === 'medlemskap') return false;
-        const kat = (this.state.katalog || []).find(x => x.tittel === (k.title || k.tittel || ''));
-        if (kat && kat.prisOre !== undefined && kat.prisOre !== null) {
-          // Prisen paa den valgte datoen gaar foran kursets, som ellers.
-          const d = (kat.datoer || []).find(x => x.oktId === this.state.bOktId);
-          const ore = (d && d.prisOre !== null && d.prisOre !== undefined) ? d.prisOre : kat.prisOre;
-          return ore > 0;
-        }
-        return k.price !== 'Gratis';
-      })(),
+      erBetalt: this.erBetaltKurs(),
       // Uten datoer er det ingen plasser aa velge mellom heller. Da skal
       // hele datovelgeren og skjemaet under den vaere borte, ikke staa tomt.
       harPlasser: (this.state.valgtKurs && this.state.valgtKurs.status) !== 'Fullbooket'
@@ -43441,6 +43514,11 @@ class Component extends DCLogic {
       toggleBmVilkaar: () => this.setState(s => ({ bmVilkaarOk: !s.bmVilkaarOk, bmFeil: null })),
       bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,
       settBmEpost: e => this.setState({ bmEpost: e.target.value, bmFeil: null }),
+      // Telefonen paa medlemskapskortet. Sto ikke noe sted for: nummeret
+      // Vipps faar naar avtalen opprettes er members.telefon, og det kunne
+      // ikke rettes noe sted. Fylles ut fra kontoen, som e-posten.
+      bmTelefon: this.state.bmTelefon === undefined ? (this.state.medlemTelefon || '') : this.state.bmTelefon,
+      settBmTelefon: e => this.setState({ bmTelefon: e.target.value, bmFeil: null }),
       bmErfaring: this.state.bmErfaring || '',
       settBmErfaring: e => this.setState({ bmErfaring: e.target.value, bmFeil: null }),
       bmMelding: this.state.bmMelding || '',

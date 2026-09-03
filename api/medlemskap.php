@@ -131,6 +131,50 @@ switch (Foresporsel::tekst('handling')) {
             Svar::feil('Ukjent medlemskap.');
         }
 
+        // ── Kontaktopplysningene fra medlemskapskortet ──────────────
+        //
+        // Eieren, 3. september: «er det mulig aa faa samme kort paa
+        // medlemskap som paa kurs?» Kortet har naa de samme feltene som
+        // kursbookingen — e-post og telefon, fylt ut fra kontoen og mulig
+        // aa rette for man betaler.
+        //
+        // Feltene maa bety noe. Medlemsvarslene «medlemstrekk_varsel» og
+        // «medlemskap_fornyet» gaar til members.epost, og nummeret Vipps
+        // faar naar avtalen eller betalingen opprettes er members.telefon.
+        // Derfor lagres en rettelse paa kontoen, og avtalen opprettes med
+        // det nye nummeret — ikke det gamle.
+        //
+        // Kallet virker som for uten feltene: «Forny» paa Min side og
+        // medlemskapet i kassa sender dem ikke, og da roeres kontoen ikke.
+        $epost   = mb_substr(Foresporsel::tekst('epost'), 0, 191);
+        $telefon = mb_substr(Foresporsel::tekst('telefon'), 0, 32);
+        $endring = [];
+        if ($epost !== '') {
+            if (!filter_var($epost, FILTER_VALIDATE_EMAIL)) {
+                Svar::feil('Vi trenger en gyldig e-postadresse.');
+            }
+            if ($epost !== (string) ($medlem['epost'] ?? '')) {
+                $endring['epost'] = $epost;
+            }
+        }
+        if ($telefon !== '') {
+            $nummer = normaliser_telefon($telefon);
+            if ($nummer === '') {
+                Svar::feil('Vi trenger et gyldig mobilnummer.');
+            }
+            if ($nummer !== (string) ($medlem['telefon'] ?? '')) {
+                $endring['telefon'] = $nummer;
+            }
+        }
+        if ($endring !== []) {
+            DB::oppdater('members', $endring, ['id' => (int) $medlem['id']]);
+            // startAvtale() og startEngangs() leser $medlem['telefon'].
+            // Uten dette ville Vipps faatt det gamle nummeret.
+            $medlem = $endring + $medlem;
+            revider('medlem_kontakt_rettet', 'member', (int) $medlem['id'],
+                ['felt' => array_keys($endring)]);
+        }
+
         $betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';
         if (Medlemskap::kreverFastTrekk($plan)) {
             $betaling = 'trekk';

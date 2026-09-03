@@ -38,6 +38,37 @@ final class Medlemskap
         return DB::en('SELECT * FROM membership_plans WHERE navn = :n AND aktiv = 1', ['n' => $navn]);
     }
 
+    /**
+     * Alle tabellene som peker paa et medlem, lest av basen selv.
+     *
+     * Lista skrives ikke for haand. Den som legger til en tabell med
+     * «member_id» neste gang skal ikke trenge aa huske hverken
+     * sammenslaaingen av dubletter eller nullstillingen — begge leser denne.
+     *
+     * @return list<array{tabell:string,kolonne:string}>
+     */
+    public static function pekere(): array
+    {
+        $ut = [];
+        foreach (DB::alle(
+            "SELECT table_name AS t, column_name AS k
+               FROM information_schema.columns
+              WHERE table_schema = DATABASE()
+                AND column_name IN ('member_id', 'registrert_av')
+                AND table_name <> 'members'
+           ORDER BY table_name, column_name"
+        ) as $r) {
+            $t = (string) $r['t'];
+            $k = (string) $r['k'];
+            // Navnene kommer fra basen, ikke fra en forespoersel — men de
+            // settes inn i SQL som identifikatorer, saa de sjekkes likevel.
+            if (preg_match('/^[a-z_]+$/', $t) && preg_match('/^[a-z_]+$/', $k)) {
+                $ut[] = ['tabell' => $t, 'kolonne' => $k];
+            }
+        }
+        return $ut;
+    }
+
     /** @return list<array<string,mixed>> */
     public static function planer(): array
     {

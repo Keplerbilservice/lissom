@@ -270,27 +270,248 @@ if (Foresporsel::metode() === 'POST') {
         revider('medlem_plan_byttet', 'member', $id,
                 ['fra' => $fra, 'til' => $type, 'av' => (int) $jeg['id']]);
 
-        // Loeper det en avtale i Vipps, trekker den fortsatt det gamle
-        // beloepet. Det skal staa i klartekst, ikke oppdages naar pengene
-        // kommer.
+        // ── Avtalen maa folge med, ellers endrer ikke prisen seg ────
+        //
+        // Eieren, 4. september: «det gaar ikke aa endre sum».
+        //
+        // Prisen leses av avtalen naar den loeper — det er den prisen som
+        // ble avtalt, og den gaar foran dagens pris paa planen. Byttet
+        // traff bare «members», saa avtalen ble staaende og fortsatte aa
+        // svare for beloepet. Skjermen sa «staar naa paa Aarsmedlemskap»
+        // mens summen sto stille.
+        //
+        // Er avtalen vaar egen — «gjor opp selv», uten fullmakt i Vipps —
+        // trekkes ingenting automatisk, og da kan den folge planen. Da er
+        // det én sannhet igjen, ikke to.
         $avtale = DB::en(
-            "SELECT plan, pris_ore FROM subscriptions
-              WHERE member_id = :m AND status = 'aktiv' LIMIT 1",
+            "SELECT id, plan, pris_ore, vipps_agreement_id FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
             ['m' => $id]
         );
+        $fastTrekk = $avtale !== null
+            && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== '';
 
+        if ($avtale !== null && !$fastTrekk) {
+            DB::oppdater('subscriptions', [
+                'plan'     => $type,
+                'pris_ore' => (int) $plan['pris_ore'],
+            ], ['id' => (int) $avtale['id']]);
+            revider('medlemsavtale_plan_byttet', 'subscription', (int) $avtale['id'],
+                    ['fra' => (string) $avtale['plan'], 'til' => $type,
+                     'pris_ore' => (int) $plan['pris_ore'], 'av' => (int) $jeg['id']]);
+        }
+
+        // Med fullmakt i Vipps er det Vipps som eier beloepet. Vi kan ikke
+        // skrive det om herfra, og det skal staa i klartekst — ikke
+        // oppdages naar pengene kommer.
         Svar::ok([
             'beskjed' => ($m['navn'] ?: 'Medlemmet') . ' står nå på ' . $type . '.'
                 . ($fra !== '' ? ' Byttet fra ' . $fra . '.' : '')
                 . ($engangs
                     ? ' Det er en engangsperiode, og den varer én måned.'
                     : '')
-                . ($avtale !== null
+                . ($fastTrekk
                     ? ' Merk: Vipps-avtalen er godkjent på '
                       . Booking::kroner((int) $avtale['pris_ore'])
                       . ' og trekker fortsatt det. Skal beløpet endres, må avtalen sies opp'
                       . ' og medlemmet sette opp en ny fra Min side.'
-                    : ' Betalingen avtaler dere selv — det opprettes ingen Vipps-avtale her.'),
+                    : ($avtale !== null
+                        ? ' Beløpet er endret til ' . Booking::kroner((int) $plan['pris_ore'])
+                          . '. Det trekkes ingenting automatisk — dere gjør opp selv.'
+                        : ' Betalingen avtaler dere selv — det opprettes ingen Vipps-avtale her.')),
+        ]);
+    }
+
+    // ── Nullstill medlemmet ───────────────────────────────────────────
+    //
+    // Eieren, 4. september, om Eirin: «hun staar to ganger», «ingen ting er
+    // betalt», og «Eirin skal ha en bruker og den skal ha aarsavtale, slett
+    // alt annet paa henne ogsaa historikken».
+    //
+    // Det fantes ingen vei dit. «Slett» anonymiserer hele personen — navnet
+    // forsvinner ogsaa. «Avslutt» beholder alt. Sammenslaaingen under «Samme
+    // person flere ganger» flytter historikk sammen, men fjerner ingenting.
+    // Skulle noen begynne paa nytt med samme person, maatte det gjores i
+    // basen.
+    //
+    // Denne tommer alt som henger paa personen og lar raden staa: navn,
+    // telefon og e-post blir igjen, slik at hun fortsatt er den samme
+    // brukeren. Skal hun over paa et annet medlemskap i samme slengen, sier
+    // «type» hvilket.
+    //
+    // Dette kan ikke angres, og det er meningen. Derfor: bare admin, aldri
+    // paa en admin-rad, aldri paa deg selv, og bare med «bekreft» satt —
+    // et kall som kommer hit ved et uhell skal ikke slette noe.
+    if ($handling === 'nullstill') {
+        $id = Foresporsel::heltall('medlemId');
+        $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+        if ((int) $m['id'] === (int) $jeg['id']) {
+            Svar::feil('Du kan ikke nullstille din egen konto.');
+        }
+        // Samme regel som «slett»: adminkontoer haandteres under Brukere.
+        // Skjermen skjuler knappen, men et lofte skjermen gir uten at
+        // serveren holder det, er ikke et lofte.
+        if ($m['rolle'] === 'admin') {
+            Svar::feil('Denne kontoen har tilgang til admin. '
+                     . 'Slike kontoer håndteres under Brukere, ikke herfra.');
+        }
+        if (Foresporsel::tekst('bekreft') !== 'NULLSTILL') {
+            Svar::feil('Nullstillingen må bekreftes.');
+        }
+
+        // Medlemskapet det skal staa paa etterpaa. Tomt er lov — da staar
+        // hun uten, slik en nyopprettet person gjor.
+        $type = mb_substr(trim(Foresporsel::tekst('type')), 0, 64);
+        if ($type !== '' && Medlemskap::plan($type) === null) {
+            Svar::feil('Fant ikke medlemskapet «' . $type . '».');
+        }
+
+        $epost = trim((string) ($m['epost'] ?? ''));
+        $tlf   = trim((string) ($m['telefon'] ?? ''));
+
+        // Alt eller ingenting. Halvveis er verre enn ikke gjort: da staar
+        // bookingene igjen mens betalingene er borte, og ingen vet hva som
+        // faktisk skjedde.
+        $tall = DB::iTransaksjon(static function () use ($id, $epost, $tlf): array {
+            $tall = [];
+            $tell = static function (string $navn, string $sql, array $p) use (&$tall): void {
+                $n = DB::kjor($sql, $p)->rowCount();
+                if ($n > 0) {
+                    $tall[$navn] = ($tall[$navn] ?? 0) + $n;
+                }
+            };
+
+            // ── Rekkefolgen er ikke tilfeldig ─────────────────────────
+            //
+            // Tre tabeller peker paa «payments» med RESTRICT: bookings,
+            // orders og gift_cards. Slettes betalingene forst, stopper
+            // basen hele operasjonen. De maa vike unna.
+
+            // Et gavekort kjopt for pengene hennes kan ligge hos en annen,
+            // og kan vaere brukt. Det skal ikke forsvinne fordi hun
+            // nullstilles — det mister bare sporet tilbake til betalingen.
+            if (DB::harTabell('gift_cards') && DB::harKolonne('gift_cards', 'payment_id')) {
+                $tell('gift_cards',
+                    'UPDATE gift_cards SET payment_id = NULL
+                      WHERE payment_id IN (SELECT id FROM payments WHERE member_id = :i)',
+                    ['i' => $id]);
+            }
+
+            // Betalinger HUN har registrert paa andre er andres penger.
+            // De skal staa; det er bare navnet hennes som loses av.
+            if (DB::harKolonne('payments', 'registrert_av')) {
+                $tell('payments_registrert_av',
+                    'UPDATE payments SET registrert_av = NULL WHERE registrert_av = :i',
+                    ['i' => $id]);
+            }
+
+            $tell('bookings', 'DELETE FROM bookings WHERE member_id = :i', ['i' => $id]);
+            if (DB::harTabell('orders')) {
+                // «order_lines» folger med av seg selv — CASCADE.
+                $tell('orders', 'DELETE FROM orders WHERE member_id = :i', ['i' => $id]);
+            }
+            $tell('payments', 'DELETE FROM payments WHERE member_id = :i', ['i' => $id]);
+
+            // Resten, lest av basen. Rekkefolgen over har alt tatt sitt;
+            // her er det bare aa tomme det som er igjen.
+            $tatt = ['bookings.member_id', 'orders.member_id', 'payments.member_id',
+                     'payments.registrert_av', 'audit_log.member_id'];
+            foreach (Medlemskap::pekere() as $p) {
+                $t = $p['tabell'];
+                $k = $p['kolonne'];
+                if (in_array($t . '.' . $k, $tatt, true)) {
+                    continue;
+                }
+                $tell($t, "DELETE FROM `{$t}` WHERE `{$k}` = :i", ['i' => $id]);
+            }
+
+            // Ventelistene staar paa e-post og telefon, ikke paa medlemmet —
+            // se personruta, som finner dem samme vei.
+            if (DB::harTabell('waitlist') && ($epost !== '' || $tlf !== '')) {
+                $hvor = [];
+                $par = [];
+                if ($epost !== '') { $hvor[] = 'epost = :e';   $par['e'] = $epost; }
+                if ($tlf !== '')   { $hvor[] = 'telefon = :t'; $par['t'] = $tlf; }
+                $tell('waitlist',
+                    'DELETE FROM waitlist WHERE ' . implode(' OR ', $hvor), $par);
+            }
+
+            // Endringsloggen, begge veier: det hun har gjort, og det som er
+            // gjort med henne. Personruta leser den siste — se «$loggHvor».
+            //
+            // To navn til det samme tallet: PDO uten emulerte forberedelser
+            // godtar ikke at «:i» staar to ganger i samme setning.
+            $tell('audit_log',
+                "DELETE FROM audit_log
+                  WHERE member_id = :a
+                     OR (objekt_type = 'member' AND objekt_id = :b)",
+                ['a' => $id, 'b' => $id]);
+
+            return $tall;
+        });
+
+        // Selve raden settes tilbake til en person uten historie. Navn,
+        // e-post, telefon og Vipps-innloggingen staar — det er den samme
+        // brukeren, ikke en ny.
+        $nytt = [
+            'status'          => $type !== '' ? 'aktiv' : 'ingen',
+            'medlemskap_type' => $type !== '' ? $type : null,
+            'start_dato'      => $type !== '' ? date('Y-m-d') : null,
+            'slutt_dato'      => null,
+            'timer_per_mnd'   => null,
+            'notat'           => null,
+        ];
+        if (DB::harKolonne('members', 'betaler_ikke')) {
+            $nytt['betaler_ikke']       = 0;
+            $nytt['betaler_ikke_grunn'] = null;
+        }
+        DB::oppdater('members', $nytt, ['id' => $id]);
+
+        revider('medlem_nullstilt', 'member', $id,
+                ['av' => (int) $jeg['id'], 'type' => $type, 'slettet' => $tall]);
+
+        // Tabellnavn er ikke noe man sier hoyt. «1 check_ins» er ikke
+        // norsk, og svaret skal leses av et menneske som staar i ruta.
+        $ord = [
+            'bookings'              => ['påmelding', 'påmeldinger'],
+            'orders'                => ['ordre', 'ordrer'],
+            'payments'              => ['betaling', 'betalinger'],
+            'payments_registrert_av'=> ['betaling ført av henne', 'betalinger ført av henne'],
+            'gift_cards'            => ['gavekort løsnet fra betalingen', 'gavekort løsnet fra betalingen'],
+            'subscriptions'         => ['avtale', 'avtaler'],
+            'check_ins'             => ['innstempling', 'innstemplinger'],
+            'waitlist'              => ['venteliste', 'ventelister'],
+            'audit_log'             => ['linje i endringsloggen', 'linjer i endringsloggen'],
+            'chat_meldinger'        => ['melding', 'meldinger'],
+            'medlemsgaver'          => ['gave', 'gaver'],
+            'medlemsgave_bruk'      => ['brukt gave', 'brukte gaver'],
+            'medlem_frys'           => ['frys', 'fryser'],
+            'membership_applications' => ['søknad', 'søknader'],
+            'member_sales'          => ['salg', 'salg'],
+            'sessions'              => ['innlogging', 'innlogginger'],
+            'verksted_notater'      => ['notat', 'notater'],
+            'verksted_paaminnelser' => ['påminnelse', 'påminnelser'],
+            'feilrapporter'         => ['feilmelding', 'feilmeldinger'],
+            'foresporsel_svar'      => ['svar på henvendelse', 'svar på henvendelser'],
+        ];
+        $deler = [];
+        foreach ($tall as $navn => $n) {
+            $par = $ord[$navn] ?? [$navn, $navn];
+            $deler[] = $n . ' ' . ($n === 1 ? $par[0] : $par[1]);
+        }
+
+        Svar::ok([
+            'slettet' => $tall,
+            'beskjed' => ($m['navn'] ?: 'Medlemmet') . ' er nullstilt.'
+                . ($deler === []
+                    ? ' Det sto ingenting på henne fra før.'
+                    : ' Fjernet: ' . implode(', ', $deler) . '.')
+                . ($type !== ''
+                    ? ' Hun står nå på ' . $type . ', uten betaling registrert.'
+                    : ' Hun står nå uten medlemskap.'),
         ]);
     }
 

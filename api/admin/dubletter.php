@@ -50,21 +50,18 @@ require __DIR__ . '/../_boot.php';
 
 $jeg = krev_admin();
 
-/** @return list<array{tabell:string,kolonne:string}> */
+/**
+ * Tabellene som peker paa et medlem.
+ *
+ * Sto her som en egen sporring. Nullstillingen under Medlemmer trenger den
+ * samme lista, og to lister som skal vaere like er én for mye — de driver fra
+ * hverandre den dagen en tabell kommer til. Se Medlemskap::pekere().
+ *
+ * @return list<array{tabell:string,kolonne:string}>
+ */
 function medlemspekere(): array
 {
-    $ut = [];
-    foreach (DB::alle(
-        "SELECT table_name AS t, column_name AS k
-           FROM information_schema.columns
-          WHERE table_schema = DATABASE()
-            AND column_name IN ('member_id', 'registrert_av')
-            AND table_name <> 'members'
-       ORDER BY table_name, column_name"
-    ) as $r) {
-        $ut[] = ['tabell' => (string) $r['t'], 'kolonne' => (string) $r['k']];
-    }
-    return $ut;
+    return Medlemskap::pekere();
 }
 
 // ---------------------------------------------------------------- lesing

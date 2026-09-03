@@ -11168,6 +11168,22 @@ window.__resources = {
                 <div style="margin-top: var(--space-3);">
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
                 </div>
+                <!-- Begynn paa nytt med den samme personen.
+                     Eieren, 4. september, om Eirin: hun sto to ganger, ingenting var
+                     betalt, og et forlatt Vipps-forsok bestemte fortsatt bade plan og
+                     pris. «Eirin skal ha en bruker og den skal ha aarsavtale, slett alt
+                     annet paa henne ogsaa historikken».
+                     «Slett» tar navnet med seg, «Avslutt» beholder alt, og
+                     sammenslaaingen under «Samme person flere ganger» flytter bare
+                     historikk sammen. Ingen av dem gjor dette.
+                     Se «nullstill» i api/admin/medlemmer.php. -->
+                <sc-if value="{{ personKanNullstille }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Begynn på nytt</div>
+                    <div style="margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personNullstillHjelp }}</div>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ nullstillPerson }}" hint-size="auto,36px">{{ personNullstillKnapp }}</x-import>
+                  </div>
+                </sc-if>
               </div>
             </sc-if>
 
@@ -11957,6 +11973,22 @@ window.__resources = {
                   <div style="margin-top: var(--space-3);">
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonFri }}" hint-size="auto,36px">{{ personFriKnapp }}</x-import>
                   </div>
+                  <!-- Begynn paa nytt med den samme personen.
+                       Eieren, 4. september, om Eirin: hun sto to ganger, ingenting var
+                       betalt, og et forlatt Vipps-forsok bestemte fortsatt bade plan og
+                       pris. «Eirin skal ha en bruker og den skal ha aarsavtale, slett alt
+                       annet paa henne ogsaa historikken».
+                       «Slett» tar navnet med seg, «Avslutt» beholder alt, og
+                       sammenslaaingen under «Samme person flere ganger» flytter bare
+                       historikk sammen. Ingen av dem gjor dette.
+                       Se «nullstill» i api/admin/medlemmer.php. -->
+                  <sc-if value="{{ personKanNullstille }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border-subtle);">
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Begynn på nytt</div>
+                      <div style="margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personNullstillHjelp }}</div>
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" size="sm" on-click="{{ nullstillPerson }}" hint-size="auto,36px">{{ personNullstillKnapp }}</x-import>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-if>
 
@@ -33839,9 +33871,15 @@ class Component extends DCLogic {
           // ut som om det er noe aa lagre hver gang ruta aapnes.
           personPlanEndret: personPlanNaa !== personPlanFra,
           personPlanKnapp: 'Bytt medlemskap',
-          personPlanHjelp: 'Byttet endrer bare hvilket medlemskap ' + fornavn
-            + ' står på. Det opprettes ingen Vipps-avtale — og en avtale som '
-            + 'alt løper, trekker fortsatt det gamle beløpet.',
+          // Beloepet folger med byttet naar avtalen er vaar egen. Eieren,
+          // 4. september: «det gaar ikke aa endre sum» — planen ble byttet,
+          // men prisen sto stille, fordi den leses av avtalen naar den
+          // loeper. Har Vipps fullmakten, er det Vipps som eier beloepet, og
+          // da kan vi ikke skrive det om herfra.
+          personPlanHjelp: 'Byttet endrer hvilket medlemskap ' + fornavn
+            + ' står på, og beløpet følger med. Det opprettes ingen Vipps-avtale '
+            + '— og har hun godkjent fast trekk, trekker Vipps fortsatt det gamle '
+            + 'beløpet til avtalen sies opp.',
           lagrePersonPlan: () => {
             if (personPlanNaa === personPlanFra || !personPlanNaa) { return; }
             // «behold» — uten den lukker medlemKall ruta, og da ville
@@ -33852,6 +33890,46 @@ class Component extends DCLogic {
                 // Overstyringa nullstilles, saa brikkene leser det som naa
                 // staar i basen — ikke det vi trodde vi satte.
                 this.setState({ personPlan: null });
+                this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+              });
+          },
+          // ── Begynn paa nytt med den samme personen ─────────────────
+          //
+          // Eieren, 4. september, om Eirin: «Eirin skal ha en bruker og den
+          // skal ha aarsavtale, slett alt annet paa henne ogsaa historikken».
+          //
+          // Ingen av de tre veiene som fantes gjorde det: «Slett» tar navnet
+          // med seg, «Avslutt» beholder alt, og sammenslaaingen av dubletter
+          // flytter historikk sammen framfor aa fjerne den.
+          //
+          // Medlemskapet som staar valgt over er det hun havner paa. Slik er
+          // det ett valg og én knapp, ikke to runder.
+          //
+          // Serveren nekter uansett paa en admin-rad og paa din egen konto —
+          // knappen staar ikke der, saa ingen prover.
+          personKanNullstille: !!p.id && !p.erAdmin,
+          personNullstillKnapp: 'Nullstill ' + fornavn,
+          personNullstillHjelp: 'Fjerner alt som henger på ' + fornavn
+            + ': påmeldinger, betalinger, avtaler, timer, ventelister og '
+            + 'endringsloggen. Navn, telefon og innlogging blir stående, så det '
+            + 'er den samme brukeren'
+            + (personPlanNaa ? ' — og hun settes på ' + personPlanNaa + '.' : '.')
+            + ' Dette kan ikke angres.',
+          nullstillPerson: () => {
+            if (!window.confirm('Nullstille ' + (p.navn || 'medlemmet') + '?\n\n'
+                + 'Alt som henger på personen fjernes: påmeldinger, betalinger, '
+                + 'avtaler, timer, ventelister og endringsloggen.\n\n'
+                + 'Navn, telefon og innlogging blir stående'
+                + (personPlanNaa ? ', og hun settes på ' + personPlanNaa : '') + '.\n\n'
+                + 'Dette kan ikke angres.')) { return; }
+            // «behold» — uten den lukker medlemKall ruta, og da ville
+            // oppfriskningen under aapnet den igjen med det samme.
+            this.medlemKall({ handling: 'nullstill', medlemId: p.id,
+                              type: personPlanNaa || '', bekreft: 'NULLSTILL' }, true)
+              .then(ok => {
+                if (!ok) { return; }
+                this.setState({ personPlan: null, personFri: null, personFriGrunn: null,
+                                personBetalingApen: false, personBetalingBelop: '' });
                 this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
               });
           },

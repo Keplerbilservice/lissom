@@ -66,6 +66,21 @@ function nullstill(): void
         DB::kjor('DELETE FROM membership_applications WHERE member_id IN (' . implode(',', $medlemmer) . ')');
         DB::kjor('DELETE FROM members WHERE id IN (' . implode(',', $medlemmer) . ')');
     }
+
+    // Radene testene lager for haand, med sin egen e-post. Faller en test
+    // midtveis, blir de staaende — og neste kjoring maa kunne begynne paa
+    // nytt uansett. Rekkefolgen er den samme som nullstillingen bruker:
+    // paameldingene peker paa betalingene.
+    $egne = array_column(DB::alle(
+        "SELECT id FROM members WHERE epost IN ('rekkefolge@example.test')"
+    ), 'id');
+    if ($egne) {
+        $inn = implode(',', $egne);
+        DB::kjor("DELETE FROM bookings WHERE member_id IN ({$inn})");
+        DB::kjor("DELETE FROM payments WHERE member_id IN ({$inn})");
+        DB::kjor("DELETE FROM subscriptions WHERE member_id IN ({$inn})");
+        DB::kjor("DELETE FROM members WHERE id IN ({$inn})");
+    }
 }
 
 nullstill();
@@ -2138,9 +2153,12 @@ sjekk('et nummer mange deler regnes ikke som sikkert',
     && str_contains($dubFil, "Deler e-post eller telefon med mange andre rader"));
 // Femten tabeller peker paa members. Lista bygges av basen, ikke skrevet av
 // for haand — den som legger til en tabell neste gang skal slippe aa huske
-// denne fila.
+// denne fila. Den sto her; naa staar den i Medlemskap::pekere(), fordi
+// nullstillingen under Medlemmer trenger den samme.
 sjekk('tabellene som peker paa medlemmet finnes av basen',
-    str_contains($dubFil, "AND column_name IN ('member_id', 'registrert_av')"));
+    str_contains($dubFil, 'return Medlemskap::pekere();')
+    && str_contains(file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php'),
+                    "AND column_name IN ('member_id', 'registrert_av')"));
 // Alt eller ingenting. Foerste forsoek flyttet innstemplingene og falt saa
 // paa en unik noekkel: bookingene sto paa den nye raden mens den gamle
 // fortsatt var et aktivt medlem.
@@ -8297,6 +8315,140 @@ sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
 
+echo "\n== Begynne på nytt med den samme personen ==\n";
+// Eieren, 4. september, om Eirin: «hun staar to ganger», «ingen ting er
+// betalt», og «Eirin skal ha en bruker og den skal ha aarsavtale, slett alt
+// annet paa henne ogsaa historikken».
+//
+// Ingen av de tre veiene som fantes gjorde det: «Slett» anonymiserer hele
+// personen og tar navnet med seg, «Avslutt» beholder alt, og
+// sammenslaaingen av dubletter flytter historikk sammen framfor aa fjerne
+// den.
+
+// ── Lista over hva som peker paa et medlem ────────────────────────────
+//
+// Den sto i api/admin/dubletter.php. Nullstillingen trenger den samme, og
+// to lister som skal vaere like er én for mye.
+$pekere = Medlemskap::pekere();
+$navnene = array_map(static fn(array $p): string => $p['tabell'] . '.' . $p['kolonne'], $pekere);
+sjekk('lista over det som peker paa et medlem leses av basen',
+    count($pekere) >= 10, count($pekere) . ' tabeller');
+sjekk('… og den har med det historikken bestaar av',
+    in_array('bookings.member_id', $navnene, true)
+    && in_array('payments.member_id', $navnene, true)
+    && in_array('subscriptions.member_id', $navnene, true)
+    && in_array('check_ins.member_id', $navnene, true)
+    && in_array('audit_log.member_id', $navnene, true));
+sjekk('… og «members» selv staar ikke i den',
+    !in_array('members.member_id', $navnene, true));
+// Navnene settes inn i SQL som identifikatorer og kan ikke parameteriseres.
+sjekk('… og alle navnene er rene tabellnavn',
+    count(array_filter($navnene,
+        static fn(string $n): bool => (bool) preg_match('/^[a-z_]+\.[a-z_]+$/', $n))) === count($navnene));
+$dubFil = file_get_contents(dirname(__DIR__) . '/api/admin/dubletter.php');
+sjekk('… og dublettene leser den samme lista, ikke sin egen',
+    str_contains($dubFil, 'return Medlemskap::pekere();')
+    && !str_contains($dubFil, "AND column_name IN ('member_id', 'registrert_av')"));
+
+// ── Rekkefolgen er ikke tilfeldig ─────────────────────────────────────
+//
+// «bookings.payment_id» peker paa «payments» med RESTRICT. Slettes
+// betalingene forst, stopper basen hele operasjonen — og da blir ingenting
+// nullstilt. Bevist her, ikke antatt.
+$rMed = (int) DB::settInn('members', [
+    'navn' => 'Rekkefolge Testesen', 'epost' => 'rekkefolge@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Mini 15',
+]);
+$rBet = (int) DB::settInn('payments', [
+    'vipps_reference' => 'REKKEF-' . $rMed, 'type' => 'manuell', 'formal' => 'booking',
+    'member_id' => $rMed, 'belop_ore' => 259000, 'status' => 'betalt',
+    'idempotency_key' => bin2hex(random_bytes(18)),
+]);
+$rKurs = (int) DB::verdi('SELECT id FROM courses LIMIT 1');
+$rBook = (int) DB::settInn('bookings', [
+    'course_id' => $rKurs, 'member_id' => $rMed, 'antall' => 1,
+    'belop_ore' => 259000, 'status' => 'betalt', 'payment_id' => $rBet,
+]);
+$sperret = false;
+try {
+    DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $rMed]);
+} catch (Throwable $e) {
+    $sperret = true;
+}
+sjekk('betalingen kan ikke slettes for paameldingen som peker paa den', $sperret);
+DB::kjor('DELETE FROM bookings WHERE member_id = :m', ['m' => $rMed]);
+DB::kjor('DELETE FROM payments WHERE member_id = :m', ['m' => $rMed]);
+sjekk('… og i riktig rekkefolge gaar begge',
+    (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE member_id = :m', ['m' => $rMed]) === 0
+    && (int) DB::verdi('SELECT COUNT(*) FROM bookings WHERE member_id = :m', ['m' => $rMed]) === 0);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $rMed]);
+
+$medApiN = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('handleren tar paameldinger og ordrer foer betalingene',
+    strpos($medApiN, "\$tell('bookings', 'DELETE FROM bookings")
+      < strpos($medApiN, "\$tell('payments', 'DELETE FROM payments"));
+sjekk('… og loser gavekortet fra betalingen forst, saa det ikke forsvinner',
+    strpos($medApiN, "UPDATE gift_cards SET payment_id = NULL")
+      < strpos($medApiN, "\$tell('payments', 'DELETE FROM payments"));
+// Penger HUN har registrert paa andre er andres penger.
+sjekk('… og betalinger hun har fort paa andre slettes ikke, bare navnet loses av',
+    str_contains($medApiN, "UPDATE payments SET registrert_av = NULL WHERE registrert_av = :i"));
+
+// ── Det som ikke henger i «member_id» ─────────────────────────────────
+sjekk('ventelistene finnes paa e-post og telefon, som i personruta',
+    str_contains($medApiN, "DELETE FROM waitlist WHERE ") && str_contains($medApiN, "'epost = :e'"));
+// Personruta leser loggen om henne — «objekt_type = member». Bare
+// «member_id» ville latt den staa.
+sjekk('endringsloggen tommes begge veier — det hun gjorde, og det som ble gjort med henne',
+    str_contains($medApiN, "DELETE FROM audit_log\n                  WHERE member_id = :a\n                     OR (objekt_type = 'member' AND objekt_id = :b)"));
+
+// ── Doren staar ikke aapen ────────────────────────────────────────────
+sjekk('nullstillingen maa bekreftes',
+    str_contains($medApiN, "if (Foresporsel::tekst('bekreft') !== 'NULLSTILL') {"));
+sjekk('… og gaar ikke paa din egen konto',
+    str_contains($medApiN, "Svar::feil('Du kan ikke nullstille din egen konto.');"));
+sjekk('… og heller ikke paa en adminkonto',
+    substr_count($medApiN, "'Slike kontoer håndteres under Brukere, ikke herfra.'") === 2);
+
+// Raden skal staa igjen som den samme brukeren.
+$nullBlokk = substr($medApiN, (int) strpos($medApiN, "if (\$handling === 'nullstill') {"));
+$nullBlokk = substr($nullBlokk, 0, (int) strpos($nullBlokk, '// ── Medlemmet skal ikke betale'));
+sjekk('navn, telefon og innlogging blir staaende',
+    !str_contains($nullBlokk, 'DELETE FROM members')
+    && str_contains($nullBlokk, "DB::oppdater('members', \$nytt, ['id' => \$id]);"));
+// Raden er den samme brukeren etterpaa. Rorer vi «navn», «epost», «telefon»
+// eller «vipps_sub», er hun en annen — og da er det «Slett» man vil ha.
+$nyttFelt = substr($nullBlokk, (int) strpos($nullBlokk, '$nytt = ['));
+$nyttFelt = substr($nyttFelt, 0, (int) strpos($nyttFelt, "DB::oppdater('members'"));
+sjekk('… og de fire feltene som gjor henne til henne roeres ikke',
+    !str_contains($nyttFelt, "'navn'")
+    && !str_contains($nyttFelt, "'epost'")
+    && !str_contains($nyttFelt, "'telefon'")
+    && !str_contains($nyttFelt, "'vipps_sub'"),
+    trim(str_replace("\n", ' ', $nyttFelt)));
+
+// ── Byttet av medlemskap maa endre beloepet ───────────────────────────
+//
+// Eieren: «det gaar ikke aa endre sum». Prisen leses av avtalen naar den
+// loeper, og byttet traff bare «members».
+sjekk('planbyttet tar avtalen med seg naar den er vaar egen',
+    str_contains($medApiN, "DB::oppdater('subscriptions', [\n                'plan'     => \$type,\n                'pris_ore' => (int) \$plan['pris_ore'],\n            ], ['id' => (int) \$avtale['id']]);"));
+// Med fullmakt i Vipps er det Vipps som eier beloepet.
+sjekk('… men ikke naar Vipps har fullmakten',
+    str_contains($medApiN, "\$fastTrekk = \$avtale !== null\n            && trim((string) (\$avtale['vipps_agreement_id'] ?? '')) !== '';")
+    && str_contains($medApiN, "if (\$avtale !== null && !\$fastTrekk) {"));
+
+$sidaN = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('knappen staar i personruta, begge steder ruta brukes',
+    substr_count($sidaN, '{{ personNullstillKnapp }}') === 2
+    && substr_count($sidaN, '{{ personKanNullstille }}') === 2);
+sjekk('… og den spor foerst',
+    str_contains($sidaN, "if (!window.confirm('Nullstille '"));
+sjekk('… og den staar ikke paa en adminrad',
+    str_contains($sidaN, 'personKanNullstille: !!p.id && !p.erAdmin,'));
+sjekk('… og medlemskapet som er valgt er det hun havner paa',
+    str_contains($sidaN, "type: personPlanNaa || '', bekreft: 'NULLSTILL'"));
+
 echo "\n== En avtale som aldri ble godkjent slipper taket ==\n";
 // Eieren, 4. september: «jeg byttet medlemskap for eirin, men det endrer ikke
 // pris. Fra basis 30 som stod ubetalt», og «hun fikk jo aldri betalt eller har
@@ -8548,7 +8700,7 @@ sjekk('serveren kan bytte plan uten aa melde inn paa nytt',
 // Det som IKKE skal roeres. Byttet er ett felt, pluss sluttdatoen som
 // hoerer til planen.
 $bytt = substr($medApi, (int) strpos($medApi, "if (\$handling === 'bytt-plan') {"));
-$bytt = substr($bytt, 0, (int) strpos($bytt, '// ── Medlemmet skal ikke betale'));
+$bytt = substr($bytt, 0, (int) strpos($bytt, '// ── Nullstill medlemmet'));
 sjekk('… og bytter medlemskapet, ikke status eller startdato',
     str_contains($bytt, "'medlemskap_type' => \$type,")
     && !str_contains($bytt, "'status'")
@@ -8561,7 +8713,7 @@ sjekk('… og sluttdatoen foelger planen begge veier',
 // Vipps-avtalen kan vi ikke endre — API-et har ingen vei til det. Da skal
 // det staa i klartekst, ikke oppdages naar pengene kommer.
 sjekk('… og sier fra at en loepende Vipps-avtale trekker det gamle',
-    str_contains($bytt, "WHERE member_id = :m AND status = 'aktiv' LIMIT 1")
+    str_contains($bytt, "WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1")
     && str_contains($bytt, 'trekker fortsatt det. Skal beløpet endres'));
 sjekk('… og byttet blir staaende i endringsloggen',
     str_contains($medApi, "revider('medlem_plan_byttet', 'member', \$id,")

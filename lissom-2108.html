@@ -11049,6 +11049,25 @@ window.__resources = {
                 <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
                   <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
                 </sc-if>
+                <!-- Bytte medlemskap.
+                     Eieren, 4. september: «jeg vil i admin kunne endre medlemskap
+                     for medlemmene». Det fantes ikke: «Meld inn» kan sette en type,
+                     men den melder inn paa nytt og flytter bade status og startdato.
+                     Se «bytt-plan» i api/admin/medlemmer.php. -->
+                <div style="margin-top: var(--space-5);">
+                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Medlemskap</div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <sc-for list="{{ personPlanValg }}" as="v" hint-placeholder-count="4">
+                      <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                    </sc-for>
+                  </div>
+                  <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personPlanHjelp }}</div>
+                  <sc-if value="{{ personPlanEndret }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top: var(--space-3);">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
+                    </div>
+                  </sc-if>
+                </div>
                 <label style="{{ personFriEtikett }}">
                   <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                   Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
@@ -11796,6 +11815,25 @@ window.__resources = {
                   <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
                     <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
                   </sc-if>
+                  <!-- Bytte medlemskap.
+                       Eieren, 4. september: «jeg vil i admin kunne endre medlemskap
+                       for medlemmene». Det fantes ikke: «Meld inn» kan sette en type,
+                       men den melder inn paa nytt og flytter bade status og startdato.
+                       Se «bytt-plan» i api/admin/medlemmer.php. -->
+                  <div style="margin-top: var(--space-5);">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Medlemskap</div>
+                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                      <sc-for list="{{ personPlanValg }}" as="v" hint-placeholder-count="4">
+                        <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
+                      </sc-for>
+                    </div>
+                    <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personPlanHjelp }}</div>
+                    <sc-if value="{{ personPlanEndret }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-3);">
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
+                      </div>
+                    </sc-if>
+                  </div>
                   <label style="{{ personFriEtikett }}">
                     <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                     Betaler ikke — medlemskapet er gratis for {{ personFornavn }}
@@ -30014,7 +30052,7 @@ class Component extends DCLogic {
     const noekkel = id > 0 ? 'm' + id : 'b' + bookingId;
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
-      personFri: null, personFriGrunn: null,
+      personFri: null, personFriGrunn: null, personPlan: null,
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
       // gjenkjennes paa; disse to er det handlingene trenger.
       personMedlemId: id > 0 ? id : 0,
@@ -33448,12 +33486,18 @@ class Component extends DCLogic {
         const d = this.state.personData;
         const p = (d || {}).person || {};
         const h = (d || {}).historikk || [];
+        const fornavn = (p.navn || '').split(' ')[0] || 'personen';
+        // Medlemskapet slik det staar i basen, og slik det staar i skjermen.
+        // Feltet er tomt til noe er valgt; da faller det tilbake paa basen.
+        const personPlanFra = p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : '';
+        const personPlanNaa = this.state.personPlan === null || this.state.personPlan === undefined
+          ? personPlanFra : this.state.personPlan;
         return {
           visPerson: !!this.state.personFor,
           personHenter: !!this.state.personFor && !d,
           personTom: !!d && h.length === 0,
           personNavn: p.navn || '',
-          personFornavn: (p.navn || '').split(' ')[0] || 'personen',
+          personFornavn: fornavn,
           personDetalj: [p.epost, p.telefon, p.medlemskap && p.medlemskap !== 'Ingen' ? p.medlemskap : null]
             .filter(Boolean).join(' · '),
           lukkPerson: () => this.setState({ personFor: null, personData: null, personNotat: null }),
@@ -33505,6 +33549,43 @@ class Component extends DCLogic {
           personFriGrunn: this.state.personFriGrunn === null || this.state.personFriGrunn === undefined
             ? (p.betalerIkkeGrunn || '') : this.state.personFriGrunn,
           settPersonFriGrunn: e => this.setState({ personFriGrunn: e.target.value }),
+          // ── Bytte medlemskap ──────────────────────────────────────
+          //
+          // Eieren, 4. september: «jeg vil i admin kunne endre medlemskap
+          // for medlemmene».
+          //
+          // «Meld inn» kunne sette en type, men den melder inn paa nytt:
+          // status til aktiv, startdato til i dag. Brukt paa et medlem som
+          // alt er inne, ville en i pause blitt aktiv igjen og «medlem
+          // siden mai» blitt «medlem siden i dag». «bytt-plan» paa serveren
+          // bytter planen og bare den.
+          //
+          // Planene kommer fra det samme svaret som medlemslista, saa
+          // valgene her er de samme som nettsida tilbyr — ikke en liste
+          // skrevet av paa nytt.
+          personPlanValg: this.brikkeliste(
+            (this.state.adminPlaner || []).map(pl => pl.navn),
+            personPlanNaa, e => this.setState({ personPlan: e.target.value })),
+          // Knappen staar bare naar noe faktisk er valgt om. Ellers ser det
+          // ut som om det er noe aa lagre hver gang ruta aapnes.
+          personPlanEndret: personPlanNaa !== personPlanFra,
+          personPlanKnapp: 'Bytt medlemskap',
+          personPlanHjelp: 'Byttet endrer bare hvilket medlemskap ' + fornavn
+            + ' står på. Det opprettes ingen Vipps-avtale — og en avtale som '
+            + 'alt løper, trekker fortsatt det gamle beløpet.',
+          lagrePersonPlan: () => {
+            if (personPlanNaa === personPlanFra || !personPlanNaa) { return; }
+            // «behold» — uten den lukker medlemKall ruta, og da ville
+            // oppfriskningen under aapnet den igjen med det samme.
+            this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)
+              .then(ok => {
+                if (!ok) { return; }
+                // Overstyringa nullstilles, saa brikkene leser det som naa
+                // staar i basen — ikke det vi trodde vi satte.
+                this.setState({ personPlan: null });
+                this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+              });
+          },
           personFriKnapp: 'Lagre',
           lagrePersonFri: () => {
             const paa = this.state.personFri === null || this.state.personFri === undefined

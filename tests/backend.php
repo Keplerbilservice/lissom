@@ -8112,6 +8112,62 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== Bytte medlemskap på et medlem ==\n";
+// Eieren, 4. september: «jeg vil i admin kunne endre medlemskap for
+// medlemmene».
+//
+// Det fantes ikke. «meld-inn» kan sette en type, men den melder INN paa
+// nytt: status til aktiv, start_dato til i dag, sluttdatoen paa nytt. Brukt
+// paa et medlem som alt er inne, ville en i pause blitt aktiv igjen og
+// «medlem siden mai» blitt «medlem siden i dag».
+$medApi = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('serveren kan bytte plan uten aa melde inn paa nytt',
+    str_contains($medApi, "if (\$handling === 'bytt-plan') {"));
+// Det som IKKE skal roeres. Byttet er ett felt, pluss sluttdatoen som
+// hoerer til planen.
+$bytt = substr($medApi, (int) strpos($medApi, "if (\$handling === 'bytt-plan') {"));
+$bytt = substr($bytt, 0, (int) strpos($bytt, '// ── Medlemmet skal ikke betale'));
+sjekk('… og bytter medlemskapet, ikke status eller startdato',
+    str_contains($bytt, "'medlemskap_type' => \$type,")
+    && !str_contains($bytt, "'status'")
+    && !str_contains($bytt, "'start_dato'"));
+// En engangsplan varer en maaned. Uten sluttdato ble «Prov Lissom» et
+// gratis medlemskap uten ende; byttes det motsatt vei, maa den gamle
+// sluttdatoen bort, ellers stopper medlemskapet paa proeveperiodens dato.
+sjekk('… og sluttdatoen foelger planen begge veier',
+    str_contains($bytt, "'slutt_dato'      => \$engangs ? date('Y-m-d', strtotime('+1 month')) : null,"));
+// Vipps-avtalen kan vi ikke endre — API-et har ingen vei til det. Da skal
+// det staa i klartekst, ikke oppdages naar pengene kommer.
+sjekk('… og sier fra at en loepende Vipps-avtale trekker det gamle',
+    str_contains($bytt, "WHERE member_id = :m AND status = 'aktiv' LIMIT 1")
+    && str_contains($bytt, 'trekker fortsatt det. Skal beløpet endres'));
+sjekk('… og byttet blir staaende i endringsloggen',
+    str_contains($medApi, "revider('medlem_plan_byttet', 'member', \$id,")
+    && str_contains($medApi, "'medlem_plan_byttet'    => 'Byttet medlemskap',"));
+// Ukjent plan skal ikke kunne settes: timene og prisen leses av planen, og
+// et medlem paa en plan som ikke finnes har ingen av delene.
+sjekk('… og en ukjent plan avvises',
+    str_contains($bytt, "Svar::feil('Velg hvilket medlemskap det skal byttes til.');"));
+
+$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+// Valgene skal vaere de samme som nettsida tilbyr, ikke en liste skrevet av
+// paa nytt. Planene kommer med det samme svaret som medlemslista.
+sjekk('personruta tilbyr medlemskapene fra basen',
+    str_contains($sidaB, "personPlanValg: this.brikkeliste(\n            (this.state.adminPlaner || []).map(pl => pl.navn),"));
+// Knappen staar bare naar noe faktisk er valgt om.
+sjekk('… og knappen staar forst naar noe er valgt om',
+    str_contains($sidaB, 'personPlanEndret: personPlanNaa !== personPlanFra,')
+    && str_contains($sidaB, '<sc-if value="{{ personPlanEndret }}"'));
+sjekk('… og knappen kaller «bytt-plan»',
+    str_contains($sidaB, "this.medlemKall({ handling: 'bytt-plan', medlemId: p.id, type: personPlanNaa }, true)"));
+// Ruta staar aapen etterpaa, og brikkene leser det som naa staar i basen.
+sjekk('… og ruta hentes paa nytt uten aa lukke seg',
+    str_contains($sidaB, "this.setState({ personPlan: null });\n                this.apnePerson(this.state.personMedlemId || 0"));
+// Overstyringa maa nullstilles naar en annen person aapnes. Ellers staar
+// forrige valg igjen paa neste medlem.
+sjekk('… og valget nullstilles naar en annen person aapnes',
+    str_contains($sidaB, "personFri: null, personFriGrunn: null, personPlan: null,"));
+
 echo "\n== «Nye påmeldinger» teller ikke avbrutte forsøk ==\n";
 // Paameldingen lages som «reservert» FOR kunden sendes til Vipps, og holder
 // plassen i noen minutter. Trykker hun «Avbryt» i Vipps, blir raden staaende

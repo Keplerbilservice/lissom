@@ -355,9 +355,12 @@ if (Foresporsel::metode() === 'POST') {
 
         // Nyeste avtale, om det finnes en. Prisen er den som ble avtalt —
         // ikke dagens pris, som kan ha endret seg siden.
+        // Bare en avtale som loeper. En rad som staar «venter» ble aldri
+        // godkjent i Vipps, og skal verken sette beloepet eller faa
+        // betalingen hengt paa seg. Se Medlemskap::loepende().
         $avtale = DB::en(
-            'SELECT id, plan, pris_ore FROM subscriptions
-              WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+            "SELECT id, plan, pris_ore FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
             ['m' => $id]
         );
 
@@ -820,8 +823,13 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             // foran planen, for det er den prisen som ble avtalt — den kan
             // ha endret seg siden.
             'pris'       => (static function () use ($m): string {
+                // Bare en avtale som loeper. En som staar «venter» ble aldri
+                // godkjent, og en som er stoppet trekker ingenting — da er
+                // det planen personen staar paa som gjelder. Se
+                // Medlemskap::loepende().
                 $avtale = DB::en(
-                    'SELECT pris_ore FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+                    "SELECT pris_ore FROM subscriptions
+                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1",
                     ['m' => (int) $m['id']]
                 );
                 $ore = $avtale !== null
@@ -896,6 +904,10 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 return ['betaling' => 'ingen', 'betalingTekst' => ''];
             }
             $id = (int) $m['id'];
+            // Nyeste rad, ogsaa en som aldri ble godkjent: teksten under
+            // «Betalingen ble startet i Vipps, men aldri fullfort» finner
+            // trekket gjennom denne. At raden ikke er «fast trekk» tar
+            // betalingsstatus() seg av — den leser statusen.
             $a = DB::en("SELECT * FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1", ['m' => $id]);
             $b = Medlemskap::betalingsstatus(
                 $m,
@@ -1110,11 +1122,22 @@ $avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
         return ['fastTrekk' => false, 'bundetTil' => null, 'bundet' => false,
                 'sagtOpp' => null, 'slutter' => null, 'iOppsigelse' => false, 'avtale' => null];
     }
-    $bundet = $a['binding_til'] !== null && (string) $a['binding_til'] >= $idag;
+    // Samme regel som «fastTrekk» under: en avtale som aldri ble godkjent
+    // binder ingen. Uten statusen sto et forlatt forsok paa aarsavtale og
+    // sa «Bundet til» et aar fram paa et medlem som aldri sa ja.
+    $loeper = (string) $a['status'] === 'aktiv';
+    $bundet = $loeper && $a['binding_til'] !== null && (string) $a['binding_til'] >= $idag;
     return [
         // Tom avtale-id betyr «gjor opp selv» — ingen automatiske trekk.
-        'fastTrekk'   => trim((string) ($a['vipps_agreement_id'] ?? '')) !== '',
-        'bundetTil'   => $dato($a['binding_til']),
+        //
+        // Statusen maa vaere med. Et forsok som ble staaende paa «venter»
+        // har ogsaa en avtale-id hos Vipps, men den ble aldri godkjent, saa
+        // ingenting trekkes paa den. Lista sa likevel «Fast trekk». Eieren,
+        // 3. september, om Eirin: «hun staar oppfort med fast trekk, men
+        // ikke trukket». Se Medlemskap::loepende().
+        'fastTrekk'   => $loeper
+                         && trim((string) ($a['vipps_agreement_id'] ?? '')) !== '',
+        'bundetTil'   => $loeper ? $dato($a['binding_til']) : null,
         'bundet'      => $bundet,
         'sagtOpp'     => $a['sagt_opp_at'] ? $dato(substr((string) $a['sagt_opp_at'], 0, 10)) : null,
         'slutter'     => $dato($a['slutter']),

@@ -8295,7 +8295,92 @@ sjekk('… og maaten lagres paa raden',
 // Prisen foelger med i personruta, saa skjermen kan si hva «tomt felt» betyr.
 sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
-    && str_contains($medApiB, 'SELECT pris_ore FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1'));
+    && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
+
+echo "\n== En avtale som aldri ble godkjent slipper taket ==\n";
+// Eieren, 4. september: «jeg byttet medlemskap for eirin, men det endrer ikke
+// pris. Fra basis 30 som stod ubetalt», og «hun fikk jo aldri betalt eller har
+// aldri godkjent saa nullstill denne».
+//
+// Eirin ble sendt til Vipps for aa godkjenne fast trekk, og snudde. Raden ble
+// staaende paa «venter» — for alltid, for det er godkjenningen som gjor den
+// «aktiv». Den raden fortsatte aa svare for hva hun sto paa og hva hun
+// skyldte: byttet medlemskap traff «members», mens prisen ble lest av avtalen.
+//
+// Skillet er nytt: avtale() svarer «hva er i spill hos Vipps naa» (og maa ha
+// «venter» med, ellers finner ikke Min side avtalen kunden nettopp godkjente
+// i appen), loepende() svarer «hva trekker faktisk».
+$eMed = (int) DB::settInn('members', [
+    'navn' => 'Forlatt Testesen', 'epost' => 'forlatt@example.test',
+    'rolle' => 'medlem', 'status' => 'aktiv', 'medlemskap_type' => 'Årsmedlemskap',
+]);
+$eSub = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMed, 'plan' => 'Basis 30', 'pris_ore' => 130000,
+    'vipps_agreement_id' => 'agr-forlatt-' . $eMed, 'status' => 'venter',
+]);
+sjekk('et forlatt forsok teller ikke som en avtale som loeper',
+    Medlemskap::loepende($eMed) === null);
+sjekk('… men Vipps-flyten finner den fortsatt',
+    ($x = Medlemskap::avtale($eMed)) !== null && (int) $x['id'] === $eSub);
+
+// Godkjenner hun senere, er det den samme raden — og da skal den telle.
+DB::oppdater('subscriptions', ['status' => 'aktiv'], ['id' => $eSub]);
+sjekk('… og i det hun godkjenner, loeper den',
+    ($x = Medlemskap::loepende($eMed)) !== null && (int) $x['id'] === $eSub);
+DB::oppdater('subscriptions', ['status' => 'venter'], ['id' => $eSub]);
+
+// En stoppet avtale trekker ingenting, og skal heller ikke sette prisen.
+DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => $eSub]);
+sjekk('… og en stoppet avtale gjor det ikke', Medlemskap::loepende($eMed) === null);
+DB::oppdater('subscriptions', ['status' => 'venter'], ['id' => $eSub]);
+
+// Merket sa «Fast trekk» paa en avtale-id som aldri ble godkjent. Eieren,
+// 3. september: «hun staar oppfort med fast trekk, men ikke trukket».
+$b = Medlemskap::betalingsstatus(
+    ['id' => $eMed, 'navn' => 'Forlatt', 'medlemskap_type' => 'Basis 30', 'status' => 'aktiv',
+     'betaler_ikke' => 0, 'betaler_ikke_grunn' => null, 'start_dato' => gmdate('Y-m-d')],
+    ['id' => $eSub, 'vipps_agreement_id' => 'agr-forlatt', 'status' => 'venter',
+     'neste_trekk' => null, 'siste_trekk' => null],
+    null,
+    null
+);
+sjekk('en avtale-id uten godkjenning er ikke fast trekk',
+    !str_contains($b['tekst'], 'Trekkes') && !str_contains($b['tekst'], 'første trekk')
+    && $b['forfalt'] === true, $b['tilstand'] . ' · ' . $b['tekst']);
+
+// … men raden skal fortsatt fortelle hvorfor det ikke er betalt. Teksten
+// «startet i Vipps, men aldri fullfort» finner betalingen gjennom avtale-id-en,
+// saa den maa fortsatt sendes inn — det er statusen som avgjor, ikke om raden
+// er der.
+$b = Medlemskap::betalingsstatus(
+    ['id' => $eMed, 'navn' => 'Forlatt', 'medlemskap_type' => 'Basis 30', 'status' => 'aktiv',
+     'betaler_ikke' => 0, 'betaler_ikke_grunn' => null, 'start_dato' => gmdate('Y-m-d')],
+    ['id' => $eSub, 'vipps_agreement_id' => 'agr-forlatt', 'status' => 'venter',
+     'neste_trekk' => null, 'siste_trekk' => null],
+    null,
+    ['status' => 'venter', 'created_at' => gmdate('Y-m-d') . ' 10:00:00']
+);
+sjekk('… og den forteller fortsatt at betalingen ble startet og aldri fullfort',
+    str_contains($b['tekst'], 'aldri fullført'), $b['tekst']);
+
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eSub]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMed]);
+
+// Kortet «Ikke betalt» paa Oversikt leste prisen av avtalen uansett status.
+$ovFil = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('«Ikke betalt» henter plan og pris av avtalen bare naar den loeper',
+    str_contains($ovFil, "\$loeper = \$a !== null && (string) \$a['status'] === 'aktiv';")
+    && str_contains($ovFil, "\$plan = (string) ((\$loeper ? \$a['plan'] : null) ?? \$m['medlemskap_type'] ?? '');")
+    && str_contains($ovFil, "\$pris = \$loeper"));
+
+// Lista sa «Fast trekk» og «Bundet til» paa forsok som aldri ble godkjent.
+$medFilA = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemslista krever at avtalen loeper for den sier «fast trekk»',
+    str_contains($medFilA, "\$loeper = (string) \$a['status'] === 'aktiv';")
+    && str_contains($medFilA, "'fastTrekk'   => \$loeper"));
+sjekk('… og for den sier at medlemmet er bundet',
+    str_contains($medFilA, "\$bundet = \$loeper && \$a['binding_til'] !== null")
+    && str_contains($medFilA, "'bundetTil'   => \$loeper ? \$dato(\$a['binding_til']) : null,"));
 
 echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
 // Eieren, 4. september, med bilde av «kr 99» der det skulle staa «kr 990»:

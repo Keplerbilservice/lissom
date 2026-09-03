@@ -171,7 +171,14 @@ final class Medlemskap
         // Her er det Vipps som trekker, og «neste_trekk» er fasiten paa om
         // perioden er dekket. Har dagen passert uten at «siste_trekk» fulgte
         // etter, gikk trekket ikke gjennom.
+        //
+        // Statusen maa vaere med. Et forsok som ble staaende paa «venter»
+        // har ogsaa en avtale-id hos Vipps, men ingenting trekkes paa den —
+        // den ble aldri godkjent. Merket sa likevel «Fast trekk». Eieren,
+        // 3. september, om Eirin: «hun staar oppfort med fast trekk, men
+        // ikke trukket». Se loepende().
         $fastTrekk = $avtale !== null
+            && (string) ($avtale['status'] ?? '') === 'aktiv'
             && trim((string) ($avtale['vipps_agreement_id'] ?? '')) !== '';
         if ($fastTrekk) {
             $neste = (string) ($avtale['neste_trekk'] ?? '');
@@ -339,12 +346,52 @@ final class Medlemskap
         return $ut;
     }
 
-    /** Avtalen et medlem har naa, eller null. */
+    /**
+     * Avtalen et medlem har i spill naa, eller null.
+     *
+     * «venter» er med: en avtale kunden nettopp er sendt til Vipps for aa
+     * godkjenne, er den avtalen vi skal sporre Vipps om. Godkjenner hun i
+     * appen uten aa komme tilbake til nettsida, er det denne raden Min side
+     * finner naar hun trykker «sjekk».
+     *
+     * Merk: «i spill» er ikke det samme som «loeper». Til pris, plan og
+     * «fast trekk» skal bare en avtale som faktisk trekker telle — se
+     * loepende().
+     */
     public static function avtale(int $medlemId): ?array
     {
         return DB::en(
             "SELECT * FROM subscriptions
               WHERE member_id = :m AND status IN ('venter','aktiv')
+              ORDER BY id DESC LIMIT 1",
+            ['m' => $medlemId]
+        );
+    }
+
+    /**
+     * Avtalen som faktisk loeper, eller null.
+     *
+     * ── Et forsok som aldri ble godkjent er ingen avtale ──────────────
+     *
+     * «venter» settes naar vi sender kunden til Vipps. Godkjenner hun, blir
+     * raden «aktiv» — det skjer i oppdaterFraVipps(), etter at vi har spurt
+     * Vipps. Snur hun i doera, blir raden staaende paa «venter» for alltid.
+     *
+     * Den raden ble likevel lest som medlemmets avtale: den bestemte prisen
+     * hun sto som skyldig, og hvilket medlemskap hun sto paa. Eirin forsokte
+     * fast trekk, godkjente aldri, og satt igjen med en rad som fortsatte aa
+     * si «Basis 30» og prisen paa den — ogsaa etter at medlemskapet hennes
+     * ble byttet.
+     *
+     * Eieren, 4. september: «jeg byttet medlemskap for eirin, men det endrer
+     * ikke pris», og «hun fikk jo aldri betalt eller har aldri godkjent saa
+     * nullstill denne».
+     */
+    public static function loepende(int $medlemId): ?array
+    {
+        return DB::en(
+            "SELECT * FROM subscriptions
+              WHERE member_id = :m AND status = 'aktiv'
               ORDER BY id DESC LIMIT 1",
             ['m' => $medlemId]
         );

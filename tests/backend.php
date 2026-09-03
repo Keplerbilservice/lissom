@@ -8113,6 +8113,34 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
+// Eieren, 4. september, med bilde av «kr 99» der det skulle staa «kr 990»:
+// «kutter tall», og «totalt 99 staar det, skal staa 990».
+//
+// Summen var riktig. «1fr» kan ikke krympe under sitt eget innhold, saa de
+// tre spaltene Kontant, Vipps og Totalt ble 351 piksler i et rutenett paa
+// 306 — og kortet, som har «overflow: hidden», klippet det siste beloepet.
+// Maalt i nettleseren for og etter.
+//
+// Klassen sto paa elementet fra for; regelen manglet. lx-cols2 og lx-cols4
+// har hatt sin hele tida.
+$sidaK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kortet har klassen som faar spaltene til aa falle sammen',
+    str_contains($sidaK, '<div class="lx-cols3"'));
+sjekk('… og regelen finnes, sammen med de andre',
+    str_contains($sidaK, '.lx-cols3 { grid-template-columns: 1fr !important; }'));
+// Én i bredden, ikke to: med tre tall ville to spalter latt den siste staa
+// alene, og den tomme ruta ville vist bakgrunnen — stripene her er 1 piksels
+// mellomrom, ikke kantlinjer.
+sjekk('… og den staar i samme media-blokk som lx-cols2 og lx-cols4',
+    (static function (string $h): bool {
+        $p = strpos($h, '.lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }');
+        $q = strpos($h, '.lx-cols3 { grid-template-columns: 1fr !important; }');
+        if ($p === false || $q === false || $q < $p) { return false; }
+        // Ingen ny media-blokk mellom dem.
+        return !str_contains(substr($h, $p, $q - $p), '@media');
+    })($sidaK));
+
 echo "\n== Dagene flytter selve økten, ikke bare teksten ==\n";
 // Eieren, 4. september, etter aa ha lagt inn 7. og 8. oktober: «den viser
 // fortsatt bare en dato».

@@ -1408,6 +1408,16 @@ window.__resources = {
   }
   @media (max-width: 560px) {
     .lx-cols4, .lx-cols2, .lx-kortgrid { grid-template-columns: 1fr !important; }
+    /* Dagsoppgjoret i Kassa: Kontant, Vipps og Totalt ved siden av
+       hverandre. «1fr» kan ikke krympe under sitt eget innhold, saa de tre
+       spaltene ble 351 piksler i et rutenett paa 306 — og kortet, som har
+       «overflow: hidden», klippet det siste beloepet. Eieren, 4. september,
+       med bilde av «kr 99»: «kutter tall».
+       Klassen sto paa elementet fra for; regelen manglet.
+       Én i bredden og ikke to: med tre tall ville to spalter latt den siste
+       staa alene, og den tomme ruta ved siden av ville vist bakgrunnen —
+       stripene her er 1 piksels mellomrom, ikke kantlinjer. */
+    .lx-cols3 { grid-template-columns: 1fr !important; }
 
     /* Butikken er en butikk, ikke en artikkelliste. Med ett kort i bredden
        ble hver vare 350 x 550 piksler og hele sida 13 700 lang — nitten

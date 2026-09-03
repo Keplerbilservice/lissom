@@ -2863,42 +2863,37 @@ window.__resources = {
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">{{ vk0Sistoppdatert }}</div>
           <h1 style="margin: 0 0 var(--space-5); font-size: var(--text-5xl);">{{ vk0Overskrift }}</h1>
           <p style="margin: 0 0 var(--space-10); color: var(--text-body); font-size: var(--text-lg); text-wrap: pretty;">{{ vk0Brodtekst }}</p>
-          <!-- Tre bolker, ikke én lang liste.
-               Eieren, 3. september: «ikke bland den andre teksten som er for
-               medlemmer, dette er for kursdeltakere». Kursbookingen sender
-               deg til den forste, innmeldingen til den andre. -->
-          <div id="vilkar-kurs" style="scroll-margin-top: 96px;">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gjelder deg som melder deg på kurs</div>
-            <h2 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">Kursvilkår</h2>
-          </div>
-          <sc-for list="{{ vilkarKurs }}" as="a" hint-placeholder-count="7">
-            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0;">
-              <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ a.h }}</h3>
-              <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ a.p }}</p>
-            </div>
-          </sc-for>
+          <!-- Ett nummerert loep, som i dokumentet.
+               Her sto tre bolker med hver sin overskrift. Eieren, 3.
+               september: «lag en som heter Salgsvilkaar, og bruk denne
+               teksten. slett den gamle». Nummereringen 1-16 er hans, og
+               kan ikke deles opp uten aa bli feil.
 
-          <div id="vilkar-medlem" style="scroll-margin-top: 96px; margin-top: var(--space-10);">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gjelder deg som er medlem</div>
-            <h2 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">Medlemsvilkår</h2>
-          </div>
-          <sc-for list="{{ vilkarMedlem }}" as="a" hint-placeholder-count="5">
-            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0;">
-              <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ a.h }}</h3>
-              <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ a.p }}</p>
+               Ankerne er beholdt: punkt 15 heter fortsatt «vilkar-kurs» og
+               punkt 16 «vilkar-medlem», saa «Les vilkaarene» paa kurs- og
+               medlemskortet lander riktig sted. -->
+          <sc-for list="{{ salgsvilkar }}" as="a" hint-placeholder-count="16">
+            <sc-if value="{{ a.harBolk }}" hint-placeholder-val="{{ false }}">
+              <h2 style="margin: var(--space-10) 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading); text-wrap: balance;">{{ a.bolk }}</h2>
+            </sc-if>
+            <div id="{{ a.ank }}" style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0; scroll-margin-top: 96px;">
+              <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-wrap: balance;"><span style="color: var(--terracotta-600); font-variant-numeric: tabular-nums;">{{ a.nr }}</span> {{ a.h }}</h3>
+              <sc-for list="{{ a.avsnitt }}" as="t" hint-placeholder-count="2">
+                <sc-if value="{{ t.harH }}" hint-placeholder-val="{{ false }}">
+                  <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin: var(--space-5) 0 var(--space-2);">{{ t.h }}</div>
+                </sc-if>
+                <p style="margin: 0 0 var(--space-3); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ t.t }}</p>
+                <sc-if value="{{ t.harPunkter }}" hint-placeholder-val="{{ false }}">
+                  <ul style="margin: 0 0 var(--space-3); padding-left: 20px; font-size: var(--text-base); color: var(--text-body);">
+                    <sc-for list="{{ t.punkter }}" as="pk" hint-placeholder-count="5">
+                      <li style="margin-bottom: 6px; text-wrap: pretty;">{{ pk.t }}</li>
+                    </sc-for>
+                  </ul>
+                </sc-if>
+              </sc-for>
             </div>
           </sc-for>
-
-          <div id="vilkar-generelt" style="scroll-margin-top: 96px; margin-top: var(--space-10);">
-            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Gjelder alle kjøp</div>
-            <h2 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">Kjøp, angrerett og nettbutikk</h2>
-          </div>
-          <sc-for list="{{ vilkarGenerelt }}" as="a" hint-placeholder-count="5">
-            <div style="border-top: 1px solid var(--border-subtle); padding: var(--space-7) 0;">
-              <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ a.h }}</h3>
-              <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">{{ a.p }}</p>
-            </div>
-          </sc-for>
+          <p style="margin: var(--space-8) 0 0; padding-top: var(--space-7); border-top: 1px solid var(--border-subtle); font-size: var(--text-base); font-weight: 600; color: var(--text-heading); text-wrap: pretty;">{{ salgsvilkarSlutt }}</p>
         </div>
       </section>
     </div>
@@ -15456,7 +15451,7 @@ const SIDEINNHOLD = {
   // refusjonen etter sine egne regler — en tekst her kunne lovet noe annet
   // enn det kunden faktisk faar.
   'Booking': [
-    { navn: 'Avbestillingsvilkår', type: 'Står i Vilkår og angrerett', synlig: 'Publisert', felter: [] },
+    { navn: 'Avbestillingsvilkår', type: 'Står i Salgsvilkår', synlig: 'Publisert', felter: [] },
     { navn: 'Kassen', type: 'Knapp', synlig: 'Publisert', felter: [
       { l: 'Knapp', v: 'Fullfør bestilling' } ] },
   ],
@@ -15592,8 +15587,8 @@ const SIDEINNHOLD = {
   'Vilkår': [
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Sist oppdatert', v: 'Sist oppdatert 3. september 2026' },
-      { l: 'Overskrift', v: 'Vilkår og angrerett' },
-      { l: 'Brødtekst', v: 'Salgsvilkår for kurs, events, medlemskap og butikk hos Lissom Keramikk & Håndverk AS. Alle priser vises inkl. mva der mva gjelder.', lang: true } ] },
+      { l: 'Overskrift', v: 'Salgsvilkår' },
+      { l: 'Brødtekst', v: 'Salgsvilkår for varer, kurs, arrangementer og medlemskap hos Lissom Keramikk & Håndverk AS. Punkt 1 til 14 gjelder alle kjøp. Punkt 15 gjelder kurs og arrangementer, punkt 16 gjelder medlemskap.', lang: true } ] },
   ],
   'Personvern': [
   { navn: 'Innledning', type: 'Tekst', synlig: 'Publisert', felter: [
@@ -31554,7 +31549,7 @@ class Component extends DCLogic {
           { navn: 'Bedriftsevent og utdrikningslag', type: 'Bedrift og event', side: 'bedrift' },
           { navn: 'Guider: glasur, brenning og cone-tabell', type: 'Nyttig info', side: 'nyttig' },
           { navn: 'Om oss og veibeskrivelse', type: 'Om oss', side: 'omoss' },
-          { navn: 'Vilkår og angrerett', type: 'Info', side: 'vilkar' },
+          { navn: 'Salgsvilkår', type: 'Info', side: 'vilkar' },
         ];
         const t = (this.state.sokTekst || '').toLowerCase().trim();
         const treff = t ? alt.filter(a => (a.navn + ' ' + a.type).toLowerCase().includes(t)) : alt.slice(0, 6);
@@ -39276,54 +39271,132 @@ class Component extends DCLogic {
           return Object.assign(t, { bildeCss: "url('" + sti + "')", bildeSti: sti });
         });
       })(),
-      // ── Vilkaarene, delt i tre ────────────────────────────────────
+      // ── Salgsvilkaarene ───────────────────────────────────────────
       //
-      // Eieren, 3. september: «ikke bland den andre teksten som er for
-      // medlemmer, dette er for kursdeltakere».
+      // Eieren, 3. september: «kan du fjerne vilkaar og angrerett i footer,
+      // lag en som heter Salgsvilkaar, og bruk denne teksten. slett den
+      // gamle».
       //
-      // Begge hakene — «Jeg har lest vilkaarene» i kursbookingen og «Jeg
-      // godtar medlemsvilkaarene» i innmeldingen — pekte hit, til én lang
-      // liste. En kursdeltaker matte lese seg gjennom fem avsnitt om
-      // bindingstid og oppsigelse som ikke gjaldt hen. Naa staar hver gruppe
-      // for seg, og hver hake sender deg til din egen.
-      vilkarKurs: [
-        { h: 'Påmelding og betaling', p: 'Påmelding er bindende. Kursavgiften skal være betalt før kursstart, med mindre annet er avtalt.' },
-        { h: 'Avbestilling', p: 'Ved avbestilling mer enn 2 dager før kursstart refunderes kursavgiften fullt ut. Ved avbestilling mindre enn 2 dager før kursstart refunderes ikke kursavgiften. Plassen kan overføres til en annen person etter avtale.' },
-        { h: 'Fravær', p: 'Manglende oppmøte gir ikke rett til refusjon eller erstatningsundervisning.' },
-        { h: 'HMS og sikkerhet', p: 'Deltakere plikter å følge instruksjoner fra kursleder og gjeldende HMS-regler. Deltakerne benytter verksted og utstyr på eget ansvar.' },
-        { h: 'Egne arbeider', p: 'Arbeider som settes til tørk, brenning eller glasering behandles med stor forsiktighet, men Lissom Keramikk & Håndverk AS kan ikke garantere mot skader, sprekker eller andre forhold som kan oppstå under keramikkprosessen.' },
-        { h: 'Ordensregler', p: 'Verkstedet skal forlates ryddig etter bruk.' },
-        { h: 'Forbehold', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å avlyse kurs ved for få deltakere eller sykdom. Ved avlysning refunderes innbetalt kursavgift i sin helhet.' },
-      ],
-      vilkarMedlem: [
-        // Eierens tekst, 2. september, med det praktiske fra den gamle
-        // seksjonen beholdt: HVORDAN man sier opp sto her fra for, og staar
-        // ikke i vilkaarsdokumentet.
-        //
-        // Den gamle teksten sa «oppsigelsen gjelder fra og med neste trekk:
-        // du beholder tilgangen ut den perioden du har betalt for, og blir
-        // ikke trukket igjen». Det stemte ikke med systemet:
-        // Medlemskap::sluttdato() regner fra forste dag i paafolgende maaned
-        // og legger til oppsigelsestida, og trekket gaar som for i den
-        // maaneden. Sida lovte altsaa kunden én maaned gratis som verkstedet
-        // faktisk fakturerer. Naa staar det samme sted som koden gjor.
-        { h: 'Bindingstid', p: 'Prøv Lissom har ingen bindingstid og kan avsluttes uten oppsigelsestid. Årsmedlemskap har 12 måneders bindingstid fra oppstartsdato; etter utløpt bindingstid løper medlemskapet videre automatisk med 1 måneds oppsigelsestid. Alle øvrige medlemskap har 2 måneders bindingstid fra oppstartsdato, og deretter 1 måneds oppsigelsestid.' },
-        { h: 'Oppsigelse', p: 'Oppsigelse skal skje skriftlig. Oppsigelsestiden regnes fra første dag i påfølgende måned etter at oppsigelsen er mottatt, og medlemsavgift belastes ut oppsigelsesperioden. Slik sier du opp: logg inn på Min side på lissom.no, åpne medlemskapskortet og trykk «Si opp». Du kan også sende e-post til post@lissom.no eller ringe +47 94 13 46 01. Du får bekreftelse på e-post, og medlemskapskortet på Min side viser at avtalen er sagt opp. Prøv Lissom stopper av seg selv etter 30 dager og fornyes ikke. Ubrukte timer overføres ikke, og Prøv Lissom kan kun benyttes én gang per person.' },
-        { h: 'HMS og ordensregler', p: 'Medlemmet plikter å sette seg inn i og følge gjeldende HMS-rutiner, sikkerhetsbestemmelser og ordensregler for verkstedet. Medlemmet er ansvarlig for å bruke utstyr, verktøy og lokaler på en forsvarlig måte. Pålegg fra ansatte eller representanter for Lissom Keramikk & Håndverk AS skal følges.' },
-        { h: 'Mislighold', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å avslutte et medlemskap med umiddelbar virkning og uten varsel dersom medlemmet bryter HMS-regler eller ordensreglement, utsetter andre medlemmer, ansatte eller utstyr for fare, unnlater å betale medlemsavgift, eller på annen måte misligholder medlemsavtalen eller opptrer på en måte som er til skade for virksomheten eller andre medlemmer.' },
-        { h: 'Endringer', p: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å oppdatere medlemsvilkårene ved behov. Gjeldende vilkår vil alltid være tilgjengelige for medlemmene her.' },
-      ],
-      // Det som gjelder alle: hvem vi er, betaling, angrerett og nettbutikken.
+      // Her sto tre lister — kursvilkaar, medlemsvilkaar og «Kjoep,
+      // angrerett og nettbutikk» — som var skrevet hver for seg og etter
+      // hvert sa litt ulike ting om det samme. Naa staar ett dokument, i
+      // eierens ordlyd, med den nummereringen han skrev: 1 til 14 gjelder
+      // alle kjoep, 15 gjelder kurs, 16 gjelder medlemskap.
       //
-      // Angreretten staar her og ikke i kursvilkaarene, men gjelder likevel
-      // kjoep paa nett — den foelger av loven, ikke av vaar tekst.
-      vilkarGenerelt: [
-        { h: 'Partene', p: 'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, 3120 Nøtterøy, org.nr. 938 280 819 MVA. Kjøper er den som gjennomfører bestillingen på lissom.no.' },
-        { h: 'Priser og betaling', p: 'Alle priser vises i norske kroner og er inkl. mva der mva gjelder (kurs og undervisning er mva-fritt). Betaling skjer med Vipps ved bestilling. Medlemskap trekkes månedlig via Vipps Recurring.' },
-        { h: 'Angrerett', p: 'Du har 14 dagers angrerett etter angrerettloven på varer kjøpt i nettbutikken. Angreretten gjelder ikke kurs og events med fastsatt dato når du har samtykket til at tjenesten starter — men våre avbestillingsregler gjelder alltid.' },
-        { h: 'Levering og henting', p: 'Varer hentes i verkstedet på Teie innen to uker, eller sendes med Posten mot frakt. Spesialbestillinger har leveringstid etter avtale.' },
-        { h: 'Reklamasjon', p: 'Håndlaget keramikk varierer i farge og form — det er ikke en mangel. Ved skade eller feil, kontakt oss på monica@lissom.no innen rimelig tid, så finner vi en løsning etter forbrukerkjøpsloven.' },
-      ],
+      // Ankerne er det knappene lenker til, og de er beholdt: «Les
+      // vilkaarene» paa kursbookingen gaar til punkt 15, «Les
+      // medlemsvilkaarene» paa medlemskortet til punkt 16. Byttes de ut,
+      // lander begge oeverst paa en side med seksten punkter.
+      //
+      // Angreretten forsvant ikke med den gamle bolken — den staar som
+      // punkt 8, der den hoerer hjemme i rekkefolgen.
+      ...(() => {
+        // Et avsnitt er enten en linje, eller en linje med egen
+        // underoverskrift og eventuelt en punktliste under seg.
+        const avsn = x => typeof x === 'string'
+          ? { harH: false, h: '', t: x, harPunkter: false, punkter: [] }
+          : { harH: !!x.h, h: x.h || '', t: x.t || '',
+              harPunkter: !!(x.punkter || []).length,
+              punkter: (x.punkter || []).map(t => ({ t })) };
+
+        const RAA = [
+          ['Avtalen', [
+            'Avtalen består av disse salgsbetingelsene, opplysninger gitt i bestillingsløsningen og eventuelt særskilt avtalte vilkår. Ved eventuell motstrid mellom opplysningene, går det som særskilt er avtalt mellom partene foran, så fremt det ikke strider mot ufravikelig lovgivning.',
+            'Avtalen vil i tillegg bli utfylt av relevante lovbestemmelser som regulerer kjøp mellom næringsdrivende og forbrukere.',
+          ]],
+          ['Partene', [
+            'Selger er Lissom Keramikk & Håndverk AS, Nordre Løkkevei 15, Teie, organisasjonsnummer 938 280 819, og betegnes i det følgende som selger/selgeren.',
+            'Kjøper er den forbrukeren som foretar bestillingen, og betegnes i det følgende som kjøper/kjøperen.',
+          ]],
+          ['Pris', [
+            'Den oppgitte prisen for varen, tjenesten, kurset eller medlemskapet er den totale prisen kjøper skal betale. Denne prisen inkluderer alle avgifter og tilleggskostnader. Ytterligere kostnader som selger før kjøpet ikke har informert om, skal kjøper ikke bære.',
+          ]],
+          ['Avtaleinngåelse', [
+            'Avtalen er bindende for begge parter når kjøper har sendt sin bestilling til selgeren.',
+            'Avtalen er likevel ikke bindende dersom det har forekommet skrive- eller tastefeil i tilbudet fra selgeren eller i kjøperens bestilling, og den annen part innså eller burde ha innsett at det forelå en slik feil.',
+          ]],
+          ['Betaling', [
+            'Betaling skjer i henhold til valgt betalingsløsning ved bestilling. Ved fakturabetaling gjelder betalingsfristen som fremgår av fakturaen.',
+            'Ved manglende betaling kan kravet bli sendt til inkasso i henhold til gjeldende regelverk.',
+          ]],
+          ['Levering', [
+            'Levering av varer anses skjedd når kjøper eller kjøpers representant har overtatt varen.',
+            'For kurs, arrangementer og medlemskap anses leveringen skjedd ved bekreftet plass eller aktivert medlemskap.',
+          ]],
+          ['Risikoen for varen', [
+            'Risikoen for varen går over på kjøper når varen er levert i henhold til punkt 6.',
+          ]],
+          ['Angrerett', [
+            'For kjøp av varer gjelder angrerett i henhold til angrerettloven.',
+            'For kurs, arrangementer og andre tjenester som er knyttet til en bestemt dato eller tidsperiode, gjelder de unntak fra angreretten som følger av angrerettloven.',
+          ]],
+          ['Forsinkelse og manglende levering', [
+            'Dersom selger ikke leverer varen eller tjenesten i henhold til avtalen, gjelder forbrukerkjøpslovens regler om forsinkelse og manglende levering.',
+          ]],
+          ['Mangel ved varen', [
+            'Dersom det foreligger en mangel ved varen, gjelder forbrukerkjøpslovens regler om reklamasjon, retting, omlevering, prisavslag, heving og erstatning.',
+          ]],
+          ['Selgerens rettigheter ved kjøperens mislighold', [
+            'Dersom kjøper ikke betaler eller oppfyller sine forpliktelser etter avtalen, kan selger etter gjeldende lovgivning kreve oppfyllelse, heve avtalen eller kreve erstatning.',
+          ]],
+          ['Garanti', [
+            'Eventuelle garantier kommer i tillegg til kjøperens lovbestemte rettigheter.',
+          ]],
+          ['Personopplysninger', [
+            'Lissom Keramikk & Håndverk AS behandler personopplysninger i samsvar med gjeldende personvernlovgivning. Opplysninger brukes kun i den utstrekning det er nødvendig for å gjennomføre avtalen og driften av virksomheten.',
+          ]],
+          ['Konfliktløsning', [
+            'Klager rettes til selger innen rimelig tid. Partene skal forsøke å løse tvister i minnelighet.',
+            'Dersom dette ikke lykkes, kan kjøper kontakte Forbrukerrådet for mekling.',
+          ]],
+          // Punkt 15 og 16 staar under en egen mellomoverskrift i eierens
+          // dokument. «bolk» er den, og den staar over punktnummeret.
+          ['Kurs og arrangementer', [
+            'Påmelding til kurs, workshops, arrangementer og andre aktiviteter hos Lissom Keramikk & Håndverk AS er bindende med mindre annet er oppgitt i kursbeskrivelsen.',
+            'Ved avbestilling senere enn 2 dager før kursstart refunderes normalt ikke kursavgiften.',
+            'Manglende oppmøte gir ikke rett til refusjon eller erstatningsundervisning.',
+            'Deltakere plikter å følge instruksjoner fra kursleder og gjeldende HMS-regler.',
+            'Lissom Keramikk & Håndverk AS behandler deltakernes arbeider med stor forsiktighet, men kan ikke holdes ansvarlig for skader, sprekker, deformasjoner, glasurfeil eller andre forhold som kan oppstå under tørking, brenning, glasering eller annen bearbeiding av keramikk.',
+            'Lissom Keramikk & Håndverk AS forbeholder seg retten til å avlyse eller flytte kurs ved sykdom, force majeure eller for få påmeldte deltakere. Ved avlysning refunderes innbetalt kursavgift i sin helhet.',
+          ], 'vilkar-kurs', 'Tilleggsvilkår for kurs, arrangementer og medlemskap'],
+          ['Medlemskap', [
+            { h: 'Prøvemedlemskap', t: 'Prøvemedlemskap har ingen bindingstid og ingen oppsigelsestid.' },
+            { h: 'Årsmedlemskap', t: 'Årsmedlemskap har 12 måneders bindingstid fra oppstartsdato.' },
+            'Etter utløpt bindingstid løper medlemskapet videre automatisk med én måneds oppsigelsestid.',
+            { h: 'Øvrige medlemskap', t: 'Alle øvrige medlemskap har to måneders bindingstid fra oppstartsdato.' },
+            'Etter utløpt bindingstid gjelder én måneds oppsigelsestid.',
+            { h: 'Oppsigelse', t: 'Oppsigelse skal skje skriftlig til post@lissom.no.' },
+            'Oppsigelsestiden regnes fra første dag i påfølgende måned etter at oppsigelsen er mottatt.',
+            'Medlemsavgift faktureres ut oppsigelsesperioden.',
+            { h: 'HMS og ordensreglement', t: 'Medlemmer plikter å sette seg inn i og følge gjeldende HMS-regler, sikkerhetsrutiner og ordensreglement.' },
+            'Medlemmer er ansvarlige for forsvarlig bruk av lokaler, verktøy, utstyr og materialer.',
+            { h: 'Mislighold', t: 'Lissom Keramikk & Håndverk AS forbeholder seg retten til å avslutte medlemskap med umiddelbar virkning og uten varsel dersom medlemmet:', punkter: [
+              'Bryter HMS-regler eller ordensreglement.',
+              'Utsetter andre personer eller utstyr for fare.',
+              'Unnlater å betale medlemsavgift.',
+              'Opptrer truende, krenkende eller uakseptabelt overfor ansatte eller andre medlemmer.',
+              'På annen måte misligholder medlemsavtalen eller virksomhetens retningslinjer.',
+            ] },
+            'Ved slik avslutning refunderes ikke innbetalt medlemsavgift.',
+          ], 'vilkar-medlem'],
+        ];
+
+        return {
+          salgsvilkar: RAA.map((rad, i) => ({
+            nr: String(i + 1) + ')',
+            h: rad[0],
+            avsnitt: rad[1].map(avsn),
+            // Punkt 15 og 16 har egne ankere, resten nummeret sitt. Alle skal
+            // ha ett: en tom id gjor at nettleseren ikke finner noe aa
+            // rulle til, og «Les vilkaarene» ville landet oeverst.
+            ank: rad[2] || ('vilkar-' + (i + 1)),
+            bolk: rad[3] || '',
+            harBolk: !!rad[3],
+          })),
+          // Siste linja staar utenfor nummereringen, som i dokumentet.
+          salgsvilkarSlutt: 'Ved bestilling, påmelding eller registrering av medlemskap bekrefter kunden at disse vilkårene er lest og akseptert.',
+        };
+      })(),
       // Overskrift og tekst skilles paa forste kolon. «Ovnen: Bare Monica...»
       // blir overskrift «Ovnen» og tekst «Bare Monica...».
       ordensregler: this.plakatPunkter('ordensregler').map(rad => {
@@ -39413,7 +39486,11 @@ class Component extends DCLogic {
         // «Bedrift og event» tatt ut etter onske fra eieren. Sida ligger der
         // som for, og naas fra menyen og fra kortene paa forsida.
         { navn: 'Personvern', velg: this.go('personvern') },
-        { navn: 'Vilkår og angrerett', velg: this.go('vilkar') },
+        // «Vilkår og angrerett» het den. Eieren, 3. september: «kan du
+        // fjerne vilkår og angrerett i footer, lag en som heter
+        // Salgsvilkår». Adressen er den samme — gamle lenker og treff i
+        // Google skal fortsatt virke.
+        { navn: 'Salgsvilkår', velg: this.go('vilkar') },
       ],
       goMinSideFooter: () => { this.setState({ side: this.state.innlogget ? 'minside' : 'login' }); window.scrollTo(0, 0); },
       // Admin-inngangen i bunnteksten.

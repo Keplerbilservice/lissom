@@ -7021,11 +7021,15 @@ sjekk('… og verdien bak den settes',
 // ville staatt gronn om selve teksten forsvant. Det er motsatt av det den er
 // til for.
 foreach ([
-    'bindingstid'  => '12 måneders bindingstid fra oppstartsdato',
-    'oppsigelse'   => 'Oppsigelsestiden regnes fra første dag i påfølgende måned',
-    'HMS'          => 'Medlemmet plikter å sette seg inn i og følge gjeldende HMS-rutiner',
-    'mislighold'   => 'avslutte et medlemskap med umiddelbar virkning',
-    'endringer'    => 'oppdatere medlemsvilkårene ved behov',
+    'proeveperioden' => 'Prøvemedlemskap har ingen bindingstid og ingen oppsigelsestid',
+    'bindingstid'    => '12 måneders bindingstid fra oppstartsdato',
+    'oevrige'        => 'Alle øvrige medlemskap har to måneders bindingstid fra oppstartsdato',
+    'oppsigelse'     => 'Oppsigelsestiden regnes fra første dag i påfølgende måned',
+    'skriftlig hvor' => 'Oppsigelse skal skje skriftlig til post@lissom.no',
+    'faktureres'     => 'Medlemsavgift faktureres ut oppsigelsesperioden',
+    'HMS'            => 'Medlemmer plikter å sette seg inn i og følge gjeldende HMS-regler',
+    'mislighold'     => 'avslutte medlemskap med umiddelbar virkning',
+    'ingen refusjon' => 'Ved slik avslutning refunderes ikke innbetalt medlemsavgift',
 ] as $navn => $setning) {
     sjekk('medlemsvilkaarene: ' . $navn . ' staar paa vilkaarssida',
         str_contains($sida, $setning));
@@ -7038,16 +7042,13 @@ foreach ([
 // dette er for kursdeltakere».
 echo "\n== Kursvilkaarene ==\n";
 foreach ([
-    'bindende paamelding' => 'Påmelding er bindende',
-    'betaling for start'  => 'skal være betalt før kursstart',
-    'avbestilling'        => 'mer enn 2 dager før kursstart refunderes kursavgiften fullt ut',
-    'ingen refusjon naer' => 'mindre enn 2 dager før kursstart refunderes ikke kursavgiften',
-    'overfoere plassen'   => 'Plassen kan overføres til en annen person etter avtale',
-    'fravaer'             => 'Manglende oppmøte gir ikke rett til refusjon',
-    'HMS'                 => 'Deltakerne benytter verksted og utstyr på eget ansvar',
-    'egne arbeider'       => 'kan ikke garantere mot skader, sprekker',
-    'ordensregler'        => 'Verkstedet skal forlates ryddig etter bruk',
-    'forbehold'           => 'avlyse kurs ved for få deltakere eller sykdom',
+    'bindende paamelding' => 'er bindende med mindre annet er oppgitt i kursbeskrivelsen',
+    'ingen refusjon naer' => 'senere enn 2 dager før kursstart refunderes normalt ikke kursavgiften',
+    'fravaer'             => 'Manglende oppmøte gir ikke rett til refusjon eller erstatningsundervisning',
+    'HMS'                 => 'plikter å følge instruksjoner fra kursleder og gjeldende HMS-regler',
+    'egne arbeider'       => 'kan ikke holdes ansvarlig for skader, sprekker, deformasjoner',
+    'forbehold'           => 'avlyse eller flytte kurs ved sykdom, force majeure eller for få påmeldte',
+    'full refusjon ved avlysning' => 'refunderes innbetalt kursavgift i sin helhet',
 ] as $navn => $setning) {
     sjekk('kursvilkaarene: ' . $navn, str_contains($sida, $setning));
 }
@@ -7117,8 +7118,12 @@ sjekk('avbestillingsruta sier det samme',
 
 // Hver hake maa lande paa SIN bolk. Pekte begge samme sted, ville
 // kursdeltakeren fortsatt maattet lese seg gjennom medlemsvilkaarene.
-sjekk('sida har begge bolkene', str_contains($sida, 'id="vilkar-kurs"')
-    && str_contains($sida, 'id="vilkar-medlem"'));
+// Ankerne settes naa av dataene og ikke av markupen — id-en er «{{ a.ank }}».
+// Proven maa derfor lese der de faktisk staar, ellers gaar den roedt paa en
+// omskriving som ikke har endret noe.
+sjekk('sida har begge ankerne', str_contains($sida, "], 'vilkar-kurs', 'Tilleggsvilkår for kurs, arrangementer og medlemskap'],")
+    && str_contains($sida, "], 'vilkar-medlem'],")
+    && str_contains($sida, 'id="{{ a.ank }}"'));
 sjekk('kursbookingen sender deg til kursvilkaarene',
     str_contains($sida, "goVilkar: this.goVilkarDel('vilkar-kurs')"));
 sjekk('innmeldingen sender deg til medlemsvilkaarene',
@@ -8307,6 +8312,113 @@ sjekk('… og regelen staar ett sted',
 sjekk('dato, tid og antall plasser staar fortsatt bare paa kurs',
     str_contains($sidaM, "&& this.state.fra !== 'medlemskap',")
     && str_contains($sidaM, 'visVelgMedlemskap: this.state.fra === \'medlemskap\','));
+
+echo "\n== Salgsvilkaarene ==\n";
+//
+// Eieren, 3. september: «kan du fjerne vilkaar og angrerett i footer, lag en
+// som heter Salgsvilkaar, og bruk denne teksten. slett den gamle».
+$sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$vilkFil = file_get_contents(dirname(__DIR__) . '/vilkar.html');
+
+// Navnet, alle stedene det sto.
+sjekk('bunnteksten sier «Salgsvilkår»',
+    str_contains($sidaS, "{ navn: 'Salgsvilkår', velg: this.go('vilkar') },"));
+sjekk('… og «Vilkår og angrerett» finnes ikke lenger som navn',
+    !str_contains($sidaS, "navn: 'Vilkår og angrerett'")
+    && !str_contains($sidaS, "v: 'Vilkår og angrerett'")
+    && !str_contains($sidaS, "type: 'Står i Vilkår og angrerett'"));
+sjekk('… og overskrifta paa sida er byttet',
+    str_contains($sidaS, "{ l: 'Overskrift', v: 'Salgsvilkår' },"));
+sjekk('… ogsaa i den frittstaaende fila Vipps leser',
+    str_contains($vilkFil, '<h1>Salgsvilkår</h1>')
+    && str_contains($vilkFil, '<title>Salgsvilkår — Lissom Keramikk</title>'));
+sjekk('… og i llms.txt',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/llms.php'),
+        "\$ut[] = '- [Salgsvilkår](' . ROT . '/vilkar)';"));
+
+// Adressa er den samme. Byttes den, blir alle gamle lenker og treff i Google
+// blindveier — og sitemap-en peker feil sted.
+sjekk('adressa er fortsatt /vilkar',
+    str_contains($sidaS, "{ sti: '/vilkar',        side: 'vilkar' },")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/sitemap.php'), "['/vilkar',"));
+
+// Nummereringen er eierens, og loeper 1 til 16 i ett.
+sjekk('punktene er nummerert 1 til 16',
+    str_contains($sidaS, "nr: String(i + 1) + ')',")
+    && str_contains($sidaS, '{{ a.nr }}'));
+
+// De to bolkene den gamle sida hadde skal vaere borte — teksten er én.
+sjekk('de tre gamle listene er borte',
+    !str_contains($sidaS, 'vilkarKurs:')
+    && !str_contains($sidaS, 'vilkarMedlem:')
+    && !str_contains($sidaS, 'vilkarGenerelt:'));
+
+// Setningene fra hvert punkt. Uten disse kunne teksten skrumpet inn uten at
+// noe ble roedt. Ett utvalg per punkt, ordrett fra dokumentet.
+foreach ([
+    '1 avtalen'        => 'Avtalen består av disse salgsbetingelsene',
+    '2 partene'        => 'organisasjonsnummer 938 280 819',
+    '3 pris'           => 'er den totale prisen kjøper skal betale',
+    '4 avtaleinngaaelse' => 'bindende for begge parter når kjøper har sendt sin bestilling',
+    '5 betaling'       => 'kan kravet bli sendt til inkasso',
+    '6 levering'       => 'anses leveringen skjedd ved bekreftet plass eller aktivert medlemskap',
+    '7 risiko'         => 'Risikoen for varen går over på kjøper',
+    '8 angrerett'      => 'For kjøp av varer gjelder angrerett i henhold til angrerettloven',
+    '9 forsinkelse'    => 'forbrukerkjøpslovens regler om forsinkelse og manglende levering',
+    '10 mangel'        => 'omlevering, prisavslag, heving og erstatning',
+    '11 mislighold'    => 'kreve oppfyllelse, heve avtalen eller kreve erstatning',
+    '12 garanti'       => 'kommer i tillegg til kjøperens lovbestemte rettigheter',
+    '13 personopplysninger' => 'i samsvar med gjeldende personvernlovgivning',
+    '14 konflikt'      => 'kan kjøper kontakte Forbrukerrådet for mekling',
+] as $navn => $setning) {
+    sjekk('salgsvilkaarene: punkt ' . $navn, str_contains($sidaS, $setning));
+}
+
+// Angreretten forsvant ikke med den gamle bolken — den er punkt 8.
+sjekk('angreretten staar fortsatt, som punkt 8',
+    str_contains($sidaS, "['Angrerett', [")
+    && str_contains($sidaS, 'unntak fra angreretten som følger av angrerettloven'));
+
+// Punktlista under «Mislighold» er fem kulepunkter, ikke ett avsnitt.
+sjekk('misligholdslista staar som punkter',
+    str_contains($sidaS, "'Opptrer truende, krenkende eller uakseptabelt overfor ansatte eller andre medlemmer.',")
+    && str_contains($sidaS, '<sc-for list="{{ t.punkter }}" as="pk"'));
+
+// Sluttlinja staar utenfor nummereringen, som i dokumentet.
+sjekk('sluttlinja staar',
+    str_contains($sidaS, 'bekrefter kunden at disse vilkårene er lest og akseptert')
+    && str_contains($sidaS, '{{ salgsvilkarSlutt }}'));
+
+// Den frittstaaende fila hadde den gamle avbestillingsregelen staaende — den
+// eieren fikk rettet 3. september. Sto den der, ville Vipps lest én regel og
+// kunden en annen.
+sjekk('den gamle 14-dagersregelen er borte fra vilkar.html',
+    !str_contains($vilkFil, 'mer enn 14 dager før kursstart, 50 % inntil 7 dager'));
+sjekk('… og fila har eierens regel i stedet',
+    str_contains($vilkFil, 'senere enn 2 dager før kursstart refunderes normalt ikke kursavgiften'));
+// Husreglene i den fila er et eget dokument under egen overskrift, og er ikke
+// vilkaar. De skal staa.
+sjekk('… mens husreglene i den fila staar som for',
+    str_contains($vilkFil, 'Ordensregler og HMS'));
+// Vipps godkjente «Vipps paa nett» paa vilkaar av at salgsvilkaarene sier
+// hvor oppsigelsen skal sendes — se d3f764d. Eierens tekst sa bare
+// «skriftlig»; han la til adressa selv da jeg spurte, 3. september.
+// Forsvinner den, er kravet borte fra vilkaarene igjen.
+sjekk('oppsigelsen sier hvor den skal sendes — begge steder',
+    str_contains($sidaS, 'Oppsigelse skal skje skriftlig til post@lissom.no')
+    && str_contains($vilkFil, 'Oppsigelse skal skje skriftlig til post@lissom.no'));
+
+// Migrasjonen. Uten den ville sida fortsatt hett «Vilkår og angrerett» paa
+// lissom.no: innh() leser content_blocks foer malen.
+$mig138 = @file_get_contents(dirname(__DIR__) . '/db/migrations/138_salgsvilkar.sql');
+sjekk('migrasjon 138 rydder den gamle overskrifta ut av basen',
+    $mig138 !== false
+    && str_contains($mig138, "WHERE nokkel = 'Vilkår/0/Overskrift'")
+    && str_contains($mig138, "AND verdi  = 'Vilkår og angrerett'"));
+// Men bare naar den er urort. Har verkstedet skrevet noe eget, er det et valg
+// noen har tatt, og det skal ikke overkjores.
+sjekk('… men bare naar den er den gamle standardteksten',
+    $mig138 !== false && substr_count($mig138, 'AND verdi') >= 2);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);

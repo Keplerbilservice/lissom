@@ -34359,8 +34359,12 @@ class Component extends DCLogic {
             const iDag = alle.filter(b => b.dato === idagIso
               && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1);
             const netto = b => Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));
-            const kontant = iDag.filter(b => !b.erVipps).reduce((n, b) => n + netto(b), 0);
-            const vipps = iDag.filter(b => b.erVipps).reduce((n, b) => n + netto(b), 0);
+            // Maaten pengene kom inn paa, ikke om de kan refunderes. Her sto
+            // «erVipps», som svarte paa det andre spoersmaalet: en Vipps-
+            // betaling fort inn for haand havnet i kontantkolonnen, mens
+            // dagsoppgjoret til regnskapet la den under Vipps.
+            const kontant = iDag.filter(b => !b.medVipps).reduce((n, b) => n + netto(b), 0);
+            const vipps = iDag.filter(b => b.medVipps).reduce((n, b) => n + netto(b), 0);
             const FORMAL = { booking: 'Kurs og events', ordre: 'Butikk',
                              medlemskap: 'Medlemskap', gavekort: 'Gavekort' };
             const perFormal = Object.keys(FORMAL)
@@ -34434,7 +34438,7 @@ class Component extends DCLogic {
 
               btListe: treff.slice(0, 200).map(b => {
                 const igjen = Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));
-                const kanRef = b.erVipps
+                const kanRef = b.kanRefunderes
                   && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1
                   && igjen > 0;
                 const apen = st.btApen === b.referanse;
@@ -34487,12 +34491,21 @@ class Component extends DCLogic {
                     this.refunderKall(b.referanse, Math.round(ore / 100))
                       .then(() => this.setState({ btApen: null }));
                   },
-                  // Kontantsalg har aldri vaert innom Vipps. Da staar det
+                  // Gikk pengene aldri gjennom vaar egen Vipps-integrasjon,
+                  // finnes det ingen referanse aa refundere paa. Da staar det
                   // hvorfor knappen ikke er der, framfor at den bare mangler.
-                  refSperret: !b.erVipps && igjen > 0
+                  refSperret: !b.kanRefunderes && igjen > 0
                     && ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1,
-                  refSperreTekst: 'Kontantsalg har ikke gått gjennom Vipps, så det finnes '
-                    + 'ingen penger å sende tilbake. Annuller salget under «Salg» i stedet.',
+                  // Teksten maa si det som gjelder DENNE raden. Sto det
+                  // «kontantsalg» over en betaling som ble tatt paa Vipps over
+                  // disk, ville den sagt noe som ikke er sant — og eieren
+                  // ville lett etter penger som er der.
+                  refSperreTekst: b.medVipps
+                    ? 'Denne ble tatt på Vipps over disk og ført inn her, så den '
+                      + 'har ingen referanse hos oss å refundere på. Send pengene '
+                      + 'tilbake fra Vipps, og annuller salget under «Salg».'
+                    : 'Kontantsalg har ikke gått gjennom Vipps, så det finnes '
+                      + 'ingen penger å sende tilbake. Annuller salget under «Salg» i stedet.',
 
                   // ── Kvittering paa nytt ────────────────────────────────
                   harKvittering: !!(b.bookingId || b.ordreId),

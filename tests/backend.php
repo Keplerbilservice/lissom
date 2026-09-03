@@ -4586,15 +4586,19 @@ sjekk('… og skjermen sier hvorfor, framfor aa mangle knappen',
     str_contains($sida2, 'refSperreTekst:'));
 
 // Dagsoppgjoret skal vise det som faktisk staar igjen.
+//
+// Delt paa MAATEN pengene kom inn paa. Her sto «erVipps», som svarer paa noe
+// annet — om de kan refunderes gjennom Vipps — og da havnet en Vipps-betaling
+// fort inn for haand i kontantkolonnen. Se «Kassa deler dagen paa maaten».
 sjekk('dagsoppgjoret deler dagen i kontant og Vipps',
-    str_contains($sida2, 'const kontant = iDag.filter(b => !b.erVipps).reduce((n, b) => n + netto(b), 0);')
-    && str_contains($sida2, 'const vipps = iDag.filter(b => b.erVipps).reduce((n, b) => n + netto(b), 0);'));
+    str_contains($sida2, 'const kontant = iDag.filter(b => !b.medVipps).reduce((n, b) => n + netto(b), 0);')
+    && str_contains($sida2, 'const vipps = iDag.filter(b => b.medVipps).reduce((n, b) => n + netto(b), 0);'));
 sjekk('… og trekker fra det som er refundert',
     str_contains($sida2, 'const netto = b => Math.max(0, (b.belopOre || 0) - (b.refundertOre || 0));'));
 sjekk('… og teller bare gjennomforte betalinger',
     str_contains($sida2, "&& ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1);"));
 sjekk('serveren sier hvilken betalingsmaate det var',
-    str_contains($bet, "'maate'      => (string) \$p['type'] === 'manuell' ? 'Kontant' : 'Vipps',"));
+    str_contains($bet, "'maate'         => \$maateAv(\$p),"));
 
 // Kvitteringen sendes paa nytt med de samme funksjonene bookingen og ordren
 // bruker naar de blir betalt — ingen ny tekst, og ingen ny ordre.
@@ -8112,6 +8116,54 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM payments WHERE id IN (:i, :j)', ['i' => $gkRad, 'j' => $kontantRad]);
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
+
+echo "\n== Kassa deler dagen på måten, ikke på refusjonsevnen ==\n";
+// Eieren, 4. september, etter aa ha registrert kr 500 med Vipps og sett dem
+// staa under Kontant.
+//
+// To spoersmaal saa like ut og ble besvart med det samme feltet:
+//
+//   Kom pengene inn paa Vipps?   → deler dagen i kassa
+//   Kan de sendes tilbake dit?   → om refusjonsknappen skal staa
+//
+// De er ikke det samme. En Vipps-betaling tatt over disk og fort inn for
+// haand kom inn paa Vipps, men har ingen referanse hos oss aa refundere paa.
+//
+// Dagsoppgjoret som gaar til regnskapet leste «p.maate» og var riktig hele
+// tida (api/admin/dagsoppgjor.php). Det var kortet man teller kassa mot som
+// sa noe annet — de to sa ikke det samme om den samme dagen.
+$betApi = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+sjekk('maaten leses av raden, ikke regnet ut av «type»',
+    str_contains($betApi, "\$m = trim((string) (\$p['maate'] ?? ''));")
+    && str_contains($betApi, "'maate'         => \$maateAv(\$p),"));
+// Gamle rader har ingen «maate». Da gjelder den gamle regelen, saa
+// historikken staar som for.
+sjekk('… og gamle rader uten maate staar som for',
+    str_contains($betApi, "return (string) \$p['type'] === 'manuell' ? 'Kontant' : 'Vipps';"));
+sjekk('… og kolonnen hentes bare naar den finnes',
+    str_contains($betApi, "\$maateFelt = DB::harKolonne('payments', 'maate') ? 'p.maate' : 'NULL AS maate';"));
+// De to spoersmaalene har hvert sitt felt naa.
+sjekk('… og de to spoersmaalene er skilt',
+    str_contains($betApi, "'medVipps'      => \$maateAv(\$p) === 'Vipps',")
+    && str_contains($betApi, "'kanRefunderes' => (string) \$p['type'] !== 'manuell',")
+    && !str_contains($betApi, "'erVipps'"));
+
+$sidaK2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kassa deler dagen paa maaten',
+    str_contains($sidaK2, 'const kontant = iDag.filter(b => !b.medVipps)')
+    && str_contains($sidaK2, 'const vipps = iDag.filter(b => b.medVipps)'));
+sjekk('… og refusjonsknappen spor om den kan refunderes',
+    str_contains($sidaK2, 'const kanRef = b.kanRefunderes')
+    && str_contains($sidaK2, 'refSperret: !b.kanRefunderes && igjen > 0'));
+// Ingen rad skal lese det gamle feltet lenger.
+sjekk('… og ingen leser det gamle feltet',
+    !str_contains($sidaK2, 'b.erVipps'));
+// Teksten maa si det som gjelder DENNE raden. «Kontantsalg» over en betaling
+// som ble tatt paa Vipps ville sendt eieren paa leting etter penger som er
+// der.
+sjekk('… og sperreteksten sier hva som faktisk gjelder raden',
+    str_contains($sidaK2, 'refSperreTekst: b.medVipps')
+    && str_contains($sidaK2, 'ingen referanse hos oss å refundere på'));
 
 echo "\n== Betalingen registreres der man står ==\n";
 // Eieren, 4. september: «pillen ikke betalt, kan jeg trykke paa den, og velge

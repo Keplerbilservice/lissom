@@ -230,7 +230,7 @@ portal.vipps.no → **Utvikler** → testsalgsenheten.
 
 Bruk `ny.lissom.no` mens vi tester. Adressen byttes til `lissom.no` samtidig
 med DNS-omleggingen, og må da også oppdateres i portalen.
-| Vilkår | `https://lissom.no/vilkar.html` |
+| Salgsvilkår | `https://lissom.no/vilkar.html` |
 | Personvern | `https://lissom.no/personvern.html` |
 
 Adressen må stemme **nøyaktig**, tegn for tegn. Vipps avviser innloggingen ved

@@ -4823,7 +4823,8 @@ sjekk('«Forny» spor hvordan det skal betales i stedet',
 sjekk('… og det gjor plankortet ogsaa',
     str_contains($sida2, "'Lukk', null, false, null, this.aboPlanValg(p.navn)),"));
 sjekk('… og begge gaar til handling=start',
-    str_contains($sida2, "this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }"));
+    str_contains($sida2, "const kropp = { handling: 'start', plan: navn, betaling: maate };")
+    && str_contains($sida2, "this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps');"));
 
 // Kurver som stod aapne da rettelsen gikk ut, skal ikke moete den samme
 // doede enden. De var det eneste stedet en «Abonnement:»-linje kunne
@@ -6212,7 +6213,7 @@ sjekk('… og knappen sier «Forny medlemskapet» da',
     str_contains($sida, "medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')"));
 // Knappen gaar samme vei som «Forny» paa Min side.
 sjekk('… og knappen gaar til startAbonnement, som «Forny»',
-    str_contains($sida, "this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt());"));
+    str_contains($sida, "this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt(),"));
 // Den som ikke er medlem skal fortsatt til innmeldingen, med planen med seg
 // gjennom innloggingen.
 sjekk('… og den som ikke er medlem gaar til innmeldingen som for',
@@ -6305,7 +6306,7 @@ sjekk('… og kortet aapner ikke skjemaet lenger',
 sjekk('kurs uten datoer har ingen datovelger',
     str_contains($sida, "&& !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)\n               && this.state.fra !== 'medlemskap',"));
 sjekk('… og ingen betalingsdel',
-    str_contains($sida, "// Et kurs uten datoer betales ikke her. Det avtales forst.\n        if (k.kunKontakt) return false;"));
+    str_contains($sida, "// Et kurs uten datoer betales ikke her. Det avtales forst.\n    if (k.kunKontakt) return false;"));
 sjekk('… men en «Kontakt oss» som staar i stedet',
     str_contains($sida, 'visKontaktKurs: !!(this.state.valgtKurs && this.state.valgtKurs.kunKontakt),')
     && str_contains($sida, '<sc-if value="{{ visKontaktKurs }}"'));
@@ -6381,7 +6382,7 @@ sjekk('infosida for et medlemskap har «Velg»',
     str_contains($sida, "visVelgMedlemskap: this.state.fra === 'medlemskap',")
     && str_contains($sida, '<sc-if value="{{ visVelgMedlemskap }}"'));
 sjekk('… og bookingskjemaet staar ikke under den',
-    str_contains($sida, "// Et medlemskap heller ikke: det gaar gjennom innmeldingen.\n        if (this.state.fra === 'medlemskap') return false;"));
+    str_contains($sida, "// Et medlemskap heller ikke: det gaar gjennom innmeldingen.\n    if (this.state.fra === 'medlemskap') return false;"));
 // Veien inn laa som en lukking inne i kortlista, og naadde ikke infosida.
 sjekk('… og begge gaar gjennom den samme metoden',
     str_contains($sida, 'meldInnPlan(navn) {')
@@ -6438,7 +6439,8 @@ sjekk('… og «eller»-skillet staar ikke alene',
 //
 // Det samme fra plankortet under «Bytt abonnement».
 sjekk('«Forny» sender betalingsmaaten til serveren',
-    str_contains($sida, "this.medlemskapKall({ handling: 'start', plan: navn, betaling: maate }"));
+    str_contains($sida, "const kropp = { handling: 'start', plan: navn, betaling: maate };")
+    && str_contains($sida, "this.medlemskapKall(kropp, 'Avtalen er opprettet i Vipps');"));
 // Kontrollen: det gamle kallet uten feltet skal vaere borte. Uten denne
 // ville proven over vaere gronn ogsaa om noen la det tilbake ved siden av.
 sjekk('… og det gamle kallet uten feltet er borte',
@@ -7019,11 +7021,15 @@ sjekk('… og verdien bak den settes',
 // ville staatt gronn om selve teksten forsvant. Det er motsatt av det den er
 // til for.
 foreach ([
-    'bindingstid'  => '12 måneders bindingstid fra oppstartsdato',
-    'oppsigelse'   => 'Oppsigelsestiden regnes fra første dag i påfølgende måned',
-    'HMS'          => 'Medlemmet plikter å sette seg inn i og følge gjeldende HMS-rutiner',
-    'mislighold'   => 'avslutte et medlemskap med umiddelbar virkning',
-    'endringer'    => 'oppdatere medlemsvilkårene ved behov',
+    'proeveperioden' => 'Prøvemedlemskap har ingen bindingstid og ingen oppsigelsestid',
+    'bindingstid'    => '12 måneders bindingstid fra oppstartsdato',
+    'oevrige'        => 'Alle øvrige medlemskap har to måneders bindingstid fra oppstartsdato',
+    'oppsigelse'     => 'Oppsigelsestiden regnes fra første dag i påfølgende måned',
+    'skriftlig hvor' => 'Oppsigelse skal skje skriftlig til post@lissom.no',
+    'faktureres'     => 'Medlemsavgift faktureres ut oppsigelsesperioden',
+    'HMS'            => 'Medlemmer plikter å sette seg inn i og følge gjeldende HMS-regler',
+    'mislighold'     => 'avslutte medlemskap med umiddelbar virkning',
+    'ingen refusjon' => 'Ved slik avslutning refunderes ikke innbetalt medlemsavgift',
 ] as $navn => $setning) {
     sjekk('medlemsvilkaarene: ' . $navn . ' staar paa vilkaarssida',
         str_contains($sida, $setning));
@@ -7036,16 +7042,13 @@ foreach ([
 // dette er for kursdeltakere».
 echo "\n== Kursvilkaarene ==\n";
 foreach ([
-    'bindende paamelding' => 'Påmelding er bindende',
-    'betaling for start'  => 'skal være betalt før kursstart',
-    'avbestilling'        => 'mer enn 2 dager før kursstart refunderes kursavgiften fullt ut',
-    'ingen refusjon naer' => 'mindre enn 2 dager før kursstart refunderes ikke kursavgiften',
-    'overfoere plassen'   => 'Plassen kan overføres til en annen person etter avtale',
-    'fravaer'             => 'Manglende oppmøte gir ikke rett til refusjon',
-    'HMS'                 => 'Deltakerne benytter verksted og utstyr på eget ansvar',
-    'egne arbeider'       => 'kan ikke garantere mot skader, sprekker',
-    'ordensregler'        => 'Verkstedet skal forlates ryddig etter bruk',
-    'forbehold'           => 'avlyse kurs ved for få deltakere eller sykdom',
+    'bindende paamelding' => 'er bindende med mindre annet er oppgitt i kursbeskrivelsen',
+    'ingen refusjon naer' => 'senere enn 2 dager før kursstart refunderes normalt ikke kursavgiften',
+    'fravaer'             => 'Manglende oppmøte gir ikke rett til refusjon eller erstatningsundervisning',
+    'HMS'                 => 'plikter å følge instruksjoner fra kursleder og gjeldende HMS-regler',
+    'egne arbeider'       => 'kan ikke holdes ansvarlig for skader, sprekker, deformasjoner',
+    'forbehold'           => 'avlyse eller flytte kurs ved sykdom, force majeure eller for få påmeldte',
+    'full refusjon ved avlysning' => 'refunderes innbetalt kursavgift i sin helhet',
 ] as $navn => $setning) {
     sjekk('kursvilkaarene: ' . $navn, str_contains($sida, $setning));
 }
@@ -7115,8 +7118,12 @@ sjekk('avbestillingsruta sier det samme',
 
 // Hver hake maa lande paa SIN bolk. Pekte begge samme sted, ville
 // kursdeltakeren fortsatt maattet lese seg gjennom medlemsvilkaarene.
-sjekk('sida har begge bolkene', str_contains($sida, 'id="vilkar-kurs"')
-    && str_contains($sida, 'id="vilkar-medlem"'));
+// Ankerne settes naa av dataene og ikke av markupen — id-en er «{{ a.ank }}».
+// Proven maa derfor lese der de faktisk staar, ellers gaar den roedt paa en
+// omskriving som ikke har endret noe.
+sjekk('sida har begge ankerne', str_contains($sida, "], 'vilkar-kurs', 'Tilleggsvilkår for kurs, arrangementer og medlemskap'],")
+    && str_contains($sida, "], 'vilkar-medlem'],")
+    && str_contains($sida, 'id="{{ a.ank }}"'));
 sjekk('kursbookingen sender deg til kursvilkaarene',
     str_contains($sida, "goVilkar: this.goVilkarDel('vilkar-kurs')"));
 sjekk('innmeldingen sender deg til medlemsvilkaarene',
@@ -8198,6 +8205,220 @@ sjekk('… og detaljen sier at kortet staar med «Kontakt oss»',
 // vises naar haken er paa. Staar de to ulikt, lyver den ene.
 sjekk('… og nettsida slipper gjennom et kurs uten datoer naar haken er paa',
     str_contains($sida, ".filter(k => (k.datoer || []).length > 0 || k.utenDatoOk)"));
+
+echo "\n== Medlemskapskortet er det samme kortet som kurs ==\n";
+//
+// Eieren, 3. september, med skjermbilde av begge: «men kan du se at bilde to
+// som er medlemskap har en helt annen layout? her er det ikke vilkaar, navn
+// telefon osv» — og «er det mulig aa faa samme kort paa medlemskap som paa
+// kurs?»
+//
+// Kortene delte ramma, prisen og smaateksten, og ingenting annet: paa kurs
+// sto dato, tid, antall, e-post, telefon, allergier og vilkaarshaken; paa
+// medlemskap sto to betalingspiller og en knapp. Det som hoerer til en
+// kurskveld — dato, tid, plasser, allergier — finnes ikke paa et medlemskap.
+// Det som gjor det, gjor det naa ogsaa her.
+$sidaM = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Felte for felt, i den rekkefolgen de staar paa kortet.
+sjekk('medlemskapskortet har e-postfeltet',
+    str_contains($sidaM, 'label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}"'));
+sjekk('… og telefonfeltet',
+    str_contains($sidaM, 'label="Telefon" icon="phone" placeholder="+47 000 00 000" value="{{ bmTelefon }}" on-change="{{ settBmTelefon }}"'));
+sjekk('… og vilkaarshaken med lenke til medlemsvilkaarene',
+    str_contains($sidaM, 'label="Jeg godtar medlemsvilkårene" checked="{{ bmVilkaarOk }}" on-change="{{ toggleBmVilkaar }}"')
+    && str_contains($sidaM, 'onClick="{{ goVilkarMedlem }}" style="appearance: none; background: transparent; border: none; padding: 0; margin: 6px 0 0 32px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Les medlemsvilkårene</button>'));
+// Haken laaser knappen, som paa kursbookingen. Uten dette kunne man bli
+// medlem — med to maaneders binding paa «30 timer» — uten aa bekrefte noe.
+sjekk('… og haken laaser «Bli medlem»-knappen',
+    str_contains($sidaM, 'disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemsBetalKnapp }}"'));
+
+// Feltene maa vaere koblet. Et felt som er tegnet, men ikke bundet, viser
+// ingenting og tar ikke imot noe.
+sjekk('telefonfeltet er koblet, og fylles ut fra kontoen',
+    str_contains($sidaM, "bmTelefon: this.state.bmTelefon === undefined ? (this.state.medlemTelefon || '') : this.state.bmTelefon,")
+    && str_contains($sidaM, "settBmTelefon: e => this.setState({ bmTelefon: e.target.value, bmFeil: null }),"));
+sjekk('… og e-posten fylles ut fra kontoen paa samme maate',
+    str_contains($sidaM, "bmEpost: this.state.bmEpost === undefined ? (this.state.medlemEpost || '') : this.state.bmEpost,"));
+
+// Knappen skal stoppe det som er tomt eller feil for turen til Vipps.
+sjekk('knappen krever gyldig e-post',
+    str_contains($sidaM, "if (!epost || epost.indexOf('@') < 1) {\n              this.setState({ bmFeil: 'Vi trenger en gyldig e-postadresse.' });"));
+sjekk('… og et telefonnummer',
+    str_contains($sidaM, "if (!telefon) {\n              this.setState({ bmFeil: 'Vi trenger et mobilnummer.' });"));
+sjekk('… og at vilkaarene er godtatt',
+    str_contains($sidaM, "if (!this.state.bmVilkaarOk) {\n              this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å bli medlem.' });"));
+// Beskjeden maa vises. Uten denne staar knappen bare stille.
+sjekk('… og beskjeden vises paa kortet',
+    str_contains($sidaM, '<sc-if value="{{ bmFeil }}" hint-placeholder-val="{{ false }}">' . "\n"
+        . '                    <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-600);">{{ bmFeil }}</p>'));
+
+// Feltene maa naa fram til serveren. Ellers er de pynt.
+sjekk('kortet sender e-post og telefon med til serveren',
+    str_contains($sidaM, "this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt(),\n              { epost: epost, telefon: telefon });"));
+sjekk('… og startAbonnement legger dem i kallet',
+    str_contains($sidaM, "if (kontakt && kontakt.epost)   { kropp.epost = kontakt.epost; }")
+    && str_contains($sidaM, "if (kontakt && kontakt.telefon) { kropp.telefon = kontakt.telefon; }"));
+// «Forny» paa Min side og medlemskapet i kassa gaar samme vei uten felter.
+// Sender de ingenting, skal kontoen ikke roeres — derfor «if».
+sjekk('… mens «Forny» og kassa gaar samme vei uten dem',
+    str_contains($sidaM, "startAbonnement(planNavn, betaling, kontakt) {")
+    && str_contains($sidaM, "const kropp = { handling: 'start', plan: navn, betaling: maate };"));
+
+// ── Serveren ───────────────────────────────────────────────────────────
+//
+// Feltene betyr noe fordi de lagres: medlemsvarslene «medlemstrekk_varsel»
+// og «medlemskap_fornyet» gaar til members.epost, og nummeret Vipps faar av
+// startAvtale() og startEngangs() er members.telefon.
+$medApiK = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('api/medlemskap.php tar imot e-post og telefon',
+    str_contains($medApiK, "\$epost   = mb_substr(Foresporsel::tekst('epost'), 0, 191);")
+    && str_contains($medApiK, "\$telefon = mb_substr(Foresporsel::tekst('telefon'), 0, 32);"));
+sjekk('… og avviser en ugyldig adresse',
+    str_contains($medApiK, "if (!filter_var(\$epost, FILTER_VALIDATE_EMAIL)) {\n                Svar::feil('Vi trenger en gyldig e-postadresse.');"));
+sjekk('… og et ugyldig nummer',
+    str_contains($medApiK, "\$nummer = normaliser_telefon(\$telefon);\n            if (\$nummer === '') {\n                Svar::feil('Vi trenger et gyldig mobilnummer.');"));
+sjekk('… og lagrer rettelsen paa kontoen',
+    str_contains($medApiK, "DB::oppdater('members', \$endring, ['id' => (int) \$medlem['id']]);"));
+// Uten denne linja ville Vipps faatt det gamle nummeret: startAvtale() og
+// startEngangs() leser $medlem['telefon'], ikke basen paa nytt.
+sjekk('… og avtalen opprettes med det nye nummeret',
+    str_contains($medApiK, "\$medlem = \$endring + \$medlem;"));
+// Rekkefolgen er poenget: lagringen maa staa for betalingen startes.
+$posLagre = strpos($medApiK, "DB::oppdater('members', \$endring,");
+$posStart = strpos($medApiK, "? Medlemskap::startAvtale(\$medlem, \$planNavn)");
+sjekk('… og lagringen skjer for Vipps kontaktes',
+    $posLagre !== false && $posStart !== false && $posLagre < $posStart);
+// Sender ingen felter, skal ingenting skje med kontoen.
+sjekk('… og kontoen roeres ikke naar feltene mangler',
+    str_contains($medApiK, "if (\$endring !== []) {"));
+
+// «Du betaler trygt med Vipps» sto bak «erBetalt», som er av paa et
+// medlemskap — og medlemskapet betales med Vipps det ogsaa. Regelen kunne
+// ikke leses fra betalingsdelen heller: den staar lenger opp i det samme
+// objektet, og et objekt kan ikke lese noe som regnes ut under. Derfor er
+// den flyttet ut i en metode, og begge spor den samme.
+sjekk('«Du betaler trygt med Vipps» staar ogsaa paa medlemskapet',
+    str_contains($sidaM, "visVippsTrygt: kanBetaleNaa || this.erBetaltKurs(),")
+    && str_contains($sidaM, '<sc-if value="{{ visVippsTrygt }}"'));
+sjekk('… og regelen staar ett sted',
+    str_contains($sidaM, 'erBetaltKurs() {')
+    && str_contains($sidaM, 'erBetalt: this.erBetaltKurs(),')
+    && substr_count($sidaM, "if (k.kunKontakt) return false;") === 1);
+
+// Det som IKKE skal ha fulgt med fra kurskortet. Et medlemskap har verken
+// dato, klokkeslett eller plasser, og allergier hoerer til en kurskveld.
+// Disse staar bak «harPlasser», som er av naar man kommer fra medlemskap.
+sjekk('dato, tid og antall plasser staar fortsatt bare paa kurs',
+    str_contains($sidaM, "&& this.state.fra !== 'medlemskap',")
+    && str_contains($sidaM, 'visVelgMedlemskap: this.state.fra === \'medlemskap\','));
+
+echo "\n== Salgsvilkaarene ==\n";
+//
+// Eieren, 3. september: «kan du fjerne vilkaar og angrerett i footer, lag en
+// som heter Salgsvilkaar, og bruk denne teksten. slett den gamle».
+$sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$vilkFil = file_get_contents(dirname(__DIR__) . '/vilkar.html');
+
+// Navnet, alle stedene det sto.
+sjekk('bunnteksten sier «Salgsvilkår»',
+    str_contains($sidaS, "{ navn: 'Salgsvilkår', velg: this.go('vilkar') },"));
+sjekk('… og «Vilkår og angrerett» finnes ikke lenger som navn',
+    !str_contains($sidaS, "navn: 'Vilkår og angrerett'")
+    && !str_contains($sidaS, "v: 'Vilkår og angrerett'")
+    && !str_contains($sidaS, "type: 'Står i Vilkår og angrerett'"));
+sjekk('… og overskrifta paa sida er byttet',
+    str_contains($sidaS, "{ l: 'Overskrift', v: 'Salgsvilkår' },"));
+sjekk('… ogsaa i den frittstaaende fila Vipps leser',
+    str_contains($vilkFil, '<h1>Salgsvilkår</h1>')
+    && str_contains($vilkFil, '<title>Salgsvilkår — Lissom Keramikk</title>'));
+sjekk('… og i llms.txt',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/llms.php'),
+        "\$ut[] = '- [Salgsvilkår](' . ROT . '/vilkar)';"));
+
+// Adressa er den samme. Byttes den, blir alle gamle lenker og treff i Google
+// blindveier — og sitemap-en peker feil sted.
+sjekk('adressa er fortsatt /vilkar',
+    str_contains($sidaS, "{ sti: '/vilkar',        side: 'vilkar' },")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/sitemap.php'), "['/vilkar',"));
+
+// Nummereringen er eierens, og loeper 1 til 16 i ett.
+sjekk('punktene er nummerert 1 til 16',
+    str_contains($sidaS, "nr: String(i + 1) + ')',")
+    && str_contains($sidaS, '{{ a.nr }}'));
+
+// De to bolkene den gamle sida hadde skal vaere borte — teksten er én.
+sjekk('de tre gamle listene er borte',
+    !str_contains($sidaS, 'vilkarKurs:')
+    && !str_contains($sidaS, 'vilkarMedlem:')
+    && !str_contains($sidaS, 'vilkarGenerelt:'));
+
+// Setningene fra hvert punkt. Uten disse kunne teksten skrumpet inn uten at
+// noe ble roedt. Ett utvalg per punkt, ordrett fra dokumentet.
+foreach ([
+    '1 avtalen'        => 'Avtalen består av disse salgsbetingelsene',
+    '2 partene'        => 'organisasjonsnummer 938 280 819',
+    '3 pris'           => 'er den totale prisen kjøper skal betale',
+    '4 avtaleinngaaelse' => 'bindende for begge parter når kjøper har sendt sin bestilling',
+    '5 betaling'       => 'kan kravet bli sendt til inkasso',
+    '6 levering'       => 'anses leveringen skjedd ved bekreftet plass eller aktivert medlemskap',
+    '7 risiko'         => 'Risikoen for varen går over på kjøper',
+    '8 angrerett'      => 'For kjøp av varer gjelder angrerett i henhold til angrerettloven',
+    '9 forsinkelse'    => 'forbrukerkjøpslovens regler om forsinkelse og manglende levering',
+    '10 mangel'        => 'omlevering, prisavslag, heving og erstatning',
+    '11 mislighold'    => 'kreve oppfyllelse, heve avtalen eller kreve erstatning',
+    '12 garanti'       => 'kommer i tillegg til kjøperens lovbestemte rettigheter',
+    '13 personopplysninger' => 'i samsvar med gjeldende personvernlovgivning',
+    '14 konflikt'      => 'kan kjøper kontakte Forbrukerrådet for mekling',
+] as $navn => $setning) {
+    sjekk('salgsvilkaarene: punkt ' . $navn, str_contains($sidaS, $setning));
+}
+
+// Angreretten forsvant ikke med den gamle bolken — den er punkt 8.
+sjekk('angreretten staar fortsatt, som punkt 8',
+    str_contains($sidaS, "['Angrerett', [")
+    && str_contains($sidaS, 'unntak fra angreretten som følger av angrerettloven'));
+
+// Punktlista under «Mislighold» er fem kulepunkter, ikke ett avsnitt.
+sjekk('misligholdslista staar som punkter',
+    str_contains($sidaS, "'Opptrer truende, krenkende eller uakseptabelt overfor ansatte eller andre medlemmer.',")
+    && str_contains($sidaS, '<sc-for list="{{ t.punkter }}" as="pk"'));
+
+// Sluttlinja staar utenfor nummereringen, som i dokumentet.
+sjekk('sluttlinja staar',
+    str_contains($sidaS, 'bekrefter kunden at disse vilkårene er lest og akseptert')
+    && str_contains($sidaS, '{{ salgsvilkarSlutt }}'));
+
+// Den frittstaaende fila hadde den gamle avbestillingsregelen staaende — den
+// eieren fikk rettet 3. september. Sto den der, ville Vipps lest én regel og
+// kunden en annen.
+sjekk('den gamle 14-dagersregelen er borte fra vilkar.html',
+    !str_contains($vilkFil, 'mer enn 14 dager før kursstart, 50 % inntil 7 dager'));
+sjekk('… og fila har eierens regel i stedet',
+    str_contains($vilkFil, 'senere enn 2 dager før kursstart refunderes normalt ikke kursavgiften'));
+// Husreglene i den fila er et eget dokument under egen overskrift, og er ikke
+// vilkaar. De skal staa.
+sjekk('… mens husreglene i den fila staar som for',
+    str_contains($vilkFil, 'Ordensregler og HMS'));
+// Vipps godkjente «Vipps paa nett» paa vilkaar av at salgsvilkaarene sier
+// hvor oppsigelsen skal sendes — se d3f764d. Eierens tekst sa bare
+// «skriftlig»; han la til adressa selv da jeg spurte, 3. september.
+// Forsvinner den, er kravet borte fra vilkaarene igjen.
+sjekk('oppsigelsen sier hvor den skal sendes — begge steder',
+    str_contains($sidaS, 'Oppsigelse skal skje skriftlig til post@lissom.no')
+    && str_contains($vilkFil, 'Oppsigelse skal skje skriftlig til post@lissom.no'));
+
+// Migrasjonen. Uten den ville sida fortsatt hett «Vilkår og angrerett» paa
+// lissom.no: innh() leser content_blocks foer malen.
+$mig138 = @file_get_contents(dirname(__DIR__) . '/db/migrations/138_salgsvilkar.sql');
+sjekk('migrasjon 138 rydder den gamle overskrifta ut av basen',
+    $mig138 !== false
+    && str_contains($mig138, "WHERE nokkel = 'Vilkår/0/Overskrift'")
+    && str_contains($mig138, "AND verdi  = 'Vilkår og angrerett'"));
+// Men bare naar den er urort. Har verkstedet skrevet noe eget, er det et valg
+// noen har tatt, og det skal ikke overkjores.
+sjekk('… men bare naar den er den gamle standardteksten',
+    $mig138 !== false && substr_count($mig138, 'AND verdi') >= 2);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);

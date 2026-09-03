@@ -100,36 +100,25 @@ if (!$vilkaar) {
     Svar::feil('Du må godta medlemsvilkårene for å melde deg inn.');
 }
 
-// ── Vanlig Vipps er utgangspunktet ─────────────────────────────────────
+// ── Fast trekk finnes bare paa aarsavtalen ─────────────────────────────
 //
-// Eieren, 3. september: «vipps fast trekk skal kun vaere paa
-// aarsmedlemskap».
+// Eieren, 3. september: «jeg vil ikke ha dette alternativet paa noen andre
+// steder enn paa aarsavtalen».
 //
-// Her sto det motsatte: alt som ikke var ordrett «selv» ble til «trekk».
-// Manglet feltet — en gammel fane, et kall uten det, en pille som ikke ble
-// trykket — opprettet vi en loepende avtale i Vipps for noen som ikke hadde
-// bedt om en. Naa er det motsatt: bare et uttrykkelig «trekk» gir trekk.
+// Her leste vi «betaling» fra kallet. Foerst ble alt som ikke sa «selv» til
+// trekk; saa snudde vi det, saa bare et uttrykkelig «trekk» ga trekk. Begge
+// deler lot en loepende avtale bli opprettet paa et medlemskap som ikke skal
+// ha en — det var bare vanskeligere aa treffe.
 //
-// Aarsmedlemskapet er unntaket, og det avgjores av basen og ikke av dette
-// feltet: «krever_fast_trekk = 1», satt av migrasjon 081 paa alt med tolv
-// maaneders bindingstid.
-$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';
-
-// Krever planen fast trekk, er valget tatt — da er avtalen en forutsetning.
-if (Medlemskap::kreverFastTrekk($plan)) {
-    $betaling = 'trekk';
-}
-
-// ── En engangsplan kan ikke ha fast trekk ──────────────────────────────
+// Naa avgjor planen alene. Feltet leses ikke lenger: krever planen fast
+// trekk, blir det trekk; ellers vanlig Vipps. En gammel fane, et kall som
+// sender «trekk», en pille som ble staaende igjen i en cache — ingenting av
+// det kan lage en avtale mer.
 //
-// «Prov Lissom» er ti timer i lopet av tretti dager, betalt én gang. Denne
-// vakta sto i api/medlemskap.php fra for, men ikke her — og det er her nye
-// medlemmer kommer inn. Den som meldte seg inn og lot «Fast trekk» staa,
-// fikk en loepende avtale i Vipps for et medlemskap som er over etter en
-// maaned. Serveren avgjor, ikke skjermen.
-if ((int) ($plan['engangs'] ?? 0) === 1) {
-    $betaling = 'selv';
-}
+// «krever_fast_trekk» staar i basen, satt av migrasjon 081 paa alt med tolv
+// maaneders bindingstid. I dag er det bare aarsmedlemskapet. En engangsplan
+// kan uansett ikke ha fast trekk, og faar det ikke her heller.
+$betaling = Medlemskap::kreverFastTrekk($plan) ? 'trekk' : 'selv';
 
 // Betalingsavtalen, for soknaden lagres.
 //

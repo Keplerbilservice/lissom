@@ -2447,18 +2447,20 @@ window.__resources = {
                   <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ medlemsFornyLinje }}</div>
                 </sc-if>
                 <sc-if value="{{ visMedlemsbetaling }}" hint-placeholder-val="{{ true }}">
-                  <sc-if value="{{ bmKanVelgeBetaling }}" hint-placeholder-val="{{ true }}">
-                    <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">Betaling</div>
-                    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
-                      <sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">
-                        <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
-                      </sc-for>
-                    </div>
-                    <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmBetalingTekst }}</p>
-                  </sc-if>
+                  <!-- Her sto «BETALING» med to piller: «Betal i Vipps» og
+                       «Fast trekk i Vipps». Eieren, 3. september: «jeg vil
+                       ikke ha dette alternativet paa noen andre steder enn
+                       paa aarsavtalen».
+
+                       Pillene er borte. Setningen under dem staar igjen —
+                       den forklarer hva som skjer med pengene, og det skal
+                       kunden faa vite enten det er et valg eller ikke. Se
+                       «bmBetalingTekst», som naa leser planen og ikke en
+                       pille. Aarsavtalen faar «bmTrekkTekst» i tillegg. -->
                   <sc-if value="{{ bmMaaHaTrekk }}" hint-placeholder-val="{{ false }}">
-                    <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ bmTrekkTekst }}</p>
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ bmTrekkTekst }}</p>
                   </sc-if>
+                  <p style="margin: 0 0 var(--space-5); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmBetalingTekst }}</p>
                   <!-- Samme kort som paa et kurs.
                        Eieren, 3. september, med bilde av begge: «men kan du se
                        at bilde to som er medlemskap har en helt annen layout?
@@ -3913,21 +3915,12 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="E-post" icon="mail" placeholder="navn@epost.no" value="{{ bmEpost }}" on-change="{{ settBmEpost }}" hint-size="100%,64px"></x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Har du jobbet med leire før?" rows="2" placeholder="F.eks. «Gikk nybegynnerkurs hos dere i vår», eller «helt fersk»." value="{{ bmErfaring }}" on-change="{{ settBmErfaring }}" hint-size="100%,96px"></x-import>
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Textarea" label="Noe du vil si oss? (valgfritt)" rows="2" placeholder="Når du helst vil bruke verkstedet, hva du vil lage …" value="{{ bmMelding }}" on-change="{{ settBmMelding }}" hint-size="100%,96px"></x-import>
-                  <!-- Fast trekk eller ikke.
-                       Vises bare naar medlemskapet gir valget. Aarsmedlemskapet
-                       bindes i tolv maaneder og maa ha fast trekk; da staar det
-                       en linje om det i stedet for to knapper som ikke gjor noe. -->
-                  <sc-if value="{{ bmKanVelgeBetaling }}" hint-placeholder-val="{{ true }}">
-                    <div>
-                      <div style="font: var(--type-label); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-heading); margin-bottom: var(--space-3);">Betaling</div>
-                      <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
-                        <sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">
-                          <button type="button" onClick="{{ v.velg }}" style="{{ v.stil }}">{{ v.navn }}</button>
-                        </sc-for>
-                      </div>
-                      <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted);">{{ bmBetalingTekst }}</p>
-                    </div>
-                  </sc-if>
+                  <!-- Her sto «BETALING» med de to pillene «Betal i Vipps» og
+                       «Fast trekk i Vipps». Eieren, 3. september: «fjern pillene
+                       betal i vipps og fast trekk». Planen avgjor naa, og bare
+                       aarsavtalen har fast trekk. Setningen om hva som skjer med
+                       pengene staar igjen. -->
+                  <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmBetalingTekst }}</p>
                   <sc-if value="{{ bmMaaHaTrekk }}" hint-placeholder-val="{{ false }}">
                     <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body);">{{ bmTrekkTekst }}</p>
                   </sc-if>
@@ -17060,12 +17053,9 @@ class Component extends DCLogic {
     if (pl.engangs) {
       return [{ navn: SELV, verdi: ' ' }];
     }
-    // Samme rekkefolge som knappene under: det vanlige forst.
-    return [
-      { navn: 'Slik virker de to', verdi: '' },
-      { navn: 'Betal i Vipps — ' + SELV, verdi: ' ' },
-      { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
-    ];
+    // Det er ikke lenger to aa velge mellom. Sto «Slik virker de to» her,
+    // ville ruta forklart et valg som ikke finnes.
+    return [{ navn: SELV, verdi: ' ' }];
   }
 
   planer() {
@@ -19566,9 +19556,12 @@ class Component extends DCLogic {
    * ene som fortsatt gir trekk. Alle andre begynner paa vanlig Vipps.
    */
   bmBetalingsvalgt() {
+    // Planen alene bestemmer. Her sto «this.state.bmBetaling», satt av to
+    // piller paa hvert medlemskap — se «bmBetalingsvalg». Eieren, 3.
+    // september: fast trekk skal ikke vaere et alternativ noe annet sted
+    // enn paa aarsavtalen. Da er det ingenting igjen aa lese av skjermen.
     const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
-    if (pl.fastTrekk) return 'trekk';
-    return this.state.bmBetaling === 'trekk' ? 'trekk' : 'selv';
+    return pl.fastTrekk ? 'trekk' : 'selv';
   }
 
   /** Valgt medlemskap — det forste hvis ingen er valgt ennaa. */
@@ -25148,14 +25141,11 @@ class Component extends DCLogic {
     //
     // Nummeret som sendes til serveren er det samme som for: «selv».
     if (pl.engangs) return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];
-    // Vanlig Vipps forst og som hovedknapp. «Forny» sto med fast trekk
-    // oeverst, saa den raskeste veien var en loepende avtale. Eieren, 3.
-    // september: «vipps fast trekk skal kun vaere paa aarsmedlemskap» — og
-    // aarsmedlemskapet gaar i grenen over, der trekk er det eneste valget.
-    return [
-      { plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' },
-      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk', variant: 'secondary' },
-    ];
+    // Alt annet enn aarsavtalen betales med vanlig Vipps. Her sto begge to
+    // som valg. Eieren, 3. september: «jeg vil ikke ha dette alternativet
+    // paa noen andre steder enn paa aarsavtalen». Aarsavtalen gaar i grenen
+    // over, der trekk er det eneste som finnes.
+    return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];
   }
 
   /**
@@ -43713,32 +43703,31 @@ class Component extends DCLogic {
       // aarsmedlemskapet, som bindes i tolv maaneder.
       ...(() => {
         const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
+        // ── Fast trekk finnes bare paa aarsavtalen ──────────────────
+        //
+        // Eieren, 3. september: «jeg vil ikke ha dette alternativet paa noen
+        // andre steder enn paa aarsavtalen».
+        //
+        // Her sto to piller paa hvert eneste medlemskap. Vi gjorde forst
+        // vanlig Vipps til det forhaandsvalgte — men valget sto der
+        // fortsatt, og et trykk var nok. Naa er det borte: krever planen
+        // fast trekk, staar det en linje om det; ellers er det vanlig Vipps,
+        // uten noe aa velge mellom.
+        //
+        // «krever_fast_trekk» staar i basen, satt av migrasjon 081 paa alt
+        // med tolv maaneders binding. I dag er det bare aarsmedlemskapet.
+        // Serveren avgjor det samme paa nytt — se api/medlemskap.php og
+        // api/bli-medlem.php. En pille som er borte stopper den som fyller
+        // ut skjemaet, ikke den som sender kallet selv.
         const maa = !!pl.fastTrekk;
-        // Vanlig Vipps staar merket til hun velger noe annet. Se
-        // bmBetalingsvalgt() — de to maa si det samme, ellers viser
-        // skjermen ett valg og serveren faar et annet.
-        const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'selv');
-        const knapp = (verdi, navn) => ({
-          navn,
-          velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),
-          stil: {
-            appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-            padding: '10px 18px', font: 'var(--type-body-sm)', fontWeight: 700,
-            border: '2px solid var(--lissom-brown)',
-            background: valgt === verdi ? 'var(--lissom-brown)' : 'transparent',
-            color: valgt === verdi ? 'var(--clay-50)' : 'var(--lissom-brown)',
-          },
-        });
         return {
-          bmKanVelgeBetaling: !maa,
+          // Ingen velger noe lenger. Feltet staar igjen fordi markupen
+          // spor etter det, og det er alltid av.
+          bmKanVelgeBetaling: false,
           bmMaaHaTrekk: maa,
           bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',
-          // Samme to setninger som dialogen paa Min side bruker. Sto de to
-          // steder, ville de etter hvert sagt hver sin ting om det samme.
-          // Vanlig Vipps forst. Den forste pilla leses som det vanlige
-          // valget, og det er nettopp det den er naa.
-          bmBetalingsvalg: [knapp('selv', 'Betal i Vipps'), knapp('trekk', 'Fast trekk i Vipps')],
-          bmBetalingValgt: valgt,
+          bmBetalingsvalg: [],
+          bmBetalingValgt: maa ? 'trekk' : 'selv',
           // ── Vilkaarene ──────────────────────────────────────────────
           //
           // Her sto én graa linje under knappen, uten bekreftelse: «2
@@ -43765,7 +43754,9 @@ class Component extends DCLogic {
                  + (opps > 0 ? mnd(opps) + ' oppsigelsestid. ' : 'ingen oppsigelsestid. ')
                  + 'Du sier opp fra Min side.';
           })(),
-          bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,
+          // Leste «valgt», som var pilla man hadde trykket paa. Pillene er
+          // borte; planen avgjor.
+          bmBetalingTekst: maa ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,
         };
       })(),
       // Vilkaarene. Samme grep som paa kursbookingen: knappen er laast til

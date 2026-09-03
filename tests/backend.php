@@ -8112,6 +8112,55 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== Flerdagerskurs settes opp der kvelden settes opp ==\n";
+// Eieren, 4. september, med dreiekurset 7. oktober foran seg: «jeg proever aa
+// legge inn dreiekurset ... over 7 og 8 oktober, men det er ikke noe sted jeg
+// kan faa lagt inn at det er 2 dager».
+//
+// Feltet fantes — men bare i den dype redigeringen, under «Datoer som ligger
+// ute». Fra kalenderen, der kvelden faktisk settes opp, var det ingen vei
+// dit. «Det maa komme frem i det feltet saa klart.»
+$sidaD = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kalenderruta har feltet for flere dager',
+    str_contains($sidaD, '>Går kurset over flere dager?</label>')
+    && str_contains($sidaD, '<sc-for list="{{ klRSamlinger }}" as="sa"')
+    && str_contains($sidaD, '+ Legg til en dag</button>'));
+// Dagene ligger paa den raa kursraden, ikke paa kalenderokta: kalenderen er
+// bygget for aa tegne timeplanen.
+sjekk('… og dagene hentes fram naar ruta aapnes',
+    str_contains($sidaD, 'klRSamlinger: samlingerPaa(base, evt.oktId),')
+    && str_contains($sidaD, "const raa = (this.state.adminKursRaa || []).find(x => x.tittel === tittel);"));
+// Forste dag foreslaas fra okta selv, andre dag dagen etter med de samme
+// klokkeslettene. Et dreiekurs 17-20 over to dager skal ikke skrives inn
+// fire ganger.
+sjekk('… og dag to foreslaas som dagen etter, med samme klokkeslett',
+    str_contains($sidaD, 'const neste = har.length === 0 ? (st.klRDato || \'\') : this.dagenEtter(grunn);')
+    && str_contains($sidaD, "fra: (forrige && forrige.fra) || st.klRFra || '',"));
+// Regnet i UTC: legger man til et doegn og leser det ut lokalt, kan man havne
+// paa samme dag igjen naar sommertida slutter.
+sjekk('… og dagen etter regnes i UTC',
+    str_contains($sidaD, "const d = new Date(dato + 'T00:00:00Z');")
+    && str_contains($sidaD, 'd.setUTCDate(d.getUTCDate() + 1);'));
+// Samme lagring som den dype redigeringen: hele lista sendes med
+// «handling: dato», og serveren skriver den.
+sjekk('… og lagringen gaar samme vei som fra for',
+    str_contains($sidaD, 'datoFelt.samlinger = saml;'));
+// Nokkelen settes bare naar noe er endret. Staar den der, skriver serveren
+// lista — og en rute som ble aapnet og lukket igjen skal ikke roere noe.
+sjekk('… men bare naar noe faktisk er endret',
+    str_contains($sidaD, "if (JSON.stringify(saml) !== (fra0.samlinger || '[]')) {")
+    && str_contains($sidaD, 'samlinger: JSON.stringify(samlingerPaa(base, evt.oktId)),'));
+// Tomme skjemarader er ikke samlinger. «+ Legg til en dag» trykket ved et
+// uhell skal ikke lagre noe.
+sjekk('… og tomme rader lagres ikke',
+    str_contains($sidaD, "const saml = (st.klRSamlinger || []).filter(sa => sa.dato);"));
+// Serveren tar imot lista paa den samme handlingen fra for, og roerer bare
+// samlingene naar nokkelen er med.
+$kursApi = file_get_contents(dirname(__DIR__) . '/api/admin/kurs.php');
+sjekk('serveren skriver samlingene bare naar de foelger med',
+    str_contains($kursApi, "if (array_key_exists('samlinger', \$kropp)) {")
+    && str_contains($kursApi, '$antall = Samlinger::lagre($oktId, (array) $kropp[\'samlinger\']);'));
+
 echo "\n== Bytte medlemskap på et medlem ==\n";
 // Eieren, 4. september: «jeg vil i admin kunne endre medlemskap for
 // medlemmene».

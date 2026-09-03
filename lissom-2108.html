@@ -6147,6 +6147,43 @@ window.__resources = {
               </sc-if>
             </div>
 
+            <!-- Dagene, naar kurset gaar over flere dager.
+                 Eieren, 4. september, med dreiekurset 7. oktober foran seg:
+                 «jeg proever aa legge inn dreiekurset ... over 7 og 8
+                 oktober, men det er ikke noe sted jeg kan faa lagt inn at
+                 det er 2 dager». Feltet fantes, men bare i den dype
+                 redigeringen under «Datoer som ligger ute» — og fra
+                 kalenderen, der kvelden faktisk settes opp, var det ingen
+                 vei dit. «Det maa komme frem i det feltet saa klart.»
+
+                 Ikke det samme som «Planlagte datoer» over: der ligger
+                 kurset ute paa nytt, med en ny paamelding. Her er det ÉN
+                 paamelding som gjelder alle dagene. -->
+            <div style="margin-bottom: var(--space-4);">
+              <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 2px;">Går kurset over flere dager?</label>
+              <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3); text-wrap: pretty;">{{ klRSamlingerHjelp }}</div>
+              <sc-if value="{{ klRHarSamlinger }}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3);">
+                  <sc-for list="{{ klRSamlinger }}" as="sa" hint-placeholder-count="2">
+                    <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4);">
+                      <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
+                        <span style="font-size: 12px; font-weight: 700; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ sa.merke }}</span>
+                        <input type="date" value="{{ sa.dato }}" onChange="{{ sa.settDato }}" style="{{ klRFeltStil }}">
+                        <input type="time" value="{{ sa.fra }}" onChange="{{ sa.settFra }}" style="{{ klRFeltStil }}">
+                        <span style="color: var(--text-muted);">–</span>
+                        <input type="time" value="{{ sa.til }}" onChange="{{ sa.settTil }}" style="{{ klRFeltStil }}">
+                        <button type="button" onClick="{{ sa.fjern }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: var(--text-xs); margin-left: auto;">Fjern</button>
+                      </div>
+                      <input value="{{ sa.overskrift }}" onChange="{{ sa.settOverskrift }}" placeholder="Overskrift, f.eks. «Sentrering og dreiing»" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading);">
+                      <div style="height: 8px;"></div>
+                      <textarea value="{{ sa.tekst }}" onChange="{{ sa.settTekst }}" rows="2" placeholder="Hva skjer denne dagen?" style="box-sizing: border-box; width: 100%; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); font-family: inherit; background: var(--clay-50); color: var(--text-heading); resize: vertical;"></textarea>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <button type="button" onClick="{{ klRLeggTilSamling }}" style="appearance: none; border: 1.5px dashed var(--border-subtle); background: transparent; cursor: pointer; border-radius: var(--radius-pill); padding: 6px 14px; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown);">+ Legg til en dag</button>
+            </div>
+
             <div style="display: flex; align-items: center; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-4);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Publisert på nettsiden" checked="{{ klRPublisertVal }}" on-change="{{ toggleKlRPublisert }}" hint-size="auto,28px"></x-import>
               <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">
@@ -25619,6 +25656,27 @@ class Component extends DCLogic {
       });
   }
 
+  /** Endrer ett felt paa én samling i kalenderruta. */
+  endreKlRSamling(i, endring) {
+    this.setState(st => ({
+      klRSamlinger: (st.klRSamlinger || []).map((sa, j) => j === i ? Object.assign({}, sa, endring) : sa),
+    }));
+  }
+
+  /**
+   * Dagen etter en dato paa formen 2026-10-07.
+   *
+   * Regnet i UTC med vilje: «new Date('2026-10-07')» er midnatt UTC, og
+   * legger man til et doegn og leser den ut lokalt, kan man havne paa
+   * samme dag igjen naar sommertida slutter.
+   */
+  dagenEtter(dato) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dato || ''))) return '';
+    const d = new Date(dato + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
   /** Endrer ett felt paa én samling i skjemaet. */
   endreSamling(i, endring) {
     this.setState(st => ({
@@ -28645,6 +28703,51 @@ class Component extends DCLogic {
               settKlRBeskrivelse: e => this.setState({ klRBeskrivelse: e.target.value }),
               klRHolderValg: this.klHoldere().map(n => ({ navn: n, velg: () => this.setState({ klRHolder: n }), stil: chipStil(this.state.klRHolder === n, null) })),
               klRAvbryt: () => this.setState({ klRedId: null }),
+              // ── Samlingene, naar kurset gaar over flere dager ────────
+              //
+              // Samme felter og samme lagring som under «Datoer som ligger
+              // ute»: hele lista sendes med «handling: dato», og serveren
+              // skriver den (Samlinger::lagre). Her er den bare naadd der
+              // eieren faktisk setter opp kvelden.
+              //
+              // Deltakeren melder seg paa hele kurset, én gang. Samlingene
+              // er dagene i det, ikke datoer man kan melde seg paa hver for
+              // seg — se «Planlagte datoer» over, som er noe annet: der
+              // ligger kurset ute paa nytt.
+              klRSamlinger: (this.state.klRSamlinger || []).map((sa, i) => ({
+                merke: 'Dag ' + (i + 1),
+                dato: sa.dato || '', fra: sa.fra || '', til: sa.til || '',
+                overskrift: sa.overskrift || '', tekst: sa.tekst || '',
+                settDato: e => this.endreKlRSamling(i, { dato: e.target.value }),
+                settFra: e => this.endreKlRSamling(i, { fra: e.target.value }),
+                settTil: e => this.endreKlRSamling(i, { til: e.target.value }),
+                settOverskrift: e => this.endreKlRSamling(i, { overskrift: e.target.value }),
+                settTekst: e => this.endreKlRSamling(i, { tekst: e.target.value }),
+                fjern: () => this.setState(st => ({
+                  klRSamlinger: (st.klRSamlinger || []).filter((_, j) => j !== i),
+                })),
+              })),
+              klRHarSamlinger: (this.state.klRSamlinger || []).length > 0,
+              // Forste dag foreslaas fra okta selv, andre dag dagen etter,
+              // med de samme klokkeslettene. Et dreiekurs 17–20 over to
+              // dager skal ikke skrives inn fire ganger.
+              klRLeggTilSamling: () => this.setState(st => {
+                const har = st.klRSamlinger || [];
+                const forrige = har[har.length - 1];
+                const grunn = forrige && forrige.dato ? forrige.dato : (st.klRDato || '');
+                const neste = har.length === 0 ? (st.klRDato || '') : this.dagenEtter(grunn);
+                return {
+                  klRSamlinger: har.concat([{
+                    dato: neste,
+                    fra: (forrige && forrige.fra) || st.klRFra || '',
+                    til: (forrige && forrige.til) || st.klRTil || '',
+                    overskrift: '', tekst: '',
+                  }]),
+                };
+              }),
+              klRSamlingerHjelp: (this.state.klRSamlinger || []).length > 0
+                ? 'Deltakeren melder seg på hele kurset, én gang — og ser alle dagene før hun betaler.'
+                : 'Går kurset over flere dager, legger du inn hver dag her. Deltakeren melder seg på hele kurset, én gang.',
               klRFull: () => redEvt && this.klApneKurs(redEvt),
               klRDeltakere: () => redEvt && this.setState({ klRedId: null, klValgtId: redEvt.id, klFlyttVis: false, klBekreftAvlys: false }),
               // Hva som er endret, i klartekst. Linja oeverst kommer forst
@@ -29097,7 +29200,30 @@ class Component extends DCLogic {
   klApneEnkel(evt) {
     const base = (evt.tittel || '').split(' · ')[0];
     const k = this.kursData().find(x => x.navn === base) || {};
+    // Samlingene paa denne datoen, slik de staar i basen naa.
+    const samlingerPaa = (tittel, oktId) => {
+      const raa = (this.state.adminKursRaa || []).find(x => x.tittel === tittel);
+      const d = raa ? (raa.datoer || []).find(x => x.oktId === oktId) : null;
+      return ((d && d.samlinger) || []).map(sa => ({
+        dato: sa.dato || '', fra: sa.fra || '', til: sa.til || '',
+        overskrift: sa.overskrift || '', tekst: sa.tekst || '',
+      }));
+    };
     this.setState({ klMeny: null, klValgtId: null, kdApen: false, kdUtkast: {}, kdVarsle: false, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!evt.avlyst, klRVisFullt: !!evt.visFullt, klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '',
+      // ── Samlingene, naar kurset gaar over flere dager ──────────────
+      //
+      // Eieren, 4. september, med dreiekurset 7. oktober foran seg: «jeg
+      // proever aa legge inn dreiekurset ... over 7 og 8 oktober, men det er
+      // ikke noe sted jeg kan faa lagt inn at det er 2 dager». Feltet fantes
+      // — men bare i den dype redigeringen, under «Datoer som ligger ute».
+      // Fra kalenderen, der man faktisk setter opp kvelden, var det ingen
+      // vei dit. «Det maa komme frem i det feltet saa klart.»
+      //
+      // Samlingene ligger paa den raa kursraden, ikke paa kalenderokta:
+      // kalenderen er bygget for aa tegne timeplanen, og baerer bare det
+      // den trenger til det.
+      klRSamlinger: samlingerPaa(base, evt.oktId),
+      klRNyeSamlinger: false,
       // Verdiene ruta ble aapnet med.
       //
       // «Lagre» skal sende det som er endret, og ingenting annet. Uten dette
@@ -29114,6 +29240,11 @@ class Component extends DCLogic {
         dato: evt.dato, fra: evt.tid, til: evt.slutt || '',
         avlyst: !!evt.avlyst,
         visFullt: !!evt.visFullt,
+        // Samlingene sammenlignes som tekst. Radene er smaa og faa, og en
+        // felt-for-felt-sammenligning her ville vaert den bokforingen som
+        // gaar galt — se «lagreDatoinfo», som sender hele lista av samme
+        // grunn.
+        samlinger: JSON.stringify(samlingerPaa(base, evt.oktId)),
       } });
   }
 
@@ -29194,6 +29325,19 @@ class Component extends DCLogic {
     if ((st.klRBeskrivelse || '') !== (fra0.info || '')) { datoFelt.info = st.klRBeskrivelse || ''; rort.push('beskrivelsen'); }
     if ((st.klRHolder || '') !== (fra0.holder || '')) {
       datoFelt.kursholderId = this.klHolderId(st.klRHolder); rort.push('kursholderen');
+    }
+    // Dagene i et flerdagerskurs. Hele lista sendes, som i den dype
+    // redigeringen — se «lagreDatoinfo». Nokkelen «samlinger» settes bare
+    // naar noe er endret: staar den der, skriver serveren lista, og en rad
+    // som ble aapnet og lukket igjen skulle ikke roert noe.
+    //
+    // Rader uten dato er tomme skjemarader, ikke samlinger. De filtreres
+    // bort her, saa «+ Dag» som ble trykket ved et uhell ikke lagrer noe.
+    const saml = (st.klRSamlinger || []).filter(sa => sa.dato);
+    if (JSON.stringify(saml) !== (fra0.samlinger || '[]')) {
+      datoFelt.samlinger = saml;
+      rort.push(saml.length === 0 ? 'at kurset går på én dag'
+              : (saml.length === 1 ? 'dagen kurset går' : 'de ' + saml.length + ' dagene kurset går'));
     }
     if (rort.length) ut.push({ hva: rort.join(' og '), kall: { sti: K, kropp: datoFelt } });
 

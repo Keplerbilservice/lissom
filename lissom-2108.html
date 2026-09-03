@@ -30208,7 +30208,16 @@ class Component extends DCLogic {
       bindingStil: {
         fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
         textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
-        whiteSpace: 'nowrap',
+        // Pilla laa i en kolonne paa 190 px med «nowrap». «Sagt opp 3.
+        // september 2026 · ut 30. november 2026» er 445 px — den rant 255 px
+        // ut over nabokolonnen og la seg oppaa «Skulle vaert trukket ...».
+        // Maalt for dette ble skrevet. Eieren, 3. september, med bilde: «det
+        // staar en tekst over en annen tekst».
+        //
+        // «inline-block» gjor at den kan brekke og likevel beholde formen
+        // som en pille.
+        display: 'inline-block', maxWidth: '100%',
+        whiteSpace: 'normal',
         background: m.iOppsigelse ? 'rgba(196,90,58,.14)'
           : (m.bundet ? 'rgba(255,207,56,.28)' : 'rgba(90,140,80,.16)'),
         color: m.iOppsigelse ? 'var(--terracotta-600)'
@@ -35287,7 +35296,15 @@ class Component extends DCLogic {
         // En som var meldt inn for haand sto som aktiv i all evighet.
         kanAvslutte: !!m.erMedlem && !m.erAdmin,
         kanGjenapne: !m.erMedlem && !m.erAdmin && !!m.harSluttet,
-        kanSlette: !m.erAdmin,
+        // Et medlem med en loepende Vipps-avtale kan ikke slettes — se
+        // api/admin/medlemmer.php, som avviser det. Sto knappen der
+        // likevel, ble man bedt om aa bekrefte «dette kan ikke angres» for
+        // et kall som uansett ble avvist, og medlemmet sto igjen i lista.
+        // Eieren, 3. september: «jeg trykket paa slett ... men hun sto som
+        // medlem enda».
+        //
+        // «Avslutt» er veien da, og den staar rett ved siden av.
+        kanSlette: !m.erAdmin && !m.harAktivAvtale,
         avslutt: (e) => {
           if (e && e.stopPropagation) e.stopPropagation();
           if (!window.confirm('Avslutte medlemskapet til ' + m.navn + '?\n\n'

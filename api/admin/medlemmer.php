@@ -976,6 +976,28 @@ $sisteTrekk = Medlemskap::sisteTrekk(
         array_filter($avtaler, static fn($a): bool => isset($a['id'])))
 );
 
+// ── Hvem kan faktisk slettes ───────────────────────────────────────────
+//
+// Eieren, 3. september: «jeg trykket paa slett og fikk en beskjed opp om jeg
+// ville slette henne. Jeg trykket paa ok. Saa gaar jeg tilbake og refresher
+// sida, men hun stemte som medlem enda».
+//
+// Slettingen ble avvist — se lenger oppe: et medlem med en loepende
+// Vipps-avtale kan ikke slettes for avtalen er sagt opp. Serveren sa fra,
+// men beskjeden kom etter at man alt hadde bekreftet «dette kan ikke
+// angres». Man ble bedt om aa bekrefte noe systemet uansett ikke ville
+// gjore.
+//
+// Naa vet lista det samme som slettingen. Samme sporring som der — ikke
+// «nyeste avtale», som kan vaere en gammel stoppet en — saa skjermen og
+// serveren ikke kan svare hver sitt.
+$harAktivAvtale = [];
+foreach (DB::alle(
+    "SELECT DISTINCT member_id FROM subscriptions WHERE status = 'aktiv'"
+) as $r) {
+    $harAktivAvtale[(int) $r['member_id']] = true;
+}
+
 $idag = gmdate('Y-m-d');
 $dato = static fn(?string $d): ?string => $d ? Booking::norskDatoKort($d . ' 12:00:00') : null;
 
@@ -1027,6 +1049,10 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
         return Stempling::timer($igjen);
     })(),
     // Haken i admin. Et gratismedlem skal aldri lyse roedt.
+    // Kan hun slettes? Er svaret nei, skal knappen ikke staa der og love
+    // noe den ikke kan holde. «Avslutt» er veien da, og den staar rett ved
+    // siden av.
+    'harAktivAvtale'  => isset($harAktivAvtale[(int) $m['id']]),
     'betalerIkke'     => !empty($m['betaler_ikke']),
     'betalerIkkeGrunn'=> (string) ($m['betaler_ikke_grunn'] ?? ''),
     'sisteBetaling'   => isset($sisteBetaling[(int) $m['id']])

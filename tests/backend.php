@@ -8521,6 +8521,90 @@ sjekk('bare aarsmedlemskapet krever fast trekk',
     count($kreverTrekk) === 1 && str_contains((string) $kreverTrekk[0]['navn'], 'rsmedlemskap'),
     implode(' · ', array_map(static fn($r) => (string) $r['navn'], $kreverTrekk)) ?: 'ingen');
 
+echo "\n== Vipps sine egne betalingsknapper ==\n";
+//
+// Eieren, 3. september: «1. vanlig vipps med vanlig vipps logo». Han sendte
+// selv markupen fra brand.vippsmobilepay.com.
+//
+// Knappene som starter en betaling er naa <vipps-mobilepay-button>, som Vipps
+// leverer fra sin egen CDN. Da staar logoen, fargen og ordlyden slik Vipps
+// krever, og vi kopierer ingen logo inn i repoet.
+$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$htacc = file_get_contents(dirname(__DIR__) . '/.htaccess');
+
+sjekk('skriptet lastes fra Vipps, uten aa sinke sida',
+    str_contains($sidaB, '<script async type="text/javascript" src="https://cdn.vippsmobilepay.com/js/button/button.js"></script>'));
+
+// ── Sikkerhetsreglene ──────────────────────────────────────────────────
+//
+// Lest av i selve fila for de ble lagt inn: skriptet henter skriftene sine
+// fra designsystem.vippsmobilepay.com, og ellers ingenting — ingen fetch,
+// ingen bilder. Logoen ligger som SVG inni skriptet.
+sjekk('CSP slipper inn skriptet',
+    str_contains($htacc, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com;"));
+sjekk('… og skriftene knappen setter teksten i',
+    str_contains($htacc, "font-src 'self' https://designsystem.vippsmobilepay.com;"));
+// Uten denne kunne noen «rydde» og ta bort det ene domenet. Da ville knappen
+// staatt i systemskrift, og ikke lenger vaert Vipps sin.
+sjekk('… og den gamle, stengte regelen er borte',
+    !str_contains($htacc, "font-src 'self'; connect-src"));
+
+// ── Sikkerhetsnettet ───────────────────────────────────────────────────
+//
+// Maalt i nettleseren: kommer skriptet aldri fram, blir elementet 0x0 og
+// usynlig. Ingen feilmelding — kunden ser et kort uten betalingsknapp.
+// Derfor staar vaar egen knapp til komponenten er meldt klar.
+sjekk('vaar egen knapp staar til Vipps sin er klar',
+    str_contains($sidaB, "customElements.whenDefined('vipps-mobilepay-button')")
+    && str_contains($sidaB, '.then(() => this.setState({ vippsKlar: true }))'));
+sjekk('… og begge tilstandene finnes',
+    str_contains($sidaB, 'vippsKlar: !!this.state.vippsKlar,')
+    && str_contains($sidaB, 'vippsIkkeKlar: !this.state.vippsKlar,'));
+// Hver knapp maa ha BEGGE greinene. Mangler den ene, blir det enten ingen
+// knapp naar Vipps er nede, eller to knapper naar den er oppe.
+sjekk('alle fire knappene har begge greinene',
+    substr_count($sidaB, '<sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">') === 4
+    && substr_count($sidaB, '<sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">') === 4);
+
+// ── «disabled» er en felle ─────────────────────────────────────────────
+//
+// Komponenten leser OM attributtet finnes, ikke hva den staar til. Maalt:
+// disabled="false" sperrer klikket like godt som disabled="true". Og
+// malmotoren skriver ordet «false» inn i markupen — proevd, den gjor det.
+// disabled="{{ ... }}" ville derfor gitt en knapp som var doed for alle.
+sjekk('ingen Vipps-knapp har disabled bundet til et felt',
+    !preg_match('/<vipps-mobilepay-button[^>]*disabled="\{\{/', $sidaB));
+// Derfor to utgaver per knapp: én med attributtet, én uten.
+sjekk('… og de laaste utgavene setter den fast',
+    substr_count($sidaB, '<vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>') === 3);
+
+// Klikket maa naa fram til det som allerede virket.
+foreach (['bekreftBooking', 'medlemsBetalKnapp', 'bmSend', 'betalKurv'] as $handling) {
+    sjekk('Vipps-knappen kaller ' . $handling . '(), som for',
+        str_contains($sidaB, 'stretched="true" onClick="{{ ' . $handling . ' }}"></vipps-mobilepay-button>'));
+}
+
+// ── Prisen ─────────────────────────────────────────────────────────────
+//
+// Vipps-knappen sier «Betal med Vipps» og har ikke plass til beloepet. Sto
+// den alene, forsvant summen fra stedet man trykker. Eieren, 3. september:
+// prisen skal staa rett over knappen.
+sjekk('summen staar over knappen paa kurs',
+    str_contains($sidaB, "bookBetalLinje: 'Du betaler ' + this.bookSum(),")
+    && str_contains($sidaB, '{{ bookBetalLinje }}'));
+sjekk('… og paa medlemskap',
+    str_contains($sidaB, "medlemsBetalLinje: pl.pris")
+    && str_contains($sidaB, '{{ medlemsBetalLinje }}'));
+// Kassa har «Å betale» med summen rett over fra for. To summer der ville
+// vaert én for mye.
+sjekk('… men ikke i kassa, som alt viser «Å betale»',
+    str_contains($sidaB, '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">{{ kurvSum }}</span>'));
+// Knappeteksten og prislinja maa lese det samme tallet.
+sjekk('summen regnes ett sted',
+    str_contains($sidaB, '  bookSum() {')
+    && str_contains($sidaB, "bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
+    && substr_count($sidaB, 'this.bookSum()') === 2);
+
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
 $phpFiler = [];

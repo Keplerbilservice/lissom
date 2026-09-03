@@ -30,7 +30,7 @@ function nullstill(): void
     $bookinger = array_column(DB::alle(
         "SELECT b.id FROM bookings b
       LEFT JOIN courses c ON c.id = b.course_id
-          WHERE c.slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye')
+          WHERE c.slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye', 'testdager')
              OR b.gjest_epost LIKE '%@example.com'
              OR b.gjest_navn IN ('Test', 'Utlopt', 'Forste', 'Andre',
                                  'Nye Levende', 'Nye Avbrutt', 'Nye Handlagt')"
@@ -52,8 +52,9 @@ function nullstill(): void
         DB::kjor('DELETE FROM payments WHERE member_id IN (' . implode(',', $medlemmer) . ')');
     }
 
-    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye'))");
-    DB::kjor("DELETE FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye')");
+    DB::kjor("DELETE FROM okt_samlinger WHERE session_id IN (SELECT id FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye', 'testdager')))");
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye', 'testdager'))");
+    DB::kjor("DELETE FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye', 'testdager')");
     DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'proev:%'");
     if (DB::harTabell('medlemsgaver') && $medlemmer) {
         DB::kjor('DELETE FROM medlemsgave_bruk WHERE member_id IN (' . implode(',', $medlemmer) . ')');
@@ -8111,6 +8112,81 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM payments WHERE id IN (:i, :j)', ['i' => $gkRad, 'j' => $kontantRad]);
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
+
+echo "\n== Dagene flytter selve økten, ikke bare teksten ==\n";
+// Eieren, 4. september, etter aa ha lagt inn 7. og 8. oktober: «den viser
+// fortsatt bare en dato».
+//
+// Datoen kunden ser kommer fra course_sessions.start_tid og slutt_tid — se
+// Booking::norskPeriode(). Samlingene laa i sin egen tabell og rorte dem
+// aldri, saa kurset sto som «onsdag 7. oktober, 17:00» i datovelgeren, paa
+// kortet, i kalenderen, i kvitteringen og i ics-feeden.
+//
+// De to dreiekursene i grunndataene har start paa dag én og slutt paa dag
+// to fra for. Det er den maaten systemet alt beskriver et flerdagerskurs
+// paa — aapningstidene deler spennet opp i de samme klokkeslettene hver dag
+// framfor aa gjore natta aapen. Naa gjor samlingene det samme.
+$sKurs = DB::settInn('courses', ['slug' => 'testdager', 'tittel' => 'Testdager', 'type' => 'kurs',
+    'pris_ore' => 69000, 'kapasitet' => 10, 'status' => 'publisert']);
+$sOkt = static fn(string $start, string $slutt): int => DB::settInn('course_sessions', [
+    'course_id' => $sKurs, 'start_tid' => $start, 'slutt_tid' => $slutt,
+    'kapasitet' => 10, 'status' => 'planlagt', 'updated_at' => gmdate('Y-m-d H:i:s'),
+]);
+$sVis = static function (int $id): string {
+    $o = DB::en('SELECT start_tid, slutt_tid FROM course_sessions WHERE id = :i', ['i' => $id]);
+    return Booking::norskPeriode((string) $o['start_tid'], $o['slutt_tid']);
+};
+
+// 7. oktober 17-20, med to dager lagt inn.
+$o1 = $sOkt('2026-10-07 15:00:00', '2026-10-07 18:00:00');
+sjekk('én dag for dagene legges inn',
+    $sVis($o1) === 'onsdag 7. oktober, 17:00', $sVis($o1));
+Samlinger::lagre($o1, [
+    ['dato' => '2026-10-07', 'fra' => '17:00', 'til' => '20:00'],
+    ['dato' => '2026-10-08', 'fra' => '17:00', 'til' => '20:00'],
+]);
+sjekk('… og to dager etterpaa',
+    $sVis($o1) === 'onsdag 7. – torsdag 8. oktober, 17:00', $sVis($o1));
+// Tre dager: slutten skal foelge den siste, ikke den andre.
+Samlinger::lagre($o1, [
+    ['dato' => '2026-10-07', 'fra' => '17:00', 'til' => '20:00'],
+    ['dato' => '2026-10-08', 'fra' => '17:00', 'til' => '20:00'],
+    ['dato' => '2026-10-09', 'fra' => '17:00', 'til' => '21:00'],
+]);
+sjekk('… og tre dager naar det er tre',
+    $sVis($o1) === 'onsdag 7. – fredag 9. oktober, 17:00', $sVis($o1));
+// Tas dagene bort, er kurset én dag igjen. Ellers ville det staatt som et
+// flerdagerskurs for alltid.
+Samlinger::lagre($o1, []);
+sjekk('… og én dag igjen naar dagene tas bort',
+    $sVis($o1) === 'onsdag 7. oktober, 17:00', $sVis($o1));
+// En dato uten klokkeslett skal ikke flytte kvelden.
+Samlinger::lagre($o1, [
+    ['dato' => '2026-10-07', 'fra' => '', 'til' => ''],
+    ['dato' => '2026-10-08', 'fra' => '', 'til' => ''],
+]);
+sjekk('… og en dato uten klokkeslett beholder tida okta hadde',
+    $sVis($o1) === 'onsdag 7. – torsdag 8. oktober, 17:00', $sVis($o1));
+
+// En ekte nattevakt — 22:00 til 02:00 — er ikke et flerdagerskurs, og skal
+// staa som den er naar dagene er tomme.
+$o2 = $sOkt('2026-10-07 20:00:00', '2026-10-08 00:00:00');
+Samlinger::lagre($o2, []);
+$natt = DB::en('SELECT slutt_tid FROM course_sessions WHERE id = :i', ['i' => $o2]);
+sjekk('en okt som gaar over midnatt roeres ikke',
+    (string) $natt['slutt_tid'] === '2026-10-08 00:00:00', (string) $natt['slutt_tid']);
+
+// Sommertida. Natt til 25. oktober stilles klokka tilbake: dag to slutter
+// 20:00 lokalt, som er 19:00 UTC — én time unna dag én. Regnet i UTC ville
+// dag to sluttet 21:00 lokalt.
+$o3 = $sOkt('2026-10-24 15:00:00', '2026-10-24 18:00:00');
+Samlinger::lagre($o3, [
+    ['dato' => '2026-10-24', 'fra' => '17:00', 'til' => '20:00'],
+    ['dato' => '2026-10-25', 'fra' => '17:00', 'til' => '20:00'],
+]);
+$dst = DB::en('SELECT slutt_tid FROM course_sessions WHERE id = :i', ['i' => $o3]);
+sjekk('sommertidsskiftet regnes riktig',
+    (string) $dst['slutt_tid'] === '2026-10-25 19:00:00', (string) $dst['slutt_tid']);
 
 echo "\n== Flerdagerskurs settes opp der kvelden settes opp ==\n";
 // Eieren, 4. september, med dreiekurset 7. oktober foran seg: «jeg proever aa

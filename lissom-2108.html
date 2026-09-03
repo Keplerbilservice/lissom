@@ -2446,6 +2446,15 @@ window.__resources = {
                 <sc-if value="{{ visMedlemsFornyLinje }}" hint-placeholder-val="{{ false }}">
                   <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ medlemsFornyLinje }}</div>
                 </sc-if>
+                <!-- Ett kort, ikke to.
+                     Her sto det to: den som var innlogget og medlem fra for
+                     fikk kortet under, alle andre fikk en «VELG»-knapp som
+                     sendte dem til et annet skjermbilde. Eieren, 3. september:
+                     «to veis kort skal jeg ikke ha» — og for det: «dette har
+                     du funnet paa selv, saa klart et det samme bilde som skal
+                     vises».
+                     Naa staar kortet likt for alle. Det er knappen som finner
+                     veien: se «medlemsBetalKnapp». -->
                 <sc-if value="{{ visMedlemsbetaling }}" hint-placeholder-val="{{ true }}">
                   <!-- Her sto «BETALING» med to piller: «Betal i Vipps» og
                        «Fast trekk i Vipps». Eieren, 3. september: «jeg vil
@@ -2504,10 +2513,6 @@ window.__resources = {
                     <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
                   </sc-if>
                   <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ bmVilkar }}</p>
-                </sc-if>
-                <sc-if value="{{ visMedlemsVelg }}" hint-placeholder-val="{{ false }}">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ velgMedlemskapKnapp }}" hint-size="100%,52px">Velg</x-import>
-                  <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Du velger selv om det skal trekkes fast i Vipps, eller om du vil gjøre opp for hver periode.</p>
                 </sc-if>
               </sc-if>
               <!-- Kurs som settes opp naar noen sporr. Her sto hele
@@ -19592,6 +19597,10 @@ class Component extends DCLogic {
         type: this.bmValgt(),
         betaling: this.bmBetalingsvalgt(),
         epost: epost,
+        // Nummeret staar paa medlemskapskortet, ikke i skjemaet paa Min
+        // side. Er det tomt, bruker serveren det Vipps ga oss — se
+        // api/bli-medlem.php.
+        telefon: (this.state.bmTelefon || '').trim(),
         erfaring: (this.state.bmErfaring || '').trim(),
         melding: (this.state.bmMelding || '').trim(),
         vilkaar: this.state.bmVilkaarOk ? 'ja' : 'nei',
@@ -22453,7 +22462,23 @@ class Component extends DCLogic {
       const plan = sessionStorage.getItem('lissom_medlemsplan');
       if (plan) {
         sessionStorage.removeItem('lissom_medlemsplan');
-        this.setState({ bmType: plan });
+        const ny = { bmType: plan };
+        // Kom hun fra medlemskapskortet, skal hun tilbake dit — ikke til
+        // innmeldingsskjemaet paa Min side. Det er ett kort, og det skal
+        // vaere det samme for og etter innloggingen. Kortet aapnes i
+        // componentDidUpdate, naar planene er lastet.
+        if (sessionStorage.getItem('lissom_medlemskort')) {
+          sessionStorage.removeItem('lissom_medlemskort');
+          ny.aapneMedlemskort = plan;
+        }
+        // Og det hun rakk aa skrive for hun ble sendt til Vipps. Uten dette
+        // sto feltene tomme naar hun kom tilbake, og hun maatte skrive det
+        // en gang til.
+        const e = sessionStorage.getItem('lissom_medlemsepost');
+        const t = sessionStorage.getItem('lissom_medlemstlf');
+        if (e) { sessionStorage.removeItem('lissom_medlemsepost'); ny.bmEpost = e; }
+        if (t) { sessionStorage.removeItem('lissom_medlemstlf'); ny.bmTelefon = t; }
+        this.setState(ny);
       }
     } catch (_) { /* privat modus */ }
 
@@ -23949,6 +23974,25 @@ class Component extends DCLogic {
 
 
   componentDidUpdate(prevProps, prevState) {
+    // Tilbake fra Vipps-innloggingen, med et medlemskap i minnet.
+    //
+    // «medlemsBetalKnapp» la det igjen for den sendte henne av garde, og
+    // returadressen er /medlemskap. Naa skal hun ha det samme kortet fram
+    // igjen, ikke lista. Planene kommer fra serveren, saa dette kan forst
+    // gjores naar de er her.
+    if (this.state.aapneMedlemskort && (this.state.planListe || []).length) {
+      const navn = this.state.aapneMedlemskort;
+      const o = this.planer().find(x => x.navn === navn);
+      // Finnes ikke planen lenger, skal hun ikke sitte fast i et kort som
+      // ikke kan bygges. Da staar lista, som for.
+      this.setState({ aapneMedlemskort: null });
+      if (o) {
+        this.apneMedlemskort(Object.assign({}, o, {
+          mork: !!o.fremhevet,
+          merke: o.merke || (o.engangs ? 'Prøveperiode' : ''),
+        }));
+      }
+    }
     // Skrev «#<skjerm>» i adressen ved hvert skjermbytte — den andre halvdelen
     // av hash-rutingen som er tatt bort over. Adressen skrives av
     // synkAdresse(), som setter den ekte stien.
@@ -25146,6 +25190,45 @@ class Component extends DCLogic {
     // paa noen andre steder enn paa aarsavtalen». Aarsavtalen gaar i grenen
     // over, der trekk er det eneste som finnes.
     return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];
+  }
+
+  /**
+   * Kortet for ett medlemskap — det samme kortet et kurs har.
+   *
+   * Sto som en lukking inne i kortlista, og kunne bare naas ved aa trykke
+   * paa et kort. Innloggingen trenger den ogsaa: den som ikke er innlogget
+   * sendes til Vipps for aa faa en konto, og skal komme tilbake til det
+   * samme kortet — ikke til et annet skjermbilde. Se «medlemsBetalKnapp»
+   * og lukkinga i componentDidUpdate.
+   */
+  apneMedlemskort(o) {
+    const bilde = o.bilde || FOTO + 'handbygging.jpg';
+    // Samme tre setninger som kortlista bygger. «Passer for: deg som »
+    // staar her, ikke i basen — se utenGjentakelse().
+    const halen = this.utenGjentakelse(o.passerFor, ['passer for', 'for deg som', 'deg som']);
+    const passer = halen ? 'Passer for: deg som ' + halen : '';
+    const oppsigelse = o.engangs
+      ? 'Stopper av seg selv når perioden er over'
+      : (o.binding > 0 ? 'Årsavtale — binding i ' + o.binding + ' måneder' : 'Måned til måned — si opp når du vil');
+    const k = {
+      level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
+      status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
+      // Har verkstedet skrevet en utfyllende tekst, er det den som staar.
+      // Ellers samme setning som for — en plan uten tekst skal ikke bli
+      // tommere enn den var.
+      om: o.langtekst
+        || ((o.beskrivelse || '') + ' ' + passer.replace('Passer for: deg', 'Passer for deg') + '. Krav: kurs hos oss, eller erfaring fra før. ' + oppsigelse + '.'),
+      // «Viktig aa vite» staar som en egen seksjon lenger nede paa sida.
+      viktig: o.viktig || [],
+      punkter: o.punkter || [],
+      datoer: [{ dato: 'Start når du vil', tid: 'Aktiveres ved betaling', plasser: 'Ledig', valgt: true }],
+    };
+    // «bmType» er planen resten av systemet regner med. Settes den her,
+    // gjelder bmBetalingTekst og bmMaaHaTrekk denne planen — de samme
+    // feltene innmeldingsskjemaet bruker. Da slipper sida aa ha sine egne.
+    this.setState({ side: 'booking', fra: 'medlemskap', valgtKurs: k, bmType: o.navn, bmFeil: null,
+      bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
+    window.scrollTo(0, 0);
   }
 
   /**
@@ -30608,32 +30691,10 @@ class Component extends DCLogic {
       // Aarsmedlemskap. Etter det bestemmer verkstedet selv hvilke planer
       // som har den, fra Medlemskap i admin.
       const punkter = o.punkter || [];
-      const oppsigelse = o.engangs
-        ? 'Stopper av seg selv når perioden er over'
-        : (o.binding > 0 ? 'Årsavtale — binding i ' + o.binding + ' måneder' : 'Måned til måned — si opp når du vil');
-      const visMer = () => {
-        const bilde = o.bilde || FOTO + 'handbygging.jpg';
-        const k = {
-          level: 'Medlemskap', title: o.navn, price: o.pris, date: 'Start når du vil', duration: o.periode,
-          status: o.merke, image: bilde, bilder: [bilde], tema: 'Medlemskap',
-          // Har verkstedet skrevet en utfyllende tekst, er det den som staar.
-          // Ellers samme setning som for — en plan uten tekst skal ikke bli
-          // tommere enn den var.
-          om: o.langtekst
-            || ((o.beskrivelse || '') + ' ' + passer.replace('Passer for: deg', 'Passer for deg') + '. Krav: kurs hos oss, eller erfaring fra før. ' + oppsigelse + '.'),
-          // «Viktig aa vite» staar som en egen seksjon lenger nede paa sida.
-          viktig: o.viktig || [],
-          punkter,
-          datoer: [{ dato: 'Start når du vil', tid: 'Aktiveres ved betaling', plasser: 'Ledig', valgt: true }],
-        };
-        // «bmType» er planen resten av systemet regner med. Settes den her,
-        // gjelder bmBetalingsvalg, bmBetalingTekst, bmKanVelgeBetaling og
-        // bmMaaHaTrekk denne planen — de samme feltene innmeldingsskjemaet
-        // bruker. Da slipper sida aa ha sine egne.
-        this.setState({ side: 'booking', fra: 'medlemskap', valgtKurs: k, bmType: o.navn, bmFeil: null,
-          bookOrdre: false, bookKvittert: false, bDato: null, ventelisteBekreftet: null });
-        window.scrollTo(0, 0);
-      };
+      // Kortet bygges av apneMedlemskort(). Sto som en lukking her, og da
+      // fantes det ingen vei inn i det for den som kom tilbake fra Vipps-
+      // innloggingen.
+      const visMer = () => this.apneMedlemskort(o);
 
       // «Velg» — veien inn i medlemskapet.
       //
@@ -31935,36 +31996,43 @@ class Component extends DCLogic {
       // veien, som alltid lagde en loepende avtale og spurte om innlogging
       // til slutt.
       //
-      // Kortets egen «Velg» gaar til innmeldingen, der valget mellom fast
-      // trekk og aa ordne selv staar. Naa gaar knappen her samme vei.
+      // Kortet staar likt for alle. Knappen finner veien.
       visVelgMedlemskap: this.state.fra === 'medlemskap',
-      velgMedlemskapKnapp: () => {
-        const k = this.state.valgtKurs || {};
-        this.meldInnPlan(k.title || k.tittel || '');
-      },
       // ── Betalingen paa medlemskapssida ──────────────────────────────
       //
-      // Den som alt er medlem, eller har vaert det, trenger ingen soknad —
-      // hun trenger en avtale. Da staar betalingsvalget og knappen her, med
-      // de samme feltene innmeldingsskjemaet bruker, og knappen gaar samme
-      // vei som «Forny»: startAbonnement, og derfra til Vipps.
+      // Her sto to kort. Den som var innlogget OG medlem fra for fikk
+      // betalingskortet — e-post, telefon, vilkaar og Vipps-knappen. Alle
+      // andre fikk en «VELG»-knapp som sendte dem til et helt annet
+      // skjermbilde.
       //
-      // Alle andre far «Velg», som for: ikke innlogget gaar til Vipps-
-      // innlogging, og den som aldri har vaert medlem til innmeldingen, der
-      // kravet om kurs hos oss eller erfaring fra for staar.
+      // Det skillet fant jeg paa selv. Eieren, 3. september: «dette har du
+      // funnet paa selv, saa klart et det samme bilde som skal vises», og
+      // dagen etter: «to veis kort skal jeg ikke ha».
+      //
+      // Naa er kortet ett. Bak det ligger tre veier, og kunden ser ingen av
+      // dem:
+      //
+      //   ikke innlogget      → Vipps-innlogging, og tilbake til dette
+      //                         kortet (medlemskap henger paa en konto)
+      //   medlem, eller har   → avtalen mangler: startAbonnement
+      //     vaert det
+      //   aldri vaert medlem  → innmeldingen: api/bli-medlem.php
+      //
+      // Alle tre ender i Vipps.
       ...(() => {
         const gammel = this.state.minAvtale || null;
-        const kanBetaleNaa = this.state.fra === 'medlemskap'
-          && !!this.state.innlogget
+        const paaMedlemskap = this.state.fra === 'medlemskap';
+        // Har hun en avtale fra for — loepende eller stoppet — er hun kjent
+        // for oss, og trenger ingen innmelding.
+        const kjentMedlem = !!this.state.innlogget
           && !!(this.state.erMedlemBruker || gammel);
-        const utloept = kanBetaleNaa && gammel && !this.state.erMedlemBruker;
+        const utloept = kjentMedlem && gammel && !this.state.erMedlemBruker;
         const pl = this.aboPlan((this.state.valgtKurs || {}).title || '');
         return {
-          visMedlemsbetaling: kanBetaleNaa,
+          visMedlemsbetaling: paaMedlemskap,
           // «Du betaler trygt med Vipps» nederst paa kortet. Sto bare paa
           // kurs; medlemskapet betales med Vipps det ogsaa.
-          visVippsTrygt: kanBetaleNaa || this.erBetaltKurs(),
-          visMedlemsVelg: this.state.fra === 'medlemskap' && !kanBetaleNaa,
+          visVippsTrygt: paaMedlemskap || this.erBetaltKurs(),
           visMedlemsFornyLinje: !!utloept,
           medlemsFornyLinje: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.',
           medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')
@@ -31976,17 +32044,43 @@ class Component extends DCLogic {
           medlemsBetalLinje: pl.pris
             ? 'Du betaler ' + pl.pris + (pl.engangs ? '' : ' per måned')
             : 'Du betaler i Vipps',
-          // Knappen sender det som staar i feltene.
+          // Knappen sender det som staar i feltene, og velger vei.
           //
           // Samme kontroll som kursbookingen gjor: en tom eller ugyldig
           // adresse skal stoppes her, ikke etter turen til Vipps. Serveren
-          // sjekker det samme paa nytt — se api/medlemskap.php.
+          // sjekker det samme paa nytt — se api/medlemskap.php og
+          // api/bli-medlem.php.
           medlemsBetalKnapp: () => {
             const k = this.state.valgtKurs || {};
+            const navn = k.title || k.tittel || '';
             const epost = (this.state.bmEpost === undefined
               ? (this.state.medlemEpost || '') : this.state.bmEpost).trim();
             const telefon = (this.state.bmTelefon === undefined
               ? (this.state.medlemTelefon || '') : this.state.bmTelefon).trim();
+            if (!this.state.bmVilkaarOk) {
+              this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å bli medlem.' });
+              return;
+            }
+            // ── Ikke innlogget ───────────────────────────────────
+            //
+            // Et medlemskap henger paa en konto, og kontoen faar man ved aa
+            // logge inn med Vipps. Det er ikke til aa komme utenom — men
+            // hun skal komme tilbake til DETTE kortet, ikke til et annet
+            // skjermbilde. Planen og det hun rakk aa skrive legges igjen i
+            // sessionStorage; componentDidMount henter det fram, og
+            // componentDidUpdate aapner kortet naar planene er lastet.
+            //
+            // Samme vei som gavekortet bruker — se kjopGavekort().
+            if (!this.state.innlogget) {
+              try {
+                sessionStorage.setItem('lissom_medlemsplan', navn);
+                sessionStorage.setItem('lissom_medlemskort', '1');
+                if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }
+                if (telefon) { sessionStorage.setItem('lissom_medlemstlf', telefon); }
+              } catch (_) { /* privat modus */ }
+              window.location.href = '/api/vipps-login.php?retur=/medlemskap';
+              return;
+            }
             if (!epost || epost.indexOf('@') < 1) {
               this.setState({ bmFeil: 'Vi trenger en gyldig e-postadresse.' });
               return;
@@ -31995,13 +32089,20 @@ class Component extends DCLogic {
               this.setState({ bmFeil: 'Vi trenger et mobilnummer.' });
               return;
             }
-            if (!this.state.bmVilkaarOk) {
-              this.setState({ bmFeil: 'Du må godta medlemsvilkårene for å bli medlem.' });
-              return;
+            this.setState({ bmFeil: null, bmType: navn });
+            // ── To endepunkter, samme kort ───────────────────────
+            //
+            // Er hun medlem, eller har vaert det, mangler det bare en
+            // avtale: startAbonnement, samme vei som «Forny» paa Min side.
+            // Har hun aldri vaert medlem, er det innmeldingen som gjelder —
+            // den samme api/bli-medlem.php som skjemaet paa Min side
+            // bruker. Begge svarer med adressen til Vipps.
+            if (kjentMedlem) {
+              this.startAbonnement(navn, this.bmBetalingsvalgt(),
+                { epost: epost, telefon: telefon });
+            } else {
+              this.sendMedlemssoknad();
             }
-            this.setState({ bmFeil: null });
-            this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt(),
-              { epost: epost, telefon: telefon });
           },
         };
       })(),

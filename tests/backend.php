@@ -30,9 +30,10 @@ function nullstill(): void
     $bookinger = array_column(DB::alle(
         "SELECT b.id FROM bookings b
       LEFT JOIN courses c ON c.id = b.course_id
-          WHERE c.slug IN ('testliten', 'testgratis', 'testkapasitet')
+          WHERE c.slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye')
              OR b.gjest_epost LIKE '%@example.com'
-             OR b.gjest_navn IN ('Test', 'Utlopt', 'Forste', 'Andre')"
+             OR b.gjest_navn IN ('Test', 'Utlopt', 'Forste', 'Andre',
+                                 'Nye Levende', 'Nye Avbrutt', 'Nye Handlagt')"
         . ($medlemmer ? ' OR b.member_id IN (' . implode(',', $medlemmer) . ')' : '')
     ), 'id');
 
@@ -51,8 +52,8 @@ function nullstill(): void
         DB::kjor('DELETE FROM payments WHERE member_id IN (' . implode(',', $medlemmer) . ')');
     }
 
-    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet'))");
-    DB::kjor("DELETE FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet')");
+    DB::kjor("DELETE FROM course_sessions WHERE course_id IN (SELECT id FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye'))");
+    DB::kjor("DELETE FROM courses WHERE slug IN ('testliten', 'testgratis', 'testkapasitet', 'testnye')");
     DB::kjor("DELETE FROM rate_limits WHERE nokkel LIKE 'proev:%'");
     if (DB::harTabell('medlemsgaver') && $medlemmer) {
         DB::kjor('DELETE FROM medlemsgave_bruk WHERE member_id IN (' . implode(',', $medlemmer) . ')');
@@ -6193,8 +6194,25 @@ if (DB::harTabell('subscriptions')) {
 // Malt i nettleseren: ingen dialog spretter opp; boksen viser «Betaling»,
 // de to pillene, teksten under, og knappen «Bli medlem · kr. 990,-» som
 // sender {handling:start, plan:«Prov Lissom», betaling:trekk}.
-sjekk('«Velg» gaar til betaling for den som alt er medlem',
-    str_contains($sida, 'const kanBetaleNaa = this.state.fra === \'medlemskap\'')
+// ── Ett kort, ikke to ─────────────────────────────────────────────────
+//
+// Kortet sto i to utgaver: den som var innlogget OG medlem fra for fikk
+// betalingskortet, alle andre fikk en «VELG»-knapp som sendte dem til et
+// annet skjermbilde. Det skillet fant jeg paa selv.
+//
+// Eieren, 3. september: «dette har du funnet paa selv, saa klart et det
+// samme bilde som skal vises», og dagen etter: «to veis kort skal jeg ikke
+// ha!».
+sjekk('medlemskapskortet staar likt for alle',
+    str_contains($sida, 'visMedlemsbetaling: paaMedlemskap,')
+    && !str_contains($sida, 'visMedlemsVelg')
+    && !str_contains($sida, 'velgMedlemskapKnapp'));
+sjekk('… og «VELG»-kortet er borte fra markupen',
+    !str_contains($sida, 'Du velger selv om det skal trekkes fast i Vipps'));
+// Kortet er likt; det er knappen som finner veien. Den som alt er medlem —
+// eller har vaert det — trenger ingen innmelding, bare en avtale.
+sjekk('… og den som alt er medlem kjennes igjen',
+    str_contains($sida, 'const kjentMedlem = !!this.state.innlogget')
     && str_contains($sida, '&& !!(this.state.erMedlemBruker || gammel);'));
 // Pillene er borte. Eieren, 3. september: «fjern pillene betal i vipps og
 // fast trekk». Fast trekk er ikke et valg lenger — planen avgjor, og bare
@@ -6219,12 +6237,35 @@ sjekk('… og knappen sier «Forny medlemskapet» da',
     str_contains($sida, "medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')"));
 // Knappen gaar samme vei som «Forny» paa Min side.
 sjekk('… og knappen gaar til startAbonnement, som «Forny»',
-    str_contains($sida, "this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt(),"));
-// Den som ikke er medlem skal fortsatt til innmeldingen, med planen med seg
-// gjennom innloggingen.
-sjekk('… og den som ikke er medlem gaar til innmeldingen som for',
-    str_contains($sida, "sessionStorage.setItem('lissom_medlemsplan', navn)")
-    && str_contains($sida, "side: this.state.innlogget ? 'minside' : 'login',"));
+    str_contains($sida, "if (kjentMedlem) {\n              this.startAbonnement(navn, this.bmBetalingsvalgt(),"));
+// Den som aldri har vaert medlem skal ikke til et annet skjermbilde. Samme
+// kort, samme knapp — innmeldingen kalles rett herfra. Eieren valgte selv
+// bort erfaringssporsmaalet 4. september: «ett kort, uten erfaringssporsmaalet».
+sjekk('… og den som aldri har vaert medlem melder seg inn fra kortet',
+    str_contains($sida, "} else {\n              this.sendMedlemssoknad();\n            }"));
+sjekk('… og innmeldingen faar nummeret fra kortet',
+    str_contains($sida, "telefon: (this.state.bmTelefon || '').trim(),\n        erfaring:"));
+// ── Den som ikke er innlogget ─────────────────────────────────────────
+//
+// Et medlemskap henger paa en konto, og kontoen faar man ved aa logge inn
+// med Vipps. Det er ikke til aa komme utenom — men hun skal komme tilbake
+// til det SAMME kortet, ikke til et annet skjermbilde. Ellers er det to
+// bilder igjen, bare i rekkefolge.
+sjekk('… og den som ikke er innlogget sendes til Vipps og tilbake hit',
+    str_contains($sida, "sessionStorage.setItem('lissom_medlemsplan', navn);")
+    && str_contains($sida, "sessionStorage.setItem('lissom_medlemskort', '1');")
+    && str_contains($sida, "window.location.href = '/api/vipps-login.php?retur=/medlemskap';"));
+// Det hun rakk aa skrive skal ikke vaere borte naar hun kommer tilbake.
+sjekk('… og e-posten og nummeret overlever innloggingen',
+    str_contains($sida, "if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }")
+    && str_contains($sida, "if (e) { sessionStorage.removeItem('lissom_medlemsepost'); ny.bmEpost = e; }")
+    && str_contains($sida, "if (t) { sessionStorage.removeItem('lissom_medlemstlf'); ny.bmTelefon = t; }"));
+// Kortet aapner seg selv naar planene er lastet. Uten dette lander hun paa
+// lista over medlemskap og maa finne fram til det samme kortet igjen.
+sjekk('… og kortet aapner seg selv naar hun er tilbake',
+    str_contains($sida, "if (this.state.aapneMedlemskort && (this.state.planListe || []).length) {")
+    && str_contains($sida, 'this.apneMedlemskort(Object.assign({}, o, {')
+    && str_contains($sida, 'ny.aapneMedlemskort = plan;'));
 // Regelen som gjorde det usynlig staar urort: admin skal fortsatt komme inn
 // paa medlemsdelen. Det var skjemaets port som var feil sted aa lande.
 sjekk('… og admin teller fortsatt som medlem paa serveren',
@@ -6384,15 +6425,17 @@ sjekk('… og kortflata forer samme sted',
 // Infosida hadde den gamle veien nederst: «Opprett avtale i Vipps», med
 // e-post, telefon, allergier og vilkaar over. Naa staar «Velg», som gaar
 // samme vei som knappen paa kortet.
-sjekk('infosida for et medlemskap har «Velg»',
+sjekk('infosida for et medlemskap har betalingskortet',
     str_contains($sida, "visVelgMedlemskap: this.state.fra === 'medlemskap',")
     && str_contains($sida, '<sc-if value="{{ visVelgMedlemskap }}"'));
 sjekk('… og bookingskjemaet staar ikke under den',
     str_contains($sida, "// Et medlemskap heller ikke: det gaar gjennom innmeldingen.\n    if (this.state.fra === 'medlemskap') return false;"));
-// Veien inn laa som en lukking inne i kortlista, og naadde ikke infosida.
-sjekk('… og begge gaar gjennom den samme metoden',
-    str_contains($sida, 'meldInnPlan(navn) {')
-    && substr_count($sida, 'this.meldInnPlan(') === 2);
+// Kortet bygges ett sted. Sto som en lukking inne i kortlista, og da fantes
+// det ingen vei inn i det for den som kom tilbake fra Vipps-innloggingen.
+sjekk('… og kortet bygges ett sted',
+    str_contains($sida, 'apneMedlemskort(o) {')
+    && str_contains($sida, 'const visMer = () => this.apneMedlemskort(o);')
+    && substr_count($sida, 'this.apneMedlemskort(') === 2);
 
 // ── Kunden ser bare Vipps ─────────────────────────────────────────────
 //
@@ -8069,6 +8112,46 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== «Nye påmeldinger» teller ikke avbrutte forsøk ==\n";
+// Paameldingen lages som «reservert» FOR kunden sendes til Vipps, og holder
+// plassen i noen minutter. Trykker hun «Avbryt» i Vipps, blir raden staaende
+// — den gaar bare ut paa tid. Kortet tok den med i tre dager, merket
+// «Ubetalt». Eieren, 3. september: «hvorfor staar joakim ... som nye
+// paameldinger? her er det kun personer som er paameldt, ikke jeg som trykket
+// avbryt».
+//
+// Spoerringa hentes ut av api/admin/oversikt.php og kjores mot basen, saa
+// dette er den samme SQL-en som staar i drift — ikke en kopi som kan bli
+// staaende gronn etter at koden er endret.
+$nyKurs = DB::settInn('courses', ['slug' => 'testnye', 'tittel' => 'Testnye', 'type' => 'kurs',
+    'pris_ore' => 69000, 'kapasitet' => 10, 'status' => 'publisert']);
+$nyOkt = DB::settInn('course_sessions', ['course_id' => $nyKurs,
+    'start_tid' => gmdate('Y-m-d', time() + 864000) . ' 18:00:00', 'kapasitet' => 10]);
+$rad = static fn(string $navn, int $frist): int => DB::settInn('bookings', [
+    'course_id' => $nyKurs, 'course_session_id' => $nyOkt, 'member_id' => null,
+    'gjest_navn' => $navn, 'antall' => 1, 'belop_ore' => 69000,
+    'status' => 'reservert', 'reservert_til' => gmdate('Y-m-d H:i:s', time() + $frist),
+]);
+$nyLever = $rad('Nye Levende', 1200);
+$nyDod   = $rad('Nye Avbrutt', -60);
+
+$ovKilde = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+preg_match('/\$nyeste = DB::alle\(\s*"(.*?)"\s*\);/s', $ovKilde, $t);
+sjekk('spoerringa for «Nye paameldinger» lar seg hente ut', isset($t[1]) && $t[1] !== '');
+$ider = array_map(static fn($r) => (int) $r['id'], DB::alle($t[1] ?? 'SELECT 1 AS id'));
+sjekk('en levende reservasjon staar i «Nye paameldinger»',
+    in_array($nyLever, $ider, true));
+sjekk('… men et avbrutt forsok gjor det ikke',
+    !in_array($nyDod, $ider, true));
+// En paamelding lagt inn i admin har ingen frist. Uten «IS NULL» ville den
+// forsvunnet fra kortet sammen med de avbrutte.
+$nyHand = DB::settInn('bookings', ['course_id' => $nyKurs, 'course_session_id' => $nyOkt,
+    'member_id' => null, 'gjest_navn' => 'Nye Handlagt', 'antall' => 1, 'belop_ore' => 69000,
+    'status' => 'reservert', 'reservert_til' => null]);
+$ider2 = array_map(static fn($r) => (int) $r['id'], DB::alle($t[1] ?? 'SELECT 1 AS id'));
+sjekk('… og en paamelding lagt inn for haand staar som for',
+    in_array($nyHand, $ider2, true));
+
 echo "\n== Medlemskapene i «Ikke betalt» ==\n";
 // Eieren, 2. september: «dverken hun eller eiriin kommer opp i kortet ikke
 // betalt paa oversikten, og det maa de jo gjore, helt til pengene er inne».
@@ -8264,7 +8347,7 @@ sjekk('… og beskjeden vises paa kortet',
 
 // Feltene maa naa fram til serveren. Ellers er de pynt.
 sjekk('kortet sender e-post og telefon med til serveren',
-    str_contains($sidaM, "this.startAbonnement(k.title || k.tittel || '', this.bmBetalingsvalgt(),\n              { epost: epost, telefon: telefon });"));
+    str_contains($sidaM, "this.startAbonnement(navn, this.bmBetalingsvalgt(),\n                { epost: epost, telefon: telefon });"));
 sjekk('… og startAbonnement legger dem i kallet',
     str_contains($sidaM, "if (kontakt && kontakt.epost)   { kropp.epost = kontakt.epost; }")
     && str_contains($sidaM, "if (kontakt && kontakt.telefon) { kropp.telefon = kontakt.telefon; }"));
@@ -8308,7 +8391,7 @@ sjekk('… og kontoen roeres ikke naar feltene mangler',
 // objektet, og et objekt kan ikke lese noe som regnes ut under. Derfor er
 // den flyttet ut i en metode, og begge spor den samme.
 sjekk('«Du betaler trygt med Vipps» staar ogsaa paa medlemskapet',
-    str_contains($sidaM, "visVippsTrygt: kanBetaleNaa || this.erBetaltKurs(),")
+    str_contains($sidaM, "visVippsTrygt: paaMedlemskap || this.erBetaltKurs(),")
     && str_contains($sidaM, '<sc-if value="{{ visVippsTrygt }}"'));
 sjekk('… og regelen staar ett sted',
     str_contains($sidaM, 'erBetaltKurs() {')

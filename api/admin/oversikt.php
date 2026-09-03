@@ -220,6 +220,21 @@ $nyeste = DB::alle(
   LEFT JOIN members m ON m.id = b.member_id
   LEFT JOIN payments p ON p.id = b.payment_id
       WHERE b.status IN ('betalt','reservert')
+        -- Ikke reservasjoner som har gaatt ut paa tid.
+        --
+        -- Paameldingen lages som «reservert» FOR kunden sendes til Vipps, og
+        -- holder plassen i noen minutter. Trykker hun «Avbryt» i Vipps, blir
+        -- raden staaende — den gaar bare ut paa tid, den slettes ikke. Kortet
+        -- tok den likevel med i tre dager, merket «Ubetalt». Eieren,
+        -- 3. september: «her er det kun personer som er paameldt, ikke jeg som
+        -- trykket avbryt».
+        --
+        -- Samme regel som kapasiteten bruker (Booking::ledige) og som
+        -- «Reserverte plasser» lenger oppe i denne fila. En paamelding lagt
+        -- inn i admin har ingen frist, og staar som for.
+        AND (b.status = 'betalt'
+             OR b.reservert_til IS NULL
+             OR b.reservert_til > UTC_TIMESTAMP())
         -- Tre dager, ikke lenger.
         --
         -- «Nye paameldinger» er det som har skjedd siden sist du saa etter.

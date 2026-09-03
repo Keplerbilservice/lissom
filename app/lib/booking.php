@@ -180,6 +180,15 @@ final class Booking
      * @param list<int> $oktIder
      * @return array<int, int> oktId => ledige
      */
+    /**
+     * Fristen for full refusjon, i timer.
+     *
+     * To doegn, fra kursvilkaarene. Staar som et tall med navn saa den kan
+     * finnes igjen — den sto for som «14 * 24» midt i en if-setning i et
+     * endepunkt.
+     */
+    private const AVBESTILLING_TIMER = 2 * 24;
+
     public static function ledigePlasserFlere(array $oktIder): array
     {
         // Overstyringa ligger her, utenpaa hele regnestykket, og ikke inne i
@@ -421,6 +430,63 @@ final class Booking
             self::$sperret[(int) $r['id']] = false;
         }
         return $ledige;
+    }
+
+    /**
+     * Hvor mye av det betalte som skal tilbake ved avbestilling.
+     *
+     * Eieren, 3. september, med kursvilkaarene sine: «Ved avbestilling mer
+     * enn 2 dager for kursstart refunderes kursavgiften fullt ut. Ved
+     * avbestilling mindre enn 2 dager for kursstart refunderes ikke
+     * kursavgiften.» Og: «jeg vil at mine regler skal gjelde».
+     *
+     * ── Hvorfor den staar her ────────────────────────────────────────
+     *
+     * Regelen sto to steder: i api/avbestill.php, som ber Vipps om pengene,
+     * og i api/mine-plasser.php, som forteller kunden hva hen faar. To
+     * kopier av en regel om penger er én for mye — den dagen den ene endres
+     * og den andre ikke, leser kunden ett tall og faar et annet inn paa
+     * konto. Naa er det ett sted, og vilkaarsteksten sier det samme.
+     *
+     * @param  float|null $timerIgjen Timer til kursstart. null naar kurset
+     *                                ikke har en fastsatt dato.
+     * @return array{andel: float, regel: string, kunde: string, kanAvbestille: bool}
+     */
+    public static function avbestillingsregel(?float $timerIgjen): array
+    {
+        if ($timerIgjen === null) {
+            return [
+                'andel' => 1.0,
+                'regel' => 'Kurset har ingen fastsatt dato, saa hele beloepet refunderes.',
+                'kunde' => 'Ta kontakt om du må avbestille.',
+                'kanAvbestille' => true,
+            ];
+        }
+        // Kurset har vaert. Da er det ikke en avbestilling lenger.
+        if ($timerIgjen <= 0) {
+            return [
+                'andel' => 0.0,
+                'regel' => 'Kurset har vaert: ingen refusjon.',
+                'kunde' => 'Kurset har vært.',
+                'kanAvbestille' => false,
+            ];
+        }
+        if ($timerIgjen > self::AVBESTILLING_TIMER) {
+            return [
+                'andel' => 1.0,
+                'regel' => 'Avbestilt mer enn 2 dager for kursstart: full refusjon.',
+                'kunde' => 'Full refusjon fram til 2 dager før kursstart.',
+                'kanAvbestille' => true,
+            ];
+        }
+        return [
+            'andel' => 0.0,
+            'regel' => 'Avbestilt mindre enn 2 dager for kursstart: ingen refusjon. '
+                     . 'Plassen kan overfores til en annen person etter avtale — '
+                     . 'ta kontakt, saa ordner vi det.',
+            'kunde' => 'Nærmere enn 2 dager refunderes ikke, men plassen kan overføres til en annen.',
+            'kanAvbestille' => false,
+        ];
     }
 
     /**

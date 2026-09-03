@@ -16,25 +16,18 @@ $medlem = krev_medlem();
 
 /**
  * Avbestillingsreglene fra vilkaarene, regnet ut fra hvor lenge det er igjen:
- * mer enn 14 dager gir full refusjon, 14–7 dager gir 50 %, naermere gir
- * ingenting. Vi regner det ut her framfor aa la kunden gjette.
+ * mer enn to dager gir full refusjon, naermere gir ingenting. Vi regner det
+ * ut her framfor aa la kunden gjette.
+ *
+ * Samme regel som api/avbestill.php bruker naar pengene faktisk sendes. Sa de
+ * to forskjellige ting, ville kunden lest ett tall her og faatt et annet inn
+ * paa konto.
  */
 $frist = static function (?string $startUtc): array {
-    if ($startUtc === null) {
-        return ['Ta kontakt om du må avbestille.', true];
-    }
-    $dager = (strtotime($startUtc) - time()) / 86400;
-
-    if ($dager > 14) {
-        return ['Full refusjon fram til 14 dager før kursstart.', true];
-    }
-    if ($dager > 7) {
-        return ['50 % refusjon fram til 7 dager før kursstart.', true];
-    }
-    if ($dager > 0) {
-        return ['Nærmere enn 7 dager refunderes ikke, men du kan gi plassen til en annen.', false];
-    }
-    return ['Kurset har vært.', false];
+    $r = Booking::avbestillingsregel(
+        $startUtc === null ? null : (strtotime($startUtc) - time()) / 3600
+    );
+    return [$r['kunde'], $r['kanAvbestille']];
 };
 
 /**

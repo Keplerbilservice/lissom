@@ -7062,10 +7062,56 @@ foreach ([
 sjekk('den gamle 14-dagersregelen staar ikke lenger i vilkaarene',
     !str_contains($sida, 'mer enn 14 dager før kursstart, 50 % inntil 7 dager'));
 
-// Og saa lenge de to spriker, skal det staa svart paa hvitt her at de gjor
-// det — saa ingen tror jobben er ferdig.
-sjekk('utregningen folger fortsatt den gamle regelen (uavklart)',
-    str_contains(file_get_contents(dirname(__DIR__) . '/api/avbestill.php'), '14 * 24'));
+// ── Regelen som flytter pengene ────────────────────────────────────────
+//
+// Eieren, 3. september: «jeg vil at mine regler skal gjelde». Teksten paa
+// vilkaarssida og utregningen i Booking::avbestillingsregel() maa si det
+// samme — ellers lover nettsida noe kassa ikke gjor.
+echo "\n== Avbestillingsregelen ==\n";
+
+$avb = static fn(?float $timer): array => Booking::avbestillingsregel($timer);
+
+sjekk('ti dager for: alt tilbake', $avb(10 * 24)['andel'] === 1.0);
+sjekk('fem dager for: alt tilbake', $avb(5 * 24)['andel'] === 1.0,
+    'fikk ' . $avb(5 * 24)['andel']);
+sjekk('tre dager for: alt tilbake', $avb(3 * 24)['andel'] === 1.0);
+// Grensa. «Mer enn 2 dager» — akkurat 48 timer er ikke mer enn.
+sjekk('akkurat to doegn for: ingenting', $avb(2 * 24)['andel'] === 0.0);
+sjekk('en time over to doegn: alt tilbake', $avb(2 * 24 + 1)['andel'] === 1.0);
+sjekk('en dag for: ingenting', $avb(24)['andel'] === 0.0);
+sjekk('en time for: ingenting', $avb(1)['andel'] === 0.0);
+sjekk('etter at kurset har vaert: ingenting og ingen avbestilling',
+    $avb(-1)['andel'] === 0.0 && $avb(-1)['kanAvbestille'] === false);
+sjekk('uten fastsatt dato: alt tilbake', $avb(null)['andel'] === 1.0);
+
+// Det gamle mellomtrinnet skal vaere borte. Sto det igjen, ville noen faatt
+// halvparten der vilkaarene lover alt.
+$andeler = [];
+foreach ([1, 24, 47, 48, 49, 72, 5 * 24, 20 * 24] as $t) {
+    $andeler[] = $avb((float) $t)['andel'];
+}
+sjekk('ingen faar lenger halvparten', !in_array(0.5, $andeler, true),
+    implode(' · ', array_map(static fn($a) => (string) $a, $andeler)));
+
+// Begge endepunktene maa bruke den samme. To kopier av en pengeregel er én
+// for mye.
+foreach (['avbestill', 'mine-plasser'] as $fil) {
+    sjekk($fil . '.php bruker den felles regelen',
+        str_contains(file_get_contents(dirname(__DIR__) . '/api/' . $fil . '.php'),
+            'Booking::avbestillingsregel('));
+}
+sjekk('… og har ingen egen kopi av tallene',
+    !str_contains(file_get_contents(dirname(__DIR__) . '/api/avbestill.php'), '14 * 24')
+    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/mine-plasser.php'), '$dager > '));
+
+// Og det kunden leser skal stemme med det hen faar.
+sjekk('teksten til kunden folger regelen',
+    $avb(5 * 24)['kunde'] === 'Full refusjon fram til 2 dager før kursstart.'
+    && str_contains($avb(24)['kunde'], 'Nærmere enn 2 dager refunderes ikke'));
+sjekk('linja under bookingknappen sier det samme',
+    str_contains($sida, 'Full refusjon ved avbestilling mer enn 2 dager før kursstart.'));
+sjekk('avbestillingsruta sier det samme',
+    str_contains($sida, 'full refusjon mer enn 2 dager før kursstart'));
 
 // Hver hake maa lande paa SIN bolk. Pekte begge samme sted, ville
 // kursdeltakeren fortsatt maattet lese seg gjennom medlemsvilkaarene.

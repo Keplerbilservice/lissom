@@ -8113,6 +8113,49 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== Betalingen registreres der man står ==\n";
+// Eieren, 4. september: «pillen ikke betalt, kan jeg trykke paa den, og velge
+// aa endre til betalt?»
+//
+// Betalingen kunne registreres fra for, men bare paa «Ikke betalt»-kortet paa
+// Oversikt. Sto man i personruta, maatte man ut av den og finne personen igjen
+// et annet sted. Ingenting nytt bak: samme kall som det kortet bruker.
+$sidaP = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('pilla er en knapp, ikke bare en etikett',
+    str_contains($sidaP, '<button type="button" onClick="{{ vekslPersonBetaling }}" title="Registrer betaling" style="{{ personBetalingStil }}">{{ personBetalingMerke }}</button>')
+    // Ruta staar to steder — Medlemmer og Deltakere — og deler verdiene.
+    && substr_count($sidaP, 'onClick="{{ vekslPersonBetaling }}" title="Registrer betaling"') === 2);
+sjekk('… og den ser ut som noe man kan trykke paa',
+    str_contains($sidaP, "appearance: 'none', border: 'none', cursor: 'pointer',"));
+sjekk('… og knappene gaar til det samme kallet som kortet paa Oversikt',
+    str_contains($sidaP, "handling: 'betaling', medlemId: p.id, maate: m,"));
+// Tomt felt betyr hele prisen. Serveren tar den fra avtalen naar det finnes
+// en, ellers fra planen.
+sjekk('… og beloepet kan overstyres for en delbetaling',
+    str_contains($sidaP, "belop: (this.state.personBetalingBelop || '').trim(),"));
+sjekk('… og feltet viser hva en hel periode koster',
+    str_contains($sidaP, 'personBetalingHint: p.pris'));
+// Boksen skal ikke staa aapen med forrige persons beloep naar en annen
+// aapnes.
+sjekk('… og boksen nullstilles naar en annen person aapnes',
+    str_contains($sidaP, "personBetalingApen: false, personBetalingBelop: '',"));
+
+$medApiB = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+// Ikke en hake: raden er en ekte betaling, med formaal «medlemskap», saa den
+// teller i dagsoppgjoret og i regnskapet.
+sjekk('serveren lager en ekte betalingsrad',
+    str_contains($medApiB, "'type'            => 'manuell',")
+    && str_contains($medApiB, "'formal'          => 'medlemskap',")
+    && str_contains($medApiB, "'status'          => 'betalt',"));
+// Maaten lagres. Dagsoppgjoret som gaar til regnskapet leser den — se
+// api/admin/dagsoppgjor.php, «p.maate AS radmaate».
+sjekk('… og maaten lagres paa raden',
+    str_contains($medApiB, "if (DB::harKolonne('payments', 'maate')) {\n            \$felt['maate'] = \$maate;"));
+// Prisen foelger med i personruta, saa skjermen kan si hva «tomt felt» betyr.
+sjekk('… og prisen foelger med til skjermen',
+    str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
+    && str_contains($medApiB, 'SELECT pris_ore FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1'));
+
 echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
 // Eieren, 4. september, med bilde av «kr 99» der det skulle staa «kr 990»:
 // «kutter tall», og «totalt 99 staar det, skal staa 990».

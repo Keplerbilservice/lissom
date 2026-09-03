@@ -812,6 +812,24 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'epost'      => $m['epost'] ?: '',
             'telefon'    => $m['telefon'] ?: '',
             'medlemskap' => $m['medlemskap_type'] ?: 'Ingen',
+            // Hva en periode koster. Ruta viser den i beloepsfeltet naar
+            // betalingen registreres for haand, saa «tomt felt betyr hele
+            // prisen» ikke er noe man maa gjette hva er.
+            //
+            // Samme rekkefolge som «betaling» under bruker: avtalen gaar
+            // foran planen, for det er den prisen som ble avtalt — den kan
+            // ha endret seg siden.
+            'pris'       => (static function () use ($m): string {
+                $avtale = DB::en(
+                    'SELECT pris_ore FROM subscriptions WHERE member_id = :m ORDER BY id DESC LIMIT 1',
+                    ['m' => (int) $m['id']]
+                );
+                $ore = $avtale !== null
+                    ? (int) $avtale['pris_ore']
+                    : (int) DB::verdi('SELECT pris_ore FROM membership_plans WHERE navn = :n',
+                                      ['n' => (string) ($m['medlemskap_type'] ?? '')]);
+                return $ore > 0 ? Booking::kroner($ore) : '';
+            })(),
             'status'     => $m['status'],
             // Uten konto er det ingen Min side aa vise, ingen medlemskap aa
             // endre, og notatet hoerer til paameldingen. Skjermen maa vite

@@ -11089,10 +11089,33 @@ window.__resources = {
                  gratismedlem kan settes ogsaa etterpaa. -->
             <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
               <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <!-- Pilla er en knapp.
+                     Eieren, 4. september: «pillen ikke betalt, kan jeg trykke paa den, og
+                     velge aa endre til betalt?»
+                     Betalingen kunne registreres fra for, men bare ett skjermbilde unna —
+                     «Ikke betalt»-kortet paa Oversikt. Naa staar de samme to knappene der
+                     man staar. Det er det samme kallet: «betaling» i
+                     api/admin/medlemmer.php, som lager en ekte rad i payments med formaal
+                     «medlemskap». Ikke en hake — pengene teller i dagsoppgjoret og i
+                     regnskapet, og pilla slaar om av seg selv fordi den leser de samme
+                     betalingene. -->
                 <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                  <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
+                  <button type="button" onClick="{{ vekslPersonBetaling }}" title="Registrer betaling" style="{{ personBetalingStil }}">{{ personBetalingMerke }}</button>
                   <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
                 </div>
+                <sc-if value="{{ personBetalingApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); margin-top: var(--space-3);">
+                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Registrer betaling</div>
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personBetalingHjelp }}</p>
+                    <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                      <input value="{{ personBetalingBelop }}" onChange="{{ settPersonBetalingBelop }}" placeholder="{{ personBetalingHint }}" style="width: 130px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                      <sc-for list="{{ personBetalingMaater }}" as="m" hint-placeholder-count="2">
+                        <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                      </sc-for>
+                      <button type="button" onClick="{{ vekslPersonBetaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                    </div>
+                  </div>
+                </sc-if>
                 <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
                   <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
                 </sc-if>
@@ -11855,10 +11878,33 @@ window.__resources = {
                    det andre foelge. -->
               <sc-if value="{{ personErMedlem }}" hint-placeholder-val="{{ true }}">
                 <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                  <!-- Pilla er en knapp.
+                       Eieren, 4. september: «pillen ikke betalt, kan jeg trykke paa den, og
+                       velge aa endre til betalt?»
+                       Betalingen kunne registreres fra for, men bare ett skjermbilde unna —
+                       «Ikke betalt»-kortet paa Oversikt. Naa staar de samme to knappene der
+                       man staar. Det er det samme kallet: «betaling» i
+                       api/admin/medlemmer.php, som lager en ekte rad i payments med formaal
+                       «medlemskap». Ikke en hake — pengene teller i dagsoppgjoret og i
+                       regnskapet, og pilla slaar om av seg selv fordi den leser de samme
+                       betalingene. -->
                   <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
-                    <span style="{{ personBetalingStil }}">{{ personBetalingMerke }}</span>
+                    <button type="button" onClick="{{ vekslPersonBetaling }}" title="Registrer betaling" style="{{ personBetalingStil }}">{{ personBetalingMerke }}</button>
                     <span style="font-size: var(--text-sm); color: var(--text-body);">{{ personBetalingTekst }}</span>
                   </div>
+                  <sc-if value="{{ personBetalingApen }}" hint-placeholder-val="{{ false }}">
+                    <div style="background: var(--clay-50); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: var(--space-4); margin-top: var(--space-3);">
+                      <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">Registrer betaling</div>
+                      <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ personBetalingHjelp }}</p>
+                      <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                        <input value="{{ personBetalingBelop }}" onChange="{{ settPersonBetalingBelop }}" placeholder="{{ personBetalingHint }}" style="width: 130px; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 9px 12px; font: var(--type-body-sm); background: var(--surface-card); color: var(--text-heading);">
+                        <sc-for list="{{ personBetalingMaater }}" as="m" hint-placeholder-count="2">
+                          <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                        </sc-for>
+                        <button type="button" onClick="{{ vekslPersonBetaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">Avbryt</button>
+                      </div>
+                    </div>
+                  </sc-if>
                   <sc-if value="{{ personHarVilkaar }}" hint-placeholder-val="{{ true }}">
                     <div style="margin-top: var(--space-3); font-size: var(--text-xs); color: var(--text-muted);">{{ personVilkaar }}</div>
                   </sc-if>
@@ -30207,6 +30253,7 @@ class Component extends DCLogic {
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
       personFri: null, personFriGrunn: null, personPlan: null,
+      personBetalingApen: false, personBetalingBelop: '',
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
       // gjenkjennes paa; disse to er det handlingene trenger.
       personMedlemId: id > 0 ? id : 0,
@@ -33684,8 +33731,58 @@ class Component extends DCLogic {
               fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
               textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
               whiteSpace: 'nowrap', background: F[0], color: F[1],
+              // Pilla er en knapp naa. Formen er den samme; det som kommer
+              // til er at den ser ut som noe man kan trykke paa.
+              appearance: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'inherit',
             };
           })(),
+
+          // ── Registrer betaling, der man staar ────────────────────────
+          //
+          // Eieren, 4. september: «pillen ikke betalt, kan jeg trykke paa
+          // den, og velge aa endre til betalt?»
+          //
+          // Betalingen kunne registreres fra for, men bare paa «Ikke
+          // betalt»-kortet paa Oversikt. Sto man i personruta, maatte man ut
+          // av den og finne personen igjen i et annet kort.
+          //
+          // Ikke en hake: kallet lager en ekte rad i payments med formaal
+          // «medlemskap» — se api/admin/medlemmer.php — saa pengene teller i
+          // dagsoppgjoret, i omsetningen og i regnskapet. Pilla slaar om av
+          // seg selv etterpaa, fordi den leser de samme betalingene.
+          personBetalingApen: !!this.state.personBetalingApen,
+          vekslPersonBetaling: () => this.setState(st => ({
+            personBetalingApen: !st.personBetalingApen,
+            personBetalingBelop: '',
+          })),
+          // Tomt felt betyr hele prisen. Serveren tar den fra avtalen naar
+          // det finnes en, ellers fra planen — det er den som ble avtalt,
+          // ikke dagens pris.
+          personBetalingBelop: this.state.personBetalingBelop || '',
+          settPersonBetalingBelop: e => this.setState({ personBetalingBelop: e.target.value }),
+          personBetalingHint: p.pris ? String(p.pris).replace('kr. ', '').replace(',-', '').trim() : 'Beløp',
+          personBetalingHjelp: 'Tomt beløp betyr hele prisen. Betalingen blir en '
+            + 'vanlig rad i regnskapet, og teller i dagsoppgjøret.',
+          personBetalingMaater: ['Kontant', 'Vipps'].map(m => ({
+            navn: m,
+            stil: {
+              appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+              border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)',
+              padding: '8px 16px', font: 'var(--type-body-sm)', fontWeight: 700,
+              color: 'var(--lissom-brown)', whiteSpace: 'nowrap',
+            },
+            // «behold» — uten den lukker medlemKall ruta, og da ville
+            // oppfriskningen under aapnet den igjen med det samme.
+            velg: () => this.medlemKall({
+              handling: 'betaling', medlemId: p.id, maate: m,
+              belop: (this.state.personBetalingBelop || '').trim(),
+            }, true).then(ok => {
+              if (!ok) { return; }
+              this.setState({ personBetalingApen: false, personBetalingBelop: '' });
+              this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+            }),
+          })),
           // Samtykket til vilkaarene, med dato og utgave. En hake som bare
           // laaser opp en knapp er ikke noe bevis; dette skal kunne vises fram.
           personVilkaar: p.vilkaar || '',

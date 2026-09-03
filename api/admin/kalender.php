@@ -68,6 +68,11 @@ $harHolder = DB::harKolonne('course_sessions', 'kursholder_id');
 $holderKol = $harHolder ? ', h.navn AS holder' : ", '' AS holder";
 $autoKol   = ($harAuto ? ', cs.fra_apningstid' : ', 0 AS fra_apningstid')
 ;
+// Kolonna kom med oppdatering 137. Kjores den ikke, staar ingen dato som
+// «fullbooket» for haand — og kalenderen skal ikke feile av den grunn i
+// vinduet mellom at koden legges ut og oppdateringen kjores.
+$fulltKol  = DB::harKolonne('course_sessions', 'vis_fullt')
+    ? ', cs.vis_fullt' : ', 0 AS vis_fullt';
 // «aktiv = 1»: en kursholder som har sluttet skal ikke staa paa hendelsene
 // i kalenderen heller. Da faller navnet bort, og oekta viser seg som det den
 // er — uten tildelt holder — framfor aa vise en som ikke er her lenger.
@@ -76,7 +81,7 @@ $holderBli = $harHolder ? 'LEFT JOIN kursholdere h ON h.id = cs.kursholder_id AN
 $okter = DB::alle(
     "SELECT cs.id, cs.start_tid, cs.slutt_tid, cs.status, cs.course_id,
             COALESCE(cs.kapasitet, c.kapasitet) AS kapasitet,
-            c.tittel, c.type, c.tema, c.status AS kurs_status {$autoKol}{$holderKol}
+            c.tittel, c.type, c.tema, c.status AS kurs_status {$autoKol}{$fulltKol}{$holderKol}
        FROM course_sessions cs
        JOIN courses c ON c.id = cs.course_id
        {$holderBli}
@@ -389,6 +394,10 @@ foreach ($okter as $o) {
         'venteliste' => $ko,
         'nye'    => $nye,
         'avlyst' => (string) $o['status'] === 'avlyst',
+        // Satt til «fullbooket» for haand. Ikke en avlysing — datoen gaar, og
+        // de som har plass beholder den; det er pilla paa nettsida som sier
+        // «Fullbooket» i stedet for «2 plasser igjen».
+        'visFullt' => (int) ($o['vis_fullt'] ?? 0) === 1,
         // Interne samlinger staar graa i ukekalenderen i dag. Skillet skal
         // ikke forsvinne fordi kalenderen byttes — men det er ikke en egen
         // brikketype, bare en merking paa en event.

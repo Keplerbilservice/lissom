@@ -182,6 +182,17 @@ final class Booking
      */
     public static function ledigePlasserFlere(array $oktIder): array
     {
+        // Overstyringa ligger her, utenpaa hele regnestykket, og ikke inne i
+        // de to veiene under. Sto den to steder, ville de etter hvert svart
+        // hver sitt — og den ene som ble glemt er reserveveien, som bare
+        // kjorer paa en base uten ressurstabellen. Da hadde feilen vaert
+        // usynlig helt til den dagen den ikke var det.
+        return self::medVisFullt(self::ledigeRegnet($oktIder));
+    }
+
+    /** Regnestykket, uten overstyringa. Se ledigePlasserFlere(). */
+    private static function ledigeRegnet(array $oktIder): array
+    {
         $ider = array_values(array_unique(array_map('intval', $oktIder)));
         if ($ider === []) {
             return [];
@@ -366,6 +377,50 @@ final class Booking
         }
 
         return $ut;
+    }
+
+    /**
+     * Oekter verkstedet har satt til «fullbooket» for haand.
+     *
+     * Eieren, 3. september: «pillen paa kortet som viser hvor mange plasser
+     * det er, denne vil jeg ha mulighet til aa overstyre med en hake paa
+     * kortet saa det staar fullbooket eller fult eller saa klart likt som de
+     * andre fulle kursene».
+     *
+     * Null ledige er alt som skal til: ledigTekst() i nettsida gjor null om
+     * til «Fullbooket», og den er det ene stedet pilla skrives — paa kortene,
+     * i datovelgeren, paa kurssida og i medlemslista. Da staar det ordrett
+     * det samme som paa et kurs som faktisk er fullt.
+     *
+     * Sperren mot aa booke folger med. Den regner paa det samme tallet, saa
+     * en dato som VISES full kan heller ikke fylles opp bakveien.
+     *
+     * Ligger her, etter begge regnestykkene, og ikke inne i de to
+     * SQL-setningene: to steder ville etter hvert svart hver sitt.
+     *
+     * @param  array<int, int> $ledige
+     * @return array<int, int>
+     */
+    private static function medVisFullt(array $ledige): array
+    {
+        if ($ledige === [] || !DB::harKolonne('course_sessions', 'vis_fullt')) {
+            // Kolonna kom med oppdatering 137. Kjores den ikke, er det ingen
+            // oekter aa overstyre — og oppslaget skal ikke velte kurslista i
+            // vinduet mellom utlegging og oppdatering. Det kostet fire
+            // femhundre-feil paa lissom.no 31. august.
+            return $ledige;
+        }
+        $inn = implode(',', array_map('intval', array_keys($ledige)));
+        foreach (DB::alle(
+            "SELECT id FROM course_sessions WHERE vis_fullt = 1 AND id IN ({$inn})"
+        ) as $r) {
+            $ledige[(int) $r['id']] = 0;
+            // «Sperret» ville gitt «Kurs i verkstedet» i stedet for
+            // «Fullbooket» — se ledigTekst(). Her er det verkstedet selv som
+            // har sagt at datoen er full, og da skal den se ut som full.
+            self::$sperret[(int) $r['id']] = false;
+        }
+        return $ledige;
     }
 
     /**

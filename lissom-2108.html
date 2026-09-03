@@ -5996,7 +5996,23 @@ window.__resources = {
                 <input type="checkbox" checked="{{ klRAvlystVal }}" onChange="{{ toggleKlRAvlyst }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
                 Avlys denne økten
               </label>
+              <!-- «Fullbooket» uten aa avlyse.
+                   Eieren, 3. september: «pillen paa kortet som viser hvor
+                   mange plasser det er, denne vil jeg ha mulighet til aa
+                   overstyre med en hake paa kortet saa det staar fullbooket
+                   eller fult eller saa klart likt som de andre fulle
+                   kursene».
+                   Valget sto mellom aa avlyse — som sier fra til de paameldte
+                   at kurset ikke gaar — og aa la nettsida selge plasser
+                   verkstedet ikke ville selge. Naa er det en tredje vei. -->
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">
+                <input type="checkbox" checked="{{ klRVisFulltVal }}" onChange="{{ toggleKlRVisFullt }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
+                Vis som fullbooket
+              </label>
             </div>
+            <sc-if value="{{ klRVisFulltVal }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-xs); color: var(--text-muted); margin: -8px 0 var(--space-4); max-width: 62ch; text-wrap: pretty;">{{ klRVisFulltHjelp }}</div>
+            </sc-if>
             <sc-if value="{{ kdMulig }}" hint-placeholder-val="{{ true }}">
               <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-5); margin-bottom: var(--space-5);">
                 <sc-if value="{{ kdLukket }}" hint-placeholder-val="{{ true }}">
@@ -28186,6 +28202,14 @@ class Component extends DCLogic {
               })(),
               klRAvlystVal: !!this.state.klRAvlyst,
               toggleKlRAvlyst: () => this.setState(s => ({ klRAvlyst: !s.klRAvlyst })),
+              klRVisFulltVal: !!this.state.klRVisFullt,
+              toggleKlRVisFullt: () => this.setState(s => ({ klRVisFullt: !s.klRVisFullt })),
+              // Hva haken faktisk gjor, sagt der den settes. «Fullbooket» og
+              // «avlyst» ser like endelige ut i en liste med to hakevalg, og
+              // de er to helt forskjellige beskjeder til dem som har plass.
+              klRVisFulltHjelp: 'Datoen står som fullbooket på nettsiden og kan '
+                + 'ikke bookes. Den går som planlagt, og de som allerede har '
+                + 'plass beholder den.',
               klRPublisertVal: this.state.klRPublisert !== false,
               toggleKlRPublisert: () => this.setState(s => ({ klRPublisert: s.klRPublisert === false })),
               klRDatoer: (rVisAlle ? rSerie : rSerie.slice(0, 3)).map(e => {
@@ -28699,7 +28723,7 @@ class Component extends DCLogic {
   klApneEnkel(evt) {
     const base = (evt.tittel || '').split(' · ')[0];
     const k = this.kursData().find(x => x.navn === base) || {};
-    this.setState({ klMeny: null, klValgtId: null, kdApen: false, kdUtkast: {}, kdVarsle: false, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!evt.avlyst, klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '',
+    this.setState({ klMeny: null, klValgtId: null, kdApen: false, kdUtkast: {}, kdVarsle: false, klSett: Object.assign({}, this.state.klSett, { [evt.id]: true }), klRedId: evt.id, klRNavn: base, klRDato: evt.dato, klRFra: evt.tid, klRTil: evt.slutt || '', klRPlasser: evt.kap ? String(evt.kap) : '', klRPris: (k.pris || '').replace('kr. ', '').replace(',-', '').trim(), klRBeskrivelse: k.beskrivelse || '', klRHolder: evt.holder || '', klRAvlyst: !!evt.avlyst, klRVisFullt: !!evt.visFullt, klRPublisert: k.publisert !== false, klRVisAlle: false, klRNyVis: false, klRNyDato: '', klRNyFra: evt.tid, klRNyTil: evt.slutt || '',
       // Verdiene ruta ble aapnet med.
       //
       // «Lagre» skal sende det som er endret, og ingenting annet. Uten dette
@@ -28715,6 +28739,7 @@ class Component extends DCLogic {
         plasser: evt.kap ? String(evt.kap) : '',
         dato: evt.dato, fra: evt.tid, til: evt.slutt || '',
         avlyst: !!evt.avlyst,
+        visFullt: !!evt.visFullt,
       } });
   }
 
@@ -28821,6 +28846,17 @@ class Component extends DCLogic {
       ut.push({ hva: skalAvlyses ? 'at økten avlyses' : 'at økten går likevel',
                 kall: { sti: K, kropp: {
                   handling: skalAvlyses ? 'avlys' : 'gjenopprett', oktId: redEvt.oktId } } });
+    }
+    // «Fullbooket» er ogsaa en egen handling, av samme grunn som avlysingen:
+    // den skal si fra hvor mange plasser som faktisk staar igjen naar den
+    // slaas av — «full av seg selv» og «satt til full» er ikke det samme.
+    const visFullt = !!st.klRVisFullt;
+    if (visFullt !== !!fra0.visFullt) {
+      ut.push({ hva: visFullt ? 'at datoen vises som fullbooket'
+                              : 'at datoen er åpen igjen',
+                kall: { sti: K, kropp: {
+                  handling: 'visFullt', oktId: redEvt.oktId,
+                  paa: visFullt ? 'ja' : 'nei' } } });
     }
     return ut;
   }

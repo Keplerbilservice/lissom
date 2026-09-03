@@ -893,6 +893,44 @@ switch ($handling) {
                 : 'Datoen er avlyst.',
         ]);
 
+    // ── «Fullbooket», selv om det er plasser igjen ─────────────────────
+    //
+    // Eieren, 3. september: «pillen paa kortet som viser hvor mange plasser
+    // det er, denne vil jeg ha mulighet til aa overstyre med en hake paa
+    // kortet saa det staar fullbooket eller fult eller saa klart likt som de
+    // andre fulle kursene».
+    //
+    // Dette er ikke en avlysing. Datoen gaar, den staar paa nettsida, og de
+    // som alt har plass beholder den — det er bare pilla som sier «Fullbooket»
+    // i stedet for «2 plasser igjen». Og siden sperren mot aa booke regner paa
+    // det samme tallet, kan den heller ikke fylles opp bakveien.
+    case 'visFullt':
+        $oktId = Foresporsel::heltall('oktId');
+        if (DB::en('SELECT id FROM course_sessions WHERE id = :o', ['o' => $oktId]) === null) {
+            Svar::feil('Fant ikke datoen.', 404);
+        }
+        if (!DB::harKolonne('course_sessions', 'vis_fullt')) {
+            Svar::feil('Vedlikeholdet må kjøres først (oppdatering 137).');
+        }
+
+        $paa = Foresporsel::tekst('paa') === 'ja';
+        DB::oppdater('course_sessions', ['vis_fullt' => $paa ? 1 : 0], ['id' => $oktId]);
+        revider('dato_vis_fullt', 'course_session', $oktId, ['paa' => $paa]);
+
+        // Hvor mange plasser som faktisk staar igjen. Det er det eieren vil
+        // vite naar hen slaar haken av igjen — og det som skiller «full paa
+        // ordentlig» fra «satt til full».
+        $ledige = Booking::ledigePlasser($oktId);
+        Svar::ok([
+            'paa'     => $paa,
+            'beskjed' => $paa
+                ? 'Datoen står som fullbooket på nettsiden. Den kan ikke bookes.'
+                : ($ledige > 0
+                    ? 'Datoen er åpen igjen — ' . $ledige
+                      . ($ledige === 1 ? ' ledig plass.' : ' ledige plasser.')
+                    : 'Datoen er åpen igjen, men den er full av seg selv.'),
+        ]);
+
     // Avlysingen angres.
     //
     // «avlys» satte status og hadde ingen vei tilbake: ble feil dato avlyst,

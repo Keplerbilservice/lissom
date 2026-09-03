@@ -166,6 +166,57 @@ echo "\n== Ledige plasser, én og mange ==\n";
     }
 }
 
+// ── «Vis som fullbooket» ───────────────────────────────────────────────
+//
+// Eieren, 3. september: «pillen paa kortet som viser hvor mange plasser det
+// er, denne vil jeg ha mulighet til aa overstyre med en hake paa kortet saa
+// det staar fullbooket eller fult eller saa klart likt som de andre fulle
+// kursene».
+//
+// Regelen maa gjelde begge veier inn i regnestykket — samlekallet og det ene
+// og ene — for kurslista bruker det foerste og bookingsperren det andre. Sier
+// de to forskjellige ting, viser nettsida «Fullbooket» paa en dato som
+// likevel kan bookes.
+echo "\n== Vis som fullbooket ==\n";
+
+// Rydd bort en rest fra en kjoring som stoppet underveis. Slug-en er unik.
+DB::kjor("DELETE cs FROM course_sessions cs JOIN courses c ON c.id = cs.course_id WHERE c.slug = 'testvisfullt'");
+DB::kjor("DELETE FROM courses WHERE slug = 'testvisfullt'");
+
+$vfKurs = DB::settInn('courses', ['slug'=>'testvisfullt','tittel'=>'Testvisfullt','type'=>'kurs',
+    'pris_ore'=>69000,'kapasitet'=>8,'status'=>'publisert']);
+$vfOkt = DB::settInn('course_sessions', ['course_id'=>$vfKurs,
+    'start_tid'=>gmdate('Y-m-d', time()+864000) . ' 10:00:00','kapasitet'=>8]);
+
+sjekk('okta har alle plassene for haken settes', Booking::ledigePlasser($vfOkt) === 8,
+    'fikk ' . Booking::ledigePlasser($vfOkt));
+
+DB::oppdater('course_sessions', ['vis_fullt' => 1], ['id' => $vfOkt]);
+sjekk('haken gir null ledige, ett og ett', Booking::ledigePlasser($vfOkt) === 0,
+    'fikk ' . Booking::ledigePlasser($vfOkt));
+sjekk('… og i samlekallet', Booking::ledigePlasserFlere([$vfOkt])[$vfOkt] === 0,
+    'fikk ' . var_export(Booking::ledigePlasserFlere([$vfOkt])[$vfOkt] ?? null, true));
+
+// «Sperret» ville gitt «Kurs i verkstedet» i pilla i stedet for «Fullbooket»
+// — se ledigTekst() i nettsida. Her er det verkstedet selv som har sagt at
+// datoen er full, og da skal den se ut som full.
+Booking::ledigePlasserFlere([$vfOkt]);
+sjekk('… og staar ikke som sperret av noe annet',
+    Booking::sperretAvAnnet([$vfOkt])[$vfOkt] === false);
+
+// Naboene skal ikke roeres. Overstyringa gjelder én dato.
+$vfNabo = DB::settInn('course_sessions', ['course_id'=>$vfKurs,
+    'start_tid'=>gmdate('Y-m-d', time()+950400) . ' 10:00:00','kapasitet'=>8]);
+$vfBegge = Booking::ledigePlasserFlere([$vfOkt, $vfNabo]);
+sjekk('nabodatoen staar urort', $vfBegge[$vfNabo] === 8, 'fikk ' . var_export($vfBegge[$vfNabo] ?? null, true));
+
+DB::oppdater('course_sessions', ['vis_fullt' => 0], ['id' => $vfOkt]);
+sjekk('haken av gir plassene tilbake', Booking::ledigePlasser($vfOkt) === 8,
+    'fikk ' . Booking::ledigePlasser($vfOkt));
+
+DB::kjor('DELETE FROM course_sessions WHERE course_id = :k', ['k' => $vfKurs]);
+DB::kjor('DELETE FROM courses WHERE id = :k', ['k' => $vfKurs]);
+
 echo "\n== Medlem og sesjon ==\n";
 $medlemId = DB::settInn('members', ['vipps_sub'=>'test-sub-1','navn'=>'Test Testesen','epost'=>'test@example.com','telefon'=>'+4791234567']);
 $token = Sesjon::opprett($medlemId);

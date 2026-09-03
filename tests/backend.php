@@ -8562,9 +8562,11 @@ sjekk('… og begge tilstandene finnes',
     && str_contains($sidaB, 'vippsIkkeKlar: !this.state.vippsKlar,'));
 // Hver knapp maa ha BEGGE greinene. Mangler den ene, blir det enten ingen
 // knapp naar Vipps er nede, eller to knapper naar den er oppe.
-sjekk('alle fire knappene har begge greinene',
-    substr_count($sidaB, '<sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">') === 4
-    && substr_count($sidaB, '<sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">') === 4);
+// Sju steder gaar til Vipps: kursbookingen, medlemskortet, innmeldingen,
+// kassa, gavekortet, «Betal i verkstedet» og innloggingen.
+sjekk('alle sju stedene har begge greinene',
+    substr_count($sidaB, '<sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">') === 7
+    && substr_count($sidaB, '<sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">') === 7);
 
 // ── «disabled» er en felle ─────────────────────────────────────────────
 //
@@ -8577,12 +8579,40 @@ sjekk('ingen Vipps-knapp har disabled bundet til et felt',
 // Derfor to utgaver per knapp: én med attributtet, én uten.
 sjekk('… og de laaste utgavene setter den fast',
     substr_count($sidaB, '<vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>') === 3);
+sjekk('… og gavekortet viser summen over knappen',
+    str_contains($sidaB, 'text-align: center;">Du betaler {{ gvValgt }}</p>'));
 
 // Klikket maa naa fram til det som allerede virket.
-foreach (['bekreftBooking', 'medlemsBetalKnapp', 'bmSend', 'betalKurv'] as $handling) {
+foreach (['bekreftBooking', 'medlemsBetalKnapp', 'bmSend', 'betalKurv',
+          'gvKjop', 'btBetal', 'vippsStart'] as $handling) {
     sjekk('Vipps-knappen kaller ' . $handling . '(), som for',
         str_contains($sidaB, 'stretched="true" onClick="{{ ' . $handling . ' }}"></vipps-mobilepay-button>'));
 }
+
+// ── Innloggingen ───────────────────────────────────────────────────────
+//
+// Eieren, 3. september: «hva med log inn, er disse ogsaa med vipps logo?»
+//
+// Her sto en knapp jeg hadde tegnet selv: Vipps sin oransje (#FF5B24),
+// pilleform, og ordet «Vipps» i fet kursiv som et hjemmelaget logomerke. Det
+// er en etterligning av et varemerke, og den laa ute paa lissom.no.
+sjekk('innloggingen bruker Vipps sin egen knapp',
+    str_contains($sidaB, 'verb="login" stretched="true" onClick="{{ vippsStart }}"></vipps-mobilepay-button>'));
+sjekk('… og den etterlignede logoen er borte fra innloggingen',
+    !str_contains($sidaB, 'style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span>'));
+// Faller Vipps bort, skal det staa en knapp i VAAR drakt — ikke en
+// etterligning. Vipps kan nevnes i tekst; logoen kan ikke tegnes opp.
+sjekk('… og reserveknappen er vaar egen, uten etterlignet logo',
+    str_contains($sidaB, 'on-click="{{ vippsStart }}" hint-size="100%,52px">Logg inn med Vipps</x-import>'));
+// Den ene gjenstaaende #FF5B24-flata er designverktoyets simulering, som
+// aldri kjorer paa lissom.no: den staar bak erPublisert() === false.
+sjekk('simuleringen med Vipps-farge kjorer bare i forhaandsvisningen',
+    str_contains($sidaB, "if (this.erPublisert()) {\n          window.location.href = '/api/vipps-login.php?retur='"));
+
+// «Betal i verkstedet» har ingen «disabled»-grein, men en som venter.
+sjekk('«Betal i verkstedet» viser Vipps sin ventetilstand',
+    str_contains($sidaB, 'verb="pay" stretched="true" loading="true"></vipps-mobilepay-button>')
+    && str_contains($sidaB, 'btLedig: !this.state.btJobber,'));
 
 // ── Prisen ─────────────────────────────────────────────────────────────
 //

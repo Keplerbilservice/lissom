@@ -3204,7 +3204,14 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens e-post" icon="mail" placeholder="navn@epost.no" value="{{ gvEpost }}" on-change="{{ settGvEpost }}" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på gavekortet" placeholder="F.eks. «Gratulerer med dagen!»" value="{{ gvHilsen }}" on-change="{{ settGvHilsen }}" hint-size="100%,66px"></x-import>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ gvKjop }}" hint-size="100%,52px">Kjøp gavekort · {{ gvValgt }}</x-import>
+            <!-- Vipps sin egen knapp, som paa kurs og medlemskap. -->
+            <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-align: center;">Du betaler {{ gvValgt }}</p>
+              <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ gvKjop }}"></vipps-mobilepay-button>
+            </sc-if>
+            <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ gvKjop }}" hint-size="100%,52px">Kjøp gavekort · {{ gvValgt }}</x-import>
+            </sc-if>
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ gk2Betalingslinje }}</p>
           </div>
         </div>
@@ -3301,7 +3308,20 @@ window.__resources = {
               <input id="bt-navn" value="{{ btNavn }}" onChange="{{ settBtNavn }}" placeholder="Valgfritt — så vet vi hvem som betalte" style="{{ btFeltStil }}">
             </div>
 
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" disabled="{{ btJobber }}" on-click="{{ btBetal }}" hint-size="100%,52px">{{ btKnapp }}</x-import>
+            <!-- Beloepet skrives inn i feltet rett over, saa ingen prislinje
+                 her. «btJobber» staar mens vi venter paa Vipps; da viser
+                 knappen Vipps sin egen ventetilstand. -->
+            <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ btJobber }}" hint-placeholder-val="{{ false }}">
+                <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" loading="true"></vipps-mobilepay-button>
+              </sc-if>
+              <sc-if value="{{ btLedig }}" hint-placeholder-val="{{ true }}">
+                <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ btBetal }}"></vipps-mobilepay-button>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" disabled="{{ btJobber }}" on-click="{{ btBetal }}" hint-size="100%,52px">{{ btKnapp }}</x-import>
+            </sc-if>
 
             <sc-if value="{{ btHarBeskjed }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); text-wrap: pretty;">{{ btBeskjed }}</p>
@@ -3417,7 +3437,29 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-8); font-size: var(--text-4xl);">{{ loginTittel }}</h1>
 
           <sc-if value="{{ visVippsInnlogging }}" hint-placeholder-val="{{ true }}">
-            <button type="button" onClick="{{ vippsStart }}" style="width: 100%; box-sizing: border-box; appearance: none; border: none; cursor: pointer; background: #FF5B24; color: #FFFFFF; border-radius: var(--radius-pill); padding: 15px 24px; font-family: var(--font-ui); font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 200ms var(--ease-clay);" style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span></button>
+            <!-- ── Innlogging med Vipps ────────────────────────────────
+                 Her sto en knapp jeg hadde tegnet selv: Vipps sin oransje
+                 (#FF5B24), pilleform, og ordet «Vipps» i fet kursiv som et
+                 hjemmelaget logomerke. Det er ikke Vipps sin logo — det er
+                 en etterligning av et varemerke, og Vipps sine egne regler
+                 tillater den ikke.
+
+                 Eieren, 3. september: «hva med log inn, er disse ogsaa med
+                 vipps logo?» — og «alt med vipps».
+
+                 Naa staar Vipps sin egen knapp, med den ekte logoen. Den
+                 sier «Logg inn med Vipps», som er Vipps sin ordlyd for
+                 nettopp dette; her sto «Fortsett med Vipps». -->
+            <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+              <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="login" stretched="true" onClick="{{ vippsStart }}"></vipps-mobilepay-button>
+            </sc-if>
+            <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+              <!-- Kommer Vipps sitt skript ikke fram, staar en knapp i vaar
+                   egen drakt. Da staar det ingen etterlignet logo — bare
+                   Lissoms egen knapp, med Vipps nevnt i teksten. Det er
+                   tillatt; en etterlignet logo er det ikke. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ vippsStart }}" hint-size="100%,52px">Logg inn med Vipps</x-import>
+            </sc-if>
             <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Rask og sikker innlogging med Vipps-appen</p>
           </sc-if>
           <!-- «eller» skiller Vipps fra passordskjemaet. Staar bare naar
@@ -39112,6 +39154,11 @@ class Component extends DCLogic {
           btNavn: this.state.btNavn || '',
           settBtNavn: e => this.setState({ btNavn: e.target.value }),
           btJobber: !!this.state.btJobber,
+          // Vipps sin knapp trenger det motsatte ogsaa: den staar i to
+          // utgaver, én som venter og én som kan trykkes. «disabled» kan
+          // ikke bindes til et felt — komponenten leser om attributtet
+          // finnes, ikke hva den staar til.
+          btLedig: !this.state.btJobber,
           btKnapp: this.state.btJobber ? 'Sender deg til Vipps …' : 'Betal med Vipps',
           btBeskjed: this.state.btBeskjed || '',
           btHarBeskjed: !!this.state.btBeskjed,

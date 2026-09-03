@@ -3382,7 +3382,7 @@ window.__resources = {
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-5);">Samtykke til månedstrekk</div>
               <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">30 timer</h3>
               <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: var(--space-6);">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">kr. 2 590,-</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">kr. 2 590,-</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">per måned</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: var(--space-7);">
@@ -3418,7 +3418,7 @@ window.__resources = {
               <div style="display: flex; flex-direction: column; gap: 10px; font-size: var(--text-sm); color: var(--text-muted); margin-bottom: var(--space-6);">
                 <div style="display: flex; justify-content: space-between;"><span>Betalt med</span><span style="color: var(--text-heading);">Vipps</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>Referanse</span><span style="color: var(--text-heading);">LIS-10482</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>Beløp</span><span style="color: var(--text-heading);">kr. 2 800,-</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>Beløp</span><span style="color: var(--text-heading);">kr. 2 800,-</span></div>
               </div>
               <div style="margin-top: auto; display: flex; flex-direction: column; gap: var(--space-3);">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" on-click="{{ goMinside }}" hint-size="100%,44px">Gå til Min side</x-import>
@@ -34400,7 +34400,28 @@ class Component extends DCLogic {
             // brikkene — ellers ville lista sett ut som den skjulte noe.
             const periode = sokB ? 'Alt' : (st.btPeriode || 'I dag');
 
-            const treff = alle.filter(b => {
+            // ── Bare det som ble et salg ─────────────────────────────
+            //
+            // Lista tok alt som sto i payments. Et forsok som ble avbrutt i
+            // Vipps lager ogsaa en rad — den staar «avbrutt» og har aldri
+            // vaert penger — og den sto i kassa ved siden av dagens salg.
+            //
+            // Eieren, 4. september, med sitt eget avbrutte forsok i lista:
+            // «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal
+            // ikke vises noen sted».
+            //
+            // Det som teller er det som faktisk ble penger: betalt, og det
+            // som er sendt helt eller delvis tilbake etterpaa — en refusjon
+            // hoerer til et salg som skjedde. «opprettet», «venter»,
+            // «avbrutt» og «feilet» er forsok.
+            //
+            // Det samme skillet dagsoppgjoret over gjor, og av samme grunn.
+            // En annullert betaling faller ogsaa ut her: den er ikke lenger
+            // et salg. Hva som er gjort staar i endringsloggen paa personen.
+            const PENGER = ['betalt', 'delvis_refundert', 'refundert'];
+            const ekte = alle.filter(b => PENGER.indexOf(String(b.status || '')) !== -1);
+
+            const treff = ekte.filter(b => {
               if (sokB) {
                 return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',
                         b.formal || '', b.maate || '', b.status || ''

@@ -8117,6 +8117,25 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
+echo "\n== Kassa viser bare det som ble et salg ==\n";
+// Eieren, 4. september, med sitt eget avbrutte Vipps-forsok staaende i
+// kassa: «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal ikke
+// vises noen sted».
+//
+// Lista tok alt som sto i payments. Et forsok som ble avbrutt i Vipps lager
+// ogsaa en rad, og den sto ved siden av dagens salg.
+//
+// Det som teller er det som faktisk ble penger: betalt, og det som er sendt
+// helt eller delvis tilbake etterpaa — en refusjon hoerer til et salg som
+// skjedde. Samme skille dagsoppgjoret over lista gjor.
+$sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kassa teller bare det som ble penger',
+    str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
+    && str_contains($sidaS, 'const ekte = alle.filter(b => PENGER.indexOf(String(b.status || \'\')) !== -1);'));
+// Ogsaa naar man soker. «Skal ikke vises noen sted.»
+sjekk('… ogsaa naar man soker',
+    str_contains($sidaS, 'const treff = ekte.filter(b => {'));
+
 echo "\n== En feilført betaling kan angres ==\n";
 // Eieren, 4. september: «jeg klarte aa registrere at hun har betalt paa
 // vipps, men det har hun ikke. Kan du reversere».

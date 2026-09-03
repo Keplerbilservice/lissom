@@ -30185,6 +30185,11 @@ class Component extends DCLogic {
       epost: m.epost || m.telefon || '',
       initial: (m.navn || '?').split(' ').map(d => d.charAt(0)).slice(0, 2).join('').toUpperCase(),
       erAdmin: !!m.erAdmin,
+      // Raden bygges som et NYTT objekt, ikke en kopi av svaret: alt som
+      // ikke staar her, finnes ikke lenger. «harAktivAvtale» ble derfor
+      // lest som undefined der «Slett»-knappen avgjores, og knappen sto
+      // uansett. Se «kanSlette» lenger nede.
+      harAktivAvtale: !!m.harAktivAvtale,
       erMedlem: MEDLEM.indexOf(m.status) !== -1,
       // Én som har vaert medlem og ikke er det lenger. «ingen» er en konto
       // som aldri har vaert medlem — den hoerer ikke hjemme under «Sluttet».

@@ -3,8 +3,19 @@
  * Avbestilling av egen plass.
  *
  * Reglene staar i vilkaarene, og regnes ut her framfor aa overlates til
- * kunden: mer enn 14 dager for kursstart gir full refusjon, 14 til 7 dager
- * gir halv, naermere enn 7 dager gir ingen.
+ * kunden: mer enn to dager for kursstart gir full refusjon, naermere enn det
+ * gir ingen.
+ *
+ * Eieren, 3. september, med kursvilkaarene sine: «Ved avbestilling mer enn 2
+ * dager for kursstart refunderes kursavgiften fullt ut. Ved avbestilling
+ * mindre enn 2 dager for kursstart refunderes ikke kursavgiften.» Og:
+ * «jeg vil at mine regler skal gjelde».
+ *
+ * Foer sto det tre trinn her — alt over fjorten dager, halvparten mellom
+ * fjorten og sju, ingenting naermere. Det var strengere enn vilkaarene sier
+ * naa: en som avbestilte fem dager for fikk ingenting, der teksten lover alt
+ * tilbake. Regelen og teksten maa si det samme, ellers lover nettsida noe
+ * kassa ikke gjor.
  *
  * Beloepet regnes alltid ut fra det som faktisk ble betalt, aldri fra noe
  * nettleseren sender.
@@ -46,19 +57,13 @@ $timerIgjen = $b['start_tid'] ? (strtotime((string) $b['start_tid']) - time()) /
 if ($betalt === 0) {
     $andel = 0.0;
     $regel = 'Ingenting var belastet.';
-} elseif ($timerIgjen === null) {
-    $andel = 1.0;
-    $regel = 'Kurset har ingen fastsatt dato, saa hele beloepet refunderes.';
-} elseif ($timerIgjen > 14 * 24) {
-    $andel = 1.0;
-    $regel = 'Avbestilt mer enn 14 dager for kursstart: full refusjon.';
-} elseif ($timerIgjen > 7 * 24) {
-    $andel = 0.5;
-    $regel = 'Avbestilt mellom 14 og 7 dager for kursstart: 50 % refusjon.';
 } else {
-    $andel = 0.0;
-    $regel = 'Avbestilt naermere enn 7 dager for kursstart: ingen refusjon. '
-           . 'Du kan gi plassen til en annen — ta kontakt, saa ordner vi det.';
+    // Selve regelen staar i Booking::avbestillingsregel(). Den samme brukes
+    // av api/mine-plasser.php, som forteller kunden hva hen faar — sto den to
+    // steder, kunne de si hver sitt om de samme pengene.
+    $r = Booking::avbestillingsregel($timerIgjen);
+    $andel = $r['andel'];
+    $regel = $r['regel'];
 }
 
 $refunderes = (int) round($betalt * $andel);

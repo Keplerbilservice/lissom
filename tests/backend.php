@@ -7011,13 +7011,117 @@ sjekk('… og verdien bak den settes',
     && str_contains($sida, 'personHarVilkaar: !!p.vilkaar,'));
 
 // Vilkaarsteksten maa faktisk staa paa sida haken lenker til. Uten den peker
-// «Les vilkaarene» paa en side der medlemsvilkaarene ikke finnes.
-foreach (['Medlemskap — bindingstid', 'Medlemskap — oppsigelse',
-          'Medlemskap — HMS og ordensregler', 'Medlemskap — mislighold',
-          'Medlemskap — endringer'] as $bolk) {
-    sjekk('«' . $bolk . '» staar paa vilkaarssida',
-        str_contains($sida, "{ h: '" . $bolk . "'"));
+// «Les vilkaarene» paa en side der vilkaarene ikke finnes.
+//
+// Proven ser paa SETNINGENE, ikke paa overskriftene. Overskriftene ble dopt
+// om 3. september da sida ble delt i kursvilkaar og medlemsvilkaar, og en
+// prove som bare leste overskrifter gikk roedt paa en ren omdoping — mens den
+// ville staatt gronn om selve teksten forsvant. Det er motsatt av det den er
+// til for.
+foreach ([
+    'bindingstid'  => '12 måneders bindingstid fra oppstartsdato',
+    'oppsigelse'   => 'Oppsigelsestiden regnes fra første dag i påfølgende måned',
+    'HMS'          => 'Medlemmet plikter å sette seg inn i og følge gjeldende HMS-rutiner',
+    'mislighold'   => 'avslutte et medlemskap med umiddelbar virkning',
+    'endringer'    => 'oppdatere medlemsvilkårene ved behov',
+] as $navn => $setning) {
+    sjekk('medlemsvilkaarene: ' . $navn . ' staar paa vilkaarssida',
+        str_contains($sida, $setning));
 }
+
+// ── Kursvilkaarene ─────────────────────────────────────────────────────
+//
+// Eieren, 3. september, med teksten sin: «til alle våre kurs, så er det dette
+// som er vilkårene». Og: «ikke bland den andre teksten som er for medlemmer,
+// dette er for kursdeltakere».
+echo "\n== Kursvilkaarene ==\n";
+foreach ([
+    'bindende paamelding' => 'Påmelding er bindende',
+    'betaling for start'  => 'skal være betalt før kursstart',
+    'avbestilling'        => 'mer enn 2 dager før kursstart refunderes kursavgiften fullt ut',
+    'ingen refusjon naer' => 'mindre enn 2 dager før kursstart refunderes ikke kursavgiften',
+    'overfoere plassen'   => 'Plassen kan overføres til en annen person etter avtale',
+    'fravaer'             => 'Manglende oppmøte gir ikke rett til refusjon',
+    'HMS'                 => 'Deltakerne benytter verksted og utstyr på eget ansvar',
+    'egne arbeider'       => 'kan ikke garantere mot skader, sprekker',
+    'ordensregler'        => 'Verkstedet skal forlates ryddig etter bruk',
+    'forbehold'           => 'avlyse kurs ved for få deltakere eller sykdom',
+] as $navn => $setning) {
+    sjekk('kursvilkaarene: ' . $navn, str_contains($sida, $setning));
+}
+
+// Den gamle avbestillingsregelen skal vaere borte FRA VILKAARENE. Sto begge
+// to der, ville sida lovet to forskjellige ting om de samme pengene.
+//
+// Den staar fortsatt tre andre steder — linja under bookingknappen,
+// avbestillingsruta, og selve utregningen i api/avbestill.php, som er den som
+// ber Vipps om pengene. De henger sammen med en avgjorelse eieren ikke har
+// tatt enda: skal systemet ogsaa BETALE etter den nye regelen? Til den er
+// tatt, er det riktigere at koden gjor det den alltid har gjort enn at den
+// gjor noe halvveis.
+sjekk('den gamle 14-dagersregelen staar ikke lenger i vilkaarene',
+    !str_contains($sida, 'mer enn 14 dager før kursstart, 50 % inntil 7 dager'));
+
+// ── Regelen som flytter pengene ────────────────────────────────────────
+//
+// Eieren, 3. september: «jeg vil at mine regler skal gjelde». Teksten paa
+// vilkaarssida og utregningen i Booking::avbestillingsregel() maa si det
+// samme — ellers lover nettsida noe kassa ikke gjor.
+echo "\n== Avbestillingsregelen ==\n";
+
+$avb = static fn(?float $timer): array => Booking::avbestillingsregel($timer);
+
+sjekk('ti dager for: alt tilbake', $avb(10 * 24)['andel'] === 1.0);
+sjekk('fem dager for: alt tilbake', $avb(5 * 24)['andel'] === 1.0,
+    'fikk ' . $avb(5 * 24)['andel']);
+sjekk('tre dager for: alt tilbake', $avb(3 * 24)['andel'] === 1.0);
+// Grensa. «Mer enn 2 dager» — akkurat 48 timer er ikke mer enn.
+sjekk('akkurat to doegn for: ingenting', $avb(2 * 24)['andel'] === 0.0);
+sjekk('en time over to doegn: alt tilbake', $avb(2 * 24 + 1)['andel'] === 1.0);
+sjekk('en dag for: ingenting', $avb(24)['andel'] === 0.0);
+sjekk('en time for: ingenting', $avb(1)['andel'] === 0.0);
+sjekk('etter at kurset har vaert: ingenting og ingen avbestilling',
+    $avb(-1)['andel'] === 0.0 && $avb(-1)['kanAvbestille'] === false);
+sjekk('uten fastsatt dato: alt tilbake', $avb(null)['andel'] === 1.0);
+
+// Det gamle mellomtrinnet skal vaere borte. Sto det igjen, ville noen faatt
+// halvparten der vilkaarene lover alt.
+$andeler = [];
+foreach ([1, 24, 47, 48, 49, 72, 5 * 24, 20 * 24] as $t) {
+    $andeler[] = $avb((float) $t)['andel'];
+}
+sjekk('ingen faar lenger halvparten', !in_array(0.5, $andeler, true),
+    implode(' · ', array_map(static fn($a) => (string) $a, $andeler)));
+
+// Begge endepunktene maa bruke den samme. To kopier av en pengeregel er én
+// for mye.
+foreach (['avbestill', 'mine-plasser'] as $fil) {
+    sjekk($fil . '.php bruker den felles regelen',
+        str_contains(file_get_contents(dirname(__DIR__) . '/api/' . $fil . '.php'),
+            'Booking::avbestillingsregel('));
+}
+sjekk('… og har ingen egen kopi av tallene',
+    !str_contains(file_get_contents(dirname(__DIR__) . '/api/avbestill.php'), '14 * 24')
+    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/mine-plasser.php'), '$dager > '));
+
+// Og det kunden leser skal stemme med det hen faar.
+sjekk('teksten til kunden folger regelen',
+    $avb(5 * 24)['kunde'] === 'Full refusjon fram til 2 dager før kursstart.'
+    && str_contains($avb(24)['kunde'], 'Nærmere enn 2 dager refunderes ikke'));
+sjekk('linja under bookingknappen sier det samme',
+    str_contains($sida, 'Full refusjon ved avbestilling mer enn 2 dager før kursstart.'));
+sjekk('avbestillingsruta sier det samme',
+    str_contains($sida, 'full refusjon mer enn 2 dager før kursstart'));
+
+// Hver hake maa lande paa SIN bolk. Pekte begge samme sted, ville
+// kursdeltakeren fortsatt maattet lese seg gjennom medlemsvilkaarene.
+sjekk('sida har begge bolkene', str_contains($sida, 'id="vilkar-kurs"')
+    && str_contains($sida, 'id="vilkar-medlem"'));
+sjekk('kursbookingen sender deg til kursvilkaarene',
+    str_contains($sida, "goVilkar: this.goVilkarDel('vilkar-kurs')"));
+sjekk('innmeldingen sender deg til medlemsvilkaarene',
+    str_contains($sida, "goVilkarMedlem: this.goVilkarDel('vilkar-medlem')")
+    && str_contains($sida, 'onClick="{{ goVilkarMedlem }}"'));
 // Den gamle teksten lovte kunden noe systemet ikke gjor: at oppsigelsen
 // gjelder fra neste trekk og at man ikke trekkes igjen.
 // Medlemskap::sluttdato() regner fra forste dag i paafolgende maaned og legger

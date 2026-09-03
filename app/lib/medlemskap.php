@@ -30,7 +30,7 @@ final class Medlemskap
      * Datoen er den teksten sist ble endret. Endres vilkaarene, settes denne
      * opp samtidig, saa en rad fra i fjor peker paa teksten som gjaldt i fjor.
      */
-    public const VILKAAR_VERSJON = '2026-09-02';
+    public const VILKAAR_VERSJON = '2026-09-03';
 
     /** @return array<string,mixed>|null */
     public static function plan(string $navn): ?array

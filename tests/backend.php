@@ -3603,11 +3603,11 @@ sjekk('… og valget overlever innloggingen',
 sjekk('… og skjemaet har et anker aa rulle til',
     str_contains($sida2, 'id="bli-medlem"')
     && str_contains($sida2, "document.getElementById('bli-medlem')"));
-// Begge betalingsveiene finnes paa serveren, ikke bare paa skjermen.
-// Vanlig Vipps er utgangspunktet: bare et uttrykkelig «trekk» gir trekk.
-sjekk('innmeldingen tar imot bade fast trekk og vanlig Vipps',
+// Planen avgjor, ikke kallet. Eieren, 3. september: fast trekk skal ikke
+// vaere et alternativ noe annet sted enn paa aarsavtalen.
+sjekk('innmeldingen lar planen avgjore betalingsmaaten',
     str_contains(file_get_contents(__DIR__ . '/../api/bli-medlem.php'),
-                 "\$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';"));
+                 "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
 
 // ── Frakt og adresse ───────────────────────────────────────────────────
 //
@@ -4686,10 +4686,13 @@ sjekk('… med samme utgangspunkt som kortet paa oversikten',
 $mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
 $mlibEngangs = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 
-sjekk('engangsplaner faar ikke fast trekk',
-    str_contains($mapi, "if ((int) (\$plan['engangs'] ?? 0) === 1) {\n            \$betaling = 'selv';"));
-sjekk('… og planer som krever fast trekk faar det',
-    str_contains($mapi, "if (Medlemskap::kreverFastTrekk(\$plan)) {\n            \$betaling = 'trekk';"));
+// Én linje avgjor alt: krever planen fast trekk, blir det trekk — ellers
+// vanlig Vipps. En engangsplan krever aldri fast trekk, saa den faar det
+// ikke; feltet fra kallet leses ikke lenger i det hele tatt.
+sjekk('planen alene avgjor betalingsmaaten',
+    str_contains($mapi, "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
+sjekk('… og kallet kan ikke lenger be om fast trekk',
+    !str_contains($mapi, "Foresporsel::tekst('betaling')"));
 sjekk('… og de to veiene gaar hver sin vei',
     str_contains($mapi, "\$ut = \$betaling === 'trekk'\n                ? Medlemskap::startAvtale(\$medlem, \$planNavn)\n                : Medlemskap::startEngangs(\$medlem, \$planNavn);"));
 sjekk('… og en ukjent plan avvises for noe opprettes',
@@ -6193,10 +6196,12 @@ if (DB::harTabell('subscriptions')) {
 sjekk('«Velg» gaar til betaling for den som alt er medlem',
     str_contains($sida, 'const kanBetaleNaa = this.state.fra === \'medlemskap\'')
     && str_contains($sida, '&& !!(this.state.erMedlemBruker || gammel);'));
-// Pillene er skjemaets egne, ikke nye. Da kan de to ikke bli uenige.
-sjekk('… med de samme pillene som innmeldingsskjemaet',
-    str_contains($sida, '<sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">')
-    && substr_count($sida, '{{ bmBetalingsvalg }}') === 2);
+// Pillene er borte. Eieren, 3. september: «fjern pillene betal i vipps og
+// fast trekk». Fast trekk er ikke et valg lenger — planen avgjor, og bare
+// aarsavtalen har det.
+sjekk('… uten piller aa velge mellom',
+    !str_contains($sida, '<sc-for list="{{ bmBetalingsvalg }}" as="v" hint-placeholder-count="2">')
+    && str_contains($sida, 'bmBetalingsvalg: [],'));
 // Kontrollen: medlemskapssida skal ikke aapne noen dialog. «Forny» paa Min
 // side bruker den fortsatt — der er en dialog systemets egen form, som paa
 // «Si opp» og «Angre» — men veien fra medlemskapssida gaar rett paa sida.
@@ -6459,7 +6464,7 @@ sjekk('planen bestemmer hvilke valg som finnes',
 // selv paa alle steder til vanlig vipps knapp».
 sjekk('… og knappen sier at det er Vipps',
     !str_contains($sida, 'Gjør opp i Vipps')
-    && str_contains($sida, "knapp('selv', 'Betal i Vipps')"));
+    && str_contains($sida, "navn: 'Betal i Vipps', betaling: 'selv' }"));
 // Bare knappetekstene — kommentaren i koden forteller hvorfor navnet ble
 // byttet, og den skal faa staa.
 sjekk('… og «Jeg ordner selv» staar ikke igjen som knappetekst',
@@ -6471,7 +6476,7 @@ sjekk('… og begge knappene bruker den samme regelen',
 // hvert sagt hver sin ting om det samme.
 sjekk('de to setningene om betaling staar ett sted',
     str_contains($sida, 'static get BETALINGSORD()')
-    && str_contains($sida, "bmBetalingTekst: valgt === 'trekk' ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,"));
+    && str_contains($sida, "bmBetalingTekst: maa ? Component.BETALINGSORD.trekk : Component.BETALINGSORD.selv,"));
 sjekk('… og dialogen henter dem derfra',
     str_contains($sida, 'const TREKK = Component.BETALINGSORD.trekk;'));
 
@@ -6479,9 +6484,11 @@ sjekk('… og dialogen henter dem derfra',
 // som vet hva planen krever.
 $mapi = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
 sjekk('serveren tvinger fast trekk der planen krever det',
-    str_contains($mapi, 'if (Medlemskap::kreverFastTrekk($plan)) {'));
-sjekk('… og en engangsplan kan ikke faa fast trekk',
-    str_contains($mapi, "if ((int) (\$plan['engangs'] ?? 0) === 1) {"));
+    str_contains($mapi, "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
+// Og bare der. En engangsplan har aldri «krever_fast_trekk», saa den kan
+// ikke faa en loepende avtale — uansett hva kallet sier.
+sjekk('… og ingen andre planer kan faa det',
+    !str_contains($mapi, "Foresporsel::tekst('betaling')"));
 
 // ── Kortet viste et annet medlemskap enn medlemmet har ────────────────
 //
@@ -8490,29 +8497,45 @@ sjekk('… og en feil hos Vipps stopper ikke betalingen hun holder paa med',
     substr_count($mlV, 'logg_feil(\'Fikk ikke stoppet forlatt avtaleforsøk ') === 1
     && substr_count($mlV, 'logg_feil(\'Fikk ikke avbrutt forlatt betalingsforsøk ') === 1);
 
-// ── Vanlig Vipps er utgangspunktet ────────────────────────────────────
-sjekk('skjermen sender vanlig Vipps naar ingenting er valgt',
-    str_contains($sidaV, "return this.state.bmBetaling === 'trekk' ? 'trekk' : 'selv';"));
-sjekk('… og pilla for vanlig Vipps staar merket',
-    str_contains($sidaV, "const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'selv');"));
-sjekk('… og staar forst',
-    str_contains($sidaV, "bmBetalingsvalg: [knapp('selv', 'Betal i Vipps'), knapp('trekk', 'Fast trekk i Vipps')],"));
-sjekk('… ogsaa i «Forny»-ruta',
-    str_contains($sidaV, "{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' },\n      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk', variant: 'secondary' },"));
-// Serveren avgjor. En gammel fane eller et kall uten feltet skal ikke gi en
-// loepende avtale.
+// ── Fast trekk finnes bare paa aarsavtalen ────────────────────────────
+//
+// Eieren, 3. september: «jeg vil ikke ha dette alternativet paa noen andre
+// steder enn paa aarsavtalen».
+//
+// Foerst gjorde vi vanlig Vipps til det forhaandsvalgte. Men de to pillene
+// sto der fortsatt, og et trykk var nok. Naa er valget borte helt.
+sjekk('det finnes ingen betalingspiller lenger',
+    str_contains($sidaV, 'bmBetalingsvalg: [],')
+    && str_contains($sidaV, 'bmKanVelgeBetaling: false,'));
+sjekk('… og ingen kan trykke seg til fast trekk',
+    !str_contains($sidaV, "knapp('trekk', 'Fast trekk i Vipps')")
+    && !str_contains($sidaV, 'velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),'));
+sjekk('… planen alene bestemmer hva skjermen sender',
+    str_contains($sidaV, "return pl.fastTrekk ? 'trekk' : 'selv';"));
+sjekk('… og «Forny»-ruta har bare vanlig Vipps',
+    str_contains($sidaV, "return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];"));
+// Aarsavtalen skal fortsatt ha fast trekk — og bare den. Da staar det en
+// linje om det i stedet for et valg.
+sjekk('… mens aarsavtalen sier fra at den har fast trekk',
+    str_contains($sidaV, "bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',")
+    && str_contains($sidaV, 'bmMaaHaTrekk: maa,'));
+
+// Serveren avgjor. En pille som er borte stopper den som fyller ut skjemaet,
+// ikke den som sender kallet selv — derfor leser serveren ikke feltet i det
+// hele tatt lenger.
 foreach (['medlemskap' => $medApiV2, 'bli-medlem' => $bliApiV] as $navn => $kode) {
-    sjekk('api/' . $navn . '.php gir vanlig Vipps naar feltet mangler',
-        str_contains($kode, "\$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';"));
-    sjekk('… og den gamle regelen er borte fra api/' . $navn . '.php',
-        !str_contains($kode, "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
-    sjekk('… og aarsmedlemskapet faar fortsatt trekk i api/' . $navn . '.php',
-        str_contains($kode, 'if (Medlemskap::kreverFastTrekk($plan)) {'));
+    sjekk('api/' . $navn . '.php lar planen avgjore',
+        str_contains($kode, "\$betaling = Medlemskap::kreverFastTrekk(\$plan) ? 'trekk' : 'selv';"));
+    sjekk('… og leser ikke «betaling» fra kallet i api/' . $navn . '.php',
+        !str_contains($kode, "Foresporsel::tekst('betaling')"));
 }
-// Engangsplaner kan ikke ha fast trekk. Vakta sto bare i det ene endepunktet,
-// og det er det ANDRE nye medlemmer kommer inn gjennom.
-sjekk('innmeldingen tvinger vanlig Vipps paa en engangsplan',
-    str_contains($bliApiV, "if ((int) (\$plan['engangs'] ?? 0) === 1) {\n    \$betaling = 'selv';\n}"));
+
+// Prøven som teller: bare aarsmedlemskapet har flagget i basen. Faar en
+// annen plan det, endres oppforselen uten at noen har rort koden.
+$medTrekk = DB::alle('SELECT navn FROM membership_plans WHERE krever_fast_trekk = 1');
+sjekk('bare aarsavtalen krever fast trekk i basen',
+    count($medTrekk) === 1 && str_contains((string) $medTrekk[0]['navn'], 'rsmedlemskap'),
+    implode(' · ', array_map(static fn($r) => (string) $r['navn'], $medTrekk)) ?: 'ingen');
 
 // Bare aarsmedlemskapet krever fast trekk. Migrasjon 081 satte flagget paa
 // alt med tolv maaneders binding — og det er bare det ene.

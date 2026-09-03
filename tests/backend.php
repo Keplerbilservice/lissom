@@ -3604,9 +3604,10 @@ sjekk('… og skjemaet har et anker aa rulle til',
     str_contains($sida2, 'id="bli-medlem"')
     && str_contains($sida2, "document.getElementById('bli-medlem')"));
 // Begge betalingsveiene finnes paa serveren, ikke bare paa skjermen.
-sjekk('innmeldingen tar imot bade fast trekk og «ordner selv»',
+// Vanlig Vipps er utgangspunktet: bare et uttrykkelig «trekk» gir trekk.
+sjekk('innmeldingen tar imot bade fast trekk og vanlig Vipps',
     str_contains(file_get_contents(__DIR__ . '/../api/bli-medlem.php'),
-                 "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
+                 "\$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';"));
 
 // ── Frakt og adresse ───────────────────────────────────────────────────
 //
@@ -7235,29 +7236,29 @@ $dAvtale = (int) DB::settInn('subscriptions', [
     'vipps_agreement_id' => 'agr-dobbel-' . $dMedlem,
     'vipps_url' => 'https://vipps.example/godkjenn/1', 'status' => 'venter',
 ]);
-$funnet = Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30');
+$funnet = Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true);
 sjekk('det samme forsoeket gjenbrukes',
     $funnet !== null && (string) $funnet['vipps_url'] === 'https://vipps.example/godkjenn/1');
 // Bytter man medlemskap i mellomtida, er det et annet forsoek.
 sjekk('… men ikke paa en annen plan',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Mini 15') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Mini 15', true) === null);
 // Vinduet er kort med vilje: en som virkelig vil proeve paa nytt skal ikke
 // sitte fast med en adresse som er utloept hos Vipps.
 DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP() - INTERVAL 6 MINUTE WHERE id = :i',
     ['i' => $dAvtale]);
 sjekk('… og ikke etter fem minutter',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true) === null);
 // Uten lagret adresse er det ingenting aa sende noen til.
 DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP(), vipps_url = NULL WHERE id = :i',
     ['i' => $dAvtale]);
 sjekk('… og ikke uten en adresse aa gjenbruke',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true) === null);
 // En avtale som alt er aktiv er et helt annet tilfelle — den skal avvises,
 // ikke gjenbrukes.
 DB::kjor("UPDATE subscriptions SET status = 'aktiv', vipps_url = 'https://vipps.example/godkjenn/1',
           created_at = UTC_TIMESTAMP() WHERE id = :i", ['i' => $dAvtale]);
 sjekk('… og en aktiv avtale gjenbrukes ikke',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true) === null);
 DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $dMedlem]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
 
@@ -7265,7 +7266,8 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
 // kunne fortsatt bli dobbelt.
 $mlKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('bade fast trekk og engangs sjekker om forsoeket paagaar',
-    substr_count($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn);") === 2);
+    str_contains($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn, true);")
+    && str_contains($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn, false);"));
 sjekk('… og begge lagrer adressen',
     substr_count($mlKode, 'self::husk((int) $id,') === 2);
 
@@ -8419,6 +8421,105 @@ sjekk('migrasjon 138 rydder den gamle overskrifta ut av basen',
 // noen har tatt, og det skal ikke overkjores.
 sjekk('… men bare naar den er den gamle standardteksten',
     $mig138 !== false && substr_count($mig138, 'AND verdi') >= 2);
+
+echo "\n== Vanlig Vipps, ikke fast trekk ==\n";
+//
+// Eieren, 3. september: «Eirin forsokte aa betale med vanlig vipps, men hun
+// fikk kun alternativet fast trekk. selv om hun valgte noe annet i losningen
+// vaart» — og «vipps fast trekk skal kun vaere paa aarsmedlemskap».
+$sidaV = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mlV   = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medApiV2 = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$bliApiV  = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+
+// ── Feilen: avtaleforsoeket ble gjenbrukt som engangsbetaling ──────────
+//
+// paagaaendeForsok() sa medlem + plan + «venter» + under fem minutter, og
+// ikke HVA slags forsok. Trykte hun forst med «Fast trekk» — som sto
+// forhaandsvalgt — og saa valgte «Betal i Vipps», fant startEngangs()
+// avtalen fra forste trykk og sendte henne til den samme fast-trekk-skjermen.
+$eMedlem = (int) DB::settInn('members', [
+    'navn' => 'Eirin Testesen', 'epost' => 'eirin@example.test',
+    'rolle' => 'medlem', 'status' => 'ingen',
+]);
+// Steg 1: forsoeket med fast trekk. En avtale har en avtale-id.
+$eAvtale = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMedlem, 'plan' => 'Mini 15', 'pris_ore' => 179000,
+    'vipps_agreement_id' => 'agr-eirin-' . $eMedlem,
+    'vipps_url' => 'https://vipps.example/AVTALE-fast-trekk', 'status' => 'venter',
+]);
+// Steg 2: hun velger vanlig Vipps. Den skal IKKE finne avtalen.
+sjekk('et avtaleforsok gjenbrukes ikke som vanlig betaling',
+    Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', false) === null);
+// Men et dobbeltklikk paa fast trekk skal fortsatt gjenbrukes — det var
+// hele grunnen til at vakta kom.
+sjekk('… mens et dobbeltklikk paa fast trekk fortsatt gjenbrukes',
+    (Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', true)['vipps_url'] ?? '')
+        === 'https://vipps.example/AVTALE-fast-trekk');
+
+// Og motsatt vei: en engangsbetaling har ingen avtale-id, og skal ikke
+// gjenbrukes naar noen ber om fast trekk.
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eAvtale]);
+$eEngangs = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMedlem, 'plan' => 'Mini 15', 'pris_ore' => 179000,
+    'vipps_agreement_id' => null,
+    'vipps_url' => 'https://vipps.example/VANLIG-betaling', 'status' => 'venter',
+]);
+sjekk('en vanlig betaling gjenbrukes ikke som avtale',
+    Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', true) === null);
+sjekk('… mens et dobbeltklikk paa vanlig Vipps fortsatt gjenbrukes',
+    (Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', false)['vipps_url'] ?? '')
+        === 'https://vipps.example/VANLIG-betaling');
+DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $eMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
+
+// Det forlatte forsoeket skal ikke bli staaende. Skjermen hun gikk fra er
+// fortsatt gyldig hos Vipps — godkjenner hun den senere, har hun et trekk
+// hun ikke ba om ved siden av betalingen hun valgte.
+sjekk('det forlatte forsoeket avlyses naar hun bytter betalingsmaate',
+    str_contains($mlV, 'private static function avlysMotsattForsok(int $medlemId, string $planNavn, bool $medAvtale): void')
+    && str_contains($mlV, 'self::avlysMotsattForsok((int) $medlem[\'id\'], $planNavn, true);')
+    && str_contains($mlV, 'self::avlysMotsattForsok((int) $medlem[\'id\'], $planNavn, false);'));
+sjekk('… og en avtale stoppes hos Vipps, ikke bare hos oss',
+    str_contains($mlV, 'Vipps::stoppAvtale($avtaleId);')
+    && str_contains($mlV, "DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => (int) \$motsatt['id']]);"));
+sjekk('… og en betaling avbrytes',
+    str_contains($mlV, 'Vipps::avbryt($ref);'));
+// Feiler Vipps, skal betalingen hun holder paa med gaa gjennom likevel.
+sjekk('… og en feil hos Vipps stopper ikke betalingen hun holder paa med',
+    substr_count($mlV, 'logg_feil(\'Fikk ikke stoppet forlatt avtaleforsøk ') === 1
+    && substr_count($mlV, 'logg_feil(\'Fikk ikke avbrutt forlatt betalingsforsøk ') === 1);
+
+// ── Vanlig Vipps er utgangspunktet ────────────────────────────────────
+sjekk('skjermen sender vanlig Vipps naar ingenting er valgt',
+    str_contains($sidaV, "return this.state.bmBetaling === 'trekk' ? 'trekk' : 'selv';"));
+sjekk('… og pilla for vanlig Vipps staar merket',
+    str_contains($sidaV, "const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'selv');"));
+sjekk('… og staar forst',
+    str_contains($sidaV, "bmBetalingsvalg: [knapp('selv', 'Betal i Vipps'), knapp('trekk', 'Fast trekk i Vipps')],"));
+sjekk('… ogsaa i «Forny»-ruta',
+    str_contains($sidaV, "{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' },\n      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk', variant: 'secondary' },"));
+// Serveren avgjor. En gammel fane eller et kall uten feltet skal ikke gi en
+// loepende avtale.
+foreach (['medlemskap' => $medApiV2, 'bli-medlem' => $bliApiV] as $navn => $kode) {
+    sjekk('api/' . $navn . '.php gir vanlig Vipps naar feltet mangler',
+        str_contains($kode, "\$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';"));
+    sjekk('… og den gamle regelen er borte fra api/' . $navn . '.php',
+        !str_contains($kode, "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
+    sjekk('… og aarsmedlemskapet faar fortsatt trekk i api/' . $navn . '.php',
+        str_contains($kode, 'if (Medlemskap::kreverFastTrekk($plan)) {'));
+}
+// Engangsplaner kan ikke ha fast trekk. Vakta sto bare i det ene endepunktet,
+// og det er det ANDRE nye medlemmer kommer inn gjennom.
+sjekk('innmeldingen tvinger vanlig Vipps paa en engangsplan',
+    str_contains($bliApiV, "if ((int) (\$plan['engangs'] ?? 0) === 1) {\n    \$betaling = 'selv';\n}"));
+
+// Bare aarsmedlemskapet krever fast trekk. Migrasjon 081 satte flagget paa
+// alt med tolv maaneders binding — og det er bare det ene.
+$kreverTrekk = DB::alle("SELECT navn FROM membership_plans WHERE krever_fast_trekk = 1");
+sjekk('bare aarsmedlemskapet krever fast trekk',
+    count($kreverTrekk) === 1 && str_contains((string) $kreverTrekk[0]['navn'], 'rsmedlemskap'),
+    implode(' · ', array_map(static fn($r) => (string) $r['navn'], $kreverTrekk)) ?: 'ingen');
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);

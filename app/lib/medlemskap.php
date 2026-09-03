@@ -378,19 +378,92 @@ final class Medlemskap
      *
      * @return array<string,mixed>|null
      */
-    public static function paagaaendeForsok(int $medlemId, string $planNavn): ?array
+    public static function paagaaendeForsok(int $medlemId, string $planNavn, bool $medAvtale): ?array
     {
         if (!DB::harKolonne('subscriptions', 'vipps_url')) {
             return null;
         }
+        // ── Betalingsmaaten maa vaere med i oppslaget ────────────────
+        //
+        // Eieren, 3. september: «Eirin forsokte aa betale med vanlig vipps,
+        // men hun fikk kun alternativet fast trekk. selv om hun valgte noe
+        // annet i losningen vaart».
+        //
+        // Vakta sa bare medlem + plan + «venter» + under fem minutter. Den
+        // sa ikke HVA slags forsok det var. Da traff en engangsbetaling
+        // avtaleforsoket fra minuttet for, og fikk avtalens adresse tilbake:
+        //
+        //   1. hun trykker med «Fast trekk» — som sto forhaandsvalgt —
+        //      og en avtale opprettes i Vipps
+        //   2. hun gaar tilbake, velger «Betal i Vipps», trykker igjen
+        //   3. startEngangs() finner avtalen fra punkt 1 og sender henne
+        //      til den samme fast-trekk-skjermen
+        //
+        // I fem minutter kunne hun ikke komme til vanlig Vipps uansett hva
+        // hun valgte. Skillet staar i «vipps_agreement_id»: en avtale har
+        // en, en engangsbetaling har NULL — se startEngangs().
+        $avtaleLedd = $medAvtale
+            ? 'AND vipps_agreement_id IS NOT NULL'
+            : 'AND vipps_agreement_id IS NULL';
         return DB::en(
             "SELECT * FROM subscriptions
               WHERE member_id = :m AND plan = :p AND status = 'venter'
+                {$avtaleLedd}
                 AND vipps_url IS NOT NULL AND vipps_url <> ''
                 AND created_at >= (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)
            ORDER BY id DESC LIMIT 1",
             ['m' => $medlemId, 'p' => $planNavn]
         );
+    }
+
+    /**
+     * Rydder bort forsoeket hun gikk fra da hun byttet betalingsmaate.
+     *
+     * Uten dette blir raden fra punkt 1 over liggende som «venter», med en
+     * ekte avtale-id hos Vipps. Skjermen hun forlot er fortsatt gyldig:
+     * godkjenner hun den senere — en fane som sto aapen, en lenke i
+     * historikken — har hun et loepende trekk hun ikke ba om, ved siden av
+     * engangsbetalingen hun faktisk valgte.
+     *
+     * Bare forsoek som staar «venter» roeres. En avtale som er aktiv er et
+     * medlemskap, og det sies opp fra Min side — ikke her.
+     *
+     * Feiler Vipps, skal det ikke stoppe betalingen hun holder paa med. Da
+     * er raden merket stoppet hos oss, og loggen sier hva som ikke gikk.
+     */
+    private static function avlysMotsattForsok(int $medlemId, string $planNavn, bool $medAvtale): void
+    {
+        $motsatt = self::paagaaendeForsok($medlemId, $planNavn, !$medAvtale);
+        if ($motsatt === null) {
+            return;
+        }
+
+        $avtaleId = trim((string) ($motsatt['vipps_agreement_id'] ?? ''));
+        if ($avtaleId !== '') {
+            try {
+                Vipps::stoppAvtale($avtaleId);
+            } catch (Throwable $e) {
+                logg_feil('Fikk ikke stoppet forlatt avtaleforsøk ' . $avtaleId, $e);
+            }
+        } else {
+            // En engangsbetaling. Referansen ligger paa betalingsraden.
+            $ref = (string) DB::verdi(
+                'SELECT vipps_reference FROM payments
+                  WHERE subscription_id = :s ORDER BY id DESC LIMIT 1',
+                ['s' => (int) $motsatt['id']]
+            );
+            if ($ref !== '') {
+                try {
+                    Vipps::avbryt($ref);
+                } catch (Throwable $e) {
+                    logg_feil('Fikk ikke avbrutt forlatt betalingsforsøk ' . $ref, $e);
+                }
+                DB::oppdater('payments', ['status' => 'avbrutt'],
+                    ['vipps_reference' => $ref]);
+            }
+        }
+
+        DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => (int) $motsatt['id']]);
     }
 
     /** Lagrer adressen forsoeket godkjennes paa, om kolonna finnes. */
@@ -416,11 +489,14 @@ final class Medlemskap
         }
 
         // Det samme forsoeket to ganger skal gi den samme avtalen, ikke to.
-        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn);
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn, true);
         if ($igjen !== null) {
             return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'],
                     'gjentakelse' => true];
         }
+        // Byttet hun fra «Betal i Vipps» til fast trekk, skal den forlatte
+        // betalingen ikke bli staaende og kunne gjennomfores i tillegg.
+        self::avlysMotsattForsok((int) $medlem['id'], $planNavn, true);
 
         $vipps = Vipps::opprettAvtale(
             $planNavn,
@@ -478,11 +554,13 @@ final class Medlemskap
 
         // Samme vakt som i startAvtale(): det samme forsoeket to ganger skal
         // gi den samme betalingen, ikke to.
-        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn);
+        $igjen = self::paagaaendeForsok((int) $medlem['id'], $planNavn, false);
         if ($igjen !== null) {
             return ['url' => (string) $igjen['vipps_url'], 'id' => (int) $igjen['id'],
                     'gjentakelse' => true];
         }
+        // Og avtaleforsoeket hun gikk fra da hun valgte vanlig Vipps.
+        self::avlysMotsattForsok((int) $medlem['id'], $planNavn, false);
 
         $binding = (int) $plan['binding_mnd'];
         $id = DB::settInn('subscriptions', [

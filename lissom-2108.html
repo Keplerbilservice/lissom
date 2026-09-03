@@ -16955,10 +16955,11 @@ class Component extends DCLogic {
     if (pl.engangs) {
       return [{ navn: SELV, verdi: ' ' }];
     }
+    // Samme rekkefolge som knappene under: det vanlige forst.
     return [
       { navn: 'Slik virker de to', verdi: '' },
-      { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
       { navn: 'Betal i Vipps — ' + SELV, verdi: ' ' },
+      { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
     ];
   }
 
@@ -19423,15 +19424,26 @@ class Component extends DCLogic {
   }
 
   /**
-   * Fast trekk, eller ordne opp selv.
+   * Fast trekk, eller vanlig Vipps.
    *
    * Krever planen fast trekk, er valget tatt. Serveren avgjor det samme paa
    * nytt — dette er bare for at skjermen og svaret skal si det samme.
+   *
+   * ── Vanlig Vipps er utgangspunktet ─────────────────────────────
+   *
+   * Her sto det motsatte: alt annet enn et aktivt trykk paa «Betal i Vipps»
+   * ble til «trekk». Den som ikke roerte pillene fikk altsaa en loepende
+   * avtale i Vipps uten aa ha bedt om det.
+   *
+   * Eieren, 3. september: «vipps fast trekk skal kun vaere paa
+   * aarsmedlemskap». Aarsmedlemskapet har «krever_fast_trekk = 1» i basen
+   * (migrasjon 081, satt paa alt med tolv maaneders binding), og det er den
+   * ene som fortsatt gir trekk. Alle andre begynner paa vanlig Vipps.
    */
   bmBetalingsvalgt() {
     const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
     if (pl.fastTrekk) return 'trekk';
-    return this.state.bmBetaling === 'selv' ? 'selv' : 'trekk';
+    return this.state.bmBetaling === 'trekk' ? 'trekk' : 'selv';
   }
 
   /** Valgt medlemskap — det forste hvis ingen er valgt ennaa. */
@@ -24994,9 +25006,13 @@ class Component extends DCLogic {
     //
     // Nummeret som sendes til serveren er det samme som for: «selv».
     if (pl.engangs) return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];
+    // Vanlig Vipps forst og som hovedknapp. «Forny» sto med fast trekk
+    // oeverst, saa den raskeste veien var en loepende avtale. Eieren, 3.
+    // september: «vipps fast trekk skal kun vaere paa aarsmedlemskap» — og
+    // aarsmedlemskapet gaar i grenen over, der trekk er det eneste valget.
     return [
-      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' },
-      { plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv', variant: 'secondary' },
+      { plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' },
+      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk', variant: 'secondary' },
     ];
   }
 
@@ -43533,7 +43549,10 @@ class Component extends DCLogic {
       ...(() => {
         const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
         const maa = !!pl.fastTrekk;
-        const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'trekk');
+        // Vanlig Vipps staar merket til hun velger noe annet. Se
+        // bmBetalingsvalgt() — de to maa si det samme, ellers viser
+        // skjermen ett valg og serveren faar et annet.
+        const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'selv');
         const knapp = (verdi, navn) => ({
           navn,
           velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),
@@ -43551,7 +43570,9 @@ class Component extends DCLogic {
           bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',
           // Samme to setninger som dialogen paa Min side bruker. Sto de to
           // steder, ville de etter hvert sagt hver sin ting om det samme.
-          bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Betal i Vipps')],
+          // Vanlig Vipps forst. Den forste pilla leses som det vanlige
+          // valget, og det er nettopp det den er naa.
+          bmBetalingsvalg: [knapp('selv', 'Betal i Vipps'), knapp('trekk', 'Fast trekk i Vipps')],
           bmBetalingValgt: valgt,
           // ── Vilkaarene ──────────────────────────────────────────────
           //

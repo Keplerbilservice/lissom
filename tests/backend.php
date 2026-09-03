@@ -2981,6 +2981,25 @@ sjekk('kortet staar paa Oversikt', str_contains($sida2, '{{ ovSkylderSum }}')
 // «ovUbetalte» var et tall fra for. renderVals gir ett flatt objekt, saa det
 // samme navnet to steder gjor at den siste vinner — og sc-for-en gikk over et
 // tall og tegnet ingenting.
+// ── Hva tallet teller ─────────────────────────────────────────────────
+//
+// Eieren, 4. september, med bilde av to rader paa det samme kurset:
+// «hvorfor staar det 2 dager paa disse?»
+//
+// Tallet er dager siden paameldingen kom inn — DATEDIFF i oversikt.php —
+// og det sto som «2 dager» rett etter datoen for kurset. Etter at
+// flerdagerskurs kom inn FINNES det kurs som gaar over to dager, og
+// varigheten staar andre steder som «2 ganger». Samme ord, to ting.
+sjekk('tallet paa kortet sier hva det teller',
+    str_contains($sida2, "? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')")
+    && str_contains($sida2, "  : 'påmeldt i dag']"));
+sjekk('… og det staar ikke lenger som noe man kan lese som kursets lengde',
+    !str_contains($sida2, "u.dager > 0 ? u.dager + ' dager' : 'i dag'"));
+// Det er paameldingsdatoen, ikke kursets lengde. Sporringa maa fortsatt
+// telle derfra, ellers betyr den nye teksten noe annet enn den sier.
+sjekk('… og serveren teller fra dagen paameldingen kom inn',
+    str_contains($ovFil, 'DATEDIFF(UTC_DATE(), DATE(b.created_at)) AS dager'));
+
 sjekk('kortet har sitt eget navn, ikke et som var tatt',
     substr_count($sida2, 'ovSkylder:') === 1
     && !str_contains($sida2, 'ovUbetalte: liste'));

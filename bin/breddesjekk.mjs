@@ -35,12 +35,33 @@
  * en ny skjerm inn der, er den med her fra samme oyeblikk — lista kan ikke
  * bli gammel.
  *
+ * ── To maal til, lagt til 4. september ────────────────────────────────
+ *
+ * Eieren fant to feil paa én kveld som denne vakta gikk gronn paa.
+ *
+ * «Kutter tall»: dagsoppgjoret i Kassa viste «kr 99» der det skulle staa
+ * «kr 990». De tre spaltene ble 351 piksler i et rutenett paa 306, og
+ * kortet — som har «overflow: hidden» for de runde hjornene — klippet
+ * siste siffer. Sida var 390 piksler hele tida. Derfor maales det naa
+ * ogsaa mot INNSIDA av det naermeste kortet som skjuler det som stikker
+ * ut, ikke bare mot skjermkanten.
+ *
+ * «Feil deling av tall»: «kr. 5 470,-» brakk i to paa telefonen, fordi
+ * tusenskillet var et vanlig mellomrom. Derfor leses teksten slik den
+ * staar paa skjermen, og et mykt mellomrom mellom sifrene i et beloep
+ * meldes uansett hvor i koden det kom fra.
+ *
  * ── Hva som IKKE maales ───────────────────────────────────────────────
  *
  * Ting som ligger bak et klikk: skjemaer som aapner seg, dialoger,
  * kalenderens dags- og maanedsvisning. Skriptet ser hver skjerm slik den
  * staar naar den er lastet. Det daekker det som pleier aa ryke — rutenett
  * og brede rader — men ikke alt.
+ *
+ * Med ett unntak: EKSTRA-lista lenger nede. Fanene i Kassa har ingen egen
+ * adresse, og det var nettopp i én av dem tallet ble klippet. De aapnes
+ * med et trykk for de maales. Lista kan vokse; hver rad koster tre
+ * sekunder.
  *
  * Noen ting skal kunne rulle sidelengs inni sin egen ramme: kalenderens
  * rutenett («.lx-kalbred») og brede tabeller. De hopper vi over — alt som
@@ -179,35 +200,221 @@ const utenfor = () => {
   return ut.sort((a, b2) => b2.bredde - a.bredde).slice(0, 4);
 };
 
+/**
+ * Innhold som blir klippet av et kort det ligger inni.
+ *
+ * Maalet over spor «stikker noe utenfor SIDA». Det er ikke det samme som
+ * «blir noe borte». 4. september sto eieren med dagsoppgjoret i Kassa paa
+ * telefonen og saa «kr 99» der det skulle staa «kr 990»: de tre spaltene
+ * Kontant, Vipps og Totalt ble 351 piksler i et rutenett paa 306, og kortet
+ * — som har «overflow: hidden» for aa holde de runde hjornene — klippet
+ * siste siffer. Sida var 390 piksler bred hele tida. Maalet over var gronn.
+ *
+ * Her er kanten kortet, ikke skjermen: naar noe naar lenger til hoyre enn
+ * innsida av den naermeste forelderen som skjuler det som stikker ut, blir
+ * det borte for den som ser paa.
+ *
+ * Hva som IKKE telles:
+ *
+ *   ruller med vilje    ligger det inne i noe med «overflow-x: auto» eller
+ *                       «scroll», er det ramma som ruller — ikke noe som
+ *                       forsvinner. Samme regel som over.
+ *   avkortet med vilje  «text-overflow: ellipsis» ER en avkorting noen har
+ *                       bedt om, og den viser tre prikker saa leseren vet.
+ *   pynt                «aria-hidden» og «pointer-events: none», som over.
+ *   skrivefelt          et input ruller sitt eget innhold; det er ikke borte.
+ */
+const klippet = () => {
+  const KLIPPER = new Set(['hidden', 'clip']);
+  const ut = [];
+  document.querySelectorAll('*').forEach(e => {
+    const r = e.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) return;
+    if (['INPUT', 'TEXTAREA', 'SELECT', 'CANVAS', 'SVG', 'IMG'].includes(e.tagName)) return;
+
+    const st = getComputedStyle(e);
+    if (st.visibility === 'hidden' || st.pointerEvents === 'none') return;
+    if (e.getAttribute('aria-hidden') === 'true') return;
+
+    // Den naermeste forelderen som bestemmer skjebnen sidelengs.
+    let ramme = null;
+    for (let f = e.parentElement; f; f = f.parentElement) {
+      const o = getComputedStyle(f).overflowX;
+      if (o === 'auto' || o === 'scroll') return;
+      if (KLIPPER.has(o)) { ramme = f; break; }
+    }
+    if (ramme === null) return;
+
+    const rst = getComputedStyle(ramme);
+    if (rst.textOverflow === 'ellipsis') return;
+
+    // Innsida av ramma: rammas venstre kant, pluss kantlinja, pluss det den
+    // faktisk har plass til. «clientWidth» er nettopp den bredden.
+    const rr = ramme.getBoundingClientRect();
+    const innsida = rr.left + parseFloat(rst.borderLeftWidth || '0') + ramme.clientWidth;
+    const over = Math.round(r.right - innsida);
+    if (over <= 2) return;
+
+    // Er forelderen like bred, er det den som er synderen. Da hjelper det
+    // ikke aa liste opp hvert barn under den ogsaa.
+    const f = e.parentElement;
+    if (f && f !== ramme && Math.round(f.getBoundingClientRect().right) >= Math.round(r.right)) return;
+
+    ut.push({
+      navn: e.tagName.toLowerCase()
+        + (e.id ? '#' + e.id : '')
+        + (e.className && typeof e.className === 'string' && e.className.trim()
+            ? '.' + e.className.trim().split(/\s+/)[0] : ''),
+      tekst: (e.innerText || '').trim().slice(0, 30).replace(/\s+/g, ' '),
+      over,
+      ramme: ramme.tagName.toLowerCase()
+        + (ramme.className && typeof ramme.className === 'string' && ramme.className.trim()
+            ? '.' + ramme.className.trim().split(/\s+/)[0] : ''),
+      spalter: getComputedStyle(e.parentElement || ramme).gridTemplateColumns,
+    });
+  });
+  return ut.sort((a, b2) => b2.over - a.over).slice(0, 4);
+};
+
+/**
+ * Beloep som kan brekke midt i tallet.
+ *
+ * «kr. 5 470,-» skal staa samlet. Skilles tusenene med et vanlig
+ * mellomrom, har nettleseren lov til aa brekke der — og paa en telefon
+ * blir det «kr. 5» paa én linje og «470,- utestaaende» paa neste.
+ *
+ * Eieren, 4. september, med bilde av det paa Oversikt: «feil deling av tall
+ * her ogsaa» — og da han maatte peke paa det andre gang: «maa jeg si dette
+ * flere ganger?».
+ *
+ * Nei. Regelen er at begge mellomrommene i et beloep er harde (U+00A0),
+ * slik Booking::kroner() gjor det paa serveren. Denne maalingen leser
+ * teksten slik den faktisk staar paa skjermen, og finner et vanlig
+ * mellomrom mellom sifrene uansett hvor i koden det kom fra.
+ *
+ * Bare tall med «kr» foran telles. Et aarstall eller et antall som noen har
+ * skrevet inn i en tekst, er ikke vaart aa rette.
+ */
+const myktTall = () => {
+  const MYKT = /kr[.\s\u00a0]{0,3}\d{1,3}\u0020\d{3}/;
+  const ut = [];
+  document.querySelectorAll('*').forEach(e => {
+    if (e.children.length) return;
+    const t = (e.innerText || '').trim();
+    if (!t || !MYKT.test(t)) return;
+    if (e.getBoundingClientRect().height === 0) return;
+    ut.push({
+      navn: e.tagName.toLowerCase()
+        + (e.className && typeof e.className === 'string' && e.className.trim()
+            ? '.' + e.className.trim().split(/\s+/)[0] : ''),
+      tekst: t.slice(0, 46).replace(/\s+/g, ' '),
+    });
+  });
+  // Samme tekst kan staa flere steder; det er den ene feilen som skal rettes.
+  const sett = new Set();
+  return ut.filter(e => { if (sett.has(e.tekst)) return false; sett.add(e.tekst); return true; })
+           .slice(0, 4);
+};
+
+/**
+ * Skjermer som ligger bak et trykk.
+ *
+ * Adressene i STIER daekker sida slik den staar naar den er lastet. Fanene
+ * i Kassa har ingen egen adresse — og det var nettopp i én av dem tallet
+ * ble klippet. Her staar de faa som er verdt aa maale, med knappen som
+ * aapner dem. Lista kan vokse; hver rad koster tre sekunder.
+ */
+const EKSTRA = [
+  { sti: '/admin/uttak', klikk: ['Betalinger'] },
+  { sti: '/admin/uttak', klikk: ['Varer i butikken'] },
+  { sti: '/admin/uttak', klikk: ['Internbutikk'] },
+];
+
 const p = await kontekst.newPage();
 p.setDefaultTimeout(20000);
 
+/** Trykker paa en knapp med denne teksten — den ekte, ikke malen. */
+const trykk = async (side, tekst) => await side.evaluate(t => {
+  const el = Array.from(document.querySelectorAll('button'))
+    .filter(x => (x.innerText || '').trim() === t)
+    .find(x => x.getBoundingClientRect().height > 0);
+  if (!el) return false;
+  el.click();
+  return true;
+}, tekst);
+
+/** Maaler én skjerm slik den staar naa, og skriver det som er galt. */
+const maalNa = async (navn) => {
+  const ute = await p.evaluate(utenfor);
+  const kl = await p.evaluate(klippet);
+  const mt = await p.evaluate(myktTall);
+  const verst = ute.length ? Math.max(...ute.map(e => e.hoyre)) - BREDDE : 0;
+  const deler = [];
+  if (ute.length) {
+    deler.push(ute.length + ' utenfor kanten, verst ' + verst + ' px');
+  }
+  if (kl.length) {
+    deler.push(kl.length + ' klippet av et kort, verst ' + kl[0].over + ' px');
+  }
+  if (mt.length) {
+    deler.push(mt.length + ' beloep som kan brekke midt i tallet');
+  }
+  si(deler.length === 0, navn + (deler.length ? ' — ' + deler.join(' · ') : ''));
+  for (const e of ute) {
+    console.log('          ' + e.bredde + ' px, naar til ' + e.hoyre + ': ' + e.navn
+      + (e.tekst ? '  «' + e.tekst + '»' : '')
+      + (e.spalter && e.spalter !== 'none' ? '  [spalter: ' + e.spalter + ']' : ''));
+  }
+  for (const e of kl) {
+    console.log('          klippet ' + e.over + ' px av ' + e.ramme + ': ' + e.navn
+      + (e.tekst ? '  «' + e.tekst + '»' : '')
+      + (e.spalter && e.spalter !== 'none' ? '  [spalter: ' + e.spalter + ']' : ''));
+  }
+  for (const e of mt) {
+    console.log('          mykt mellomrom i beloepet: ' + e.navn + '  «' + e.tekst + '»');
+  }
+};
+
 for (const sti of liste) {
-  let maal;
   try {
     await p.goto(ADRESSE + sti, { waitUntil: 'domcontentloaded' });
     // Sida bygges om til React etter lasting. Uten en pause her maaler vi
     // malen for den er tegnet, og alt ser riktig ut.
     await p.waitForTimeout(3200);
-    maal = await p.evaluate(utenfor);
   } catch (e) {
     si(false, sti + ' — kom ikke fram: ' + String(e).split('\n')[0].slice(0, 80));
     continue;
   }
-  const verst = maal.length ? Math.max(...maal.map(e => e.hoyre)) - BREDDE : 0;
-  si(maal.length === 0,
-     sti + (maal.length === 0 ? '' : ' — ' + maal.length + ' element'
-       + (maal.length === 1 ? '' : 'er') + ' utenfor kanten, verst ' + verst + ' px'));
-  for (const e of maal) {
-    console.log('          ' + e.bredde + ' px, naar til ' + e.hoyre + ': ' + e.navn
-      + (e.tekst ? '  «' + e.tekst + '»' : '')
-      + (e.spalter && e.spalter !== 'none' ? '  [spalter: ' + e.spalter + ']' : ''));
+  await maalNa(sti);
+}
+
+// Skjermene bak et trykk. Bare de som er filtrert bort over hoppes.
+for (const e of EKSTRA) {
+  if (FILTER && !e.sti.includes(FILTER)) continue;
+  const navn = e.sti + ' → ' + e.klikk.join(' → ');
+  try {
+    await p.goto(ADRESSE + e.sti, { waitUntil: 'domcontentloaded' });
+    await p.waitForTimeout(3200);
+    for (const t of e.klikk) {
+      if (!(await trykk(p, t))) {
+        si(false, navn + ' — fant ingen knapp «' + t + '»');
+        throw new Error('hoppet');
+      }
+      await p.waitForTimeout(1500);
+    }
+  } catch (feilen) {
+    if (String(feilen).includes('hoppet')) continue;
+    si(false, navn + ' — kom ikke fram: ' + String(feilen).split('\n')[0].slice(0, 80));
+    continue;
   }
+  await maalNa(navn);
 }
 
 await b.close();
 
+const antall = liste.length + EKSTRA.filter(e => !FILTER || e.sti.includes(FILTER)).length;
 console.log('\n' + (feil === 0
-  ? 'Alle ' + liste.length + ' skjermene holder seg innenfor ' + BREDDE + ' px.'
-  : feil + ' av ' + liste.length + ' skjermer er for brede.'));
+  ? 'Alle ' + antall + ' skjermene holder seg innenfor ' + BREDDE
+    + ' px, ingenting blir klippet av et kort, og ingen beloep kan brekke.'
+  : feil + ' av ' + antall + ' skjermer har noe som ikke er synlig.'));
 process.exit(feil === 0 ? 0 : 1);

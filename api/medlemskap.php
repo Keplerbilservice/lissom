@@ -175,7 +175,20 @@ switch (Foresporsel::tekst('handling')) {
                 ['felt' => array_keys($endring)]);
         }
 
-        $betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';
+        // ── Vanlig Vipps er utgangspunktet ─────────────────────────────────────
+        //
+        // Eieren, 3. september: «vipps fast trekk skal kun vaere paa
+        // aarsmedlemskap».
+        //
+        // Her sto det motsatte: alt som ikke var ordrett «selv» ble til «trekk».
+        // Manglet feltet — en gammel fane, et kall uten det, en pille som ikke ble
+        // trykket — opprettet vi en loepende avtale i Vipps for noen som ikke hadde
+        // bedt om en. Naa er det motsatt: bare et uttrykkelig «trekk» gir trekk.
+        //
+        // Aarsmedlemskapet er unntaket, og det avgjores av basen og ikke av dette
+        // feltet: «krever_fast_trekk = 1», satt av migrasjon 081 paa alt med tolv
+        // maaneders bindingstid.
+        $betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';
         if (Medlemskap::kreverFastTrekk($plan)) {
             $betaling = 'trekk';
         }

@@ -3604,9 +3604,10 @@ sjekk('… og skjemaet har et anker aa rulle til',
     str_contains($sida2, 'id="bli-medlem"')
     && str_contains($sida2, "document.getElementById('bli-medlem')"));
 // Begge betalingsveiene finnes paa serveren, ikke bare paa skjermen.
-sjekk('innmeldingen tar imot bade fast trekk og «ordner selv»',
+// Vanlig Vipps er utgangspunktet: bare et uttrykkelig «trekk» gir trekk.
+sjekk('innmeldingen tar imot bade fast trekk og vanlig Vipps',
     str_contains(file_get_contents(__DIR__ . '/../api/bli-medlem.php'),
-                 "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
+                 "\$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';"));
 
 // ── Frakt og adresse ───────────────────────────────────────────────────
 //
@@ -7235,29 +7236,29 @@ $dAvtale = (int) DB::settInn('subscriptions', [
     'vipps_agreement_id' => 'agr-dobbel-' . $dMedlem,
     'vipps_url' => 'https://vipps.example/godkjenn/1', 'status' => 'venter',
 ]);
-$funnet = Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30');
+$funnet = Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true);
 sjekk('det samme forsoeket gjenbrukes',
     $funnet !== null && (string) $funnet['vipps_url'] === 'https://vipps.example/godkjenn/1');
 // Bytter man medlemskap i mellomtida, er det et annet forsoek.
 sjekk('… men ikke paa en annen plan',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Mini 15') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Mini 15', true) === null);
 // Vinduet er kort med vilje: en som virkelig vil proeve paa nytt skal ikke
 // sitte fast med en adresse som er utloept hos Vipps.
 DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP() - INTERVAL 6 MINUTE WHERE id = :i',
     ['i' => $dAvtale]);
 sjekk('… og ikke etter fem minutter',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true) === null);
 // Uten lagret adresse er det ingenting aa sende noen til.
 DB::kjor('UPDATE subscriptions SET created_at = UTC_TIMESTAMP(), vipps_url = NULL WHERE id = :i',
     ['i' => $dAvtale]);
 sjekk('… og ikke uten en adresse aa gjenbruke',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true) === null);
 // En avtale som alt er aktiv er et helt annet tilfelle — den skal avvises,
 // ikke gjenbrukes.
 DB::kjor("UPDATE subscriptions SET status = 'aktiv', vipps_url = 'https://vipps.example/godkjenn/1',
           created_at = UTC_TIMESTAMP() WHERE id = :i", ['i' => $dAvtale]);
 sjekk('… og en aktiv avtale gjenbrukes ikke',
-    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30') === null);
+    Medlemskap::paagaaendeForsok($dMedlem, 'Basis 30', true) === null);
 DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $dMedlem]);
 DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
 
@@ -7265,7 +7266,8 @@ DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $dMedlem]);
 // kunne fortsatt bli dobbelt.
 $mlKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('bade fast trekk og engangs sjekker om forsoeket paagaar',
-    substr_count($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn);") === 2);
+    str_contains($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn, true);")
+    && str_contains($mlKode, "\$igjen = self::paagaaendeForsok((int) \$medlem['id'], \$planNavn, false);"));
 sjekk('… og begge lagrer adressen',
     substr_count($mlKode, 'self::husk((int) $id,') === 2);
 
@@ -8419,6 +8421,219 @@ sjekk('migrasjon 138 rydder den gamle overskrifta ut av basen',
 // noen har tatt, og det skal ikke overkjores.
 sjekk('… men bare naar den er den gamle standardteksten',
     $mig138 !== false && substr_count($mig138, 'AND verdi') >= 2);
+
+echo "\n== Vanlig Vipps, ikke fast trekk ==\n";
+//
+// Eieren, 3. september: «Eirin forsokte aa betale med vanlig vipps, men hun
+// fikk kun alternativet fast trekk. selv om hun valgte noe annet i losningen
+// vaart» — og «vipps fast trekk skal kun vaere paa aarsmedlemskap».
+$sidaV = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mlV   = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$medApiV2 = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$bliApiV  = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+
+// ── Feilen: avtaleforsoeket ble gjenbrukt som engangsbetaling ──────────
+//
+// paagaaendeForsok() sa medlem + plan + «venter» + under fem minutter, og
+// ikke HVA slags forsok. Trykte hun forst med «Fast trekk» — som sto
+// forhaandsvalgt — og saa valgte «Betal i Vipps», fant startEngangs()
+// avtalen fra forste trykk og sendte henne til den samme fast-trekk-skjermen.
+$eMedlem = (int) DB::settInn('members', [
+    'navn' => 'Eirin Testesen', 'epost' => 'eirin@example.test',
+    'rolle' => 'medlem', 'status' => 'ingen',
+]);
+// Steg 1: forsoeket med fast trekk. En avtale har en avtale-id.
+$eAvtale = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMedlem, 'plan' => 'Mini 15', 'pris_ore' => 179000,
+    'vipps_agreement_id' => 'agr-eirin-' . $eMedlem,
+    'vipps_url' => 'https://vipps.example/AVTALE-fast-trekk', 'status' => 'venter',
+]);
+// Steg 2: hun velger vanlig Vipps. Den skal IKKE finne avtalen.
+sjekk('et avtaleforsok gjenbrukes ikke som vanlig betaling',
+    Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', false) === null);
+// Men et dobbeltklikk paa fast trekk skal fortsatt gjenbrukes — det var
+// hele grunnen til at vakta kom.
+sjekk('… mens et dobbeltklikk paa fast trekk fortsatt gjenbrukes',
+    (Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', true)['vipps_url'] ?? '')
+        === 'https://vipps.example/AVTALE-fast-trekk');
+
+// Og motsatt vei: en engangsbetaling har ingen avtale-id, og skal ikke
+// gjenbrukes naar noen ber om fast trekk.
+DB::kjor('DELETE FROM subscriptions WHERE id = :i', ['i' => $eAvtale]);
+$eEngangs = (int) DB::settInn('subscriptions', [
+    'member_id' => $eMedlem, 'plan' => 'Mini 15', 'pris_ore' => 179000,
+    'vipps_agreement_id' => null,
+    'vipps_url' => 'https://vipps.example/VANLIG-betaling', 'status' => 'venter',
+]);
+sjekk('en vanlig betaling gjenbrukes ikke som avtale',
+    Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', true) === null);
+sjekk('… mens et dobbeltklikk paa vanlig Vipps fortsatt gjenbrukes',
+    (Medlemskap::paagaaendeForsok($eMedlem, 'Mini 15', false)['vipps_url'] ?? '')
+        === 'https://vipps.example/VANLIG-betaling');
+DB::kjor('DELETE FROM subscriptions WHERE member_id = :m', ['m' => $eMedlem]);
+DB::kjor('DELETE FROM members WHERE id = :i', ['i' => $eMedlem]);
+
+// Det forlatte forsoeket skal ikke bli staaende. Skjermen hun gikk fra er
+// fortsatt gyldig hos Vipps — godkjenner hun den senere, har hun et trekk
+// hun ikke ba om ved siden av betalingen hun valgte.
+sjekk('det forlatte forsoeket avlyses naar hun bytter betalingsmaate',
+    str_contains($mlV, 'private static function avlysMotsattForsok(int $medlemId, string $planNavn, bool $medAvtale): void')
+    && str_contains($mlV, 'self::avlysMotsattForsok((int) $medlem[\'id\'], $planNavn, true);')
+    && str_contains($mlV, 'self::avlysMotsattForsok((int) $medlem[\'id\'], $planNavn, false);'));
+sjekk('… og en avtale stoppes hos Vipps, ikke bare hos oss',
+    str_contains($mlV, 'Vipps::stoppAvtale($avtaleId);')
+    && str_contains($mlV, "DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => (int) \$motsatt['id']]);"));
+sjekk('… og en betaling avbrytes',
+    str_contains($mlV, 'Vipps::avbryt($ref);'));
+// Feiler Vipps, skal betalingen hun holder paa med gaa gjennom likevel.
+sjekk('… og en feil hos Vipps stopper ikke betalingen hun holder paa med',
+    substr_count($mlV, 'logg_feil(\'Fikk ikke stoppet forlatt avtaleforsøk ') === 1
+    && substr_count($mlV, 'logg_feil(\'Fikk ikke avbrutt forlatt betalingsforsøk ') === 1);
+
+// ── Vanlig Vipps er utgangspunktet ────────────────────────────────────
+sjekk('skjermen sender vanlig Vipps naar ingenting er valgt',
+    str_contains($sidaV, "return this.state.bmBetaling === 'trekk' ? 'trekk' : 'selv';"));
+sjekk('… og pilla for vanlig Vipps staar merket',
+    str_contains($sidaV, "const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'selv');"));
+sjekk('… og staar forst',
+    str_contains($sidaV, "bmBetalingsvalg: [knapp('selv', 'Betal i Vipps'), knapp('trekk', 'Fast trekk i Vipps')],"));
+sjekk('… ogsaa i «Forny»-ruta',
+    str_contains($sidaV, "{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' },\n      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk', variant: 'secondary' },"));
+// Serveren avgjor. En gammel fane eller et kall uten feltet skal ikke gi en
+// loepende avtale.
+foreach (['medlemskap' => $medApiV2, 'bli-medlem' => $bliApiV] as $navn => $kode) {
+    sjekk('api/' . $navn . '.php gir vanlig Vipps naar feltet mangler',
+        str_contains($kode, "\$betaling = Foresporsel::tekst('betaling') === 'trekk' ? 'trekk' : 'selv';"));
+    sjekk('… og den gamle regelen er borte fra api/' . $navn . '.php',
+        !str_contains($kode, "\$betaling = Foresporsel::tekst('betaling') === 'selv' ? 'selv' : 'trekk';"));
+    sjekk('… og aarsmedlemskapet faar fortsatt trekk i api/' . $navn . '.php',
+        str_contains($kode, 'if (Medlemskap::kreverFastTrekk($plan)) {'));
+}
+// Engangsplaner kan ikke ha fast trekk. Vakta sto bare i det ene endepunktet,
+// og det er det ANDRE nye medlemmer kommer inn gjennom.
+sjekk('innmeldingen tvinger vanlig Vipps paa en engangsplan',
+    str_contains($bliApiV, "if ((int) (\$plan['engangs'] ?? 0) === 1) {\n    \$betaling = 'selv';\n}"));
+
+// Bare aarsmedlemskapet krever fast trekk. Migrasjon 081 satte flagget paa
+// alt med tolv maaneders binding — og det er bare det ene.
+$kreverTrekk = DB::alle("SELECT navn FROM membership_plans WHERE krever_fast_trekk = 1");
+sjekk('bare aarsmedlemskapet krever fast trekk',
+    count($kreverTrekk) === 1 && str_contains((string) $kreverTrekk[0]['navn'], 'rsmedlemskap'),
+    implode(' · ', array_map(static fn($r) => (string) $r['navn'], $kreverTrekk)) ?: 'ingen');
+
+echo "\n== Vipps sine egne betalingsknapper ==\n";
+//
+// Eieren, 3. september: «1. vanlig vipps med vanlig vipps logo». Han sendte
+// selv markupen fra brand.vippsmobilepay.com.
+//
+// Knappene som starter en betaling er naa <vipps-mobilepay-button>, som Vipps
+// leverer fra sin egen CDN. Da staar logoen, fargen og ordlyden slik Vipps
+// krever, og vi kopierer ingen logo inn i repoet.
+$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$htacc = file_get_contents(dirname(__DIR__) . '/.htaccess');
+
+sjekk('skriptet lastes fra Vipps, uten aa sinke sida',
+    str_contains($sidaB, '<script async type="text/javascript" src="https://cdn.vippsmobilepay.com/js/button/button.js"></script>'));
+
+// ── Sikkerhetsreglene ──────────────────────────────────────────────────
+//
+// Lest av i selve fila for de ble lagt inn: skriptet henter skriftene sine
+// fra designsystem.vippsmobilepay.com, og ellers ingenting — ingen fetch,
+// ingen bilder. Logoen ligger som SVG inni skriptet.
+sjekk('CSP slipper inn skriptet',
+    str_contains($htacc, "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com;"));
+sjekk('… og skriftene knappen setter teksten i',
+    str_contains($htacc, "font-src 'self' https://designsystem.vippsmobilepay.com;"));
+// Uten denne kunne noen «rydde» og ta bort det ene domenet. Da ville knappen
+// staatt i systemskrift, og ikke lenger vaert Vipps sin.
+sjekk('… og den gamle, stengte regelen er borte',
+    !str_contains($htacc, "font-src 'self'; connect-src"));
+
+// ── Sikkerhetsnettet ───────────────────────────────────────────────────
+//
+// Maalt i nettleseren: kommer skriptet aldri fram, blir elementet 0x0 og
+// usynlig. Ingen feilmelding — kunden ser et kort uten betalingsknapp.
+// Derfor staar vaar egen knapp til komponenten er meldt klar.
+sjekk('vaar egen knapp staar til Vipps sin er klar',
+    str_contains($sidaB, "customElements.whenDefined('vipps-mobilepay-button')")
+    && str_contains($sidaB, '.then(() => this.setState({ vippsKlar: true }))'));
+sjekk('… og begge tilstandene finnes',
+    str_contains($sidaB, 'vippsKlar: !!this.state.vippsKlar,')
+    && str_contains($sidaB, 'vippsIkkeKlar: !this.state.vippsKlar,'));
+// Hver knapp maa ha BEGGE greinene. Mangler den ene, blir det enten ingen
+// knapp naar Vipps er nede, eller to knapper naar den er oppe.
+// Sju steder gaar til Vipps: kursbookingen, medlemskortet, innmeldingen,
+// kassa, gavekortet, «Betal i verkstedet» og innloggingen.
+sjekk('alle sju stedene har begge greinene',
+    substr_count($sidaB, '<sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">') === 7
+    && substr_count($sidaB, '<sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">') === 7);
+
+// ── «disabled» er en felle ─────────────────────────────────────────────
+//
+// Komponenten leser OM attributtet finnes, ikke hva den staar til. Maalt:
+// disabled="false" sperrer klikket like godt som disabled="true". Og
+// malmotoren skriver ordet «false» inn i markupen — proevd, den gjor det.
+// disabled="{{ ... }}" ville derfor gitt en knapp som var doed for alle.
+sjekk('ingen Vipps-knapp har disabled bundet til et felt',
+    !preg_match('/<vipps-mobilepay-button[^>]*disabled="\{\{/', $sidaB));
+// Derfor to utgaver per knapp: én med attributtet, én uten.
+sjekk('… og de laaste utgavene setter den fast',
+    substr_count($sidaB, '<vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>') === 3);
+sjekk('… og gavekortet viser summen over knappen',
+    str_contains($sidaB, 'text-align: center;">Du betaler {{ gvValgt }}</p>'));
+
+// Klikket maa naa fram til det som allerede virket.
+foreach (['bekreftBooking', 'medlemsBetalKnapp', 'bmSend', 'betalKurv',
+          'gvKjop', 'btBetal', 'vippsStart'] as $handling) {
+    sjekk('Vipps-knappen kaller ' . $handling . '(), som for',
+        str_contains($sidaB, 'stretched="true" onClick="{{ ' . $handling . ' }}"></vipps-mobilepay-button>'));
+}
+
+// ── Innloggingen ───────────────────────────────────────────────────────
+//
+// Eieren, 3. september: «hva med log inn, er disse ogsaa med vipps logo?»
+//
+// Her sto en knapp jeg hadde tegnet selv: Vipps sin oransje (#FF5B24),
+// pilleform, og ordet «Vipps» i fet kursiv som et hjemmelaget logomerke. Det
+// er en etterligning av et varemerke, og den laa ute paa lissom.no.
+sjekk('innloggingen bruker Vipps sin egen knapp',
+    str_contains($sidaB, 'verb="login" stretched="true" onClick="{{ vippsStart }}"></vipps-mobilepay-button>'));
+sjekk('… og den etterlignede logoen er borte fra innloggingen',
+    !str_contains($sidaB, 'style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span>'));
+// Faller Vipps bort, skal det staa en knapp i VAAR drakt — ikke en
+// etterligning. Vipps kan nevnes i tekst; logoen kan ikke tegnes opp.
+sjekk('… og reserveknappen er vaar egen, uten etterlignet logo',
+    str_contains($sidaB, 'on-click="{{ vippsStart }}" hint-size="100%,52px">Logg inn med Vipps</x-import>'));
+// Den ene gjenstaaende #FF5B24-flata er designverktoyets simulering, som
+// aldri kjorer paa lissom.no: den staar bak erPublisert() === false.
+sjekk('simuleringen med Vipps-farge kjorer bare i forhaandsvisningen',
+    str_contains($sidaB, "if (this.erPublisert()) {\n          window.location.href = '/api/vipps-login.php?retur='"));
+
+// «Betal i verkstedet» har ingen «disabled»-grein, men en som venter.
+sjekk('«Betal i verkstedet» viser Vipps sin ventetilstand',
+    str_contains($sidaB, 'verb="pay" stretched="true" loading="true"></vipps-mobilepay-button>')
+    && str_contains($sidaB, 'btLedig: !this.state.btJobber,'));
+
+// ── Prisen ─────────────────────────────────────────────────────────────
+//
+// Vipps-knappen sier «Betal med Vipps» og har ikke plass til beloepet. Sto
+// den alene, forsvant summen fra stedet man trykker. Eieren, 3. september:
+// prisen skal staa rett over knappen.
+sjekk('summen staar over knappen paa kurs',
+    str_contains($sidaB, "bookBetalLinje: 'Du betaler ' + this.bookSum(),")
+    && str_contains($sidaB, '{{ bookBetalLinje }}'));
+sjekk('… og paa medlemskap',
+    str_contains($sidaB, "medlemsBetalLinje: pl.pris")
+    && str_contains($sidaB, '{{ medlemsBetalLinje }}'));
+// Kassa har «Å betale» med summen rett over fra for. To summer der ville
+// vaert én for mye.
+sjekk('… men ikke i kassa, som alt viser «Å betale»',
+    str_contains($sidaB, '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">{{ kurvSum }}</span>'));
+// Knappeteksten og prislinja maa lese det samme tallet.
+sjekk('summen regnes ett sted',
+    str_contains($sidaB, '  bookSum() {')
+    && str_contains($sidaB, "bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
+    && substr_count($sidaB, 'this.bookSum()') === 2);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);

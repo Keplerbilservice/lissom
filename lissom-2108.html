@@ -70,6 +70,21 @@
 <meta property="og:image:alt" content="Deltaker former en bolle på dreieskiva hos Lissom Keramikk i Tønsberg">
 <meta name="twitter:card" content="summary_large_image">
 <!-- seo:slutt -->
+<!-- ── Vipps sine egne betalingsknapper ──────────────────────────────────
+     Eieren, 3. september: «1. vanlig vipps med vanlig vipps logo».
+
+     Knappene som starter en betaling er naa <vipps-mobilepay-button>, som
+     Vipps leverer selv. Da staar logoen, fargen og ordlyden slik Vipps
+     krever, og den foelger med naar de endrer noe — vi kopierer ingen logo.
+
+     «async»: sida skal ikke vente paa Vipps. Kommer skriptet aldri fram —
+     CDN nede, en annonseblokker, et bedriftsnett — blir elementet 0x0 og
+     usynlig. Derfor staar dagens knapp til komponenten er meldt klar; se
+     «vippsKlar» i lissom-2108.html. Kortet er aldri uten knapp.
+
+     .htaccess slipper gjennom cdn.vippsmobilepay.com (skriptet) og
+     designsystem.vippsmobilepay.com (skriftene). -->
+<script async type="text/javascript" src="https://cdn.vippsmobilepay.com/js/button/button.js"></script>
 <!-- ds-css:start — skrevet av bin/inline-css.php, ikke rediger her -->
 <style>
 /* ds-fonts.css */
@@ -2384,7 +2399,22 @@ window.__resources = {
                     <p style="{{ gkStil }}">{{ gkBeskjed }}</p>
                   </sc-if>
                   <div style="height: var(--space-5);"></div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
+                  <!-- Vipps sin egen knapp, med logoen. Er skriptet ikke kommet fram
+                       ennaa — eller aldri — staar vaar egen, og kortet er ikke uten
+                       knapp. To utgaver fordi komponenten leser OM «disabled» finnes,
+                       ikke hva den staar til: disabled="false" sperrer like godt. -->
+                  <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-align: center;">{{ bookBetalLinje }}</p>
+                    <sc-if value="{{ vilkaarMangler }}" hint-placeholder-val="{{ false }}">
+                      <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>
+                    </sc-if>
+                    <sc-if value="{{ vilkaarOk }}" hint-placeholder-val="{{ true }}">
+                      <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ bekreftBooking }}"></vipps-mobilepay-button>
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ vilkaarMangler }}" on-click="{{ bekreftBooking }}" hint-size="100%,52px">{{ bookKnapp }}</x-import>
+                  </sc-if>
                   
                   <sc-if value="{{ erBookKvittert }}" hint-placeholder-val="{{ true }}">
                     <div style="background: var(--sage-50, var(--clay-100)); border: 2px solid var(--sage-500); border-radius: var(--radius-lg); padding: var(--space-6);">
@@ -2455,7 +2485,22 @@ window.__resources = {
                     <p style="margin: var(--space-3) 0 0; font-size: var(--text-sm); font-weight: 700; color: var(--terracotta-600);">{{ bmFeil }}</p>
                   </sc-if>
                   <div style="height: var(--space-5);"></div>
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
+                  <!-- Vipps sin egen knapp, med logoen. Er skriptet ikke kommet fram
+                       ennaa — eller aldri — staar vaar egen, og kortet er ikke uten
+                       knapp. To utgaver fordi komponenten leser OM «disabled» finnes,
+                       ikke hva den staar til: disabled="false" sperrer like godt. -->
+                  <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-align: center;">{{ medlemsBetalLinje }}</p>
+                    <sc-if value="{{ bmVilkaarMangler }}" hint-placeholder-val="{{ false }}">
+                      <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>
+                    </sc-if>
+                    <sc-if value="{{ bmVilkaarOk }}" hint-placeholder-val="{{ true }}">
+                      <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ medlemsBetalKnapp }}"></vipps-mobilepay-button>
+                    </sc-if>
+                  </sc-if>
+                  <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" disabled="{{ bmVilkaarMangler }}" on-click="{{ medlemsBetalKnapp }}" hint-size="100%,52px">{{ medlemsBetalTekst }}</x-import>
+                  </sc-if>
                   <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ bmVilkar }}</p>
                 </sc-if>
                 <sc-if value="{{ visMedlemsVelg }}" hint-placeholder-val="{{ false }}">
@@ -3159,7 +3204,14 @@ window.__resources = {
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Mottakerens e-post" icon="mail" placeholder="navn@epost.no" value="{{ gvEpost }}" on-change="{{ settGvEpost }}" hint-size="100%,66px"></x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Input" label="Hilsen på gavekortet" placeholder="F.eks. «Gratulerer med dagen!»" value="{{ gvHilsen }}" on-change="{{ settGvHilsen }}" hint-size="100%,66px"></x-import>
             </div>
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ gvKjop }}" hint-size="100%,52px">Kjøp gavekort · {{ gvValgt }}</x-import>
+            <!-- Vipps sin egen knapp, som paa kurs og medlemskap. -->
+            <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); text-align: center;">Du betaler {{ gvValgt }}</p>
+              <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ gvKjop }}"></vipps-mobilepay-button>
+            </sc-if>
+            <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ gvKjop }}" hint-size="100%,52px">Kjøp gavekort · {{ gvValgt }}</x-import>
+            </sc-if>
             <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">{{ gk2Betalingslinje }}</p>
           </div>
         </div>
@@ -3256,7 +3308,20 @@ window.__resources = {
               <input id="bt-navn" value="{{ btNavn }}" onChange="{{ settBtNavn }}" placeholder="Valgfritt — så vet vi hvem som betalte" style="{{ btFeltStil }}">
             </div>
 
-            <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" disabled="{{ btJobber }}" on-click="{{ btBetal }}" hint-size="100%,52px">{{ btKnapp }}</x-import>
+            <!-- Beloepet skrives inn i feltet rett over, saa ingen prislinje
+                 her. «btJobber» staar mens vi venter paa Vipps; da viser
+                 knappen Vipps sin egen ventetilstand. -->
+            <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ btJobber }}" hint-placeholder-val="{{ false }}">
+                <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" loading="true"></vipps-mobilepay-button>
+              </sc-if>
+              <sc-if value="{{ btLedig }}" hint-placeholder-val="{{ true }}">
+                <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ btBetal }}"></vipps-mobilepay-button>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" full-width="{{ sant }}" disabled="{{ btJobber }}" on-click="{{ btBetal }}" hint-size="100%,52px">{{ btKnapp }}</x-import>
+            </sc-if>
 
             <sc-if value="{{ btHarBeskjed }}" hint-placeholder-val="{{ false }}">
               <p style="margin: 0; font-size: var(--text-sm); color: var(--terracotta-600); text-wrap: pretty;">{{ btBeskjed }}</p>
@@ -3372,7 +3437,29 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-8); font-size: var(--text-4xl);">{{ loginTittel }}</h1>
 
           <sc-if value="{{ visVippsInnlogging }}" hint-placeholder-val="{{ true }}">
-            <button type="button" onClick="{{ vippsStart }}" style="width: 100%; box-sizing: border-box; appearance: none; border: none; cursor: pointer; background: #FF5B24; color: #FFFFFF; border-radius: var(--radius-pill); padding: 15px 24px; font-family: var(--font-ui); font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 200ms var(--ease-clay);" style-hover="background: #E8501E;">Fortsett med <span style="font-weight: 800; font-style: italic; letter-spacing: -0.01em;">Vipps</span></button>
+            <!-- ── Innlogging med Vipps ────────────────────────────────
+                 Her sto en knapp jeg hadde tegnet selv: Vipps sin oransje
+                 (#FF5B24), pilleform, og ordet «Vipps» i fet kursiv som et
+                 hjemmelaget logomerke. Det er ikke Vipps sin logo — det er
+                 en etterligning av et varemerke, og Vipps sine egne regler
+                 tillater den ikke.
+
+                 Eieren, 3. september: «hva med log inn, er disse ogsaa med
+                 vipps logo?» — og «alt med vipps».
+
+                 Naa staar Vipps sin egen knapp, med den ekte logoen. Den
+                 sier «Logg inn med Vipps», som er Vipps sin ordlyd for
+                 nettopp dette; her sto «Fortsett med Vipps». -->
+            <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+              <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="login" stretched="true" onClick="{{ vippsStart }}"></vipps-mobilepay-button>
+            </sc-if>
+            <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+              <!-- Kommer Vipps sitt skript ikke fram, staar en knapp i vaar
+                   egen drakt. Da staar det ingen etterlignet logo — bare
+                   Lissoms egen knapp, med Vipps nevnt i teksten. Det er
+                   tillatt; en etterlignet logo er det ikke. -->
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ vippsStart }}" hint-size="100%,52px">Logg inn med Vipps</x-import>
+            </sc-if>
             <p style="margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center;">Rask og sikker innlogging med Vipps-appen</p>
           </sc-if>
           <!-- «eller» skiller Vipps fra passordskjemaet. Staar bare naar
@@ -3550,7 +3637,14 @@ window.__resources = {
                 </sc-for>
               </div>
               <!-- Haken «Send som gave» med hilsen sto her. Eieren 30. august: fjernet. -->
-              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
+              <!-- Summen staar rett over, i «Å betale». Derfor ingen egen
+                   prislinje her, som paa kurs- og medlemskortet. -->
+              <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+                <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ betalKurv }}"></vipps-mobilepay-button>
+              </sc-if>
+              <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ betalKurv }}" hint-size="100%,52px">{{ kaKnapp }}</x-import>
+              </sc-if>
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">Du betaler med {{ valgtBetaling }}. Alle priser er inkl. mva der mva gjelder.</p>
               <div style="height: 1px; background: var(--border-subtle); margin: var(--space-6) 0;"></div>
               <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Alt er dreid for hånd, så farge og form varierer litt fra bildet. Varene henter du hos oss i Nordre Løkkevei 15 på Teie i vår åpningstid.</p>
@@ -3854,7 +3948,18 @@ window.__resources = {
                   </div>
                   <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ bmVilkar }}</p>
                   <div>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
+                    <!-- Samme knapp som paa medlemskapskortet. -->
+                    <sc-if value="{{ vippsKlar }}" hint-placeholder-val="{{ false }}">
+                      <sc-if value="{{ bmVilkaarMangler }}" hint-placeholder-val="{{ false }}">
+                        <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" disabled="true"></vipps-mobilepay-button>
+                      </sc-if>
+                      <sc-if value="{{ bmVilkaarOk }}" hint-placeholder-val="{{ true }}">
+                        <vipps-mobilepay-button brand="vipps" language="no" variant="primary" rounded="true" verb="pay" stretched="true" onClick="{{ bmSend }}"></vipps-mobilepay-button>
+                      </sc-if>
+                    </sc-if>
+                    <sc-if value="{{ vippsIkkeKlar }}" hint-placeholder-val="{{ true }}">
+                      <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon-after="arrow-right" disabled="{{ bmVilkaarMangler }}" on-click="{{ bmSend }}" hint-size="auto,52px">Bli medlem</x-import>
+                    </sc-if>
                   </div>
                 </div>
               </sc-if>
@@ -16955,10 +17060,11 @@ class Component extends DCLogic {
     if (pl.engangs) {
       return [{ navn: SELV, verdi: ' ' }];
     }
+    // Samme rekkefolge som knappene under: det vanlige forst.
     return [
       { navn: 'Slik virker de to', verdi: '' },
-      { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
       { navn: 'Betal i Vipps — ' + SELV, verdi: ' ' },
+      { navn: 'Fast trekk i Vipps — ' + TREKK, verdi: ' ' },
     ];
   }
 
@@ -19410,6 +19516,26 @@ class Component extends DCLogic {
     return k.price !== 'Gratis';
   }
 
+  /**
+   * Det kunden faktisk skal betale for plassene som er valgt.
+   *
+   * Sto midt inne i knappeteksten. Naa staar den her, fordi linja over
+   * Vipps-knappen maa si det samme tallet — se «bookBetalLinje».
+   */
+  bookSum() {
+    const k = this.state.valgtKurs || {};
+    if (k.price === 'Gratis') return 'Gratis';
+    const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
+    const antall = Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
+    // Prisen fra katalogen forst. Finner vi den ikke, bruker vi den
+    // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
+    // enn ingen sum i det hele tatt.
+    const grunn = this.prisAv(k.title || k.tittel || '') || 0;
+    if (!grunn) return (k.price || '').replace('Fra ', '') || 'se pris';
+    const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
+    return 'kr.' + ' ' + Math.round(netto).toLocaleString('nb-NO') + ',-';
+  }
+
   medlemsplaner() {
     const fra = this.state.planListe || [];
     // Bindingstida og oppsigelsen foelger med: innmeldinga skal si det som
@@ -19423,15 +19549,26 @@ class Component extends DCLogic {
   }
 
   /**
-   * Fast trekk, eller ordne opp selv.
+   * Fast trekk, eller vanlig Vipps.
    *
    * Krever planen fast trekk, er valget tatt. Serveren avgjor det samme paa
    * nytt — dette er bare for at skjermen og svaret skal si det samme.
+   *
+   * ── Vanlig Vipps er utgangspunktet ─────────────────────────────
+   *
+   * Her sto det motsatte: alt annet enn et aktivt trykk paa «Betal i Vipps»
+   * ble til «trekk». Den som ikke roerte pillene fikk altsaa en loepende
+   * avtale i Vipps uten aa ha bedt om det.
+   *
+   * Eieren, 3. september: «vipps fast trekk skal kun vaere paa
+   * aarsmedlemskap». Aarsmedlemskapet har «krever_fast_trekk = 1» i basen
+   * (migrasjon 081, satt paa alt med tolv maaneders binding), og det er den
+   * ene som fortsatt gir trekk. Alle andre begynner paa vanlig Vipps.
    */
   bmBetalingsvalgt() {
     const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
     if (pl.fastTrekk) return 'trekk';
-    return this.state.bmBetaling === 'selv' ? 'selv' : 'trekk';
+    return this.state.bmBetaling === 'trekk' ? 'trekk' : 'selv';
   }
 
   /** Valgt medlemskap — det forste hvis ingen er valgt ennaa. */
@@ -22252,6 +22389,23 @@ class Component extends DCLogic {
   }
 
   componentDidMount() {
+    // ── Vipps sin knapp, naar den er klar ──────────────────────────
+    //
+    // Skriptet lastes med «async» fra Vipps sin CDN, og er derfor ikke der
+    // naar sida tegnes forste gang. Kommer det aldri fram — CDN nede, en
+    // annonseblokker, et bedriftsnett — blir <vipps-mobilepay-button> et
+    // element nettleseren ikke kjenner: 0x0 piksler, usynlig, ingen
+    // feilmelding. Kunden ville sett et kort uten betalingsknapp og ikke
+    // skjont hvorfor.
+    //
+    // Derfor staar dagens knapp til komponenten er meldt klar. Da byttes
+    // den, og bare da. whenDefined() svarer aldri hvis skriptet uteblir, og
+    // det er nettopp det vi vil: knappen som virker blir staaende.
+    if (typeof customElements !== 'undefined' && customElements.whenDefined) {
+      customElements.whenDefined('vipps-mobilepay-button')
+        .then(() => this.setState({ vippsKlar: true }))
+        .catch(() => { /* da staar vaar egen knapp, som for */ });
+    }
     // #innlogget settes av vipps-callback.php ved retur fra Vipps. Den sier
     // bare at vi skal hente profilen — hvilken side man skal til, staar i
     // adressen, som callbacken har satt til der man var da man logget inn.
@@ -24994,9 +25148,13 @@ class Component extends DCLogic {
     //
     // Nummeret som sendes til serveren er det samme som for: «selv».
     if (pl.engangs) return [{ plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' }];
+    // Vanlig Vipps forst og som hovedknapp. «Forny» sto med fast trekk
+    // oeverst, saa den raskeste veien var en loepende avtale. Eieren, 3.
+    // september: «vipps fast trekk skal kun vaere paa aarsmedlemskap» — og
+    // aarsmedlemskapet gaar i grenen over, der trekk er det eneste valget.
     return [
-      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk' },
-      { plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv', variant: 'secondary' },
+      { plan: pl.navn, navn: 'Betal i Vipps', betaling: 'selv' },
+      { plan: pl.navn, navn: 'Fast trekk i Vipps', betaling: 'trekk', variant: 'secondary' },
     ];
   }
 
@@ -31807,6 +31965,13 @@ class Component extends DCLogic {
           medlemsFornyLinje: 'Medlemskapet ditt løper ikke lenger. Forny det her, så er du i gang igjen.',
           medlemsBetalTekst: (utloept ? 'Forny medlemskapet' : 'Bli medlem')
             + (pl.pris ? ' · ' + pl.pris : ''),
+          // Summen over Vipps-knappen. Den sier «Betal med Vipps» og har
+          // ikke plass til beloepet — se «bookBetalLinje» paa kurskortet.
+          // «per måned» eller «engangs» foelger med, saa det ikke ser ut som
+          // en enkeltbetaling naar det er et loepende medlemskap.
+          medlemsBetalLinje: pl.pris
+            ? 'Du betaler ' + pl.pris + (pl.engangs ? '' : ' per måned')
+            : 'Du betaler i Vipps',
           // Knappen sender det som staar i feltene.
           //
           // Samme kontroll som kursbookingen gjor: en tom eller ugyldig
@@ -31943,19 +32108,16 @@ class Component extends DCLogic {
       // er misvisende — det er en avtale, ikke en plass.
       bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')
         ? 'Opprett avtale i Vipps'
-        : 'Book plass · ' + ((() => {
-            const k = this.state.valgtKurs || {};
-            if (k.price === 'Gratis') return 'Gratis';
-            const erDreiing = (k.tema === 'Dreiing') || ((k.title || '').toLowerCase().indexOf('dreie') >= 0);
-            const antall = Math.min(this.state.bAntallN || 1, erDreiing ? 8 : 12);
-            // Prisen fra katalogen forst. Finner vi den ikke, bruker vi den
-            // som staar paa kortet — «kr. 0,-» paa et kurs til 2 800 er verre
-            // enn ingen sum i det hele tatt.
-            const grunn = this.prisAv(k.title || k.tittel || '') || 0;
-            if (!grunn) return (k.price || '').replace('Fra ', '') || 'se pris';
-            const netto = grunn * antall * (1 - this.rabattFor(k, antall) / 100);
-            return 'kr.' + ' ' + Math.round(netto).toLocaleString('nb-NO') + ',-';
-          })()),
+        : 'Book plass · ' + this.bookSum(),
+      // ── Summen over Vipps-knappen ───────────────────────────────────
+      //
+      // Vipps sin knapp sier «Betal med Vipps» og har ikke plass til
+      // beloepet. Sto den alene, forsvant summen fra stedet man trykker.
+      // Eieren, 3. september: prisen skal staa rett over knappen.
+      //
+      // Samme tall som i knappeteksten over — begge leser bookSum(), saa
+      // de kan ikke bli uenige.
+      bookBetalLinje: 'Du betaler ' + this.bookSum(),
       bekreftBooking: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra kr. 2 800,-', date: 'Onsdag 2. september, 17:30' };
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || (k.date + (k.duration ? ', ' + k.duration : ''));
@@ -38992,6 +39154,11 @@ class Component extends DCLogic {
           btNavn: this.state.btNavn || '',
           settBtNavn: e => this.setState({ btNavn: e.target.value }),
           btJobber: !!this.state.btJobber,
+          // Vipps sin knapp trenger det motsatte ogsaa: den staar i to
+          // utgaver, én som venter og én som kan trykkes. «disabled» kan
+          // ikke bindes til et felt — komponenten leser om attributtet
+          // finnes, ikke hva den staar til.
+          btLedig: !this.state.btJobber,
           btKnapp: this.state.btJobber ? 'Sender deg til Vipps …' : 'Betal med Vipps',
           btBeskjed: this.state.btBeskjed || '',
           btHarBeskjed: !!this.state.btBeskjed,
@@ -41377,6 +41544,20 @@ class Component extends DCLogic {
       goBooking: this.go('booking'),
       vilkaarOk: !!this.state.vilkaarOk,
       vilkaarMangler: !this.state.vilkaarOk,
+      // ── Vipps sin knapp, eller vaar egen ────────────────────────────
+      //
+      // Settes av componentDidMount() naar Vipps sitt skript har meldt seg.
+      // Til da staar vaar egen knapp. Begge finnes i markupen, og bare én
+      // av dem tegnes.
+      //
+      // Hver av dem maa staa i to utgaver — paa og av. «disabled» leses av
+      // komponenten paa OM attributtet finnes, ikke paa hva det staar:
+      // disabled="false" blokkerer klikket like godt som disabled="true».
+      // Maalt i nettleseren for dette ble skrevet. Derfor kan
+      // disabled="{{ ... }}" ikke brukes — malmotoren skriver ordet «false»
+      // inn, og knappen ville vaert doed for alle.
+      vippsKlar: !!this.state.vippsKlar,
+      vippsIkkeKlar: !this.state.vippsKlar,
       toggleVilkaar: () => this.setState(s => ({ vilkaarOk: !s.vilkaarOk })),
       // Allergier og annet arrangoren maa vite. Krysset avgjor om feltet
       // vises, og feltet maa fylles ut naar krysset staar — ellers vet
@@ -43533,7 +43714,10 @@ class Component extends DCLogic {
       ...(() => {
         const pl = this.medlemsplaner().find(x => x.navn === this.bmValgt()) || {};
         const maa = !!pl.fastTrekk;
-        const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'trekk');
+        // Vanlig Vipps staar merket til hun velger noe annet. Se
+        // bmBetalingsvalgt() — de to maa si det samme, ellers viser
+        // skjermen ett valg og serveren faar et annet.
+        const valgt = maa ? 'trekk' : (this.state.bmBetaling || 'selv');
         const knapp = (verdi, navn) => ({
           navn,
           velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),
@@ -43551,7 +43735,9 @@ class Component extends DCLogic {
           bmTrekkTekst: (pl.navn || 'Dette medlemskapet') + ' betales med fast trekk i Vipps.',
           // Samme to setninger som dialogen paa Min side bruker. Sto de to
           // steder, ville de etter hvert sagt hver sin ting om det samme.
-          bmBetalingsvalg: [knapp('trekk', 'Fast trekk i Vipps'), knapp('selv', 'Betal i Vipps')],
+          // Vanlig Vipps forst. Den forste pilla leses som det vanlige
+          // valget, og det er nettopp det den er naa.
+          bmBetalingsvalg: [knapp('selv', 'Betal i Vipps'), knapp('trekk', 'Fast trekk i Vipps')],
           bmBetalingValgt: valgt,
           // ── Vilkaarene ──────────────────────────────────────────────
           //

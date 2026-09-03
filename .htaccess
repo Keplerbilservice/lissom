@@ -89,7 +89,23 @@ AddDefaultCharset UTF-8
     # Proevd av foer den ble lagt inn: alle elleve offentlige sider, alle
     # elleve adminskjermer, innlogging, handlekurv, kasse, innholdsredigering
     # og mobilforhandsvisningen — null brudd, null skriptfeil.
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    #
+    # ── De to Vipps-adressene ─────────────────────────────────────────
+    #
+    # Eieren, 3. september: knappene som starter en betaling skal vaere
+    # Vipps sine egne, med logoen. Vipps leverer dem som en nettkomponent
+    # man laster fra deres CDN — se «vipps-mobilepay-button» i
+    # lissom-2108.html.
+    #
+    # script-src: cdn.vippsmobilepay.com er fila selv.
+    # font-src:   designsystem.vippsmobilepay.com er skriftene knappen
+    #             setter teksten i. Uten den tegnes «Betal med Vipps» i
+    #             systemskrift, og knappen er ikke lenger Vipps sin.
+    #
+    # Lest av i fila for de ble lagt inn: den henter ingenting annet — ingen
+    # fetch, ingen bilder. Logoen ligger som SVG inni skriptet. Derfor er
+    # img-src og connect-src urort.
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.vippsmobilepay.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self' https://designsystem.vippsmobilepay.com; connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 </IfModule>
 
 # Komprimering.

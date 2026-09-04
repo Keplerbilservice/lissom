@@ -674,6 +674,28 @@ final class Vipps
             ['p' => json_encode($status, JSON_UNESCAPED_UNICODE), 'r' => $referanse]
         );
 
+        return self::anvendTilstand($referanse, $status);
+    }
+
+    /**
+     * Gjor det tilstanden sier. Selve regelen, uten oppslaget.
+     *
+     * Skilt fra synkroniser() fordi webhooken alt VET hvilken tilstand det
+     * gjelder — Vipps sender den, signert — og ikke skal sporre om igjen.
+     *
+     * Et nytt oppslag der ville ikke bare kostet et kall: leseadressen kan
+     * ligge et hakk bak hendelsen, saa en CAPTURED-hendelse kunne blitt lest
+     * som AUTHORIZED, og vi ville forsokt aa trekke en betaling som alt var
+     * trukket. Da feiler trekket, og «betalt» blir aldri satt.
+     *
+     * Cron og Tikk maa sporre, for de har ingen hendelse. Webhooken har den.
+     * Begge veier ender her, saa regelen finnes ett sted.
+     *
+     * @param array<string,mixed> $status Svaret fra Vipps, eller minst
+     *                                    ['state' => 'CAPTURED'] fra en hendelse.
+     */
+    public static function anvendTilstand(string $referanse, array $status): string
+    {
         $tilstand = strtoupper((string) ($status['state'] ?? ''));
 
         try {
@@ -689,6 +711,11 @@ final class Vipps
                 DB::kjor(
                     "UPDATE payments SET status = 'avbrutt'
                       WHERE vipps_reference = :r AND status <> 'betalt'",
+                    ['r' => $referanse]
+                );
+            } elseif ($tilstand === 'REFUNDED') {
+                DB::kjor(
+                    "UPDATE payments SET status = 'refundert' WHERE vipps_reference = :r",
                     ['r' => $referanse]
                 );
             }

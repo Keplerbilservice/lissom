@@ -24269,6 +24269,33 @@ class Component extends DCLogic {
       }
     } catch (_) { /* privat modus */ }
 
+    // Bookingen man holdt paa med for innloggingen.
+    //
+    // Lagt igjen av bookOgBetal(). Datoen, telefonnummeret, allergiene og
+    // gavekortkoden kommer tilbake — ellers matte man fylle ut alt en gang
+    // til etter en tur innom Vipps man ikke hadde bedt om.
+    //
+    // Vilkaarshaken settes IKKE tilbake. Den er en bekreftelse paa at man har
+    // lest noe, og den maa man gi selv — den kan ikke gjenopprettes fra en
+    // tidligere okt paa vaare vegne.
+    try {
+      const raa = sessionStorage.getItem('lissom_booking');
+      if (raa) {
+        sessionStorage.removeItem('lissom_booking');
+        const b = JSON.parse(raa) || {};
+        const ny = {};
+        if (b.oktId) { ny.bOktId = b.oktId; }
+        if (b.telefon) { ny.bTelefon = b.telefon; }
+        if (b.epost) { ny.bEpost = b.epost; }
+        if (b.allergiKryss) { ny.bAllergiKryss = true; }
+        if (b.allergier) { ny.bAllergier = b.allergier; }
+        // «gkApen» settes ikke: feltet aapner seg av seg selv naar det
+        // staar en kode i det. Se propen «gkApen».
+        if (b.gavekort) { ny.gkKode = b.gavekort; }
+        if (Object.keys(ny).length) { this.setState(ny); }
+      }
+    } catch (_) { /* privat modus, eller ugyldig JSON: da staar feltene tomme */ }
+
     this.vaktNyUtgave();
     // Feilvakta forst av alt som kan feile: en feil under oppstarten er
     // den vi minst faar vite om paa annet vis.
@@ -32151,6 +32178,28 @@ class Component extends DCLogic {
       return;
     }
     if (!this.state.innlogget) {
+      // Det hun rakk aa fylle ut skal ikke vaere borte naar hun kommer
+      // tilbake.
+      //
+      // Adressen tok henne til riktig kurs, men datoen hun valgte,
+      // telefonnummeret, allergiene og gavekortkoden sto tomme — hun matte
+      // gjore alt en gang til, etter en tur innom Vipps hun ikke hadde bedt
+      // om. Medlemsinnmeldinga tok vare paa sitt fra for; bookingen gjorde
+      // det ikke.
+      //
+      // Ett felt med JSON framfor seks noekler: det er én ting aa rydde bort
+      // igjen, og den kan ikke bli halvveis fjernet.
+      try {
+        sessionStorage.setItem('lissom_booking', JSON.stringify({
+          oktId: oktId,
+          telefon: (this.state.bTelefon || '').trim(),
+          epost: (this.state.bEpost || '').trim(),
+          allergiKryss: !!this.state.bAllergiKryss,
+          allergier: (this.state.bAllergier || '').trim(),
+          gavekort: (this.state.gkKode || '').trim(),
+          vilkaar: !!this.state.vilkaarOk,
+        }));
+      } catch (_) { /* privat modus: da staar feltene tomme, som for */ }
       // Tilbake til bookingen etterpaa, ikke til forsiden.
       this.sendTilInnlogging(this.naaSti(), 'Du ble ikke meldt på kurset.');
       return;
@@ -37636,6 +37685,37 @@ class Component extends DCLogic {
                           : nye + ' feil venter på at du ser på dem.',
                 nye, 'Se dem',
                 () => this.gaaAdmin('adminfeil', {}), true)] : [];
+            })(),
+
+            // Kvitteringer og paaminnelser som ikke kom fram.
+            //
+            // Tallet har vaert regnet ut i api/admin/oversikt.php hele tiden,
+            // men laa i «varsler» — en liste som ikke vises noe sted. Samme
+            // regel som resten: kortet staar bare naar noe faktisk venter.
+            //
+            // Dette er e-post og SMS til kunder som ikke kom fram. Staar det
+            // her, er det noen som ikke har faatt kvitteringen sin.
+            ...(() => {
+                const n = (((this.state.adminData || {}).varselTall) || {}).feilet || 0;
+                return n ? [kort('Varsler kom ikke fram',
+                  n === 1 ? 'Ett varsel kom ikke fram. Sjekk e-postoppsettet.'
+                          : n + ' varsler kom ikke fram. Sjekk e-postoppsettet.',
+                  n, 'Se dem',
+                  () => this.gaaAdmin('adminvarsler', {}), true)] : [];
+            })(),
+
+            // Varsler som har ligget i ko i over en halvtime.
+            //
+            // Koen tommes av trafikken paa sida (Tikk) og av cron. Ligger det
+            // noe der en halvtime senere, er det som regel fordi ingen av dem
+            // kjorer — og da gaar det ingen kvitteringer ut i det hele tatt.
+            ...(() => {
+                const n = (((this.state.adminData || {}).varselTall) || {}).iKo || 0;
+                return n ? [kort('Varsler står i kø',
+                  n === 1 ? 'Ett varsel har ligget i kø i over en halvtime.'
+                          : n + ' varsler har ligget i kø i over en halvtime.',
+                  n, 'Se køen',
+                  () => this.gaaAdmin('adminvarsler', {}), true)] : [];
             })(),
 
             // Betalinger som stoppet paa veien gjennom Vipps.

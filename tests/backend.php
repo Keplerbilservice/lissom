@@ -10991,6 +10991,84 @@ if ($mId > 0) {
     sjekk('det finnes et medlem aa regne paa', false, 'ingen medlemmer i basen');
 }
 
+// ── De tre siste restene ────────────────────────────────────────────────
+//
+// Eieren, 4. september: «Gjør ferdig alt». Tre punkter sto igjen og var
+// skrevet ned i docs/APNE-PUNKTER.md.
+$restK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$restU = (string) preg_replace('/<!--.*?-->/s', '', $restK);
+$restU = (string) preg_replace('/^\s*\/\/.*$/m', '', $restU);
+sjekk('det er kode aa maale i restsjekkene', strlen($restU) > 500000, strlen($restU) . ' tegn');
+
+// 1. Skjemaet overlever turen innom Vipps-innloggingen.
+//
+// Adressen tok kunden til riktig kurs, men datoen, telefonnummeret,
+// allergiene og gavekortkoden sto tomme — alt matte fylles ut paa nytt etter
+// en tur hun ikke hadde bedt om. Medlemsinnmeldinga tok vare paa sitt fra
+// for; bookingen gjorde det ikke.
+//
+// Maalt i nettleseren, utlogget kunde paa «Nybegynner dreiekurs»: dato valgt,
+// telefon «90011122», allergi «Nøtteallergi», vilkaar krysset av. Etter
+// trykk gikk sida til /api/vipps-login.php, og etter retur sto telefonen og
+// allergien der igjen — og noekkelen var ryddet bort.
+sjekk('bookingen tas vare paa foer innloggingen',
+    str_contains($restU, "sessionStorage.setItem('lissom_booking', JSON.stringify({"),
+    'ett felt med JSON');
+foreach (['oktId', 'telefon', 'epost', 'allergiKryss', 'allergier', 'gavekort'] as $felt) {
+    sjekk('… og «' . $felt . '» er med',
+        (bool) preg_match("/lissom_booking', JSON.stringify\(\{.{0,400}" . preg_quote($felt, '/') . ':/s', $restU),
+        'lagres');
+}
+sjekk('… og hentes fram igjen ved oppstart',
+    str_contains($restU, "const raa = sessionStorage.getItem('lissom_booking');"), 'ved oppstart');
+sjekk('… og ryddes bort naar den er brukt',
+    str_contains($restU, "sessionStorage.removeItem('lissom_booking');"), 'én gang');
+// Vilkaarshaken er en bekreftelse paa at man har lest noe. Den kan ikke
+// gjenopprettes paa kundens vegne.
+sjekk('… men vilkaarshaken settes ikke tilbake',
+    !(bool) preg_match('/if \(b\.vilkaar\)/', $restU), 'den maa gis paa nytt');
+sjekk('… og et ugyldig lager velter ikke sida',
+    (bool) preg_match("/const raa = sessionStorage.getItem\('lissom_booking'\);.*?\} catch \(_\) \{/s", $restU),
+    'JSON.parse staar inne i try');
+
+// 2. Webhooken og cron deler regel, uten aa dele oppslag.
+$vK = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$wK = file_get_contents(dirname(__DIR__) . '/api/vipps-webhook.php');
+sjekk('regelen for hva en tilstand betyr staar ett sted',
+    str_contains($vK, 'public static function anvendTilstand(string $referanse, array $status): string'),
+    'Vipps::anvendTilstand()');
+sjekk('… og synkroniser() bruker den',
+    str_contains($vK, 'return self::anvendTilstand($referanse, $status);'), 'etter oppslaget');
+sjekk('… og webhooken ogsaa',
+    str_contains($wK, 'Vipps::anvendTilstand($referanse, $status);'), 'uten eget regelsett');
+sjekk('… saa webhooken ikke har sin egen utgave lenger',
+    !str_contains($wK, "case 'CAPTURED':") && !str_contains($wK, "Booking::markerBetalt(\$referanse);"),
+    'switchen er borte');
+// Hendelsen er signert og sier hva som har skjedd. Leseadressen kan ligge et
+// hakk bak, saa et oppslag her kunne lest en CAPTURED-hendelse som AUTHORIZED
+// og forsokt aa trekke en betaling som alt var trukket.
+sjekk('webhooken sporr ikke Vipps om igjen',
+    str_contains($wK, "\$status = \$navn === 'AUTHORIZED'\n        ? Vipps::hentBetaling(\$referanse)\n        : ['state' => \$navn];"),
+    'bare AUTHORIZED, som trenger beloepet');
+sjekk('REFUNDED behandles fortsatt',
+    str_contains($vK, "} elseif (\$tilstand === 'REFUNDED') {"), 'flyttet inn i regelen');
+
+// 3. Varslene som ikke vistes noe sted.
+$oK = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('tallene foelger med som tall, ikke bare som setninger',
+    str_contains($oK, "'varselTall' => [") && str_contains($oK, "'feilet' => \$feiledeVarsler,")
+    && str_contains($oK, "'iKo'    => \$iKo,"),
+    'et kort kan ikke lese et tall ut av en setning');
+sjekk('kortet «Varsler kom ikke fram» finnes',
+    str_contains($restU, "kort('Varsler kom ikke fram',"), 'paa Verkstedet');
+sjekk('kortet «Varsler står i kø» finnes',
+    str_contains($restU, "kort('Varsler står i kø',"), 'paa Verkstedet');
+sjekk('… og begge staar bare naar noe venter',
+    substr_count($restU, "return n ? [kort('Varsler") === 2, 'samme regel som resten');
+sjekk('… og begge gaar til varselskjermen',
+    substr_count($restU, "this.gaaAdmin('adminvarsler', {}), true)] : [];") === 2,
+    'adminvarsler');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

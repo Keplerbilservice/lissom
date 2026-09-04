@@ -14,6 +14,57 @@ flerdagerskurset i kalenderen og på telefonen.
 
 ---
 
+## De tre siste restene — 4. september 2026
+
+Eieren: «Gjør ferdig alt».
+
+### Skjemaet overlever turen innom Vipps-innloggingen
+
+Adressen tok kunden til riktig kurs, men datoen, telefonnummeret, allergiene
+og gavekortkoden sto tomme — alt måtte fylles ut på nytt etter en tur hun
+ikke hadde bedt om. Medlemsinnmeldinga tok vare på sitt fra før; bookingen
+gjorde det ikke.
+
+Lagres nå som ett felt med JSON, `lissom_booking`, og hentes fram ved
+oppstart. **Vilkårshaken settes ikke tilbake** — den er en bekreftelse på at
+man har lest noe, og kan ikke gjenopprettes på kundens vegne.
+
+**Målt i nettleseren**, utlogget kunde på «Nybegynner dreiekurs»:
+
+| | Resultat |
+|---|---|
+| Fylt ut | dato valgt, telefon «90011122», allergi «Nøtteallergi», vilkår krysset av |
+| Etter trykk | sida gikk til `/api/vipps-login.php?retur=/kurs/nybegynner-dreiekurs` |
+| Etter retur | telefon «90011122» og allergi «Nøtteallergi» sto der igjen |
+| Nøkkelen | ryddet bort |
+
+### Webhooken og cron deler regel, uten å dele oppslag
+
+Regelen for hva en Vipps-tilstand betyr sto tre steder: i webhooken, i `Tikk`
+og halvveis i cron. Nå står den i `Vipps::anvendTilstand()`, som alle tre
+bruker.
+
+**Webhooken spør ikke Vipps om igjen.** Hendelsen er signert og sier hva som
+har skjedd; leseadressen kan ligge et hakk bak, og et oppslag der kunne lest
+en CAPTURED-hendelse som AUTHORIZED og forsøkt å trekke en betaling som
+allerede var trukket. Unntaket er AUTHORIZED, som trenger beløpet — det står
+ikke i hendelsen.
+
+`REFUNDED` er flyttet inn i den delte regelen, så cron og `Tikk` håndterer
+den også.
+
+### Varslene som ikke vistes noe sted
+
+«N varsler kom ikke fram» og «N varsler har ligget i kø» var regnet ut hele
+tiden, men lå i `varsler` — en liste uten plass i skjermbildet. Nå har de
+hvert sitt kort på Verkstedet, ved siden av «Henger i Vipps», med samme regel
+som resten: kortet står bare når noe faktisk venter.
+
+**Målt i nettleseren** med to feilede og ett i kø:
+
+- «Varsler kom ikke fram · 2 · 2 varsler kom ikke fram. Sjekk e-postoppsettet. · Se dem →»
+- «Varsler står i kø · 1 · Ett varsel har ligget i kø i over en halvtime. · Se køen →»
+
 ## Min side og kursdeltakersidene — 4. september 2026
 
 Eieren la fram femten punkter, med krav om analyse og skisser før noe ble
@@ -268,9 +319,9 @@ begge radene viste «BELØP I KRONER … Refunder / Avbryt». Nå er den
 |---|---|---|
 | Cron hentet Vipps-status og gjorde ingenting med den. | `bin/cron.php` | **Rettet.** Se under. |
 | Sikkerhetsnettet i `Tikk` så bare på `venter` og `autorisert`, og hoppet ikke over månedstrekkene. | `app/lib/tikk.php` | **Rettet.** Se under. |
-| Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php` | **Rettet i API-et.** Se under — men varselet vises ingen steder i skjermbildet, og det er en egen sak. |
-| Kom kunden seg gjennom innloggingen, er skjemaet hun fylte ut (dato, telefon, allergier) borte når hun kommer tilbake. Bare medlemskap tar vare på det. | `lissom-2108.html` | **Ikke rettet.** |
-| Webhooken har fortsatt sin egen behandling av AUTHORIZED/CAPTURED/avbrutt/REFUNDED, som ikke går gjennom `Vipps::synkroniser()`. | `api/vipps-webhook.php` | **Ikke rørt.** Den virker, og den er signert — å legge den om er en egen sak. |
+| Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php` | **Rettet.** Se under. |
+| Kom kunden seg gjennom innloggingen, var skjemaet hun fylte ut borte når hun kom tilbake. | `lissom-2108.html` | **Rettet.** Se under. |
+| Webhooken hadde sin egen behandling av AUTHORIZED/CAPTURED/avbrutt/REFUNDED. | `api/vipps-webhook.php` | **Rettet.** Se under. |
 
 ### Cron gjorde ingenting med svaret fra Vipps
 

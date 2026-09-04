@@ -182,6 +182,12 @@ $kommende = DB::alle(
 $varsler = [];
 $hengendeListe = [];
 
+// Kvitteringer og paaminnelser som ikke kom fram, og som ligger i ko.
+//
+// Begge har vaert talt opp her hele tiden, og begge har vaert usynlige:
+// «varsler» hadde ingen plass i skjermbildet. Naa har de hvert sitt kort paa
+// Verkstedet, ved siden av «Henger i Vipps» — og tallene under er det de
+// kortene leser.
 $feiledeVarsler = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'");
 if ($feiledeVarsler > 0) {
     $varsler[] = $feiledeVarsler === 1
@@ -537,6 +543,12 @@ Svar::json([
     'venteliste' => $venteliste,
     'varsler'    => $varsler,
     'hengende'   => $hengendeListe,
+    // Tallene kortene leser. De sto bare inni tekstene i «varsler», og et
+    // kort kan ikke lese et tall ut av en setning.
+    'varselTall' => [
+        'feilet' => $feiledeVarsler,
+        'iKo'    => $iKo,
+    ],
     // Om utsendingen er skrudd paa. Ligger her fordi denne hentes paa hver
     // adminskjerm — da kan kortet som peker til oppsettet vise hva som
     // gjelder, uten et eget kall.

@@ -67,34 +67,20 @@ if (!$signert) {
     Svar::ok(['notert' => true]);
 }
 
+// Hva tilstanden betyr, staar ett sted: Vipps::anvendTilstand(). Her sto
+// den samme regelen én gang til, og cron hadde sin egen halve utgave — tre
+// steder som kunne komme i utakt om ett av dem ble rettet.
+//
+// Vi sporr IKKE Vipps om igjen. Hendelsen er signert og sier hva som har
+// skjedd; leseadressen kan ligge et hakk bak, og et oppslag her kunne lest
+// en CAPTURED-hendelse som AUTHORIZED og forsokt aa trekke en betaling som
+// alt var trukket. Unntaket er AUTHORIZED, der vi trenger beloepet som ble
+// godkjent — det staar ikke i hendelsen.
 try {
-    switch ($navn) {
-        case 'AUTHORIZED':
-            $status = Vipps::hentBetaling($referanse);
-            Vipps::trekk($referanse, (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0));
-            Booking::markerBetalt($referanse);
-            break;
-
-        case 'CAPTURED':
-            Booking::markerBetalt($referanse);
-            break;
-
-        case 'ABORTED':
-        case 'EXPIRED':
-        case 'TERMINATED':
-            DB::kjor(
-                "UPDATE payments SET status = 'avbrutt' WHERE vipps_reference = :r AND status <> 'betalt'",
-                ['r' => $referanse]
-            );
-            break;
-
-        case 'REFUNDED':
-            DB::kjor(
-                "UPDATE payments SET status = 'refundert' WHERE vipps_reference = :r",
-                ['r' => $referanse]
-            );
-            break;
-    }
+    $status = $navn === 'AUTHORIZED'
+        ? Vipps::hentBetaling($referanse)
+        : ['state' => $navn];
+    Vipps::anvendTilstand($referanse, $status);
 
     DB::oppdater('vipps_webhook_events', ['behandlet_at' => gmdate('Y-m-d H:i:s')], ['event_id' => $hendelsesId]);
 } catch (Throwable $e) {

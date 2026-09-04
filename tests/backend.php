@@ -10500,6 +10500,87 @@ sjekk('… og linja over Vipps-knappen sier det samme',
     str_contains($kodeI, "? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()"),
     'staar rett over knappen');
 
+// ── Cron gjorde ingenting med svaret fra Vipps ──────────────────────────
+//
+// api/vipps-webhook.php svarer 200 selv naar behandlingen feiler, og
+// begrunner det med at «Cron rydder opp». Det gjorde den ikke: jobben
+// «betalinger» hentet statusen fra Vipps, la den i «siste_payload» og gikk
+// videre. Ingen trekk, ingen «betalt», ingen «avbrutt» — og «siste_payload»
+// skrives tre steder og leses ingen. Sviktet webhooken, og kunden aldri kom
+// tilbake til retur-adressen, kunne betalingen bli staaende for alltid:
+// pengene reservert i Vipps, plassen staaende som «reservert».
+//
+// Behandlingen laa i Tikk, som virket. Naa ligger den ett sted —
+// Vipps::synkroniser() — og begge kaller den.
+//
+// Maalt mot en Vipps-etterligning paa 127.0.0.1, med en ekte booking i
+// basen som hadde hengt i tretti minutter:
+//   AUTHORIZED  for:   betaling «venter», booking «reservert», trekk ikke kalt
+//               etter: betaling «betalt», booking «betalt», trekk kalt
+//   TERMINATED  for:   betaling «venter»
+//               etter: betaling «avbrutt»
+//   en rad som alt sto «betalt» ble staaende «betalt»
+$vippsK = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$cronK  = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$tikkK  = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$utenKomm = static fn(string $t): string =>
+    (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '', $t);
+$vippsU = $utenKomm($vippsK);
+$cronU  = $utenKomm($cronK);
+$tikkU  = $utenKomm($tikkK);
+
+sjekk('det er kode aa maale i betalingssjekkene',
+    strlen($vippsU) > 10000 && strlen($cronU) > 3000 && strlen($tikkU) > 1000,
+    strlen($vippsU) . '/' . strlen($cronU) . '/' . strlen($tikkU) . ' tegn');
+sjekk('behandlingen ligger ett sted',
+    str_contains($vippsU, 'public static function synkroniser(string $referanse): string'),
+    'Vipps::synkroniser()');
+sjekk('… og cron kaller den',
+    str_contains($cronU, 'Vipps::synkroniser((string) $p[\'vipps_reference\'])'),
+    'jobben «betalinger»');
+sjekk('… og Tikk kaller den samme',
+    str_contains($tikkU, 'Vipps::synkroniser((string) $p[\'vipps_reference\'])'),
+    'sjekkHengendeBetalinger()');
+sjekk('… saa ingen av dem har sin egen utgave lenger',
+    !str_contains($cronU, 'Vipps::hentBetaling')
+    && !str_contains($tikkU, 'Vipps::hentBetaling')
+    && !str_contains($tikkU, 'Booking::markerBetalt'),
+    'bare ett kall hvert sted');
+// Det statusen sier, skal faktisk gjores.
+sjekk('AUTHORIZED trekker pengene og markerer betalt',
+    str_contains($vippsU, "if (\$tilstand === 'AUTHORIZED') {")
+    && str_contains($vippsU, 'self::trekk($referanse, (int) ($status[\'aggregate\'][\'authorizedAmount\'][\'value\'] ?? 0));')
+    && str_contains($vippsU, 'Booking::markerBetalt($referanse);'),
+    'trekk + markerBetalt');
+sjekk('CAPTURED markerer betalt',
+    str_contains($vippsU, "} elseif (\$tilstand === 'CAPTURED') {"),
+    'egen gren');
+sjekk('TERMINATED, ABORTED og EXPIRED avbryter',
+    str_contains($vippsU, "in_array(\$tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)"),
+    'alle tre');
+sjekk('… men en betalt rad faller aldri tilbake til avbrutt',
+    str_contains($vippsU, "WHERE vipps_reference = :r AND status <> 'betalt'"),
+    'vernet staar');
+sjekk('et mislykket oppslag lar raden staa som for',
+    str_contains($vippsU, "logg_feil('Statusoppslag feilet for ' . \$referanse, \$e);\n            return '';"),
+    'ingen halv oppdatering');
+// Maanedstrekkene finnes ikke paa ePayment-adressen: hvert oppslag ga 404 og
+// en linje i feilloggen — og de laa foerst i «ORDER BY id», saa tre gamle
+// trekk ville brukt opp hele LIMIT-en i Tikk.
+sjekk('Tikk hopper over maanedstrekkene, som cron alltid har gjort',
+    str_contains($tikkU, "AND type <> 'recurring_charge'")
+    && str_contains($cronU, "AND type <> 'recurring_charge'"),
+    'begge steder');
+sjekk('… og begge ser paa «opprettet» ogsaa',
+    str_contains($tikkU, "WHERE status IN ('opprettet','venter','autorisert')")
+    && str_contains($cronU, "WHERE status IN ('opprettet','venter','autorisert')"),
+    'samme tre statuser');
+// Uten dette kunne jobben si «30 statusoppslag» selv om alle tretti feilet.
+sjekk('cron teller bare de oppslagene som faktisk gikk',
+    str_contains($cronU, "if (\$tilstand !== '') { \$sjekket++; }")
+    && str_contains($cronU, "\$gjortOpp"),
+    'sjekket og gjortOpp hver for seg');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

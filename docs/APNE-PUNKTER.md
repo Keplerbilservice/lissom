@@ -124,10 +124,42 @@ sjekk i `tests/backend.php`, men den er ikke sett på skjerm.
 
 | Funn | Hvor | Status |
 |---|---|---|
-| Cron henter Vipps-status og gjør ingenting med den — trekker ikke, markerer ikke betalt, avbryter ikke. `siste_payload` skrives tre steder og leses null. | `bin/cron.php:174` | **Ikke rettet — venter på svar.** Webhooken sier «Cron rydder opp» ved feil. Det gjør den ikke. |
-| Sikkerhetsnettet som faktisk virker ser bare på `venter` og `autorisert` — ikke `opprettet`. | `app/lib/tikk.php:97` | **Ikke rettet.** Smalt hull: alle kanaler går `opprettet → venter` med én gang, så en rad blir bare stående på `opprettet` hvis PHP dør midt imellom. |
+| Cron hentet Vipps-status og gjorde ingenting med den. | `bin/cron.php` | **Rettet.** Se under. |
+| Sikkerhetsnettet i `Tikk` så bare på `venter` og `autorisert`, og hoppet ikke over månedstrekkene. | `app/lib/tikk.php` | **Rettet.** Se under. |
 | Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php:197` | **Ikke rettet.** |
 | Kom kunden seg gjennom innloggingen, er skjemaet hun fylte ut (dato, telefon, allergier) borte når hun kommer tilbake. Bare medlemskap tar vare på det. | `lissom-2108.html` | **Ikke rettet.** |
+| Webhooken har fortsatt sin egen behandling av AUTHORIZED/CAPTURED/avbrutt/REFUNDED, som ikke går gjennom `Vipps::synkroniser()`. | `api/vipps-webhook.php` | **Ikke rørt.** Den virker, og den er signert — å legge den om er en egen sak. |
+
+### Cron gjorde ingenting med svaret fra Vipps
+
+`api/vipps-webhook.php` svarer 200 selv når behandlingen feiler, og begrunner
+det med at «Cron rydder opp». Det gjorde den ikke: jobben `betalinger` hentet
+statusen fra Vipps, la den i `siste_payload` og gikk videre. Ingen trekk,
+ingen «betalt», ingen «avbrutt» — og `siste_payload` skrives tre steder og
+leses null. Sviktet webhooken, og kunden aldri kom tilbake til retur-adressen,
+kunne betalingen bli stående for alltid: pengene reservert i Vipps, plassen
+stående som «reservert».
+
+Behandlingen lå i `Tikk`, som virket. Nå ligger den ett sted —
+`Vipps::synkroniser()` — og både cron og `Tikk` kaller den.
+
+`Tikk` fikk samtidig med `type <> 'recurring_charge'`, som cron alltid har
+hatt: månedstrekkene finnes ikke på ePayment-adressen, hvert oppslag ga 404 og
+en linje i feilloggen — og de lå først i `ORDER BY id`, så tre gamle trekk
+ville brukt opp hele `LIMIT 3` og en ekte kursbetaling som hang ville aldri
+blitt sjekket.
+
+**Målt mot en Vipps-etterligning på 127.0.0.1**, med en ekte booking i basen
+som hadde hengt i tretti minutter:
+
+| Tilstand fra Vipps | Før | Etter |
+|---|---|---|
+| AUTHORIZED | betaling «venter», booking «reservert», trekk ikke kalt | betaling «betalt», booking «betalt», trekk kalt |
+| TERMINATED | betaling «venter» | betaling «avbrutt» |
+| rad som alt sto «betalt» | — | står fortsatt «betalt» |
+
+Etterligningen ligger ikke i repoet — den var en engangsting under testen.
+`app/secrets.php` ble midlertidig pekt mot den og satt tilbake etterpå.
 
 **Ikke gjort, venter på svar**
 

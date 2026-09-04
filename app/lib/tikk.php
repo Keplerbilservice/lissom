@@ -91,42 +91,35 @@ final class Tikk
      */
     private static function sjekkHengendeBetalinger(): void
     {
+        // «type <> recurring_charge» sto i bin/cron.php, men manglet her.
+        // Maanedstrekkene er ikke ePayment og finnes ikke paa den adressen:
+        // hvert oppslag gir 404 og en linje i feilloggen. Verre er det at de
+        // ligger foerst i «ORDER BY id» og aldri gaar bort — tre gamle trekk
+        // ville brukt opp hele LIMIT-en, og en ekte kursbetaling som hang
+        // ville aldri blitt sjekket. Trekkene hentes fra avtalen sin, i
+        // cron-jobben «medlemstrekk».
+        //
+        // «opprettet» staar med her, som i cron. Alle kanalene setter
+        // «venter» med én gang Vipps har svart, saa en rad blir bare staaende
+        // paa «opprettet» hvis PHP doer akkurat mellom de to linjene — men da
+        // er den ellers usynlig for alle sikkerhetsnett.
         $venter = DB::alle(
             "SELECT vipps_reference
                FROM payments
-              WHERE status IN ('venter','autorisert')
+              WHERE status IN ('opprettet','venter','autorisert')
+                AND type <> 'recurring_charge'
                 AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY)
                 AND updated_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 MINUTE)
               ORDER BY id
               LIMIT 3"
         );
 
+        // Selve behandlingen ligger i Vipps::synkroniser(). Den sto her, og
+        // bin/cron.php hadde sin egen halve utgave som bare lagret svaret
+        // uten aa gjore noe med det. Naa er det ett sted, og begge kaller
+        // det samme.
         foreach ($venter as $p) {
-            $ref = (string) $p['vipps_reference'];
-            try {
-                $status = Vipps::hentBetaling($ref);
-                $tilstand = strtoupper((string) ($status['state'] ?? ''));
-
-                DB::kjor(
-                    'UPDATE payments SET siste_payload = :p, updated_at = UTC_TIMESTAMP()
-                      WHERE vipps_reference = :r',
-                    ['p' => json_encode($status, JSON_UNESCAPED_UNICODE), 'r' => $ref]
-                );
-
-                if ($tilstand === 'AUTHORIZED') {
-                    Vipps::trekk($ref, (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0));
-                    Booking::markerBetalt($ref);
-                } elseif ($tilstand === 'CAPTURED') {
-                    Booking::markerBetalt($ref);
-                } elseif (in_array($tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)) {
-                    DB::kjor(
-                        "UPDATE payments SET status = 'avbrutt' WHERE vipps_reference = :r AND status <> 'betalt'",
-                        ['r' => $ref]
-                    );
-                }
-            } catch (Throwable $e) {
-                logg_feil('Kunne ikke sjekke betaling ' . $ref, $e);
-            }
+            Vipps::synkroniser((string) $p['vipps_reference']);
         }
     }
 }

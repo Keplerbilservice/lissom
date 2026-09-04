@@ -948,9 +948,21 @@ final class Medlemskap
             return 'Medlemskapet er alt sagt opp, og gjelder ut '
                 . Booking::norskDatoKort((string) $avtale['slutter'] . ' 12:00:00') . '.';
         }
-        $binding = $avtale['binding_til'] ?? null;
+        // ── Planen gaar foran den lagrede datoen ──────────────────────
+        //
+        // «binding_til» settes én gang, naar avtalen opprettes. Endres
+        // planens «binding_mnd» etterpaa — fra to maaneder til null — blir
+        // datoen staaende i raden, og denne metoden sperret oppsigelsen paa
+        // en binding som ikke lenger fantes.
+        //
+        // Eieren, 5. september: «Prøv Lissom har ingen binding». Planen staar
+        // med binding_mnd = 0, men et medlem sto med «bundet til 2. november»
+        // — og kunne dermed ikke si opp. Planen er avtalen.
+        $plan = self::plan((string) $avtale['plan']);
+        $binderIDetHeleTatt = $plan === null || (int) ($plan['binding_mnd'] ?? 0) > 0;
+
+        $binding = $binderIDetHeleTatt ? ($avtale['binding_til'] ?? null) : null;
         if ($binding !== null && (string) $binding >= gmdate('Y-m-d')) {
-            $plan = self::plan((string) $avtale['plan']);
             $aar = $plan !== null && (int) $plan['binding_mnd'] >= 12;
             return ($aar
                 ? 'Årsavtalen kan ikke sies opp før året er ute. Den løper til '

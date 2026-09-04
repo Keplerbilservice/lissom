@@ -365,6 +365,10 @@
 --type-h3:var(--weight-bold) var(--text-xl)/var(--leading-snug) var(--font-display);
 --type-body:var(--weight-regular) var(--text-base)/var(--leading-relaxed) var(--font-sans);
 --type-body-sm:var(--weight-regular) var(--text-sm)/var(--leading-normal) var(--font-sans);
+/* Piller og filterknapper. Sto med brodtekst i 15px og 14px polstring paa
+   hver side; ti filtre fylte da fire linjer paa mobil. Eieren, 5. september:
+   «de er for brede». Ett maal for alle 14 stedene, saa de foelger hverandre. */
+--type-chip:var(--weight-semibold) var(--text-xs)/1.2 var(--font-sans);
 --type-label:var(--weight-bold) var(--text-xs)/1.2 var(--font-sans);
 --type-eyebrow:var(--weight-bold) var(--text-xs)/1.2 var(--font-sans);
 }
@@ -1269,6 +1273,20 @@ window.__resources = {
 
   @media (max-width: 760px) {
     [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
+  }
+
+  /* «Logg ut» og «Stemple inn» paa samme linje.
+     ------------------------------------------
+     Raden over Min side er «Du er ikke innstemplet» · Logg ut · Stemple inn.
+     Paa 390 px tar de tre 484 px, saa den siste falt ned paa egen linje.
+     Eieren, 5. september, med bilde: «pillene logg ut og stemple inn maa
+     vaere paa linje».
+
+     Statusteksten tar sin egen linje i stedet — den er ord, ikke en knapp —
+     og de to knappene blir staaende sammen. Samme grep som kalendertittelen
+     bruker rett over. Paa skjerm over 760 px staar raden som for. */
+  @media (max-width: 760px) {
+    .lx-mstempeltekst { flex: 1 0 100%; }
   }
 
   /* Kortene paa telefonen: tittel, tall og «Se mer».
@@ -3828,7 +3846,7 @@ window.__resources = {
           <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-4);">
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
             <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-              <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ stemplingTekst }}</span>
+              <span class="lx-mstempeltekst" style="font-size: var(--text-sm); color: var(--text-muted);">{{ stemplingTekst }}</span>
               <button type="button" onClick="{{ loggUt }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">
                 <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -5027,7 +5045,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -5622,7 +5640,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -7666,7 +7684,7 @@ window.__resources = {
         </sc-if>
 
         <!-- Hva selger du? Tre ting, og ingen vei innom noe annet. -->
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 var(--space-6);">
           <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
             <button type="button" onClick="{{ kv.velg }}" style="{{ kv.stil }}">{{ kv.navn }}</button>
           </sc-for>
@@ -8812,7 +8830,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ false }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -10552,7 +10570,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -10757,7 +10775,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet, saa veien tilbake til Markedsforing staar
              der som paa de andre skjermene. Uten den var dette en blindvei. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="2">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11022,7 +11040,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11172,7 +11190,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11310,7 +11328,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11470,7 +11488,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -11598,7 +11616,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -12098,7 +12116,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -12742,7 +12760,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13303,7 +13321,7 @@ window.__resources = {
                 <sc-if value="{{ m.harBinding }}" hint-placeholder-val="{{ true }}">
                   <div style="flex: 0 1 190px; min-width: 0;">
                     <span style="{{ m.bindingStil }}">{{ m.bindingTekst }}</span>
-                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.trekkTekst }}</div>
+                    <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.bindingDetalj }}</div>
                   </div>
                 </sc-if>
                 <!-- Har hun betalt?
@@ -13509,7 +13527,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13722,7 +13740,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -13979,7 +13997,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -14250,7 +14268,7 @@ window.__resources = {
              menyen. «harOmrFaner» er usann paa de skjermene som ikke
              hoerer til et omraade, saa raden tegnes ikke der. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-6) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -14421,7 +14439,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -14701,7 +14719,7 @@ window.__resources = {
         <!-- Fanerekka for omraadet. Alt man trenger naar man jobber med
              denne gruppa, uten aa maatte ut av den. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -15159,7 +15177,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -15955,7 +15973,7 @@ window.__resources = {
         <!-- Fanerekka for stedet. Alt som hoerer hjemme her, uten aa maatte
              ut i menyen for hver ting. -->
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -16180,7 +16198,7 @@ window.__resources = {
         </div>
 
         <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
-          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: 0 0 var(--space-6);">
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
@@ -30682,7 +30700,7 @@ class Component extends DCLogic {
                         velg: () => sett('maate', m),
                         stil: {
                           appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-                          padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600,
+                          padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600,
                           border: '1.5px solid ' + (maate === m ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
                           background: maate === m ? 'var(--lissom-brown)' : 'var(--surface-card)',
                           color: maate === m ? 'var(--clay-50)' : 'var(--text-heading)',
@@ -32670,30 +32688,46 @@ class Component extends DCLogic {
       // To maaneders binding fra innmelding, tolv paa aarsavtalen, og én
       // maaneds oppsigelsestid. Uten dette sto det ingen steder naar noen var
       // bundet til, eller naar en oppsigelse faktisk tar slutt.
-      bindingTekst: m.slutter ? 'Sagt opp ' + (m.sagtOpp || '') + ' · ut ' + m.slutter
-        : (m.bundet ? 'Bundet til ' + m.bundetTil : (m.bundetTil ? 'Fri' : '')),
+      // ── Bindingspilla: ett ord, datoen under ─────────────────────
+      //
+      // Hele setningen sto inni pilla: «SAGT OPP 3. SEPTEMBER 2026 · UT 30.
+      // NOVEMBER 2026», i versaler, med sperret skrift. Foerst rant den ut
+      // over nabokolonnen; da fikk den lov aa brekke, og ble i stedet en stor
+      // gul flate over to linjer. Eieren, 5. september, med bilde: «pillen er
+      // alt for stor og passer ikke i stilen».
+      //
+      // Naboene loser det samme riktig: en liten pille med ett ord — «BETALT»,
+      // «AKTIV» — og detaljene i graa tekst under. Bindinga folger den formen
+      // naa. Da trengs heller ingen brekking: «BUNDET» er seks tegn.
+      bindingTekst: m.slutter ? 'Sagt opp' : (m.bundet ? 'Bundet' : (m.bundetTil ? 'Fri' : '')),
+      // Datoen staar i den graa linja under, sammen med betalingsmaaten —
+      // samme sted «Fast trekk» sto fra for.
+      // Datoen medlemmet SA opp sto i den gamle pilleteksten og ville blitt
+      // borte da pilla ble kortet ned til ett ord. Den staar ingen andre
+      // steder i lista, saa den foelger med hit — ikke fjernet, flyttet.
+      bindingDetalj: (m.slutter
+        ? (m.sagtOpp ? 'Sagt opp ' + m.sagtOpp + ' · ut ' + m.slutter : 'Ut ' + m.slutter)
+        : (m.bundet ? 'Til ' + m.bundetTil : ''))
+        + (m.slutter || m.bundet ? ' · ' : '')
+        + (m.fastTrekk ? 'Fast trekk' : 'Gjør opp selv'),
       iOppsigelse: !!m.iOppsigelse,
       erBundet: !!m.bundet,
       harBinding: !!(m.slutter || m.bundetTil),
       bindingStil: {
         fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
         textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
-        // Pilla laa i en kolonne paa 190 px med «nowrap». «Sagt opp 3.
-        // september 2026 · ut 30. november 2026» er 445 px — den rant 255 px
-        // ut over nabokolonnen og la seg oppaa «Skulle vaert trukket ...».
-        // Maalt for dette ble skrevet. Eieren, 3. september, med bilde: «det
-        // staar en tekst over en annen tekst».
-        //
-        // «inline-block» gjor at den kan brekke og likevel beholde formen
-        // som en pille.
+        // Ett ord i pilla, saa den kan staa paa én linje igjen. Brekkinga
+        // var lovlig for teksten var lang; naa er den seks tegn.
         display: 'inline-block', maxWidth: '100%',
-        whiteSpace: 'normal',
+        whiteSpace: 'nowrap',
         background: m.iOppsigelse ? 'rgba(196,90,58,.14)'
           : (m.bundet ? 'rgba(255,207,56,.28)' : 'rgba(90,140,80,.16)'),
         color: m.iOppsigelse ? 'var(--terracotta-600)'
           : (m.bundet ? 'var(--lissom-brown)' : '#3E6B36'),
       },
-      trekkTekst: m.fastTrekk ? 'Fast trekk' : 'Gjør opp selv',
+      // «trekkTekst» sto som egen linje under bindingspilla. Den er slaatt
+      // sammen i «bindingDetalj» over, saa den graa linja sier baade naar
+      // bindinga loper ut og hvordan det gjores opp — som naboraden gjor.
       // ── Betalt eller ikke ──────────────────────────────────────────
       //
       // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
@@ -32765,7 +32799,7 @@ class Component extends DCLogic {
         velg: () => { if (typeof sett === 'function') sett({ target: { value: verdi } }); },
         stil: {
           appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-          padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600,
+          padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600,
           textAlign: 'left', maxWidth: '100%', whiteSpace: 'normal',
           border: '1.5px solid ' + (aktiv ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
           background: aktiv ? 'var(--lissom-brown)' : 'var(--surface-card)',
@@ -33302,7 +33336,7 @@ class Component extends DCLogic {
         const valgt = this.state.gMedlem === navn;
         return {
           navn, velg: () => this.setState({ gMedlem: navn }),
-          stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: valgt ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)' },
+          stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: valgt ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)' },
         };
       }),
       gErTimer: (this.state.gType || 'Ta med en venn') === 'Ekstra timer',
@@ -33365,7 +33399,7 @@ class Component extends DCLogic {
         return {
           ndGjentakValg: NAVN.map(t => ({
             navn: t, velg: () => this.setState({ ndGjentak: t }),
-            stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: g === t ? 'var(--lissom-brown)' : 'transparent', color: g === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
+            stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: g === t ? 'var(--lissom-brown)' : 'transparent', color: g === t ? 'var(--clay-50)' : 'var(--lissom-brown)' },
           })),
           ndGjentar: g !== 'Ingen',
           ndAntall: this.state.ndAntall ?? '',
@@ -38093,7 +38127,7 @@ class Component extends DCLogic {
         // og det man ser etter naar man trykker Medlemmer, er dem som er
         // medlem naa. «Alle» staar fortsatt som forste filter.
         const valgt = (this.state.medlemFilter || 'Aktive') === n;
-        return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
+        return { navn: n, velg: () => this.setState({ medlemFilter: n }), stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '1px solid ' + (valgt ? 'var(--lissom-brown)' : 'var(--border-subtle)'), background: valgt ? 'var(--lissom-brown)' : 'var(--surface-card)', color: valgt ? 'var(--clay-50)' : 'var(--text-heading)', transition: 'all .18s ease' } };
       }),
       sorterNavn: () => this.setState(s => ({ medlemSort: s.medlemSort === 'navn' ? '' : 'navn' })),
       sorterTimer: () => this.setState(s => ({ medlemSort: s.medlemSort === 'timer' ? '' : 'timer' })),
@@ -39285,7 +39319,7 @@ class Component extends DCLogic {
       kursSokStil: {
         boxSizing: 'border-box', width: 'min(240px, 100%)',
         border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-pill)',
-        padding: '7px 14px', font: 'var(--type-body-sm)',
+        padding: '6px 12px', font: 'var(--type-chip)',
         background: 'var(--surface-card)', color: 'var(--text-heading)',
       },
       ingenKursTreff: this.kursSokte().length === 0 && (this.state.kursSok || '').trim() !== '',
@@ -40073,7 +40107,7 @@ class Component extends DCLogic {
       nkHolderValg: ['Monica', 'Joakim'].map(t => ({
         navn: t,
         velg: () => this.setState({ nkHolder: t }),
-        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkHolder || 'Monica') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkHolder || 'Monica') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkHolder || 'Monica') ? 'var(--clay-50)' : 'var(--text-heading)' },
+        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkHolder || 'Monica') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkHolder || 'Monica') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkHolder || 'Monica') ? 'var(--clay-50)' : 'var(--text-heading)' },
       })),
       // «Workshop» heter «Haandbygging» naa, som pilla ute. Eieren, 30.
       // august: «jeg vil ha mulighet aa velge haandbygging naar jeg legger ut
@@ -40081,7 +40115,7 @@ class Component extends DCLogic {
       nkTyper: ['Kurs', 'Håndbygging', 'Event', 'Sip & Clay'].map(t => ({
         navn: t,
         velg: () => this.setState({ nkType: t }),
-        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '7px 14px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkType || 'Kurs') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkType || 'Kurs') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkType || 'Kurs') ? 'var(--clay-50)' : 'var(--text-heading)' },
+        stil: { appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600, padding: '6px 12px', borderRadius: 'var(--radius-pill)', border: t === (this.state.nkType || 'Kurs') ? '2px solid var(--lissom-brown)' : '1px solid var(--border-subtle)', background: t === (this.state.nkType || 'Kurs') ? 'var(--lissom-brown)' : 'var(--surface-card)', color: t === (this.state.nkType || 'Kurs') ? 'var(--clay-50)' : 'var(--text-heading)' },
       })),
       nkNavn: this.state.nkNavn || '',
       settNkNavn: e => this.setState({ nkNavn: e.target.value }),
@@ -40343,7 +40377,7 @@ class Component extends DCLogic {
             velg: () => this.setState({ kRessursId: id }),
             stil: {
               appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-              padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+              padding: '6px 12px', font: 'var(--type-chip)', fontWeight: paa ? 700 : 500,
               border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
               background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
               color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
@@ -40409,7 +40443,7 @@ class Component extends DCLogic {
                 },
                 stil: {
                   appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-                  padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+                  padding: '6px 12px', font: 'var(--type-chip)', fontWeight: paa ? 700 : 500,
                   border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
                   background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
                   color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
@@ -40795,7 +40829,7 @@ class Component extends DCLogic {
           velg: () => { this.setState({ kSteg: n }); this.rullTilKursoppsettet(); },
           stil: {
             appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-            padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: paa ? 700 : 500,
+            padding: '6px 12px', font: 'var(--type-chip)', fontWeight: paa ? 700 : 500,
             border: '1px solid ' + (paa ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
             background: paa ? 'var(--lissom-brown)' : 'var(--surface-card)',
             color: paa ? 'var(--clay-50)' : 'var(--text-heading)',
@@ -40882,7 +40916,21 @@ class Component extends DCLogic {
           piBadge: p ? p.badge : '',
           piPris: p ? p.pris : '',
           piTekst: p ? p.detalj : '',
-          piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin' : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : 'Sendes på e-post med en gang') : '',
+          // Merknaden sier noe om glasuren, ikke om levering.
+          //
+          // Reserveverdien var «Sendes på e-post med en gang» — en setning som
+          // hoerer til gavekortet. Den sto paa HVER butikkvare som ikke var
+          // merket «Matsikret» eller «Kunstobjekt», altsaa paa vaser, krukker
+          // og alt annet man ikke kan sende paa e-post. Eieren, 5. september,
+          // med bilde av en vase til 800 kroner: «fjern alle steder at varer
+          // sendes med en gang på epost».
+          //
+          // Gavekortet er ikke en butikkvare — det har sin egen side — saa
+          // linja hadde ingenting her aa gjore i det hele tatt. Hvordan varen
+          // kommer fram staar alt i punktet under: «Hent i butikken på Teie,
+          // eller få den sendt.»
+          piMerknad: p ? (p.badge === 'Matsikret' ? 'Matsikret glasur — tåler oppvaskmaskin'
+            : p.badge === 'Kunstobjekt' ? 'Dekorglasur — ment som pynt, ikke til mat' : '') : '',
           piBildeCss: p ? "url('" + p.image + "')" : 'none',
           piFokus: p ? this.fokusFor(p.image || p.bilde || '') : 'center',
           piLeggIKurv: () => { if (p && !p.utsolgt) { this.leggTil(p.id ? '#' + p.id : p.title); this.setState({ piProdukt: null }); } },
@@ -43735,7 +43783,7 @@ class Component extends DCLogic {
             return {
               navn: t,
               velg: () => this.setState(s => ({ innholdUtseende: Object.assign({}, s.innholdUtseende, { [nokkel]: Object.assign({}, (s.innholdUtseende || {})[nokkel], { bakgrunn: t }) }) })),
-              stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: valgt ? 'var(--lissom-brown)' : 'transparent', color: valgt ? 'var(--clay-50)' : 'var(--lissom-brown)' },
+              stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: valgt ? 'var(--lissom-brown)' : 'transparent', color: valgt ? 'var(--clay-50)' : 'var(--lissom-brown)' },
             };
           }),
           overganger: ['Ingen', 'Gradient mot bunnen', 'Gradient mot toppen'].map(t => {
@@ -43744,7 +43792,7 @@ class Component extends DCLogic {
             return {
               navn: t,
               velg: () => this.setState(s => ({ innholdUtseende: Object.assign({}, s.innholdUtseende, { [nokkel]: Object.assign({}, (s.innholdUtseende || {})[nokkel], { overgang: t }) }) })),
-              stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '7px 14px', font: 'var(--type-body-sm)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: valgt ? 'var(--lissom-brown)' : 'transparent', color: valgt ? 'var(--clay-50)' : 'var(--lissom-brown)' },
+              stil: { appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)', padding: '6px 12px', font: 'var(--type-chip)', fontWeight: 600, border: '2px solid var(--lissom-brown)', background: valgt ? 'var(--lissom-brown)' : 'transparent', color: valgt ? 'var(--clay-50)' : 'var(--lissom-brown)' },
             };
           }),
           harGradient: (((this.state.innholdUtseende || {})[nokkel] || {}).overgang || 'Ingen') !== 'Ingen',
@@ -46316,7 +46364,7 @@ class Component extends DCLogic {
         navn,
         velg: () => this.setState({ brNyRolle: verdi }),
         stil: {
-          appearance: 'none', cursor: 'pointer', padding: '7px 14px',
+          appearance: 'none', cursor: 'pointer', padding: '6px 12px',
           borderRadius: 'var(--radius-pill)', font: 'var(--type-body-sm)',
           fontWeight: (this.state.brNyRolle || 'admin') === verdi ? 700 : 500,
           border: '1px solid ' + ((this.state.brNyRolle || 'admin') === verdi

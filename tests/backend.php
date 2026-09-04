@@ -9477,8 +9477,16 @@ sjekk('medlemslista krever at avtalen loeper for den sier «fast trekk»',
     str_contains($medFilA, "\$loeper = (string) \$a['status'] === 'aktiv';")
     && str_contains($medFilA, "'fastTrekk'   => \$loeper"));
 sjekk('… og for den sier at medlemmet er bundet',
-    str_contains($medFilA, "\$bundet = \$loeper && \$a['binding_til'] !== null")
-    && str_contains($medFilA, "'bundetTil'   => \$loeper ? \$dato(\$a['binding_til']) : null,"));
+    str_contains($medFilA, "\$bundet = \$loeper && \$planBinder")
+    && str_contains($medFilA, "&& \$a['binding_til'] !== null && (string) \$a['binding_til'] >= \$idag;")
+    && str_contains($medFilA, "'bundetTil'   => \$loeper && \$planBinder ? \$dato(\$a['binding_til']) : null,"));
+// Datoen i raden er satt én gang, av planen som gjaldt da avtalen ble laget.
+// Endres planen til null maaneder etterpaa, blir datoen staaende — og lista
+// sa «bundet» paa en plan som ikke binder. Eieren, 5. september, med bilde:
+// «Prøv Lissom har ingen binding».
+sjekk('… og planen gaar foran den lagrede datoen',
+    str_contains($medFilA, "\$p = Medlemskap::plan((string) \$a['plan']);")
+    && str_contains($medFilA, "return \$p === null || (int) (\$p['binding_mnd'] ?? 0) > 0;"));
 
 echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
 // Eieren, 4. september, med bilde av «kr 99» der det skulle staa «kr 990»:
@@ -9663,7 +9671,24 @@ sjekk('… og sier fra at en loepende Vipps-avtale trekker det gamle',
     && str_contains($bytt, 'trekker fortsatt det. Skal beløpet endres'));
 sjekk('… og byttet blir staaende i endringsloggen',
     str_contains($medApi, "revider('medlem_plan_byttet', 'member', \$id,")
-    && str_contains($medApi, "'medlem_plan_byttet'    => 'Byttet medlemskap',"));
+    && str_contains($medApi, "if (\$h === 'medlem_plan_byttet') {")
+    && str_contains($medApi, "'Byttet medlemskap' . (\$fra !== '' ? ' fra ' . \$fra : '') . ' til ' . \$til"));
+// ── Loggen maa si hvilken vei det gikk ────────────────────────────
+//
+// «medlem_betaler_ikke» sto ikke i lista, saa den falt til reserveregelen og
+// ble skrevet ut som handlingsnavnet: «Medlem betaler ikke». Den teksten er
+// den samme enten haken ble slaatt paa eller av. Eieren, 5. september, om et
+// medlem: «Har jeg satt hun ikke skal betale? Noe alvorlig feil er det» —
+// loggen kunne verken bekrefte eller avkrefte det.
+sjekk('… og loggen sier om fritaket ble slaatt paa eller av',
+    str_contains($medApi, "if (\$h === 'medlem_betaler_ikke') {")
+    && str_contains($medApi, "? 'Fritatt fra betaling' . (\$grunn !== '' ? ' — ' . \$grunn : '')")
+    && str_contains($medApi, ": 'Skal betale igjen';"));
+sjekk('… og «detaljer» blir faktisk lest',
+    str_contains($medApi, "\$loggTekst = static function (string \$h, ?string \$detaljer = null): string {")
+    && str_contains($medApi, "\$loggTekst((string) \$a['handling'], \$a['detaljer'] ?? null)"));
+sjekk('… og nullstillinga staar med ord, ikke handlingsnavnet',
+    str_contains($medApi, "'medlem_nullstilt'      => 'Medlemskapet nullstilt',"));
 // Ukjent plan skal ikke kunne settes: timene og prisen leses av planen, og
 // et medlem paa en plan som ikke finnes har ingen av delene.
 sjekk('… og en ukjent plan avvises',
@@ -11068,6 +11093,82 @@ sjekk('… og begge staar bare naar noe venter',
 sjekk('… og begge gaar til varselskjermen',
     substr_count($restU, "this.gaaAdmin('adminvarsler', {}), true)] : [];") === 2,
     'adminvarsler');
+
+
+echo "\n== Piller, faner og en vase som ikke sendes på e-post ==\n";
+// Eieren, 5. september, i tur og orden: «pillene passer ikke, sjekk globalt»,
+// «piller over hverandre», «de går ut på siden», «de er for brede», og med
+// bilde av bindinga: «pillen er alt for stor og passer ikke i stilen».
+$sidaP = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+// Egne kommentarer skal ikke svare for koden.
+$utenKomm = (string) preg_replace('/^\s*\/\/.*$/m', '',
+    (string) preg_replace('/<!--.*?-->/s', '', $sidaP));
+
+// 1. Faneraden ble dratt 24 piksler opp i kortet over. Brakk pillene til to
+//    linjer paa mobil, ble hele blokka liggende oppaa kortet foran.
+sjekk('ingen faneraad drar seg opp i kortet over',
+    !str_contains($utenKomm, 'margin: calc(var(--space-8) * -1 + var(--space-2))')
+    && !str_contains($utenKomm, 'margin: calc(var(--space-6) * -1 + var(--space-2))'),
+    'maalt i nettleseren: marginTop 0 paa alle faneraadene, 390/820/1280 px');
+sjekk('… og de staar med vanlig luft under i stedet',
+    substr_count($utenKomm, 'margin: 0 0 var(--space-6);') >= 20);
+
+// 2. Pillene var brodtekst i 15px med 14px polstring. Ti filtre fylte fire
+//    linjer paa en telefon. Ett maal for alle stedene.
+sjekk('pillene har ett felles maal',
+    str_contains($sidaP, '--type-chip:var(--weight-semibold) var(--text-xs)/1.2 var(--font-sans);'));
+sjekk('… og ingen piller staar igjen med det gamle maalet',
+    !str_contains($utenKomm, "padding: '7px 14px'"),
+    'alle 14 stedene er endret');
+sjekk('… og de som har skrift bruker pillemaalet',
+    substr_count($utenKomm, "padding: '6px 12px', font: 'var(--type-chip)'") === 11);
+
+// 3. Bindingspilla sa hele setningen i versaler og ble en gul flate over to
+//    linjer. Naboene sier ett ord — «BETALT», «AKTIV» — og datoen under.
+sjekk('bindingspilla sier ett ord',
+    str_contains($utenKomm, "bindingTekst: m.slutter ? 'Sagt opp' : (m.bundet ? 'Bundet' : (m.bundetTil ? 'Fri' : '')),"),
+    'maalt i nettleseren: 69 x 24 px, én linje');
+sjekk('… og datoen staar i den graa linja under',
+    str_contains($utenKomm, "bindingDetalj: (m.slutter")
+    && str_contains($utenKomm, "(m.bundet ? 'Til ' + m.bundetTil : ''))"));
+// Datoen medlemmet SA opp sto i den gamle pilleteksten. Den staar ingen
+// andre steder i lista, saa den skal foelge med — flyttet, ikke fjernet.
+sjekk('… og oppsigelsesdatoen er ikke borte',
+    str_contains($utenKomm, "(m.sagtOpp ? 'Sagt opp ' + m.sagtOpp + ' · ut ' + m.slutter : 'Ut ' + m.slutter)"));
+sjekk('… sammen med betalingsmaaten, som sto som egen linje for',
+    str_contains($utenKomm, "+ (m.fastTrekk ? 'Fast trekk' : 'Gjør opp selv'),")
+    && !str_contains($utenKomm, 'trekkTekst'),
+    'slaatt sammen, ikke fjernet');
+sjekk('… og den brekker ikke lenger',
+    str_contains($utenKomm, "whiteSpace: 'nowrap',"));
+
+// 3b. «Logg ut» og «Stemple inn» falt fra hverandre paa telefonen.
+//     Raden er statustekst · Logg ut · Stemple inn; paa 390 px tok de tre
+//     484 px. Eieren, 5. september, med bilde: «pillene logg ut og stemple
+//     inn maa vaere paa linje». Teksten tar sin egen linje i stedet.
+sjekk('statusteksten viker for de to knappene paa telefon',
+    str_contains($sidaP, '.lx-mstempeltekst { flex: 1 0 100%; }')
+    && str_contains($sidaP, '<span class="lx-mstempeltekst"'),
+    'maalt i nettleseren: samme linje paa 390, 820 og 1280 px');
+
+// 4. «Sendes på e-post med en gang» sto paa hver butikkvare som ikke var
+//    merket. Eieren, med bilde av en vase til 800 kroner: «fjern alle steder
+//    at varer sendes med en gang på epost».
+sjekk('ingen butikkvare paastaar at den sendes paa e-post',
+    !str_contains($utenKomm, 'Sendes på e-post med en gang'));
+sjekk('… og merknaden sier noe om glasuren i stedet',
+    str_contains($utenKomm, "piMerknad: p ? (p.badge === 'Matsikret'")
+    && str_contains($utenKomm, "p.badge === 'Kunstobjekt' ? 'Dekorglasur"));
+// Gavekortet SENDES paa e-post. Den linja hoerer hjemme og skal staa.
+sjekk('… mens gavekortet fortsatt sier at det sendes',
+    str_contains($sidaP, "badge: 'Sendes på e-post'"));
+
+// 5. Oppsigelsen leste den samme lagrede datoen og sperret et proevemedlem
+//    ute fra aa si opp. Planen er avtalen.
+$mLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('oppsigelsen sperres ikke av en binding planen ikke har',
+    str_contains($mLib, '$binderIDetHeleTatt = $plan === null || (int) ($plan[\'binding_mnd\'] ?? 0) > 0;')
+    && str_contains($mLib, '$binding = $binderIDetHeleTatt ? ($avtale[\'binding_til\'] ?? null) : null;'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -8427,6 +8427,38 @@ sjekk('… og begge lenkene deler stil',
     substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 2
     && str_contains($sidaG, '      listeKnappStil: {'));
 
+// ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
+//
+// Kalenderen viste ingenting om penger. Man maatte aapne okta for aa se om
+// noen skyldte. Planen: kortet skal si det, og hover-kortet skal si hvor
+// mange.
+//
+// Ett regnestykke, flere visninger. Sto det i hver visning, kunne dag-,
+// uke- og listevisningen sagt hver sitt om det samme kurset.
+sjekk('kalenderen regner betalingen ett sted',
+    str_contains($sidaG, '  oktBetaling(deltakere) {')
+    && str_contains($sidaG, "const ubetalt = alle.filter(d => String(d.status || '') !== 'Betalt').length;"));
+// Fargen kommer fra betalingsPille(), saa kalenderen ikke faar sin egen.
+sjekk('… med den samme fargen som pilla ellers',
+    str_contains($sidaG, "const p = this.betalingsPille(ubetalt === 0 ? 'betalt' : 'venter');"));
+// Tre visninger tegner kort: dag, uke og liste. Maalt i nettleseren:
+// «1 ubetalt» i lys terrakotta, «Alle betalt» i groent.
+sjekk('… og pilla staar i dag-, uke- og listevisningen',
+    substr_count($sidaG, '{{ h.harBetaling }}') === 3);
+// Maanedsvisningen har én linje tekst per okt. En pille der ville brutt
+// tettheten eieren ba om 31. august: «pillene ... maa bli mye mindre».
+sjekk('… men ikke i maanedsvisningen, som har én linje per okt',
+    str_contains($sidaG, '<button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>'));
+// Hover-kortet sier hvor mange. Det har «pointer-events: none» og kan ikke
+// trykkes; veien inn i Kassa staar i okta naar den aapnes — «klKasse».
+sjekk('hover-kortet sier hvor mange som ikke har betalt',
+    str_contains($sidaG, '{{ klHover.harBetaling }}')
+    && str_contains($sidaG, "klKasse: () => this.gaaAdmin('adminuttak', {"));
+// En gruppe i listevisningen har ingen egne deltakere. Proppen maa likevel
+// finnes — mangler den, kaster malen og hele skjermen blanker.
+sjekk('… og en gruppe uten deltakere svarer likevel paa proppen',
+    str_contains($sidaG, "harBetaling: false, betalingTekst: '', betalingListeStil: {} }"));
+
 
 // ── Stemplingstestene taaler at klokka er over 23 ──────────────────────
 //

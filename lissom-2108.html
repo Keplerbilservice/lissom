@@ -6134,6 +6134,12 @@ window.__resources = {
                           <sc-if value="{{ h.harMerknad }}" hint-placeholder-val="{{ false }}">
                             <span style="display: inline-flex; align-items: center; gap: 3px; font-size: 10px; font-weight: 700;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>{{ h.merknadAntall }}</span>
                           </sc-if>
+                          <!-- Samme pille som paa den brede visningen. Kortet
+                               er smalt her, saa den staar i rada med de andre
+                               smaa merkene. -->
+                          <sc-if value="{{ h.harBetaling }}" hint-placeholder-val="{{ false }}">
+                            <span style="{{ h.betalingSmalStil }}">{{ h.betalingTekst }}</span>
+                          </sc-if>
                         </span>
                       </sc-if>
                     </button>
@@ -6185,6 +6191,13 @@ window.__resources = {
                       <sc-if value="{{ h.harMerknad }}" hint-placeholder-val="{{ false }}">
                         <span style="{{ h.merknadStil }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>{{ h.merknadTekst }}</span>
                       </sc-if>
+                      <!-- Er kurset gjort opp? Sto ingen steder paa kortet;
+                           man maatte aapne okta for aa se det. Fargen er den
+                           samme som betalingspilla bruker overalt ellers —
+                           se betalingsPille(). -->
+                      <sc-if value="{{ h.harBetaling }}" hint-placeholder-val="{{ false }}">
+                        <span style="{{ h.betalingStil }}">{{ h.betalingTekst }}</span>
+                      </sc-if>
                     </button>
                   </sc-for>
                 </div>
@@ -6212,6 +6225,12 @@ window.__resources = {
                       <span style="display: block; font-weight: 600; font-size: var(--text-sm); color: var(--text-heading); text-decoration: {{ h.strek }};">{{ h.tittel }}</span>
                       <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ h.detalj }}</span>
                     </span>
+                    <!-- Samme pille som i dag- og ukevisningen. Sto den bare
+                         to av tre steder, sa kalenderen tre ulike ting om det
+                         samme kurset. -->
+                    <sc-if value="{{ h.harBetaling }}" hint-placeholder-val="{{ false }}">
+                      <span style="{{ h.betalingListeStil }}">{{ h.betalingTekst }}</span>
+                    </sc-if>
                   </button>
                 </sc-for>
                 </div>
@@ -6786,6 +6805,12 @@ window.__resources = {
           <div style="font-size: var(--text-sm); color: var(--text-body);">{{ klHover.dato }}</div>
           <div style="font-size: var(--text-sm); color: var(--text-body);">{{ klHover.holder }}</div>
           <div style="font-size: var(--text-sm); font-weight: 700; color: var(--text-heading); margin-top: 4px;">{{ klHover.kap }}</div>
+          <!-- Hvor mange som ikke har gjort opp, i klartekst. Kortet har
+               «pointer-events: none» og kan ikke trykkes paa; veien inn i
+               Kassa staar i okta naar den aapnes — se «klKasse». -->
+          <sc-if value="{{ klHover.harBetaling }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top: 6px;"><span style="{{ klHover.betalingStil }}">{{ klHover.betalingTekst }}</span></div>
+          </sc-if>
           <sc-if value="{{ klHover.harDeltakere }}" hint-placeholder-val="{{ false }}">
             <div style="border-top: 1px solid var(--border-subtle); margin-top: 10px; padding-top: 8px;">
               <sc-for list="{{ klHover.deltakere }}" as="p" hint-placeholder-count="3">
@@ -28307,6 +28332,37 @@ class Component extends DCLogic {
    * gikk med én betaling; dette er hvor en person staar. To begreper, to
    * kart — de skal ikke slaas sammen.
    */
+  /**
+   * Hvordan det staar til med betalingen paa én oekt.
+   *
+   * Kalenderen viste ingenting om penger: man maatte aapne okta for aa se
+   * om noen skyldte. Planens punkt 6: kortet skal si det, og hover-kortet
+   * skal si hvor mange.
+   *
+   * Deltakerraden fra api/admin/kalender.php sier «Betalt» eller
+   * «Reservert». Alt som ikke er «Betalt» er ikke gjort opp.
+   *
+   * Fargen kommer fra betalingsPille(), saa kalenderen ikke faar sin egen.
+   */
+  oktBetaling(deltakere) {
+    const alle = deltakere || [];
+    if (alle.length === 0) {
+      return { har: false, tekst: '', stil: {} };
+    }
+    const ubetalt = alle.filter(d => String(d.status || '') !== 'Betalt').length;
+    const p = this.betalingsPille(ubetalt === 0 ? 'betalt' : 'venter');
+    return {
+      har: true,
+      tekst: ubetalt === 0 ? 'Alle betalt'
+        : ubetalt + (ubetalt === 1 ? ' ubetalt' : ' ubetalte'),
+      // Samme form som merknadspilla ved siden av, saa de staar paa linje.
+      stil: Object.assign({}, p.stil, {
+        display: 'inline-flex', alignItems: 'center', marginTop: '4px',
+        fontSize: '10px', padding: '1px 8px',
+      }),
+    };
+  }
+
   betalingsPille(tilstand, somKnapp) {
     const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
                     forfalt: 'Forfalt', venter: 'Ikke betalt' };
@@ -29280,8 +29336,20 @@ class Component extends DCLogic {
           prikkStil: prikk(e), strek: 'none', velg: vekslUtvid(e.id),
           // Hoyreklikkmenyen slaar opp okta paa id-en. En gruppe er ingen
           // okt, saa den skal ikke aapne en meny som ikke finner noe.
-          meny: ev => ev.preventDefault() }
-      : { tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: detalj(e), prikkStil: prikk(e), strek: e.avlyst ? 'line-through' : 'none', velg: velg(e), meny: meny(e) });
+          meny: ev => ev.preventDefault(),
+          // En gruppe har ingen egne deltakere. Proppen maa likevel finnes:
+          // mangler den, kaster malen og hele skjermen blanker.
+          harBetaling: false, betalingTekst: '', betalingListeStil: {} }
+      : Object.assign(
+          { tid: e.tid + (e.slutt ? '–' + e.slutt : ''), tittel: e.tittel, detalj: detalj(e), prikkStil: prikk(e), strek: e.avlyst ? 'line-through' : 'none', velg: velg(e), meny: meny(e) },
+          // Betalingspilla, som i dag- og ukevisningen. Ett regnestykke,
+          // tre visninger — se oktBetaling().
+          (() => {
+            const bp = this.oktBetaling(e.deltakere);
+            return { harBetaling: bp.har, betalingTekst: bp.tekst,
+                     betalingListeStil: Object.assign({}, bp.stil,
+                       { marginTop: 0, flex: '0 0 auto' }) };
+          })()));
     const minAv = t => { const p = String(t).split(':'); return (+p[0]) * 60 + (+p[1] || 0); };
     const dagensAlle = dagEvts(dagIso);
     const rekkevidde = dagensAlle.filter(e => e.type !== 'vakt');
@@ -29464,6 +29532,17 @@ class Component extends DCLogic {
             // det skal ikke frem». Det han var ute etter er feltet
             // «Venteliste» i sidemenyen under «Alle kurs», og det er koen fra
             // serveren som fyller det.
+            ...(() => {
+              const bp = this.oktBetaling(p.e.deltakere);
+              return { harBetaling: bp.har, betalingTekst: bp.tekst, betalingStil: bp.stil,
+                       // Den smale visningen har smaa merker paa én linje.
+                       betalingSmalStil: Object.assign({}, bp.stil,
+                         { marginTop: 0, fontSize: '10px', padding: '0 6px' }),
+                       // Listevisningen har raden staaende vannrett; pilla
+                       // staar ytterst, uten toppmarg.
+                       betalingListeStil: Object.assign({}, bp.stil,
+                         { marginTop: 0, flex: '0 0 auto' }) };
+            })(),
             harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadStil: { display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '4px', background: 'var(--terracotta-500)', color: 'var(--clay-50)', borderRadius: 'var(--radius-pill)', padding: '1px 8px', fontSize: '10px', fontWeight: 700, letterSpacing: '.04em' },
             merknadTekst: (() => { const n = (p.e.deltakere || []).filter(dl => dl.merknad).length; return n + (n === 1 ? ' merknad' : ' merknader'); })(),
@@ -29565,6 +29644,17 @@ class Component extends DCLogic {
             ut: () => this.setState({ klHover: null }),
             harAvatarer: (p.e.deltakere || []).length > 0,
             antallTekst: String((p.e.deltakere || []).length),
+            ...(() => {
+              const bp = this.oktBetaling(p.e.deltakere);
+              return { harBetaling: bp.har, betalingTekst: bp.tekst, betalingStil: bp.stil,
+                       // Den smale visningen har smaa merker paa én linje.
+                       betalingSmalStil: Object.assign({}, bp.stil,
+                         { marginTop: 0, fontSize: '10px', padding: '0 6px' }),
+                       // Listevisningen har raden staaende vannrett; pilla
+                       // staar ytterst, uten toppmarg.
+                       betalingListeStil: Object.assign({}, bp.stil,
+                         { marginTop: 0, flex: '0 0 auto' }) };
+            })(),
             harMerknad: (p.e.deltakere || []).some(dl => dl.merknad),
             merknadAntall: String((p.e.deltakere || []).filter(dl => dl.merknad).length),
             harMeta: (p.e.deltakere || []).length > 0 || (p.e.deltakere || []).some(dl => dl.merknad),
@@ -30823,6 +30913,12 @@ class Component extends DCLogic {
             deltakere: (he.deltakere || []).slice(0, 5).map(dl => ({ navn: dl.navn, status: dl.merknad ? '⚠ ' + dl.merknad : dl.status })),
             harDeltakere: (he.deltakere || []).length > 0,
             flere: (he.deltakere || []).length > 5 ? '+ ' + ((he.deltakere || []).length - 5) + ' til' : '',
+            ...(() => {
+              const bp = this.oktBetaling(he.deltakere);
+              return { harBetaling: bp.har, betalingTekst: bp.tekst,
+                       betalingStil: Object.assign({}, bp.stil,
+                         { marginTop: 0, fontSize: '11px', padding: '2px 10px' }) };
+            })(),
           },
         };
       })(),

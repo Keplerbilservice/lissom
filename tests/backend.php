@@ -8409,6 +8409,43 @@ sjekk('… og teksten fra serveren staar urort, med plassene',
 sjekk('kassas statuskart er ikke slaatt sammen med pilla',
     str_contains($sidaP3, "betalt: 'Betalt', venter: 'Venter', opprettet: 'Ikke fullført',"));
 
+echo "\n== Pilla i medlemslista er klikkbar ==\n";
+// Eieren, 4. september: «jeg vil ha den klikkbar som jeg ber om».
+//
+// Den sto som en etikett i lista og som en knapp i personruta — samme
+// pille, samme farge, men den virket bare det ene stedet.
+$sidaM2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('pilla i medlemslista er en knapp',
+    str_contains($sidaM2, '<button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>'));
+// Ingen ny betalingsboks i lista. Det ville staatt to av dem, og de kunne
+// svart hver sitt. Pilla aapner personen med den boksen som finnes.
+sjekk('… og den aapner boksen som finnes, ikke en ny',
+    str_contains($sidaM2, 'this.apnePerson(m.id, 0, true);')
+    && str_contains($sidaM2, 'apnePerson(id, bookingId, medBetaling) {')
+    && str_contains($sidaM2, "personBetalingApen: !!medBetaling, personBetalingBelop: '',"));
+// De andre veiene inn skal ikke aapne boksen. De kaller med to argumenter,
+// og da er «medBetaling» udefinert.
+sjekk('… og de andre veiene inn aapner den ikke',
+    substr_count($sidaM2, 'apnePerson(m.id, 0, true)') === 1);
+
+// Et gratismedlem har ingenting aa registrere. Da staar pilla som en
+// etikett — den skal ikke love en handling som ikke finnes.
+sjekk('et gratismedlem har ingen knapp',
+    str_contains($sidaM2, "kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen',")
+    && str_contains($sidaM2, "kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen',")
+    && str_contains($sidaM2, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
+// Begge greinene maa finnes som verdier. Mangler én, tegnes hele skjermen
+// som «{{ }}».
+sjekk('… og begge greinene har en verdi aa lese',
+    substr_count($sidaM2, '{{ m.kanRegistrere }}') === 1
+    && substr_count($sidaM2, '{{ m.kanIkkeRegistrere }}') === 1);
+
+// Pilla alene registrerer ingenting. Det andre trykket — Kontant eller
+// Vipps — er det som foerer pengene.
+sjekk('pilla alene foerer ingen penger',
+    str_contains($sidaM2, "personBetalingMaater: ['Kontant', 'Vipps'].map(m => ({"));
+
 echo "\n== «Butikk» heter «Nettbutikk» i admin ==\n";
 // Eieren, 4. september: «Endre navnet Butikk til Nettbutikk i hele
 // adminsystemet. Endringen skal gjelde menyer, overskrifter, lenker og

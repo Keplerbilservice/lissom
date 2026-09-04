@@ -12924,7 +12924,12 @@ window.__resources = {
                      valgte. Et medlem som er fritatt staar graat, aldri roedt. -->
                 <sc-if value="{{ m.harBetaling }}" hint-placeholder-val="{{ true }}">
                   <div style="flex: 0 1 200px; min-width: 0;">
-                    <span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>
+                    <sc-if value="{{ m.kanRegistrere }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>
+                    </sc-if>
+                    <sc-if value="{{ m.kanIkkeRegistrere }}" hint-placeholder-val="{{ false }}">
+                      <span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>
+                    </sc-if>
                     <div style="font-size: var(--text-xs); color: var(--text-muted); margin-top: 4px;">{{ m.betalingTekst }}</div>
                   </div>
                 </sc-if>
@@ -31574,7 +31579,18 @@ class Component extends DCLogic {
    * Naa kan den ogsaa aapnes av en paamelding. Serveren finner ut hvem det er
    * av bookingen, og slaar opp resten paa e-post og telefon.
    */
-  apnePerson(id, bookingId) {
+  /**
+   * Aapne en person.
+   *
+   * «medBetaling» aapner betalingsboksen med det samme. Det er veien inn
+   * fra pilla i medlemslista: eieren, 4. september, «jeg vil ha den
+   * klikkbar som jeg ber om» — pilla saa lik ut i lista og i ruta, men
+   * virket bare det ene stedet.
+   *
+   * Boksen er den samme som staar i ruta fra for. Ingen ny betalingsboks i
+   * lista: da ville det staatt to, og de kunne svart hver sitt.
+   */
+  apnePerson(id, bookingId, medBetaling) {
     const spor = id > 0 ? 'person=' + encodeURIComponent(id)
                : (bookingId > 0 ? 'booking=' + encodeURIComponent(bookingId) : '');
     if (!spor) return;
@@ -31584,7 +31600,7 @@ class Component extends DCLogic {
     this.setState({
       personFor: noekkel, personData: null, personNotat: null,
       personFri: null, personFriGrunn: null, personPlan: null,
-      personBetalingApen: false, personBetalingBelop: '',
+      personBetalingApen: !!medBetaling, personBetalingBelop: '',
       // Hva ruta faktisk ble aapnet av. «personFor» er noekkelen svaret
       // gjenkjennes paa; disse to er det handlingene trenger.
       personMedlemId: id > 0 ? id : 0,
@@ -31901,7 +31917,24 @@ class Component extends DCLogic {
       erFritatt: m.betaling === 'fri',
       // Samme form som bindingslappen rett over, saa de to leses som ett
       // par og ikke som to forskjellige ideer.
-      betalingStil: this.betalingsPille(m.betaling).stil,
+      //
+      // Og den er en knapp. Eieren, 4. september: «jeg vil ha den klikkbar
+      // som jeg ber om». Den sto som en etikett i lista og som en knapp i
+      // personruta — samme pille, samme farge, men den virket bare det ene
+      // stedet.
+      //
+      // Et gratismedlem har ingenting aa registrere. Da staar pilla som for.
+      betalingStil: this.betalingsPille(m.betaling, m.betaling !== 'fri').stil,
+      kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen',
+      kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen',
+      betalingHjelp: m.betaling === 'fri' ? '' : 'Registrer betaling',
+      // Ett trykk aapner personen med betalingsboksen framme. Andre trykk —
+      // Kontant eller Vipps — er det som faktisk foerer pengene. Pilla alene
+      // registrerer ingenting.
+      apneBetaling: (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        this.apnePerson(m.id, 0, true);
+      },
       abonnement: m.medlemskap || 'Ingen',
       // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
       // viser bare hvor mye som er brukt.

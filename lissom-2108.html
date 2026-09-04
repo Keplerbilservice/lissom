@@ -7368,7 +7368,7 @@ window.__resources = {
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kasse</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges over disk. Skriv beløpet, velg kontant eller Vipps, og hva det var — så er det med i regnskapet.</p>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges over disk. Skriv beløpet, velg kontant, Vipps eller gratis, og hva det var — så er det med i regnskapet.</p>
         </div>
 
         <!-- Hva selger du? Tre ting, og ingen vei innom noe annet. -->
@@ -7532,7 +7532,7 @@ window.__resources = {
                 <div>
                   <div style="{{ utEtikett }}">Betalt med</div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                    <sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">
+                    <sc-for list="{{ utSalgMaater }}" as="m" hint-placeholder-count="3">
                       <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
                     </sc-for>
                   </div>
@@ -35598,6 +35598,11 @@ class Component extends DCLogic {
         const varer = (data && data.varer) || [];
         const kurv = st.utKurv || {};
         const maate = st.utMaate || 'Kontant';
+        // Salget med fritt beloep har én maate mer enn varekurven: «Gratis».
+        // Derfor sitt eget valg. Delte de det samme, ville et gratissalg
+        // etterlatt «Gratis» staaende paa kurven, der den ikke finnes, og
+        // «Fullfør salget» blitt avvist av serveren uten at noe var galt.
+        const salgMaate = st.utSalgMaate || 'Kontant';
         const sok = (st.utSok || '').trim().toLowerCase();
 
         const felt = {
@@ -35945,6 +35950,11 @@ class Component extends DCLogic {
             border: '2px solid var(--lissom-brown)',
           }),
           utBelopHjelp: (() => {
+            // Gratis er null kroner. Da er det ikke noe beloep aa forklare,
+            // og feltet kan staa tomt.
+            if (salgMaate === 'Gratis') {
+              return 'Gis bort. Salget føres med kr. 0,- — det står i lista, men legger ingenting til i omsetningen.';
+            }
             const n = parseFloat(String(st.utBelop || '').replace(/\s/g, '').replace(',', '.'));
             if (!isFinite(n) || n <= 0) return 'Beløpet kunden betaler, i kroner.';
             const ore = Math.round(n * 100);
@@ -36107,7 +36117,10 @@ class Component extends DCLogic {
               return;
             }
 
-            const raa = String(st.utBelop || '').trim();
+            // Gratis trenger ikke noe tastet beloep — det ER null.
+            const raa = salgMaate === 'Gratis'
+              ? (String(st.utBelop || '').trim() || '0')
+              : String(st.utBelop || '').trim();
             if (raa === '' || !isFinite(parseFloat(raa.replace(/\s/g, '').replace(',', '.')))) {
               this.setState({ utSalgBeskjed: 'Skriv inn et beløp først.' });
               return;
@@ -36115,7 +36128,7 @@ class Component extends DCLogic {
             this.uttakKall({
               handling: 'salg',
               belop: raa,
-              maate,
+              maate: salgMaate,
               slag,
               kunde: (st.utKunde || '').trim(),
             }).then(ok => {
@@ -36300,6 +36313,19 @@ class Component extends DCLogic {
           })),
           utTomt: linjer.length === 0,
           utSum: sum > 0 ? kr(sum) : 'kr. 0,-',
+
+          // Maatene et fritt beloep kan foeres paa. «Gratis» staar bare her.
+          utSalgMaater: ((data && data.salgmaater) || ['Kontant', 'Vipps', 'Gratis']).map(n => ({
+            navn: n,
+            velg: () => this.setState({ utSalgMaate: n, utSalgBeskjed: '' }),
+            stil: {
+              appearance: 'none', cursor: 'pointer', font: 'var(--type-body-sm)', fontWeight: 600,
+              padding: '9px 18px', borderRadius: 'var(--radius-pill)',
+              border: '1px solid ' + (salgMaate === n ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+              background: salgMaate === n ? 'var(--lissom-brown)' : 'var(--surface-card)',
+              color: salgMaate === n ? 'var(--clay-50)' : 'var(--text-heading)',
+            },
+          })),
 
           utMaater: ((data && data.maater) || ['Kontant', 'Vipps']).map(n => ({
             navn: n,

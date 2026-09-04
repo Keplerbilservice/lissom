@@ -8007,6 +8007,84 @@ $utFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
 sjekk('kassa har egne maater for delene av et oppgjor',
     str_contains($utFil, "const DELMAATER = ['Gavekort', 'Kontant', 'Vipps'];")
     && str_contains($utFil, "const MAATER = ['Kontant', 'Vipps'];"));
+
+// ── Null kroner over disk ──────────────────────────────────────────────
+//
+// Eieren, 4. september: «jeg maa ha et null kroners salg over disk ogsaa».
+//
+// «Gratis» staar bare paa salget med fritt beloep. Varekurven henter prisen
+// fra basen og gavekortet skal lyde paa et beloep — der ville «Gratis» blitt
+// en betalingsrad med full sum og status «betalt» uten at det kom inn en
+// krone. Skiller vi ikke listene, loeyer regnskapet.
+sjekk('bare salget med fritt beloep kan vaere gratis',
+    str_contains($utFil, "const SALGMAATER = ['Kontant', 'Vipps', 'Gratis'];")
+    && str_contains($utFil, "const MAATER = ['Kontant', 'Vipps'];"));
+sjekk('… og varekurven og gavekortet har den ikke',
+    substr_count($utFil, 'in_array($maate, MAATER, true)') === 2
+    && substr_count($utFil, 'in_array($maate, SALGMAATER, true)') === 1);
+// Null er lov naar det ER gratis, og bare da. Uten det andre leddet ville
+// «Kontant, kr. 0,-» gaatt gjennom som et salg ingen betalte for.
+sjekk('null kroner slipper gjennom bare naar maaten er «Gratis»',
+    str_contains($utFil, "if (\$sum < 0 || (\$sum === 0 && \$maate !== 'Gratis')) {"));
+sjekk('… og et tomt felt betyr null naar det er gratis',
+    str_contains($utFil, "if (\$maate === 'Gratis' && \$raa === '') {"));
+// Serveren maa si hva som finnes. Sto lista bare i nettleseren, ville de to
+// glidd fra hverandre.
+sjekk('nettleseren henter maatene for fritt beloep fra serveren',
+    str_contains($utFil, "'salgmaater' => SALGMAATER,"));
+
+$sidaG = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kassa viser «Gratis» bare ved det frie beloepet',
+    str_contains($sidaG, '<sc-for list="{{ utSalgMaater }}" as="m" hint-placeholder-count="3">')
+    && substr_count($sidaG, '<sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">') === 1);
+// Delte de det samme valget, ville «Gratis» blitt staaende paa varekurven,
+// der den ikke finnes, og «Fullfør salget» blitt avvist uten at noe var galt.
+sjekk('… og har sitt eget valg, skilt fra varekurven',
+    str_contains($sidaG, "const salgMaate = st.utSalgMaate || 'Kontant';")
+    && str_contains($sidaG, "velg: () => this.setState({ utSalgMaate: n, utSalgBeskjed: '' }),")
+    && str_contains($sidaG, '              maate: salgMaate,'));
+sjekk('… og teksten over kassa nevner den',
+    str_contains($sidaG, 'Skriv beløpet, velg kontant, Vipps eller gratis, og hva det var'));
+
+// Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
+// tekst som ligner paa noe riktig.
+if (DB::harKolonne('payments', 'order_id')) {
+    $gOrdrenr = 'D-TESTGRATIS-' . strtoupper(bin2hex(random_bytes(3)));
+    $gBet = DB::settInn('payments', [
+        'vipps_reference' => 'KASSE-' . $gOrdrenr, 'type' => 'manuell',
+        'formal' => 'booking', 'belop_ore' => 0, 'status' => 'betalt',
+        'idempotency_key' => Vipps::uuid(),
+    ]);
+    $gOrdre = DB::settInn('orders', [
+        'ordrenr' => $gOrdrenr, 'kunde_navn' => 'Salg over disk',
+        'sum_ore' => 0, 'status' => 'hentet', 'betalt_maate' => 'Gratis',
+        'payment_id' => $gBet,
+    ]);
+    DB::oppdater('payments', ['order_id' => $gOrdre], ['id' => $gBet]);
+
+    $gRad = DB::en('SELECT o.sum_ore, o.betalt_maate, p.belop_ore, p.status
+                      FROM orders o JOIN payments p ON p.id = o.payment_id
+                     WHERE o.id = :i', ['i' => $gOrdre]);
+    sjekk('et gratissalg staar i lista med null kroner',
+        $gRad !== null && (int) $gRad['sum_ore'] === 0 && (int) $gRad['belop_ore'] === 0
+        && (string) $gRad['betalt_maate'] === 'Gratis' && (string) $gRad['status'] === 'betalt',
+        json_encode($gRad));
+
+    // Dagsoppgjoret deler dagen i Kontant, Vipps og Faktura. «Gratis» er
+    // ingen av dem og normaliseres til Vipps — men den er null kroner, og
+    // legger derfor ingenting til noen kolonne.
+    $gDag = (int) DB::verdi(
+        "SELECT COALESCE(SUM(p.belop_ore - p.refundert_ore), 0)
+           FROM payments p
+          WHERE p.status IN ('betalt', 'delvis_refundert')
+            AND p.id = :i", ['i' => $gBet]);
+    sjekk('… og legger ingenting til i dagens omsetning', $gDag === 0, (string) $gDag);
+
+    DB::kjor('DELETE FROM orders WHERE id = :i', ['i' => $gOrdre]);
+    DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $gBet]);
+    sjekk('… og testen rydder etter seg',
+        DB::en('SELECT id FROM orders WHERE ordrenr = :n', ['n' => $gOrdrenr]) === null);
+}
 sjekk('gavekortdelen foeres med null i penger og beloepet i gavekort_ore',
     str_contains($utFil, "'belop_ore'       => \$erGavekort ? 0 : \$r['ore'],")
     && str_contains($utFil, "\$felt['gavekort_ore'] = \$r['ore'];"));

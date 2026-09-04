@@ -33,6 +33,27 @@ $admin = krev_admin();
 const MAATER = ['Kontant', 'Vipps'];
 
 /**
+ * Maatene et salg med fritt beloep kan foeres paa.
+ *
+ * «Gratis» kom 4. september: eieren, «jeg maa ha et null kroners salg over
+ * disk ogsaa». En ting gitt bort er fortsatt et salg som skal staa i lista —
+ * den er bare null kroner.
+ *
+ * Den staar bare her, og ikke i MAATER, fordi de andre veiene inn i kassa
+ * regner ut summen selv: varekurven henter prisen fra basen, og gavekortet
+ * skal lyde paa et beloep. Der ville «Gratis» blitt en betalingsrad med full
+ * sum og status «betalt» uten at det kom inn en krone — regnskapet ville
+ * loeyet. Et gavekort som gis bort har allerede sin egen vei: opprinnelse
+ * «gitt».
+ *
+ * Dagsoppgjoret deler dagen i Kontant og Vipps. «Gratis» er null kroner og
+ * legger derfor null til uansett hvilken kolonne den havner i — den
+ * forstyrrer ingen telling. Samme regel som «Gratis» har paa kurs, se
+ * api/admin/kursbetaling.php.
+ */
+const SALGMAATER = ['Kontant', 'Vipps', 'Gratis'];
+
+/**
  * Maatene en DEL av et oppgjor kan vaere.
  *
  * Gavekortet staar her og ikke i MAATER, fordi det ikke er en maate aa
@@ -106,6 +127,8 @@ if (Foresporsel::metode() === 'GET') {
 
     Svar::json([
         'maater' => MAATER,
+        // Fritt beloep har én maate mer enn de andre: «Gratis».
+        'salgmaater' => SALGMAATER,
         // Delene et oppgjor kan settes sammen av. Skjermen bygger ett felt
         // per maate, og gavekortet er den som ogsaa trenger en kode.
         'delmaater' => DELMAATER,
@@ -485,21 +508,30 @@ if ($handling === 'salg') {
         Svar::feil('Velg om det er kurs, medlemskap eller produkt.');
     }
 
-    $maate = (string) ($kropp['maate'] ?? MAATER[0]);
-    if (!in_array($maate, MAATER, true)) {
-        Svar::feil('Velg kontant eller Vipps.');
+    $maate = (string) ($kropp['maate'] ?? SALGMAATER[0]);
+    if (!in_array($maate, SALGMAATER, true)) {
+        Svar::feil('Velg kontant, Vipps eller gratis.');
     }
 
     // Belopet kommer i kroner, med komma eller punktum. Vi regner i oere, og
     // gjor det her — ikke i nettleseren, der det kan endres paa veien.
     $raa = str_replace([' ', "\u{a0}", 'kr', ',-'], '', (string) ($kropp['belop'] ?? ''));
     $raa = str_replace(',', '.', trim($raa));
+    // Er det gratis, er det ikke noe beloep aa taste. Samme regel som paa
+    // kurs, se api/admin/kursbetaling.php.
+    if ($maate === 'Gratis' && $raa === '') {
+        $raa = '0';
+    }
     if ($raa === '' || !is_numeric($raa)) {
         Svar::feil('Skriv inn et beløp.');
     }
     $sum = (int) round((float) $raa * 100);
-    if ($sum <= 0) {
-        Svar::feil('Beløpet må være over null.');
+    // Null er lov naar det ER gratis, og bare da. Et tomt eller null beloep
+    // med en betalingsmaate paa er en glipp, ikke et valg.
+    if ($sum < 0 || ($sum === 0 && $maate !== 'Gratis')) {
+        Svar::feil($maate === 'Gratis'
+            ? 'Beløpet kan ikke være negativt.'
+            : 'Beløpet må være over null, eller velg «Gratis».');
     }
     if ($sum > 10000000) {
         Svar::feil('Beløpet må være under 100 000 kroner.');

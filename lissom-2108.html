@@ -1289,6 +1289,19 @@ window.__resources = {
     .lx-mstempeltekst { flex: 1 0 100%; }
   }
 
+  /* «Logg ut» paa de smaleste telefonene.
+     ------------------------------------
+     I kortet staar «Stemple inn» (201 px) og «Logg ut» (84 px) side om side.
+     Paa 390 px er det 292 av 298 tilgjengelige — det gaar opp. Paa 360 px er
+     det bare 272, og da brekker raden.
+
+     Ordet viker, ikke knappen: igjen staar ikonet, og «aria-label» sier
+     fortsatt «Logg ut» for den som bruker skjermleser. Over 380 px staar
+     ordet som for. */
+  @media (max-width: 380px) {
+    .lx-msloggut-ord { display: none; }
+  }
+
   /* Kortene paa telefonen: tittel, tall og «Se mer».
      ------------------------------------------------
      Eieren, 4. september: «mobil skal vise mindre direkte, men ikke miste
@@ -3843,62 +3856,135 @@ window.__resources = {
             </div>
           </sc-if>
 
-          <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-8); flex-wrap: wrap; margin-bottom: var(--space-4);">
+          <!-- ── Navnet, og doerkoden ved siden av ────────────────────
+               Doerkoden sto i et eget «Intern info»-kort langt nede, etter
+               fem andre kort. Eieren, 5. september: «Dørkode kan stå fast
+               mer diskret lenger opp». Den staar naa som en liten pille ved
+               navnet, og aapner Nyttig info naar man trykker paa den. -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-5);">
             <h1 style="margin: 0; font-size: var(--text-4xl);">{{ minsideHilsen }}</h1>
-            <div style="display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap;">
-              <span class="lx-mstempeltekst" style="font-size: var(--text-sm); color: var(--text-muted);">{{ stemplingTekst }}</span>
-              <button type="button" onClick="{{ loggUt }}" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">
-                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+              <button type="button" onClick="{{ msTilNyttig }}" aria-label="Dørkode {{ dorkode }} — åpne nyttig info" style="{{ msDorStil }}">Dørkode <span style="{{ msDorTallStil }}">{{ dorkode }}</span></button>
+            </sc-if>
+          </div>
+
+          <!-- ── Verkstedet ditt ──────────────────────────────────────
+               Ett kort, ikke fire. Eieren, 5. september: «jeg ønsker at den
+               infoen er samlet så det er synlig fra et sted — stempling,
+               mange timer jeg har brukt/har igjen, mitt medlemskap og bytt.
+               Redesign ikke juster, for her trengs det en opprydding.»
+
+               Foer dette laa stemplingsknappen oeverst paa sida, timene og
+               medlemskapet i et kort langt nede etter fem andre, og
+               ressursvalget bak en understreket lenke. Tre steder for én
+               ting: har jeg tid igjen, og er jeg inne?
+
+               Ingenting er fjernet. Det som sto i «Medlemskapet ditt» staar
+               naa bak menyvalget Medlemskap, med de samme radene. -->
+          <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); margin-bottom: var(--space-6);">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4);">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Verkstedet ditt</div>
+              <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
+            </div>
+
+            <!-- «Stemple inn» og «Logg ut» paa samme linje. Eieren,
+                 5. september: «pillene logg ut og stemple inn maa vaere paa
+                 linje». Stemplingsknappen er 201 px; da maa naboen holde seg
+                 under 90 for at begge skal faa plass paa en telefon paa
+                 390 px. Derfor er «Logg ut» smalere her enn ellers. -->
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
+              </sc-if>
+              <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
+              </sc-if>
+              <button type="button" onClick="{{ loggUt }}" aria-label="Logg ut" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 9px 11px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); font: var(--type-chip); font-size: 13px;">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                   <polyline points="16 17 21 12 16 7"></polyline>
                   <line x1="21" y1="12" x2="9" y2="12"></line>
                 </svg>
-                Logg ut
+                <span class="lx-msloggut-ord">Logg ut</span>
               </button>
-              <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
-                <!-- Hva du skal bruke.
-                     Eieren, 30. august: «kunne det voere lost om de booker
-                     inn og velger dreieskive, eller verkstedplass» —
-                     medlemmene — «det skjer paa min side».
+            </div>
+            <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-3);">{{ stemplingTekst }}</div>
 
-                     For dette gjettet regnestykket at enhver innstemplet sto
-                     ved en skive, og et medlem som haandbygget ved bordet
-                     holdt av en skive ingen brukte. Naa sier du det selv, og
-                     tallet blir riktig for dem som kommer etter deg.
+            <!-- Bordplass eller dreieskive, alltid klikkbart.
+                 Valget laa bak lenka «si fra hva du bruker», og var borte
+                 saa lenge man sto innstemplet. Eieren, 5. september:
+                 «Valget bordplass eller dreieskive må også være klikkbart
+                 hele tiden i dette bildet». -->
+            <sc-if value="{{ msHarRessurser }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top: var(--space-4);">
+                <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 6px;">{{ msRessursHjelp }}</div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
 
-                     Brikkene staar bare naar verkstedet har satt opp
-                     ressurser, og de forsvinner naar du er inne — da har du
-                     valgt. -->
-                <!-- Ressursvalget staar ikke lenger i veien.
-                     Brikkene «Bordplass» og «Dreieskive» sto over knappen paa
-                     hver eneste innstempling. De sperret ingenting — den
-                     forste var alt valgt — men de var det forste oyet traff,
-                     og de gjorde et ett-trykks valg til et to-trinns skjema.
-                     Eieren, 4. september: inn- og utstemplinga skal vaere
-                     superenkel.
-                     Naa staar knappen forst, og valget ligger under den som
-                     en linje man trykker paa naar man faktisk vil si fra.
-                     Ingenting er fjernet — det er flyttet ett trykk unna. -->
-                <sc-if value="{{ msRessursApen }}" hint-placeholder-val="{{ true }}">
-                  <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-                    <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ msRessursHjelp }}</span>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                      <sc-for list="{{ msRessursValg }}" as="r" hint-placeholder-count="2">
-                        <button type="button" onClick="{{ r.velg }}" style="{{ r.stil }}">{{ r.navn }}</button>
-                      </sc-for>
-                    </div>
+            <!-- Glemt aa stemple ut. Sto i medlemskapskortet; den hoerer til
+                 stemplinga, ikke til abonnementet. -->
+            <sc-if value="{{ msGlemtVis }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top: var(--space-4);">
+                <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ msGlemtTekst }}</div>
+                <sc-if value="{{ msGlemtSkjul }}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{ apneMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Glemt å stemple ut</button>
+                </sc-if>
+                <sc-if value="{{ msGlemtApen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <!-- Skrives, ikke plukkes. «type=time» tegner feltet i
+                         NETTLESERENS spraak, ikke sidas: staar nettleseren
+                         paa engelsk, skriver den «11:00 PM» — og eieren, 2.
+                         september: «Ikke pm og am klokkeslett». Det finnes
+                         ingen attributt som styrer det, saa feltet maa vaere
+                         vaart eget. -->
+                    <input type="text" inputmode="numeric" maxlength="5" placeholder="15:30" aria-label="Klokkeslettet du gikk" value="{{ msGlemtTid }}" onChange="{{ settMsGlemtTid }}" style="width: 74px; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 10px; font: var(--type-body-sm); font-variant-numeric: tabular-nums; background: var(--clay-50); color: var(--text-heading);">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ lagreMsGlemt }}" hint-size="auto,36px">Lagre</x-import>
+                    <button type="button" onClick="{{ lukkMsGlemt }}" style="appearance: none; background: transparent; border: none; padding: 0 4px; cursor: pointer; font: var(--type-body-sm); color: var(--text-muted);">Avbryt</button>
                   </div>
                 </sc-if>
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
-                <sc-if value="{{ msRessursLukket }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ msRessursVis }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">{{ msRessursLenke }}</button>
-                </sc-if>
-              </sc-if>
-              <sc-if value="{{ erTom }}" hint-placeholder-val="{{ true }}">
-                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
+              </div>
+            </sc-if>
+
+            <!-- Timene. Samme tall og samme stolpe som sto i
+                 medlemskapskortet — flyttet hit, ikke tegnet paa nytt. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+                <div style="font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; color: var(--text-heading);">{{ timerIgjen }}</div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ timerMaks }}</span>
+              </div>
+              <div style="height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden; margin: var(--space-3) 0;">
+                <div style="{{ timerBarStil }}"></div>
+              </div>
+              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ timerUndertekst }}</p>
+              <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
+                <div style="border-top: 1px solid var(--terracotta-500); margin-top: var(--space-4); padding-top: var(--space-3);">
+                  <div style="font-weight: 700; font-size: var(--text-xs); color: var(--terracotta-600); margin-bottom: 6px;">Timene er brukt opp</div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" on-click="{{ aFornyAbo }}" hint-size="auto,36px">Forny</x-import>
+                </div>
               </sc-if>
             </div>
+
+            <!-- Medlemskapet i kortform. Radene, knappene og oppsigelsen
+                 staar bak menyvalget Medlemskap — her staar bare hva du har
+                 og hva det koster, saa kortet svarer paa det uten aa bli en
+                 side i seg selv. -->
+            <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
+              <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; min-width: 0;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ mittAbo }}</span>
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
+              </div>
+              <button type="button" onClick="{{ msTilMedlemskap }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se medlemskapet →</button>
+            </div>
           </div>
+          </sc-if>
+          </sc-if>
 
           <!-- Hvilken av de to sidene dette er.
                Skillet mellom medlem og kursdeltaker har alltid avgjort hva
@@ -3914,17 +4000,22 @@ window.__resources = {
             </sc-if>
           </div>
 
-          <!-- Snarveiene som piller, ikke understreket tekst.
-               De laa som fire understrekede lenker paa rad. Paa en telefon
-               er det fire smaa maal tett i tett, og de ser ut som brodtekst
-               som tilfeldigvis er understreket — ikke som noe man trykker paa.
-               Eieren, 4. september: mobilmeny med fem valg.
-               Samme pilleform som brukes ellers i systemet. -->
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
-            <sc-for list="{{ minsideSnarveier }}" as="s" hint-placeholder-count="5">
-              <button type="button" onClick="{{ s.velg }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 15px; font: var(--type-body-sm); font-weight: 700;" style-hover="border-color: var(--lissom-brown);">{{ s.navn }}</button>
-            </sc-for>
-          </div>
+          <!-- Snarveispillene sto her.
+               Fem piller som rullet deg nedover til seksjoner som sto paa
+               den samme sida uansett. Eieren, 5. september: «Og da fjerner
+               du tingene fra forsiden slik at det blir synlig først når man
+               trykker på menyen?» — ja. Valgene er de samme fem; de ligger i
+               bunnmenyen, og bare det stedet du staar paa tegnes.
+
+               For en kursdeltaker staar de fortsatt her: hun har to av dem,
+               paameldingene og beskjedene, og ingen bunnmeny. -->
+          <sc-if value="{{ msViserSnarveier }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
+              <sc-for list="{{ minsideSnarveier }}" as="s" hint-placeholder-count="3">
+                <button type="button" onClick="{{ s.velg }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 15px; font: var(--type-body-sm); font-weight: 700;" style-hover="border-color: var(--lissom-brown);">{{ s.navn }}</button>
+              </sc-for>
+            </div>
+          </sc-if>
 
           <!-- Medlemsdelen.
                Vipps Login sier hvem noen er — ikke at de skal ha tilgang til
@@ -3948,7 +4039,10 @@ window.__resources = {
             </div>
           </sc-if>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: var(--space-5); align-items: stretch;">
+          <!-- Dreieskivene staar paa forsiden; medlemskapet og den interne
+               infoen bak hvert sitt menyvalg. Rutene er de samme som for. -->
+          <div style="{{ msRuterStil }}">
+            <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dreieskivene denne uka</div>
               <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
@@ -3965,6 +4059,12 @@ window.__resources = {
                 </sc-for>
               </div>
             </div>
+            </sc-if>
+
+            <!-- Medlemskapet i sin helhet: radene, oppsigelsen og knappene.
+                 Kortformen staar i «Verkstedet ditt» paa forsiden; her staar
+                 alt. Samme kort som for — flyttet bak menyvalget. -->
+            <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
             <div id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;">
               <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Medlemskapet ditt</div>
@@ -4070,6 +4170,12 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ vekslByttAbo }}" hint-size="auto,32px">Bytt abonnement</x-import>
               </div>
             </div>
+            </sc-if>
+
+            <!-- Doerkoden staar naa som en pille ved navnet. Dette kortet er
+                 forklaringa og veien videre til guidene, og hoerer hjemme bak
+                 Nyttig info sammen med resten av det interne. -->
+            <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
             <div onClick="{{ goNyttig }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; cursor: pointer; transition: box-shadow var(--duration-fast, .15s) ease, transform var(--duration-fast, .15s) ease;" style-hover="box-shadow: var(--shadow-md, 0 6px 20px rgba(45,20,12,.1)); transform: translateY(-2px);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Intern info</div>
               <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-2);">
@@ -4089,6 +4195,7 @@ window.__resources = {
 
                  Eieren, 4. september: fjern «Påfyll». Ingenting er borte —
                  gavekortet kjopes samme sted som for. -->
+            </sc-if>
           </div>
           </sc-if>
 
@@ -4258,6 +4365,10 @@ window.__resources = {
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
+              <!-- «Selg mine produkter» hoerer til internbutikken: begge
+                   handler om varer som gaar gjennom verkstedet. De staar bak
+                   det samme menyvalget. -->
+              <sc-if value="{{ msFaneButikk }}" hint-placeholder-val="{{ false }}">
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
               <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Medlemsfordel</div>
@@ -4369,6 +4480,9 @@ window.__resources = {
               </div>
               </sc-if>
 
+              </sc-if>
+
+              <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
               <div id="minside-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Chat</div>
                 <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Fra Monica</h3>
@@ -4415,7 +4529,11 @@ window.__resources = {
                   </div>
                 </div>
               </div>
+              </sc-if>
 
+              <!-- Kursene blir staaende paa forsiden. Det er datoer man maa
+                   rekke, ikke noe man leter etter i en meny. -->
+              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <sc-if value="{{ harMedlemskurs }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internkurs" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
@@ -4528,6 +4646,7 @@ window.__resources = {
                 <p style="margin: var(--space-5) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Beviset åpnes som et ark du kan skrive ut eller lagre. Står det feil navn eller feil kurs på det, si fra til verkstedet, så rettes det.</p>
                 </sc-if>
               </div>
+              </sc-if>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
@@ -4536,6 +4655,7 @@ window.__resources = {
                    hverandre, er internt. Det sto uten portvakt: en som hadde
                    vaert paa ett kurs saa begge deler. -->
               <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">I verkstedet nå</div>
@@ -4570,6 +4690,9 @@ window.__resources = {
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Switch" label="Vis meg for andre medlemmer" checked="{{ synlig }}" on-change="{{ vekslSynlig }}" hint-size="100%,28px"></x-import>
               </div>
 
+              </sc-if>
+
+              <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
               <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <span style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">
@@ -4598,9 +4721,11 @@ window.__resources = {
                   <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ sendChat }}" hint-size="auto,38px">Send</x-import>
                 </div>
               </div>
+              </sc-if>
 
               </sc-if>
 
+              <sc-if value="{{ msFaneButikk }}" hint-placeholder-val="{{ false }}">
               <sc-if value="{{ visInternbutikk }}" hint-placeholder-val="{{ true }}">
               <div id="minside-internbutikk" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6);">
                 <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap;">
@@ -4651,10 +4776,15 @@ window.__resources = {
                   </div>
                 </sc-if>
               </div>
+              </sc-if>
             </div>
           </div>
 
 
+          <!-- HMS hoerer til det interne. Den sto nederst paa forsiden og
+               var det siste man scrollet forbi; naa staar den bak Nyttig
+               info, sammen med doerkoden og guidene. -->
+          <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
           <div id="minside-ordensregler" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6) var(--space-8); margin-top: var(--space-6);">
             <button type="button" onClick="{{ vekslOrdensregler }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-8); text-align: left;">
@@ -4676,6 +4806,7 @@ window.__resources = {
             </sc-if>
           </div>
           </sc-if>
+          </sc-if>
 
           <!-- Meld inn feil, ogsaa herfra. Den som er innlogget er den som
                bruker sidene mest, og som stanser paa noe som ikke virker.
@@ -4683,8 +4814,31 @@ window.__resources = {
           <sc-if value="{{ fmKnappVis }}" hint-placeholder-val="{{ false }}">
             <p style="margin: var(--space-8) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Er det noe som ikke virker? <button type="button" onClick="{{ fmAapne }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; color: var(--lissom-brown); font-weight: 700; text-decoration: underline; text-underline-offset: 3px;">Meld inn feil</button>, så ser vi på det.</p>
           </sc-if>
+
+          <!-- Menyen ligger fast over innholdet. Uten denne luften blir det
+               siste kortet liggende bak den. -->
+          <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ msBunnLuft }}"></div>
+          </sc-if>
         </div>
       </section>
+
+      <!-- ── Bunnmenyen ───────────────────────────────────────────────
+           Eieren, 5. september: «Nyttiginfo kan legges i en meny på bunnen
+           ala vi har på admin», «Medlemskap på menyen i bunnen»,
+           «Internbutkikk også», «Og chat».
+
+           Samme celle som adminmenyen bruker — se bunnMenyPunkt(). Fem
+           steder; bare det du staar paa tegnes. -->
+      <sc-if value="{{ msHarBunnmeny }}" hint-placeholder-val="{{ true }}">
+        <nav style="{{ msBmStil }}" aria-label="Min side">
+          <button type="button" onClick="{{ msBmHjem.velg }}" aria-label="{{ msBmHjem.full }}" style="{{ msBmHjem.stil }}"><span style="{{ msBmHjem.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg><span style="{{ msBmTekstStil }}">{{ msBmHjem.navn }}</span></button>
+          <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
+          <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ msBmChat.velg }}" aria-label="{{ msBmChat.full }}" style="{{ msBmChat.stil }}"><span style="{{ msBmChat.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><span style="{{ msBmTekstStil }}">{{ msBmChat.navn }}</span></button>
+          <button type="button" onClick="{{ msBmNyttig.velg }}" aria-label="{{ msBmNyttig.full }}" style="{{ msBmNyttig.stil }}"><span style="{{ msBmNyttig.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span style="{{ msBmTekstStil }}">{{ msBmNyttig.navn }}</span></button>
+        </nav>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -18908,13 +19062,39 @@ class Component extends DCLogic {
    * fikk et aarsmedlem tilbud om aa gjore opp selv — noe aarsmedlemskapet
    * ikke tillater.
    */
+  // ── Planen medlemmet staar paa ────────────────────────────────────
+  //
+  // Tilbakefallet «forste loepende plan» gjaldt for ALLE som ikke ble
+  // funnet — ogsaa for et medlem som HAR en plan, men en som ikke ligger i
+  // den offentlige lista fordi den er tatt ut av salg. Da sto navnet og
+  // prisen til en HELT ANNEN plan paa medlemmets eget kort.
+  //
+  // Eieren, 5. september, med bilde: «Mini 15 · kr 1 790,- · 15 timer i
+  // måneden» i tittelen og «∞ · ingen timebegrensning» rett under. Han staar
+  // paa «Fri tilgang», som er avslaatt; den fantes ikke i lista, saa kortet
+  // viste den forste loepende planen i stedet — «Mini 15».
+  //
+  // Tilbakefallet er riktig for én som ikke er medlem ennaa: da er det et
+  // tilbud, ikke en paastand om hva noen har. Har medlemmet et plannavn,
+  // beholder vi navnet og henter timetallet fra stemplingssvaret, som er
+  // regnet av den samme planen paa serveren.
   aktivPlan() {
     const alle = this.planer();
     const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');
+    const funnet = navn ? alle.find(p => p.navn === navn) : null;
+    if (funnet) return funnet;
+    if (navn) {
+      const st = this.state.stempling;
+      const a = this.state.minAvtale || {};
+      return {
+        navn: navn,
+        timer: st && st.timer ? st.timer.perMnd : null,
+        pris: a.pris || '', periode: '', detalj: '', engangs: false, ukjent: true,
+      };
+    }
     // Uten noen avtale i det hele tatt: forste loepende plan, ikke
     // proveperioden. Det er kortet til en som ikke er medlem ennaa.
-    return alle.find(p => p.navn === navn)
-        || alle.find(p => !p.engangs)
+    return alle.find(p => !p.engangs)
         || alle[0]
         || { navn: '', timer: null, pris: '', periode: '', detalj: '' };
   }
@@ -28877,29 +29057,8 @@ class Component extends DCLogic {
     // menypunkt — adminSted() foerte «adminuttak» til Oversikt, og da lyste
     // Oversikt mens man sto i kassa. Naa er Kasse et sted som de andre, og
     // regelen er den samme for alle seks.
-    const punkt = (menynavn, rute, forvalg, kortnavn) => {
-      const paa = sted.meny === menynavn;
-      return {
-        navn: kortnavn,
-        full: menynavn,
-        paa,
-        velg: () => this.gaaAdmin(rute, forvalg || {}),
-        stil: {
-          appearance: 'none', border: 'none', background: 'transparent',
-          cursor: 'pointer', padding: '7px 2px 3px', minWidth: 0,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-          // Fargen arves av bade ikonet og teksten — lucide tegner med
-          // «currentColor».
-          color: paa ? 'var(--lissom-brown)' : 'var(--clay-600)',
-          fontWeight: paa ? 800 : 700,
-          position: 'relative',
-        },
-        merkeStil: paa
-          ? { position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-              width: 22, height: 3, borderRadius: '0 0 3px 3px', background: 'var(--lissom-yellow)' }
-          : { display: 'none' },
-      };
-    };
+    const punkt = (menynavn, rute, forvalg, kortnavn) => this.bunnMenyPunkt(
+      kortnavn, menynavn, sted.meny === menynavn, () => this.gaaAdmin(rute, forvalg || {}));
 
     // Oversikt staar ikke i ADMIN_MENY — den er selve forsiden i panelet.
     const kalender = fra('Kalender');
@@ -28915,6 +29074,75 @@ class Component extends DCLogic {
       marked: punkt('Markedsføring', marked[1], marked[2], KORT['Markedsføring']),
       butikk: punkt(butikk[0], butikk[1], butikk[2], KORT[butikk[0]] || butikk[0]),
       kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),
+    };
+  }
+
+  // ── Bunnmenyen paa Min side ───────────────────────────────────────
+  //
+  // Eieren, 5. september: «Nyttiginfo kan legges i en meny på bunnen ala vi
+  // har på admin», og «Medlemskap på menyen i bunnen», «Internbutkikk også»,
+  // «Og chat». Paa spoersmaalet om tingene da blir borte fra forsiden:
+  // «Og da fjerner du tingene fra forsiden slik at det blir synlig først
+  // naar man trykker paa menyen?» — ja.
+  //
+  // Foer dette laa alt paa én lang side: fem snarveispiller oeverst som
+  // rullet deg nedover til seksjoner som uansett sto der hele tida. Naa er
+  // det fem steder, og bare ett av dem tegnes om gangen.
+  //
+  // Cellene deler utseende med adminmenyen gjennom bunnMenyPunkt().
+  minsideBunnMeny() {
+    const naa = this.msFane();
+    const til = (f) => () => { this.setState({ msFane: f }); window.scrollTo(0, 0); };
+    const p = (kort, fullt, f) => this.bunnMenyPunkt(kort, fullt, naa === f, til(f));
+    return {
+      hjem:       p('Min side', 'Min side', 'hjem'),
+      medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),
+      butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),
+      chat:       p('Chat', 'Chat med verkstedet', 'chat'),
+      nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),
+    };
+  }
+
+  // Hvilket av de fem stedene som staar naa.
+  //
+  // En kursdeltaker har hverken medlemskap, internbutikk eller HMS. Staar
+  // hun likevel paa en av dem — et gammelt valg i state — sendes hun hjem,
+  // saa siden ikke blir staaende tom.
+  msFane() {
+    const f = this.state.msFane || 'hjem';
+    if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'nyttig')) return 'hjem';
+    return f;
+  }
+
+  // ── Én celle i bunnmenyen ─────────────────────────────────────────
+  //
+  // Bunnmenyen fantes bare i admin. Da Min side fikk sin egen — eieren,
+  // 5. september: «Nyttiginfo kan legges i en meny på bunnen ala vi har på
+  // admin» — skulle den se ut som den samme menyen, ikke som en kopi som
+  // driver fra hverandre neste gang en av dem endres.
+  //
+  // Her staar bare utseendet og merket over det valgte punktet. Hva punktene
+  // heter og hvor de gaar, bestemmer hver meny selv.
+  bunnMenyPunkt(kortnavn, fullt, paa, velg) {
+    return {
+      navn: kortnavn,
+      full: fullt,
+      paa: !!paa,
+      velg: velg,
+      stil: {
+        appearance: 'none', border: 'none', background: 'transparent',
+        cursor: 'pointer', padding: '7px 2px 3px', minWidth: 0,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+        // Fargen arves av bade ikonet og teksten — lucide tegner med
+        // «currentColor».
+        color: paa ? 'var(--lissom-brown)' : 'var(--clay-600)',
+        fontWeight: paa ? 800 : 700,
+        position: 'relative',
+      },
+      merkeStil: paa
+        ? { position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+            width: 22, height: 3, borderRadius: '0 0 3px 3px', background: 'var(--lissom-yellow)' }
+        : { display: 'none' },
     };
   }
 
@@ -33189,7 +33417,11 @@ class Component extends DCLogic {
     const fastBrukt = this.erPublisert() ? 0 : 11.5;
     let t;
     if (plan.timer == null) {
-      t = { igjen: '∞', maks: 'ingen timebegrensning', brukt: (this.state.aboKjopt || this.erPublisert()) ? '0' : '11,5', andel: 100, varsel: '', varselStil: { display: 'none' } };
+      // ── «Fritt», ikke «∞» ────────────────────────────────────────
+      // Der en plan ikke har timetak sto uendelighetstegnet, stort og
+      // alene. Eieren, 5. september: «Hva betyr dette tegnet? ∞». Det er et
+      // matematikktegn paa en medlemsside; ordet sier det samme.
+      t = { igjen: 'Fritt', maks: 'ingen timebegrensning', brukt: (this.state.aboKjopt || this.erPublisert()) ? '0' : '11,5', andel: 100, varsel: '', varselStil: { display: 'none' } };
     } else {
       const maksT = plan.timer;
       let brukt = this.state.aboKjopt ? 0 : status === 'Tom' ? maksT : status === 'Nesten tom' ? maksT - 4 : fastBrukt;
@@ -34119,7 +34351,10 @@ class Component extends DCLogic {
         })),
       })),
       mittAbo: aboNavn,
-      mittAboPris: plan.pris + ' ' + plan.periode,
+      // Ligger planen ikke i den offentlige lista, har vi navnet og prisen,
+      // men ingen periodetekst aa henge paa. Da staar prisen alene heller
+      // enn med et tomrom etter seg.
+      mittAboPris: (plan.pris || '') + (plan.periode ? ' ' + plan.periode : ''),
       // ── Naar avtalen og medlemskapet staar paa hver sin plan ─────────
       //
       // Bytter verkstedet plan paa et medlem som har fast trekk i Vipps,
@@ -41133,6 +41368,70 @@ class Component extends DCLogic {
       // Navnene er korte med vilje: fem piller skal faa plass paa to linjer
       // paa en telefon. «Internbutikk — leire og brenning» tok en hel linje
       // alene.
+      // ── De fem stedene, og bunnmenyen som bytter mellom dem ─────────
+      //
+      // Snarveispillene oeverst er borte. De rullet deg nedover til
+      // seksjoner som sto paa den samme sida uansett; naa tegnes bare det
+      // stedet du staar paa. Ingenting er fjernet — alt fem er i menyen.
+      ...(() => {
+        const f = this.msFane();
+        const b = this.minsideBunnMeny();
+        return {
+          msFaneHjem:       f === 'hjem',
+          msFaneMedlemskap: f === 'medlemskap',
+          msFaneButikk:     f === 'butikk',
+          msFaneChat:       f === 'chat',
+          msFaneNyttig:     f === 'nyttig',
+          // Bunnmenyen staar bare for den som faktisk har de fem stedene.
+          // En kursdeltaker har to av dem, og faar dem paa forsiden som for.
+          msHarBunnmeny: this.medlemsvisning(),
+          // Snarveispillene staar bare for den som ikke har bunnmenyen.
+          msViserSnarveier: !this.medlemsvisning(),
+          // Rutenettet holdt tre kort ved siden av hverandre. Naa staar bare
+          // ett av dem om gangen, saa «auto-fit» ville strukket det eneste
+          // kortet over hele bredda paa en PC. Forsiden beholder rutenettet
+          // — der staar dreieskivene alene og skal ikke bli en plakat.
+          msRuterStil: f === 'hjem'
+            ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))',
+                gap: 'var(--space-5)', alignItems: 'stretch' }
+            : { display: 'block', maxWidth: 640 },
+          msBmHjem: b.hjem, msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
+          msBmChat: b.chat, msBmNyttig: b.nyttig,
+          msBmStil: {
+            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
+            background: 'var(--surface-card)',
+            borderTop: '1px solid var(--border-subtle)',
+            boxShadow: '0 -2px 12px rgba(77,29,18,.08)',
+            display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+            // Plass til hjemknappen paa iPhone, som i adminmenyen.
+            paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
+          },
+          msBmTekstStil: {
+            fontSize: 9, lineHeight: 1.15, letterSpacing: '-.01em',
+            whiteSpace: 'nowrap', color: 'inherit', fontWeight: 'inherit',
+          },
+          // Menyen ligger fast over innholdet. Uten luft under blir det
+          // siste kortet liggende bak den.
+          msBunnLuft: { height: 'calc(64px + env(safe-area-inset-bottom, 0px))' },
+          // Til «Se medlemskapet →» i kortet paa forsiden.
+          msTilMedlemskap: () => { this.setState({ msFane: 'medlemskap' }); window.scrollTo(0, 0); },
+          // Doerkodepilla ved navnet. Trykker man paa den, staar forklaringa
+          // og guidene i Nyttig info — der resten av det interne ligger.
+          msTilNyttig: () => { this.setState({ msFane: 'nyttig' }); window.scrollTo(0, 0); },
+          msDorStil: {
+            appearance: 'none', cursor: 'pointer', display: 'inline-flex',
+            alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+            border: '1px solid var(--border-subtle)', background: 'var(--surface-card)',
+            borderRadius: 'var(--radius-pill)', padding: '6px 14px',
+            font: 'var(--type-body-sm)', color: 'var(--text-muted)',
+          },
+          msDorTallStil: {
+            fontFamily: 'var(--font-display)', fontWeight: 800,
+            fontSize: 'var(--text-base)', letterSpacing: '.06em',
+            color: 'var(--text-heading)',
+          },
+        };
+      })(),
       minsideSnarveier: (
         this.medlemsvisning()
           ? [
@@ -41173,10 +41472,14 @@ class Component extends DCLogic {
         const nyeTimer = nesteMnd.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', timeZone: 'Europe/Oslo' });
 
         return {
-          timerIgjen: fri ? '∞' : String(st.timer.igjen).replace('.', ','),
+          timerIgjen: fri ? 'Fritt' : String(st.timer.igjen).replace('.', ','),
           timerMaks: fri ? 'ingen timebegrensning' : 'av ' + st.timer.perMnd + ' timer',
+          // «Fri tilgang» sto her som fast tekst. Den navngir en bestemt
+          // plan, og sto derfor med feil navn for alle andre planer uten
+          // timegrense. Planen medlemmet har sier det selv.
           timerUndertekst: fri
-            ? 'Fri tilgang har ingen timebegrensning. Du har brukt ' + st.timer.brukt + ' timer denne måneden.'
+            ? (plan.navn || 'Medlemskapet ditt') + ' har ingen timebegrensning. Du har brukt '
+              + st.timer.brukt + ' timer denne måneden.'
             : 'Du har brukt ' + st.timer.brukt + ' timer denne måneden. Nye timer ' + nyeTimer + '.',
           timerBrukt: st.timer.brukt,
         };
@@ -41193,7 +41496,7 @@ class Component extends DCLogic {
         // stemple inn i et verksted hen ikke har nokkel til.
         const somMedlem = this.medlemsvisning();
         if (!st) return {
-          harTimer: somMedlem && !this.erPublisert() && (t.igjen === '∞' || t.igjen > 0),
+          harTimer: somMedlem && !this.erPublisert() && (t.igjen === 'Fritt' || t.igjen > 0),
           erTom: somMedlem && !this.erPublisert() && t.igjen === 0,
           timerBarStil: { width: t.andel + '%', height: '100%', background: t.igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
           timerVarsel: t.varsel,
@@ -41394,6 +41697,17 @@ class Component extends DCLogic {
         const harValgtSelv = this.state.msRessursId != null
           && Number(this.state.msRessursId) !== Number((alle[0] || {}).id || 0);
         return {
+          // ── Alltid klikkbart ─────────────────────────────────────────
+          //
+          // Brikkene sto bare naar man var UTE, og bare bak lenka «si fra
+          // hva du bruker». Var man innstemplet, fantes valget ikke — og en
+          // som satte seg ved en skive etter aa ha stemplet inn ved bordet,
+          // hadde ingen vei til aa rette det.
+          //
+          // Eieren, 5. september: «Valget bordplass eller dreieskive må også
+          // være klikkbart hele tiden i dette bildet». Det staar naa aapent i
+          // kortet, ute som inne, saa lenge verkstedet har mer enn én ressurs.
+          msHarRessurser: alle.length > 1,
           msVisRessurs: harValg,
           msRessursApen: harValg && (apent || harValgtSelv),
           msRessursLukket: harValg && !apent && !harValgtSelv,

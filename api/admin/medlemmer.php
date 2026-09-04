@@ -1389,7 +1389,7 @@ $avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
     // samme datoen og SPERRER oppsigelsen — saa en proevekunde uten binding
     // ikke fikk si opp. Planen er avtalen; sier den null, er det null.
     $planBinder = (static function () use ($a): bool {
-        $p = Medlemskap::plan((string) $a['plan']);
+        $p = Medlemskap::planUansett((string) $a['plan']);
         return $p === null || (int) ($p['binding_mnd'] ?? 0) > 0;
     })();
     $bundet = $loeper && $planBinder

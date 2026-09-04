@@ -2246,8 +2246,13 @@ sjekk('ingen kommentar paastaar at interne samlinger mangler',
     !str_contains($sida, 'Interne samlinger finnes ikke i basen ennaa'));
 // Og det de sa var ubygget, virker: timene kommer fra api/stempling.php.
 sjekk('timene paa Min side kommer fra innstemplingene',
-    str_contains($sida, "timerIgjen: fri ? '∞' : String(st.timer.igjen).replace('.', ',')")
+    str_contains($sida, "timerIgjen: fri ? 'Fritt' : String(st.timer.igjen).replace('.', ',')")
     && str_contains($sida, 'timerBrukt: st.timer.brukt,'));
+// Uendelighetstegnet sto stort og alene der planen ikke har timetak.
+// Eieren, 5. september: «Hva betyr dette tegnet? ∞».
+sjekk('… og sier «Fritt», ikke et matematikktegn',
+    !str_contains(preg_replace('/^\s*\/\/.*$/m', '', $sida), '∞'),
+    'ordet sier det samme');
 sjekk('endepunktet regner ut timene',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
                  'Stempling::minutterDenneManeden($id)'));
@@ -6642,7 +6647,19 @@ sjekk('… og ingen andre planer kan faa det',
 sjekk('kortet leser medlemskapet fra avtalen serveren sender',
     str_contains($sida, "const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');"));
 sjekk('… og faller tilbake til forste loepende plan uten avtale',
-    str_contains($sida, "|| alle.find(p => !p.engangs)"));
+    str_contains($sida, "return alle.find(p => !p.engangs)"));
+// ── Men bare for den som ikke HAR en plan ─────────────────────────
+//
+// Tilbakefallet gjaldt alle som ikke ble funnet — ogsaa et medlem med en
+// plan som er tatt ut av salg og derfor ikke ligger i den offentlige lista.
+// Da sto navnet og prisen til en HELT ANNEN plan paa medlemmets kort.
+// Eieren, 5. september, med bilde: «Mini 15 · kr 1 790,- · 15 timer i
+// måneden» i tittelen og «∞ · ingen timebegrensning» rett under.
+sjekk('… men aldri for en som har en plan lista ikke kjenner',
+    str_contains($sida, 'const funnet = navn ? alle.find(p => p.navn === navn) : null;')
+    && str_contains($sida, 'if (funnet) return funnet;')
+    && str_contains($sida, 'timer: st && st.timer ? st.timer.perMnd : null,'),
+    'navnet beholdes, timetallet kommer fra stemplingssvaret');
 
 // ── Fullbooket kurs sier «Les mer», ikke «Book plass» ─────────────────
 //
@@ -8123,7 +8140,7 @@ sjekk('… og adminSted foerer kassa til sitt eget punkt',
     && !str_contains($sidaG, "case 'adminuttak':         return p('Oversikt');"));
 sjekk('… saa bunnmenyen slipper aa spoerre om skjermen',
     !str_contains($sidaG, "const iKassa = this.state.side === 'adminuttak';")
-    && str_contains($sidaG, '      const paa = sted.meny === menynavn;'));
+    && str_contains($sidaG, 'sted.meny === menynavn, () => this.gaaAdmin(rute, forvalg || {}));'));
 // Navnet og ruta hentes fra ADMIN_MENY, ikke skrevet av i bunnmenyen.
 sjekk('… og bunnmenyen henter Kasse fra menyen',
     str_contains($sidaG, "const kasse = fra('Kasse');")
@@ -9131,9 +9148,12 @@ sjekk('… med seks valg i hver',
     && substr_count($sidaB, '{{ bmButikk.velg }}') === $logoerB
     && substr_count($sidaB, '{{ bmKasse.velg }}') === $logoerB);
 // «Ikon og tekst skal alltid brukes sammen.»
+// Min side har faatt den samme menyen — fem valg, ett sted i markupen.
+// Ikonene teller derfor $logoerB * 6 + 5.
 sjekk('… og hvert valg har baade ikon og tekst',
-    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6
-    && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6);
+    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 5
+    && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6
+    && substr_count($sidaB, '{{ msBmTekstStil }}') === 5);
 
 // Rutene skrives ikke av. Doper vi om «Butikk», folger bunnmenyen med.
 sjekk('navn og ruter hentes fra ADMIN_MENY',
@@ -9146,9 +9166,14 @@ sjekk('navn og ruter hentes fra ADMIN_MENY',
 // er Kasse et sted som de andre, og regelen er den samme for alle seks.
 sjekk('Kassa lyser naar man staar i kassa, ikke Oversikt',
     str_contains($sidaB, "case 'adminuttak':         return p('Kasse');")
-    && str_contains($sidaB, '      const paa = sted.meny === menynavn;')
+    && str_contains($sidaB, 'sted.meny === menynavn, () => this.gaaAdmin(rute, forvalg || {}));')
     && str_contains($sidaB, "kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),")
     && !str_contains($sidaB, "const iKassa = this.state.side === 'adminuttak';"));
+// Cella — utseendet og merket over det valgte punktet — er delt med Min
+// sides bunnmeny, saa de to ikke driver fra hverandre.
+sjekk('… og cella er den samme i begge bunnmenyene',
+    str_contains($sidaB, '  bunnMenyPunkt(kortnavn, fullt, paa, velg) {')
+    && str_contains($sidaB, 'const p = (kort, fullt, f) => this.bunnMenyPunkt(kort, fullt, naa === f, til(f));'));
 
 // Menyen ligger fast mot bunnen. Da maa innholdet ha plass under seg, ellers
 // dekker den den nederste knappen paa hver skjerm.
@@ -9485,8 +9510,9 @@ sjekk('… og for den sier at medlemmet er bundet',
 // sa «bundet» paa en plan som ikke binder. Eieren, 5. september, med bilde:
 // «Prøv Lissom har ingen binding».
 sjekk('… og planen gaar foran den lagrede datoen',
-    str_contains($medFilA, "\$p = Medlemskap::plan((string) \$a['plan']);")
-    && str_contains($medFilA, "return \$p === null || (int) (\$p['binding_mnd'] ?? 0) > 0;"));
+    str_contains($medFilA, "\$p = Medlemskap::planUansett((string) \$a['plan']);")
+    && str_contains($medFilA, "return \$p === null || (int) (\$p['binding_mnd'] ?? 0) > 0;"),
+    'planUansett: en plan tatt ut av salg gjelder fortsatt for dem som staar paa den');
 
 echo "\n== Dagsoppgjøret klipper ikke tall på en telefon ==\n";
 // Eieren, 4. september, med bilde av «kr 99» der det skulle staa «kr 990»:
@@ -10838,13 +10864,17 @@ sjekk('… og kortet heter medlemskapet',
     str_contains($msU, '>Medlemskapet ditt</div>'), 'ikke «Abonnement»');
 
 // 2. Stemplinga: én knapp, valget under.
-sjekk('ressursvalget ligger bak en lenke',
-    str_contains($msU, 'msRessursLukket: harValg && !apent && !harValgtSelv,')
-    && str_contains($msU, '{{ msRessursLenke }}'),
-    'lukket som standard');
-sjekk('… og aapner seg av seg selv naar man har valgt noe annet',
-    str_contains($msU, 'msRessursApen: harValg && (apent || harValgtSelv),'),
-    'ellers ville valget vaert usynlig');
+// ── Ressursvalget staar aapent ────────────────────────────────────
+//
+// Brikkene laa bak lenka «si fra hva du bruker», og fantes ikke i det hele
+// tatt naar man var innstemplet. Eieren, 5. september: «Valget bordplass
+// eller dreieskive må også være klikkbart hele tiden i dette bildet».
+sjekk('ressursvalget staar aapent i kortet',
+    str_contains($msU, 'msHarRessurser: alle.length > 1,')
+    && str_contains($msU, '<sc-if value="{{ msHarRessurser }}"'),
+    'ute som inne');
+sjekk('… og lenka som gjemte det er ikke i bruk lenger',
+    !str_contains($msU, '{{ msRessursLenke }}'), 'brikkene staar der selv');
 sjekk('stemplinga skjer ett sted',
     str_contains($msU, '  vekslStempling() {')
     && substr_count($msU, 'this.stemplingKall(inne ?') === 1,
@@ -11146,10 +11176,14 @@ sjekk('… og den brekker ikke lenger',
 //     Raden er statustekst · Logg ut · Stemple inn; paa 390 px tok de tre
 //     484 px. Eieren, 5. september, med bilde: «pillene logg ut og stemple
 //     inn maa vaere paa linje». Teksten tar sin egen linje i stedet.
-sjekk('statusteksten viker for de to knappene paa telefon',
-    str_contains($sidaP, '.lx-mstempeltekst { flex: 1 0 100%; }')
-    && str_contains($sidaP, '<span class="lx-mstempeltekst"'),
-    'maalt i nettleseren: samme linje paa 390, 820 og 1280 px');
+// Raden er bygget om: knappene staar sammen i kortet «Verkstedet ditt»,
+// og statusteksten staar paa linja under dem. Ordet «Logg ut» viker for
+// ikonet paa de smaleste telefonene, slik at de to holder samme linje.
+sjekk('«Stemple inn» og «Logg ut» holder samme linje',
+    str_contains($sidaP, '.lx-msloggut-ord { display: none; }')
+    && str_contains($sidaP, '<span class="lx-msloggut-ord">Logg ut</span>')
+    && str_contains($sidaP, 'aria-label="Logg ut"'),
+    'maalt i nettleseren: samme linje paa 360, 390, 430, 820 og 1280 px');
 
 // 4. «Sendes på e-post med en gang» sto paa hver butikkvare som ikke var
 //    merket. Eieren, med bilde av en vase til 800 kroner: «fjern alle steder
@@ -11169,6 +11203,92 @@ $mLib = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 sjekk('oppsigelsen sperres ikke av en binding planen ikke har',
     str_contains($mLib, '$binderIDetHeleTatt = $plan === null || (int) ($plan[\'binding_mnd\'] ?? 0) > 0;')
     && str_contains($mLib, '$binding = $binderIDetHeleTatt ? ($avtale[\'binding_til\'] ?? null) : null;'));
+
+
+echo "\n== Min side ryddet: ett kort, dørkode oppe, meny i bunnen ==\n";
+// Eieren, 5. september: «jeg ønsker at den infoen er samlet så det er synlig
+// fra et sted — stempling, mange timer jeg har brukt/har igjen, mitt
+// medlemskap og bytt. Redesign ikke juster, for her trengs det en
+// opprydding.» Og videre: «Dørkode kan stå fast mer diskret lenger opp»,
+// «Nyttiginfo kan legges i en meny på bunnen ala vi har på admin»,
+// «Medlemskap på menyen i bunnen», «Internbutkikk også», «Og chat».
+$msP = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msRen = (string) preg_replace('/^\s*\/\/.*$/m', '',
+    (string) preg_replace('/<!--.*?-->/s', '', $msP));
+
+// ── En plan tatt ut av salg gjelder fortsatt for dem som staar paa den ──
+//
+// Dette er den alvorlige. «aktiv = 0» betyr at planen ikke kan kjopes mer;
+// Medlemskap::plan() leter bare blant aktive, og alt som BESKREV et medlem
+// kalte den. En avslaatt plan ble ikke funnet — og «ikke funnet» ble tolket
+// som «ingen grense»: timerFor() ga null, som betyr fri tilgang paa doera.
+$mlP = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('en plan et medlem staar paa finnes selv om den er avslaatt',
+    str_contains($mlP, 'public static function planUansett(string $navn): ?array')
+    && str_contains($mlP, "DB::en('SELECT * FROM membership_plans WHERE navn = :n', ['n' => \$navn])"));
+sjekk('… og timene leses av den, ikke av salgslista',
+    str_contains($mlP, '$plan = self::planUansett($type);'),
+    'ellers gir en avslaatt plan ubegrensede timer');
+sjekk('… og det samme gjor binding, oppsigelse og engangsregelen',
+    substr_count($mlP, "self::planUansett((string) \$avtale['plan']);") === 3);
+sjekk('… mens innmelding og kjop fortsatt krever en plan som selges',
+    substr_count($mlP, 'self::plan($planNavn);') === 2,
+    'startAvtale() og startEngangs()');
+$mkP = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
+    str_contains($mkP, "\$p = \$harPlan !== '' ? Medlemskap::planUansett(\$harPlan) : null;"),
+    'sto planen ikke i salgslista, falt prisen tilbake paa Vipps-avtalens');
+
+// ── Bunnmenyen ────────────────────────────────────────────────────
+sjekk('Min side har en bunnmeny med fem valg',
+    str_contains($msRen, '<nav style="{{ msBmStil }}" aria-label="Min side">')
+    && substr_count($msRen, '{{ msBmTekstStil }}') === 5);
+sjekk('… med de valgene eieren ba om',
+    str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
+    && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")
+    && str_contains($msP, "butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),")
+    && str_contains($msP, "chat:       p('Chat', 'Chat med verkstedet', 'chat'),")
+    && str_contains($msP, "nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),"));
+sjekk('… og den staar bare for den som har de fem stedene',
+    str_contains($msRen, 'msHarBunnmeny: this.medlemsvisning(),'),
+    'en kursdeltaker har to av dem, og faar snarveiene som for');
+sjekk('… og innholdet har plass under den',
+    str_contains($msRen, "msBunnLuft: { height: 'calc(64px + env(safe-area-inset-bottom, 0px))' },")
+    && str_contains($msRen, '<div style="{{ msBunnLuft }}"></div>'));
+
+// ── Ett sted om gangen ────────────────────────────────────────────
+// Snarveispillene rullet deg nedover til seksjoner som sto der uansett.
+// Eieren: «Og da fjerner du tingene fra forsiden slik at det blir synlig
+// først når man trykker på menyen?» — ja.
+sjekk('bare det stedet du staar paa tegnes',
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 4
+    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 1
+    && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 2
+    && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 2
+    && substr_count($msRen, '<sc-if value="{{ msFaneNyttig }}"') === 2,
+    'maalt i nettleseren: hvert valg viser bare sitt eget, 390 og 1280 px');
+sjekk('… og en kursdeltaker sendes hjem fra et sted hun ikke har',
+    str_contains($msP, "if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'nyttig')) return 'hjem';"));
+sjekk('… mens snarveipillene staar igjen for henne',
+    str_contains($msRen, 'msViserSnarveier: !this.medlemsvisning(),')
+    && str_contains($msRen, '<sc-if value="{{ msViserSnarveier }}"'),
+    'ingenting er fjernet for den som ikke har menyen');
+
+// ── Doerkoden ─────────────────────────────────────────────────────
+sjekk('doerkoden staar som en liten pille ved navnet',
+    str_contains($msRen, 'onClick="{{ msTilNyttig }}" aria-label="Dørkode {{ dorkode }}')
+    && str_contains($msRen, 'msDorStil: {'),
+    'ikke i et eget kort etter fem andre');
+
+// ── Verkstedet ditt ───────────────────────────────────────────────
+sjekk('stempling, timer og medlemskap staar i ett kort',
+    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,4000}\{\{ mittAbo \}\}/s', $msRen),
+    'tre steder ble ett');
+sjekk('… og veien videre til hele medlemskapet staar der',
+    str_contains($msRen, 'onClick="{{ msTilMedlemskap }}"')
+    && str_contains($msRen, 'Se medlemskapet →'));
+sjekk('… og «glemt aa stemple ut» hoerer til stemplinga, ikke abonnementet',
+    (bool) preg_match('/Verkstedet ditt.{0,6000}\{\{ apneMsGlemt \}\}/s', $msRen));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

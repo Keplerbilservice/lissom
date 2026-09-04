@@ -35246,13 +35246,27 @@ class Component extends DCLogic {
             // Kursraden sier hvilket kurs, naar det er, og hvor lenge plassen
             // har staatt ubetalt — det siste avgjor om den haster.
             //
+            // Tallet er dager siden paameldingen kom inn, ikke kursets
+            // lengde. Det sto som «2 dager», rett etter datoen for kurset,
+            // uten et ord om hva det telte. Eieren, 4. september, med bilde
+            // av to rader paa det samme kurset: «hvorfor staar det 2 dager
+            // paa disse?»
+            //
+            // Lesningen er den naturlige, og den er blitt verre etter at
+            // flerdagerskurs kom inn: naa FINNES det kurs som gaar over to
+            // dager, og varigheten staar andre steder som «3 timer per gang
+            // · 2 ganger». Samme ord, to forskjellige ting, paa samme kort.
+            //
             // Medlemsraden sier hvilket medlemskap og HVORFOR den staar her:
             // «Skulle vaert trukket 1. september», «Ingen betaling
             // registrert». Dager siden innmelding ville bare gjentatt det
             // teksten alt sier, med et annet tall.
             under: erMedlem
               ? [u.kurs, u.naar].filter(Boolean).join(' · ')
-              : [u.kurs, u.naar, u.dager > 0 ? u.dager + ' dager' : 'i dag'].filter(Boolean).join(' · '),
+              : [u.kurs, u.naar,
+                 u.dager > 0
+                   ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
+                   : 'påmeldt i dag'].filter(Boolean).join(' · '),
             // Tomt naar prisen ikke er kjent. «kr. 0,-» leses som «skylder
             // ingenting», og det er det motsatte av det raden staar her for.
             belop: u.belop || '',

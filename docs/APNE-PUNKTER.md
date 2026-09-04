@@ -36,6 +36,8 @@ sto der.
 | — | Stemplingstestene tåler at klokka er over 23 | samme |
 | 9 | Nettbutikken på telefonen — ordrer først, varer bak lenke | «gjør ferdig alt» |
 | 7 | Kursskjermen på telefonen — to lister bak hver sin lenke | «jatakk, jeg vil ha det slik du foreslår» |
+| 6 | Betalingsstatus på kalenderkortene | «ja, ta punkt 10» / «jeg vil ta de punktene ja» |
+| 10 | Dagsrapport i Kassa | «ja, ta punkt 10» |
 
 Punkt 7 ble committet med «VENTER PÅ GODKJENNING» i meldinga. Godkjenningen
 kom etterpå, og står her — historikken skrives ikke om.
@@ -44,9 +46,7 @@ kom etterpå, og står her — historikken skrives ikke om.
 
 | Punkt | Hva | Status |
 |---|---|---|
-| 6 | Kalender: betalingsstatus på kurskortene, og betale derfra | Ny funksjonalitet, ikke opprydding. Ikke bestilt av eieren i klartekst. |
-| 8 | Markedsføring delt i fire kort | **Frarådet.** Skjermen er 2 133 px = 2,5 skjermer på mobil, kortere enn Kasse og Kalender. Ingenting å løse. |
-| 10 | Kasse: dagsrapport | Ny funksjonalitet. Skal lese de samme radene som Kassa, ikke en ny kilde. |
+| 8 | Markedsføring delt i fire kort | **Frarådet, og ikke gjort.** Skjermen er 2 133 px = 2,5 skjermer på mobil, kortere enn Kasse og Kalender. Ingenting å løse. |
 
 **Funn som står åpne**
 
@@ -58,6 +58,9 @@ kom etterpå, og står her — historikken skrives ikke om.
 - «Ikke fullført» på skjermen og «Opprettet» i CSV-en er det samme ordet om
   den samme statusen. De to listene har ulikt formål — skjermen ser tre
   statuser, CSV-en alle åtte — så de er ikke slått sammen.
+- Månedsvisningen i kalenderen har ingen betalingspille. Hver økt er én linje
+  tekst i et rutenett på sju kolonner, og eieren ba 31. august om at pillene
+  der skulle bli «mye mindre». Dag-, uke- og listevisningen har den.
 
 ---
 

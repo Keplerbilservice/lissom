@@ -8459,6 +8459,39 @@ sjekk('hover-kortet sier hvor mange som ikke har betalt',
 sjekk('… og en gruppe uten deltakere svarer likevel paa proppen',
     str_contains($sidaG, "harBetaling: false, betalingTekst: '', betalingListeStil: {} }"));
 
+// ── Punkt 10: dagsrapport i Kassa ──────────────────────────────────────
+//
+// Planen: «dagsrapporten leser de samme radene som Kassa — ingen ny
+// datakilde». Den gjor det: «idag» er allerede hentet, og rapporten
+// summerer den.
+sjekk('dagsrapporten leser de samme radene som lista',
+    str_contains($sidaG, '        const rapport = (() => {')
+    && str_contains($sidaG, "const levende = idag.filter(x => x.status !== 'kansellert');")
+    && !str_contains($sidaG, "fetch('/api/admin/dagsoppgjor.php')"));
+// Beloepene leses av tallet, ikke av teksten. Skulle rapporten tolke
+// «kr. 1 410,-» tilbake, ville den vaert avhengig av harde mellomrom.
+sjekk('… og summerer paa tallet, ikke paa teksten',
+    str_contains($utFil, "'sumOre'  => (int) \$o['sum_ore'],")
+    && str_contains($sidaG, 'const ore = (x) => Number(x.sumOre || 0);'));
+// Gjelden er ikke penger i kassa. Legges den til summen, sier rapporten at
+// det ligger mer i skuffen enn det gjor.
+sjekk('… og holder gjelden utenfor summen',
+    str_contains($sidaG, "const betalte = levende.filter(x => x.maate !== 'Ikke betalt');")
+    && str_contains($sidaG, "const gjeld   = levende.filter(x => x.maate === 'Ikke betalt');"));
+// Tallet og summen maa hoere sammen. «4 salg · kr. 950,-» med én ubetalt
+// blant dem leste som at fire salg ga 950 — og det gjorde tre.
+sjekk('… og teller bare de som er gjort opp',
+    str_contains($sidaG, '          utRapAntall: rapport.betalte.length'));
+// Maatene staar slik de forekommer, ikke som en fast liste. Kommer det en
+// maate til, staar den her av seg selv.
+sjekk('… og maatene kommer fra radene, ikke fra en fast liste',
+    str_contains($sidaG, "const m = x.maate || 'Ukjent';")
+    && str_contains($sidaG, 'maater.sort((a2, b2) => b2.ore - a2.ore);'));
+// Annullerte skal ses, men ikke telles.
+sjekk('… og annullerte staar utenfor',
+    str_contains($sidaG, "const annullerte = idag.filter(x => x.status === 'kansellert');")
+    && str_contains($sidaG, '{{ utRapAnnullert }} · ikke med i summen'));
+
 
 // ── Stemplingstestene taaler at klokka er over 23 ──────────────────────
 //

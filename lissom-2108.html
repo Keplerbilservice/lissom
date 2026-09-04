@@ -7977,6 +7977,48 @@ window.__resources = {
                 <div style="padding: var(--space-4) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Ingen salg over disk i dag.</div>
               </sc-if>
             </div>
+
+            <!-- Dagsrapporten.
+                 Det verkstedet trenger naar dagen er omme: hva kom inn,
+                 hvordan, hva staar ute og hva ble annullert.
+
+                 Den leser de samme radene som lista over — «idag», som
+                 allerede er hentet. Ingen ny datakilde, og ingen mulighet
+                 for at de to sier hver sitt om den samme dagen.
+
+                 Maatene staar slik de faktisk forekommer paa dagens rader,
+                 ikke som en fast liste. Kommer det en maate til, staar den
+                 her av seg selv; forsvinner en, blir den ikke staaende paa
+                 null. -->
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); margin-top: var(--space-5);">
+              <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); border-radius: var(--radius-lg) var(--radius-lg) 0 0;">Dagsrapport · {{ utRapDato }}</div>
+
+              <sc-if value="{{ utRapTom }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-5) var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Ingenting er slått inn i dag ennå.</div>
+              </sc-if>
+
+              <div style="padding: var(--space-5) var(--space-6); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ utRapAntall }}</span>
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ utRapSum }}</span>
+              </div>
+
+              <sc-for list="{{ utRapMaater }}" as="m" hint-placeholder-count="2">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle);">
+                  <span style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">{{ m.navn }}</span>
+                  <span style="font-size: var(--text-xs); color: var(--text-muted); flex: 1;">{{ m.antall }}</span>
+                  <span style="font-weight: 700; font-size: var(--text-sm); color: var(--text-heading); white-space: nowrap;">{{ m.sum }}</span>
+                </div>
+              </sc-for>
+
+              <!-- Gjelden er ikke penger i kassa, og legges ikke til summen
+                   over. Den skal likevel ses naar dagen gjores opp. -->
+              <sc-if value="{{ utRapHarGjeld }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--terracotta-600);">Ikke betalt · {{ utRapGjeld }}</div>
+              </sc-if>
+              <sc-if value="{{ utRapHarAnnullert }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-subtle); font-size: var(--text-xs); color: var(--text-muted);">{{ utRapAnnullert }} · ikke med i summen</div>
+              </sc-if>
+            </div>
           </div>
         </div>
       </main>
@@ -36156,6 +36198,39 @@ class Component extends DCLogic {
         };
 
         const idag = (data && data.idag) || [];
+        // ── Dagsrapporten ──────────────────────────────────────────────
+        //
+        // Planen: «dagsrapporten leser de samme radene som Kassa — ingen ny
+        // datakilde». Den gjor det: «idag» er allerede hentet, og rapporten
+        // summerer den. Ingen ekstra kall, og ingen mulighet for at de to
+        // sier hver sitt om den samme dagen.
+        //
+        // Beloepene leses av «sumOre» og ikke av teksten. Skulle rapporten
+        // tolke «kr. 1 410,-» tilbake til et tall, ville den vaert avhengig
+        // av harde mellomrom og oerer i kroner().
+        const rapport = (() => {
+            const levende = idag.filter(x => x.status !== 'kansellert');
+            const ore = (x) => Number(x.sumOre || 0);
+            const sumAv = (rader) => rader.reduce((n, x) => n + ore(x), 0);
+            // Gjelden er ikke penger i kassa. Den staar for seg.
+            const betalte = levende.filter(x => x.maate !== 'Ikke betalt');
+            const gjeld   = levende.filter(x => x.maate === 'Ikke betalt');
+            const annullerte = idag.filter(x => x.status === 'kansellert');
+            // Maatene slik de faktisk staar paa dagens rader — ikke en
+            // fast liste. Kommer det en maate til, staar den her av seg
+            // selv, og forsvinner en, blir den ikke staaende paa null.
+            const maater = [];
+            betalte.forEach(x => {
+              const m = x.maate || 'Ukjent';
+              const f = maater.find(y => y.navn === m);
+              if (f) { f.ore += ore(x); f.antall += 1; }
+              else { maater.push({ navn: m, ore: ore(x), antall: 1 }); }
+            });
+            maater.sort((a2, b2) => b2.ore - a2.ore);
+            return { levende, betalte, gjeld, annullerte, maater,
+                     sumBetalt: sumAv(betalte), sumGjeld: sumAv(gjeld) };
+        })();
+
         // Dagens penger. Ikke dagens salg.
         //
         // Lista under viser alt som gikk over disken, ogsaa det som ble foert
@@ -36913,6 +36988,38 @@ class Component extends DCLogic {
           })),
           utIngenIdag: idag.length === 0,
           utDagsum: dagsum > 0 ? kr(dagsum * 100) : 'kr. 0,-',
+
+          // ── Dagsrapporten ────────────────────────────────────────────
+          //
+          // Det verkstedet trenger naar dagen er omme: hva kom inn, hvordan,
+          // hva staar ute, og hva ble annullert. Samme rader som lista over.
+          utRapDato: new Date().toLocaleDateString('nb-NO',
+            { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+          // Tallet og summen maa hoere sammen. Sto det «4 salg · kr. 950,-»
+          // mens det fjerde var ubetalt, leste det som at fire salg ga 950 —
+          // og det gjorde tre. Gjelden staar paa sin egen linje under.
+          utRapAntall: rapport.betalte.length
+            + (rapport.betalte.length === 1 ? ' salg' : ' salg')
+            + ' gjort opp',
+          utRapSum: kr(rapport.sumBetalt),
+          utRapMaater: rapport.maater.map(m => ({
+            navn: m.navn,
+            antall: m.antall + (m.antall === 1 ? ' salg' : ' salg'),
+            sum: kr(m.ore),
+          })),
+          utRapIngenMaater: rapport.maater.length === 0,
+          // Gjelden staar for seg. Den er ikke penger i kassa, og skal ikke
+          // legges til summen — men den skal ses.
+          utRapHarGjeld: rapport.gjeld.length > 0,
+          utRapGjeld: rapport.gjeld.length
+            + (rapport.gjeld.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
+            + kr(rapport.sumGjeld),
+          // Annullerte staar ogsaa. Er dagen kort én, skal det vaere til aa
+          // se hvorfor.
+          utRapHarAnnullert: rapport.annullerte.length > 0,
+          utRapAnnullert: rapport.annullerte.length
+            + (rapport.annullerte.length === 1 ? ' annullert' : ' annullerte'),
+          utRapTom: idag.length === 0,
         };
       })(),
       // ── Kortene paa Oversikt ─────────────────────────────────────────

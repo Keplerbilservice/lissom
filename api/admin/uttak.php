@@ -183,6 +183,11 @@ if (Foresporsel::metode() === 'GET') {
             'id'      => (int) $o['id'],
             'ordrenr' => (string) $o['ordrenr'],
             'sum'     => Booking::kroner((int) $o['sum_ore']),
+            // Tallet, ikke bare teksten. Dagsrapporten summerer dagen, og
+            // skulle den lese «kr. 1 410,-» tilbake til et tall, ville den
+            // vaert avhengig av hvordan kroner() skriver — harde mellomrom,
+            // oerer, tusenskille. Raden sier det selv.
+            'sumOre'  => (int) $o['sum_ore'],
             'status'  => (string) $o['status'],
             'maate'   => (string) ($o['betalt_maate'] ?? ''),
             'linjer'  => (string) ($o['linjer'] ?? ''),

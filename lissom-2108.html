@@ -1284,6 +1284,23 @@ window.__resources = {
      telefonen snus — uten at skjermen maa tegnes om.
 
      760 px er det samme knekkpunktet erSmal() bruker. Ett tall, ett sted. */
+  /* Nettbutikken paa telefonen: ordrene foerst, varene bak en lenke.
+     ------------------------------------------------------------------
+     Skjermen er to spalter — varene til venstre, ordrene til hoeyre. Naar
+     rutenettet faller sammen til én spalte, kom varene foerst: 4 483 av
+     5 820 piksler foer man saa en eneste ordre.
+
+     «order» snur dem paa telefonen uten aa flytte noe i markupen, saa PC
+     staar noeyaktig som foer. Knappen som aapner varelista staar bare her. */
+  .lx-butvis { display: none; }
+  @media (max-width: 760px) {
+    .lx-butordre { order: 1; }
+    .lx-butvis   { display: block !important; order: 2; }
+    .lx-butvarer { order: 3; }
+    /* Lukket er lukket. «data-apen» settes av butVarerApen. */
+    .lx-butvarer[data-apen="false"] { display: none !important; }
+  }
+
   .lx-kortmer { display: none; }
   @media (max-width: 760px) {
     .lx-korthva  { display: none !important; }
@@ -13480,7 +13497,14 @@ window.__resources = {
         </sc-if>
 
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: var(--space-6); align-items: start;">
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <!-- Varelista bak en lenke paa telefonen.
+               Eieren, planens punkt 9: «ordrer foerst, varer bak lenke».
+               Lista var 4 483 av 5 820 piksler paa en 390 px skjerm — sju
+               skjermer aa dra forbi for aa se om noen har bestilt noe.
+               Knappen staar bare paa telefonen; paa stoerre skjerm staar
+               lista der den alltid har staatt, ved siden av ordrene. -->
+          <button type="button" class="lx-butvis" onClick="{{ butVarerVeksle }}" style="{{ butVarerKnappStil }}">{{ butVarerKnapp }}</button>
+          <div class="lx-butvarer" data-apen="{{ butVarerApen }}" style="{{ butVarerStil }}">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ butikkListeTittel }}</div>
             <sc-for list="{{ lager }}" as="v" hint-placeholder-count="6">
               <!-- Raden brekker framfor aa skli ut til hoyre.
@@ -13507,7 +13531,7 @@ window.__resources = {
             </sc-for>
           </div>
 
-          <div style="display: flex; flex-direction: column; gap: var(--space-6);">
+          <div class="lx-butordre" style="display: flex; flex-direction: column; gap: var(--space-6);">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Synlighet på nettsiden</div>
             <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-4);">
@@ -35346,6 +35370,26 @@ class Component extends DCLogic {
       butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk',
       butikkListeTittel: this.state.butikkFane === 'Medlemssalg'
         ? 'Varer i internbutikken' : 'Produkter i butikken',
+      // Varelista bak en lenke paa telefonen. Knappen staar bare der — se
+      // «.lx-butvis» i stilarket — og teller varene, saa man ser at de er
+      // der uten aa aapne dem.
+      butVarerApen: !!this.state.butVarerApen,
+      butVarerVeksle: () => this.setState({ butVarerApen: !this.state.butVarerApen }),
+      butVarerKnapp: (this.state.butikkFane === 'Medlemssalg'
+          ? 'Varer i internbutikken (' : 'Produkter i butikken (')
+        + ((this.state.butikkvarer || this.state.adminProdukter || []).length) + ')'
+        + (this.state.butVarerApen ? ' ▴' : ' ▾'),
+      butVarerKnappStil: {
+        appearance: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
+        background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)', padding: 'var(--space-4) var(--space-6)',
+        font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--text-heading)',
+        letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', fontSize: 12,
+      },
+      butVarerStil: {
+        background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)',
+      },
       // «Internbutikk»-knappen aapnet et skjema for en ny internvare. Den saa
       // ut som en vei inn til internbutikken, og var det ikke — lista bak sto
       // med de vanlige varene, og internvarene kunne ikke redigeres noe sted.

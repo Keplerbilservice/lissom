@@ -8378,6 +8378,31 @@ sjekk('… mens butikkens egne faner staar',
     && str_contains($sidaG, "['Internbutikk',  'adminbutikk',     { butikkFane: 'Medlemssalg' }],")
     && str_contains($sidaG, "['Internbutikk', 'adminbutikk',      { butikkFane: 'Medlemssalg' }],"));
 
+// ── Punkt 9: Nettbutikk paa telefonen ──────────────────────────────────
+//
+// Skjermen er to spalter: varene til venstre, ordrene til hoeyre. Naar
+// rutenettet faller sammen paa telefonen, kom varene foerst — 4 483 av
+// 5 820 piksler foer man saa en eneste ordre.
+//
+// Maalt: 6,9 -> 2,7 skjermer med lista lukket. PC uendret, 2 524 px foer
+// og etter.
+sjekk('ordrene staar foerst paa telefonen',
+    str_contains($sidaG, '    .lx-butordre { order: 1; }')
+    && str_contains($sidaG, '    .lx-butvarer { order: 3; }'));
+// «order» snur dem i visningen uten aa flytte noe i markupen, saa PC staar
+// noeyaktig som foer.
+sjekk('… uten at markupen er flyttet',
+    strpos($sidaG, 'class="lx-butvarer"') < strpos($sidaG, 'class="lx-butordre"'));
+sjekk('… og varelista staar bak en lenke, bare der',
+    str_contains($sidaG, '  .lx-butvis { display: none; }')
+    && str_contains($sidaG, '    .lx-butvis   { display: block !important; order: 2; }')
+    && str_contains($sidaG, '    .lx-butvarer[data-apen="false"] { display: none !important; }'));
+// Tallet i knappen: man skal se at varene er der uten aa aapne dem.
+sjekk('… med tallet paa varene i knappen',
+    str_contains($sidaG, "butVarerVeksle: () => this.setState({ butVarerApen: !this.state.butVarerApen }),")
+    && str_contains($sidaG, "+ ((this.state.butikkvarer || this.state.adminProdukter || []).length) + ')'"));
+
+
 // ── Stemplingstestene taaler at klokka er over 23 ──────────────────────
 //
 // «I gaar kl. 10» virker helt til klokka blir 23. Da er stengetida etter

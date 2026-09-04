@@ -7,9 +7,57 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 29. august 2026, kveld — etter «Legg til deltaker» på økta
+Sist gjennomgått: 4. september 2026 — adminomleggingen.
+Før det: 29. august 2026, kveld — etter «Legg til deltaker» på økta
 med vippskrav, drop-in og Paint on Pots samlet i kalenderen, og
 flerdagerskurset i kalenderen og på telefonen.
+
+---
+
+## Adminomleggingen — 4. september 2026
+
+Planen ligger i samtalen, ikke i repoet. Punktene under er nummerert slik de
+sto der.
+
+**Gjort og godkjent**
+
+| Punkt | Hva | Godkjent |
+|---|---|---|
+| — | Null kroners salg over disk | «ja» |
+| — | Kassa kan føre et salg som ubetalt | «ja, kassa skal kunne føre som ikke betalt» |
+| — | «Ikke betalt» viser butikk, kurs og medlemskap | samme |
+| — | Kasse som eget menypunkt | «ja» |
+| — | Nettsiden, Referansekunder og Maler under Verkstedet | «ja, ta punkt 6» |
+| — | Samme vei tilbake på alle skjermer | «her er en global løsning på plass så endre det» |
+| — | «Se mer» på mobilkortene | «jatakk slik skissen viser på mobil» |
+| — | «Forfalt» og «Ikke betalt» fikk hver sin farge | «ja skill fargen» |
+| — | Endringsloggen som lenke | del av «gjør ferdig alt» |
+| — | Nettbutikk står ett sted | samme |
+| — | Stemplingstestene tåler at klokka er over 23 | samme |
+| 9 | Nettbutikken på telefonen — ordrer først, varer bak lenke | «gjør ferdig alt» |
+| 7 | Kursskjermen på telefonen — to lister bak hver sin lenke | «jatakk, jeg vil ha det slik du foreslår» |
+
+Punkt 7 ble committet med «VENTER PÅ GODKJENNING» i meldinga. Godkjenningen
+kom etterpå, og står her — historikken skrives ikke om.
+
+**Ikke gjort, venter på svar**
+
+| Punkt | Hva | Status |
+|---|---|---|
+| 6 | Kalender: betalingsstatus på kurskortene, og betale derfra | Ny funksjonalitet, ikke opprydding. Ikke bestilt av eieren i klartekst. |
+| 8 | Markedsføring delt i fire kort | **Frarådet.** Skjermen er 2 133 px = 2,5 skjermer på mobil, kortere enn Kasse og Kalender. Ingenting å løse. |
+| 10 | Kasse: dagsrapport | Ny funksjonalitet. Skal lese de samme radene som Kassa, ikke en ny kilde. |
+
+**Funn som står åpne**
+
+- Videokurs-skjermen navngir fanen «Videokurs», men den fanen finnes ikke i
+  rada til Kurs og deltakere. Eieren, 4. september: skjermen «skal bare ligge
+  der som et tomt kort uten funksjon». Ikke rørt.
+- Mobilvisning og Feilmeldinger tegner ingen fanerad selv. De har veien
+  tilbake gjennom rada som kom 4. september, men ingen fane som lyser.
+- «Ikke fullført» på skjermen og «Opprettet» i CSV-en er det samme ordet om
+  den samme statusen. De to listene har ulikt formål — skjermen ser tre
+  statuser, CSV-en alle åtte — så de er ikke slått sammen.
 
 ---
 

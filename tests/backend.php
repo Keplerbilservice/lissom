@@ -8402,6 +8402,31 @@ sjekk('… med tallet paa varene i knappen',
     str_contains($sidaG, "butVarerVeksle: () => this.setState({ butVarerApen: !this.state.butVarerApen }),")
     && str_contains($sidaG, "+ ((this.state.butikkvarer || this.state.adminProdukter || []).length) + ')'"));
 
+// ── Punkt 7: kursskjermen paa telefonen ────────────────────────────────
+//
+// Tre lange lister etter hverandre: ukestripa, «Alle kurs og events» og
+// «Datoer som ligger ute». 8 130 piksler paa en 390 px skjerm — nesten ti
+// skjermer aa dra forbi for aa se om noen har betalt paa morgendagens kurs.
+//
+// Maalt: 9,6 -> 3,0 skjermer. PC uendret, begge listene aapne.
+sjekk('de to lange listene ligger bak hver sin lenke paa telefonen',
+    str_contains($sidaG, '  .lx-listevis { display: none; }')
+    && str_contains($sidaG, '    .lx-listevis { display: block !important; }')
+    && str_contains($sidaG, '    .lx-kursliste[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-datoliste[data-apen="false"] { display: none !important; }'));
+// Ukestripa staar som foer, oeverst: det er den man trenger for aa se dagen.
+sjekk('… mens ukestripa staar aapen',
+    !str_contains($sidaG, '.lx-ukestripe[data-apen'));
+// Navnet og tallet i lenken er de samme som i overskriften inne i boksen.
+// Sto de hver for seg, kunne de sagt hver sitt.
+sjekk('… og lenken sier det samme som overskriften',
+    str_contains($sidaG, "kursListeKnapp: (NAVN[fane] || NAVN.alle) + ' (' + this.kursSokte().length + ')'")
+    && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
+// Én stil paa begge lenkene, saa de ikke driver fra hverandre.
+sjekk('… og begge lenkene deler stil',
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 2
+    && str_contains($sidaG, '      listeKnappStil: {'));
+
 
 // ── Stemplingstestene taaler at klokka er over 23 ──────────────────────
 //

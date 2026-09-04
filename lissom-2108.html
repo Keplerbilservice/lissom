@@ -1292,6 +1292,17 @@ window.__resources = {
 
      «order» snur dem paa telefonen uten aa flytte noe i markupen, saa PC
      staar noeyaktig som foer. Knappen som aapner varelista staar bare her. */
+  /* Kursskjermen paa telefonen: de to lange listene bak hver sin lenke.
+     ------------------------------------------------------------------
+     Samme grep som i Nettbutikken. Knappene staar bare under 760 px; paa
+     stoerre skjerm staar listene aapne, som de alltid har gjort. */
+  .lx-listevis { display: none; }
+  @media (max-width: 760px) {
+    .lx-listevis { display: block !important; }
+    .lx-kursliste[data-apen="false"],
+    .lx-datoliste[data-apen="false"] { display: none !important; }
+  }
+
   .lx-butvis { display: none; }
   @media (max-width: 760px) {
     .lx-butordre { order: 1; }
@@ -9307,7 +9318,14 @@ window.__resources = {
                sjelden er saa bred. Da havnet «Rediger» og «Slett» utenfor
                kanten — knappene var der, men umulige aa treffe uten aa dra
                tabellen sidelengs. Naa bryter raden i stedet. -->
-          <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
+          <!-- Bak en lenke paa telefonen.
+               Kursskjermen var 8 130 piksler paa en 390 px skjerm — tre
+               lange lister etter hverandre, nesten ti skjermer aa dra forbi
+               for aa se om noen har betalt paa morgendagens kurs. Knappene
+               staar bare paa telefonen; paa stoerre skjerm staar begge
+               listene aapne som de alltid har gjort. -->
+          <button type="button" class="lx-listevis" onClick="{{ kursListeVeksle }}" style="{{ listeKnappStil }}">{{ kursListeKnapp }}</button>
+          <div class="lx-kursliste" data-apen="{{ kursListeApen }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg);">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ kursListeTittel }} · {{ adminKursAntall }}</span>
               <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
@@ -9350,7 +9368,8 @@ window.__resources = {
                folk melder seg paa — og det er der en deltaker legges til.
                Har du et kurs aapent, viser lista datoene til det kurset:
                ellers staar seksten datoer der, og din er én av dem. -->
-          <div id="admin-datoer" style="{{ datoBlokkStil }}">
+          <button type="button" class="lx-listevis" onClick="{{ datoListeVeksle }}" style="{{ listeKnappStil }}">{{ datoListeKnapp }}</button>
+          <div id="admin-datoer" class="lx-datoliste" data-apen="{{ datoListeApen }}" style="{{ datoBlokkStil }}">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
               <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ aktiveOkterTittel }} · {{ aktiveOkterAntall }}</span>
               <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
@@ -37717,6 +37736,13 @@ class Component extends DCLogic {
           kursFaneInterne: fane === 'interne',
           kursFaneApen: fane !== 'interne' && fane !== 'maler',
           kursListeTittel: NAVN[fane] || NAVN.alle,
+          // Bak en lenke paa telefonen. Tallet staar i knappen, saa man ser
+          // at lista er der uten aa aapne den. Se «.lx-listevis» i stilarket
+          // — knappene finnes bare under 760 px.
+          kursListeApen: !!this.state.kursListeApen,
+          kursListeVeksle: () => this.setState({ kursListeApen: !this.state.kursListeApen }),
+          kursListeKnapp: (NAVN[fane] || NAVN.alle) + ' (' + this.kursSokte().length + ')'
+            + (this.state.kursListeApen ? ' ▴' : ' ▾'),
           // Overskriften sa «Kurs og medlemskap» — navnet paa omraadet slik det
           // het for fase 7. Skjermen viser kursene med datoene sine; det er
           // det den heter.
@@ -38303,6 +38329,12 @@ class Component extends DCLogic {
           aktiveOkter: okter,
           aktiveOkterAntall: okter.length,
           aktiveOkterTittel: aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute',
+          // Teksten paa lenken som aapner lista paa telefonen. Samme navn og
+          // samme tall som overskriften inne i boksen — de skal ikke kunne
+          // si hver sitt.
+          datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')
+            + ' (' + okter.length + ')'
+            + (this.state.datoListeApen ? ' ▴' : ' ▾'),
           // Blokka flyttes oeverst naar den gjelder ett kurs. «order» virker
           // paa flex-barn, og spalten er allerede flex — saa den bytter plass
           // uten at markeringen finnes to steder.
@@ -38634,6 +38666,17 @@ class Component extends DCLogic {
       ingenKursTreff: this.kursSokte().length === 0 && (this.state.kursSok || '').trim() !== '',
       ingenKursTreffTekst: 'Ingen kurs heter noe med «' + (this.state.kursSok || '').trim() + '».',
       adminKursAntall: this.kursSokte().length,
+      // Den felles stilen paa de to lenkene som aapner en lang liste paa
+      // telefonen. Én stil, saa de ikke driver fra hverandre.
+      listeKnappStil: {
+        appearance: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
+        background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-lg)', padding: 'var(--space-4) var(--space-6)',
+        font: 'var(--type-body-sm)', fontWeight: 700, color: 'var(--text-heading)',
+        letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase', fontSize: 12,
+      },
+      datoListeApen: !!this.state.datoListeApen,
+      datoListeVeksle: () => this.setState({ datoListeApen: !this.state.datoListeApen }),
       // ── Basen over kurstypene ────────────────────────────────────────
       //
       // Eieren, 30. august: «en base over alle type kurs», «jeg vil bare se

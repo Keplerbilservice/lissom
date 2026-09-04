@@ -8355,6 +8355,66 @@ sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
 
+echo "\n== «Butikk» heter «Nettbutikk» i admin ==\n";
+// Eieren, 4. september: «Endre navnet Butikk til Nettbutikk i hele
+// adminsystemet. Endringen skal gjelde menyer, overskrifter, lenker og
+// relevante visninger.»
+//
+// Bare i admin. Kundene har en butikk, og den heter «Butikk» paa nettsida —
+// i menyen, i tittelen og i adressen. Den er ikke rort.
+$sidaN2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('menypunktet heter Nettbutikk',
+    str_contains($sidaN2, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],")
+    && !str_contains($sidaN2, "['Butikk',    'adminbutikk', { butikkFane: 'Butikken' }],"));
+// Fanerekka slaas opp med menynavnet. Dopes menypunktet om uten denne,
+// forsvinner «Butikken» og «Internbutikk» fra skjermen.
+sjekk('… og fanerekka foelger med, ellers forsvinner fanene',
+    str_contains($sidaN2, "      'Nettbutikk': [\n        ['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],")
+    && !str_contains($sidaN2, "      'Butikk': [\n        ['Butikken',"));
+sjekk('… og skjermen sier hvor man staar',
+    str_contains($sidaN2, "? p('Nettbutikk', 'Nettbutikk', 'Internbutikk')")
+    && str_contains($sidaN2, ": p('Nettbutikk', 'Nettbutikk', 'Butikken');"));
+sjekk('… og overskrifta paa skjermen',
+    str_contains($sidaN2, "butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk',"));
+sjekk('… og kortet paa Oversikt',
+    str_contains($sidaN2, "kort('Nettbutikk',"));
+
+// Bunnmenyen skriver ikke navnet av — den henter det. Da er dette beviset
+// paa at avledningen virker, ikke bare paastanden om det.
+$kortBlokk = substr($sidaN2, (int) strpos($sidaN2, '    const KORT = {'));
+$kortBlokk = substr($kortBlokk, 0, (int) strpos($kortBlokk, '    };'));
+sjekk('bunnmenyen faar det nye navnet uten aa bli rort',
+    // Kortnavnkartet doper ikke om noe — det forkorter. Navnet kommer fra
+    // ADMIN_MENY, saa byttet der slaar gjennom av seg selv.
+    !str_contains($kortBlokk, "'Butikk': 'Nettbutikk',")
+    && str_contains($kortBlokk, "'Nettbutikk': 'Nettbutikk',")
+    && str_contains($sidaN2, 'const rad = meny.find(([n]) => n === navn);'),
+    trim(str_replace("\n", ' ', $kortBlokk)));
+
+// Rekkefolgen paa kortene ligger lagret som navn. Uten dette legger kortet
+// seg bakerst hos den som alt har dratt det paa plass — samme grunn som
+// «Uttak butikk» → «Kasse» staar der.
+sjekk('den lagrede kortrekkefolgen finner kortet igjen',
+    str_contains($sidaN2, "'Butikk': 'Nettbutikk',\n                            'Ny registrering': 'Meld noen på' };"));
+
+// ── Kundenes butikk er ikke rort ──────────────────────────────────────
+sjekk('kundemenyen sier fortsatt «Butikk»',
+    str_contains($sidaN2, "['butikk', 'Butikk'], ['omoss', 'Om oss'],"));
+sjekk('… og adressa er den samme',
+    str_contains($sidaN2, "{ sti: '/butikk',"));
+// Tittelen i Google er delt og indeksert. Den skal ikke endres av en
+// navneendring inne i admin.
+sjekk('… og sidetittelen i soek staar urort',
+    str_contains($sidaN2, "'Butikk': ['Håndlaget keramikk"));
+
+// Regnskapskategorien for ordrer heter «Butikk» baade her og i PHP-en, og
+// gaar i CSV-en til regnskapsforeren. Den er ikke en meny eller en
+// overskrift, og er ikke rort — se funnet i rapporten.
+sjekk('regnskapskategorien er ikke dopt om',
+    str_contains($sidaN2, "ordre: 'Butikk', medlemskap: 'Medlemskap',")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/okonomi.php'), "'ordre'      => 'Butikk',"));
+
 echo "\n== Bunnmeny på telefon, seks valg ==\n";
 // Eieren, 4. september, valgte alternativ A av de to skissene: seks synlige
 // valg, ikon og tekst sammen, ingen «Mer».

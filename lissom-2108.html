@@ -27782,7 +27782,7 @@ class Component extends DCLogic {
       // Butikken laa bare under Nettsiden, som en fane ved siden av «Innhold».
       // Den er et sted i seg selv — varer, priser, bilder og lager — og var
       // ikke til aa finne uten aa vite hvor den var gjemt.
-      ['Butikk',    'adminbutikk', { butikkFane: 'Butikken' }],
+      ['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],
       ['Markedsføring', 'adminmarked'],
       ['Nettsiden', 'admininnhold'],
       ['Brukere',   'adminbrukere'],
@@ -27858,7 +27858,7 @@ class Component extends DCLogic {
         ['Referansekunder', 'adminreferanser'],
         // Kursvelgeren sto her. Den er et verktoy, ikke en tekst paa en
         // side, og staar naa som kort paa Oversikt.
-        ['Butikk',        'adminbutikk',     { butikkFane: 'Butikken' }],
+        ['Nettbutikk',    'adminbutikk',     { butikkFane: 'Butikken' }],
         ['SEO',           'adminseo',        { seoFra: 'nettsiden' }],
         ['GEO',           'admingeo',        { geoFra: 'nettsiden' }],
         ['Mobilvisning',  'adminmobilvis'],
@@ -27869,7 +27869,7 @@ class Component extends DCLogic {
       // Butikken er eget menypunkt naa, og har to lister: den kundene ser, og
       // internbutikken medlemmene handler leire og brenning i. Foer sto det
       // bare én liste — internvarene var ikke til aa redigere noe sted.
-      'Butikk': [
+      'Nettbutikk': [
         ['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],
         ['Internbutikk',  'adminbutikk',     { butikkFane: 'Medlemssalg' }],
       ],
@@ -27974,8 +27974,8 @@ class Component extends DCLogic {
         // Butikken er sitt eget punkt i menyen naa. Internbutikken hoerer
         // fortsatt til medlemmene — det er varene deres.
         return st.butikkFane === 'Medlemssalg'
-          ? p('Butikk', 'Butikk', 'Internbutikk')
-          : p('Butikk', 'Butikk', 'Butikken');
+          ? p('Nettbutikk', 'Nettbutikk', 'Internbutikk')
+          : p('Nettbutikk', 'Nettbutikk', 'Butikken');
       default: return p('');
     }
   }
@@ -28061,8 +28061,9 @@ class Component extends DCLogic {
       'Oversikt': 'Oversikt',
       'Kurs og deltakere': 'Kurs',
       'Markedsføring': 'Marked',
-      // Staar «Butikk» i ADMIN_MENY, staar det «Butikk» her ogsaa. Doper
-      // vi den om, folger bunnmenyen med av seg selv.
+      // Navnet folger ADMIN_MENY. Den sto som «Butikk» til 4. september;
+      // begge staar her, saa en gammel lagret rekkefolge fortsatt finner
+      // seg igjen.
       'Butikk': 'Butikk',
       'Nettbutikk': 'Nettbutikk',
     };
@@ -28108,7 +28109,7 @@ class Component extends DCLogic {
     const kalender = fra('Kalender');
     const kurs = fra('Kurs og deltakere');
     const marked = fra('Markedsføring');
-    const butikk = meny.find(([, r]) => r === 'adminbutikk') || ['Butikk', 'adminbutikk', { butikkFane: 'Butikken' }];
+    const butikk = meny.find(([, r]) => r === 'adminbutikk') || ['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }];
 
     return {
       kalender: punkt('Kalender', kalender[1], kalender[2], KORT['Kalender']),
@@ -34936,7 +34937,10 @@ class Component extends DCLogic {
       omrEyebrow: this.omraadeFaner().omrNavn || 'Administrasjon',
       beskjedTittel: (this.state.motValg || 'Alle aktive medlemmer') === 'Deltakere på et kurs'
         ? 'Beskjed til kursdeltakere' : 'Beskjed til medlemmer',
-      butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Butikk',
+      // «Butikk» het den til 4. september. Eieren: «Butikk skal hete
+      // Nettbutikk i hele adminsystemet». Fanen inne heter fortsatt
+      // «Butikken» — det er lista, ikke stedet.
+      butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk',
       butikkListeTittel: this.state.butikkFane === 'Medlemssalg'
         ? 'Varer i internbutikken' : 'Produkter i butikken',
       // «Internbutikk»-knappen aapnet et skjema for en ny internvare. Den saa
@@ -36632,7 +36636,7 @@ class Component extends DCLogic {
                  null, 'Se siden',
                  () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
 
-            kort('Butikk',
+            kort('Nettbutikk',
                  'Varer, priser, bilder og lager.',
                  varer.length || null, 'Se butikken',
                  () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' })),
@@ -36795,6 +36799,8 @@ class Component extends DCLogic {
             const DOEPT = { 'Gjennomførte kurs': 'Klar til henting',
                             'Ferdig glassert': 'Klar til henting',
                             'Uttak butikk': 'Kasse',
+                            // «Butikk» ble «Nettbutikk» 4. september.
+                            'Butikk': 'Nettbutikk',
                             'Ny registrering': 'Meld noen på' };
             const egen = (this.state.ovRekkefolge
               || ((this.state.adminData || {}).kortrekkefolge || []))

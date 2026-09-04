@@ -10619,7 +10619,7 @@ sjekk('… og hopper over maanedstrekkene',
     str_contains($overU, "AND p.type <> 'recurring_charge'"),
     'de gjores opp i «medlemstrekk»');
 sjekk('en rad uten navn lyver ikke',
-    str_contains($overU, "\$n = 'Ukjent (' . (\$SLAG[(string) \$r['formal']] ?? 'betaling') . ')';"),
+    str_contains($overU, "return \$n !== '' ? \$n : 'Ukjent (' . strtolower(\$SLAG[(string) \$r['formal']] ?? 'betaling') . ')';"),
     'sier hva slags betaling det er');
 sjekk('hele lista foelger med i svaret',
     str_contains($overU, "'hengende'   => \$hengendeListe,"),
@@ -10681,6 +10681,95 @@ if ($oktH > 0) {
 } else {
     sjekk('det finnes en planlagt okt aa henge en betaling paa', false, 'ingen okter i basen');
 }
+
+// ── Kortet «Henger i Vipps» ─────────────────────────────────────────────
+//
+// Varselet var riktig i API-et, men vistes ingen steder: den eneste bruken
+// var «adminTall», og den lista er ikke bundet til noe markup. Naa staar det
+// et kort i rutenettet paa Verkstedet, ved siden av «Feil meldt inn», med
+// samme regel som resten — kortet staar bare naar noe faktisk henger.
+//
+// Eieren ba om et kortere navn enn «Betalinger som henger», som brakk over
+// to linjer. «Henger i Vipps» gaar paa én, og kan ikke forveksles med «Ikke
+// betalt» i kassa, som betyr noe helt annet.
+//
+// Maalt i nettleseren, med to hengende rader i basen:
+//   kortet:  «Henger i Vipps · 2 · Ukjent (gavekort) · Gavekort · kr. 1 490,-
+//             — og 1 til. · Se dem →»
+//   klikket: /admin/okonomi, «TRENGER ET MENNESKE / Betalinger som henger i
+//             Vipps», og lista under «HENGER I VIPPS»:
+//               Ukjent (gavekort) · Gavekort · hengt i ett dogn · kr. 1 490,-
+//               Gina Borjesson · Kursplass · Store former, viderekomne
+//                              · hengt i 3 timer · kr. 2 800,-
+$hvK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$hvU = (string) preg_replace('/<!--.*?-->/s', '', $hvK);
+$hvU = (string) preg_replace('/^\s*\/\/.*$/m', '', $hvU);
+
+sjekk('det er kode aa maale i kortsjekken', strlen($hvU) > 500000, strlen($hvU) . ' tegn');
+sjekk('kortet «Henger i Vipps» finnes',
+    str_contains($hvU, "kort('Henger i Vipps',"), 'ett kort');
+sjekk('… og staar bare naar noe henger',
+    str_contains($hvU, "if (!h.length) return [];"), 'tom liste gir ingen kort');
+sjekk('… og henter tallet fra lista, ikke fra et eget felt',
+    str_contains($hvU, "const h = ((this.state.adminData || {}).hengende || []);")
+    && str_contains($hvU, "h.length, 'Se dem',"),
+    'samme kilde som linja');
+sjekk('… og navngir den som har hengt lengst',
+    str_contains($hvU, "f.navn + ' · ' + f.hva + ' · ' + f.sum"),
+    'navn, hva og sum');
+sjekk('… og gaar til betalingene',
+    str_contains($hvU, "this.gaaAdmin('adminokonomi', { okonomiFor: 'hengende' })"),
+    'okonomiFor hengende');
+sjekk('… og er merket som noe som haster, som «Feil meldt inn»',
+    (bool) preg_match("/kort\('Henger i Vipps',.*?h\.length, 'Se dem',.*?true\)\]/s", $hvU),
+    'terrakotta paa tallet');
+
+// Skjermen man kommer til.
+sjekk('betalingslista leser de hengende fra oversikten',
+    str_contains($hvU, "(this.state.okonomiFor === 'hengende'\n          ? ((this.state.adminData || {}).hengende || [])"),
+    'api/admin/betalinger.php har dem ikke');
+// api/admin/betalinger.php svarer bare med de gjennomforte. Sto de hengende
+// og ventet paa den lista, ville skjermen vaert tom.
+sjekk('… fordi betalings-API-et bare svarer med de gjennomforte',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php'),
+                 'betalt') && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php'),
+                 "'opprettet'"),
+    'ingen «opprettet» der');
+sjekk('radene beholder navnet sitt i lista',
+    str_contains($hvU, "navn: b.navn || b.medlem || 'Gjest',")
+    && str_contains($hvU, "hva: b.hva || ({ booking: 'Kursbooking'"),
+    'ellers het alle «Gjest»');
+sjekk('overskriften sier hva man ser paa',
+    str_contains($hvU, "this.state.okonomiFor === 'hengende' ? 'Betalinger som henger i Vipps'")
+    && str_contains($hvU, "this.state.okonomiFor === 'hengende' ? 'Trenger et menneske'"),
+    'tittel og stikkord');
+sjekk('… og lista over radene ogsaa',
+    str_contains($hvU, "okListeTittel: this.state.okonomiFor === 'hengende'\n            ? 'Henger i Vipps' : 'Siste betalinger',"),
+    'ikke «Siste betalinger»');
+sjekk('… og forklaringen er ikke medlemsteksten',
+    str_contains($hvU, "Betalinger som ble startet, men aldri gjort opp."),
+    'egen tekst');
+sjekk('brodsmulen viser veien',
+    str_contains($hvU, "if (st.okonomiFor === 'hengende') return p('Økonomi', 'Økonomi', 'Henger i Vipps');"),
+    'Okonomi → Henger i Vipps');
+// Uten «!!b.referanse» ble «undefined === undefined» sant, og refusjonsruta
+// sto aapen paa hver eneste hengende rad. Maalt i nettleseren for rettingen:
+// begge radene viste «BELOP I KRONER … Refunder / Avbryt».
+sjekk('refusjonsruta staar ikke aapen paa en rad uten referanse',
+    str_contains($hvU, 'refApen: !!b.referanse && this.state.refFor === b.referanse,'),
+    'vernet staar');
+// API-et gir radene samme form som resten av lista.
+$ovU2 = (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '',
+    file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php'));
+foreach (["'navn'", "'hva'", "'tid'", "'sum'", "'status'"] as $felt) {
+    sjekk('den hengende raden har feltet ' . $felt,
+        (bool) preg_match('/\$hengendeListe\[\] = \[.*?' . preg_quote($felt, '/') . '\s*=>/s', $ovU2),
+        'samme form som betalingslista');
+}
+sjekk('tiden skrives i timer og dogn, ikke bare «over en time»',
+    str_contains($ovU2, "? (\$t === 1 ? 'hengt i én time' : 'hengt i ' . \$t . ' timer')")
+    && str_contains($ovU2, "'hengt i ett døgn'"),
+    'begge');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

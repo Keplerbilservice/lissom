@@ -14618,7 +14618,7 @@ window.__resources = {
           </div>
 
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
-            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Siste betalinger</div>
+            <div style="padding: var(--space-5) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">{{ okListeTittel }}</div>
             <sc-for list="{{ betalinger }}" as="b" hint-placeholder-count="6">
               <div style="border-top: 1px solid var(--border-subtle);">
                 <div onClick="{{ b.velg }}" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4) var(--space-6); cursor: pointer;">
@@ -28319,6 +28319,7 @@ class Component extends DCLogic {
       case 'adminokonomi':
         if (st.okonomiFor === 'deltakere') return p('Kurs og deltakere', 'Kurs og deltakere', 'Betalinger');
         if (st.okonomiFor === 'medlemmer') return p('Medlemmer', 'Medlemmer', 'Betalinger');
+        if (st.okonomiFor === 'hengende') return p('Økonomi', 'Økonomi', 'Henger i Vipps');
         return p('Økonomi');
       case 'adminnyttig':
         return st.nyttigFor === 'deltakere'
@@ -37427,6 +37428,27 @@ class Component extends DCLogic {
                 () => this.gaaAdmin('adminfeil', {}), true)] : [];
             })(),
 
+            // Betalinger som stoppet paa veien gjennom Vipps.
+            //
+            // Varselet fantes i api/admin/oversikt.php fra for, men det ble
+            // aldri vist noe sted: den eneste bruken var «adminTall», og den
+            // lista er ikke bundet til noe markup. Alle varslene har vaert
+            // usynlige.
+            //
+            // Dette er raden Monica trenger naar en kunde ringer og sier at
+            // hun bestilte og ikke ble paameldt. Derfor staar navnet paa
+            // kortet, ikke bare tallet.
+            ...(() => {
+              const h = ((this.state.adminData || {}).hengende || []);
+              if (!h.length) return [];
+              const f = h[0];
+              return [kort('Henger i Vipps',
+                f.navn + ' · ' + f.hva + ' · ' + f.sum
+                  + (h.length > 1 ? ' — og ' + (h.length - 1) + ' til.' : '.'),
+                h.length, 'Se dem',
+                () => this.gaaAdmin('adminokonomi', { okonomiFor: 'hengende' }), true)];
+            })(),
+
             // Samme regel som ventelista: kortet staar naar noe venter.
             ...(ubesvarte ? [kort('Ubesvarte meldinger',
                  ubesvarte === 1 ? 'Én henvendelse er ikke besvart.'
@@ -37903,18 +37925,32 @@ class Component extends DCLogic {
       // kursene; under Medlemmer er det medlemskapstrekkene. Uten
       // filteret var fanen bare en snarvei til hele oekonomiskjermen, og da
       // hjalp den ikke.
+      // «hengende» leser en annen kilde enn de andre.
+      //
+      // api/admin/betalinger.php svarer bare med «betalt», «refundert» og
+      // «delvis_refundert» — de gjennomforte. En betaling som henger staar
+      // paa «opprettet» eller «venter» og finnes derfor ikke i den lista i
+      // det hele tatt. Radene kommer fra oversikten, som alt henter dem, og
+      // har samme form: navn, hva, tid, sum.
       betalinger: this.klikkbar(
-        (this.state.adminBetalinger || []).filter(b => {
+        (this.state.okonomiFor === 'hengende'
+          ? ((this.state.adminData || {}).hengende || [])
+          : (this.state.adminBetalinger || [])
+        ).filter(b => {
           const f = this.state.okonomiFor;
           if (f === 'deltakere') return b.formal === 'booking';
           if (f === 'medlemmer') return b.formal === 'medlemskap';
           return true;
+        // De hengende radene kommer ferdig formet fra oversikten — navn,
+        // hva, tid og sum staar alt i dem. De gjennomforte kommer raa fra
+        // api/admin/betalinger.php og settes sammen her. Uten «b.navn ||»
+        // ville alle de hengende blitt hetende «Gjest».
         }).map(b => ({
-          navn: b.medlem || 'Gjest',
-          hva: ({ booking: 'Kursbooking', gavekort: 'Gavekort',
+          navn: b.navn || b.medlem || 'Gjest',
+          hva: b.hva || ({ booking: 'Kursbooking', gavekort: 'Gavekort',
                   ordre: 'Butikkordre', medlemskap: 'Medlemskap' })[b.formal] || b.formal,
-          tid: b.tidspunkt,
-          sum: b.belop,
+          tid: b.tid || b.tidspunkt,
+          sum: b.sum || b.belop,
           status: b.status,
           referanse: b.referanse,
           // ── Refusjon ────────────────────────────────────────────────
@@ -37937,7 +37973,12 @@ class Component extends DCLogic {
           // ikke kan trykkes er bedre enn en som svarer nei.
           kanRefundere: ['betalt', 'delvis_refundert'].indexOf(String(b.status || '')) !== -1
             && (b.belopOre || 0) - (b.refundertOre || 0) > 0,
-          refApen: this.state.refFor === b.referanse,
+          // «!!b.referanse» er ikke pynt. En rad uten referanse — de
+          // hengende har ingen, for de skal ikke kunne refunderes — ville
+          // gitt «undefined === undefined», altsaa sant, og refusjonsruta
+          // sto aapen paa hver eneste av dem. Maalt i nettleseren: begge de
+          // hengende radene viste «BELOP I KRONER … Refunder / Avbryt».
+          refApen: !!b.referanse && this.state.refFor === b.referanse,
           refApne: (e) => {
             if (e && e.stopPropagation) e.stopPropagation();
             this.setState({ refFor: b.referanse, refBelop: '' });
@@ -39612,12 +39653,25 @@ class Component extends DCLogic {
 
         return {
           okMaanedTittel: this.state.okonomiFor === 'deltakere' ? 'Betalinger fra kursdeltakere'
-            : (this.state.okonomiFor === 'medlemmer' ? 'Betalinger fra medlemmer' : 'Økonomi i ' + maaned),
+            : this.state.okonomiFor === 'medlemmer' ? 'Betalinger fra medlemmer'
+            : this.state.okonomiFor === 'hengende' ? 'Betalinger som henger i Vipps'
+            : 'Økonomi i ' + maaned,
           okEyebrow: this.state.okonomiFor === 'deltakere' ? 'Kursdeltakere'
-            : (this.state.okonomiFor === 'medlemmer' ? 'Medlemmer' : 'Administrasjon'),
+            : this.state.okonomiFor === 'medlemmer' ? 'Medlemmer'
+            : this.state.okonomiFor === 'hengende' ? 'Trenger et menneske'
+            : 'Administrasjon',
+          // «Siste betalinger» sto fast over lista. Paa de hengende er det
+          // feil: de er ikke de siste, de er de som stoppet.
+          okListeTittel: this.state.okonomiFor === 'hengende'
+            ? 'Henger i Vipps' : 'Siste betalinger',
           okAvgrenset: !!this.state.okonomiFor,
+          // Teksten sier hva man faktisk ser paa. For sto medlemsteksten paa
+          // alt som ikke var «deltakere» — ogsaa paa de hengende, som ikke er
+          // medlemskapstrekk.
           okAvgrensetTekst: this.state.okonomiFor === 'deltakere'
             ? 'Viser kursene. Hele regnskapet ligger under Daglig → Økonomi.'
+            : this.state.okonomiFor === 'hengende'
+            ? 'Betalinger som ble startet, men aldri gjort opp. Pengene kan stå reservert i Vipps, og plassen kan stå som reservert. Ring kunden, eller la den stå — cron spør Vipps på nytt hvert femte minutt.'
             : 'Viser medlemskapstrekkene. Hele regnskapet ligger under Daglig → Økonomi.',
           okOmsetning: ok
             ? ok.omsetning

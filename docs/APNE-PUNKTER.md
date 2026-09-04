@@ -141,12 +141,42 @@ Hele lista følger nå med i svaret som `hengende`, med navn, kurs, beløp,
 antall timer og status. En rad uten navn sier hva slags betaling det er —
 «Ukjent (gavekort)» — i stedet for å stå tom.
 
-**Funnet underveis, og ikke rettet:** `varsler` fra `api/admin/oversikt.php`
-vises **ingen steder**. Den eneste bruken i skjermbildet er `adminTall` i
-`lissom-2108.html:37978`, og den listen er ikke bundet til noe markup — den
-er død kode. Alle varslene om feilede varsler, varsler i kø og hengende
-betalinger har altså vært usynlige. Rettelsen over gjør API-svaret riktig,
-men Monica ser det fortsatt ikke.
+**Funnet underveis:** `varsler` fra `api/admin/oversikt.php` vises **ingen
+steder**. Den eneste bruken i skjermbildet er `adminTall` i
+`lissom-2108.html`, og den listen er ikke bundet til noe markup — den er død
+kode. Alle varslene om feilede varsler, varsler i kø og hengende betalinger
+har altså vært usynlige.
+
+### Kortet «Henger i Vipps»
+
+Eieren så en skisse satt inn i det ekte skjermbildet og ba om et kortere navn
+enn «Betalinger som henger», som brakk over to linjer. «Henger i Vipps» går på
+én, og kan ikke forveksles med «Ikke betalt» i kassa, som betyr noe annet.
+
+Kortet står i kortrutenettet på Verkstedet, ved siden av «Feil meldt inn», med
+samme regel som resten: det står bare når noe faktisk henger. Tallet er i
+terrakotta. Linja navngir den som har hengt lengst.
+
+«Se dem →» går til Økonomi med `okonomiFor: 'hengende'`. Radene kommer fra
+oversikten, ikke fra `api/admin/betalinger.php` — den svarer bare med de
+gjennomførte (`betalt`, `refundert`, `delvis_refundert`), så en hengende
+betaling finnes ikke i den listen i det hele tatt.
+
+**Målt i nettleseren, med to hengende rader i basen:**
+
+| | Resultat |
+|---|---|
+| Kortet | «Henger i Vipps · 2 · Ukjent (gavekort) · Gavekort · kr. 1 490,- — og 1 til. · Se dem →» |
+| Etter klikk | `/admin/okonomi`, «TRENGER ET MENNESKE / Betalinger som henger i Vipps» |
+| Listen | «Ukjent (gavekort) · Gavekort · hengt i ett døgn · kr. 1 490,-» og «Gina Børjesson · Kursplass · Store former, viderekomne · hengt i 3 timer · kr. 2 800,-» |
+| Refusjon på vanlige betalinger | panelet lukket til man trykker, åpner på klikk — uendret |
+
+**Feil funnet i min egen endring, og rettet:** `refApen` var
+`this.state.refFor === b.referanse`. De hengende radene har ingen referanse —
+de skal ikke kunne refunderes — så det ble `undefined === undefined`, altså
+sant, og refusjonsruta sto åpen på hver eneste av dem. Målt før rettingen:
+begge radene viste «BELØP I KRONER … Refunder / Avbryt». Nå er den
+`!!b.referanse && …`.
 
 ### Fortsatt åpent etter Vipps-gjennomgangen
 

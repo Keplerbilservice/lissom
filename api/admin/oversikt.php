@@ -230,29 +230,42 @@ $hengende = count($hengendeRader);
 if ($hengende > 0) {
     // Navnet forst — det er det Monica leter etter. Staar det ikke noe navn
     // paa raden, sier vi hva slags betaling det er i stedet for aa lyve.
-    $SLAG = ['booking' => 'kursplass', 'gavekort' => 'gavekort',
-             'ordre' => 'bestilling', 'medlemskap' => 'medlemskap'];
+    // Radene faar samme form som resten av betalingslista — navn, hva, tid,
+    // sum — saa skjermen kan tegne dem med det samme oppsettet den alt har.
+    // Ett radformat, ikke to.
+    $SLAG = ['booking' => 'Kursplass', 'gavekort' => 'Gavekort',
+             'ordre' => 'Bestilling', 'medlemskap' => 'Medlemskap'];
     $navnet = static function (array $r) use ($SLAG): string {
         $n = trim((string) $r['navn']);
-        if ($n === '') { $n = 'Ukjent (' . ($SLAG[(string) $r['formal']] ?? 'betaling') . ')'; }
-        $hva = trim((string) $r['kurs']);
-        return $n . ($hva !== '' ? ' · ' . $hva : '')
-             . ' · ' . Booking::kroner((int) $r['belop_ore']);
+        // Staar det ikke noe navn paa raden, sier vi hva slags betaling det
+        // er. Et tomt felt ser ut som en feil i skjermen, ikke som en rad
+        // uten kunde.
+        return $n !== '' ? $n : 'Ukjent (' . strtolower($SLAG[(string) $r['formal']] ?? 'betaling') . ')';
     };
-    $forste = $navnet($hengendeRader[0]);
+    $tiden = static fn(int $t): string => $t < 24
+        ? ($t === 1 ? 'hengt i én time' : 'hengt i ' . $t . ' timer')
+        : ((int) floor($t / 24) === 1 ? 'hengt i ett døgn'
+                                      : 'hengt i ' . (int) floor($t / 24) . ' døgn');
+    foreach ($hengendeRader as $r) {
+        $hva = $SLAG[(string) $r['formal']] ?? 'Betaling';
+        $kurs = trim((string) $r['kurs']);
+        $hengendeListe[] = [
+            'id'        => (int) $r['id'],
+            'navn'      => $navnet($r),
+            'hva'       => $hva . ($kurs !== '' ? ' · ' . $kurs : ''),
+            'tid'       => $tiden((int) $r['timer']),
+            'sum'       => Booking::kroner((int) $r['belop_ore']),
+            'timer'     => (int) $r['timer'],
+            'status'    => (string) $r['status'],
+        ];
+    }
+    // Linja i varselet: den som har hengt lengst, med navn, hva og sum.
+    $f = $hengendeListe[0];
+    $forste = $f['navn'] . ' · ' . $f['hva'] . ' · ' . $f['sum'];
     $varsler[] = $hengende === 1
         ? 'Én betaling har hengt i over en time: ' . $forste
         : $hengende . ' betalinger har hengt i over en time: ' . $forste
           . ' — og ' . ($hengende - 1) . ' til';
-    // Hele lista foelger med, saa skjermen kan vise alle uten et nytt kall.
-    foreach ($hengendeRader as $r) {
-        $hengendeListe[] = [
-            'id'     => (int) $r['id'],
-            'navn'   => $navnet($r),
-            'timer'  => (int) $r['timer'],
-            'status' => (string) $r['status'],
-        ];
-    }
 }
 
 $venteliste = (int) DB::verdi("SELECT COUNT(*) FROM waitlist WHERE status = 'venter'");

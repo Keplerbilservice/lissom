@@ -867,6 +867,37 @@ $osloTilbake = static function (int $doegn, string $kl): string {
         ->format('Y-m-d H:i:s');
 };
 
+/**
+ * Et klokkeslett paa kvelden som ER omme.
+ *
+ * «I gaar kl. 10» virker hele dagen — helt til klokka blir 23. Da er
+ * stengetida etter den oekta akkurat 24 timer og ett minutt gammel, og
+ * Stempling::sisteOkt() setter «kanRettes» til usann: rettevinduet er 24
+ * timer. Seks tester om retting gikk derfor roede mellom 23:00 og midnatt,
+ * uten at noe var galt i produktet. Regnet ut foer den ble rettet:
+ *
+ *   22:59  stenger 03.09 23:00  kanRettes ja
+ *   23:30  stenger 03.09 23:00  kanRettes NEI
+ *
+ * Denne foelger den siste stengetida som faktisk er passert, ikke doegnet.
+ * Foer kl. 23 er det i gaar; etter kl. 23 er det i dag. Da ligger oekta
+ * alltid like innenfor vinduet, og klokkeslettene i testene — inn 10:00,
+ * ut 14:00 — betyr det samme hele doegnet.
+ */
+$osloKveld = static function (string $kl): string {
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $naa  = new DateTimeImmutable('now', $oslo);
+    // Siste stengetid som er omme.
+    $stengte = $naa->setTime(23, 0);
+    if ($stengte > $naa) {
+        $stengte = $stengte->modify('-1 day');
+    }
+    return $stengte
+        ->setTime((int) substr($kl, 0, 2), (int) substr($kl, 3, 2))
+        ->setTimezone(new DateTimeZone('UTC'))
+        ->format('Y-m-d H:i:s');
+};
+
 // Glemt utstempling skal lukkes, og ikke spise hele maaneden. Inn kl. 10,
 // stengetid kl. 23 — tretten timer, seks telles. Eieren, spurt om hva som
 // skal trekkes: «Behold taket paa 6 timer».
@@ -912,7 +943,7 @@ DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
 
 // Inn kl. 20 i gaar: tre timer til stengetid. Kortere enn det gamle taket paa
 // ti, saa den gamle regelen ville latt den staa aapen.
-$kveld = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '20:00')]);
+$kveld = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('20:00')]);
 Stempling::lukkGlemte();
 $k = DB::en('SELECT ut_tid, minutter, auto_lukket FROM check_ins WHERE id = :i', ['i' => $kveld]);
 sjekk('kveldsokt lukkes ved stengetid', (int) ($k['auto_lukket'] ?? 0) === 1);
@@ -926,6 +957,10 @@ sjekk('kveldsokta lukkes klokka 23 norsk tid',
 $natt = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(2, '23:30')]);
 Stempling::lukkGlemte();
 $n = DB::en('SELECT ut_tid FROM check_ins WHERE id = :i', ['i' => $natt]);
+// Forventningen foelger seedingen, ikke dagens kveld: oekta ble lagt inn to
+// doegn tilbake kl. 23:30, og stengetida etter den er ett doegn tilbake kl.
+// 23. Bruker vi $osloKveld her, flytter forventningen seg klokka 23 mens den
+// lukkede oekta staar stille.
 sjekk('innstemplet etter stengetid lukkes neste kveld',
     substr((string) $n['ut_tid'], 0, 16) === substr($osloTilbake(1, '23:00'), 0, 16),
     'fikk ' . var_export($n['ut_tid'] ?? null, true) . ', ventet ' . $osloTilbake(1, '23:00'));
@@ -936,7 +971,7 @@ sjekk('innstemplet etter stengetid lukkes neste kveld',
 // gikk». Spurt om hvem: «Begge — medlemmet og du». Begge veier inn gaar
 // gjennom denne, saa de kan ikke skille lag.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-$rettes = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+$rettes = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('10:00')]);
 Stempling::lukkGlemte();
 sjekk('okta staar som lukket av systemet foer rettinga',
     (int) DB::verdi('SELECT auto_lukket FROM check_ins WHERE id = :i', ['i' => $rettes]) === 1);
@@ -968,14 +1003,14 @@ sjekk('okta staar urort etter et avvist klokkeslett',
 // hadde verkstedet stengt en og en halv time for. Da er det ikke et
 // klokkeslett vi kan skrive inn.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '22:00')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('22:00')]);
 sjekk('et klokkeslett etter stengetid avvises',
     (Stempling::rettUtKlokke($testMedlem, '00:30')['ok'] ?? true) === false);
 
 // ... men den som stemplet inn ETTER stengetid, gikk naturligvis etter
 // midnatt. Da er stengetida neste kveld, og klokkeslettet hoerer til der.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '23:30')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('23:30')]);
 $rs = Stempling::rettUtKlokke($testMedlem, '01:00');
 sjekk('gikk man etter midnatt, teller det som samme okt', ($rs['minutter'] ?? 0) === 90,
     'fikk ' . var_export($rs['minutter'] ?? null, true) . ' ' . ($rs['feil'] ?? ''));
@@ -983,7 +1018,7 @@ sjekk('gikk man etter midnatt, teller det som samme okt', ($rs['minutter'] ?? 0)
 // Taket staar. Eieren, spurt om hva som skal trekkes: «Behold taket paa 6
 // timer». Inn kl. 10, gikk kl. 22 — tolv timer, seks telles.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('10:00')]);
 sjekk('rettinga holder seg innenfor taket paa seks timer',
     (Stempling::rettUtKlokke($testMedlem, '22:00')['minutter'] ?? 0) === 360);
 
@@ -994,7 +1029,7 @@ sjekk('rettinga holder seg innenfor taket paa seks timer',
 // brukes én gang, og den som skrev 15:00 i stedet for 16:00 satt igjen med
 // feilen. Derfor gaar vinduet paa naar oekta tok slutt.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('10:00')]);
 Stempling::lukkGlemte();
 sjekk('rettinga kan gjores om igjen',
     (Stempling::rettUtKlokke($testMedlem, '15:00')['minutter'] ?? 0) === 300
@@ -8290,6 +8325,77 @@ sjekk('… paa begge kortblokkene',
 sjekk('… uten at kortet mister noe',
     str_contains($sidaG, '<button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">'));
 
+// ── «Forfalt» og «Ikke betalt» ser ikke like ut lenger ─────────────────
+//
+// De to hadde samme farge, rgba(196,90,58,.18). To ulike betydninger saa
+// like ut: den ene er «pengene skulle vaert her», den andre er «pengene er
+// ikke kommet ennaa». Eieren, 4. september: «ja skill fargen».
+//
+// Maalt i nettleseren mot de ekte CSS-variablene: Forfalt 5,25 i kontrast,
+// Ikke betalt 4,48, og de to bakgrunnene skiller seg med 4,48.
+sjekk('«Forfalt» har fylt bakgrunn',
+    str_contains($sidaG, "      forfalt: ['var(--terracotta-600)',  'var(--clay-50)'],"));
+sjekk('… og «Ikke betalt» beholder den lyse',
+    str_contains($sidaG, "      venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],"));
+// Uten dette kan de to gli sammen igjen den dagen én av dem rettes.
+sjekk('… saa de to ikke er like',
+    !str_contains($sidaG, "      forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],"));
+
+// ── Endringsloggen staar sammenslaatt ──────────────────────────────────
+//
+// Den sto som full liste oeverst i ruta. Hos et medlem med litt historie
+// ble det tolv-femten linjer man maatte forbi hver gang for aa komme til
+// det man kom for. Planen: «Endringslogg (12)» som lenke.
+//
+// Maalt i nettleseren: lukket «Endringslogg (4) ▾», aapen «▴» med fire
+// rader mer — 3106 -> 3223 px paa PC, 5576 -> 5788 px paa mobil.
+sjekk('endringsloggen staar som én linje med tallet i',
+    str_contains($sidaG, "personLoggKnapp: 'Endringslogg (' + (((d || {}).logg) || []).length + ')'")
+    && str_contains($sidaG, 'personLoggVeksle: () => this.setState({ personLoggApen: !this.state.personLoggApen }),'));
+// Ruta staar to steder — under Medlemmer og under Deltakere — og deler
+// verdiene. Sto knappen bare ett sted, ville den andre ruta vist en tom
+// blokk der lista pleide aa staa.
+sjekk('… begge stedene ruta staar',
+    substr_count($sidaG, 'onClick="{{ personLoggVeksle }}"') === 2
+    && substr_count($sidaG, '<sc-if value="{{ personLoggApen }}" hint-placeholder-val="{{ false }}">') === 2);
+// Ingenting er borte: det er de samme radene, bak ett trykk.
+sjekk('… og radene er de samme',
+    substr_count($sidaG, '<sc-for list="{{ personLogg }}" as="l" hint-placeholder-count="3">') === 2);
+
+// ── Nettbutikk staar ett sted ──────────────────────────────────────────
+//
+// Butikken sto som fane under Nettsiden fra den gang det var eneste vei
+// dit. Den ble eget menypunkt 4. september, og fanen var da en doer ut av
+// rada den sto i: adminSted() foerer «adminbutikk» til omraadet
+// «Nettbutikk», saa ett trykk byttet hele fanerada.
+sjekk('Nettbutikk staar i hovedmenyen',
+    str_contains($sidaG, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],"));
+sjekk('… og ikke ogsaa som fane under Nettsiden',
+    !str_contains($sidaG, "['Nettbutikk',    'adminbutikk',     { butikkFane: 'Butikken' }],"));
+// Butikkens egen fanerad, og Internbutikken hos medlemmene, staar som for.
+sjekk('… mens butikkens egne faner staar',
+    str_contains($sidaG, "['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],")
+    && str_contains($sidaG, "['Internbutikk',  'adminbutikk',     { butikkFane: 'Medlemssalg' }],")
+    && str_contains($sidaG, "['Internbutikk', 'adminbutikk',      { butikkFane: 'Medlemssalg' }],"));
+
+// ── Stemplingstestene taaler at klokka er over 23 ──────────────────────
+//
+// «I gaar kl. 10» virker helt til klokka blir 23. Da er stengetida etter
+// den oekta 24 timer og ett minutt gammel, og Stempling::sisteOkt() setter
+// «kanRettes» til usann — rettevinduet er 24 timer. Seks tester gikk roede
+// mellom 23:00 og midnatt uten at noe var galt i produktet.
+//
+// Regnet ut over alle 48 halvtimer i doegnet: gammel seeding roed 1 gang,
+// ny seeding roed 0.
+sjekk('rettingstestene seedes mot siste passerte stengetid',
+    str_contains($sidaEgen = file_get_contents(__FILE__), '$osloKveld = static function (string $kl): string {')
+    && str_contains($sidaEgen, '$stengte = $naa->setTime(23, 0);'));
+// Maalt paa seedingslinja og ikke paa ordet: navnet staar igjen i teksten
+// her, og en test som leser sin egen fil finner da seg selv.
+sjekk('… og ingen oekt seedes lenger med «ett doegn tilbake»',
+    substr_count($sidaEgen, "'inn_tid' => \$osloTilbake(1,") === 0
+    && substr_count($sidaEgen, "'inn_tid' => \$osloKveld(") === 6);
+
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.
 if (DB::harKolonne('payments', 'order_id')) {
@@ -8739,7 +8845,20 @@ sjekk('… og teksten fra serveren staar urort, med plassene',
 // Kassa sitt statuskart er et ANNET begrep: hvordan det gikk med én
 // betalingsrad. Det skal ikke slaas sammen med dette.
 sjekk('kassas statuskart er ikke slaatt sammen med pilla',
-    str_contains($sidaP3, "betalt: 'Betalt', venter: 'Venter', opprettet: 'Ikke fullført',"));
+    str_contains($sidaP3, 'const STATUSTEKST = {')
+    && str_contains($sidaP3, "MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+// Kartet daekker hele «payments.status». Manglet én, viste skjermen det rene
+// kolonnenavnet. «autorisert» manglet til 4. september.
+$enumStatus = ['opprettet', 'venter', 'autorisert', 'betalt', 'avbrutt',
+               'feilet', 'refundert', 'delvis_refundert'];
+$utenOrd = [];
+$kartFra = strpos($sidaP3, 'const STATUSTEKST = {');
+$kartet  = substr($sidaP3, $kartFra, 420);
+foreach ($enumStatus as $st) {
+    if (!str_contains($kartet, $st . ':')) { $utenOrd[] = $st; }
+}
+sjekk('… og har et ord for hver status i basen',
+    $utenOrd === [], implode(', ', $utenOrd));
 
 echo "\n== Færre betalingsmåter å velge i ==\n";
 // Eieren, 4. september: «du kan droppe faktura og bankoverforing».

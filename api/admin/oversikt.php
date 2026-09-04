@@ -180,6 +180,7 @@ $kommende = DB::alle(
 
 // --- Ting som trenger oppmerksomhet --------------------------------------
 $varsler = [];
+$hengendeListe = [];
 
 $feiledeVarsler = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'");
 if ($feiledeVarsler > 0) {
@@ -195,15 +196,63 @@ if ($iKo > 0) {
         : $iKo . ' varsler har ligget i kø i over en halvtime';
 }
 
-$hengende = (int) DB::verdi(
-    "SELECT COUNT(*) FROM payments
-      WHERE status IN ('venter','autorisert')
-        AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)"
+// Betalinger som henger — med navn.
+//
+// Her sto det bare et tall: «Én betaling har hengt i over en time». Det er
+// den beskjeden Monica faar naar en kunde ringer og sier at hun bestilte og
+// ikke ble paameldt — og av et tall kan hun ikke finne ut hvem det er.
+// Eieren, 4. september: navn, beloep og kurs.
+//
+// «opprettet» staar med her ogsaa. Alle kanalene setter «venter» med én gang
+// Vipps har svart, saa en rad blir bare staaende paa «opprettet» hvis PHP
+// doer akkurat mellom de to linjene. Da var den usynlig i dette varselet, og
+// nettopp den raden er den som trenger et menneske.
+//
+// Maanedstrekkene staar utenfor: de gjores opp fra avtalen sin i
+// «medlemstrekk», og de henger ikke paa samme maate.
+$hengendeRader = DB::alle(
+    "SELECT p.id, p.belop_ore, p.formal, p.status,
+            TIMESTAMPDIFF(HOUR, p.created_at, UTC_TIMESTAMP()) AS timer,
+            COALESCE(m.navn, b.gjest_navn, o.kunde_navn, '') AS navn,
+            COALESCE(c.tittel, '') AS kurs
+       FROM payments p
+  LEFT JOIN members  m ON m.id = p.member_id
+  LEFT JOIN bookings b ON b.id = p.booking_id
+  LEFT JOIN orders   o ON o.id = p.order_id
+  LEFT JOIN courses  c ON c.id = b.course_id
+      WHERE p.status IN ('opprettet','venter','autorisert')
+        AND p.type <> 'recurring_charge'
+        AND p.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)
+   ORDER BY p.created_at
+      LIMIT 20"
 );
+$hengende = count($hengendeRader);
 if ($hengende > 0) {
+    // Navnet forst — det er det Monica leter etter. Staar det ikke noe navn
+    // paa raden, sier vi hva slags betaling det er i stedet for aa lyve.
+    $SLAG = ['booking' => 'kursplass', 'gavekort' => 'gavekort',
+             'ordre' => 'bestilling', 'medlemskap' => 'medlemskap'];
+    $navnet = static function (array $r) use ($SLAG): string {
+        $n = trim((string) $r['navn']);
+        if ($n === '') { $n = 'Ukjent (' . ($SLAG[(string) $r['formal']] ?? 'betaling') . ')'; }
+        $hva = trim((string) $r['kurs']);
+        return $n . ($hva !== '' ? ' · ' . $hva : '')
+             . ' · ' . Booking::kroner((int) $r['belop_ore']);
+    };
+    $forste = $navnet($hengendeRader[0]);
     $varsler[] = $hengende === 1
-        ? 'Én betaling har hengt i over en time'
-        : $hengende . ' betalinger har hengt i over en time';
+        ? 'Én betaling har hengt i over en time: ' . $forste
+        : $hengende . ' betalinger har hengt i over en time: ' . $forste
+          . ' — og ' . ($hengende - 1) . ' til';
+    // Hele lista foelger med, saa skjermen kan vise alle uten et nytt kall.
+    foreach ($hengendeRader as $r) {
+        $hengendeListe[] = [
+            'id'     => (int) $r['id'],
+            'navn'   => $navnet($r),
+            'timer'  => (int) $r['timer'],
+            'status' => (string) $r['status'],
+        ];
+    }
 }
 
 $venteliste = (int) DB::verdi("SELECT COUNT(*) FROM waitlist WHERE status = 'venter'");
@@ -474,6 +523,7 @@ Svar::json([
     )),
     'venteliste' => $venteliste,
     'varsler'    => $varsler,
+    'hengende'   => $hengendeListe,
     // Om utsendingen er skrudd paa. Ligger her fordi denne hentes paa hver
     // adminskjerm — da kan kortet som peker til oppsettet vise hva som
     // gjelder, uten et eget kall.

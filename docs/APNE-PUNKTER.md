@@ -120,13 +120,41 @@ vises bare når Vipps sitt eget knappeskript har lastet, og det skriptet
 hentes over nett. Det skjer ikke i testmiljøet. Teksten er låst med en
 sjekk i `tests/backend.php`, men den er ikke sett på skjerm.
 
+### «Én betaling har hengt» sa ikke hvem — og vises ikke i det hele tatt
+
+Varselet var et tall. Det er beskjeden Monica får når en kunde ringer og sier
+at hun bestilte og ikke ble påmeldt — og av et tall kan hun ikke finne ut hvem.
+
+Spørringen var også feil på to måter: den talte månedstrekkene, som hører til
+`medlemstrekk` og aldri kan gjøres opp herfra, og den så ikke på `opprettet`
+— den ene statusen som betyr at en betaling stoppet før Vipps rakk å svare.
+
+**Målt mot ekte rader i basen** — ett kurskjøp på «venter» (3 timer), ett
+gavekort på «opprettet» (5 timer), ett månedstrekk på «venter» (9 timer):
+
+| | Fant | Sa |
+|---|---|---|
+| Før | månedstrekket + kurskjøpet | «2 betalinger har hengt i over en time» |
+| Etter | gavekortet + kurskjøpet | «2 betalinger har hengt i over en time: Ukjent (gavekort) · kr. 1 490,- — og 1 til» |
+
+Hele lista følger nå med i svaret som `hengende`, med navn, kurs, beløp,
+antall timer og status. En rad uten navn sier hva slags betaling det er —
+«Ukjent (gavekort)» — i stedet for å stå tom.
+
+**Funnet underveis, og ikke rettet:** `varsler` fra `api/admin/oversikt.php`
+vises **ingen steder**. Den eneste bruken i skjermbildet er `adminTall` i
+`lissom-2108.html:37978`, og den listen er ikke bundet til noe markup — den
+er død kode. Alle varslene om feilede varsler, varsler i kø og hengende
+betalinger har altså vært usynlige. Rettelsen over gjør API-svaret riktig,
+men Monica ser det fortsatt ikke.
+
 ### Fortsatt åpent etter Vipps-gjennomgangen
 
 | Funn | Hvor | Status |
 |---|---|---|
 | Cron hentet Vipps-status og gjorde ingenting med den. | `bin/cron.php` | **Rettet.** Se under. |
 | Sikkerhetsnettet i `Tikk` så bare på `venter` og `autorisert`, og hoppet ikke over månedstrekkene. | `app/lib/tikk.php` | **Rettet.** Se under. |
-| Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php:197` | **Ikke rettet.** |
+| Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php` | **Rettet i API-et.** Se under — men varselet vises ingen steder i skjermbildet, og det er en egen sak. |
 | Kom kunden seg gjennom innloggingen, er skjemaet hun fylte ut (dato, telefon, allergier) borte når hun kommer tilbake. Bare medlemskap tar vare på det. | `lissom-2108.html` | **Ikke rettet.** |
 | Webhooken har fortsatt sin egen behandling av AUTHORIZED/CAPTURED/avbrutt/REFUNDED, som ikke går gjennom `Vipps::synkroniser()`. | `api/vipps-webhook.php` | **Ikke rørt.** Den virker, og den er signert — å legge den om er en egen sak. |
 

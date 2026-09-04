@@ -10581,6 +10581,107 @@ sjekk('cron teller bare de oppslagene som faktisk gikk',
     && str_contains($cronU, "\$gjortOpp"),
     'sjekket og gjortOpp hver for seg');
 
+// ── «Én betaling har hengt» sa ikke hvem ────────────────────────────────
+//
+// Varselet var et tall. Det er beskjeden Monica faar naar en kunde ringer og
+// sier at hun bestilte og ikke ble paameldt — og av et tall kan hun ikke
+// finne ut hvem. Eieren, 4. september: navn, beloep og kurs.
+//
+// Sporringen var ogsaa feil paa to maater. Den talte maanedstrekkene, som
+// hoerer til «medlemstrekk» og aldri kan gjores opp herfra, og den saa ikke
+// paa «opprettet» — den ene statusen som betyr at en betaling stoppet foer
+// Vipps rakk aa svare.
+//
+// Maalt mot ekte rader i basen: ett kurskjop paa «venter» (3 timer), ett
+// gavekort paa «opprettet» (5 timer), og ett maanedstrekk paa «venter»
+// (9 timer).
+//   for:   maanedstrekket + kurskjopet   → «2 betalinger har hengt …»
+//   etter: gavekortet + kurskjopet       → «2 betalinger har hengt i over en
+//          time: Ukjent (gavekort) · kr. 1 490,- — og 1 til», og hele lista
+//          med «Provekunde Hengende · Store former, viderekomne · kr. 2 800,-»
+$overK = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$overU = (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '', $overK);
+
+sjekk('det er kode aa maale i varselsjekken', strlen($overU) > 8000, strlen($overU) . ' tegn');
+sjekk('varselet henter navn, ikke bare et tall',
+    str_contains($overU, "COALESCE(m.navn, b.gjest_navn, o.kunde_navn, '') AS navn"),
+    'medlem, gjest eller ordrekunde');
+sjekk('… og kurset raden gjelder',
+    str_contains($overU, "COALESCE(c.tittel, '') AS kurs"),
+    'tittelen blir med');
+sjekk('… og hvor lenge den har hengt',
+    str_contains($overU, 'TIMESTAMPDIFF(HOUR, p.created_at, UTC_TIMESTAMP()) AS timer'),
+    'timer, ikke bare «over en time»');
+sjekk('varselet ser paa «opprettet» ogsaa',
+    str_contains($overU, "WHERE p.status IN ('opprettet','venter','autorisert')"),
+    'alle tre statusene');
+sjekk('… og hopper over maanedstrekkene',
+    str_contains($overU, "AND p.type <> 'recurring_charge'"),
+    'de gjores opp i «medlemstrekk»');
+sjekk('en rad uten navn lyver ikke',
+    str_contains($overU, "\$n = 'Ukjent (' . (\$SLAG[(string) \$r['formal']] ?? 'betaling') . ')';"),
+    'sier hva slags betaling det er');
+sjekk('hele lista foelger med i svaret',
+    str_contains($overU, "'hengende'   => \$hengendeListe,"),
+    'skjermen slipper et nytt kall');
+sjekk('… og den finnes ogsaa naar ingenting henger',
+    str_contains($overU, '$hengendeListe = [];'),
+    'tom liste, ikke manglende felt');
+
+// Sporringen maales, ikke bare teksten: rader legges inn og hentes ut igjen.
+$oktH = (int) DB::verdi("SELECT id FROM course_sessions WHERE status = 'planlagt' ORDER BY id LIMIT 1");
+if ($oktH > 0) {
+    $kursH = (int) DB::verdi('SELECT course_id FROM course_sessions WHERE id = :i', ['i' => $oktH]);
+    $gammelt = gmdate('Y-m-d H:i:s', time() - 3 * 3600);
+    $pB = DB::settInn('payments', ['vipps_reference' => 'SJEKK-B-' . bin2hex(random_bytes(4)),
+        'type' => 'epayment', 'formal' => 'booking', 'belop_ore' => 280000,
+        'status' => 'venter', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => $gammelt, 'updated_at' => $gammelt]);
+    $bH = DB::settInn('bookings', ['course_id' => $kursH, 'course_session_id' => $oktH,
+        'gjest_navn' => 'Sjekkkunde Hengende', 'antall' => 1, 'belop_ore' => 280000,
+        'status' => 'reservert', 'payment_id' => $pB, 'created_at' => $gammelt]);
+    DB::oppdater('payments', ['booking_id' => $bH], ['id' => $pB]);
+    $pO = DB::settInn('payments', ['vipps_reference' => 'SJEKK-O-' . bin2hex(random_bytes(4)),
+        'type' => 'epayment', 'formal' => 'gavekort', 'belop_ore' => 149000,
+        'status' => 'opprettet', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => $gammelt, 'updated_at' => $gammelt]);
+    $pR = DB::settInn('payments', ['vipps_reference' => 'SJEKK-R-' . bin2hex(random_bytes(4)),
+        'type' => 'recurring_charge', 'formal' => 'medlemskap', 'belop_ore' => 50000,
+        'status' => 'venter', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => $gammelt, 'updated_at' => $gammelt]);
+
+    $traff = DB::alle(
+        "SELECT p.id, COALESCE(m.navn, b.gjest_navn, o.kunde_navn, '') AS navn,
+                COALESCE(c.tittel, '') AS kurs
+           FROM payments p
+      LEFT JOIN members  m ON m.id = p.member_id
+      LEFT JOIN bookings b ON b.id = p.booking_id
+      LEFT JOIN orders   o ON o.id = p.order_id
+      LEFT JOIN courses  c ON c.id = b.course_id
+          WHERE p.status IN ('opprettet','venter','autorisert')
+            AND p.type <> 'recurring_charge'
+            AND p.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)
+            AND p.id IN (:a, :b, :c)",
+        ['a' => $pB, 'b' => $pO, 'c' => $pR]
+    );
+    $ider = array_map(static fn(array $r): int => (int) $r['id'], $traff);
+    sjekk('kurskjopet som henger blir funnet', in_array($pB, $ider, true), 'id ' . $pB);
+    sjekk('… og gavekortet som stoppet paa «opprettet»', in_array($pO, $ider, true), 'id ' . $pO);
+    sjekk('… men ikke maanedstrekket', !in_array($pR, $ider, true), 'id ' . $pR . ' holdt utenfor');
+    $navnet = '';
+    foreach ($traff as $r) { if ((int) $r['id'] === $pB) { $navnet = $r['navn'] . '|' . $r['kurs']; } }
+    sjekk('navnet og kurset foelger med raden',
+        str_contains($navnet, 'Sjekkkunde Hengende') && strlen($navnet) > 20, $navnet);
+
+    DB::kjor('DELETE FROM bookings WHERE id = :i', ['i' => $bH]);
+    DB::kjor('DELETE FROM payments WHERE id IN (:a, :b, :c)', ['a' => $pB, 'b' => $pO, 'c' => $pR]);
+    sjekk('sjekkradene er ryddet bort etterpaa',
+        (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE id IN (:a, :b, :c)',
+            ['a' => $pB, 'b' => $pO, 'c' => $pR]) === 0, 'ingen igjen');
+} else {
+    sjekk('det finnes en planlagt okt aa henge en betaling paa', false, 'ingen okter i basen');
+}
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

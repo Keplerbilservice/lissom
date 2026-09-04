@@ -8248,6 +8248,21 @@ foreach (['erAdminReferanser', 'erAdminMaler', 'erAdminFeil', 'erAdminMobilvis',
 sjekk('… og hver enkelt av de sju har den',
     $manglerFane === [], implode(', ', $manglerFane));
 
+// Videokurs-skjermen hadde sin egen tilbakeknapp fra for. Da rada kom hit,
+// sto det to veier tilbake paa den samme skjermen, med hvert sitt navn — og
+// «Kurs og medlemskap» er et omraadenavn som ikke finnes lenger.
+// Maalt paa bindingen og ikke paa ordet: navnet staar igjen i kommentaren
+// som forklarer hvorfor knappen er borte.
+sjekk('Videokurs har én vei tilbake, ikke to',
+    !str_contains($sidaG, 'onClick="{{ vkTilbake }}"')
+    && !str_contains($sidaG, 'vkTilbake: () =>'));
+// Eieren, 4. september: «videokurs er ikke bygget, og den skal bare ligge
+// der som et tomt kort uten funksjon». Kortet og skjermen sier begge det
+// samme, og skal fortsette aa gjore det.
+sjekk('… og sier fortsatt at ingenting er bygget',
+    str_contains($sidaG, 'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.')
+    && str_contains($sidaG, 'Her skal videokursene ligge. Ingenting er bygget ennå.'));
+
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.
 if (DB::harKolonne('payments', 'order_id')) {

@@ -5426,7 +5426,12 @@ window.__resources = {
 
       <main style="padding: var(--space-10) var(--space-10) var(--space-16); min-width: 0;">
         <div style="margin-bottom: var(--space-8);">
-          <button type="button" onClick="{{ vkTilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 0; font: var(--type-body-sm); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;">← Kurs og medlemskap</button>
+          <!-- Her sto en egen tilbakeknapp, «← Kurs og medlemskap». Den
+               ble en dublett da fanerada kom hit 4. september: to veier
+               tilbake paa samme skjerm, med hvert sitt navn — og «Kurs og
+               medlemskap» er dessuten et omraadenavn som ikke finnes lenger.
+               Rada under overskriften har «← Kurs og deltakere», som er den
+               samme veien tilbake som alle andre skjermer har. -->
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin: var(--space-4) 0 var(--space-2);">Administrasjon</div>
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Videokurs</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Her skal videokursene ligge. Ingenting er bygget ennå.</p>
@@ -40892,7 +40897,9 @@ class Component extends DCLogic {
       erAdminNyttig: side === 'adminnyttig',
       erAdminVideokurs: side === 'adminvideokurs',
       adminNavVideokurs: this.adminMeny(),
-      vkTilbake: () => this.gaaAdmin('adminomrkurs', {}),
+      // «vkTilbake» sto her, til den egne tilbakeknappen paa
+      // Videokurs-skjermen. Knappen ble en dublett da fanerada kom dit, og
+      // da hadde den ingen aa bli trykket av.
       erAdminFerdigbrent: side === 'adminferdigbrent',
       adminNavFerdigbrent: this.adminMeny(),
       // ── Skjermen «Ferdig glassert» ───────────────────────────────────

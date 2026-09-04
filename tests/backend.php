@@ -8154,24 +8154,38 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
-echo "\n== Kassa viser bare det som ble et salg ==\n";
+echo "\n== Bare det som ble penger, overalt ==\n";
 // Eieren, 4. september, med sitt eget avbrutte Vipps-forsok staaende i
 // kassa: «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal ikke
 // vises noen sted».
 //
-// Lista tok alt som sto i payments. Et forsok som ble avbrutt i Vipps lager
-// ogsaa en rad, og den sto ved siden av dagens salg.
+// Regelen ble lagt i kassa — paa skjermen, og bare der. Samme kveld sto den
+// samme typen rad under Okonomi, som tegner sin egen liste av det samme
+// svaret og filtrerte paa formaal, ikke paa status: «hva i all verden er
+// dette?»
 //
-// Det som teller er det som faktisk ble penger: betalt, og det som er sendt
-// helt eller delvis tilbake etterpaa — en refusjon hoerer til et salg som
-// skjedde. Samme skille dagsoppgjoret over lista gjor.
+// Naa staar regelen paa serveren. Svaret inneholder bare det som faktisk ble
+// penger: betalt, og det som er sendt helt eller delvis tilbake etterpaa — en
+// refusjon hoerer til et salg som skjedde. Begge listene leser det samme.
+$betApi = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+sjekk('serveren sender bare ut det som ble penger',
+    str_contains($betApi, "WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert')"));
+// En annullert betaling settes til «avbrutt» — se kursbetaling.php — saa den
+// faller ut av det samme filteret, uten en egen regel.
+sjekk('… og en annullert rad faller ut av det samme filteret',
+    !str_contains($betApi, "annullert_at IS NULL"));
 $sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('kassa teller bare det som ble penger',
-    str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
-    && str_contains($sidaS, 'const ekte = alle.filter(b => PENGER.indexOf(String(b.status || \'\')) !== -1);'));
-// Ogsaa naar man soker. «Skal ikke vises noen sted.»
-sjekk('… ogsaa naar man soker',
-    str_contains($sidaS, 'const treff = ekte.filter(b => {'));
+// Kopien paa skjermen er borte: to lister som skal vaere like er én for mye.
+sjekk('kopien i kassa er borte, saa regelen bare finnes ett sted',
+    !str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
+    && !str_contains($sidaS, 'const ekte = alle.filter(b =>'));
+sjekk('… og kassa leser lista serveren sender',
+    str_contains($sidaS, 'const treff = alle.filter(b => {'));
+// Okonomi filtrerer paa formaal — det er meningen, den skiller medlemmer fra
+// deltakere. Den skal IKKE ha sin egen statusregel; den kommer fra serveren.
+sjekk('… og Okonomi filtrerer bare paa formaal, ikke paa status',
+    str_contains($sidaS, "if (f === 'deltakere') return b.formal === 'booking';")
+    && str_contains($sidaS, "if (f === 'medlemmer') return b.formal === 'medlemskap';"));
 
 echo "\n== En feilført betaling kan angres ==\n";
 // Eieren, 4. september: «jeg klarte aa registrere at hun har betalt paa

@@ -34496,18 +34496,15 @@ class Component extends DCLogic {
             // «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal
             // ikke vises noen sted».
             //
-            // Det som teller er det som faktisk ble penger: betalt, og det
-            // som er sendt helt eller delvis tilbake etterpaa — en refusjon
-            // hoerer til et salg som skjedde. «opprettet», «venter»,
-            // «avbrutt» og «feilet» er forsok.
+            // Regelen sto her, og bare her. Okonomi tegner sin egen liste av
+            // det samme svaret og hadde den ikke — saa den samme annullerte
+            // raden dukket opp der i stedet. Eieren, samme kveld: «hva i all
+            // verden er dette?»
             //
-            // Det samme skillet dagsoppgjoret over gjor, og av samme grunn.
-            // En annullert betaling faller ogsaa ut her: den er ikke lenger
-            // et salg. Hva som er gjort staar i endringsloggen paa personen.
-            const PENGER = ['betalt', 'delvis_refundert', 'refundert'];
-            const ekte = alle.filter(b => PENGER.indexOf(String(b.status || '')) !== -1);
-
-            const treff = ekte.filter(b => {
+            // Naa staar regelen paa serveren, i api/admin/betalinger.php:
+            // svaret inneholder bare det som faktisk ble penger. Begge
+            // listene leser det samme, og en tredje kan ikke glemme den.
+            const treff = alle.filter(b => {
               if (sokB) {
                 return [b.medlem || '', b.belop || '', b.tidspunkt || '', b.referanse || '',
                         b.formal || '', b.maate || '', b.status || ''

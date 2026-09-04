@@ -2763,9 +2763,11 @@ sjekk('linja og lagringen leser den samme lista',
 sjekk('et klikk paa kurskortet aapner kurset',
     str_contains($sida, 'klApneKursRed(kurs, mv);')
     && str_contains($sida, 'klApneKursRed(kort, ev) {'));
-// Ruta legger seg ved kortet, ikke midt paa skjermen.
-sjekk('ruta staar der kortet staar',
-    str_contains($sida, "{ x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }"));
+// Ruta laa ved kortet. Trykket eieren paa et kort langt nede, aapnet ruta
+// seg nede — utenfor skjermen. Naa staar den midt paa skjermen.
+sjekk('ruta staar midt paa skjermen, ikke ved kortet',
+    !str_contains($sida, "{ x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }")
+    && str_contains($sida, "left: '50%', top: '50%', transform: 'translate(-50%, -50%)',"));
 // Lagrelinja kommer forst naar noe faktisk er endret.
 sjekk('lagrelinja kommer naar noe er endret',
     str_contains($sida, 'klKursRedEndret: endret.length > 0,'));
@@ -6193,7 +6195,7 @@ sjekk('… mens resten av bunnteksten staar som for',
 // kortet viser kr. 2 990,-, knappen aapner det enkle skjemaet, det sier
 // «Gjelder: Date Night», og «Antall personer» er ikke der.
 sjekk('kurssida aapner det enkle skjemaet',
-    str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
+    str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '' });"));
 sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
     substr_count($sida, 'fsApen: true') === 2
     && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
@@ -6445,7 +6447,7 @@ sjekk('… men en «Kontakt oss» som staar i stedet',
     str_contains($sida, 'visKontaktKurs: !!(this.state.valgtKurs && this.state.valgtKurs.kunKontakt),')
     && str_contains($sida, '<sc-if value="{{ visKontaktKurs }}"'));
 sjekk('… og den tar kurset med som emne',
-    str_contains($sida, "ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
+    str_contains($sida, "ktEmne: k.title || k.tittel || '' });"));
 
 // ── Én linje om salg, ikke to ─────────────────────────────────────────
 //
@@ -6875,25 +6877,27 @@ sjekk('… og serveren tar imot alle tre',
 // Eieren, 1. september: «hele systemet har en tendens til aa aapne pop up
 // eller nye vinduer utenfor skjermbildet om jeg er langt nede paa siden».
 //
-// «Sett opp kurset» legger seg ved kortet du trykket paa. Klemmen sa bare at
-// TOPPEN skulle vaere innenfor skjermen — men ruta kan vaere 78 % av
-// skjermhoyden hoy. Trykte du langt nede, startet den innenfor og fortsatte
-// langt utenfor, og «Lagre endringer» sto under skjermkanten.
+// «Sett opp kurset» la seg ved kortet du trykket paa. To ganger ble det
+// rettet ved aa klemme ruta innenfor kanten. Det fjernet ikke aarsaken,
+// bare det verste utslaget — og 4. september kom bildet av ruta nede i
+// hoyre hjorne: «kan du bekrefte at sant ikke skjer igjen? at alt aapnes
+// midt paa skjermen». Naa staar ruta midt paa skjermen, og da finnes
+// feilen ikke lenger.
 //
-// Maalt i nettleseren, klikk paa et kort nederst paa skjermen:
-//   for:   700 px skjerm → bunnen paa 1046   (346 px utenfor)
-//          950 px skjerm → bunnen paa 1491   (541 px utenfor)
-//   etter: 700 px skjerm → bunnen paa 688
-//          950 px skjerm → bunnen paa 938
-sjekk('ruta faar bare den hoyden det er plass til',
-    str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',")
-    && !str_contains($sida, "width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',"));
-// Toppen skal fortsatt legge seg ved kortet, ikke midt paa skjermen.
-sjekk('… og legger seg fortsatt der du trykket',
-    str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
+// Maalt i nettleseren, sida rullet helt ned og klikk paa det nederste
+// kurskortet — verste tilfelle:
+//   390x844   ruta 12,59 → 378,785     helt inne, midtavvik 0
+//   768x1024  ruta 154,72 → 614,952    helt inne, midtavvik 0
+//   1024x768  ruta 282,54 → 742,714    helt inne, midtavvik 0
+//   1440x900  ruta 490,63 → 950,837    helt inne, midtavvik 0
+sjekk('ruta klemmes ikke lenger inn mot kanten',
+    !str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',"));
+sjekk('… og legger seg ikke lenger der du trykket',
+    !str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
 // Ruta ruller inni seg selv naar innholdet er hoyere enn plassen.
 sjekk('… og ruller inni seg selv naar den ikke faar plass',
-    str_contains($sida, "overflow: 'auto',\n                      overscrollBehavior: 'contain',"));
+    str_contains($sida, "maxHeight: '86vh', overflow: 'auto',")
+    && str_contains($sida, "overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',"));
 
 // ── Pillene laa oppi kortene over ──────────────────────────────────────
 //
@@ -10336,6 +10340,64 @@ sjekk('alle PHP-filene lar seg lese',
     count($phpFiler) . ' filer' . ($ulesbare ? ' — ' . implode(' | ', array_slice($ulesbare, 0, 3)) : ''));
 // En tom liste ville gitt gronn uten aa ha sjekket noe.
 sjekk('… og det er faktisk filer aa sjekke', count($phpFiler) > 50, count($phpFiler) . ' filer');
+
+// ── Kursruta i kalenderen aapner midt paa skjermen ──────────────────────
+//
+// Ruta laa ved musepekeren. Trykket eieren paa et kort langt nede eller
+// ute til hoeyre, aapnet ruta der — utenfor skjermen. Meldt 31. august,
+// 1. september og 4. september (med bilde av ruta i hoeyre hjoerne):
+// «kan du bekrefte at sant ikke skjer igjen? at alt aapnes midt paa
+// skjermen». Naa staar den sentrert som de andre rutene. Denne sjekken
+// er der for at den ikke skal gli tilbake til pekeren.
+$sidaR = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+// Kommentarene forteller HVORFOR pekeren er tatt bort, og navngir det som er
+// fjernet. Leser sjekken hele fila, finner den sine egne ord igjen og blir
+// gronn av feil grunn. Derfor maales koden uten kommentarer.
+$kodeR = preg_replace('/<!--.*?-->/s', '', $sidaR);
+$kodeR = preg_replace('/^\s*\/\/.*$/m', '', (string) $kodeR);
+$stilR = '';
+if (preg_match('/klKursRedStil:\s*\{(.*?)\n\s*\},/s', $sidaR, $m)) { $stilR = $m[1]; }
+sjekk('kursruta i kalenderen har en stil aa maale',
+    $stilR !== '', strlen($stilR) . ' tegn');
+sjekk('kursruta staar midt paa skjermen',
+    str_contains($stilR, "left: '50%'")
+    && str_contains($stilR, "top: '50%'")
+    && str_contains($stilR, "translate(-50%, -50%)"),
+    'left/top 50% + translate');
+sjekk('kursruta plasseres ikke lenger etter musepekeren',
+    !str_contains((string) $kodeR, 'klKursRedPos'),
+    'klKursRedPos er borte');
+sjekk('kursruta holder seg innenfor kanten paa smale skjermer',
+    str_contains($stilR, "calc(100vw - 24px)") && str_contains($stilR, "maxHeight: '86vh'"),
+    'bredde og hoeyde er klemt til vinduet');
+
+// ── Ingen rute plasseres etter musepekeren ──────────────────────────────
+//
+// Det samme fantes globalt: «topNaa()» leste av y-en til klikket, og seks
+// ruter ble satt der — handlekurven, Vipps-ruta, kontaktskjemaet,
+// bedriftsskjemaet, «Ny dato» og «Nytt kurs». Klikket man langt nede,
+// aapnet ruta seg nede, og bunnen havnet under skjermkanten. Maalt i
+// nettleseren for rettingen: handlekurven stakk 144 px under kanten paa
+// 390 px og 132 px under paa 1440 px. Naa staar alle midt paa skjermen.
+sjekk('det er faktisk kode aa maale etter at kommentarene er strippet',
+    strlen((string) $kodeR) > 500000, strlen((string) $kodeR) . ' tegn');
+sjekk('«topNaa()» er borte fra sida',
+    !str_contains((string) $kodeR, 'topNaa('), 'ingen treff');
+sjekk('musepekeren leses ikke av lenger',
+    !str_contains((string) $kodeR, '_klikkY'), '_klikkY er borte');
+foreach (['popupTop', 'fsTop', 'ktTop', 'nkTop', 'ndTop', 'toastTop'] as $felt) {
+    sjekk('feltet ' . $felt . ' er ute av sida',
+        !str_contains((string) $kodeR, $felt), 'ingen treff');
+}
+sjekk('handlekurven staar midt paa skjermen',
+    (bool) preg_match('/stoppKurvTimer[^>]*position: fixed; left: 50%; top: 50%; transform: translate\(-50%, -50%\)/', $sidaR),
+    'fixed + translate(-50%, -50%)');
+sjekk('Vipps-ruta staar midt paa skjermen',
+    substr_count($sidaR, 'position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 86vh') === 2,
+    'begge de to rutene');
+sjekk('de fire skjemarutene sentreres av «margin: auto 0»',
+    substr_count($sidaR, 'margin: auto 0;') === 4,
+    'fire ruter');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

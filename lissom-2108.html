@@ -6257,10 +6257,28 @@ window.__resources = {
         <div style="{{ klNyDragStil }}">{{ klNyDragNavn }}</div>
       </sc-if>
 
-      <!-- Kurset, redigert der kortet staar.
-           Ruta legger seg ved kortet, ikke midt paa skjermen, saa du ser
-           hvilket kurs du holder paa med. Lagrelinja staar oeverst — rett
-           over feltene — og kommer forst naar noe faktisk er endret. -->
+      <!-- Kurset, redigert i en rute midt paa skjermen.
+           Ruta laa ved kortet du trykket paa, saa du saa hvilket kurs du
+           holdt paa med. Det kostet mer enn det ga: trykket du paa et kort
+           ute til hoeyre eller langt nede, aapnet ruta der — og eieren
+           meldte det tre ganger.
+
+             31. august   «pop up, maa aapnes lenger opp saa jeg ser skjermen»
+             1. september «hele systemet har en tendens til aa aapne pop up
+                           eller nye vinduer utenfor skjermbildet om jeg er
+                           langt nede paa siden»
+             4. september med bilde av ruta nede i hoeyre hjoerne:
+                          «kan du bekrefte at sant ikke skjer igjen? at alt
+                           aapnes midt paa skjermen»
+
+           To ganger ble det rettet ved aa klemme ruta innenfor kanten. Det
+           fjernet ikke aarsaken, bare det verste utslaget. Naa staar den
+           midt paa skjermen, som alle de andre rutene i systemet — og da
+           finnes ikke feilen lenger.
+
+           Navnet paa kurset staar oeverst i ruta, saa man fortsatt ser hva
+           man holder paa med. Lagrelinja staar rett over feltene og kommer
+           foerst naar noe faktisk er endret. -->
       <sc-if value="{{ klKursRedVises }}" hint-placeholder-val="{{ false }}">
         <div onClick="{{ klKursRedLukk }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.28); z-index: 77;"></div>
         <div onClick="{{ klStopp }}" style="{{ klKursRedStil }}">
@@ -16282,8 +16300,18 @@ window.__resources = {
   </div>
 </sc-if>
 
+<!-- Rutene som kommer ved klikk staar midt paa skjermen.
+     De laa der man trykket: «topNaa()» leste av y-en til klikket og satte
+     ruta rett over den. Trykket man langt nede paa sida, aapnet ruta seg
+     nede — og halve ruta havnet under skjermkanten. Eieren meldte det
+     31. august, 1. september og 4. september: «alt maa aapnes midt paa
+     skjermen». Maalt i nettleseren for endringen: handlekurven laa 144 px
+     under kanten paa mobil og 132 px under paa pc.
+
+     «topNaa()», «_klikkY» og de seks tilhorende feltene er tatt bort.
+     Ingen rute leser lenger av musepekeren. -->
 <sc-if value="{{ kurvApen }}" hint-placeholder-val="{{ false }}">
-  <div onClick="{{ stoppKurvTimer }}" style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 480; width: min(380px, 94vw);">
+  <div onClick="{{ stoppKurvTimer }}" style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 86vh; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; z-index: 480; width: min(380px, 94vw);">
     <div class="lx-kurvpopup" style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: 0 18px 50px rgba(46,16,2,.35);">
       <sc-if value="{{ kurvTellerVises }}" hint-placeholder-val="{{ false }}">
         <div style="text-align: center; font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--space-3);">Lukkes automatisk om {{ kurvNedtelling }} sekunder — klikk for å beholde åpen</div>
@@ -16322,7 +16350,7 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ harVippsBetaling }}" hint-placeholder-val="{{ false }}">
-  <div style="position: absolute; left: 50%; transform: translateX(-50%); top: {{ popupTop }}px; z-index: 490; width: min(380px, 92vw);">
+  <div style="position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 86vh; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; z-index: 490; width: min(380px, 92vw);">
     <div style="background: #fff; border: 2px solid var(--lissom-brown); border-radius: var(--radius-xl, 22px); padding: var(--space-10); text-align: center; box-shadow: 0 18px 50px rgba(46,16,2,.35);">
       <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: #FF5B24; margin-bottom: var(--space-2);">Vipps</div>
       <div style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--text-heading); margin-bottom: var(--space-3);">{{ vippsSumVis }}</div>
@@ -16364,7 +16392,7 @@ window.__resources = {
 
 <sc-if value="{{ nkApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ nkLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain;">
-    <div onClick="{{ stoppKlikk }}" style="width: min(440px, 100%); margin-top: {{ nkTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
+    <div onClick="{{ stoppKlikk }}" style="width: min(440px, 100%); margin: auto 0; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
       <button type="button" onClick="{{ nkLukk }}" aria-label="Lukk" style="position: absolute; top: 12px; right: 14px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 24px; line-height: 1;">×</button>
       <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Nytt kurs eller event</h3>
       <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted);">Start fra et eksisterende kurs, eller lag et nytt fra bunnen.</p>
@@ -16465,7 +16493,7 @@ window.__resources = {
 
 <sc-if value="{{ ktApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ ktLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; overscroll-behavior: contain;">
-    <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin-top: {{ ktTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
+    <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin: auto 0; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
       <button type="button" onClick="{{ ktLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
       <sc-if value="{{ ktIkkeSendt }}" hint-placeholder-val="{{ true }}">
         <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send oss en forespørsel</h3>
@@ -16524,7 +16552,7 @@ window.__resources = {
 
 <sc-if value="{{ fsApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ fsLukk }}" style="position: fixed; inset: 0; z-index: 97; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: 16px; overflow-y: auto; overscroll-behavior: contain;">
-    <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin-top: {{ fsTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
+    <div onClick="{{ stoppKlikk }}" style="width: min(520px, 100%); margin: auto 0; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-8); box-shadow: var(--shadow-lg); position: relative; box-sizing: border-box;">
       <button type="button" onClick="{{ fsLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 22px; line-height: 1;">×</button>
       <sc-if value="{{ fsIkkeSendt }}" hint-placeholder-val="{{ true }}">
         <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Send en forespørsel</h3>
@@ -16562,7 +16590,7 @@ window.__resources = {
 
 <sc-if value="{{ ndApen }}" hint-placeholder-val="{{ false }}">
   <div onClick="{{ ndLukk }}" style="position: fixed; inset: 0; z-index: 96; background: rgba(45,20,12,.42); backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center; padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain;">
-    <div onClick="{{ stoppKlikk }}" style="width: min(480px, 100%); margin-top: {{ ndTop }}px; margin-bottom: 24px; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
+    <div onClick="{{ stoppKlikk }}" style="width: min(480px, 100%); margin: auto 0; background: var(--surface-card); border-radius: var(--radius-xl, 22px); padding: var(--space-6); position: relative; box-shadow: var(--shadow-lg);">
       <button type="button" onClick="{{ ndLukk }}" aria-label="Lukk" style="position: absolute; top: 14px; right: 16px; appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font-size: 24px; line-height: 1;">×</button>
       <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">Ny kursdato</h3>
       <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Legg ut en ny dato på et eksisterende kurs eller event. Kurset beholder pris, beskrivelse og bilder.</p>
@@ -18346,7 +18374,7 @@ class Component extends DCLogic {
   }
 
   apne(tittel, undertittel, felter, handling, maal, skjema, gjor, aboValg) {
-    return () => this.setState({ detalj: { tittel, undertittel, felter, handling, maal, skjema, gjor, aboValg }, detaljMva: null, popupTop: this.topNaa(160) });
+    return () => this.setState({ detalj: { tittel, undertittel, felter, handling, maal, skjema, gjor, aboValg }, detaljMva: null });
   }
 
   // Bekreftelsesbokser som paastaar noe om penger.
@@ -18460,7 +18488,7 @@ class Component extends DCLogic {
   apneKurvAuto(top) {
     clearTimeout(this._kurvTimer);
     clearInterval(this._kurvIntervall);
-    this.setState({ kurvApen: true, popupTop: this.topNaa(top), kurvNedtelling: 10 });
+    this.setState({ kurvApen: true, kurvNedtelling: 10 });
     this._kurvIntervall = setInterval(() => {
       this.setState(s => ({ kurvNedtelling: Math.max(0, (s.kurvNedtelling || 0) - 1) }));
     }, 1000);
@@ -19904,7 +19932,7 @@ class Component extends DCLogic {
   }
 
   apneForesporsel() {
-    this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) });
+    this.setState({ fsApen: true, fsSendt2: false, fsFeil: null });
   }
 
   goNaa(side, filter) {
@@ -20139,7 +20167,7 @@ class Component extends DCLogic {
       ndKurs: this.ndKursnavn()[0] || '',
       ndDato: '', ndFra: '18:00', ndTil: '21:00', ndPlasser: '8',
       ndGjentak: 'Ingen', ndAntall: '', ndSluttdato: '',
-      ndLagtTil: [], ndTop: this.topNaa(60),
+      ndLagtTil: [],
     });
   }
 
@@ -24127,8 +24155,6 @@ class Component extends DCLogic {
         this.tonBytt('but', this.forsideProdukter().length);
       }
     }, Component.BUT_OPPHOLD);
-    this._klikk = (e) => { this._klikkY = e.pageY; };
-    document.addEventListener('click', this._klikk, true);
     this._resize = () => this.setState({ vw: window.innerWidth });
     window.addEventListener('resize', this._resize);
     // Innloggingen gikk ut. Si fra én gang, og send til innlogging — framfor
@@ -24258,11 +24284,8 @@ class Component extends DCLogic {
     clearInterval(this._kurvIntervall);
     this.stoppChat();
     window.removeEventListener('resize', this._resize);
-    document.removeEventListener('click', this._klikk, true);
     document.removeEventListener('keydown', this._esc);
   }
-
-  topNaa(offset) { return Math.max(20, (this._klikkY || 300) - (offset || 280)); }
 
   /**
    * Medlemschatten.
@@ -25591,8 +25614,6 @@ class Component extends DCLogic {
     // av hash-rutingen som er tatt bort over. Adressen skrives av
     // synkAdresse(), som setter den ekte stien.
     if (this.state.kvittering && (!prevState || this.state.kvittering !== prevState.kvittering)) {
-      const toastTop = this.topNaa(60);
-      if (this.state.toastTop !== toastTop) this.setState({ toastTop });
       clearTimeout(this._kvitteringTimer);
       const denne = this.state.kvittering;
       this._kvitteringTimer = setTimeout(() => {
@@ -30080,7 +30101,6 @@ class Component extends DCLogic {
             // og timesats, men ingen signatur — saa et riktig navn ville
             // fortsatt faatt Monicas signatur under seg.
             const endret = felter.filter(f => (naa[f.nokkel] || '') !== (start[f.nokkel] || ''));
-            const pos = this.state.klKursRedPos || {};
             return {
               klKursRedVises: true,
               klKursRedNavn: start.tittel || red.tittel || '',
@@ -30107,43 +30127,33 @@ class Component extends DCLogic {
               // rullet helt til topps — eieren, 31. august: «jeg faar ikke
               // scrollet tilbake, da virker det som siden under er den som
               // scroller». Det er nettopp det som skjer.
-              klKursRedStil: this.erSmal()
-                ? {
-                    position: 'fixed', zIndex: 78, left: '12px', top: '12px',
-                    width: 'calc(100vw - 24px)', maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px', overflow: 'auto',
-                    overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
-                    background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                    borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
-                  }
-                : (() => {
-                    // Ruta legger seg ved kortet du trykket paa. Klemmen sa
-                    // bare at TOPPEN skulle vaere innenfor skjermen — men ruta
-                    // kan vaere 78 % av skjermhoyden hoy. Trykte du langt nede,
-                    // startet den innenfor og fortsatte langt utenfor, og
-                    // «Lagre» sto under skjermkanten.
-                    //
-                    // Eieren, 1. september: «hele systemet har en tendens til
-                    // aa aapne pop up eller nye vinduer utenfor skjermbildet om
-                    // jeg er langt nede paa siden».
-                    //
-                    // Naa faar hoyden det som er igjen under toppen. Ruta ruller
-                    // inni seg selv, og bunnen staar alltid minst 12 px over
-                    // skjermkanten.
-                    const vb = typeof window !== 'undefined' ? window.innerWidth : 1200;
-                    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-                    const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));
-                    return {
-                      position: 'fixed', zIndex: 78,
-                      left: Math.max(12, Math.min((pos.x || 320), vb - 432)) + 'px',
-                      top: topp + 'px',
-                      width: 'min(420px, calc(100vw - 24px))',
-                      maxHeight: '78vh',
-                      overflow: 'auto',
-                      overscrollBehavior: 'contain',
-                      background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
-                      borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
-                    };
-                  })(),
+              // Ruta staar midt paa skjermen.
+              //
+              // Den laa ved kortet du trykket paa. Trykte du langt nede
+              // eller ute til hoeyre, aapnet den der — halve ruta utenfor
+              // kanten, og knappene umulige aa naa. Eieren, 4. september:
+              // «den aapner seg jo ikke saa jeg ser hele ruten og kan
+              // faktisk ikke klikke meg videre».
+              //
+              // To ganger foer ble det rettet ved aa klemme ruta innenfor
+              // skjermen — 31. august og 1. september. Klemmen fjernet ikke
+              // aarsaken. Midt paa skjermen finnes feilen ikke: ruta kan
+              // ikke havne utenfor en kant den ikke naar.
+              //
+              // «maxHeight: 86vh» med «overflow: auto» gjor at et langt kurs
+              // ruller inni ruta og ikke sprenger den. «overscrollBehavior:
+              // contain» stopper rullinga der, saa fingeren ikke fortsetter
+              // ned i sida bak — eieren, 31. august: «jeg faar ikke scrollet
+              // tilbake, da virker det som siden under er den som scroller».
+              klKursRedStil: {
+                position: 'fixed', zIndex: 78,
+                left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
+                width: 'min(460px, calc(100vw - 24px))',
+                maxHeight: '86vh', overflow: 'auto',
+                overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',
+                background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+                borderRadius: '22px', boxShadow: 'var(--shadow-lg)', boxSizing: 'border-box',
+              },
               klKursRedLukk: () => this.setState({ klKursRedId: null, klKursVerdier: null, klKursStart: null }),
               klKursRedLagre: () => {
                 // Bare det som er endret, pluss de to serveren alltid trenger:
@@ -31181,12 +31191,18 @@ class Component extends DCLogic {
       passerNivaa: raa.passerNivaa || '', metode: raa.metode || '',
       allergener: raa.allergener || '', bekreftelse: raa.bekreftelse || '',
     };
-    // Ruta staar der kortet staar — ikke midt paa skjermen, saa du ser hvilket
-    // kurs du holder paa med.
-    const r = ev && ev.clientX != null
-      ? { x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }
-      : { x: 320, y: 90 };
-    this.setState({ klKursRedId: raa.id, klKursRedPos: r,
+    // Ruta staar midt paa skjermen.
+    //
+    // Her ble musepekeren lest av og lagt i «klKursRedPos», og ruta plassert
+    // der. Trykte du paa et kort langt nede eller ute til hoeyre, aapnet ruta
+    // der — og halve ruta havnet utenfor kanten. Eieren meldte det tre
+    // ganger, sist 4. september med bilde: «den aapner seg jo ikke saa jeg
+    // ser hele ruten og kan faktisk ikke klikke meg videre».
+    //
+    // Posisjonen leses ikke lenger. Blir den staaende, lever den videre som
+    // et felt ingen bruker, og neste som leser koden tror ruta foelger
+    // pekeren. Se «klKursRedStil», som naa sentrerer.
+    this.setState({ klKursRedId: raa.id,
                     klKursStart: start, klKursVerdier: Object.assign({}, start) });
   }
 
@@ -32950,7 +32966,6 @@ class Component extends DCLogic {
       utforDetalj: () => this.utforDetalj(),
       kvittering: this.state.kvittering || '',
       harKvittering: !!this.state.kvittering,
-      toastTop: this.state.toastTop ?? 80,
       lukkKvittering: () => this.setState({ kvittering: '' }),
       // Dialogen beskrev «PDF eller Excel» og lukket seg igjen naar man
       // trykket «Last ned» — ingenting ble lastet ned, og verkstedet maatte
@@ -33008,7 +33023,6 @@ class Component extends DCLogic {
       // egen Min side, og ingen andre fikk noe.
       gSend: () => this.sendGave(),
       aNyKursdato: () => this.apneNyKursdato(),
-      ndTop: this.state.ndTop ?? 80,
       ndVelgerApen: !!this.state.ndVelgerApen,
       ndVelgerToggle: () => this.setState(s => ({ ndVelgerApen: !s.ndVelgerApen })),
       ndVelgerPil: this.state.ndVelgerApen ? '▲' : '▼',
@@ -33635,11 +33649,10 @@ class Component extends DCLogic {
         };
       })(),
       kursAlle: this.filtrerKurs(this.kursKort()),
-      bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null, fsTop: Math.min(this.topNaa(60), 90) }),
-      ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null, ktTop: Math.min(this.topNaa(60), 90) }),
+      bedriftTilSkjema: () => this.setState({ fsApen: true, fsSendt2: false, fsFeil: null }),
+      ktApne: () => this.setState({ ktApen: true, ktSendt2: false, ktFeil: null }),
       ktApen: !!this.state.ktApen,
       ktLukk: () => this.setState({ ktApen: false }),
-      ktTop: this.state.ktTop ?? 80,
       ktIkkeSendt: !this.state.ktSendt2,
       ktSendt: !!this.state.ktSendt2,
       ktNavn: this.state.ktNavn || '', settKtNavn: e => this.setState({ ktNavn: e.target.value, ktFeil: null }),
@@ -33652,7 +33665,6 @@ class Component extends DCLogic {
       ktSend: () => this.sendKontakt(),
       fsApen: !!this.state.fsApen,
       fsLukk: () => this.setState({ fsApen: false }),
-      fsTop: this.state.fsTop ?? 80,
       fsIkkeSendt: !this.state.fsSendt2,
       fsSendt: !!this.state.fsSendt2,
       fsNavn: this.state.fsNavn || '',
@@ -34208,7 +34220,7 @@ class Component extends DCLogic {
       kontaktKursKnapp: () => {
         const k = this.state.valgtKurs || {};
         this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,
-          ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });
+          ktEmne: k.title || k.tittel || '' });
       },
       erGratis: (this.state.valgtKurs && this.state.valgtKurs.price) === 'Gratis'
              && !(this.state.valgtKurs && this.state.valgtKurs.kunKontakt)
@@ -34498,7 +34510,6 @@ class Component extends DCLogic {
       gaveBoksHake: this.state.gaveinnpakning ? '✓' : '',
       kurvNedtelling: this.state.kurvNedtelling,
       kurvTellerVises: this.state.kurvNedtelling != null && this.state.kurvNedtelling > 0,
-      popupTop: this.state.popupTop ?? 200,
       dialogWrapStil: {
         position: 'fixed', inset: 0, zIndex: 500,
         transform: 'translateZ(0)',
@@ -34528,7 +34539,7 @@ class Component extends DCLogic {
         }
         if ((this.state.betaling || 'Vipps') === 'Vipps') {
           const sum = Object.keys(k).reduce((n, navn) => n + this.prisAv(navn) * k[navn], 0);
-          this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-', kurvApen: false, popupTop: this.topNaa(120) });
+          this.setState({ vippsBetaling: { linjer }, vippsSum: sum.toLocaleString('nb-NO').replace(/^/, 'kr.' + ' ') + ',-', kurvApen: false });
         } else {
           this.betalKurv(linjer);
         }
@@ -34540,7 +34551,7 @@ class Component extends DCLogic {
         this.setState({ vippsBetaling: null });
         if (v) this.betalKurv(v.linjer);
       },
-      avbrytVipps: () => this.setState({ vippsBetaling: null, kurvApen: true, popupTop: this.topNaa(200) }),
+      avbrytVipps: () => this.setState({ vippsBetaling: null, kurvApen: true }),
       visMerHistorikk: () => this.setState({ allHistorikk: true }),
       kjopshistorikk: fh.slice(0, this.state.allHistorikk ? 99 : 3).map(k => Object.assign({}, k, {
         velg: () => {
@@ -39612,10 +39623,9 @@ class Component extends DCLogic {
           { navn: 'Plasser', verdi: (String(k.pameldte).split('/')[1] || '8').trim() },
         ], 'Lagre', null, true),
       })),
-      mobNyttKurs: () => this.setState({ nkApen: true, nkMalApen: false, nkMal: 'Nytt fra bunnen', nkType: 'Kurs', nkNavn: '', nkPris: '', nkPlasser: '8', nkBeskrivelse: '', nkTop: this.topNaa(60) }),
+      mobNyttKurs: () => this.setState({ nkApen: true, nkMalApen: false, nkMal: 'Nytt fra bunnen', nkType: 'Kurs', nkNavn: '', nkPris: '', nkPlasser: '8', nkBeskrivelse: '' }),
       nkApen: !!this.state.nkApen,
       nkLukk: () => this.setState({ nkApen: false }),
-      nkTop: this.state.nkTop ?? 80,
       nkMal: this.state.nkMal || 'Nytt fra bunnen',
       nkMalApen: !!this.state.nkMalApen,
       nkMalToggle: () => this.setState(s => ({ nkMalApen: !s.nkMalApen })),

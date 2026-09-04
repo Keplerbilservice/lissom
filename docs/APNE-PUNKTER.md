@@ -38,9 +38,44 @@ sto der.
 | 7 | Kursskjermen på telefonen — to lister bak hver sin lenke | «jatakk, jeg vil ha det slik du foreslår» |
 | 6 | Betalingsstatus på kalenderkortene | «ja, ta punkt 10» / «jeg vil ta de punktene ja» |
 | 10 | Dagsrapport i Kassa | «ja, ta punkt 10» |
+| — | Alle ruter som kommer ved klikk åpnes midt på skjermen | «det må fikses og sørge for at er løst» / «Gjelder alle kort som kommer ved klikking, globalt» |
 
 Punkt 7 ble committet med «VENTER PÅ GODKJENNING» i meldinga. Godkjenningen
 kom etterpå, og står her — historikken skrives ikke om.
+
+### Ruter som åpnet utenfor skjermen
+
+Meldt tre ganger: 31. august («pop up, må åpnes lenger opp så jeg ser
+skjermen»), 1. september («hele systemet har en tendens til å åpne pop up
+eller nye vinduer utenfor skjermbildet om jeg er langt nede på siden») og
+4. september med bilde av kursruta nede i høyre hjørne.
+
+Årsaken var to steder, ikke ett:
+
+1. Kalenderen leste av musepekeren og satte kursruta der (`klKursRedPos`).
+2. Hele resten av systemet gjorde det samme gjennom `topNaa()`, som leste
+   `pageY` fra siste klikk. Seks ruter hang i den: handlekurven,
+   Vipps-ruta, kontaktskjemaet, bedriftsskjemaet, «Ny dato» og «Nytt kurs».
+
+To ganger før ble dette rettet ved å klemme ruta innenfor kanten. Det
+fjernet ikke årsaken. Nå er `topNaa()`, `_klikkY` og de seks feltene
+(`popupTop`, `fsTop`, `ktTop`, `nkTop`, `ndTop`, `toastTop`) borte, og
+ingen rute leser musepekeren.
+
+**Målt i nettleseren, ikke bare i koden.** Siden rullet helt til bunnen,
+og det nederste klikkbare elementet trykket — verste tilfelle:
+
+| Rute | Bredde | Før | Etter |
+|---|---|---|---|
+| Kursruta i kalenderen | 390 / 768 / 1024 / 1440 | utenfor kanten | helt inne, midtavvik 0 |
+| Handlekurven | 390 | bunn 988 av 844 (144 px under) | 231–613, midtavvik 0 |
+| Handlekurven | 1440 | bunn 1032 av 900 (132 px under) | 267–633, midtavvik 0 |
+| Kontaktskjemaet | 390 / 1440 | vilkårlig klikkavstand | helt inne, midtavvik 0 |
+
+Høyreklikkmenyen i kalenderen står fortsatt ved pekeren — det er slik en
+høyreklikkmeny skal stå, og den er klemt innenfor vinduet så den ikke kan
+havne utenfor. Etiketten som følger fingeren når et kurs dras er heller
+ikke rørt.
 
 **Ikke gjort, venter på svar**
 

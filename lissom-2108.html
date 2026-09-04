@@ -1215,7 +1215,7 @@ window.__resources = {
      som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
      si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
      spalter, saa hele menyen faar plass uten aa rulle. */
-  .lx-admmob, .lx-admmobpanel { display: none !important; }
+  .lx-admmob, .lx-admmobpanel, .lx-bunnmeny { display: none !important; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
        dytter menyen ut av skjermen. */
@@ -1224,9 +1224,21 @@ window.__resources = {
        menyen paa en telefon. */
     .lx-adminaside .lx-admstatus { display: none !important; }
     /* Den sidelengs menyraden er byttet ut med «hvor du er» + Meny.
-       Se .lx-admmob under. */
-    .lx-adminaside nav { display: none !important; }
+       Se .lx-admmob under.
+       «> nav:not(.lx-bunnmeny)»: regelen gjaldt ALLE nav-elementer i
+       sidemenyen, og tok bunnmenyen med seg da den kom — den er ogsaa en
+       nav, og har hoyere spesifisitet aa slaa. Naa sier regelen hva den
+       mener: sidemenyens egen meny, ikke enhver meny som staar der. */
+    .lx-adminaside > nav:not(.lx-bunnmeny) { display: none !important; }
     .lx-admmob { display: flex !important; }
+    /* Bunnmenyen. Seks valg, ikon og tekst — eieren valgte alternativ A
+       4. september. Den staar «fixed» mot bunnen, saa hovedinnholdet maa
+       ha plass under seg: 58 px meny, luft, og hjemknappen paa iPhone.
+       Uten dette dekker menyen den nederste knappen paa hver skjerm. */
+    .lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }
+    .lx-adminaside + main {
+      padding-bottom: calc(58px + 18px + env(safe-area-inset-bottom, 0px)) !important;
+    }
     .lx-admmobpanel { display: grid !important; }
     /* «Lukk» oeverst til hoyre.
        Pillen sto helt ute i kanten av stripa, og paa eierens telefon havnet
@@ -4771,6 +4783,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5038,6 +5068,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyePameldinger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5119,6 +5167,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemssoknader }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5200,6 +5266,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUbesvarte }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5285,6 +5369,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVideokurs }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5364,6 +5466,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerdigbrent }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5619,6 +5739,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKalender }}" as="n" hint-placeholder-count="9">
             <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
@@ -6795,6 +6933,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVenteliste }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6940,6 +7096,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursholdere }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7131,6 +7305,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7662,6 +7854,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7876,6 +8086,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -8165,6 +8393,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9239,6 +9485,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9679,6 +9943,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursvelger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9903,6 +10185,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavReferanser }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10080,6 +10380,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVarsler }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10327,6 +10645,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavRessurser }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10443,6 +10779,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerie }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10547,6 +10901,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFeil }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10668,6 +11040,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10756,6 +11146,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11112,6 +11520,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11214,6 +11640,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11677,6 +12121,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11814,6 +12276,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12554,6 +13034,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12749,6 +13247,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12989,6 +13505,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -13244,6 +13778,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMaler }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -13376,6 +13928,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -13630,6 +14200,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -14077,6 +14665,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMarked }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -14859,6 +15465,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -15073,6 +15697,24 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Bunnmenyen paa telefon.
+             Eieren, 4. september, valgte alternativ A: seks synlige valg,
+             ikon og tekst sammen, ingen «Mer».
+             Skuffen over («Meny») staar som for — den har alle ti stedene
+             med underpunktene sine. Dette er de seks man er i hele dagen.
+             Menyen ligger «fixed» mot bunnen, saa den staar stille naar
+             sida ruller, og hovedinnholdet faar plass under seg — se
+             «.lx-adminaside + main» i stilarket. Nederst er det lagt inn
+             plass til hjemknappen paa iPhone («safe-area-inset-bottom»).
+             Rutene kommer fra ADMIN_MENY, ikke skrevet av her. -->
+        <nav class="lx-bunnmeny" style="{{ bmStil }}" aria-label="Hovedmeny">
+          <button type="button" onClick="{{ bmKalender.velg }}" aria-label="{{ bmKalender.full }}" style="{{ bmKalender.stil }}"><span style="{{ bmKalender.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span style="{{ bmTekstStil }}">{{ bmKalender.navn }}</span></button>
+          <button type="button" onClick="{{ bmOversikt.velg }}" aria-label="{{ bmOversikt.full }}" style="{{ bmOversikt.stil }}"><span style="{{ bmOversikt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style="{{ bmTekstStil }}">{{ bmOversikt.navn }}</span></button>
+          <button type="button" onClick="{{ bmKurs.velg }}" aria-label="{{ bmKurs.full }}" style="{{ bmKurs.stil }}"><span style="{{ bmKurs.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5"/></svg><span style="{{ bmTekstStil }}">{{ bmKurs.navn }}</span></button>
+          <button type="button" onClick="{{ bmMarked.velg }}" aria-label="{{ bmMarked.full }}" style="{{ bmMarked.stil }}"><span style="{{ bmMarked.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 10v4h3l6 4V6l-6 4H4Z"/><path d="M17 9c1.2 1.4 1.2 5.6 0 7"/></svg><span style="{{ bmTekstStil }}">{{ bmMarked.navn }}</span></button>
+          <button type="button" onClick="{{ bmButikk.velg }}" aria-label="{{ bmButikk.full }}" style="{{ bmButikk.stil }}"><span style="{{ bmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ bmTekstStil }}">{{ bmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ bmKasse.velg }}" aria-label="{{ bmKasse.full }}" style="{{ bmKasse.stil }}"><span style="{{ bmKasse.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg><span style="{{ bmTekstStil }}">{{ bmKasse.navn }}</span></button>
+        </nav>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavGeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -27392,6 +28034,95 @@ class Component extends DCLogic {
    * Naa staar det hvor du er, og ett trykk viser hele kartet: alle
    * omraadene, med underpunktene under det man staar i.
    */
+  /**
+   * Bunnmenyen paa telefon.
+   *
+   * Eieren, 4. september, valgte alternativ A: seks synlige valg, ikon og
+   * tekst sammen, ingen «Mer».
+   *
+   * Skuffen over («Meny») staar som for. Den har alle ti stedene med
+   * underpunktene sine; dette er de seks man er i hele dagen, ett trykk
+   * unna. Bunnmenyen aapner de samme hovedsidene — ingen forenklede kopier.
+   *
+   * Navnene og rutene hentes fra ADMIN_MENY, ikke skrevet av her: doper vi
+   * om «Butikk» til «Nettbutikk» ett sted, folger bunnmenyen med. Bare
+   * kortnavnet staar her, fordi «Kurs og deltakere» ikke faar plass i en
+   * celle paa 65 px.
+   */
+  adminBunnMeny() {
+    const sted = this.adminSted();
+    const meny = Component.ADMIN_MENY;
+
+    // Kortnavn i cella, fullt navn i «aria-label». Rekkefolgen er den
+    // eieren godkjente: Kalender, Oversikt, Kurs, Markedsforing,
+    // Nettbutikk, Kasse.
+    const KORT = {
+      'Kalender': 'Kalender',
+      'Oversikt': 'Oversikt',
+      'Kurs og deltakere': 'Kurs',
+      'Markedsføring': 'Marked',
+      // Staar «Butikk» i ADMIN_MENY, staar det «Butikk» her ogsaa. Doper
+      // vi den om, folger bunnmenyen med av seg selv.
+      'Butikk': 'Butikk',
+      'Nettbutikk': 'Nettbutikk',
+    };
+
+    const fra = (navn) => {
+      const rad = meny.find(([n]) => n === navn);
+      return rad || [navn, 'adminoversikt', {}];
+    };
+
+    // Hvilket valg lyser?
+    //
+    // For de fem er det menypunktet man staar i. Kassa er ikke et
+    // menypunkt — adminSted() foerer «adminuttak» til Oversikt, fordi den
+    // naas fra et kort der — saa den maa spoerre om selve skjermen. Uten
+    // dette lyste «Oversikt» mens man sto i kassa, og to valg sa hver sin
+    // sannhet om hvor man var.
+    const iKassa = this.state.side === 'adminuttak';
+    const punkt = (menynavn, rute, forvalg, kortnavn, egen) => {
+      const paa = egen !== undefined ? egen : (sted.meny === menynavn && !iKassa);
+      return {
+        navn: kortnavn,
+        full: menynavn,
+        paa,
+        velg: () => this.gaaAdmin(rute, forvalg || {}),
+        stil: {
+          appearance: 'none', border: 'none', background: 'transparent',
+          cursor: 'pointer', padding: '7px 2px 3px', minWidth: 0,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+          // Fargen arves av bade ikonet og teksten — lucide tegner med
+          // «currentColor».
+          color: paa ? 'var(--lissom-brown)' : 'var(--clay-600)',
+          fontWeight: paa ? 800 : 700,
+          position: 'relative',
+        },
+        merkeStil: paa
+          ? { position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+              width: 22, height: 3, borderRadius: '0 0 3px 3px', background: 'var(--lissom-yellow)' }
+          : { display: 'none' },
+      };
+    };
+
+    // Oversikt staar ikke i ADMIN_MENY — den er selve forsiden i panelet.
+    const kalender = fra('Kalender');
+    const kurs = fra('Kurs og deltakere');
+    const marked = fra('Markedsføring');
+    const butikk = meny.find(([, r]) => r === 'adminbutikk') || ['Butikk', 'adminbutikk', { butikkFane: 'Butikken' }];
+
+    return {
+      kalender: punkt('Kalender', kalender[1], kalender[2], KORT['Kalender']),
+      oversikt: punkt('Oversikt', 'adminoversikt', {}, KORT['Oversikt']),
+      kurs: punkt('Kurs og deltakere', kurs[1], kurs[2], KORT['Kurs og deltakere']),
+      marked: punkt('Markedsføring', marked[1], marked[2], KORT['Markedsføring']),
+      // Kassa er ikke et menypunkt enda — den naas fra et kort paa Oversikt.
+      // Den staar likevel her, fordi det er dit man skal hele dagen. Blir den
+      // et menypunkt senere, byttes ruta ett sted.
+      butikk: punkt(butikk[0], butikk[1], butikk[2], KORT[butikk[0]] || butikk[0]),
+      kasse: punkt('Kasse', 'adminuttak', {}, 'Kasse', iKassa),
+    };
+  }
+
   adminMobilMeny() {
     const sted = this.adminSted();
     const apen = !!this.state.admMobApen;
@@ -43020,6 +43751,34 @@ class Component extends DCLogic {
       // Paa smal skjerm er sidemenyen en stripe paa tvers. Da staar pillene
       // ved siden av logoen og bryter til egen linje naar det er trangt —
       // se adminAsideStil, som har «flexWrap» der.
+      // ── Bunnmenyen paa telefon ────────────────────────────────────────
+      //
+      // Seks valg, ikon og tekst sammen — alternativ A, som eieren valgte
+      // 4. september. Verdiene ligger paa toppnivaa av samme grunn som
+      // stemplingspillene: markupen staar i alle 35 adminskjermene.
+      //
+      // Selve menyen vises bare under 980 px; det staar i stilarket, ikke
+      // her, saa den ikke tegnes og skjules paa nytt for hver bredde.
+      ...(() => {
+        const b = this.adminBunnMeny();
+        return {
+          bmStil: {
+            position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
+            background: 'var(--surface-card)',
+            borderTop: '1px solid var(--border-subtle)',
+            boxShadow: '0 -2px 12px rgba(77,29,18,.08)',
+            // Plass til hjemknappen paa iPhone. Uten dette havner nederste
+            // rad med tekst bak stripa nederst paa skjermen.
+            paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
+          },
+          bmTekstStil: {
+            fontSize: 9, lineHeight: 1.15, letterSpacing: '-.01em',
+            whiteSpace: 'nowrap', color: 'inherit', fontWeight: 'inherit',
+          },
+          bmKalender: b.kalender, bmOversikt: b.oversikt, bmKurs: b.kurs,
+          bmMarked: b.marked, bmButikk: b.butikk, bmKasse: b.kasse,
+        };
+      })(),
       ...(() => {
         const st = this.stemplingPiller();
         const smal = (this.state.vw || 1400) < 980;

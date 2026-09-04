@@ -8355,6 +8355,72 @@ sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
 
+echo "\n== Bunnmeny på telefon, seks valg ==\n";
+// Eieren, 4. september, valgte alternativ A av de to skissene: seks synlige
+// valg, ikon og tekst sammen, ingen «Mer».
+//
+// Skuffen («Meny») staar som for — den har alle ti stedene med
+// underpunktene sine. Bunnmenyen er de seks man er i hele dagen, ett trykk
+// unna, og den aapner de samme hovedsidene: ingen forenklede kopier.
+$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Menyen staar i hver adminskjerm, som logoen og stemplingspillene.
+$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til oversikten"');
+sjekk('bunnmenyen staar i alle adminskjermene',
+    substr_count($sidaB, 'class="lx-bunnmeny"') === $logoerB, $logoerB . ' skjermer');
+sjekk('… med seks valg i hver',
+    substr_count($sidaB, '{{ bmKalender.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmOversikt.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmKurs.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmMarked.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmButikk.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmKasse.velg }}') === $logoerB);
+// «Ikon og tekst skal alltid brukes sammen.»
+sjekk('… og hvert valg har baade ikon og tekst',
+    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6
+    && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6);
+
+// Rutene skrives ikke av. Doper vi om «Butikk», folger bunnmenyen med.
+sjekk('navn og ruter hentes fra ADMIN_MENY',
+    str_contains($sidaB, 'const meny = Component.ADMIN_MENY;')
+    && str_contains($sidaB, 'const rad = meny.find(([n]) => n === navn);'));
+
+// Kassa er ikke et menypunkt: adminSted() forer «adminuttak» til Oversikt,
+// fordi den naas fra et kort der. Uten et eget svar lyste «Oversikt» mens
+// man sto i kassa, og to valg sa hver sin sannhet om hvor man var.
+sjekk('Kassa lyser naar man staar i kassa, ikke Oversikt',
+    str_contains($sidaB, "const iKassa = this.state.side === 'adminuttak';")
+    && str_contains($sidaB, "const paa = egen !== undefined ? egen : (sted.meny === menynavn && !iKassa);")
+    && str_contains($sidaB, "kasse: punkt('Kasse', 'adminuttak', {}, 'Kasse', iKassa),"));
+
+// Menyen ligger fast mot bunnen. Da maa innholdet ha plass under seg, ellers
+// dekker den den nederste knappen paa hver skjerm.
+sjekk('innholdet har plass under menyen',
+    str_contains($sidaB, '.lx-adminaside + main {')
+    && str_contains($sidaB, 'padding-bottom: calc(58px + 18px + env(safe-area-inset-bottom, 0px)) !important;'));
+// Hjemknappen paa iPhone ligger nederst paa skjermen.
+sjekk('… og det er satt av plass til hjemknappen paa iPhone',
+    str_contains($sidaB, "paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',"));
+
+// Bare paa telefon. Paa PC er sidemenyen der.
+sjekk('menyen staar bare paa smal skjerm',
+    str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny { display: none !important; }')
+    && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
+
+// Regelen som skjuler sidemenyens egen meny paa telefon gjaldt ALLE
+// nav-elementer i sidemenyen, og tok bunnmenyen med seg — den er ogsaa en
+// nav, og har hoyere spesifisitet aa slaa.
+sjekk('regelen som skjuler sidemenyen tar ikke bunnmenyen med seg',
+    str_contains($sidaB, '.lx-adminaside > nav:not(.lx-bunnmeny) { display: none !important; }')
+    && !str_contains($sidaB, '.lx-adminaside nav { display: none !important; }'));
+
+// Ikonene tegnes her, ikke hentes. Designsystemets Icon-komponent la hele
+// dokumenthodet inn i knappen naar navnet ikke fantes i settet — samme feil
+// som «rotate-ccw» ga paa en Button 4. september.
+sjekk('ikonene er egne, ikke hentet fra et navneoppslag',
+    !str_contains($sidaB, 'LissomDesignSystem_8402ac.Icon" name="calendar"')
+    && !str_contains($sidaB, 'LissomDesignSystem_8402ac.Icon" name="credit-card"'));
+
 echo "\n== Stemple inn og Ferie står under logoen, overalt ==\n";
 // Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
 // tilgjengelige under logoen uansett hvilken side jeg er inne paa».

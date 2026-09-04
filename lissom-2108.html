@@ -3956,11 +3956,12 @@ window.__resources = {
                 <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ mittAbo }}</span>
                 <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
               </div>
-              <!-- Avtalen og timene er uenige.
+              <!-- Avtalen trekker et annet beloep enn medlemskapet koster.
                    Kortet sa «Mini 15 · 15 timer i måneden» rett over «35 av 35
-                   timer», fordi navnet kom fra abonnementet og timene fra
-                   medlemsraden. Naa staar det hva som er uenig, i stedet for
-                   to tall og ingen forklaring. Se «aboUenig». -->
+                   timer», fordi navnet kom fra avtalen og timene fra
+                   medlemsraden. Naa navngir kortet medlemskapet, og avtalen
+                   staar for seg naar den er godkjent paa noe annet.
+                   Se «aboUenig». -->
               <sc-if value="{{ aboUenig }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ aboUenigStil }}">{{ aboUenigTekst }}</div>
               </sc-if>
@@ -34036,38 +34037,35 @@ class Component extends DCLogic {
       })),
       mittAbo: aboNavn,
       mittAboPris: plan.pris + ' ' + plan.periode,
-      // ── Naar de to kildene er uenige ─────────────────────────────────
+      // ── Naar avtalen og medlemskapet staar paa hver sin plan ─────────
       //
-      // Planen staar to steder i basen: «subscriptions.plan» er avtalen som
-      // trekkes i Vipps, «members.medlemskap_type» er den verkstedet har satt
-      // paa medlemmet. Kortet leste den forste for navn og pris, og timene
-      // kom fra den andre gjennom api/stempling.php.
+      // Bytter verkstedet plan paa et medlem som har fast trekk i Vipps,
+      // flyttes medlemskapet, men avtalen blir staaende: Vipps eier beloepet
+      // paa en godkjent avtale, og det kan ikke skrives om herfra. Det er med
+      // vilje — se api/admin/medlemmer.php.
       //
-      // Sto de ulikt, sa kortet «Mini 15 · 15 timer i måneden» rett over
-      // «35 av 35 timer». Eieren meldte det 4. september, med bilde fra
-      // lissom.no.
+      // Feilen var at kortet leste navnet og prisen fra AVTALEN og timene fra
+      // MEDLEMSRADEN. Da sto det «Mini 15 · kr. 1 790,- · 15 timer i måneden»
+      // rett over «35 av 35 timer» — det verste av begge. Eieren, 4.
+      // september, med bilde fra lissom.no: «Viser feil medlemskap».
       //
-      // Vi gjetter ikke hvilken som er riktig — det er data, og det er
-      // verkstedet som vet. Vi sier at de er uenige, og hvilke to navn det
-      // gjelder, saa medlemmet ikke sitter med to tall og ingen forklaring.
+      // Naa navngir kortet medlemskapet medlemmet HAR — det styrer timer og
+      // tilgang, og timene over kommer fra det samme. Trekkes det et annet
+      // beloep, staar det for seg, med tallet og hva som maa til.
       ...(() => {
-        const st = this.state.stempling;
-        const fraTimene = st && st.plan ? String(st.plan.navn || '').trim() : '';
-        const fraAvtalen = String(aboNavn || '').trim();
-        const eget = !!(st && st.plan && st.plan.egetTimetall);
-        // Ingen uenighet aa melde naar vi mangler det ene navnet, naar de er
-        // like, eller naar verkstedet har satt et eget timetall med vilje.
-        const uenige = !!fraTimene && !!fraAvtalen && fraTimene !== fraAvtalen && !eget;
+        const a = this.state.minAvtale;
+        const annen = a && a.avtalePlan;
         return {
-          aboUenig: uenige,
-          aboUenigTekst: uenige
-            ? 'Avtalen din står som «' + fraAvtalen + '», men timene dine regnes etter «'
-              + fraTimene + '». Ta kontakt med verkstedet, så retter vi det.'
+          aboUenig: !!annen,
+          aboUenigTekst: annen
+            ? 'Vipps-avtalen din er fortsatt godkjent på ' + a.avtalePlan + ' — '
+              + a.avtalePris + ' i måneden — og trekker det til den sies opp. '
+              + 'Ta kontakt med verkstedet, så ordner vi det.'
             : '',
           aboUenigStil: {
-            background: 'rgba(196,90,58,.10)', border: '1px solid var(--terracotta-500)',
+            background: 'var(--lissom-yellow)', border: '1px solid var(--lissom-yellow)',
             borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)',
-            margin: 'var(--space-3) 0', fontSize: 'var(--text-xs)', color: 'var(--text-body)',
+            margin: 'var(--space-3) 0', fontSize: 'var(--text-xs)', color: 'var(--lissom-brown)',
           },
         };
       })(),
@@ -34130,8 +34128,14 @@ class Component extends DCLogic {
             background: oppsagt ? 'rgba(196,90,58,.14)' : 'rgba(90,140,80,.16)',
             color: oppsagt ? 'var(--terracotta-600)' : '#3E6B36',
           },
+          // Beloepet som faktisk trekkes, ikke det planen koster.
+          //
+          // «a.pris» er prisen paa medlemskapet medlemmet staar paa. Er
+          // Vipps-avtalen godkjent paa en annen plan, er det avtalens beloep
+          // som gaar av kontoen — og det er det «neste trekk» handler om.
+          // Sto planprisen her, ville kortet lovet et trekk som ikke kommer.
           aboNesteTrekk: a
-            ? (a.nesteTrekk ? a.nesteTrekk + ' · ' + a.pris : '—')
+            ? (a.nesteTrekk ? a.nesteTrekk + ' · ' + (a.avtalePris || a.pris) : '—')
             : (this.erPublisert() ? 'Avtales med verkstedet' : '1. sep · ' + plan.pris),
           oppsigelseTekst: a && a.status === 'utlopt'
             ? 'Avtalen har løpt ut.'

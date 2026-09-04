@@ -69,15 +69,34 @@ Reprodusert i testbasen: `subscriptions.plan = 'Mini 15'`,
 `members.medlemskap_type = 'Årsmedlemskap'` → `api/stempling.php` svarte
 `perMnd: 35` mens kortet sa 15.
 
-**Ikke rettet i dataene.** Hvilken av de to som er riktig er det bare
-verkstedet som vet, og Claude har ikke tilgang til produksjonsbasen. Det
-koden gjør nå: serveren sier hvilken plan timene ble regnet etter, og kortet
-sier fra når de to er uenige — med begge navnene, så medlemmet ikke sitter
-med to tall og ingen forklaring.
+**Årsaken, funnet i koden.** Bytter verkstedet plan på et medlem som har
+fast trekk i Vipps, flyttes `members.medlemskap_type`, men
+`subscriptions.plan` blir stående — se `api/admin/medlemmer.php`. Det er med
+vilje: Vipps eier beløpet på en godkjent avtale, og det kan ikke skrives om
+derfra. Admin får til og med beskjed om det.
 
-**Åpent:** verkstedet får ingen automatisk beskjed når to medlemsrader er
-uenige. Teksten til medlemmet lover derfor ikke at noen er varslet, bare at
-de kan ta kontakt.
+Feilen var ikke at de to sto ulikt. Feilen var at Min side leste **navnet og
+prisen fra avtalen** og **timene fra medlemsraden**, og dermed viste det
+verste av begge.
+
+**Rettet.** Kortet navngir medlemskapet medlemmet *har* — det styrer timer og
+tilgang, og timene over kommer fra det samme. Avtalen står for seg når den er
+godkjent på noe annet, med navnet og beløpet. «Neste trekk» viser avtalens
+beløp, for det er det som går av kontoen.
+
+**Målt i nettleseren**, med `medlemskap_type = 'Årsmedlemskap'` og
+`subscriptions.plan = 'Mini 15'` med `vipps_agreement_id` satt:
+
+| | Før | Etter |
+|---|---|---|
+| Navn og pris | Mini 15 · kr. 1 790,- | Årsmedlemskap · kr. 1 990,- |
+| Timer | 35 av 35 | 35 av 35 — nå fra samme plan som navnet |
+| Avtalen | usynlig | «Vipps-avtalen din er fortsatt godkjent på Mini 15 — kr. 1 790,- i måneden — og trekker det til den sies opp.» |
+| Neste trekk | kr. 1 990,- (planens pris — et trekk som ikke kommer) | kr. 1 790,- (avtalens beløp) |
+
+**Dataene i produksjon er ikke rørt** — Claude har ikke tilgang dit. Men de
+trenger heller ikke rettes: de to feltene *skal* kunne stå ulikt så lenge
+Vipps-avtalen ikke er sagt opp. Det var visningen som løy.
 
 ## Adminomleggingen — 4. september 2026
 

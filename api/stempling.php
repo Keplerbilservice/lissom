@@ -170,26 +170,14 @@ Svar::json([
     // Hva medlemmet kan velge mellom, og hva det staar med naa.
     'ressurser'   => $ressurser,
     'ressursId'   => $valgtRessurs,
-    // ── Hvilken plan timene faktisk kommer fra ─────────────────────────
+    // Hvilken plan timene ble regnet etter.
     //
-    // Planen staar to steder: «subscriptions.plan» er avtalen som trekkes i
-    // Vipps, «members.medlemskap_type» er den verkstedet har satt paa
-    // medlemmet, og «members.timer_per_mnd» kan overstyre begge.
-    // Medlemskap::timerFor() leser de to siste; abonnementskortet paa Min
-    // side leste den forste. Sto de ulikt, viste kortet navnet og prisen fra
-    // avtalen og timene fra medlemsraden — «Mini 15 · 15 timer i måneden»
-    // rett over «35 av 35 timer».
-    //
-    // Meldt av eieren 4. september, med bilde fra lissom.no.
-    //
-    // Vi retter ikke dataene her — hvilken av de to som er riktig er det
-    // bare verkstedet som vet. Vi sier hvor timene kommer fra, saa skjermen
-    // kan slutte aa paastaa to ting, og si fra naar de to er uenige.
+    // Medlemskap::timerFor() leser «members.timer_per_mnd» forst, saa
+    // «members.medlemskap_type». Skjermen navngir det samme medlemskapet, og
+    // da kan de to aldri si hver sin ting — men et eget timetall satt paa
+    // medlemmet gaar foran planen, og det maa skjermen kunne se.
     'plan' => [
-        // Navnet timene ble regnet etter.
-        'navn'  => trim((string) ($medlem['medlemskap_type'] ?? '')),
-        // Et eget timetall satt paa medlemmet gaar foran planen. Da er det
-        // ikke planen som bestemmer, og det maa skjermen faa vite.
+        'navn'         => trim((string) ($medlem['medlemskap_type'] ?? '')),
         'egetTimetall' => $medlem['timer_per_mnd'] !== null,
     ],
     'timer' => [

@@ -10905,39 +10905,53 @@ sjekk('bindingstida staar som egen rad',
 // Kortet sto med «Mini 15 · kr. 1 790,- · 15 timer i måneden» rett over
 // «Timer igjen: 35 av 35 timer».
 //
-// Planen staar to steder i basen. «subscriptions.plan» er avtalen som
-// trekkes i Vipps, og den ga navnet og prisen. «members.medlemskap_type» er
-// den verkstedet har satt paa medlemmet, og den ga timene gjennom
-// Medlemskap::timerFor(). Ingen holdt dem i takt.
+// AARSAKEN, funnet i koden: bytter verkstedet plan paa et medlem som har fast
+// trekk i Vipps, flyttes «members.medlemskap_type», men «subscriptions.plan»
+// blir staaende — se api/admin/medlemmer.php. Det er med vilje: Vipps eier
+// beloepet paa en godkjent avtale, og det kan ikke skrives om derfra.
 //
-// Reprodusert i testbasen: subscriptions.plan = «Mini 15»,
-// members.medlemskap_type = «Årsmedlemskap» → api/stempling.php svarte
-// perMnd 35 mens kortet sa 15.
+// Feilen var at Min side leste navnet og prisen fra AVTALEN og timene fra
+// MEDLEMSRADEN, og dermed viste det verste av begge.
 //
-// Vi retter ikke dataene — hvilken av de to som er riktig er det bare
-// verkstedet som vet, og Claude har ikke tilgang til produksjonsbasen. Vi
-// slutter aa paastaa to ting: serveren sier hvor timene kommer fra, og
-// kortet sier fra naar de to er uenige.
-sjekk('serveren sier hvilken plan timene kom fra',
-    str_contains($apiK ?? file_get_contents(dirname(__DIR__) . '/api/stempling.php'), "'plan' => ["),
-    'nytt felt i svaret');
-sjekk('… og om verkstedet har satt et eget timetall',
+// Rettet: kortet navngir medlemskapet medlemmet HAR — det styrer timer og
+// tilgang, og timene over kommer fra det samme — og avtalen staar for seg
+// naar den er godkjent paa noe annet. «Neste trekk» viser avtalens beloep,
+// for det er det som gaar av kontoen.
+//
+// Maalt i nettleseren, med medlemskap_type = «Årsmedlemskap» og
+// subscriptions.plan = «Mini 15» med vipps_agreement_id satt:
+//   «Årsmedlemskap · kr. 1 990,- · 35 timer i måneden · årsavtale»
+//   «Vipps-avtalen din er fortsatt godkjent på Mini 15 — kr. 1 790,- i
+//    måneden — og trekker det til den sies opp.»
+//   «Neste trekk  1. oktober 2026 · kr. 1 790,-»   (avtalens beloep)
+//   «av 35 timer · 23»                             (medlemskapets timer)
+$medK = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('svaret navngir medlemskapet medlemmet staar paa',
+    str_contains($medK, "'plan'       => \$harPlan !== '' ? \$harPlan : \$avtalePlan,"),
+    'ikke avtalens plan');
+sjekk('… og prisen paa det medlemskapet',
+    str_contains($medK, "return Booking::kroner((int) (\$p['pris_ore'] ?? \$a['pris_ore']));"),
+    'planens pris, ikke avtalens');
+sjekk('… og avtalen for seg naar den staar paa noe annet',
+    str_contains($medK, "'avtalePlan' => \$harPlan !== '' && \$avtalePlan !== '' && \$avtalePlan !== \$harPlan"),
+    'null naar de er like');
+sjekk('… med beloepet avtalen faktisk trekker',
+    str_contains($medK, "'avtalePris' => Booking::kroner((int) \$a['pris_ore']),"), 'avtalens sum');
+sjekk('kortet sier hva avtalen trekker, ikke at noe er uklart',
+    str_contains($msU, "'Vipps-avtalen din er fortsatt godkjent på ' + a.avtalePlan + ' — '"),
+    'navnet og beloepet');
+sjekk('… og staar stille naar de to er like',
+    str_contains($msU, 'const annen = a && a.avtalePlan;'), 'serveren sender null da');
+sjekk('«Neste trekk» viser det som faktisk trekkes',
+    str_contains($msU, "a.nesteTrekk + ' · ' + (a.avtalePris || a.pris)"),
+    'avtalens beloep gaar foran planens');
+sjekk('timene og navnet kommer fra samme plan',
     str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
-                 "'egetTimetall' => \$medlem['timer_per_mnd'] !== null,"),
-    'da er det ikke planen som bestemmer');
-sjekk('kortet oppdager uenigheten',
-    str_contains($msU, "const uenige = !!fraTimene && !!fraAvtalen && fraTimene !== fraAvtalen && !eget;"),
-    'begge navn maa finnes, og de maa vaere ulike');
-sjekk('… og sier hvilke to navn det gjelder',
-    str_contains($msU, "'Avtalen din står som «' + fraAvtalen + '», men timene dine regnes etter «'"),
-    'ikke bare «noe er galt»');
-sjekk('… og lover ikke noe vi ikke gjor',
-    str_contains($msU, 'Ta kontakt med verkstedet, så retter vi det.')
-    && !str_contains($msU, 'Vi har fått beskjed'),
-    'ingen beskjed sendes automatisk');
-sjekk('… og staar stille naar verkstedet har satt timetallet med vilje',
-    str_contains($msU, 'const eget = !!(st && st.plan && st.plan.egetTimetall);'),
-    'da er uenigheten meningen');
+                 "'navn'         => trim((string) \$medlem['medlemskap_type'] ?? ''),")
+    || str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                 "'navn'         => trim((string) (\$medlem['medlemskap_type'] ?? '')),"),
+    'begge leser medlemskap_type');
+
 
 // ── Serveren: de tre siste hele maanedene ───────────────────────────────
 $stK = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');

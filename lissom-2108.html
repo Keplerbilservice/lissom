@@ -11370,7 +11370,12 @@ window.__resources = {
                   <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ p.maate }}</div>
                 </div>
                 <div style="flex: 0 0 auto;">
-                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Badge" tone="{{ p.tone }}" hint-size="auto,24px">{{ p.status }}</x-import>
+                  <!-- Pilla er en knapp, ikke en etikett.
+                       Eieren, 4. september: «under Kurs og deltakere fungerer
+                       ikke pillen Betalt som en klikkbar pille». Den aapner
+                       det samme panelet som «Betaling»-lenka til hoyre —
+                       samme kall, samme skjema, ingen ny losning. -->
+                  <button type="button" onClick="{{ p.betaling }}" title="Åpne betalingen" style="{{ p.betalingStil }}">{{ p.status }}</button>
                 </div>
                 <div style="display: flex; gap: var(--space-3); margin-left: auto;">
                   <!-- «Marker som betalt» satte en status og ikke noe mer:
@@ -28049,6 +28054,56 @@ class Component extends DCLogic {
    * kortnavnet staar her, fordi «Kurs og deltakere» ikke faar plass i en
    * celle paa 65 px.
    */
+  /**
+   * Betalingspilla. Ett sted.
+   *
+   * Eieren, 4. september: «Bruk samme statuspiller som paa Oversikt i hele
+   * adminsystemet», og «En pille som ser klikkbar ut, skal alltid vaere
+   * klikkbar».
+   *
+   * Ordet og fargen sto to steder med akkurat samme innhold — én gang i
+   * medlemslista og én gang i personruta. To kopier av det samme driver fra
+   * hverandre den dagen én av dem rettes.
+   *
+   * Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(), saa
+   * lista, kortet paa Oversikt og personruta ikke kan svare hver sitt om den
+   * samme personen. Her staar bare ordet og fargen.
+   *
+   * Merk at dette ikke er det samme som statusen paa en betalingsrad i
+   * kassa («opprettet», «venter», «avbrutt», «feilet»). Det er hvordan det
+   * gikk med én betaling; dette er hvor en person staar. To begreper, to
+   * kart — de skal ikke slaas sammen.
+   */
+  betalingsPille(tilstand, somKnapp) {
+    const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
+                    forfalt: 'Forfalt', venter: 'Ikke betalt' };
+    // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
+    // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
+    // her, ville verkstedet trodd noe var gjort opp som ikke var det.
+    const F = {
+      fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
+      betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
+      bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
+      forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+      venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
+    }[tilstand] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
+
+    const stil = {
+      fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
+      textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
+      whiteSpace: 'nowrap', background: F[0], color: F[1],
+    };
+    if (somKnapp) {
+      // Formen er den samme. Det som kommer til er at den ser ut som noe
+      // man kan trykke paa.
+      Object.assign(stil, {
+        appearance: 'none', border: 'none', cursor: 'pointer',
+        fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center',
+      });
+    }
+    return { merke: MERKE[tilstand] || '', stil: stil };
+  }
+
   adminBunnMeny() {
     const sted = this.adminSted();
     const meny = Component.ADMIN_MENY;
@@ -31837,28 +31892,16 @@ class Component extends DCLogic {
       // «Bestilt» er sitt eget svar: trekket er bedt om, men Vipps krever
       // forvarsel, saa pengene har ikke flyttet seg enda. Sto det «Betalt»
       // her, ville verkstedet trodd noe var gjort opp som ikke var det.
-      betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
-                       forfalt: 'Forfalt', venter: 'Ikke betalt' }[m.betaling] || '',
+      // Ordet og fargen kommer fra betalingsPille(), ett sted for hele
+      // admin. Sto som en egen kopi her til 4. september.
+      betalingMerke: this.betalingsPille(m.betaling).merke,
       betalingTekst: m.betalingTekst || '',
       betalingForfalt: !!m.betalingForfalt,
       betalingUte: !!m.betalingUte,
       erFritatt: m.betaling === 'fri',
-      betalingStil: (() => {
-        // Samme form som bindingslappen rett over, saa de to leses som ett
-        // par og ikke som to forskjellige ideer.
-        const F = {
-          fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
-          betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
-          bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
-          forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
-          venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
-        }[m.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
-        return {
-          fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
-          textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
-          whiteSpace: 'nowrap', background: F[0], color: F[1],
-        };
-      })(),
+      // Samme form som bindingslappen rett over, saa de to leses som ett
+      // par og ikke som to forskjellige ideer.
+      betalingStil: this.betalingsPille(m.betaling).stil,
       abonnement: m.medlemskap || 'Ingen',
       // Timeforbruk fra innstemplingene. Fri tilgang har ingen grense, og
       // viser bare hvor mye som er brukt.
@@ -34995,27 +35038,9 @@ class Component extends DCLogic {
           // Tilstanden regnes ut paa serveren, i Medlemskap::betalingsstatus(),
           // den samme som medlemslista og kortet paa Oversikt bruker.
           personErMedlem: ['prove', 'aktiv', 'pause'].indexOf(p.status) !== -1,
-          personBetalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',
-                                 forfalt: 'Forfalt', venter: 'Ikke betalt' }[p.betaling] || '',
+          personBetalingMerke: this.betalingsPille(p.betaling).merke,
           personBetalingTekst: p.betalingTekst || '',
-          personBetalingStil: (() => {
-            const F = {
-              fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],
-              betalt:  ['rgba(90,140,80,.16)',   '#3E6B36'],
-              bestilt: ['rgba(255,207,56,.28)',  'var(--lissom-brown)'],
-              forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
-              venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],
-            }[p.betaling] || ['rgba(120,120,120,.12)', 'var(--text-muted)'];
-            return {
-              fontSize: 11, fontWeight: 700, letterSpacing: 'var(--tracking-caps)',
-              textTransform: 'uppercase', padding: '3px 10px', borderRadius: 999,
-              whiteSpace: 'nowrap', background: F[0], color: F[1],
-              // Pilla er en knapp naa. Formen er den samme; det som kommer
-              // til er at den ser ut som noe man kan trykke paa.
-              appearance: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'inherit',
-            };
-          })(),
+          personBetalingStil: this.betalingsPille(p.betaling, true).stil,
 
           // ── Registrer betaling, der man staar ────────────────────────
           //
@@ -41787,6 +41812,25 @@ class Component extends DCLogic {
         this.state.adminDeltakere || (this.erPublisert() ? [] : PAMELDTE)
       ).map(p => Object.assign({}, p, {
         kontakt: [p.epost, p.tlf].filter(Boolean).join(' · '),
+        // ── Pilla er veien inn til betalingen ──────────────────────────
+        //
+        // Eieren, 4. september: «Under Kurs og deltakere fungerer ikke
+        // pillen Betalt som en klikkbar pille. Jeg faar derfor ikke
+        // anledning til aa aapne eller endre betalingsinformasjonen.»
+        //
+        // Han har rett: den var en Badge, uten klikk og uten pekefinger,
+        // mens handlingen laa i en tekstlenke som het «Betaling» lenger ute
+        // paa raden. Naa aapner pilla det samme panelet som lenka gjor —
+        // ingen ny betalingslosning, samme kall, samme skjema.
+        //
+        // Lenka staar som for. Den som er vant til aa gaa den veien, skal
+        // ikke maatte laere noe nytt.
+        //
+        // Serveren sier «Betalt» eller «Ubetalt», og legger paa « · 3
+        // plasser» naar det er flere. Teksten staar som den er — bare formen
+        // og fargen kommer fra den felles pilla.
+        betalingStil: this.betalingsPille(
+          /^Betalt/.test(String(p.status || '')) ? 'betalt' : 'venter', true).stil,
         // Betaling registrert for haand. Panelet folder seg ut paa raden,
         // slik flyttingen gjor — finner du personen én gang, skal du slippe
         // aa finne henne igjen et annet sted.

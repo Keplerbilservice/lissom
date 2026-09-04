@@ -8355,6 +8355,60 @@ sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
 
+echo "\n== Én betalingspille, og den er klikkbar ==\n";
+// Eieren, 4. september: «Under Kurs og deltakere fungerer ikke pillen
+// Betalt som en klikkbar pille. Jeg faar derfor ikke anledning til aa aapne
+// eller endre betalingsinformasjonen.»
+//
+// Han hadde rett: den var en Badge, uten klikk og uten pekefinger, mens
+// handlingen laa i en tekstlenke lenger ute paa raden. Maalt i nettleseren
+// for endringen: «cursor: auto», ingen klikkbar forelder.
+$sidaP3 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// ── Ett sted for ordet og fargen ──────────────────────────────────────
+//
+// Kartet sto to ganger med akkurat samme innhold: én gang i medlemslista og
+// én gang i personruta. To kopier driver fra hverandre den dagen én rettes.
+sjekk('betalingspilla har ett sted aa bo',
+    str_contains($sidaP3, '  betalingsPille(tilstand, somKnapp) {')
+    && str_contains($sidaP3, "const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+sjekk('… og medlemslista leser den',
+    str_contains($sidaP3, 'betalingMerke: this.betalingsPille(m.betaling).merke,')
+    && str_contains($sidaP3, 'betalingStil: this.betalingsPille(m.betaling).stil,'));
+sjekk('… og personruta leser den samme',
+    str_contains($sidaP3, 'personBetalingMerke: this.betalingsPille(p.betaling).merke,')
+    && str_contains($sidaP3, 'personBetalingStil: this.betalingsPille(p.betaling, true).stil,'));
+// Kopiene skal vaere borte, ikke bare erstattet ett sted.
+sjekk('… og ingen av kopiene staar igjen',
+    substr_count($sidaP3, "fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],") === 1);
+
+// ── Pilla paa Paameldte er en knapp ───────────────────────────────────
+sjekk('pilla under Kurs og deltakere er en knapp',
+    str_contains($sidaP3, '<button type="button" onClick="{{ p.betaling }}" title="Åpne betalingen" style="{{ p.betalingStil }}">{{ p.status }}</button>'));
+// Badgen skal vaere borte FRA PAAMELDTE. Den staar fortsatt paa Min side og
+// paa Vipps-skjermen, og de er ikke denne lista — en for bred paastand her
+// ville sagt at noe var galt der det er helt i orden.
+$pamBlokk = substr($sidaP3, (int) strpos($sidaP3, '{{ erAdminPameldte }}'));
+$pamBlokk = substr($pamBlokk, 0, (int) strpos($pamBlokk, '{{ erAdminKursdeltakere }}'));
+sjekk('… og etiketten uten klikk er borte derfra',
+    !str_contains($pamBlokk, 'Badge" tone="{{ p.tone }}"')
+    && str_contains($pamBlokk, 'title="Åpne betalingen"'));
+// Samme kall som tekstlenka. Ingen ny betalingslosning.
+sjekk('… og den aapner det panelet som fantes fra for',
+    substr_count($sidaP3, 'onClick="{{ p.betaling }}"') === 2);
+// Lenka staar som for — den som er vant til den veien skal ikke laere noe nytt.
+sjekk('… mens «Betaling»-lenka staar som for',
+    str_contains($sidaP3, '>Betaling</button>'));
+// Serveren sier «Betalt» eller «Ubetalt», med « · 3 plasser» paa toppen naar
+// det er flere. Teksten skal staa som den er — bare formen kommer fra pilla.
+sjekk('… og teksten fra serveren staar urort, med plassene',
+    str_contains($sidaP3, "/^Betalt/.test(String(p.status || '')) ? 'betalt' : 'venter', true).stil,"));
+
+// Kassa sitt statuskart er et ANNET begrep: hvordan det gikk med én
+// betalingsrad. Det skal ikke slaas sammen med dette.
+sjekk('kassas statuskart er ikke slaatt sammen med pilla',
+    str_contains($sidaP3, "betalt: 'Betalt', venter: 'Venter', opprettet: 'Ikke fullført',"));
+
 echo "\n== «Butikk» heter «Nettbutikk» i admin ==\n";
 // Eieren, 4. september: «Endre navnet Butikk til Nettbutikk i hele
 // adminsystemet. Endringen skal gjelde menyer, overskrifter, lenker og

@@ -180,7 +180,14 @@ $kommende = DB::alle(
 
 // --- Ting som trenger oppmerksomhet --------------------------------------
 $varsler = [];
+$hengendeListe = [];
 
+// Kvitteringer og paaminnelser som ikke kom fram, og som ligger i ko.
+//
+// Begge har vaert talt opp her hele tiden, og begge har vaert usynlige:
+// «varsler» hadde ingen plass i skjermbildet. Naa har de hvert sitt kort paa
+// Verkstedet, ved siden av «Henger i Vipps» — og tallene under er det de
+// kortene leser.
 $feiledeVarsler = (int) DB::verdi("SELECT COUNT(*) FROM notifications WHERE status = 'feilet'");
 if ($feiledeVarsler > 0) {
     $varsler[] = $feiledeVarsler === 1
@@ -195,15 +202,76 @@ if ($iKo > 0) {
         : $iKo . ' varsler har ligget i kø i over en halvtime';
 }
 
-$hengende = (int) DB::verdi(
-    "SELECT COUNT(*) FROM payments
-      WHERE status IN ('venter','autorisert')
-        AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)"
+// Betalinger som henger — med navn.
+//
+// Her sto det bare et tall: «Én betaling har hengt i over en time». Det er
+// den beskjeden Monica faar naar en kunde ringer og sier at hun bestilte og
+// ikke ble paameldt — og av et tall kan hun ikke finne ut hvem det er.
+// Eieren, 4. september: navn, beloep og kurs.
+//
+// «opprettet» staar med her ogsaa. Alle kanalene setter «venter» med én gang
+// Vipps har svart, saa en rad blir bare staaende paa «opprettet» hvis PHP
+// doer akkurat mellom de to linjene. Da var den usynlig i dette varselet, og
+// nettopp den raden er den som trenger et menneske.
+//
+// Maanedstrekkene staar utenfor: de gjores opp fra avtalen sin i
+// «medlemstrekk», og de henger ikke paa samme maate.
+$hengendeRader = DB::alle(
+    "SELECT p.id, p.belop_ore, p.formal, p.status,
+            TIMESTAMPDIFF(HOUR, p.created_at, UTC_TIMESTAMP()) AS timer,
+            COALESCE(m.navn, b.gjest_navn, o.kunde_navn, '') AS navn,
+            COALESCE(c.tittel, '') AS kurs
+       FROM payments p
+  LEFT JOIN members  m ON m.id = p.member_id
+  LEFT JOIN bookings b ON b.id = p.booking_id
+  LEFT JOIN orders   o ON o.id = p.order_id
+  LEFT JOIN courses  c ON c.id = b.course_id
+      WHERE p.status IN ('opprettet','venter','autorisert')
+        AND p.type <> 'recurring_charge'
+        AND p.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)
+   ORDER BY p.created_at
+      LIMIT 20"
 );
+$hengende = count($hengendeRader);
 if ($hengende > 0) {
+    // Navnet forst — det er det Monica leter etter. Staar det ikke noe navn
+    // paa raden, sier vi hva slags betaling det er i stedet for aa lyve.
+    // Radene faar samme form som resten av betalingslista — navn, hva, tid,
+    // sum — saa skjermen kan tegne dem med det samme oppsettet den alt har.
+    // Ett radformat, ikke to.
+    $SLAG = ['booking' => 'Kursplass', 'gavekort' => 'Gavekort',
+             'ordre' => 'Bestilling', 'medlemskap' => 'Medlemskap'];
+    $navnet = static function (array $r) use ($SLAG): string {
+        $n = trim((string) $r['navn']);
+        // Staar det ikke noe navn paa raden, sier vi hva slags betaling det
+        // er. Et tomt felt ser ut som en feil i skjermen, ikke som en rad
+        // uten kunde.
+        return $n !== '' ? $n : 'Ukjent (' . strtolower($SLAG[(string) $r['formal']] ?? 'betaling') . ')';
+    };
+    $tiden = static fn(int $t): string => $t < 24
+        ? ($t === 1 ? 'hengt i én time' : 'hengt i ' . $t . ' timer')
+        : ((int) floor($t / 24) === 1 ? 'hengt i ett døgn'
+                                      : 'hengt i ' . (int) floor($t / 24) . ' døgn');
+    foreach ($hengendeRader as $r) {
+        $hva = $SLAG[(string) $r['formal']] ?? 'Betaling';
+        $kurs = trim((string) $r['kurs']);
+        $hengendeListe[] = [
+            'id'        => (int) $r['id'],
+            'navn'      => $navnet($r),
+            'hva'       => $hva . ($kurs !== '' ? ' · ' . $kurs : ''),
+            'tid'       => $tiden((int) $r['timer']),
+            'sum'       => Booking::kroner((int) $r['belop_ore']),
+            'timer'     => (int) $r['timer'],
+            'status'    => (string) $r['status'],
+        ];
+    }
+    // Linja i varselet: den som har hengt lengst, med navn, hva og sum.
+    $f = $hengendeListe[0];
+    $forste = $f['navn'] . ' · ' . $f['hva'] . ' · ' . $f['sum'];
     $varsler[] = $hengende === 1
-        ? 'Én betaling har hengt i over en time'
-        : $hengende . ' betalinger har hengt i over en time';
+        ? 'Én betaling har hengt i over en time: ' . $forste
+        : $hengende . ' betalinger har hengt i over en time: ' . $forste
+          . ' — og ' . ($hengende - 1) . ' til';
 }
 
 $venteliste = (int) DB::verdi("SELECT COUNT(*) FROM waitlist WHERE status = 'venter'");
@@ -474,6 +542,13 @@ Svar::json([
     )),
     'venteliste' => $venteliste,
     'varsler'    => $varsler,
+    'hengende'   => $hengendeListe,
+    // Tallene kortene leser. De sto bare inni tekstene i «varsler», og et
+    // kort kan ikke lese et tall ut av en setning.
+    'varselTall' => [
+        'feilet' => $feiledeVarsler,
+        'iKo'    => $iKo,
+    ],
     // Om utsendingen er skrudd paa. Ligger her fordi denne hentes paa hver
     // adminskjerm — da kan kortet som peker til oppsettet vise hva som
     // gjelder, uten et eget kall.
@@ -510,9 +585,13 @@ Svar::json([
     // bygget 29. august for kursplasser alene, for medlemmene hadde noen
     // betalingsstatus i det hele tatt.
     //
+    // Butikken kom 4. september: «her skal alle som ikke har betalt vises, om
+    // det er butikk, kurs eller medlemskap». Kassa kan foere et salg som
+    // «Ikke betalt» — varen gaar ut av doera, pengene kommer senere.
+    //
     // «slag» skiller dem: en kursplass merkes betalt med paameldingen sin,
-    // et medlemskap med en betalingsrad paa medlemmet. Skjermen trenger aa
-    // vite hvilken av delene raden er.
+    // et medlemskap med en betalingsrad paa medlemmet, og et butikksalg med
+    // «gjorOpp» i kassa. Skjermen trenger aa vite hvilken av delene raden er.
     'ubetalte' => array_merge(array_map(static function (array $r) use ($oslo, $utc): array {
         return [
             'slag'    => 'booking',
@@ -564,7 +643,45 @@ Svar::json([
                 : 0,
             'forfalt' => $m['forfalt'],
         ];
-    }, $medlemsstatus['rader'])),
+    }, $medlemsstatus['rader']), array_map(static function (array $o): array {
+        return [
+            'slag'  => 'ordre',
+            'id'    => (int) $o['id'],
+            'navn'  => (string) $o['kunde_navn'],
+            // Der kursraden sier hvilket kurs og medlemsraden hvilken plan,
+            // sier butikkraden hva som ble handlet — og ordrenummeret, saa
+            // den er til aa finne igjen i Nettbutikk.
+            'kurs'  => (string) ($o['hva'] ?? '') !== ''
+                ? (string) $o['hva'] : 'Salg over disk',
+            'naar'  => (string) $o['ordrenr'],
+            'belop' => Booking::kroner((int) $o['sum_ore']),
+            'belopOre' => (int) $o['sum_ore'],
+            'telefon' => (string) ($o['kunde_telefon'] ?? ''),
+            'maate'   => (string) ($o['betalt_maate'] ?? ''),
+            'dager'   => (int) $o['dager'],
+        ];
+    }, DB::alle(
+        // Butikken. Eieren, 4. september: «her skal alle som ikke har betalt
+        // vises, om det er butikk, kurs eller medlemskap».
+        //
+        // «payment_id IS NULL» er hele skillet. Et forlatt Vipps-forsoek har
+        // alltid en betalingsrad — den ble laget for kunden ble sendt til
+        // Vipps — og er ikke en gjeld, men et salg som aldri ble noe av.
+        // Eieren om nettopp dem: «avbrutt er ikke et salg og skal ikke vises
+        // noen sted». Et salg foert som «Ikke betalt» i kassa har ingen rad,
+        // og er en gjeld til noen trykker «Kontant» eller «Vipps».
+        "SELECT o.id, o.ordrenr, o.kunde_navn, o.kunde_telefon, o.sum_ore, o.betalt_maate,
+                DATEDIFF(UTC_DATE(), DATE(o.created_at)) AS dager,
+                (SELECT GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel)
+                          ORDER BY ol.id SEPARATOR ', ')
+                   FROM order_lines ol WHERE ol.order_id = o.id) AS hva
+           FROM orders o
+          WHERE o.payment_id IS NULL
+            AND o.betalt_maate = 'Ikke betalt'
+            AND o.status NOT IN ('kansellert', 'refundert')
+            AND o.sum_ore > 0
+       ORDER BY o.created_at"
+    ))),
 
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren

@@ -7,9 +7,372 @@ når de blir lange. Da forsvinner det som er sagt tidlig, og jeg svarte
 «gjenstår ingenting» på ting som gjensto. Fila her overlever det. Den skal
 oppdateres i samme commit som arbeidet gjøres — ikke etterpå.
 
-Sist gjennomgått: 29. august 2026, kveld — etter «Legg til deltaker» på økta
+Sist gjennomgått: 4. september 2026 — adminomleggingen.
+Før det: 29. august 2026, kveld — etter «Legg til deltaker» på økta
 med vippskrav, drop-in og Paint on Pots samlet i kalenderen, og
 flerdagerskurset i kalenderen og på telefonen.
+
+---
+
+## De tre siste restene — 4. september 2026
+
+Eieren: «Gjør ferdig alt».
+
+### Skjemaet overlever turen innom Vipps-innloggingen
+
+Adressen tok kunden til riktig kurs, men datoen, telefonnummeret, allergiene
+og gavekortkoden sto tomme — alt måtte fylles ut på nytt etter en tur hun
+ikke hadde bedt om. Medlemsinnmeldinga tok vare på sitt fra før; bookingen
+gjorde det ikke.
+
+Lagres nå som ett felt med JSON, `lissom_booking`, og hentes fram ved
+oppstart. **Vilkårshaken settes ikke tilbake** — den er en bekreftelse på at
+man har lest noe, og kan ikke gjenopprettes på kundens vegne.
+
+**Målt i nettleseren**, utlogget kunde på «Nybegynner dreiekurs»:
+
+| | Resultat |
+|---|---|
+| Fylt ut | dato valgt, telefon «90011122», allergi «Nøtteallergi», vilkår krysset av |
+| Etter trykk | sida gikk til `/api/vipps-login.php?retur=/kurs/nybegynner-dreiekurs` |
+| Etter retur | telefon «90011122» og allergi «Nøtteallergi» sto der igjen |
+| Nøkkelen | ryddet bort |
+
+### Webhooken og cron deler regel, uten å dele oppslag
+
+Regelen for hva en Vipps-tilstand betyr sto tre steder: i webhooken, i `Tikk`
+og halvveis i cron. Nå står den i `Vipps::anvendTilstand()`, som alle tre
+bruker.
+
+**Webhooken spør ikke Vipps om igjen.** Hendelsen er signert og sier hva som
+har skjedd; leseadressen kan ligge et hakk bak, og et oppslag der kunne lest
+en CAPTURED-hendelse som AUTHORIZED og forsøkt å trekke en betaling som
+allerede var trukket. Unntaket er AUTHORIZED, som trenger beløpet — det står
+ikke i hendelsen.
+
+`REFUNDED` er flyttet inn i den delte regelen, så cron og `Tikk` håndterer
+den også.
+
+### Varslene som ikke vistes noe sted
+
+«N varsler kom ikke fram» og «N varsler har ligget i kø» var regnet ut hele
+tiden, men lå i `varsler` — en liste uten plass i skjermbildet. Nå har de
+hvert sitt kort på Verkstedet, ved siden av «Henger i Vipps», med samme regel
+som resten: kortet står bare når noe faktisk venter.
+
+**Målt i nettleseren** med to feilede og ett i kø:
+
+- «Varsler kom ikke fram · 2 · 2 varsler kom ikke fram. Sjekk e-postoppsettet. · Se dem →»
+- «Varsler står i kø · 1 · Ett varsel har ligget i kø i over en halvtime. · Se køen →»
+
+## Min side og kursdeltakersidene — 4. september 2026
+
+Eieren la fram femten punkter, med krav om analyse og skisser før noe ble
+bygget. Analysen ble presentert med målinger, skissene ble satt inn i det
+ekte skjermbildet, og godkjenningen kom som «Bygg komplett du» — inkludert
+treməneders-historikken, som var det ene punktet jeg foreslo å forenkle.
+
+**Målt før:** medlemssiden var 5 987 px = 7,1 mobilskjermer, kursdeltaker-
+siden 2 568 px = 3.
+
+| # | Punkt | Gjort |
+|---|---|---|
+| 1 | Timene inn i medlemskapskortet | Ja — «11,5» sto to steder før |
+| 2 | Superenkel inn-/utstempling | Ja — én knapp, ressursvalget bak en lenke |
+| 3 | QR ved døra | Ja — `/stemple`, valgt av eieren blant to alternativer |
+| 4 | Fjerne «Påfyll» | Ja — kortet hadde én ting, og den finnes på gavekortsida |
+| 5 | Kort- og pillestandard | Ja — snarveiene er piller som ellers i systemet |
+| 6 | Mobilmeny med fem valg | Ja — Chat, Internbutikk, Kurs, Selg mine produkter, HMS |
+| 7 | Chat | Ja — het «Beskjeder», er en chat |
+| 8–9, 11 | Internbutikk, Kurs, HMS | Uendret, med plass i menyen |
+| 10 | Selg mine produkter | Ja — lista var regnet ut, men aldri bundet i markup |
+| 12 | 20 %-varsel | Ja — sto på fire timer fast, uansett plan |
+| 13 | Oppgraderingsforslag | Ja — krever at det gjentar seg over tre måneder |
+| 14 | Bytte medlemskap | Uendret |
+| 15 | Medlemsvilkår og bindingstid | Ja — sto bare i admin før |
+| 16 | «Bli medlem» på kursdeltakersiden | Uendret |
+
+**Målt etter, med ekte data i basen** — et medlem på «Mini 15» som nådde
+taket i juni, juli og august, med 3 av 15 timer igjen:
+
+| Hva | Resultat |
+|---|---|
+| Piller | Chat · Internbutikk · Kurs · Selg mine produkter · HMS |
+| Varsel | «Du har 3 av 15 timer igjen denne måneden.» (3/15 = 20 %) |
+| Forslag | «Du nådde taket på 15 timer juni, juli og august. Neste steg opp gir 30 timer i måneden — 15 flere enn i dag, og koster kr 800 mer i måneden.» |
+| Bindingstid | «Bundet til 1. november 2026» |
+| Salgslista | Tre rader med «Ute i butikken», «Til godkjenning» og «Ikke lagt ut: «Bildet er for mørkt — send gjerne et nytt.»» |
+| `/stemple`, utlogget | «Du må logge inn med Vipps for å stemple inn. Da kommer du rett hit igjen.» |
+| `/stemple`, innlogget | «Hei, Testadmin · 3 av 15 timer igjen» — ett trykk stemplet inn, bekreftet i basen (`innstemplet: true`, `siden: 20:25`) |
+
+### Da kortet viste to medlemskap
+
+Eieren sendte bilde fra lissom.no midt i byggingen: «Viser feil medlemskap».
+Kortet sto med «Mini 15 · kr. 1 790,- · 15 timer i måneden» rett over «Timer
+igjen: 35 av 35 timer».
+
+Planen står to steder i basen. `subscriptions.plan` er avtalen som trekkes i
+Vipps, og den ga navnet og prisen. `members.medlemskap_type` er den
+verkstedet har satt på medlemmet, og den ga timene gjennom
+`Medlemskap::timerFor()`. Ingenting holdt dem i takt.
+
+Reprodusert i testbasen: `subscriptions.plan = 'Mini 15'`,
+`members.medlemskap_type = 'Årsmedlemskap'` → `api/stempling.php` svarte
+`perMnd: 35` mens kortet sa 15.
+
+**Årsaken, funnet i koden.** Bytter verkstedet plan på et medlem som har
+fast trekk i Vipps, flyttes `members.medlemskap_type`, men
+`subscriptions.plan` blir stående — se `api/admin/medlemmer.php`. Det er med
+vilje: Vipps eier beløpet på en godkjent avtale, og det kan ikke skrives om
+derfra. Admin får til og med beskjed om det.
+
+Feilen var ikke at de to sto ulikt. Feilen var at Min side leste **navnet og
+prisen fra avtalen** og **timene fra medlemsraden**, og dermed viste det
+verste av begge.
+
+**Rettet.** Kortet navngir medlemskapet medlemmet *har* — det styrer timer og
+tilgang, og timene over kommer fra det samme. Avtalen står for seg når den er
+godkjent på noe annet, med navnet og beløpet. «Neste trekk» viser avtalens
+beløp, for det er det som går av kontoen.
+
+**Målt i nettleseren**, med `medlemskap_type = 'Årsmedlemskap'` og
+`subscriptions.plan = 'Mini 15'` med `vipps_agreement_id` satt:
+
+| | Før | Etter |
+|---|---|---|
+| Navn og pris | Mini 15 · kr. 1 790,- | Årsmedlemskap · kr. 1 990,- |
+| Timer | 35 av 35 | 35 av 35 — nå fra samme plan som navnet |
+| Avtalen | usynlig | «Vipps-avtalen din er fortsatt godkjent på Mini 15 — kr. 1 790,- i måneden — og trekker det til den sies opp.» |
+| Neste trekk | kr. 1 990,- (planens pris — et trekk som ikke kommer) | kr. 1 790,- (avtalens beløp) |
+
+**Dataene i produksjon er ikke rørt** — Claude har ikke tilgang dit. Men de
+trenger heller ikke rettes: de to feltene *skal* kunne stå ulikt så lenge
+Vipps-avtalen ikke er sagt opp. Det var visningen som løy.
+
+## Adminomleggingen — 4. september 2026
+
+Planen ligger i samtalen, ikke i repoet. Punktene under er nummerert slik de
+sto der.
+
+**Gjort og godkjent**
+
+| Punkt | Hva | Godkjent |
+|---|---|---|
+| — | Null kroners salg over disk | «ja» |
+| — | Kassa kan føre et salg som ubetalt | «ja, kassa skal kunne føre som ikke betalt» |
+| — | «Ikke betalt» viser butikk, kurs og medlemskap | samme |
+| — | Kasse som eget menypunkt | «ja» |
+| — | Nettsiden, Referansekunder og Maler under Verkstedet | «ja, ta punkt 6» |
+| — | Samme vei tilbake på alle skjermer | «her er en global løsning på plass så endre det» |
+| — | «Se mer» på mobilkortene | «jatakk slik skissen viser på mobil» |
+| — | «Forfalt» og «Ikke betalt» fikk hver sin farge | «ja skill fargen» |
+| — | Endringsloggen som lenke | del av «gjør ferdig alt» |
+| — | Nettbutikk står ett sted | samme |
+| — | Stemplingstestene tåler at klokka er over 23 | samme |
+| 9 | Nettbutikken på telefonen — ordrer først, varer bak lenke | «gjør ferdig alt» |
+| 7 | Kursskjermen på telefonen — to lister bak hver sin lenke | «jatakk, jeg vil ha det slik du foreslår» |
+| 6 | Betalingsstatus på kalenderkortene | «ja, ta punkt 10» / «jeg vil ta de punktene ja» |
+| 10 | Dagsrapport i Kassa | «ja, ta punkt 10» |
+| — | Alle ruter som kommer ved klikk åpnes midt på skjermen | «det må fikses og sørge for at er løst» / «Gjelder alle kort som kommer ved klikking, globalt» |
+
+Punkt 7 ble committet med «VENTER PÅ GODKJENNING» i meldinga. Godkjenningen
+kom etterpå, og står her — historikken skrives ikke om.
+
+### Ruter som åpnet utenfor skjermen
+
+Meldt tre ganger: 31. august («pop up, må åpnes lenger opp så jeg ser
+skjermen»), 1. september («hele systemet har en tendens til å åpne pop up
+eller nye vinduer utenfor skjermbildet om jeg er langt nede på siden») og
+4. september med bilde av kursruta nede i høyre hjørne.
+
+Årsaken var to steder, ikke ett:
+
+1. Kalenderen leste av musepekeren og satte kursruta der (`klKursRedPos`).
+2. Hele resten av systemet gjorde det samme gjennom `topNaa()`, som leste
+   `pageY` fra siste klikk. Seks ruter hang i den: handlekurven,
+   Vipps-ruta, kontaktskjemaet, bedriftsskjemaet, «Ny dato» og «Nytt kurs».
+
+To ganger før ble dette rettet ved å klemme ruta innenfor kanten. Det
+fjernet ikke årsaken. Nå er `topNaa()`, `_klikkY` og de seks feltene
+(`popupTop`, `fsTop`, `ktTop`, `nkTop`, `ndTop`, `toastTop`) borte, og
+ingen rute leser musepekeren.
+
+**Målt i nettleseren, ikke bare i koden.** Siden rullet helt til bunnen,
+og det nederste klikkbare elementet trykket — verste tilfelle:
+
+| Rute | Bredde | Før | Etter |
+|---|---|---|---|
+| Kursruta i kalenderen | 390 / 768 / 1024 / 1440 | utenfor kanten | helt inne, midtavvik 0 |
+| Handlekurven | 390 | bunn 988 av 844 (144 px under) | 231–613, midtavvik 0 |
+| Handlekurven | 1440 | bunn 1032 av 900 (132 px under) | 267–633, midtavvik 0 |
+| Kontaktskjemaet | 390 / 1440 | vilkårlig klikkavstand | helt inne, midtavvik 0 |
+
+Høyreklikkmenyen i kalenderen står fortsatt ved pekeren — det er slik en
+høyreklikkmeny skal stå, og den er klemt innenfor vinduet så den ikke kan
+havne utenfor. Etiketten som følger fingeren når et kurs dras er heller
+ikke rørt.
+
+### Kunden som bestilte, men aldri ble påmeldt
+
+4. september: en ny kunde bestilte et kurs på nett. Hun fikk **ingen
+feilmelding**, ble **ikke trukket i Vipps**, og sto **aldri i lista**.
+
+Veien hun gikk:
+
+1. «Book plass» booker ikke når du ikke er innlogget — den sendte deg til
+   Vipps-innlogging med et bart `window.location.href`, uten et ord om
+   hvorfor. Fire steder gjorde dette hver for seg.
+2. Gikk innloggingen galt, sendte `vipps-callback.php` deg til forsida med
+   `?innlogging=feilet`. **Ingen leste den parameteren.**
+3. Da hadde `api/book.php` aldri vært kalt. Derfor finnes det ingen booking,
+   ingen betaling og ingen rad å finne igjen — hun er «aldri registrert».
+
+Rettet:
+
+- Én delt `sendTilInnlogging(retur, hva)` erstatter alle fem hoppene. Den
+  husker hva som ikke ble gjort.
+- `?innlogging=feilet` og `=avbrutt` leses nå, og gir en beskjed som sier
+  hva som ikke ble gjort: «Innloggingen gikk ikke — Du ble ikke meldt på
+  kurset.»
+- Meldingsboksen sto på `tone="success"` uansett hva den sa. Tonen er nå
+  bundet, og en feil får en rød ring i CSS — ikonet hentes som en SVG-fil
+  over nett, og uteble den, sto boksen helt umerket.
+- Bookingknappen sier «Logg inn med Vipps for å melde deg på» når du ikke
+  er innlogget, i stedet for «Book plass · kr. 2 800,-».
+
+**Målt i nettleseren, utlogget:**
+
+| Hva | Før | Etter |
+|---|---|---|
+| `/?innlogging=feilet` | forsida, ingen beskjed | «Innloggingen gikk ikke», rød ring |
+| `/?innlogging=avbrutt` | forsida, ingen beskjed | «Innloggingen ble avbrutt», rød ring |
+| Med grunn lagret | — | «… Du ble ikke meldt på kurset.» |
+| Bookingknappen | «Book plass · kr. 2 800,-» | «Logg inn med Vipps for å melde deg på» |
+| Vanlig beskjed (gavekort, feil e-post) | grønn, ingen ring | uendret |
+
+**Ikke målt:** linja «Du logger inn med Vipps først — så betaler du kr X»
+vises bare når Vipps sitt eget knappeskript har lastet, og det skriptet
+hentes over nett. Det skjer ikke i testmiljøet. Teksten er låst med en
+sjekk i `tests/backend.php`, men den er ikke sett på skjerm.
+
+### «Én betaling har hengt» sa ikke hvem — og vises ikke i det hele tatt
+
+Varselet var et tall. Det er beskjeden Monica får når en kunde ringer og sier
+at hun bestilte og ikke ble påmeldt — og av et tall kan hun ikke finne ut hvem.
+
+Spørringen var også feil på to måter: den talte månedstrekkene, som hører til
+`medlemstrekk` og aldri kan gjøres opp herfra, og den så ikke på `opprettet`
+— den ene statusen som betyr at en betaling stoppet før Vipps rakk å svare.
+
+**Målt mot ekte rader i basen** — ett kurskjøp på «venter» (3 timer), ett
+gavekort på «opprettet» (5 timer), ett månedstrekk på «venter» (9 timer):
+
+| | Fant | Sa |
+|---|---|---|
+| Før | månedstrekket + kurskjøpet | «2 betalinger har hengt i over en time» |
+| Etter | gavekortet + kurskjøpet | «2 betalinger har hengt i over en time: Ukjent (gavekort) · kr. 1 490,- — og 1 til» |
+
+Hele lista følger nå med i svaret som `hengende`, med navn, kurs, beløp,
+antall timer og status. En rad uten navn sier hva slags betaling det er —
+«Ukjent (gavekort)» — i stedet for å stå tom.
+
+**Funnet underveis:** `varsler` fra `api/admin/oversikt.php` vises **ingen
+steder**. Den eneste bruken i skjermbildet er `adminTall` i
+`lissom-2108.html`, og den listen er ikke bundet til noe markup — den er død
+kode. Alle varslene om feilede varsler, varsler i kø og hengende betalinger
+har altså vært usynlige.
+
+### Kortet «Henger i Vipps»
+
+Eieren så en skisse satt inn i det ekte skjermbildet og ba om et kortere navn
+enn «Betalinger som henger», som brakk over to linjer. «Henger i Vipps» går på
+én, og kan ikke forveksles med «Ikke betalt» i kassa, som betyr noe annet.
+
+Kortet står i kortrutenettet på Verkstedet, ved siden av «Feil meldt inn», med
+samme regel som resten: det står bare når noe faktisk henger. Tallet er i
+terrakotta. Linja navngir den som har hengt lengst.
+
+«Se dem →» går til Økonomi med `okonomiFor: 'hengende'`. Radene kommer fra
+oversikten, ikke fra `api/admin/betalinger.php` — den svarer bare med de
+gjennomførte (`betalt`, `refundert`, `delvis_refundert`), så en hengende
+betaling finnes ikke i den listen i det hele tatt.
+
+**Målt i nettleseren, med to hengende rader i basen:**
+
+| | Resultat |
+|---|---|
+| Kortet | «Henger i Vipps · 2 · Ukjent (gavekort) · Gavekort · kr. 1 490,- — og 1 til. · Se dem →» |
+| Etter klikk | `/admin/okonomi`, «TRENGER ET MENNESKE / Betalinger som henger i Vipps» |
+| Listen | «Ukjent (gavekort) · Gavekort · hengt i ett døgn · kr. 1 490,-» og «Gina Børjesson · Kursplass · Store former, viderekomne · hengt i 3 timer · kr. 2 800,-» |
+| Refusjon på vanlige betalinger | panelet lukket til man trykker, åpner på klikk — uendret |
+
+**Feil funnet i min egen endring, og rettet:** `refApen` var
+`this.state.refFor === b.referanse`. De hengende radene har ingen referanse —
+de skal ikke kunne refunderes — så det ble `undefined === undefined`, altså
+sant, og refusjonsruta sto åpen på hver eneste av dem. Målt før rettingen:
+begge radene viste «BELØP I KRONER … Refunder / Avbryt». Nå er den
+`!!b.referanse && …`.
+
+### Fortsatt åpent etter Vipps-gjennomgangen
+
+| Funn | Hvor | Status |
+|---|---|---|
+| Cron hentet Vipps-status og gjorde ingenting med den. | `bin/cron.php` | **Rettet.** Se under. |
+| Sikkerhetsnettet i `Tikk` så bare på `venter` og `autorisert`, og hoppet ikke over månedstrekkene. | `app/lib/tikk.php` | **Rettet.** Se under. |
+| Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php` | **Rettet.** Se under. |
+| Kom kunden seg gjennom innloggingen, var skjemaet hun fylte ut borte når hun kom tilbake. | `lissom-2108.html` | **Rettet.** Se under. |
+| Webhooken hadde sin egen behandling av AUTHORIZED/CAPTURED/avbrutt/REFUNDED. | `api/vipps-webhook.php` | **Rettet.** Se under. |
+
+### Cron gjorde ingenting med svaret fra Vipps
+
+`api/vipps-webhook.php` svarer 200 selv når behandlingen feiler, og begrunner
+det med at «Cron rydder opp». Det gjorde den ikke: jobben `betalinger` hentet
+statusen fra Vipps, la den i `siste_payload` og gikk videre. Ingen trekk,
+ingen «betalt», ingen «avbrutt» — og `siste_payload` skrives tre steder og
+leses null. Sviktet webhooken, og kunden aldri kom tilbake til retur-adressen,
+kunne betalingen bli stående for alltid: pengene reservert i Vipps, plassen
+stående som «reservert».
+
+Behandlingen lå i `Tikk`, som virket. Nå ligger den ett sted —
+`Vipps::synkroniser()` — og både cron og `Tikk` kaller den.
+
+`Tikk` fikk samtidig med `type <> 'recurring_charge'`, som cron alltid har
+hatt: månedstrekkene finnes ikke på ePayment-adressen, hvert oppslag ga 404 og
+en linje i feilloggen — og de lå først i `ORDER BY id`, så tre gamle trekk
+ville brukt opp hele `LIMIT 3` og en ekte kursbetaling som hang ville aldri
+blitt sjekket.
+
+**Målt mot en Vipps-etterligning på 127.0.0.1**, med en ekte booking i basen
+som hadde hengt i tretti minutter:
+
+| Tilstand fra Vipps | Før | Etter |
+|---|---|---|
+| AUTHORIZED | betaling «venter», booking «reservert», trekk ikke kalt | betaling «betalt», booking «betalt», trekk kalt |
+| TERMINATED | betaling «venter» | betaling «avbrutt» |
+| rad som alt sto «betalt» | — | står fortsatt «betalt» |
+
+Etterligningen ligger ikke i repoet — den var en engangsting under testen.
+`app/secrets.php` ble midlertidig pekt mot den og satt tilbake etterpå.
+
+**Ikke gjort, venter på svar**
+
+| Punkt | Hva | Status |
+|---|---|---|
+| 8 | Markedsføring delt i fire kort | **Frarådet, og ikke gjort.** Skjermen er 2 133 px = 2,5 skjermer på mobil, kortere enn Kasse og Kalender. Ingenting å løse. |
+
+**Funn som står åpne**
+
+- Videokurs-skjermen navngir fanen «Videokurs», men den fanen finnes ikke i
+  rada til Kurs og deltakere. Eieren, 4. september: skjermen «skal bare ligge
+  der som et tomt kort uten funksjon». Ikke rørt.
+- Mobilvisning og Feilmeldinger tegner ingen fanerad selv. De har veien
+  tilbake gjennom rada som kom 4. september, men ingen fane som lyser.
+- «Ikke fullført» på skjermen og «Opprettet» i CSV-en er det samme ordet om
+  den samme statusen. De to listene har ulikt formål — skjermen ser tre
+  statuser, CSV-en alle åtte — så de er ikke slått sammen.
+- Månedsvisningen i kalenderen har ingen betalingspille. Hver økt er én linje
+  tekst i et rutenett på sju kolonner, og eieren ba 31. august om at pillene
+  der skulle bli «mye mindre». Dag-, uke- og listevisningen har den.
 
 ---
 

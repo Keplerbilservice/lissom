@@ -867,6 +867,37 @@ $osloTilbake = static function (int $doegn, string $kl): string {
         ->format('Y-m-d H:i:s');
 };
 
+/**
+ * Et klokkeslett paa kvelden som ER omme.
+ *
+ * «I gaar kl. 10» virker hele dagen — helt til klokka blir 23. Da er
+ * stengetida etter den oekta akkurat 24 timer og ett minutt gammel, og
+ * Stempling::sisteOkt() setter «kanRettes» til usann: rettevinduet er 24
+ * timer. Seks tester om retting gikk derfor roede mellom 23:00 og midnatt,
+ * uten at noe var galt i produktet. Regnet ut foer den ble rettet:
+ *
+ *   22:59  stenger 03.09 23:00  kanRettes ja
+ *   23:30  stenger 03.09 23:00  kanRettes NEI
+ *
+ * Denne foelger den siste stengetida som faktisk er passert, ikke doegnet.
+ * Foer kl. 23 er det i gaar; etter kl. 23 er det i dag. Da ligger oekta
+ * alltid like innenfor vinduet, og klokkeslettene i testene — inn 10:00,
+ * ut 14:00 — betyr det samme hele doegnet.
+ */
+$osloKveld = static function (string $kl): string {
+    $oslo = new DateTimeZone('Europe/Oslo');
+    $naa  = new DateTimeImmutable('now', $oslo);
+    // Siste stengetid som er omme.
+    $stengte = $naa->setTime(23, 0);
+    if ($stengte > $naa) {
+        $stengte = $stengte->modify('-1 day');
+    }
+    return $stengte
+        ->setTime((int) substr($kl, 0, 2), (int) substr($kl, 3, 2))
+        ->setTimezone(new DateTimeZone('UTC'))
+        ->format('Y-m-d H:i:s');
+};
+
 // Glemt utstempling skal lukkes, og ikke spise hele maaneden. Inn kl. 10,
 // stengetid kl. 23 — tretten timer, seks telles. Eieren, spurt om hva som
 // skal trekkes: «Behold taket paa 6 timer».
@@ -912,7 +943,7 @@ DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
 
 // Inn kl. 20 i gaar: tre timer til stengetid. Kortere enn det gamle taket paa
 // ti, saa den gamle regelen ville latt den staa aapen.
-$kveld = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '20:00')]);
+$kveld = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('20:00')]);
 Stempling::lukkGlemte();
 $k = DB::en('SELECT ut_tid, minutter, auto_lukket FROM check_ins WHERE id = :i', ['i' => $kveld]);
 sjekk('kveldsokt lukkes ved stengetid', (int) ($k['auto_lukket'] ?? 0) === 1);
@@ -926,6 +957,10 @@ sjekk('kveldsokta lukkes klokka 23 norsk tid',
 $natt = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(2, '23:30')]);
 Stempling::lukkGlemte();
 $n = DB::en('SELECT ut_tid FROM check_ins WHERE id = :i', ['i' => $natt]);
+// Forventningen foelger seedingen, ikke dagens kveld: oekta ble lagt inn to
+// doegn tilbake kl. 23:30, og stengetida etter den er ett doegn tilbake kl.
+// 23. Bruker vi $osloKveld her, flytter forventningen seg klokka 23 mens den
+// lukkede oekta staar stille.
 sjekk('innstemplet etter stengetid lukkes neste kveld',
     substr((string) $n['ut_tid'], 0, 16) === substr($osloTilbake(1, '23:00'), 0, 16),
     'fikk ' . var_export($n['ut_tid'] ?? null, true) . ', ventet ' . $osloTilbake(1, '23:00'));
@@ -936,7 +971,7 @@ sjekk('innstemplet etter stengetid lukkes neste kveld',
 // gikk». Spurt om hvem: «Begge — medlemmet og du». Begge veier inn gaar
 // gjennom denne, saa de kan ikke skille lag.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-$rettes = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+$rettes = DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('10:00')]);
 Stempling::lukkGlemte();
 sjekk('okta staar som lukket av systemet foer rettinga',
     (int) DB::verdi('SELECT auto_lukket FROM check_ins WHERE id = :i', ['i' => $rettes]) === 1);
@@ -968,14 +1003,14 @@ sjekk('okta staar urort etter et avvist klokkeslett',
 // hadde verkstedet stengt en og en halv time for. Da er det ikke et
 // klokkeslett vi kan skrive inn.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '22:00')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('22:00')]);
 sjekk('et klokkeslett etter stengetid avvises',
     (Stempling::rettUtKlokke($testMedlem, '00:30')['ok'] ?? true) === false);
 
 // ... men den som stemplet inn ETTER stengetid, gikk naturligvis etter
 // midnatt. Da er stengetida neste kveld, og klokkeslettet hoerer til der.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '23:30')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('23:30')]);
 $rs = Stempling::rettUtKlokke($testMedlem, '01:00');
 sjekk('gikk man etter midnatt, teller det som samme okt', ($rs['minutter'] ?? 0) === 90,
     'fikk ' . var_export($rs['minutter'] ?? null, true) . ' ' . ($rs['feil'] ?? ''));
@@ -983,7 +1018,7 @@ sjekk('gikk man etter midnatt, teller det som samme okt', ($rs['minutter'] ?? 0)
 // Taket staar. Eieren, spurt om hva som skal trekkes: «Behold taket paa 6
 // timer». Inn kl. 10, gikk kl. 22 — tolv timer, seks telles.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('10:00')]);
 sjekk('rettinga holder seg innenfor taket paa seks timer',
     (Stempling::rettUtKlokke($testMedlem, '22:00')['minutter'] ?? 0) === 360);
 
@@ -994,7 +1029,7 @@ sjekk('rettinga holder seg innenfor taket paa seks timer',
 // brukes én gang, og den som skrev 15:00 i stedet for 16:00 satt igjen med
 // feilen. Derfor gaar vinduet paa naar oekta tok slutt.
 DB::kjor('DELETE FROM check_ins WHERE member_id = :m', ['m' => $testMedlem]);
-DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloTilbake(1, '10:00')]);
+DB::settInn('check_ins', ['member_id' => $testMedlem, 'inn_tid' => $osloKveld('10:00')]);
 Stempling::lukkGlemte();
 sjekk('rettinga kan gjores om igjen',
     (Stempling::rettUtKlokke($testMedlem, '15:00')['minutter'] ?? 0) === 300
@@ -2670,8 +2705,11 @@ sjekk('ventelista har faatt sin plass i fanerekka',
 // En fane som forer til en skjerm uten fanerad er en blindvei.
 // Tallet er summen av skjermer med fanerad. Det gikk fra 15 til 16 da
 // GEO-skjermen kom til — den har fanerekka som SEO-skjermen har.
+// Tallet var 16 til 4. september. Da fikk sju skjermer til fanerada, saa
+// ingen av dem blir en blindvei — se «Samme vei tilbake paa alle
+// skjermene» lenger nede.
 sjekk('ventelisteskjermen har fanerekka, saa den ikke blir en blindvei',
-    substr_count($sida, '{{ harOmrFaner }}') === 16);
+    substr_count($sida, '{{ harOmrFaner }}') === 23);
 // Oversikt var blitt en oppslagstavle med fjorten kort. Eieren, 29. august,
 // pekte ut fire som skulle bort: «Kursadministrasjon», «Meld noen paa»,
 // «Intern side» og programlista. Skjermene naas fra menyen som for — det er
@@ -2725,9 +2763,11 @@ sjekk('linja og lagringen leser den samme lista',
 sjekk('et klikk paa kurskortet aapner kurset',
     str_contains($sida, 'klApneKursRed(kurs, mv);')
     && str_contains($sida, 'klApneKursRed(kort, ev) {'));
-// Ruta legger seg ved kortet, ikke midt paa skjermen.
-sjekk('ruta staar der kortet staar',
-    str_contains($sida, "{ x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }"));
+// Ruta laa ved kortet. Trykket eieren paa et kort langt nede, aapnet ruta
+// seg nede — utenfor skjermen. Naa staar den midt paa skjermen.
+sjekk('ruta staar midt paa skjermen, ikke ved kortet',
+    !str_contains($sida, "{ x: ev.clientX + 16, y: Math.max(12, ev.clientY - 80) }")
+    && str_contains($sida, "left: '50%', top: '50%', transform: 'translate(-50%, -50%)',"));
 // Lagrelinja kommer forst naar noe faktisk er endret.
 sjekk('lagrelinja kommer naar noe er endret',
     str_contains($sida, 'klKursRedEndret: endret.length > 0,'));
@@ -3760,9 +3800,16 @@ sjekk('ferieskjermen finnes, med ukenummer aa trykke paa',
     str_contains($sida2, 'data-screen-label="Admin – ferie"')
     && str_contains($sida2, 'onClick="{{ v.vekslUke }}"')
     && str_contains($sida2, 'onClick="{{ g.veksl }}"'));
-sjekk('… og pillen staar paa Oversikt, sammen med innstemplinga',
+// Pillen sto i menyen til 30. august, saa paa Oversikt — «stemple inn og
+// ferie maa flyttes til oversikt» — og staar fra 4. september under logoen
+// paa hver eneste adminside: «uansett hvilken side jeg er inne paa».
+// Sjekken folger den siste flyttingen; se «Stemple inn og Ferie staar under
+// logoen, overalt» lenger nede.
+sjekk('… og pillen staar under logoen, paa alle adminsidene',
     str_contains($sida2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),")
-    && str_contains($sida2, '{{ ovStempNavn }}') && str_contains($sida2, '{{ ovFerieNavn }}'));
+    && str_contains($sida2, '{{ admFerieNavn }}')
+    && substr_count($sida2, '{{ admFerieNavn }}')
+       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til oversikten"'));
 // Eieren, 30. august: «stemple inn og ferie maa flyttes til oversikt».
 sjekk('… og de staar ikke lenger i menyen',
     str_contains($sida2, 'const stempling = [];'));
@@ -4790,8 +4837,13 @@ sjekk('ingen oppretter en betaling uten idempotency-noekkel',
 //
 // Gavekortet har heller ikke fast pris: belop, mottaker og hilsen er hele
 // poenget, og de finnes bare paa gavekortsida.
+// «Påfyll»-kortet paa Min side er fjernet — det hadde én ting i seg, og den
+// tingen finnes paa gavekortsida. Paa den publiserte sida gaar kjopet
+// gjennom kjopGavekort(), som spor serveren; linja som la «Gavekort» i
+// kurven staar igjen bak «!erPublisert()» og kjorer bare i designverktoyet.
 sjekk('gavekortet legges ikke i handlekurven',
-    str_contains($sida2, "kjop: this.go('gavekortside'),"));
+    !str_contains($sida2, 'paafyll')
+    && str_contains($sida2, "if (this.erPublisert()) { this.kjopGavekort(); return; }"));
 sjekk('… og kurs legges ikke i den heller',
     !str_contains($sida2, 'bookTilKurv:'));
 
@@ -6148,7 +6200,7 @@ sjekk('… mens resten av bunnteksten staar som for',
 // kortet viser kr. 2 990,-, knappen aapner det enkle skjemaet, det sier
 // «Gjelder: Date Night», og «Antall personer» er ikke der.
 sjekk('kurssida aapner det enkle skjemaet',
-    str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
+    str_contains($sida, "this.setState({ ktApen: true, ktSendt2: false, ktFeil: null,\n          ktEmne: k.title || k.tittel || '' });"));
 sjekk('… og gruppeskjemaet aapnes bare fra gruppelenka',
     substr_count($sida, 'fsApen: true') === 2
     && str_contains($sida, 'goForesporsel: () => this.apneForesporsel(),'));
@@ -6296,7 +6348,7 @@ sjekk('… og innmeldingen faar nummeret fra kortet',
 sjekk('… og den som ikke er innlogget sendes til Vipps og tilbake hit',
     str_contains($sida, "sessionStorage.setItem('lissom_medlemsplan', navn);")
     && str_contains($sida, "sessionStorage.setItem('lissom_medlemskort', '1');")
-    && str_contains($sida, "window.location.href = '/api/vipps-login.php?retur=/medlemskap';"));
+    && str_contains($sida, "this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');"));
 // Det hun rakk aa skrive skal ikke vaere borte naar hun kommer tilbake.
 sjekk('… og e-posten og nummeret overlever innloggingen',
     str_contains($sida, "if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }")
@@ -6400,7 +6452,7 @@ sjekk('… men en «Kontakt oss» som staar i stedet',
     str_contains($sida, 'visKontaktKurs: !!(this.state.valgtKurs && this.state.valgtKurs.kunKontakt),')
     && str_contains($sida, '<sc-if value="{{ visKontaktKurs }}"'));
 sjekk('… og den tar kurset med som emne',
-    str_contains($sida, "ktEmne: k.title || k.tittel || '', ktTop: Math.min(this.topNaa(60), 90) });"));
+    str_contains($sida, "ktEmne: k.title || k.tittel || '' });"));
 
 // ── Én linje om salg, ikke to ─────────────────────────────────────────
 //
@@ -6830,25 +6882,27 @@ sjekk('… og serveren tar imot alle tre',
 // Eieren, 1. september: «hele systemet har en tendens til aa aapne pop up
 // eller nye vinduer utenfor skjermbildet om jeg er langt nede paa siden».
 //
-// «Sett opp kurset» legger seg ved kortet du trykket paa. Klemmen sa bare at
-// TOPPEN skulle vaere innenfor skjermen — men ruta kan vaere 78 % av
-// skjermhoyden hoy. Trykte du langt nede, startet den innenfor og fortsatte
-// langt utenfor, og «Lagre endringer» sto under skjermkanten.
+// «Sett opp kurset» la seg ved kortet du trykket paa. To ganger ble det
+// rettet ved aa klemme ruta innenfor kanten. Det fjernet ikke aarsaken,
+// bare det verste utslaget — og 4. september kom bildet av ruta nede i
+// hoyre hjorne: «kan du bekrefte at sant ikke skjer igjen? at alt aapnes
+// midt paa skjermen». Naa staar ruta midt paa skjermen, og da finnes
+// feilen ikke lenger.
 //
-// Maalt i nettleseren, klikk paa et kort nederst paa skjermen:
-//   for:   700 px skjerm → bunnen paa 1046   (346 px utenfor)
-//          950 px skjerm → bunnen paa 1491   (541 px utenfor)
-//   etter: 700 px skjerm → bunnen paa 688
-//          950 px skjerm → bunnen paa 938
-sjekk('ruta faar bare den hoyden det er plass til',
-    str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',")
-    && !str_contains($sida, "width: 'min(420px, calc(100vw - 24px))', maxHeight: '78vh', overflow: 'auto',"));
-// Toppen skal fortsatt legge seg ved kortet, ikke midt paa skjermen.
-sjekk('… og legger seg fortsatt der du trykket',
-    str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
+// Maalt i nettleseren, sida rullet helt ned og klikk paa det nederste
+// kurskortet — verste tilfelle:
+//   390x844   ruta 12,59 → 378,785     helt inne, midtavvik 0
+//   768x1024  ruta 154,72 → 614,952    helt inne, midtavvik 0
+//   1024x768  ruta 282,54 → 742,714    helt inne, midtavvik 0
+//   1440x900  ruta 490,63 → 950,837    helt inne, midtavvik 0
+sjekk('ruta klemmes ikke lenger inn mot kanten',
+    !str_contains($sida, "maxHeight: Math.max(180, Math.min(Math.round(vh * 0.78), vh - topp - 12)) + 'px',"));
+sjekk('… og legger seg ikke lenger der du trykket',
+    !str_contains($sida, "const topp = Math.max(12, Math.min((pos.y || 90), vh - 200));"));
 // Ruta ruller inni seg selv naar innholdet er hoyere enn plassen.
 sjekk('… og ruller inni seg selv naar den ikke faar plass',
-    str_contains($sida, "overflow: 'auto',\n                      overscrollBehavior: 'contain',"));
+    str_contains($sida, "maxHeight: '86vh', overflow: 'auto',")
+    && str_contains($sida, "overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch',"));
 
 // ── Pillene laa oppi kortene over ──────────────────────────────────────
 //
@@ -6902,22 +6956,25 @@ sjekk('den smale blokka viser fortsatt plasstall, ansikter og merknader',
 sjekk('… og blokkene ligger foran rutenettet',
     substr_count($sida, 'zIndex: 2 + p.lane') === 2);
 
-// ── «Ikke betalt» og statistikken er kort som de andre ─────────────────
+// ── Statistikken er et kort som de andre ───────────────────────────────
 //
 // Eieren: «jeg vil at de skal ha vaert sitt kort, men ikke slike kort som i
 // dag, jeg vil at kortene skal vaere like som de andre kortene paa denne
 // siden». De sto som to brede paneler over rutenettet, i en annen drakt.
-sjekk('de to panelene staar inne i kortrutenettet',
-    strpos($sida2, 'id="ov-kortrutenett"') < strpos($sida2, '{{ ovSkylderVis }}'));
+//
+// «Ikke betalt» sto her ogsaa. Den flyttet til Kassa 4. september; se
+// «Ikke betalt flyttet til Kassa» lenger nede.
+sjekk('statistikkpanelet staar inne i kortrutenettet',
+    strpos($sida2, 'id="ov-kortrutenett"') < strpos($sida2, '{{ ovPopVis }}'));
 sjekk('… med samme ramme som resten',
     str_contains($sida2, "borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',")
     && str_contains($sida2, "borderRadius: 'var(--radius-lg)', overflow: 'hidden',"));
 // «span 2» var min feil. Paa telefonen har rutenettet én spalte, og «span 2»
-// lager da en spalte til: panelene ble 413 piksler paa en skjerm som er 390,
-// og hele Oversikt maatte dras sidelengs. Under 760 piksler skal de spenne
+// lager da en spalte til: panelet ble 413 piksler paa en skjerm som er 390,
+// og hele Oversikt maatte dras sidelengs. Under 760 piksler skal det spenne
 // over hele rada, over 760 over to spalter som for.
 sjekk('… og sprenger ikke telefonskjermen',
-    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 2
+    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 1
     && !str_contains($sida2, 'grid-column: span 2;'));
 
 // ── Dra-kortene i kalenderen ───────────────────────────────────────────
@@ -7678,9 +7735,15 @@ sjekk('… og teller ikke dem som er fritatt',
     str_contains($ovApi, "if (\$b['tilstand'] === 'fri') {"));
 
 // ── Skjermene ──────────────────────────────────────────────────────────
+// Pilla var en etikett til 4. september, og kartet over ord og farge sto i
+// to kopier. Naa er den en knapp — eieren: «jeg vil ha den klikkbar som jeg
+// ber om» — og kartet staar ett sted, i betalingsPille().
 sjekk('medlemsraden viser om det er betalt',
-    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>')
-    && str_contains($sida, "betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+    str_contains($sida, '<button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>')
+    && str_contains($sida, 'betalingMerke: this.betalingsPille(m.betaling).merke,'));
+// Et gratismedlem har ingenting aa registrere, og staar som en etikett.
+sjekk('… og et gratismedlem staar som en etikett',
+    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
 sjekk('… og timer igjen',
     str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
 // Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
@@ -7689,10 +7752,19 @@ sjekk('filteret «Ubetalte» finnes',
     str_contains($sida, "'Alle', 'Aktive', 'Ubetalte', 'Sluttet'"));
 sjekk('… og teller det samme som kortet',
     str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;"));
-sjekk('Oversikt har kortet «Medlemmer og betaling»',
-    str_contains($sida, "kort('Medlemmer og betaling',"));
-sjekk('… og det gaar til de ubetalte',
-    str_contains($sida, "{ medlemFilter: 'Ubetalte', medlemSok: '' }"));
+$okoFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+// Kortet «Medlemmer og betaling» sto her. Eieren, 4. september: «jeg vil
+// fjerne kortet og at medlemmer som ikke har betalt skal vises i oversikten
+// ikke betalt, slik at vi har en oversikt naturligvis».
+//
+// De staar der alt: «Ikke betalt» har baaret baade kursplasser og medlemskap
+// siden 2. september. Kortet sa det samme tallet en gang til.
+sjekk('kortet «Medlemmer og betaling» er borte fra Oversikt',
+    !str_contains($sida, "kort('Medlemmer og betaling',"));
+// Uten dette er kortet fjernet og medlemmene borte fra begge steder.
+sjekk('… og ubetalte medlemskap staar fortsatt i «Ikke betalt»',
+    str_contains($okoFil2, "'slag'  => 'medlem',")
+    && str_contains($okoFil2, "'ubetalte' => array_merge(array_map("));
 
 // Haken staar begge steder skjemaet staar, og i begge personrutene. Sto den
 // bare det ene stedet, ville de to skjermene sagt forskjellige ting.
@@ -7994,6 +8066,499 @@ $utFil = file_get_contents(dirname(__DIR__) . '/api/admin/uttak.php');
 sjekk('kassa har egne maater for delene av et oppgjor',
     str_contains($utFil, "const DELMAATER = ['Gavekort', 'Kontant', 'Vipps'];")
     && str_contains($utFil, "const MAATER = ['Kontant', 'Vipps'];"));
+
+// ── Null kroner over disk ──────────────────────────────────────────────
+//
+// Eieren, 4. september: «jeg maa ha et null kroners salg over disk ogsaa».
+//
+// «Gratis» staar bare paa salget med fritt beloep. Varekurven henter prisen
+// fra basen og gavekortet skal lyde paa et beloep — der ville «Gratis» blitt
+// en betalingsrad med full sum og status «betalt» uten at det kom inn en
+// krone. Skiller vi ikke listene, loeyer regnskapet.
+sjekk('bare salget med fritt beloep kan vaere gratis',
+    str_contains($utFil, "'Gratis'")
+    && !str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Gratis'")
+    && !str_contains($utFil, "const MAATER = ['Kontant', 'Vipps', 'Gratis'"));
+sjekk('… og varekurven og gavekortet har den ikke',
+    substr_count($utFil, 'in_array($maate, MAATER, true)') === 2
+    && substr_count($utFil, 'in_array($maate, SALGMAATER, true)') === 1);
+// Null er lov naar det ER gratis, og bare da. Uten det andre leddet ville
+// «Kontant, kr. 0,-» gaatt gjennom som et salg ingen betalte for.
+sjekk('null kroner slipper gjennom bare naar maaten er «Gratis»',
+    str_contains($utFil, "if (\$sum < 0 || (\$sum === 0 && \$maate !== 'Gratis')) {"));
+sjekk('… og et tomt felt betyr null naar det er gratis',
+    str_contains($utFil, "if (\$maate === 'Gratis' && \$raa === '') {"));
+// Serveren maa si hva som finnes. Sto lista bare i nettleseren, ville de to
+// glidd fra hverandre.
+sjekk('nettleseren henter maatene for fritt beloep fra serveren',
+    str_contains($utFil, "'salgmaater' => SALGMAATER,"));
+
+$sidaG = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('kassa viser «Gratis» bare ved det frie beloepet',
+    str_contains($sidaG, '<sc-for list="{{ utSalgMaater }}" as="m" hint-placeholder-count="3">')
+    && substr_count($sidaG, '<sc-for list="{{ utMaater }}" as="m" hint-placeholder-count="2">') === 1);
+// Delte de det samme valget, ville «Gratis» blitt staaende paa varekurven,
+// der den ikke finnes, og «Fullfør salget» blitt avvist uten at noe var galt.
+sjekk('… og har sitt eget valg, skilt fra varekurven',
+    str_contains($sidaG, "const salgMaate = st.utSalgMaate || 'Kontant';")
+    && str_contains($sidaG, "velg: () => this.setState({ utSalgMaate: n, utSalgBeskjed: '' }),")
+    && str_contains($sidaG, '              maate: salgMaate,'));
+// Teksten ramset opp maatene. Da «Ikke betalt» kom, ble den for lang, og
+// den ville uansett maattet rettes hver gang lista endrer seg. Naa peker den
+// paa valget og paa lista under.
+sjekk('… og teksten over kassa peker paa valget og paa lista',
+    str_contains($sidaG, 'velg hvordan det gjøres opp, og hva det var')
+    && str_contains($sidaG, 'Det som ikke er betalt står i lista under.'));
+
+// ── Kasse som eget menypunkt ───────────────────────────────────────────
+//
+// Kassa var et kort paa Oversikt. Eieren staar i den hele dagen og maatte
+// innom Oversikt hver gang.
+sjekk('Kasse staar i hovedmenyen',
+    str_contains($sidaG, "['Kasse',     'adminuttak'],"));
+// Lyste Oversikt mens man sto i kassa, sa to valg hver sin sannhet om hvor
+// man var. Det var derfor bunnmenyen maatte spoerre om selve skjermen.
+sjekk('… og adminSted foerer kassa til sitt eget punkt',
+    str_contains($sidaG, "case 'adminuttak':         return p('Kasse');")
+    && !str_contains($sidaG, "case 'adminuttak':         return p('Oversikt');"));
+sjekk('… saa bunnmenyen slipper aa spoerre om skjermen',
+    !str_contains($sidaG, "const iKassa = this.state.side === 'adminuttak';")
+    && str_contains($sidaG, '      const paa = sted.meny === menynavn;'));
+// Navnet og ruta hentes fra ADMIN_MENY, ikke skrevet av i bunnmenyen.
+sjekk('… og bunnmenyen henter Kasse fra menyen',
+    str_contains($sidaG, "const kasse = fra('Kasse');")
+    && str_contains($sidaG, "kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),"));
+
+// ── «Ikke betalt» flyttet til Kassa ────────────────────────────────────
+//
+// Oversikt skal si hva som skjer i dag. Kassa er der man staar naar noe
+// skal kreves inn, og knappene som gjor det er de samme.
+sjekk('«Ikke betalt» regnes ut ett sted',
+    str_contains($sidaG, '  skylderKort() {')
+    && substr_count($sidaG, 'ovSkylderVis: true,') === 1);
+sjekk('… og kortet staar i Kassa',
+    str_contains($sidaG, '          ...this.skylderKort(),'));
+// Markupen skal staa ett sted. Sto den begge steder, ville to kopier
+// drevet fra hverandre.
+sjekk('… og bare der',
+    substr_count($sidaG, '<sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">') === 1);
+// «span 2» i et rutenett som ikke finnes lager en spalte til, og hele
+// sida maa dras sidelengs. Det skjedde en gang for, paa Oversikt.
+sjekk('… uten rutenettbredden fra Oversikt',
+    !str_contains($sidaG, "ovSkylderRamme: {\n        gridColumn:"));
+
+$okoFil3 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+// ── Kassa kan foere et salg som ubetalt ────────────────────────────────
+//
+// Eieren, 4. september: «her skal alle som ikke har betalt vises, om det er
+// butikk, kurs eller medlemskap», og «kassa skal kunne foere som ikke betalt».
+//
+// Butikken manglet: alle sju stedene som lager en ordre satte enten «ny»
+// (venter paa Vipps) eller «hentet» (betalt over disk). Det fantes ingen
+// tilstand for «kunden har faatt varen, pengene mangler».
+sjekk('kassa kan foere et fritt beloep som ubetalt',
+    str_contains($utFil, "const SALGMAATER = ['Kontant', 'Vipps', 'Gratis', 'Ikke betalt'];"));
+sjekk('… og varekurven ogsaa',
+    str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Ikke betalt'];")
+    && str_contains($utFil, 'in_array($maate, KURVMAATER, true)'));
+// «Gratis» hoerer ikke hjemme i kurven: prisen kommer fra hylla, og en
+// gratislinje ville betydd at varen er gratis for alle.
+sjekk('… men kurven kan ikke gi bort en hyllevare',
+    !str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Gratis'"));
+
+// Betalingsraden ER pengene. Lagde vi en med status «venter», maatte hvert
+// eneste sted som teller penger huske aa se bort fra den.
+sjekk('et ubetalt salg lager ingen betalingsrad',
+    substr_count($utFil, "\$ubetalt = \$maate === 'Ikke betalt';") === 1
+    && str_contains($utFil, '$betalingId = $ubetalt ? null : DB::settInn(\'payments\', [')
+    && str_contains($utFil, "\$betalingId = \$maate === 'Ikke betalt' ? null : DB::settInn('payments', ["));
+// Uten vakta kraesjer koblingen paa en null-id.
+sjekk('… og kobler ikke en betaling som ikke finnes',
+    substr_count($utFil, "if (\$betalingId !== null && DB::harKolonne('payments', 'order_id')) {") === 2);
+
+// «payment_id IS NULL» er hele skillet mot et forlatt Vipps-forsoek, som
+// alltid har en rad. Eieren om dem: «avbrutt er ikke et salg og skal ikke
+// vises noen sted».
+sjekk('«Ikke betalt» viser butikk, kurs og medlemskap',
+    str_contains($okoFil3, "'slag'  => 'ordre',")
+    && str_contains($okoFil3, "AND o.betalt_maate = 'Ikke betalt'")
+    && str_contains($okoFil3, 'WHERE o.payment_id IS NULL'));
+sjekk('… og ikke forlatte Vipps-forsoek',
+    str_contains($okoFil3, "AND o.status NOT IN ('kansellert', 'refundert')"));
+
+// Ett trykk paa «Kontant» eller «Vipps» ved navnet lager raden som ikke ble
+// laget over disken.
+sjekk('gjelden kan gjores opp fra lista',
+    str_contains($utFil, "if (\$handling === 'gjorOpp') {")
+    && str_contains($sidaG, "? this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, maate: m })"));
+// Betalingsraden er sperren, ikke maaten: har salget en rad, er det gjort
+// opp — eller det venter paa Vipps, og da skal ikke vi roere det.
+sjekk('… bare én gang',
+    str_contains($utFil, "if (\$ordre['payment_id'] !== null) {")
+    && str_contains($utFil, "Svar::feil('Salget er alt gjort opp.', 409);"));
+// «Gratis» og «Ikke betalt» ville vaert aa gjore opp uten aa gjore opp.
+sjekk('… og bare med noe som faktisk er penger',
+    str_contains($utFil, "\$maate   = (string) (\$kropp['maate'] ?? MAATER[0]);"));
+// Et fritt beloep kan vaere kurs, medlemskap eller produkt, og det avgjor
+// kontoen i dagsoppgjoret. Uten betalingsrad var det ingen «formal» aa arve.
+sjekk('… paa den kontoen salget hoerer til',
+    str_contains($utFil, 'SELECT tittel FROM order_lines WHERE order_id = :o ORDER BY id LIMIT 1')
+    && str_contains($utFil, 'foreach (SLAG as $def) {')
+    && str_contains($utFil, "\$formal = \$def['formal'];"));
+
+// En feilregistrering maa kunne tas bort. Uten «LEFT JOIN» fant hverken
+// dagens liste eller annulleringen et salg uten betalingsrad.
+sjekk('en ubetalt feilregistrering kan annulleres',
+    str_contains($utFil, "FROM orders o LEFT JOIN payments p ON p.id = o.payment_id")
+    && str_contains($utFil, "\$ubetaltSalg = \$ordre['payment_id'] === null"));
+sjekk('… og staar i dagens liste',
+    str_contains($utFil, "OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt'))"));
+// Maalt: det sto kr. 1 410,- i «Solgt i dag» med kr. 450,- i kassa.
+sjekk('… men teller ikke som penger i kassa',
+    str_contains($sidaG, "          .filter(s => s.status !== 'kansellert' && s.maate !== 'Ikke betalt')"));
+
+// ── Nettsiden, Referansekunder og Maler inn under Verkstedet ───────────
+//
+// Nettsiden var et menypunkt for seg. Den er et av husets rom, som
+// oppskriftene og brenningen: noe verkstedet steller med, ikke en gruppe
+// mennesker eller et regnskap.
+sjekk('hovedmenyen er ti punkter',
+    !str_contains($sidaG, "['Nettsiden', 'admininnhold'],")
+    && str_contains($sidaG, "['Markedsføring', 'adminmarked'],\n"));
+sjekk('… og Verkstedet har faatt de tre',
+    str_contains($sidaG, "['Nettsiden',     'admininnhold'],")
+    && str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Malene sto under")
+    && str_contains($sidaG, "['Maler',         'adminmaler'],"));
+// Sto de begge steder, ville to faner gaatt til den samme skjermen og
+// begge villet lyse.
+sjekk('… og staar ikke igjen der de kom fra',
+    !str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Kursvelgeren")
+    && !str_contains($sidaG, "['Maler',           'adminmaler'],"));
+
+// Uten dette lyste ingenting i menyen paa Nettsidens skjermer: «Nettsiden»
+// fantes ikke lenger som menypunkt.
+sjekk('nettsidens skjermer lyser Verkstedet',
+    str_contains($sidaG, "case 'admininnhold':       return p('Verkstedet', 'Nettsiden', 'Innhold');")
+    && str_contains($sidaG, "case 'adminmobilvis':      return p('Verkstedet', 'Nettsiden', 'Mobilvisning');")
+    && str_contains($sidaG, "case 'adminfeil':          return p('Verkstedet', 'Nettsiden', 'Feilmeldinger');")
+    && str_contains($sidaG, "          : p('Verkstedet', 'Nettsiden', 'SEO');")
+    && str_contains($sidaG, "          : p('Verkstedet', 'Nettsiden', 'GEO');"));
+// … men beholder sin egen fanerad. Ellers ville Innhold, SEO, GEO,
+// Mobilvisning og Feilmeldinger mistet veien mellom seg.
+sjekk('… og beholder sin egen fanerad',
+    str_contains($sidaG, "      'Nettsiden': [")
+    && str_contains($sidaG, "['← Verkstedet',  'adminoppskrifter', { vstFane: 'oppskrifter' }],"));
+
+// De to som flyttet helt hoerer til Verkstedets egen rad, ikke Nettsidens.
+sjekk('referansekundene og malene hoerer til Verkstedet',
+    str_contains($sidaG, "case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');")
+    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');"));
+// Kortet paa Oversikt skal gaa dit som for. Eieren, 1. september: «jeg vil
+// ha et eget kort paa oversikt som heter maler».
+sjekk('… og kortet paa Oversikt gaar fortsatt til malene',
+    str_contains($sidaG, "'Se malene', () => this.gaaAdmin('adminmaler', {})"));
+sjekk('… og kortet til referansekundene ogsaa',
+    str_contains($sidaG, "() => this.gaaAdmin('adminreferanser', {})"));
+
+// ── Samme vei tilbake paa alle skjermene ───────────────────────────────
+//
+// Eieren, 4. september: «de maa ha samme vei tilbake som alt annet, her er
+// en global loesning paa plass saa endre det».
+//
+// Sju skjermer hoerte til et omraade uten aa tegne fanerada. Eneste vei ut
+// var aa gaa om menyen. Blokka er den samme overalt, og omraadeFaner()
+// bak den er den samme — ingen egen loesning per skjerm.
+sjekk('alle skjermene som hoerer til et omraade tegner fanerada',
+    substr_count($sidaG, '{{ harOmrFaner }}') === 23);
+// Én «sc-if» per «sc-for». Er de ulike, staar det en rad uten vakt foran —
+// eller en vakt uten rad bak.
+sjekk('… med den samme blokka, én rad per vakt',
+    substr_count($sidaG, '{{ harOmrFaner }}')
+        === substr_count($sidaG, '<sc-for list="{{ omrFaner }}"'));
+
+$manglerFane = [];
+foreach (['erAdminReferanser', 'erAdminMaler', 'erAdminFeil', 'erAdminMobilvis',
+          'erAdminFerie', 'erAdminRessurser', 'erAdminVideokurs'] as $skjerm) {
+    $start = strpos($sidaG, '<sc-if value="{{ ' . $skjerm . ' }}"');
+    if ($start === false) { $manglerFane[] = $skjerm . ' (fant ikke skjermen)'; continue; }
+    // Neste skjerm etter denne — fanerada maa staa foer den.
+    $neste = strlen($sidaG);
+    if (preg_match('~<sc-if value="\{\{ erAdmin\w+ \}\}"~', $sidaG, $t, PREG_OFFSET_CAPTURE, $start + 10)) {
+        $neste = $t[0][1];
+    }
+    $bit = substr($sidaG, $start, $neste - $start);
+    if (!str_contains($bit, '{{ harOmrFaner }}')) { $manglerFane[] = $skjerm; }
+}
+sjekk('… og hver enkelt av de sju har den',
+    $manglerFane === [], implode(', ', $manglerFane));
+
+// Videokurs-skjermen hadde sin egen tilbakeknapp fra for. Da rada kom hit,
+// sto det to veier tilbake paa den samme skjermen, med hvert sitt navn — og
+// «Kurs og medlemskap» er et omraadenavn som ikke finnes lenger.
+// Maalt paa bindingen og ikke paa ordet: navnet staar igjen i kommentaren
+// som forklarer hvorfor knappen er borte.
+sjekk('Videokurs har én vei tilbake, ikke to',
+    !str_contains($sidaG, 'onClick="{{ vkTilbake }}"')
+    && !str_contains($sidaG, 'vkTilbake: () =>'));
+// Eieren, 4. september: «videokurs er ikke bygget, og den skal bare ligge
+// der som et tomt kort uten funksjon». Kortet og skjermen sier begge det
+// samme, og skal fortsette aa gjore det.
+sjekk('… og sier fortsatt at ingenting er bygget',
+    str_contains($sidaG, 'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.')
+    && str_contains($sidaG, 'Her skal videokursene ligge. Ingenting er bygget ennå.'));
+
+// ── «Se mer» paa kortene, paa telefonen ────────────────────────────────
+//
+// Eieren, 4. september: «mobil skal vise mindre direkte, men ikke miste
+// funksjon — resten bak Se mer», og «jatakk slik skissen viser paa mobil».
+//
+// Kortet viser tittel, tall og «Se mer» under 760 px. Forklaringslinja og
+// den egne lenketeksten staar som for paa stoerre skjerm.
+sjekk('kortene har «Se mer» paa telefonen',
+    str_contains($sidaG, '.lx-kortmer { display: none; }')
+    && str_contains($sidaG, '    .lx-korthva  { display: none !important; }')
+    && str_contains($sidaG, '    .lx-kortnavn { display: none !important; }')
+    && str_contains($sidaG, '    .lx-kortmer  { display: block !important; }'));
+// 760 px er det samme tallet erSmal() bruker. Ett tall, ett sted — ellers
+// oppfoerer kortene seg annerledes enn resten av admin i et smalt belte.
+sjekk('… paa det samme knekkpunktet som resten av admin',
+    str_contains($sidaG, 'erSmal() { return (this.state.vw || (typeof window !== \'undefined\' ? window.innerWidth : 1200)) <= 760; }')
+    && substr_count($sidaG, "  .lx-kortmer { display: none; }\n  @media (max-width: 760px) {") === 1);
+// Begge kortblokkene: Oversikt og omraadesidene. Sto det bare ett sted,
+// ville halvparten av kortene oppfoert seg annerledes.
+sjekk('… paa begge kortblokkene',
+    substr_count($sidaG, '<p class="lx-korthva"') === 2
+    && substr_count($sidaG, '<span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span>') === 2);
+// Funksjonen skal ikke vaere borte: kortet er den samme knappen, og gaar
+// til det samme stedet. Bare teksten paa det er kortere.
+sjekk('… uten at kortet mister noe',
+    str_contains($sidaG, '<button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">'));
+
+// ── «Forfalt» og «Ikke betalt» ser ikke like ut lenger ─────────────────
+//
+// De to hadde samme farge, rgba(196,90,58,.18). To ulike betydninger saa
+// like ut: den ene er «pengene skulle vaert her», den andre er «pengene er
+// ikke kommet ennaa». Eieren, 4. september: «ja skill fargen».
+//
+// Maalt i nettleseren mot de ekte CSS-variablene: Forfalt 5,25 i kontrast,
+// Ikke betalt 4,48, og de to bakgrunnene skiller seg med 4,48.
+sjekk('«Forfalt» har fylt bakgrunn',
+    str_contains($sidaG, "      forfalt: ['var(--terracotta-600)',  'var(--clay-50)'],"));
+sjekk('… og «Ikke betalt» beholder den lyse',
+    str_contains($sidaG, "      venter:  ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],"));
+// Uten dette kan de to gli sammen igjen den dagen én av dem rettes.
+sjekk('… saa de to ikke er like',
+    !str_contains($sidaG, "      forfalt: ['rgba(196,90,58,.18)',   'var(--terracotta-600)'],"));
+
+// ── Endringsloggen staar sammenslaatt ──────────────────────────────────
+//
+// Den sto som full liste oeverst i ruta. Hos et medlem med litt historie
+// ble det tolv-femten linjer man maatte forbi hver gang for aa komme til
+// det man kom for. Planen: «Endringslogg (12)» som lenke.
+//
+// Maalt i nettleseren: lukket «Endringslogg (4) ▾», aapen «▴» med fire
+// rader mer — 3106 -> 3223 px paa PC, 5576 -> 5788 px paa mobil.
+sjekk('endringsloggen staar som én linje med tallet i',
+    str_contains($sidaG, "personLoggKnapp: 'Endringslogg (' + (((d || {}).logg) || []).length + ')'")
+    && str_contains($sidaG, 'personLoggVeksle: () => this.setState({ personLoggApen: !this.state.personLoggApen }),'));
+// Ruta staar to steder — under Medlemmer og under Deltakere — og deler
+// verdiene. Sto knappen bare ett sted, ville den andre ruta vist en tom
+// blokk der lista pleide aa staa.
+sjekk('… begge stedene ruta staar',
+    substr_count($sidaG, 'onClick="{{ personLoggVeksle }}"') === 2
+    && substr_count($sidaG, '<sc-if value="{{ personLoggApen }}" hint-placeholder-val="{{ false }}">') === 2);
+// Ingenting er borte: det er de samme radene, bak ett trykk.
+sjekk('… og radene er de samme',
+    substr_count($sidaG, '<sc-for list="{{ personLogg }}" as="l" hint-placeholder-count="3">') === 2);
+
+// ── Nettbutikk staar ett sted ──────────────────────────────────────────
+//
+// Butikken sto som fane under Nettsiden fra den gang det var eneste vei
+// dit. Den ble eget menypunkt 4. september, og fanen var da en doer ut av
+// rada den sto i: adminSted() foerer «adminbutikk» til omraadet
+// «Nettbutikk», saa ett trykk byttet hele fanerada.
+sjekk('Nettbutikk staar i hovedmenyen',
+    str_contains($sidaG, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],"));
+sjekk('… og ikke ogsaa som fane under Nettsiden',
+    !str_contains($sidaG, "['Nettbutikk',    'adminbutikk',     { butikkFane: 'Butikken' }],"));
+// Butikkens egen fanerad, og Internbutikken hos medlemmene, staar som for.
+sjekk('… mens butikkens egne faner staar',
+    str_contains($sidaG, "['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],")
+    && str_contains($sidaG, "['Internbutikk',  'adminbutikk',     { butikkFane: 'Medlemssalg' }],")
+    && str_contains($sidaG, "['Internbutikk', 'adminbutikk',      { butikkFane: 'Medlemssalg' }],"));
+
+// ── Punkt 9: Nettbutikk paa telefonen ──────────────────────────────────
+//
+// Skjermen er to spalter: varene til venstre, ordrene til hoeyre. Naar
+// rutenettet faller sammen paa telefonen, kom varene foerst — 4 483 av
+// 5 820 piksler foer man saa en eneste ordre.
+//
+// Maalt: 6,9 -> 2,7 skjermer med lista lukket. PC uendret, 2 524 px foer
+// og etter.
+sjekk('ordrene staar foerst paa telefonen',
+    str_contains($sidaG, '    .lx-butordre { order: 1; }')
+    && str_contains($sidaG, '    .lx-butvarer { order: 3; }'));
+// «order» snur dem i visningen uten aa flytte noe i markupen, saa PC staar
+// noeyaktig som foer.
+sjekk('… uten at markupen er flyttet',
+    strpos($sidaG, 'class="lx-butvarer"') < strpos($sidaG, 'class="lx-butordre"'));
+sjekk('… og varelista staar bak en lenke, bare der',
+    str_contains($sidaG, '  .lx-butvis { display: none; }')
+    && str_contains($sidaG, '    .lx-butvis   { display: block !important; order: 2; }')
+    && str_contains($sidaG, '    .lx-butvarer[data-apen="false"] { display: none !important; }'));
+// Tallet i knappen: man skal se at varene er der uten aa aapne dem.
+sjekk('… med tallet paa varene i knappen',
+    str_contains($sidaG, "butVarerVeksle: () => this.setState({ butVarerApen: !this.state.butVarerApen }),")
+    && str_contains($sidaG, "+ ((this.state.butikkvarer || this.state.adminProdukter || []).length) + ')'"));
+
+// ── Punkt 7: kursskjermen paa telefonen ────────────────────────────────
+//
+// Tre lange lister etter hverandre: ukestripa, «Alle kurs og events» og
+// «Datoer som ligger ute». 8 130 piksler paa en 390 px skjerm — nesten ti
+// skjermer aa dra forbi for aa se om noen har betalt paa morgendagens kurs.
+//
+// Maalt: 9,6 -> 3,0 skjermer. PC uendret, begge listene aapne.
+sjekk('de to lange listene ligger bak hver sin lenke paa telefonen',
+    str_contains($sidaG, '  .lx-listevis { display: none; }')
+    && str_contains($sidaG, '    .lx-listevis { display: block !important; }')
+    && str_contains($sidaG, '    .lx-kursliste[data-apen="false"],')
+    && str_contains($sidaG, '    .lx-datoliste[data-apen="false"] { display: none !important; }'));
+// Ukestripa staar som foer, oeverst: det er den man trenger for aa se dagen.
+sjekk('… mens ukestripa staar aapen',
+    !str_contains($sidaG, '.lx-ukestripe[data-apen'));
+// Navnet og tallet i lenken er de samme som i overskriften inne i boksen.
+// Sto de hver for seg, kunne de sagt hver sitt.
+sjekk('… og lenken sier det samme som overskriften',
+    str_contains($sidaG, "kursListeKnapp: (NAVN[fane] || NAVN.alle) + ' (' + this.kursSokte().length + ')'")
+    && str_contains($sidaG, "datoListeKnapp: (aapentKurs ? 'Datoer for ' + aapentKurs : 'Datoer som ligger ute')"));
+// Én stil paa begge lenkene, saa de ikke driver fra hverandre.
+sjekk('… og begge lenkene deler stil',
+    substr_count($sidaG, 'style="{{ listeKnappStil }}"') === 2
+    && str_contains($sidaG, '      listeKnappStil: {'));
+
+// ── Punkt 6: betalingsstatus i kalenderen ──────────────────────────────
+//
+// Kalenderen viste ingenting om penger. Man maatte aapne okta for aa se om
+// noen skyldte. Planen: kortet skal si det, og hover-kortet skal si hvor
+// mange.
+//
+// Ett regnestykke, flere visninger. Sto det i hver visning, kunne dag-,
+// uke- og listevisningen sagt hver sitt om det samme kurset.
+sjekk('kalenderen regner betalingen ett sted',
+    str_contains($sidaG, '  oktBetaling(deltakere) {')
+    && str_contains($sidaG, "const ubetalt = alle.filter(d => String(d.status || '') !== 'Betalt').length;"));
+// Fargen kommer fra betalingsPille(), saa kalenderen ikke faar sin egen.
+sjekk('… med den samme fargen som pilla ellers',
+    str_contains($sidaG, "const p = this.betalingsPille(ubetalt === 0 ? 'betalt' : 'venter');"));
+// Tre visninger tegner kort: dag, uke og liste. Maalt i nettleseren:
+// «1 ubetalt» i lys terrakotta, «Alle betalt» i groent.
+sjekk('… og pilla staar i dag-, uke- og listevisningen',
+    substr_count($sidaG, '{{ h.harBetaling }}') === 3);
+// Maanedsvisningen har én linje tekst per okt. En pille der ville brutt
+// tettheten eieren ba om 31. august: «pillene ... maa bli mye mindre».
+sjekk('… men ikke i maanedsvisningen, som har én linje per okt',
+    str_contains($sidaG, '<button type="button" id="{{ h.domId }}" onClick="{{ h.velg }}" onMouseDown="{{ h.ned }}" onContextMenu="{{ h.meny }}" style="{{ h.stil }}">{{ h.tekst }}</button>'));
+// Hover-kortet sier hvor mange. Det har «pointer-events: none» og kan ikke
+// trykkes; veien inn i Kassa staar i okta naar den aapnes — «klKasse».
+sjekk('hover-kortet sier hvor mange som ikke har betalt',
+    str_contains($sidaG, '{{ klHover.harBetaling }}')
+    && str_contains($sidaG, "klKasse: () => this.gaaAdmin('adminuttak', {"));
+// En gruppe i listevisningen har ingen egne deltakere. Proppen maa likevel
+// finnes — mangler den, kaster malen og hele skjermen blanker.
+sjekk('… og en gruppe uten deltakere svarer likevel paa proppen',
+    str_contains($sidaG, "harBetaling: false, betalingTekst: '', betalingListeStil: {} }"));
+
+// ── Punkt 10: dagsrapport i Kassa ──────────────────────────────────────
+//
+// Planen: «dagsrapporten leser de samme radene som Kassa — ingen ny
+// datakilde». Den gjor det: «idag» er allerede hentet, og rapporten
+// summerer den.
+sjekk('dagsrapporten leser de samme radene som lista',
+    str_contains($sidaG, '        const rapport = (() => {')
+    && str_contains($sidaG, "const levende = idag.filter(x => x.status !== 'kansellert');")
+    && !str_contains($sidaG, "fetch('/api/admin/dagsoppgjor.php')"));
+// Beloepene leses av tallet, ikke av teksten. Skulle rapporten tolke
+// «kr. 1 410,-» tilbake, ville den vaert avhengig av harde mellomrom.
+sjekk('… og summerer paa tallet, ikke paa teksten',
+    str_contains($utFil, "'sumOre'  => (int) \$o['sum_ore'],")
+    && str_contains($sidaG, 'const ore = (x) => Number(x.sumOre || 0);'));
+// Gjelden er ikke penger i kassa. Legges den til summen, sier rapporten at
+// det ligger mer i skuffen enn det gjor.
+sjekk('… og holder gjelden utenfor summen',
+    str_contains($sidaG, "const betalte = levende.filter(x => x.maate !== 'Ikke betalt');")
+    && str_contains($sidaG, "const gjeld   = levende.filter(x => x.maate === 'Ikke betalt');"));
+// Tallet og summen maa hoere sammen. «4 salg · kr. 950,-» med én ubetalt
+// blant dem leste som at fire salg ga 950 — og det gjorde tre.
+sjekk('… og teller bare de som er gjort opp',
+    str_contains($sidaG, '          utRapAntall: rapport.betalte.length'));
+// Maatene staar slik de forekommer, ikke som en fast liste. Kommer det en
+// maate til, staar den her av seg selv.
+sjekk('… og maatene kommer fra radene, ikke fra en fast liste',
+    str_contains($sidaG, "const m = x.maate || 'Ukjent';")
+    && str_contains($sidaG, 'maater.sort((a2, b2) => b2.ore - a2.ore);'));
+// Annullerte skal ses, men ikke telles.
+sjekk('… og annullerte staar utenfor',
+    str_contains($sidaG, "const annullerte = idag.filter(x => x.status === 'kansellert');")
+    && str_contains($sidaG, '{{ utRapAnnullert }} · ikke med i summen'));
+
+
+// ── Stemplingstestene taaler at klokka er over 23 ──────────────────────
+//
+// «I gaar kl. 10» virker helt til klokka blir 23. Da er stengetida etter
+// den oekta 24 timer og ett minutt gammel, og Stempling::sisteOkt() setter
+// «kanRettes» til usann — rettevinduet er 24 timer. Seks tester gikk roede
+// mellom 23:00 og midnatt uten at noe var galt i produktet.
+//
+// Regnet ut over alle 48 halvtimer i doegnet: gammel seeding roed 1 gang,
+// ny seeding roed 0.
+sjekk('rettingstestene seedes mot siste passerte stengetid',
+    str_contains($sidaEgen = file_get_contents(__FILE__), '$osloKveld = static function (string $kl): string {')
+    && str_contains($sidaEgen, '$stengte = $naa->setTime(23, 0);'));
+// Maalt paa seedingslinja og ikke paa ordet: navnet staar igjen i teksten
+// her, og en test som leser sin egen fil finner da seg selv.
+sjekk('… og ingen oekt seedes lenger med «ett doegn tilbake»',
+    substr_count($sidaEgen, "'inn_tid' => \$osloTilbake(1,") === 0
+    && substr_count($sidaEgen, "'inn_tid' => \$osloKveld(") === 6);
+
+// Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
+// tekst som ligner paa noe riktig.
+if (DB::harKolonne('payments', 'order_id')) {
+    $gOrdrenr = 'D-TESTGRATIS-' . strtoupper(bin2hex(random_bytes(3)));
+    $gBet = DB::settInn('payments', [
+        'vipps_reference' => 'KASSE-' . $gOrdrenr, 'type' => 'manuell',
+        'formal' => 'booking', 'belop_ore' => 0, 'status' => 'betalt',
+        'idempotency_key' => Vipps::uuid(),
+    ]);
+    $gOrdre = DB::settInn('orders', [
+        'ordrenr' => $gOrdrenr, 'kunde_navn' => 'Salg over disk',
+        'sum_ore' => 0, 'status' => 'hentet', 'betalt_maate' => 'Gratis',
+        'payment_id' => $gBet,
+    ]);
+    DB::oppdater('payments', ['order_id' => $gOrdre], ['id' => $gBet]);
+
+    $gRad = DB::en('SELECT o.sum_ore, o.betalt_maate, p.belop_ore, p.status
+                      FROM orders o JOIN payments p ON p.id = o.payment_id
+                     WHERE o.id = :i', ['i' => $gOrdre]);
+    sjekk('et gratissalg staar i lista med null kroner',
+        $gRad !== null && (int) $gRad['sum_ore'] === 0 && (int) $gRad['belop_ore'] === 0
+        && (string) $gRad['betalt_maate'] === 'Gratis' && (string) $gRad['status'] === 'betalt',
+        json_encode($gRad));
+
+    // Dagsoppgjoret deler dagen i Kontant, Vipps og Faktura. «Gratis» er
+    // ingen av dem og normaliseres til Vipps — men den er null kroner, og
+    // legger derfor ingenting til noen kolonne.
+    $gDag = (int) DB::verdi(
+        "SELECT COALESCE(SUM(p.belop_ore - p.refundert_ore), 0)
+           FROM payments p
+          WHERE p.status IN ('betalt', 'delvis_refundert')
+            AND p.id = :i", ['i' => $gBet]);
+    sjekk('… og legger ingenting til i dagens omsetning', $gDag === 0, (string) $gDag);
+
+    DB::kjor('DELETE FROM orders WHERE id = :i', ['i' => $gOrdre]);
+    DB::kjor('DELETE FROM payments WHERE id = :i', ['i' => $gBet]);
+    sjekk('… og testen rydder etter seg',
+        DB::en('SELECT id FROM orders WHERE ordrenr = :n', ['n' => $gOrdrenr]) === null);
+}
 sjekk('gavekortdelen foeres med null i penger og beloepet i gavekort_ore',
     str_contains($utFil, "'belop_ore'       => \$erGavekort ? 0 : \$r['ore'],")
     && str_contains($utFil, "\$felt['gavekort_ore'] = \$r['ore'];"));
@@ -8154,24 +8719,38 @@ if (DB::harKolonne('payments', 'order_id') && DB::harKolonne('gift_cards', 'oppr
     DB::kjor('DELETE FROM gift_cards WHERE id = :i', ['i' => $kortId]);
 }
 
-echo "\n== Kassa viser bare det som ble et salg ==\n";
+echo "\n== Bare det som ble penger, overalt ==\n";
 // Eieren, 4. september, med sitt eget avbrutte Vipps-forsok staaende i
 // kassa: «hvorfor vises avbrutt i kassen? Det er ikke et salg og skal ikke
 // vises noen sted».
 //
-// Lista tok alt som sto i payments. Et forsok som ble avbrutt i Vipps lager
-// ogsaa en rad, og den sto ved siden av dagens salg.
+// Regelen ble lagt i kassa — paa skjermen, og bare der. Samme kveld sto den
+// samme typen rad under Okonomi, som tegner sin egen liste av det samme
+// svaret og filtrerte paa formaal, ikke paa status: «hva i all verden er
+// dette?»
 //
-// Det som teller er det som faktisk ble penger: betalt, og det som er sendt
-// helt eller delvis tilbake etterpaa — en refusjon hoerer til et salg som
-// skjedde. Samme skille dagsoppgjoret over lista gjor.
+// Naa staar regelen paa serveren. Svaret inneholder bare det som faktisk ble
+// penger: betalt, og det som er sendt helt eller delvis tilbake etterpaa — en
+// refusjon hoerer til et salg som skjedde. Begge listene leser det samme.
+$betApi = file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php');
+sjekk('serveren sender bare ut det som ble penger',
+    str_contains($betApi, "WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert')"));
+// En annullert betaling settes til «avbrutt» — se kursbetaling.php — saa den
+// faller ut av det samme filteret, uten en egen regel.
+sjekk('… og en annullert rad faller ut av det samme filteret',
+    !str_contains($betApi, "annullert_at IS NULL"));
 $sidaS = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
-sjekk('kassa teller bare det som ble penger',
-    str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
-    && str_contains($sidaS, 'const ekte = alle.filter(b => PENGER.indexOf(String(b.status || \'\')) !== -1);'));
-// Ogsaa naar man soker. «Skal ikke vises noen sted.»
-sjekk('… ogsaa naar man soker',
-    str_contains($sidaS, 'const treff = ekte.filter(b => {'));
+// Kopien paa skjermen er borte: to lister som skal vaere like er én for mye.
+sjekk('kopien i kassa er borte, saa regelen bare finnes ett sted',
+    !str_contains($sidaS, "const PENGER = ['betalt', 'delvis_refundert', 'refundert'];")
+    && !str_contains($sidaS, 'const ekte = alle.filter(b =>'));
+sjekk('… og kassa leser lista serveren sender',
+    str_contains($sidaS, 'const treff = alle.filter(b => {'));
+// Okonomi filtrerer paa formaal — det er meningen, den skiller medlemmer fra
+// deltakere. Den skal IKKE ha sin egen statusregel; den kommer fra serveren.
+sjekk('… og Okonomi filtrerer bare paa formaal, ikke paa status',
+    str_contains($sidaS, "if (f === 'deltakere') return b.formal === 'booking';")
+    && str_contains($sidaS, "if (f === 'medlemmer') return b.formal === 'medlemskap';"));
 
 echo "\n== En feilført betaling kan angres ==\n";
 // Eieren, 4. september: «jeg klarte aa registrere at hun har betalt paa
@@ -8315,8 +8894,12 @@ sjekk('… og feltet viser hva en hel periode koster',
     str_contains($sidaP, 'personBetalingHint: p.pris'));
 // Boksen skal ikke staa aapen med forrige persons beloep naar en annen
 // aapnes.
+// Boksen skal ikke staa aapen med forrige persons beloep. Fra 4. september
+// kan den aapnes med vilje — pilla i medlemslista kaller apnePerson() med
+// «medBetaling» — men alle andre veier inn lukker den.
 sjekk('… og boksen nullstilles naar en annen person aapnes',
-    str_contains($sidaP, "personBetalingApen: false, personBetalingBelop: '',"));
+    str_contains($sidaP, "personBetalingApen: !!medBetaling, personBetalingBelop: '',")
+    && substr_count($sidaP, 'apnePerson(m.id, 0, true)') === 1);
 
 $medApiB = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
 // Ikke en hake: raden er en ekte betaling, med formaal «medlemskap», saa den
@@ -8333,6 +8916,350 @@ sjekk('… og maaten lagres paa raden',
 sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
+
+echo "\n== Én betalingspille, og den er klikkbar ==\n";
+// Eieren, 4. september: «Under Kurs og deltakere fungerer ikke pillen
+// Betalt som en klikkbar pille. Jeg faar derfor ikke anledning til aa aapne
+// eller endre betalingsinformasjonen.»
+//
+// Han hadde rett: den var en Badge, uten klikk og uten pekefinger, mens
+// handlingen laa i en tekstlenke lenger ute paa raden. Maalt i nettleseren
+// for endringen: «cursor: auto», ingen klikkbar forelder.
+$sidaP3 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// ── Ett sted for ordet og fargen ──────────────────────────────────────
+//
+// Kartet sto to ganger med akkurat samme innhold: én gang i medlemslista og
+// én gang i personruta. To kopier driver fra hverandre den dagen én rettes.
+sjekk('betalingspilla har ett sted aa bo',
+    str_contains($sidaP3, '  betalingsPille(tilstand, somKnapp) {')
+    && str_contains($sidaP3, "const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+sjekk('… og medlemslista leser den',
+    str_contains($sidaP3, 'betalingMerke: this.betalingsPille(m.betaling).merke,')
+    && str_contains($sidaP3, "betalingStil: this.betalingsPille(m.betaling, m.betaling !== 'fri').stil,"));
+sjekk('… og personruta leser den samme',
+    str_contains($sidaP3, 'personBetalingMerke: this.betalingsPille(p.betaling).merke,')
+    && str_contains($sidaP3, 'personBetalingStil: this.betalingsPille(p.betaling, true).stil,'));
+// Kopiene skal vaere borte, ikke bare erstattet ett sted.
+sjekk('… og ingen av kopiene staar igjen',
+    substr_count($sidaP3, "fri:     ['rgba(120,120,120,.16)', 'var(--text-muted)'],") === 1);
+
+// ── Pilla paa Paameldte er en knapp ───────────────────────────────────
+sjekk('pilla under Kurs og deltakere er en knapp',
+    str_contains($sidaP3, '<button type="button" onClick="{{ p.betaling }}" title="Åpne betalingen" style="{{ p.betalingStil }}">{{ p.status }}</button>'));
+// Badgen skal vaere borte FRA PAAMELDTE. Den staar fortsatt paa Min side og
+// paa Vipps-skjermen, og de er ikke denne lista — en for bred paastand her
+// ville sagt at noe var galt der det er helt i orden.
+$pamBlokk = substr($sidaP3, (int) strpos($sidaP3, '{{ erAdminPameldte }}'));
+$pamBlokk = substr($pamBlokk, 0, (int) strpos($pamBlokk, '{{ erAdminKursdeltakere }}'));
+sjekk('… og etiketten uten klikk er borte derfra',
+    !str_contains($pamBlokk, 'Badge" tone="{{ p.tone }}"')
+    && str_contains($pamBlokk, 'title="Åpne betalingen"'));
+// Samme kall som tekstlenka. Ingen ny betalingslosning.
+sjekk('… og den aapner det panelet som fantes fra for',
+    substr_count($sidaP3, 'onClick="{{ p.betaling }}"') === 2);
+// Lenka staar som for — den som er vant til den veien skal ikke laere noe nytt.
+sjekk('… mens «Betaling»-lenka staar som for',
+    str_contains($sidaP3, '>Betaling</button>'));
+// Serveren sier «Betalt» eller «Ubetalt», med « · 3 plasser» paa toppen naar
+// det er flere. Teksten skal staa som den er — bare formen kommer fra pilla.
+sjekk('… og teksten fra serveren staar urort, med plassene',
+    str_contains($sidaP3, "/^Betalt/.test(String(p.status || '')) ? 'betalt' : 'venter', true).stil,"));
+
+// Kassa sitt statuskart er et ANNET begrep: hvordan det gikk med én
+// betalingsrad. Det skal ikke slaas sammen med dette.
+sjekk('kassas statuskart er ikke slaatt sammen med pilla',
+    str_contains($sidaP3, 'const STATUSTEKST = {')
+    && str_contains($sidaP3, "MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+// Kartet daekker hele «payments.status». Manglet én, viste skjermen det rene
+// kolonnenavnet. «autorisert» manglet til 4. september.
+$enumStatus = ['opprettet', 'venter', 'autorisert', 'betalt', 'avbrutt',
+               'feilet', 'refundert', 'delvis_refundert'];
+$utenOrd = [];
+$kartFra = strpos($sidaP3, 'const STATUSTEKST = {');
+$kartet  = substr($sidaP3, $kartFra, 420);
+foreach ($enumStatus as $st) {
+    if (!str_contains($kartet, $st . ':')) { $utenOrd[] = $st; }
+}
+sjekk('… og har et ord for hver status i basen',
+    $utenOrd === [], implode(', ', $utenOrd));
+
+echo "\n== Færre betalingsmåter å velge i ==\n";
+// Eieren, 4. september: «du kan droppe faktura og bankoverforing».
+//
+// Lista sto med fem valg paa kurs, to i kassa og to paa medlemskap. Naa er
+// det tre paa kurs, og ordet for Vipps er det samme alle tre stedene.
+$bookLib = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+sjekk('kurs tilbyr tre maater, ikke fem',
+    str_contains($bookLib, "public const MAATER = ['Kontant', 'Vipps', 'Gratis'];"));
+sjekk('… og «Vipps i verkstedet» heter «Vipps», som i kassa',
+    !str_contains($bookLib, "'Vipps i verkstedet', 'Faktura'"));
+
+// ── Det som alt er foert staar urort ──────────────────────────────────
+//
+// Aa slutte aa tilby en maate er ikke det samme som aa slette den.
+$pamLib = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+sjekk('gamle rader beholder maaten sin',
+    str_contains($pamLib, "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];")
+    && str_contains($pamLib, "'Vipps i verkstedet'"));
+// Dagsoppgjoret maa fortsatt kunne foere et gammelt fakturabilag.
+$dagLib = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+sjekk('… og dagsoppgjoret har fortsatt en motkonto for Faktura',
+    str_contains($dagLib, "'Faktura'  => 'regnskap_motkonto_faktura',")
+    && str_contains($dagLib, "if (\$m === 'Faktura') {"));
+// «Gratis» er null kroner, saa den forstyrrer ikke delingen mellom Kontant
+// og Vipps i dagsoppgjoret — den legger null til Vipps-kolonnen.
+$kbLib = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+sjekk('«Gratis» er null kroner, og forstyrrer ingen kolonne',
+    str_contains($kbLib, "if (\$maate === 'Gratis') {\n            \$belop = 0;"));
+
+echo "\n== Pilla i medlemslista er klikkbar ==\n";
+// Eieren, 4. september: «jeg vil ha den klikkbar som jeg ber om».
+//
+// Den sto som en etikett i lista og som en knapp i personruta — samme
+// pille, samme farge, men den virket bare det ene stedet.
+$sidaM2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('pilla i medlemslista er en knapp',
+    str_contains($sidaM2, '<button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>'));
+// Ingen ny betalingsboks i lista. Det ville staatt to av dem, og de kunne
+// svart hver sitt. Pilla aapner personen med den boksen som finnes.
+sjekk('… og den aapner boksen som finnes, ikke en ny',
+    str_contains($sidaM2, 'this.apnePerson(m.id, 0, true);')
+    && str_contains($sidaM2, 'apnePerson(id, bookingId, medBetaling) {')
+    && str_contains($sidaM2, "personBetalingApen: !!medBetaling, personBetalingBelop: '',"));
+// De andre veiene inn skal ikke aapne boksen. De kaller med to argumenter,
+// og da er «medBetaling» udefinert.
+sjekk('… og de andre veiene inn aapner den ikke',
+    substr_count($sidaM2, 'apnePerson(m.id, 0, true)') === 1);
+
+// Et gratismedlem har ingenting aa registrere. Da staar pilla som en
+// etikett — den skal ikke love en handling som ikke finnes.
+sjekk('et gratismedlem har ingen knapp',
+    str_contains($sidaM2, "kanRegistrere: m.betaling !== 'fri' && m.betaling !== 'ingen',")
+    && str_contains($sidaM2, "kanIkkeRegistrere: m.betaling === 'fri' || m.betaling === 'ingen',")
+    && str_contains($sidaM2, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
+// Begge greinene maa finnes som verdier. Mangler én, tegnes hele skjermen
+// som «{{ }}».
+sjekk('… og begge greinene har en verdi aa lese',
+    substr_count($sidaM2, '{{ m.kanRegistrere }}') === 1
+    && substr_count($sidaM2, '{{ m.kanIkkeRegistrere }}') === 1);
+
+// Pilla alene registrerer ingenting. Det andre trykket — Kontant eller
+// Vipps — er det som foerer pengene.
+sjekk('pilla alene foerer ingen penger',
+    str_contains($sidaM2, "personBetalingMaater: ['Kontant', 'Vipps'].map(m => ({"));
+
+echo "\n== «Butikk» heter «Nettbutikk» i admin ==\n";
+// Eieren, 4. september: «Endre navnet Butikk til Nettbutikk i hele
+// adminsystemet. Endringen skal gjelde menyer, overskrifter, lenker og
+// relevante visninger.»
+//
+// Bare i admin. Kundene har en butikk, og den heter «Butikk» paa nettsida —
+// i menyen, i tittelen og i adressen. Den er ikke rort.
+$sidaN2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+sjekk('menypunktet heter Nettbutikk',
+    str_contains($sidaN2, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],")
+    && !str_contains($sidaN2, "['Butikk',    'adminbutikk', { butikkFane: 'Butikken' }],"));
+// Fanerekka slaas opp med menynavnet. Dopes menypunktet om uten denne,
+// forsvinner «Butikken» og «Internbutikk» fra skjermen.
+sjekk('… og fanerekka foelger med, ellers forsvinner fanene',
+    str_contains($sidaN2, "      'Nettbutikk': [\n        ['Butikken',      'adminbutikk',     { butikkFane: 'Butikken' }],")
+    && !str_contains($sidaN2, "      'Butikk': [\n        ['Butikken',"));
+sjekk('… og skjermen sier hvor man staar',
+    str_contains($sidaN2, "? p('Nettbutikk', 'Nettbutikk', 'Internbutikk')")
+    && str_contains($sidaN2, ": p('Nettbutikk', 'Nettbutikk', 'Butikken');"));
+sjekk('… og overskrifta paa skjermen',
+    str_contains($sidaN2, "butikkTittel: this.state.butikkFane === 'Medlemssalg' ? 'Internbutikk' : 'Nettbutikk',"));
+sjekk('… og kortet paa Oversikt',
+    str_contains($sidaN2, "kort('Nettbutikk',"));
+
+// Bunnmenyen skriver ikke navnet av — den henter det. Da er dette beviset
+// paa at avledningen virker, ikke bare paastanden om det.
+$kortBlokk = substr($sidaN2, (int) strpos($sidaN2, '    const KORT = {'));
+$kortBlokk = substr($kortBlokk, 0, (int) strpos($kortBlokk, '    };'));
+sjekk('bunnmenyen faar det nye navnet uten aa bli rort',
+    // Kortnavnkartet doper ikke om noe — det forkorter. Navnet kommer fra
+    // ADMIN_MENY, saa byttet der slaar gjennom av seg selv.
+    !str_contains($kortBlokk, "'Butikk': 'Nettbutikk',")
+    && str_contains($kortBlokk, "'Nettbutikk': 'Nettbutikk',")
+    && str_contains($sidaN2, 'const rad = meny.find(([n]) => n === navn);'),
+    trim(str_replace("\n", ' ', $kortBlokk)));
+
+// Rekkefolgen paa kortene ligger lagret som navn. Uten dette legger kortet
+// seg bakerst hos den som alt har dratt det paa plass — samme grunn som
+// «Uttak butikk» → «Kasse» staar der.
+sjekk('den lagrede kortrekkefolgen finner kortet igjen',
+    str_contains($sidaN2, "'Butikk': 'Nettbutikk',\n                            'Ny registrering': 'Meld noen på' };"));
+
+// ── Kundenes butikk er ikke rort ──────────────────────────────────────
+sjekk('kundemenyen sier fortsatt «Butikk»',
+    str_contains($sidaN2, "['butikk', 'Butikk'], ['omoss', 'Om oss'],"));
+sjekk('… og adressa er den samme',
+    str_contains($sidaN2, "{ sti: '/butikk',"));
+// Tittelen i Google er delt og indeksert. Den skal ikke endres av en
+// navneendring inne i admin.
+sjekk('… og sidetittelen i soek staar urort',
+    str_contains($sidaN2, "'Butikk': ['Håndlaget keramikk"));
+
+// Regnskapskategorien for ordrer heter «Butikk» baade her og i PHP-en, og
+// gaar i CSV-en til regnskapsforeren. Den er ikke en meny eller en
+// overskrift, og er ikke rort — se funnet i rapporten.
+sjekk('regnskapskategorien er ikke dopt om',
+    str_contains($sidaN2, "ordre: 'Butikk', medlemskap: 'Medlemskap',")
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/okonomi.php'), "'ordre'      => 'Butikk',"));
+
+echo "\n== Bunnmeny på telefon, seks valg ==\n";
+// Eieren, 4. september, valgte alternativ A av de to skissene: seks synlige
+// valg, ikon og tekst sammen, ingen «Mer».
+//
+// Skuffen («Meny») staar som for — den har alle ti stedene med
+// underpunktene sine. Bunnmenyen er de seks man er i hele dagen, ett trykk
+// unna, og den aapner de samme hovedsidene: ingen forenklede kopier.
+$sidaB = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Menyen staar i hver adminskjerm, som logoen og stemplingspillene.
+$logoerB = substr_count($sidaB, 'onClick="{{ adminHjem }}" title="Til oversikten"');
+sjekk('bunnmenyen staar i alle adminskjermene',
+    substr_count($sidaB, 'class="lx-bunnmeny"') === $logoerB, $logoerB . ' skjermer');
+sjekk('… med seks valg i hver',
+    substr_count($sidaB, '{{ bmKalender.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmOversikt.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmKurs.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmMarked.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmButikk.velg }}') === $logoerB
+    && substr_count($sidaB, '{{ bmKasse.velg }}') === $logoerB);
+// «Ikon og tekst skal alltid brukes sammen.»
+sjekk('… og hvert valg har baade ikon og tekst',
+    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6
+    && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6);
+
+// Rutene skrives ikke av. Doper vi om «Butikk», folger bunnmenyen med.
+sjekk('navn og ruter hentes fra ADMIN_MENY',
+    str_contains($sidaB, 'const meny = Component.ADMIN_MENY;')
+    && str_contains($sidaB, 'const rad = meny.find(([n]) => n === navn);'));
+
+// Kassa maatte spoerre om selve skjermen saa lenge den ikke var et menypunkt:
+// adminSted() foerte «adminuttak» til Oversikt, og da lyste Oversikt mens man
+// sto i kassa — to valg sa hver sin sannhet om hvor man var. Fra 4. september
+// er Kasse et sted som de andre, og regelen er den samme for alle seks.
+sjekk('Kassa lyser naar man staar i kassa, ikke Oversikt',
+    str_contains($sidaB, "case 'adminuttak':         return p('Kasse');")
+    && str_contains($sidaB, '      const paa = sted.meny === menynavn;')
+    && str_contains($sidaB, "kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),")
+    && !str_contains($sidaB, "const iKassa = this.state.side === 'adminuttak';"));
+
+// Menyen ligger fast mot bunnen. Da maa innholdet ha plass under seg, ellers
+// dekker den den nederste knappen paa hver skjerm.
+sjekk('innholdet har plass under menyen',
+    str_contains($sidaB, '.lx-adminaside + main {')
+    && str_contains($sidaB, 'padding-bottom: calc(58px + 18px + env(safe-area-inset-bottom, 0px)) !important;'));
+// Hjemknappen paa iPhone ligger nederst paa skjermen.
+sjekk('… og det er satt av plass til hjemknappen paa iPhone',
+    str_contains($sidaB, "paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',"));
+
+// Bare paa telefon. Paa PC er sidemenyen der.
+sjekk('menyen staar bare paa smal skjerm',
+    str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny { display: none !important; }')
+    && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
+
+// Regelen som skjuler sidemenyens egen meny paa telefon gjaldt ALLE
+// nav-elementer i sidemenyen, og tok bunnmenyen med seg — den er ogsaa en
+// nav, og har hoyere spesifisitet aa slaa.
+sjekk('regelen som skjuler sidemenyen tar ikke bunnmenyen med seg',
+    str_contains($sidaB, '.lx-adminaside > nav:not(.lx-bunnmeny) { display: none !important; }')
+    && !str_contains($sidaB, '.lx-adminaside nav { display: none !important; }'));
+
+// Ikonene tegnes her, ikke hentes. Designsystemets Icon-komponent la hele
+// dokumenthodet inn i knappen naar navnet ikke fantes i settet — samme feil
+// som «rotate-ccw» ga paa en Button 4. september.
+sjekk('ikonene er egne, ikke hentet fra et navneoppslag',
+    !str_contains($sidaB, 'LissomDesignSystem_8402ac.Icon" name="calendar"')
+    && !str_contains($sidaB, 'LissomDesignSystem_8402ac.Icon" name="credit-card"'));
+
+echo "\n== Stemple inn og Ferie står under logoen, overalt ==\n";
+// Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+// tilgjengelige under logoen uansett hvilken side jeg er inne paa».
+//
+// De laa i adminmenyen til 30. august, ble flyttet til Oversikt paa
+// bestilling, og sto der alene. Sto du i Kalenderen og skulle stemple ut,
+// maatte du innom Oversikt for aa finne knappen.
+//
+// Spurt om stripa paa Oversikt skulle bli staaende i tillegg: «nei».
+$sidaP2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Sidemenyen staar i hver eneste adminskjerm. Tallet er ikke poenget —
+// poenget er at pillene staar like mange steder som logoen gjor, saa ingen
+// skjerm er glemt.
+$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til oversikten"');
+$stempler = substr_count($sidaP2, '{{ admStemplingStil }}');
+sjekk('pillene staar like mange steder som logoen',
+    $logoer > 20 && $stempler === $logoer, $logoer . ' logoer, ' . $stempler . ' pillepar');
+sjekk('… og de staar rett etter logoen, ikke et vilkaarlig sted',
+    substr_count($sidaP2,
+        '</button>' . "\n" . '        <!-- Stemple inn og Ferie, rett under logoen.') === $logoer);
+
+// Ingen ny losning. Det er de samme pillene som sto paa Oversikt.
+sjekk('pillene kommer fra stemplingPiller(), ikke fra noe nytt',
+    str_contains($sidaP2, 'const st = this.stemplingPiller();')
+    && str_contains($sidaP2, 'admStempNavn: st.stempleNavn,')
+    && str_contains($sidaP2, 'admFerieVelg: st.ferieVelg,'));
+// Ferie skal aapne skjermen som finnes, ikke en ny.
+sjekk('… og Ferie aapner den eksisterende ferieskjermen',
+    str_contains($sidaP2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),"));
+
+// Verdiene maa staa paa toppnivaa. Markupen finnes i alle adminskjermene,
+// og en verdi som mangler ett sted tegner hele skjermen som «{{ }}».
+$foerAdminHjem = substr($sidaP2, 0, (int) strpos($sidaP2, 'admStemplingStil:'));
+sjekk('verdiene staar paa toppnivaa, ikke bak en side-sjekk',
+    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
+
+// Stripa paa Oversikt er borte — bade markupen og verdiene den brukte.
+sjekk('stripa paa Oversikt er borte',
+    !str_contains($sidaP2, '{{ ovStempNavn }}')
+    && !str_contains($sidaP2, '{{ ovFerieNavn }}'));
+sjekk('… og verdiene den brukte staar ikke igjen som doed kode',
+    !str_contains($sidaP2, 'ovStempStatus:')
+    && !str_contains($sidaP2, 'ovFerieStil: st.ferieStil,'));
+
+// Paa en telefon er sidemenyen en stripe paa tvers. Pillene maa krympe, og
+// stripa maa kunne brekke — ellers dyttes «Meny» ut av skjermen.
+sjekk('pillene krymper paa smal skjerm',
+    str_contains($sidaP2, "const smal = (this.state.vw || 1400) < 980;")
+    && str_contains($sidaP2, "admStempStil: smal ? kompakt(st.stempleStil) : st.stempleStil,"));
+sjekk('… og stripa kan brekke til ny linje',
+    str_contains($sidaP2, "? { display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }"));
+
+echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
+// Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg
+// klikke paa logoen min og komme tilbake til forsiden».
+//
+// Innloggingsskjermen fyller hele skjermen og har ingen meny. Logoen var det
+// eneste som saa ut som en vei tilbake, og den var et bilde — ingenting
+// skjedde naar man trykket. Adminpanelet har hatt den samme knappen hele
+// tida (se «adminHjem»); her sto den ikke.
+$sidaL = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('logoen paa innloggingsskjermen er en knapp',
+    str_contains($sidaL, '<button type="button" onClick="{{ goForside }}" title="Til forsiden"'));
+sjekk('… og den gaar til forsida',
+    str_contains($sidaL, "goForside: this.go('forside'),"));
+// Skjermlesere leser «alt». «lissom» alene sier ikke at det gaar an aa
+// trykke, eller hvor man havner.
+sjekk('… og den sier hvor den foerer',
+    str_contains($sidaL, 'alt="lissom — til forsiden"'));
+// Skjermen staar tre steder: /logg-inn, /admin/logg-inn, og /min-side naar
+// man ikke er innlogget. Alle tre er den samme markupen — sjekken her er at
+// den fortsatt er det, saa knappen ikke bare virker ett av stedene.
+sjekk('… og skjermen er den samme paa alle tre adressene',
+    str_contains($sidaL, "erLogin: side === 'login' || side === 'adminlogin'")
+    && str_contains($sidaL, "(side === 'minside' && this.erPublisert() && !this.state.innlogget),")
+    // Én markup, ett sted. Sto knappen i to kopier, kunne de drive fra
+    // hverandre — og da virker den ett sted og ikke det andre.
+    && substr_count($sidaL, 'onClick="{{ goForside }}" title="Til forsiden"') === 1);
+// Bildet skal ikke ligge igjen som et bilde uten knapp.
+sjekk('… og det gamle bildet uten knapp er borte',
+    !str_contains($sidaL, '<img src="logo-lockup.svg" alt="lissom" style="height: 72px; align-self: flex-start; position: relative;"'));
 
 echo "\n== Begynne på nytt med den samme personen ==\n";
 // Eieren, 4. september, om Eirin: «hun staar to ganger», «ingen ting er
@@ -8821,10 +9748,12 @@ sjekk('betalingsstatusen for medlemmene regnes ett sted',
 sjekk('… og telleren leser den',
     str_contains($ovFil, "'ubetalte'    => \$medlemsstatus['ubetalte'],"));
 sjekk('… og kortet leser de samme radene',
-    str_contains($ovFil, "}, \$medlemsstatus['rader'])),"));
-// Uten dette staar kursplassene alene i kortet, som for.
-sjekk('kortet slaar sammen kursplasser og medlemskap',
-    str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
+    str_contains($ovFil, "}, \$medlemsstatus['rader']), array_map(static function (array \$o): array {"));
+// Uten dette staar kursplassene alene i kortet, som for. Butikken kom
+// 4. september som den tredje kilden.
+sjekk('kortet slaar sammen kursplasser, medlemskap og butikk',
+    str_contains($ovFil, "'ubetalte' => array_merge(array_map(")
+    && substr_count($ovFil, 'array_map(static function') >= 3);
 // Skjermen maa vite hvilket slag raden er: de to gjores opp hvert sitt sted.
 sjekk('radene sier hvilket slag de er',
     str_contains($ovFil, "'slag'    => 'booking',")
@@ -9362,7 +10291,7 @@ sjekk('… og reserveknappen er vaar egen, uten etterlignet logo',
 // Den ene gjenstaaende #FF5B24-flata er designverktoyets simulering, som
 // aldri kjorer paa lissom.no: den staar bak erPublisert() === false.
 sjekk('simuleringen med Vipps-farge kjorer bare i forhaandsvisningen',
-    str_contains($sidaB, "if (this.erPublisert()) {\n          window.location.href = '/api/vipps-login.php?retur='"));
+    str_contains($sidaB, "if (this.erPublisert()) {\n          this.sendTilInnlogging(this.naaSti(), '');"));
 
 // «Betal i verkstedet» har ingen «disabled»-grein, men en som venter.
 sjekk('«Betal i verkstedet» viser Vipps sin ventetilstand',
@@ -9375,8 +10304,11 @@ sjekk('«Betal i verkstedet» viser Vipps sin ventetilstand',
 // den alene, forsvant summen fra stedet man trykker. Eieren, 3. september:
 // prisen skal staa rett over knappen.
 sjekk('summen staar over knappen paa kurs',
-    str_contains($sidaB, "bookBetalLinje: 'Du betaler ' + this.bookSum(),")
+    str_contains($sidaB, "        : 'Du betaler ' + this.bookSum(),")
     && str_contains($sidaB, '{{ bookBetalLinje }}'));
+// Er du ikke innlogget, betaler du ikke enda — da sier linja det i stedet.
+sjekk('… og sier fra naar du maa logge inn forst',
+    str_contains($sidaB, "? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()"));
 sjekk('… og paa medlemskap',
     str_contains($sidaB, "medlemsBetalLinje: pl.pris")
     && str_contains($sidaB, '{{ medlemsBetalLinje }}'));
@@ -9385,10 +10317,14 @@ sjekk('… og paa medlemskap',
 sjekk('… men ikke i kassa, som alt viser «Å betale»',
     str_contains($sidaB, '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">{{ kurvSum }}</span>'));
 // Knappeteksten og prislinja maa lese det samme tallet.
+// Tre treff naa, ikke to: prislinja har faatt en gren til, for den som ikke
+// er innlogget. Alle tre leser den samme bookSum(), saa tallet er ett.
+// Knappen viser ikke summen naar du er utlogget — da staar den i linja rett
+// over, sammen med at du maa logge inn forst.
 sjekk('summen regnes ett sted',
     str_contains($sidaB, '  bookSum() {')
-    && str_contains($sidaB, "bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
-    && substr_count($sidaB, 'this.bookSum()') === 2);
+    && str_contains($sidaB, "        : ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
+    && substr_count($sidaB, 'this.bookSum()') === 3);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
@@ -9416,6 +10352,722 @@ sjekk('alle PHP-filene lar seg lese',
     count($phpFiler) . ' filer' . ($ulesbare ? ' — ' . implode(' | ', array_slice($ulesbare, 0, 3)) : ''));
 // En tom liste ville gitt gronn uten aa ha sjekket noe.
 sjekk('… og det er faktisk filer aa sjekke', count($phpFiler) > 50, count($phpFiler) . ' filer');
+
+// ── Kursruta i kalenderen aapner midt paa skjermen ──────────────────────
+//
+// Ruta laa ved musepekeren. Trykket eieren paa et kort langt nede eller
+// ute til hoeyre, aapnet ruta der — utenfor skjermen. Meldt 31. august,
+// 1. september og 4. september (med bilde av ruta i hoeyre hjoerne):
+// «kan du bekrefte at sant ikke skjer igjen? at alt aapnes midt paa
+// skjermen». Naa staar den sentrert som de andre rutene. Denne sjekken
+// er der for at den ikke skal gli tilbake til pekeren.
+$sidaR = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+// Kommentarene forteller HVORFOR pekeren er tatt bort, og navngir det som er
+// fjernet. Leser sjekken hele fila, finner den sine egne ord igjen og blir
+// gronn av feil grunn. Derfor maales koden uten kommentarer.
+$kodeR = preg_replace('/<!--.*?-->/s', '', $sidaR);
+$kodeR = preg_replace('/^\s*\/\/.*$/m', '', (string) $kodeR);
+$stilR = '';
+if (preg_match('/klKursRedStil:\s*\{(.*?)\n\s*\},/s', $sidaR, $m)) { $stilR = $m[1]; }
+sjekk('kursruta i kalenderen har en stil aa maale',
+    $stilR !== '', strlen($stilR) . ' tegn');
+sjekk('kursruta staar midt paa skjermen',
+    str_contains($stilR, "left: '50%'")
+    && str_contains($stilR, "top: '50%'")
+    && str_contains($stilR, "translate(-50%, -50%)"),
+    'left/top 50% + translate');
+sjekk('kursruta plasseres ikke lenger etter musepekeren',
+    !str_contains((string) $kodeR, 'klKursRedPos'),
+    'klKursRedPos er borte');
+sjekk('kursruta holder seg innenfor kanten paa smale skjermer',
+    str_contains($stilR, "calc(100vw - 24px)") && str_contains($stilR, "maxHeight: '86vh'"),
+    'bredde og hoeyde er klemt til vinduet');
+
+// ── Ingen rute plasseres etter musepekeren ──────────────────────────────
+//
+// Det samme fantes globalt: «topNaa()» leste av y-en til klikket, og seks
+// ruter ble satt der — handlekurven, Vipps-ruta, kontaktskjemaet,
+// bedriftsskjemaet, «Ny dato» og «Nytt kurs». Klikket man langt nede,
+// aapnet ruta seg nede, og bunnen havnet under skjermkanten. Maalt i
+// nettleseren for rettingen: handlekurven stakk 144 px under kanten paa
+// 390 px og 132 px under paa 1440 px. Naa staar alle midt paa skjermen.
+sjekk('det er faktisk kode aa maale etter at kommentarene er strippet',
+    strlen((string) $kodeR) > 500000, strlen((string) $kodeR) . ' tegn');
+sjekk('«topNaa()» er borte fra sida',
+    !str_contains((string) $kodeR, 'topNaa('), 'ingen treff');
+sjekk('musepekeren leses ikke av lenger',
+    !str_contains((string) $kodeR, '_klikkY'), '_klikkY er borte');
+foreach (['popupTop', 'fsTop', 'ktTop', 'nkTop', 'ndTop', 'toastTop'] as $felt) {
+    sjekk('feltet ' . $felt . ' er ute av sida',
+        !str_contains((string) $kodeR, $felt), 'ingen treff');
+}
+sjekk('handlekurven staar midt paa skjermen',
+    (bool) preg_match('/stoppKurvTimer[^>]*position: fixed; left: 50%; top: 50%; transform: translate\(-50%, -50%\)/', $sidaR),
+    'fixed + translate(-50%, -50%)');
+sjekk('Vipps-ruta staar midt paa skjermen',
+    substr_count($sidaR, 'position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 86vh') === 2,
+    'begge de to rutene');
+sjekk('de fire skjemarutene sentreres av «margin: auto 0»',
+    substr_count($sidaR, 'margin: auto 0;') === 4,
+    'fire ruter');
+
+// ── Ingen skal falle ut uten beskjed ────────────────────────────────────
+//
+// 4. september: en ny kunde bestilte et kurs paa nett. Hun fikk ingen
+// feilmelding, ble ikke trukket i Vipps, og sto aldri i lista.
+//
+// Veien var denne: «Book plass» booker ikke naar du ikke er innlogget — den
+// sender deg til Vipps-innlogging, med et bart window.location.href og uten
+// et ord om hvorfor. Gaar innloggingen galt, sender vipps-callback.php deg
+// til forsida med «?innlogging=feilet». Ingen leste den parameteren. Da sto
+// det ingenting noe sted, og api/book.php var aldri kalt — derfor finnes det
+// heller ingen rad aa finne igjen.
+//
+// Maalt i nettleseren, utlogget:
+//   /?innlogging=feilet   for: forsida, ingen beskjed
+//                       etter: «Innloggingen gikk ikke» med rod ring
+//   /?innlogging=avbrutt  for: forsida, ingen beskjed
+//                       etter: «Innloggingen ble avbrutt» med rod ring
+//   /kurs/nybegynner-dreiekurs
+//                         for: «Book plass · kr. 2 800,-»
+//                       etter: «Logg inn med Vipps for aa melde deg paa»
+//   vanlig beskjed (gavekort, feil e-post): ingen ring, gronn tone som for
+$sidaI = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kodeI = (string) preg_replace('/<!--.*?-->/s', '', $sidaI);
+$kodeI = (string) preg_replace('/^\s*\/\/.*$/m', '', $kodeI);
+
+sjekk('det er kode aa maale i innloggingssjekkene',
+    strlen($kodeI) > 500000, strlen($kodeI) . ' tegn');
+// Én vei til innlogging, ikke fem spredte hopp.
+sjekk('alle veier til Vipps-innlogging gaar gjennom én metode',
+    substr_count($kodeI, "window.location.href = '/api/vipps-login.php") === 1
+    && str_contains($kodeI, 'sendTilInnlogging(retur, hva) {'),
+    'ett hopp, i sendTilInnlogging()');
+// Fem var det da den ble laget; skjermen bak QR-koden ved doera kom som den
+// sjette, og bruker den samme veien.
+sjekk('… og alle stedene bruker den',
+    substr_count($kodeI, 'this.sendTilInnlogging(') === 6,
+    substr_count($kodeI, 'this.sendTilInnlogging(') . ' kall');
+// Grunnen legges igjen, saa beskjeden kan si hva som IKKE ble gjort.
+foreach ([
+    'Du ble ikke meldt på kurset.',
+    'Gavekortet ble ikke kjøpt.',
+    'Bestillingen ble ikke sendt.',
+    'Medlemskapet ble ikke opprettet.',
+] as $grunn) {
+    sjekk('grunnen «' . $grunn . '» tas vare paa',
+        str_contains($kodeI, "'" . $grunn . "'"), 'staar i et kall');
+}
+sjekk('grunnen lagres og hentes fra samme noekkel',
+    substr_count($kodeI, 'lissom_innlogging_grunn') === 4,
+    'skriv, slett-naar-tom, les og rydd');
+// Parameteren fra vipps-callback.php leses naa.
+sjekk('«?innlogging=feilet» leses av sida',
+    str_contains($kodeI, "window.location.search.match(/[?&]innlogging=([a-z]+)/)"),
+    'parameteren plukkes ut');
+sjekk('… og gir en beskjed med feiltone',
+    str_contains($kodeI, "kvitteringTone: 'danger',")
+    && str_contains($kodeI, "'Innloggingen gikk ikke'")
+    && str_contains($kodeI, "'Innloggingen ble avbrutt'"),
+    'begge utfallene');
+sjekk('… og blir ikke staaende i adressen etterpaa',
+    str_contains($kodeI, "replace(/([?&])innlogging=[a-z]+&?/, '\$1')"),
+    'parameteren fjernes');
+sjekk('… og bare «feilet» og «avbrutt» utloser den',
+    str_contains($kodeI, "if (innlogging === 'feilet' || innlogging === 'avbrutt') {"),
+    'ingen andre verdier');
+// Beskjedboksen sto paa «success» uansett hva den sa.
+sjekk('meldingsboksen leser tonen fra sida',
+    str_contains($sidaI, 'Toast" tone="{{ kvitteringTone }}"')
+    && !str_contains($sidaI, 'Toast" tone="success"'),
+    'bundet, ikke fast');
+sjekk('… og staar paa «success» naar ingen tone er satt',
+    str_contains($kodeI, "kvitteringTone: this.state.kvitteringTone || 'success',"),
+    'samme som for');
+// Ikonet hentes som en SVG-fil over nett. Uteblir den, staar boksen umerket —
+// derfor males ringen i CSS, som ikke henter noe.
+sjekk('en feilmelding faar en ring som ikke henter noe',
+    str_contains($kodeI, "boxShadow: '0 0 0 3px var(--danger)'")
+    && str_contains($kodeI, "boxShadow: '0 0 0 3px var(--warning)'"),
+    'danger og warning');
+sjekk('… og en vanlig beskjed faar ingen ring',
+    (bool) preg_match("/kvitteringStil: Object\.assign\(.*?: \{\}\),/s", $kodeI),
+    'tom for de andre tonene');
+sjekk('tonen nullstilles naar boksen lukkes',
+    substr_count($kodeI, 'kvitteringTone: null') === 3,
+    'lukk, auto-lukk og den andre auto-lukken');
+// Knappen skal si hva den gjor.
+sjekk('bookingknappen sier at du logger inn forst',
+    str_contains($kodeI, "? 'Logg inn med Vipps for å melde deg på'"),
+    'ny tekst naar du ikke er innlogget');
+sjekk('… og sier «Book plass» som for naar du er innlogget',
+    str_contains($kodeI, "          : 'Book plass · ' + this.bookSum(),"),
+    'uendret for innloggede');
+sjekk('… og linja over Vipps-knappen sier det samme',
+    str_contains($kodeI, "? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()"),
+    'staar rett over knappen');
+
+// ── Cron gjorde ingenting med svaret fra Vipps ──────────────────────────
+//
+// api/vipps-webhook.php svarer 200 selv naar behandlingen feiler, og
+// begrunner det med at «Cron rydder opp». Det gjorde den ikke: jobben
+// «betalinger» hentet statusen fra Vipps, la den i «siste_payload» og gikk
+// videre. Ingen trekk, ingen «betalt», ingen «avbrutt» — og «siste_payload»
+// skrives tre steder og leses ingen. Sviktet webhooken, og kunden aldri kom
+// tilbake til retur-adressen, kunne betalingen bli staaende for alltid:
+// pengene reservert i Vipps, plassen staaende som «reservert».
+//
+// Behandlingen laa i Tikk, som virket. Naa ligger den ett sted —
+// Vipps::synkroniser() — og begge kaller den.
+//
+// Maalt mot en Vipps-etterligning paa 127.0.0.1, med en ekte booking i
+// basen som hadde hengt i tretti minutter:
+//   AUTHORIZED  for:   betaling «venter», booking «reservert», trekk ikke kalt
+//               etter: betaling «betalt», booking «betalt», trekk kalt
+//   TERMINATED  for:   betaling «venter»
+//               etter: betaling «avbrutt»
+//   en rad som alt sto «betalt» ble staaende «betalt»
+$vippsK = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$cronK  = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$tikkK  = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$utenKomm = static fn(string $t): string =>
+    (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '', $t);
+$vippsU = $utenKomm($vippsK);
+$cronU  = $utenKomm($cronK);
+$tikkU  = $utenKomm($tikkK);
+
+sjekk('det er kode aa maale i betalingssjekkene',
+    strlen($vippsU) > 10000 && strlen($cronU) > 3000 && strlen($tikkU) > 1000,
+    strlen($vippsU) . '/' . strlen($cronU) . '/' . strlen($tikkU) . ' tegn');
+sjekk('behandlingen ligger ett sted',
+    str_contains($vippsU, 'public static function synkroniser(string $referanse): string'),
+    'Vipps::synkroniser()');
+sjekk('… og cron kaller den',
+    str_contains($cronU, 'Vipps::synkroniser((string) $p[\'vipps_reference\'])'),
+    'jobben «betalinger»');
+sjekk('… og Tikk kaller den samme',
+    str_contains($tikkU, 'Vipps::synkroniser((string) $p[\'vipps_reference\'])'),
+    'sjekkHengendeBetalinger()');
+sjekk('… saa ingen av dem har sin egen utgave lenger',
+    !str_contains($cronU, 'Vipps::hentBetaling')
+    && !str_contains($tikkU, 'Vipps::hentBetaling')
+    && !str_contains($tikkU, 'Booking::markerBetalt'),
+    'bare ett kall hvert sted');
+// Det statusen sier, skal faktisk gjores.
+sjekk('AUTHORIZED trekker pengene og markerer betalt',
+    str_contains($vippsU, "if (\$tilstand === 'AUTHORIZED') {")
+    && str_contains($vippsU, 'self::trekk($referanse, (int) ($status[\'aggregate\'][\'authorizedAmount\'][\'value\'] ?? 0));')
+    && str_contains($vippsU, 'Booking::markerBetalt($referanse);'),
+    'trekk + markerBetalt');
+sjekk('CAPTURED markerer betalt',
+    str_contains($vippsU, "} elseif (\$tilstand === 'CAPTURED') {"),
+    'egen gren');
+sjekk('TERMINATED, ABORTED og EXPIRED avbryter',
+    str_contains($vippsU, "in_array(\$tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)"),
+    'alle tre');
+sjekk('… men en betalt rad faller aldri tilbake til avbrutt',
+    str_contains($vippsU, "WHERE vipps_reference = :r AND status <> 'betalt'"),
+    'vernet staar');
+sjekk('et mislykket oppslag lar raden staa som for',
+    str_contains($vippsU, "logg_feil('Statusoppslag feilet for ' . \$referanse, \$e);\n            return '';"),
+    'ingen halv oppdatering');
+// Maanedstrekkene finnes ikke paa ePayment-adressen: hvert oppslag ga 404 og
+// en linje i feilloggen — og de laa foerst i «ORDER BY id», saa tre gamle
+// trekk ville brukt opp hele LIMIT-en i Tikk.
+sjekk('Tikk hopper over maanedstrekkene, som cron alltid har gjort',
+    str_contains($tikkU, "AND type <> 'recurring_charge'")
+    && str_contains($cronU, "AND type <> 'recurring_charge'"),
+    'begge steder');
+sjekk('… og begge ser paa «opprettet» ogsaa',
+    str_contains($tikkU, "WHERE status IN ('opprettet','venter','autorisert')")
+    && str_contains($cronU, "WHERE status IN ('opprettet','venter','autorisert')"),
+    'samme tre statuser');
+// Uten dette kunne jobben si «30 statusoppslag» selv om alle tretti feilet.
+sjekk('cron teller bare de oppslagene som faktisk gikk',
+    str_contains($cronU, "if (\$tilstand !== '') { \$sjekket++; }")
+    && str_contains($cronU, "\$gjortOpp"),
+    'sjekket og gjortOpp hver for seg');
+
+// ── «Én betaling har hengt» sa ikke hvem ────────────────────────────────
+//
+// Varselet var et tall. Det er beskjeden Monica faar naar en kunde ringer og
+// sier at hun bestilte og ikke ble paameldt — og av et tall kan hun ikke
+// finne ut hvem. Eieren, 4. september: navn, beloep og kurs.
+//
+// Sporringen var ogsaa feil paa to maater. Den talte maanedstrekkene, som
+// hoerer til «medlemstrekk» og aldri kan gjores opp herfra, og den saa ikke
+// paa «opprettet» — den ene statusen som betyr at en betaling stoppet foer
+// Vipps rakk aa svare.
+//
+// Maalt mot ekte rader i basen: ett kurskjop paa «venter» (3 timer), ett
+// gavekort paa «opprettet» (5 timer), og ett maanedstrekk paa «venter»
+// (9 timer).
+//   for:   maanedstrekket + kurskjopet   → «2 betalinger har hengt …»
+//   etter: gavekortet + kurskjopet       → «2 betalinger har hengt i over en
+//          time: Ukjent (gavekort) · kr. 1 490,- — og 1 til», og hele lista
+//          med «Provekunde Hengende · Store former, viderekomne · kr. 2 800,-»
+$overK = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+$overU = (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '', $overK);
+
+sjekk('det er kode aa maale i varselsjekken', strlen($overU) > 8000, strlen($overU) . ' tegn');
+sjekk('varselet henter navn, ikke bare et tall',
+    str_contains($overU, "COALESCE(m.navn, b.gjest_navn, o.kunde_navn, '') AS navn"),
+    'medlem, gjest eller ordrekunde');
+sjekk('… og kurset raden gjelder',
+    str_contains($overU, "COALESCE(c.tittel, '') AS kurs"),
+    'tittelen blir med');
+sjekk('… og hvor lenge den har hengt',
+    str_contains($overU, 'TIMESTAMPDIFF(HOUR, p.created_at, UTC_TIMESTAMP()) AS timer'),
+    'timer, ikke bare «over en time»');
+sjekk('varselet ser paa «opprettet» ogsaa',
+    str_contains($overU, "WHERE p.status IN ('opprettet','venter','autorisert')"),
+    'alle tre statusene');
+sjekk('… og hopper over maanedstrekkene',
+    str_contains($overU, "AND p.type <> 'recurring_charge'"),
+    'de gjores opp i «medlemstrekk»');
+sjekk('en rad uten navn lyver ikke',
+    str_contains($overU, "return \$n !== '' ? \$n : 'Ukjent (' . strtolower(\$SLAG[(string) \$r['formal']] ?? 'betaling') . ')';"),
+    'sier hva slags betaling det er');
+sjekk('hele lista foelger med i svaret',
+    str_contains($overU, "'hengende'   => \$hengendeListe,"),
+    'skjermen slipper et nytt kall');
+sjekk('… og den finnes ogsaa naar ingenting henger',
+    str_contains($overU, '$hengendeListe = [];'),
+    'tom liste, ikke manglende felt');
+
+// Sporringen maales, ikke bare teksten: rader legges inn og hentes ut igjen.
+$oktH = (int) DB::verdi("SELECT id FROM course_sessions WHERE status = 'planlagt' ORDER BY id LIMIT 1");
+if ($oktH > 0) {
+    $kursH = (int) DB::verdi('SELECT course_id FROM course_sessions WHERE id = :i', ['i' => $oktH]);
+    $gammelt = gmdate('Y-m-d H:i:s', time() - 3 * 3600);
+    $pB = DB::settInn('payments', ['vipps_reference' => 'SJEKK-B-' . bin2hex(random_bytes(4)),
+        'type' => 'epayment', 'formal' => 'booking', 'belop_ore' => 280000,
+        'status' => 'venter', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => $gammelt, 'updated_at' => $gammelt]);
+    $bH = DB::settInn('bookings', ['course_id' => $kursH, 'course_session_id' => $oktH,
+        'gjest_navn' => 'Sjekkkunde Hengende', 'antall' => 1, 'belop_ore' => 280000,
+        'status' => 'reservert', 'payment_id' => $pB, 'created_at' => $gammelt]);
+    DB::oppdater('payments', ['booking_id' => $bH], ['id' => $pB]);
+    $pO = DB::settInn('payments', ['vipps_reference' => 'SJEKK-O-' . bin2hex(random_bytes(4)),
+        'type' => 'epayment', 'formal' => 'gavekort', 'belop_ore' => 149000,
+        'status' => 'opprettet', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => $gammelt, 'updated_at' => $gammelt]);
+    $pR = DB::settInn('payments', ['vipps_reference' => 'SJEKK-R-' . bin2hex(random_bytes(4)),
+        'type' => 'recurring_charge', 'formal' => 'medlemskap', 'belop_ore' => 50000,
+        'status' => 'venter', 'idempotency_key' => Vipps::uuid(),
+        'created_at' => $gammelt, 'updated_at' => $gammelt]);
+
+    $traff = DB::alle(
+        "SELECT p.id, COALESCE(m.navn, b.gjest_navn, o.kunde_navn, '') AS navn,
+                COALESCE(c.tittel, '') AS kurs
+           FROM payments p
+      LEFT JOIN members  m ON m.id = p.member_id
+      LEFT JOIN bookings b ON b.id = p.booking_id
+      LEFT JOIN orders   o ON o.id = p.order_id
+      LEFT JOIN courses  c ON c.id = b.course_id
+          WHERE p.status IN ('opprettet','venter','autorisert')
+            AND p.type <> 'recurring_charge'
+            AND p.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 HOUR)
+            AND p.id IN (:a, :b, :c)",
+        ['a' => $pB, 'b' => $pO, 'c' => $pR]
+    );
+    $ider = array_map(static fn(array $r): int => (int) $r['id'], $traff);
+    sjekk('kurskjopet som henger blir funnet', in_array($pB, $ider, true), 'id ' . $pB);
+    sjekk('… og gavekortet som stoppet paa «opprettet»', in_array($pO, $ider, true), 'id ' . $pO);
+    sjekk('… men ikke maanedstrekket', !in_array($pR, $ider, true), 'id ' . $pR . ' holdt utenfor');
+    $navnet = '';
+    foreach ($traff as $r) { if ((int) $r['id'] === $pB) { $navnet = $r['navn'] . '|' . $r['kurs']; } }
+    sjekk('navnet og kurset foelger med raden',
+        str_contains($navnet, 'Sjekkkunde Hengende') && strlen($navnet) > 20, $navnet);
+
+    DB::kjor('DELETE FROM bookings WHERE id = :i', ['i' => $bH]);
+    DB::kjor('DELETE FROM payments WHERE id IN (:a, :b, :c)', ['a' => $pB, 'b' => $pO, 'c' => $pR]);
+    sjekk('sjekkradene er ryddet bort etterpaa',
+        (int) DB::verdi('SELECT COUNT(*) FROM payments WHERE id IN (:a, :b, :c)',
+            ['a' => $pB, 'b' => $pO, 'c' => $pR]) === 0, 'ingen igjen');
+} else {
+    sjekk('det finnes en planlagt okt aa henge en betaling paa', false, 'ingen okter i basen');
+}
+
+// ── Kortet «Henger i Vipps» ─────────────────────────────────────────────
+//
+// Varselet var riktig i API-et, men vistes ingen steder: den eneste bruken
+// var «adminTall», og den lista er ikke bundet til noe markup. Naa staar det
+// et kort i rutenettet paa Verkstedet, ved siden av «Feil meldt inn», med
+// samme regel som resten — kortet staar bare naar noe faktisk henger.
+//
+// Eieren ba om et kortere navn enn «Betalinger som henger», som brakk over
+// to linjer. «Henger i Vipps» gaar paa én, og kan ikke forveksles med «Ikke
+// betalt» i kassa, som betyr noe helt annet.
+//
+// Maalt i nettleseren, med to hengende rader i basen:
+//   kortet:  «Henger i Vipps · 2 · Ukjent (gavekort) · Gavekort · kr. 1 490,-
+//             — og 1 til. · Se dem →»
+//   klikket: /admin/okonomi, «TRENGER ET MENNESKE / Betalinger som henger i
+//             Vipps», og lista under «HENGER I VIPPS»:
+//               Ukjent (gavekort) · Gavekort · hengt i ett dogn · kr. 1 490,-
+//               Gina Borjesson · Kursplass · Store former, viderekomne
+//                              · hengt i 3 timer · kr. 2 800,-
+$hvK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$hvU = (string) preg_replace('/<!--.*?-->/s', '', $hvK);
+$hvU = (string) preg_replace('/^\s*\/\/.*$/m', '', $hvU);
+
+sjekk('det er kode aa maale i kortsjekken', strlen($hvU) > 500000, strlen($hvU) . ' tegn');
+sjekk('kortet «Henger i Vipps» finnes',
+    str_contains($hvU, "kort('Henger i Vipps',"), 'ett kort');
+sjekk('… og staar bare naar noe henger',
+    str_contains($hvU, "if (!h.length) return [];"), 'tom liste gir ingen kort');
+sjekk('… og henter tallet fra lista, ikke fra et eget felt',
+    str_contains($hvU, "const h = ((this.state.adminData || {}).hengende || []);")
+    && str_contains($hvU, "h.length, 'Se dem',"),
+    'samme kilde som linja');
+sjekk('… og navngir den som har hengt lengst',
+    str_contains($hvU, "f.navn + ' · ' + f.hva + ' · ' + f.sum"),
+    'navn, hva og sum');
+sjekk('… og gaar til betalingene',
+    str_contains($hvU, "this.gaaAdmin('adminokonomi', { okonomiFor: 'hengende' })"),
+    'okonomiFor hengende');
+sjekk('… og er merket som noe som haster, som «Feil meldt inn»',
+    (bool) preg_match("/kort\('Henger i Vipps',.*?h\.length, 'Se dem',.*?true\)\]/s", $hvU),
+    'terrakotta paa tallet');
+
+// Skjermen man kommer til.
+sjekk('betalingslista leser de hengende fra oversikten',
+    str_contains($hvU, "(this.state.okonomiFor === 'hengende'\n          ? ((this.state.adminData || {}).hengende || [])"),
+    'api/admin/betalinger.php har dem ikke');
+// api/admin/betalinger.php svarer bare med de gjennomforte. Sto de hengende
+// og ventet paa den lista, ville skjermen vaert tom.
+sjekk('… fordi betalings-API-et bare svarer med de gjennomforte',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php'),
+                 'betalt') && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/betalinger.php'),
+                 "'opprettet'"),
+    'ingen «opprettet» der');
+sjekk('radene beholder navnet sitt i lista',
+    str_contains($hvU, "navn: b.navn || b.medlem || 'Gjest',")
+    && str_contains($hvU, "hva: b.hva || ({ booking: 'Kursbooking'"),
+    'ellers het alle «Gjest»');
+sjekk('overskriften sier hva man ser paa',
+    str_contains($hvU, "this.state.okonomiFor === 'hengende' ? 'Betalinger som henger i Vipps'")
+    && str_contains($hvU, "this.state.okonomiFor === 'hengende' ? 'Trenger et menneske'"),
+    'tittel og stikkord');
+sjekk('… og lista over radene ogsaa',
+    str_contains($hvU, "okListeTittel: this.state.okonomiFor === 'hengende'\n            ? 'Henger i Vipps' : 'Siste betalinger',"),
+    'ikke «Siste betalinger»');
+sjekk('… og forklaringen er ikke medlemsteksten',
+    str_contains($hvU, "Betalinger som ble startet, men aldri gjort opp."),
+    'egen tekst');
+sjekk('brodsmulen viser veien',
+    str_contains($hvU, "if (st.okonomiFor === 'hengende') return p('Økonomi', 'Økonomi', 'Henger i Vipps');"),
+    'Okonomi → Henger i Vipps');
+// Uten «!!b.referanse» ble «undefined === undefined» sant, og refusjonsruta
+// sto aapen paa hver eneste hengende rad. Maalt i nettleseren for rettingen:
+// begge radene viste «BELOP I KRONER … Refunder / Avbryt».
+sjekk('refusjonsruta staar ikke aapen paa en rad uten referanse',
+    str_contains($hvU, 'refApen: !!b.referanse && this.state.refFor === b.referanse,'),
+    'vernet staar');
+// API-et gir radene samme form som resten av lista.
+$ovU2 = (string) preg_replace('/^\s*(\/\/|\*|\/\*).*$/m', '',
+    file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php'));
+foreach (["'navn'", "'hva'", "'tid'", "'sum'", "'status'"] as $felt) {
+    sjekk('den hengende raden har feltet ' . $felt,
+        (bool) preg_match('/\$hengendeListe\[\] = \[.*?' . preg_quote($felt, '/') . '\s*=>/s', $ovU2),
+        'samme form som betalingslista');
+}
+sjekk('tiden skrives i timer og dogn, ikke bare «over en time»',
+    str_contains($ovU2, "? (\$t === 1 ? 'hengt i én time' : 'hengt i ' . \$t . ' timer')")
+    && str_contains($ovU2, "'hengt i ett døgn'"),
+    'begge');
+
+// ── Min side, bygget om ─────────────────────────────────────────────────
+//
+// Eieren, 4. september, femten punkter. Analysen ble lagt fram med maalinger
+// og skisser, og godkjent med «Bygg komplett du» — inkludert historikken
+// over tre maaneder, som var det ene punktet jeg foreslo aa forenkle.
+//
+// Maalt i nettleseren med ekte data i basen: et medlem paa «Mini 15» som
+// naadde taket i juni, juli og august, og har 3 av 15 timer igjen naa.
+//   piller:      Chat · Internbutikk · Kurs · Selg mine produkter · HMS
+//   varsel:      «Du har 3 av 15 timer igjen denne måneden.»  (3/15 = 20 %)
+//   forslag:     «Du nådde taket på 15 timer juni, juli og august. Neste steg
+//                 opp gir 30 timer i måneden — 15 flere enn i dag, og koster
+//                 kr 800 mer i måneden.»
+//   binding:     «Bundet til 1. november 2026»
+//   salgslista:  tre rader med «Ute i butikken», «Til godkjenning» og
+//                «Ikke lagt ut: «Bildet er for mørkt — send gjerne et nytt.»»
+//   «Påfyll»:    borte
+//   /stemple:    utlogget «Du må logge inn med Vipps …»; innlogget «Hei,
+//                Testadmin · 3 av 15 timer igjen» og ett trykk stemplet inn
+//                — bekreftet i basen med innstemplet=true, siden=20:25.
+$msK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msU = (string) preg_replace('/<!--.*?-->/s', '', $msK);
+$msU = (string) preg_replace('/^\s*\/\/.*$/m', '', $msU);
+sjekk('det er kode aa maale i Min side-sjekkene', strlen($msU) > 500000, strlen($msU) . ' tegn');
+
+// 1. Timene bor i medlemskapskortet.
+sjekk('timene staar i medlemskapskortet',
+    (bool) preg_match('/id="minside-abonnement".{0,4000}\{\{ timerBarStil \}\}/s', $msU),
+    'stolpen er inne i kortet');
+sjekk('… og «Timer igjen» staar ikke lenger som egen rad der',
+    !str_contains($msU, '>Timer igjen</span>'), 'raden er borte');
+sjekk('… og kortet heter medlemskapet',
+    str_contains($msU, '>Medlemskapet ditt</div>'), 'ikke «Abonnement»');
+
+// 2. Stemplinga: én knapp, valget under.
+sjekk('ressursvalget ligger bak en lenke',
+    str_contains($msU, 'msRessursLukket: harValg && !apent && !harValgtSelv,')
+    && str_contains($msU, '{{ msRessursLenke }}'),
+    'lukket som standard');
+sjekk('… og aapner seg av seg selv naar man har valgt noe annet',
+    str_contains($msU, 'msRessursApen: harValg && (apent || harValgtSelv),'),
+    'ellers ville valget vaert usynlig');
+sjekk('stemplinga skjer ett sted',
+    str_contains($msU, '  vekslStempling() {')
+    && substr_count($msU, 'this.stemplingKall(inne ?') === 1,
+    'én metode, to knapper');
+
+// 3. QR-en ved doera.
+sjekk('«/stemple» er en ekte rute',
+    str_contains($msU, "{ sti: '/stemple',       side: 'stemple' },"), 'i ruterlista');
+sjekk('… og skjermen finnes',
+    str_contains($msU, '{{ erStemple }}') && str_contains($msU, "erStemple: side === 'stemple',"),
+    'markup og prop');
+sjekk('… og henter timene, som Min side gjor',
+    str_contains($msU, "(side === 'minside' || side === 'stemple' || this.erAdminSkjerm(side))"),
+    'ellers sto «Henter timene dine …» for alltid');
+sjekk('… og sender utloggede til Vipps med «/stemple» som retur',
+    str_contains($msU, "this.sendTilInnlogging('/stemple', 'Du ble ikke stemplet inn.')"),
+    'tilbake hit, ikke til forsida');
+
+// 4. «Påfyll» er borte.
+sjekk('«Påfyll» er fjernet',
+    !str_contains($msU, 'paafyll') && !str_contains($msK, '>Påfyll</div>'),
+    'kortet og lista');
+
+// 5-6. Mobilmenyen.
+foreach (['Chat', 'Internbutikk', 'Kurs', 'Selg mine produkter', 'HMS'] as $valg) {
+    sjekk('menyen har «' . $valg . '»',
+        (bool) preg_match("/minsideSnarveier.{0,900}navn: '" . preg_quote($valg, '/') . "'/s", $msU),
+        'i medlemslista');
+}
+sjekk('… og de er piller, ikke understreket tekst',
+    (bool) preg_match('/minsideSnarveier \}\}" as="s"[^>]*>\s*<button[^>]*border-radius: var\(--radius-pill\)/s', $msU),
+    'pilleform');
+
+// 7. Chatten heter chat.
+sjekk('chatten heter Chat paa Min side',
+    (bool) preg_match('/id="minside-beskjeder".{0,400}>Chat<\/div>/s', $msU), 'ikke «Beskjeder»');
+
+// 10. Selg mine produkter.
+sjekk('lista over det du har sendt inn vises',
+    str_contains($msU, '<sc-for list="{{ mineSalg }}" as="v"')
+    && str_contains($msU, '{{ harMineSalg }}'),
+    'bundet i markup');
+sjekk('… med status paa hver rad',
+    str_contains($msU, '{{ v.merkeStil }}') && str_contains($msU, '{{ v.statusTekst }}'),
+    'pille med farge');
+sjekk('… og grunnen naar noe ikke ble lagt ut',
+    str_contains($msU, "harGrunn: v.status === 'avvist' && !!v.avvist,"),
+    'feltet heter «avvist» i API-et');
+sjekk('… og seksjonen har et sted menyen kan hoppe til',
+    str_contains($msU, 'id="minside-salg"'), 'minside-salg');
+
+// 12. Varselet paa 20 %.
+// Begge grenene: den ekte sida leser serverens timer, forhaandsvisningen i
+// designverktoyet regner sine egne. Sto de ulikt, ville forhaandsvisningen
+// vist noe annet enn medlemmet faar.
+sjekk('varselet gaar paa 20 %, ikke fire timer',
+    str_contains($msU, 'const grense = fri ? 0 : st.timer.perMnd * 0.2;')
+    && str_contains($msU, 'igjen <= maksT * 0.2 ?')
+    && !str_contains($msU, 'igjen <= 4 ?'),
+    'begge grenene');
+
+// 13. Oppgraderingsforslaget.
+sjekk('forslaget krever at det gjentar seg',
+    str_contains($msU, 'if (!(taket >= 2 || (tomtNaa && taket >= 1))) return av;'),
+    'to av tre maaneder, eller tomt naa og én');
+sjekk('… og leser historikken fra serveren',
+    str_contains($msU, 'const hist = st.historikk || [];'), 'ikke regnet i nettleseren');
+sjekk('… og foreslaar den neste planen opp, ikke en prisliste',
+    str_contains($msU, 'const neste = storre[0];'), 'ett forslag');
+sjekk('… og gaar samme vei som «Bytt medlemskap»',
+    str_contains($msU, 'oppVelg: () => this.hoppTilAbo(),'), 'ingen parallell innmelding');
+sjekk('… og fri tilgang faar ikke noe forslag',
+    str_contains($msU, 'if (perMnd === null) return av;'), 'ingenting aa foreslaa');
+
+// 15. Bindingstida.
+sjekk('bindingstida staar som egen rad',
+    str_contains($msU, '{{ aboBinding }}') && str_contains($msU, "aboBinding: !a ? '—'"),
+    'ikke bare som hale paa statuslinja');
+
+// ── Da kortet viste to medlemskap ───────────────────────────────────────
+//
+// Eieren, 4. september, med bilde fra lissom.no: «Viser feil medlemskap».
+// Kortet sto med «Mini 15 · kr. 1 790,- · 15 timer i måneden» rett over
+// «Timer igjen: 35 av 35 timer».
+//
+// AARSAKEN, funnet i koden: bytter verkstedet plan paa et medlem som har fast
+// trekk i Vipps, flyttes «members.medlemskap_type», men «subscriptions.plan»
+// blir staaende — se api/admin/medlemmer.php. Det er med vilje: Vipps eier
+// beloepet paa en godkjent avtale, og det kan ikke skrives om derfra.
+//
+// Feilen var at Min side leste navnet og prisen fra AVTALEN og timene fra
+// MEDLEMSRADEN, og dermed viste det verste av begge.
+//
+// Rettet: kortet navngir medlemskapet medlemmet HAR — det styrer timer og
+// tilgang, og timene over kommer fra det samme — og avtalen staar for seg
+// naar den er godkjent paa noe annet. «Neste trekk» viser avtalens beloep,
+// for det er det som gaar av kontoen.
+//
+// Maalt i nettleseren, med medlemskap_type = «Årsmedlemskap» og
+// subscriptions.plan = «Mini 15» med vipps_agreement_id satt:
+//   «Årsmedlemskap · kr. 1 990,- · 35 timer i måneden · årsavtale»
+//   «Vipps-avtalen din er fortsatt godkjent på Mini 15 — kr. 1 790,- i
+//    måneden — og trekker det til den sies opp.»
+//   «Neste trekk  1. oktober 2026 · kr. 1 790,-»   (avtalens beloep)
+//   «av 35 timer · 23»                             (medlemskapets timer)
+$medK = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+sjekk('svaret navngir medlemskapet medlemmet staar paa',
+    str_contains($medK, "'plan'       => \$harPlan !== '' ? \$harPlan : \$avtalePlan,"),
+    'ikke avtalens plan');
+sjekk('… og prisen paa det medlemskapet',
+    str_contains($medK, "return Booking::kroner((int) (\$p['pris_ore'] ?? \$a['pris_ore']));"),
+    'planens pris, ikke avtalens');
+sjekk('… og avtalen for seg naar den staar paa noe annet',
+    str_contains($medK, "'avtalePlan' => \$harPlan !== '' && \$avtalePlan !== '' && \$avtalePlan !== \$harPlan"),
+    'null naar de er like');
+sjekk('… med beloepet avtalen faktisk trekker',
+    str_contains($medK, "'avtalePris' => Booking::kroner((int) \$a['pris_ore']),"), 'avtalens sum');
+sjekk('kortet sier hva avtalen trekker, ikke at noe er uklart',
+    str_contains($msU, "'Vipps-avtalen din er fortsatt godkjent på ' + a.avtalePlan + ' — '"),
+    'navnet og beloepet');
+sjekk('… og staar stille naar de to er like',
+    str_contains($msU, 'const annen = a && a.avtalePlan;'), 'serveren sender null da');
+sjekk('«Neste trekk» viser det som faktisk trekkes',
+    str_contains($msU, "a.nesteTrekk + ' · ' + (a.avtalePris || a.pris)"),
+    'avtalens beloep gaar foran planens');
+sjekk('timene og navnet kommer fra samme plan',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                 "'navn'         => trim((string) \$medlem['medlemskap_type'] ?? ''),")
+    || str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                 "'navn'         => trim((string) (\$medlem['medlemskap_type'] ?? '')),"),
+    'begge leser medlemskap_type');
+
+
+// ── Serveren: de tre siste hele maanedene ───────────────────────────────
+$stK = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
+$apiK = file_get_contents(dirname(__DIR__) . '/api/stempling.php');
+sjekk('Stempling teller en hel maaned tilbake',
+    str_contains($stK, 'public static function minutterIManed(int $medlemId, int $tilbake): int'),
+    'ny metode');
+sjekk('… i norsk tid, ikke i UTC',
+    str_contains($stK, "->modify('first day of this month')->setTime(0, 0)
+            ->modify('-' . \$tilbake . ' months');"),
+    'grensene regnes i Oslo');
+sjekk('… og bare avsluttede oekter',
+    str_contains($stK, "WHERE member_id = :m AND ut_tid IS NOT NULL
+                AND inn_tid >= :fra AND inn_tid < :til"),
+    'en maaned som er over har ingen paagaaende');
+sjekk('… og «tilbake» maa vaere minst 1',
+    str_contains($stK, "throw new InvalidArgumentException"), 'null er inneveerende maaned');
+sjekk('API-et sender tre maaneder',
+    str_contains($apiK, 'for ($i = 3; $i >= 1; $i--) {'), 'juni, juli, august');
+sjekk('… og sier om taket ble naadd',
+    str_contains($apiK, "'naaddeTaket' => \$min >= \$perMnd * 60,"), 'per maaned');
+sjekk('… og sender tom liste for fri tilgang',
+    str_contains($apiK, 'if ($perMnd !== null) {'), 'ingenting aa foreslaa');
+
+// Regnestykket, kjort mot basen.
+$mId = (int) DB::verdi("SELECT id FROM members ORDER BY id LIMIT 1");
+if ($mId > 0) {
+    $for = Stempling::minutterIManed($mId, 1);
+    sjekk('minutterIManed svarer med et tall', is_int($for), $for . ' minutter forrige maaned');
+    $navn = Stempling::manedNavn(1);
+    $ventet = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+    sjekk('… og maanedsnavnet er norsk', in_array($navn, $ventet, true), $navn);
+    sjekk('… og «denne maaneden» er et annet navn enn «forrige»',
+        Stempling::manedNavn(0) !== Stempling::manedNavn(1),
+        Stempling::manedNavn(0) . ' vs ' . $navn);
+} else {
+    sjekk('det finnes et medlem aa regne paa', false, 'ingen medlemmer i basen');
+}
+
+// ── De tre siste restene ────────────────────────────────────────────────
+//
+// Eieren, 4. september: «Gjør ferdig alt». Tre punkter sto igjen og var
+// skrevet ned i docs/APNE-PUNKTER.md.
+$restK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$restU = (string) preg_replace('/<!--.*?-->/s', '', $restK);
+$restU = (string) preg_replace('/^\s*\/\/.*$/m', '', $restU);
+sjekk('det er kode aa maale i restsjekkene', strlen($restU) > 500000, strlen($restU) . ' tegn');
+
+// 1. Skjemaet overlever turen innom Vipps-innloggingen.
+//
+// Adressen tok kunden til riktig kurs, men datoen, telefonnummeret,
+// allergiene og gavekortkoden sto tomme — alt matte fylles ut paa nytt etter
+// en tur hun ikke hadde bedt om. Medlemsinnmeldinga tok vare paa sitt fra
+// for; bookingen gjorde det ikke.
+//
+// Maalt i nettleseren, utlogget kunde paa «Nybegynner dreiekurs»: dato valgt,
+// telefon «90011122», allergi «Nøtteallergi», vilkaar krysset av. Etter
+// trykk gikk sida til /api/vipps-login.php, og etter retur sto telefonen og
+// allergien der igjen — og noekkelen var ryddet bort.
+sjekk('bookingen tas vare paa foer innloggingen',
+    str_contains($restU, "sessionStorage.setItem('lissom_booking', JSON.stringify({"),
+    'ett felt med JSON');
+foreach (['oktId', 'telefon', 'epost', 'allergiKryss', 'allergier', 'gavekort'] as $felt) {
+    sjekk('… og «' . $felt . '» er med',
+        (bool) preg_match("/lissom_booking', JSON.stringify\(\{.{0,400}" . preg_quote($felt, '/') . ':/s', $restU),
+        'lagres');
+}
+sjekk('… og hentes fram igjen ved oppstart',
+    str_contains($restU, "const raa = sessionStorage.getItem('lissom_booking');"), 'ved oppstart');
+sjekk('… og ryddes bort naar den er brukt',
+    str_contains($restU, "sessionStorage.removeItem('lissom_booking');"), 'én gang');
+// Vilkaarshaken er en bekreftelse paa at man har lest noe. Den kan ikke
+// gjenopprettes paa kundens vegne.
+sjekk('… men vilkaarshaken settes ikke tilbake',
+    !(bool) preg_match('/if \(b\.vilkaar\)/', $restU), 'den maa gis paa nytt');
+sjekk('… og et ugyldig lager velter ikke sida',
+    (bool) preg_match("/const raa = sessionStorage.getItem\('lissom_booking'\);.*?\} catch \(_\) \{/s", $restU),
+    'JSON.parse staar inne i try');
+
+// 2. Webhooken og cron deler regel, uten aa dele oppslag.
+$vK = file_get_contents(dirname(__DIR__) . '/app/lib/vipps.php');
+$wK = file_get_contents(dirname(__DIR__) . '/api/vipps-webhook.php');
+sjekk('regelen for hva en tilstand betyr staar ett sted',
+    str_contains($vK, 'public static function anvendTilstand(string $referanse, array $status): string'),
+    'Vipps::anvendTilstand()');
+sjekk('… og synkroniser() bruker den',
+    str_contains($vK, 'return self::anvendTilstand($referanse, $status);'), 'etter oppslaget');
+sjekk('… og webhooken ogsaa',
+    str_contains($wK, 'Vipps::anvendTilstand($referanse, $status);'), 'uten eget regelsett');
+sjekk('… saa webhooken ikke har sin egen utgave lenger',
+    !str_contains($wK, "case 'CAPTURED':") && !str_contains($wK, "Booking::markerBetalt(\$referanse);"),
+    'switchen er borte');
+// Hendelsen er signert og sier hva som har skjedd. Leseadressen kan ligge et
+// hakk bak, saa et oppslag her kunne lest en CAPTURED-hendelse som AUTHORIZED
+// og forsokt aa trekke en betaling som alt var trukket.
+sjekk('webhooken sporr ikke Vipps om igjen',
+    str_contains($wK, "\$status = \$navn === 'AUTHORIZED'\n        ? Vipps::hentBetaling(\$referanse)\n        : ['state' => \$navn];"),
+    'bare AUTHORIZED, som trenger beloepet');
+sjekk('REFUNDED behandles fortsatt',
+    str_contains($vK, "} elseif (\$tilstand === 'REFUNDED') {"), 'flyttet inn i regelen');
+
+// 3. Varslene som ikke vistes noe sted.
+$oK = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+sjekk('tallene foelger med som tall, ikke bare som setninger',
+    str_contains($oK, "'varselTall' => [") && str_contains($oK, "'feilet' => \$feiledeVarsler,")
+    && str_contains($oK, "'iKo'    => \$iKo,"),
+    'et kort kan ikke lese et tall ut av en setning');
+sjekk('kortet «Varsler kom ikke fram» finnes',
+    str_contains($restU, "kort('Varsler kom ikke fram',"), 'paa Verkstedet');
+sjekk('kortet «Varsler står i kø» finnes',
+    str_contains($restU, "kort('Varsler står i kø',"), 'paa Verkstedet');
+sjekk('… og begge staar bare naar noe venter',
+    substr_count($restU, "return n ? [kort('Varsler") === 2, 'samme regel som resten');
+sjekk('… og begge gaar til varselskjermen',
+    substr_count($restU, "this.gaaAdmin('adminvarsler', {}), true)] : [];") === 2,
+    'adminvarsler');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

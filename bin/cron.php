@@ -168,21 +168,25 @@ switch ($jobb) {
               LIMIT 30"
         );
 
+        // Her sto det bare et oppslag: statusen ble hentet fra Vipps, lagt i
+        // «siste_payload», og saa var det slutt. Ingen trekk, ingen «betalt»,
+        // ingen «avbrutt» — og «siste_payload» leses ingen steder. Samtidig
+        // sier api/vipps-webhook.php «Cron rydder opp» naar den selv feiler.
+        // Det gjorde den altsaa ikke: sviktet webhooken, og kunden aldri kom
+        // tilbake til retur-adressen, kunne betalingen bli staaende for
+        // alltid.
+        //
+        // Behandlingen ligger naa i Vipps::synkroniser(), som Tikk ogsaa
+        // bruker. Ett sted, én oppforsel.
         $sjekket = 0;
+        $gjortOpp = 0;
         foreach ($venter as $p) {
-            try {
-                $status = Vipps::hentBetaling((string) $p['vipps_reference']);
-                DB::oppdater('payments', [
-                    'siste_payload' => json_encode($status, JSON_UNESCAPED_UNICODE),
-                    'updated_at'    => gmdate('Y-m-d H:i:s'),
-                ], ['id' => $p['id']]);
-                $sjekket++;
-            } catch (Throwable $e) {
-                logg_feil('Statusoppslag feilet for ' . $p['vipps_reference'], $e);
-            }
+            $tilstand = Vipps::synkroniser((string) $p['vipps_reference']);
+            if ($tilstand !== '') { $sjekket++; }
+            if ($tilstand === 'AUTHORIZED' || $tilstand === 'CAPTURED') { $gjortOpp++; }
             usleep(300_000);
         }
-        $si("Betalinger: {$sjekket} statusoppslag.");
+        $si("Betalinger: {$sjekket} statusoppslag, {$gjortOpp} gjort opp.");
         break;
 
     // -----------------------------------------------------------------------

@@ -25,6 +25,28 @@ if (Foresporsel::metode() === 'GET') {
     // det var for.
     $maateFelt = DB::harKolonne('payments', 'maate') ? 'p.maate' : 'NULL AS maate';
 
+    // ── Bare det som faktisk ble penger ────────────────────────────────
+    //
+    // Eieren, 4. september, med en annullert rad staaende under Okonomi:
+    // «hva i all verden er dette?» — og fire dager for, om det samme i
+    // kassa: «avbrutt skal ikke vises noen sted».
+    //
+    // Regelen sto paa skjermen, i kassa, og bare der. Okonomi tegner sin
+    // egen liste av det samme svaret og filtrerte paa formaal, ikke paa
+    // status — saa et forsok som aldri ble til penger sto ved siden av
+    // dagens salg, med beloepet sitt.
+    //
+    // Naa staar regelen her, ett sted, og begge listene faar den samme
+    // sannheten. En tredje liste kan ikke glemme den.
+    //
+    // Betalt, og det som er sendt helt eller delvis tilbake etterpaa: en
+    // refusjon hoerer til et salg som skjedde. «opprettet», «venter»,
+    // «avbrutt» og «feilet» er forsok — og en annullert rad er satt til
+    // «avbrutt», saa den faller ut her ogsaa.
+    //
+    // Radene slettes ikke. De staar i basen som for; de vises bare ikke
+    // som penger. Dagsoppgjoret og omsetningen har skilt likedan hele
+    // tida — se api/admin/dagsoppgjor.php og api/admin/okonomi.php.
     $betalinger = DB::alle(
         "SELECT p.id, p.vipps_reference, p.formal, p.type, p.belop_ore, p.refundert_ore,
                 p.status, p.created_at, m.navn AS medlem, {$maateFelt},
@@ -32,6 +54,7 @@ if (Foresporsel::metode() === 'GET') {
                 (SELECT o.id FROM orders o WHERE o.payment_id = p.id LIMIT 1) AS ordre_id
            FROM payments p
       LEFT JOIN members m ON m.id = p.member_id
+         WHERE p.status IN ('betalt', 'delvis_refundert', 'refundert')
           ORDER BY p.id DESC
           LIMIT 1000"
     );

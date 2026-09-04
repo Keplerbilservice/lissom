@@ -61,9 +61,40 @@ if (Foresporsel::metode() === 'GET') {
                 ['m' => (int) $medlem['id']]
             );
         if ($a !== null) {
+            // ── Naar avtalen og medlemskapet staar paa hver sin plan ──────
+            //
+            // Bytter verkstedet plan paa et medlem som har fast trekk i Vipps,
+            // flyttes «members.medlemskap_type», men «subscriptions.plan» blir
+            // staaende — se api/admin/medlemmer.php: Vipps eier beloepet paa en
+            // godkjent avtale, og vi kan ikke skrive det om herfra.
+            //
+            // Det er riktig. Feilen var at Min side leste navnet og prisen fra
+            // AVTALEN og timene fra MEDLEMSRADEN, og dermed viste det verste av
+            // begge: «Mini 15 · kr. 1 790,- · 15 timer i måneden» rett over «35
+            // av 35 timer». Eieren, 4. september, med bilde fra lissom.no:
+            // «Viser feil medlemskap».
+            //
+            // Naa sier svaret begge deler hver for seg. Medlemskapet er det
+            // medlemmet HAR — det styrer timer og tilgang. Avtalen er det som
+            // trekkes. Skjermen kan si det som det er.
+            $harPlan = trim((string) ($medlem['medlemskap_type'] ?? ''));
+            $avtalePlan = trim((string) $a['plan']);
+            $fastTrekk = trim((string) ($a['vipps_agreement_id'] ?? '')) !== '';
             $min = [
-                'plan'       => $a['plan'],
-                'pris'       => Booking::kroner((int) $a['pris_ore']),
+                // Planen medlemmet staar paa. Mangler den, er avtalen det
+                // naermeste vi har — da er det ingen uenighet aa melde.
+                'plan'       => $harPlan !== '' ? $harPlan : $avtalePlan,
+                // Prisen paa planen medlemmet staar paa. Trekkes det et annet
+                // beloep, staar det for seg under.
+                'pris'       => (static function () use ($harPlan, $a): string {
+                    $p = $harPlan !== '' ? Medlemskap::plan($harPlan) : null;
+                    return Booking::kroner((int) ($p['pris_ore'] ?? $a['pris_ore']));
+                })(),
+                // Avtalen, naar den staar paa noe annet enn medlemskapet.
+                'avtalePlan' => $harPlan !== '' && $avtalePlan !== '' && $avtalePlan !== $harPlan
+                    ? $avtalePlan : null,
+                'avtalePris' => Booking::kroner((int) $a['pris_ore']),
+                'fastTrekk'  => $fastTrekk,
                 'status'     => $a['status'],
                 'nesteTrekk' => $a['neste_trekk']
                     ? Booking::norskDatoKort((string) $a['neste_trekk'] . ' 12:00:00') : null,

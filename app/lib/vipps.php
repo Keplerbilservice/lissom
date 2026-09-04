@@ -636,6 +636,96 @@ final class Vipps
         return $svar['json'];
     }
 
+    /**
+     * Henter status fra Vipps — og gjor det statusen sier.
+     *
+     * Dette sto to steder, og bare det ene gjorde noe. Tikk hentet statusen,
+     * trakk pengene og markerte betalt. bin/cron.php hentet den samme
+     * statusen, la den i «siste_payload» og gikk videre — den trakk ikke,
+     * markerte ikke betalt og avbrot ikke. «siste_payload» skrives tre
+     * steder og leses ingen: den var altsaa bare et avtrykk.
+     *
+     * Samtidig sier api/vipps-webhook.php «200 uansett: Vipps skal ikke
+     * sende om igjen i det uendelige. Cron rydder opp.» Det gjorde den ikke.
+     * Sviktet webhooken, og kunden aldri kom tilbake til retur-adressen,
+     * kunne en betaling bli staaende for alltid — pengene reservert i Vipps,
+     * plassen staaende som «reservert», og ingen som visste noe.
+     *
+     * Naa er behandlingen ett sted, og begge kaller den. Alt her taaler aa
+     * kjores om igjen: Booking::markerBetalt() er laget for det, og trekket
+     * gjentas ikke naar Vipps alt har satt tilstanden til CAPTURED.
+     *
+     * Returnerer tilstanden Vipps oppga, i store bokstaver. Tom streng
+     * betyr at oppslaget ikke gikk — da staar raden som for, og neste
+     * runde prover igjen.
+     */
+    public static function synkroniser(string $referanse): string
+    {
+        try {
+            $status = self::hentBetaling($referanse);
+        } catch (Throwable $e) {
+            logg_feil('Statusoppslag feilet for ' . $referanse, $e);
+            return '';
+        }
+
+        DB::kjor(
+            'UPDATE payments SET siste_payload = :p, updated_at = UTC_TIMESTAMP()
+              WHERE vipps_reference = :r',
+            ['p' => json_encode($status, JSON_UNESCAPED_UNICODE), 'r' => $referanse]
+        );
+
+        return self::anvendTilstand($referanse, $status);
+    }
+
+    /**
+     * Gjor det tilstanden sier. Selve regelen, uten oppslaget.
+     *
+     * Skilt fra synkroniser() fordi webhooken alt VET hvilken tilstand det
+     * gjelder — Vipps sender den, signert — og ikke skal sporre om igjen.
+     *
+     * Et nytt oppslag der ville ikke bare kostet et kall: leseadressen kan
+     * ligge et hakk bak hendelsen, saa en CAPTURED-hendelse kunne blitt lest
+     * som AUTHORIZED, og vi ville forsokt aa trekke en betaling som alt var
+     * trukket. Da feiler trekket, og «betalt» blir aldri satt.
+     *
+     * Cron og Tikk maa sporre, for de har ingen hendelse. Webhooken har den.
+     * Begge veier ender her, saa regelen finnes ett sted.
+     *
+     * @param array<string,mixed> $status Svaret fra Vipps, eller minst
+     *                                    ['state' => 'CAPTURED'] fra en hendelse.
+     */
+    public static function anvendTilstand(string $referanse, array $status): string
+    {
+        $tilstand = strtoupper((string) ($status['state'] ?? ''));
+
+        try {
+            if ($tilstand === 'AUTHORIZED') {
+                self::trekk($referanse, (int) ($status['aggregate']['authorizedAmount']['value'] ?? 0));
+                Booking::markerBetalt($referanse);
+            } elseif ($tilstand === 'CAPTURED') {
+                Booking::markerBetalt($referanse);
+            } elseif (in_array($tilstand, ['TERMINATED', 'ABORTED', 'EXPIRED'], true)) {
+                // «status <> betalt» staar der fordi en betaling som ER gjort
+                // opp aldri skal falle tilbake til avbrutt, uansett hva Vipps
+                // sier om en gammel reservasjon.
+                DB::kjor(
+                    "UPDATE payments SET status = 'avbrutt'
+                      WHERE vipps_reference = :r AND status <> 'betalt'",
+                    ['r' => $referanse]
+                );
+            } elseif ($tilstand === 'REFUNDED') {
+                DB::kjor(
+                    "UPDATE payments SET status = 'refundert' WHERE vipps_reference = :r",
+                    ['r' => $referanse]
+                );
+            }
+        } catch (Throwable $e) {
+            logg_feil('Kunne ikke gjore opp betaling ' . $referanse, $e);
+        }
+
+        return $tilstand;
+    }
+
     /** Trekker pengene etter at betalingen er godkjent. */
     public static function trekk(string $referanse, int $belopOre): array
     {

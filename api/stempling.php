@@ -133,14 +133,53 @@ if ($apen !== null) {
     $saaLenge = Stempling::varighet((int) round((time() - $inn->getTimestamp()) / 60));
 }
 
+// ── De tre siste hele maanedene ────────────────────────────────────────
+//
+// Til oppgraderingsforslaget. Gaar medlemmet tomt maaned etter maaned, er det
+// planen som er for liten — ikke maaneden som var travel. Ett enkelt tall
+// sier ikke det; tre gjor.
+//
+// Maalt mot dagens grense, ikke mot den som gjaldt den gangen. Vi lagrer ikke
+// hvilken plan medlemmet hadde i juni, og aa late som om vi vet det ville
+// vaert verre enn aa si det rett ut: dette er «saa mye brukte du», holdt opp
+// mot «saa mye faar du naa».
+//
+// Fri tilgang har ingen grense, og da er det ingenting aa foreslaa. Da sender
+// vi tom liste framfor tre rader som aldri kan bety noe.
+$historikk = [];
+if ($perMnd !== null) {
+    for ($i = 3; $i >= 1; $i--) {
+        $min = Stempling::minutterIManed($id, $i);
+        $historikk[] = [
+            'maaned'   => Stempling::manedNavn($i),
+            'timer'    => Stempling::timer($min),
+            'timerMin' => $min,
+            // «Naadde taket» og ikke «brukte opp»: en maaned der medlemmet
+            // brukte alt er ikke det samme som en der hen ville brukt mer.
+            'naaddeTaket' => $min >= $perMnd * 60,
+        ];
+    }
+}
+
 Svar::json([
     'innstemplet' => $apen !== null,
+    'historikk'   => $historikk,
     'siden'       => $siden,
     'saaLenge'    => $saaLenge,
     'visMeg'      => (bool) ($medlem['vis_innstempling'] ?? 1),
     // Hva medlemmet kan velge mellom, og hva det staar med naa.
     'ressurser'   => $ressurser,
     'ressursId'   => $valgtRessurs,
+    // Hvilken plan timene ble regnet etter.
+    //
+    // Medlemskap::timerFor() leser «members.timer_per_mnd» forst, saa
+    // «members.medlemskap_type». Skjermen navngir det samme medlemskapet, og
+    // da kan de to aldri si hver sin ting — men et eget timetall satt paa
+    // medlemmet gaar foran planen, og det maa skjermen kunne se.
+    'plan' => [
+        'navn'         => trim((string) ($medlem['medlemskap_type'] ?? '')),
+        'egetTimetall' => $medlem['timer_per_mnd'] !== null,
+    ],
     'timer' => [
         'brukt'    => Stempling::timer($brukt),
         'bruktMin' => $brukt,

@@ -7368,7 +7368,7 @@ window.__resources = {
         <div style="margin-bottom: var(--space-8);">
           <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Administrasjon</div>
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Kasse</h1>
-          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges over disk. Skriv beløpet, velg kontant, Vipps eller gratis, og hva det var — så er det med i regnskapet.</p>
+          <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges over disk. Skriv beløpet, velg hvordan det gjøres opp, og hva det var — så er det med i regnskapet. Det som ikke er betalt står i lista under.</p>
         </div>
 
         <!-- Ikke betalt.
@@ -28185,6 +28185,9 @@ class Component extends DCLogic {
           + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',- utestående',
       ovSkylder: liste.map(u => {
         const erMedlem = u.slag === 'medlem';
+        // Butikksalget kom 4. september. Det er hverken en kursplass eller
+        // et medlemskap: en vare gikk ut av doera, og pengene kommer senere.
+        const erOrdre = u.slag === 'ordre';
         return {
         navn: u.navn,
         // Kursraden sier hvilket kurs, naar det er, og hvor lenge plassen
@@ -28205,8 +28208,11 @@ class Component extends DCLogic {
         // «Skulle vaert trukket 1. september», «Ingen betaling
         // registrert». Dager siden innmelding ville bare gjentatt det
         // teksten alt sier, med et annet tall.
-        under: erMedlem
-          ? [u.kurs, u.naar].filter(Boolean).join(' · ')
+        under: erMedlem || erOrdre
+          ? [u.kurs, u.naar,
+             erOrdre && u.dager > 0
+               ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
+               : ''].filter(Boolean).join(' · ')
           : [u.kurs, u.naar,
              u.dager > 0
                ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
@@ -28229,17 +28235,20 @@ class Component extends DCLogic {
         },
         // Ett trykk merker den betalt, med maaten.
         //
-        // De to slagene gjores opp hvert sitt sted: en kursplass paa
-        // paameldingen sin, et medlemskap som en betalingsrad paa
-        // medlemmet. Samme knapp, to endepunkt.
+        // De tre slagene gjores opp hvert sitt sted: en kursplass paa
+        // paameldingen sin, et medlemskap som en betalingsrad paa medlemmet,
+        // og et butikksalg i kassa, der betalingsraden som ikke ble laget
+        // over disken lages naa. Samme knapp, tre endepunkt.
         maater: ['Kontant', 'Vipps'].map(m => ({
           navn: m,
           stil: knapp,
-          // Begge henter admin paa nytt av seg selv naar det gikk bra, saa
-          // kortet oppdaterer seg.
-          velg: () => (erMedlem
-            ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
-            : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
+          // Alle tre henter admin paa nytt av seg selv naar det gikk bra,
+          // saa kortet oppdaterer seg.
+          velg: () => (erOrdre
+            ? this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, maate: m })
+            : erMedlem
+              ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
+              : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
           ).then(() => {}),
         })),
       };
@@ -35792,8 +35801,15 @@ class Component extends DCLogic {
         };
 
         const idag = (data && data.idag) || [];
+        // Dagens penger. Ikke dagens salg.
+        //
+        // Lista under viser alt som gikk over disken, ogsaa det som ble foert
+        // som ubetalt — ellers kunne en feilregistrering ikke annulleres.
+        // Men et ubetalt salg er ingen krone i kassa, og telte vi det med,
+        // ville «Solgt i dag» sagt at det ligger mer i skuffen enn det gjor.
+        // Det sto kr. 1 410,- med kr. 450,- i kassa da dette ble maalt.
         const dagsum = idag
-          .filter(s => s.status !== 'kansellert')
+          .filter(s => s.status !== 'kansellert' && s.maate !== 'Ikke betalt')
           .reduce((n, s) => n + (parseInt(String(s.sum).replace(/[^\d]/g, ''), 10) || 0), 0);
 
         // ── Hurtigsalget ──────────────────────────────────────────────
@@ -36091,6 +36107,14 @@ class Component extends DCLogic {
               return 'Gis bort. Salget føres med kr. 0,- — det står i lista, men legger ingenting til i omsetningen.';
             }
             const n = parseFloat(String(st.utBelop || '').replace(/\s/g, '').replace(',', '.'));
+            // «Ikke betalt» trenger et beloep — det er nettopp det som
+            // skyldes. Null kroner ville vaert ingen gjeld.
+            if (salgMaate === 'Ikke betalt') {
+              return !isFinite(n) || n <= 0
+                ? 'Beløpet kunden skal betale, i kroner.'
+                : 'Føres som ubetalt. Salget står under «Ikke betalt» her i Kassa '
+                  + 'til noen trykker Kontant eller Vipps ved navnet.';
+            }
             if (!isFinite(n) || n <= 0) return 'Beløpet kunden betaler, i kroner.';
             const ore = Math.round(n * 100);
             // kr() runder til hele kroner. Har noen tastet oerer, skal de
@@ -36217,7 +36241,8 @@ class Component extends DCLogic {
             : 'Venter på at kunden betaler …',
           utQrLukk: () => { this.utQrStopp(); this.setState({ utQr: null }); },
 
-          utSalgKnapp: delt ? 'Registrer delt oppgjør' : 'Registrer salget',
+          utSalgKnapp: delt ? 'Registrer delt oppgjør'
+            : (salgMaate === 'Ikke betalt' ? 'Registrer som ubetalt' : 'Registrer salget'),
           utRegistrerSalg: () => {
             // Delt oppgjor gaar en annen vei: én rad per del, med hver sin
             // maate, saa dagsoppgjoret kan foere kontantene og Vipps-pengene
@@ -36467,7 +36492,11 @@ class Component extends DCLogic {
             },
           })),
 
-          utMaater: ((data && data.maater) || ['Kontant', 'Vipps']).map(n => ({
+          // Varekurven. «Ikke betalt» staar her ogsaa — varen gaar ut av
+          // doera, pengene kommer senere — men ikke «Gratis»: prisen kommer
+          // fra hylla, og en gratislinje ville betydd at varen er gratis
+          // for alle.
+          utMaater: ((data && data.kurvmaater) || ['Kontant', 'Vipps', 'Ikke betalt']).map(n => ({
             navn: n,
             velg: () => this.setState({ utMaate: n }),
             stil: {
@@ -36500,7 +36529,11 @@ class Component extends DCLogic {
           utIdag: idag.map(s => ({
             linjer: s.linjer || '(ingen linjer)',
             sum: s.sum,
-            detalj: [s.tid, s.maate, s.status === 'kansellert' ? 'ANNULLERT' : ''].filter(Boolean).join(' · '),
+            // «UBETALT» i klartekst. Maaten staar der alt, men den leses som
+            // «slik ble det gjort opp» — og her ble det ikke gjort opp.
+            detalj: [s.tid, s.maate,
+                     s.status === 'kansellert' ? 'ANNULLERT'
+                     : s.maate === 'Ikke betalt' ? 'IKKE I DAGSSUMMEN' : ''].filter(Boolean).join(' · '),
             kanAnnulleres: s.status !== 'kansellert',
             annuller: () => {
               if (!window.confirm('Annullere salget på ' + s.sum + '?\n\n'

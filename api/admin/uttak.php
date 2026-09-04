@@ -39,6 +39,12 @@ const MAATER = ['Kontant', 'Vipps'];
  * disk ogsaa». En ting gitt bort er fortsatt et salg som skal staa i lista —
  * den er bare null kroner.
  *
+ * «Ikke betalt» kom samme dag: «kassa skal kunne foere som ikke betalt». Det
+ * er det motsatte av «Gratis» — beloepet staar, men pengene er ikke kommet.
+ * Salget lages uten betalingsrad, akkurat som en haandfoert kursplass merket
+ * «Ikke betalt», og dukker opp i lista over dem som skylder til noen trykker
+ * «Kontant» eller «Vipps» ved navnet.
+ *
  * Den staar bare her, og ikke i MAATER, fordi de andre veiene inn i kassa
  * regner ut summen selv: varekurven henter prisen fra basen, og gavekortet
  * skal lyde paa et beloep. Der ville «Gratis» blitt en betalingsrad med full
@@ -51,7 +57,20 @@ const MAATER = ['Kontant', 'Vipps'];
  * forstyrrer ingen telling. Samme regel som «Gratis» har paa kurs, se
  * api/admin/kursbetaling.php.
  */
-const SALGMAATER = ['Kontant', 'Vipps', 'Gratis'];
+const SALGMAATER = ['Kontant', 'Vipps', 'Gratis', 'Ikke betalt'];
+
+/**
+ * Maatene et varesalg fra kurven kan foeres paa.
+ *
+ * «Ikke betalt» kom 4. september: eieren, «kassa skal kunne foere som ikke
+ * betalt», etter «her skal alle som ikke har betalt vises, om det er butikk,
+ * kurs eller medlemskap». Varen gaar ut av doera, pengene kommer senere.
+ *
+ * «Gratis» staar ikke her. Kurven henter prisen fra basen, og en gratislinje
+ * ville betydd at varen skulle vaere gratis for alle. Et fritt beloep kan
+ * settes til null; en hylleprise kan det ikke.
+ */
+const KURVMAATER = ['Kontant', 'Vipps', 'Ikke betalt'];
 
 /**
  * Maatene en DEL av et oppgjor kan vaere.
@@ -119,16 +138,24 @@ if (Foresporsel::metode() === 'GET') {
                 (SELECT GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel) SEPARATOR ', ')
                    FROM order_lines ol WHERE ol.order_id = o.id) AS linjer
            FROM orders o
-           JOIN payments p ON p.id = o.payment_id
-          WHERE p.type = 'manuell' AND o.created_at >= :fra
+      LEFT JOIN payments p ON p.id = o.payment_id
+          WHERE o.created_at >= :fra
+            AND (p.type = 'manuell'
+                 -- Et salg foert som «Ikke betalt» har ingen betalingsrad.
+                 -- Uten dette leddet sto det ingen steder i kassa, og en
+                 -- feilregistrering kunne ikke annulleres. Summen for dagen
+                 -- teller det ikke med — se «utDagsum» i nettleseren.
+                 OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt'))
           ORDER BY o.id DESC",
         ['fra' => $fraOslo->format('Y-m-d H:i:s')]
     );
 
     Svar::json([
         'maater' => MAATER,
-        // Fritt beloep har én maate mer enn de andre: «Gratis».
+        // Fritt beloep har to maater mer enn de andre: «Gratis» og
+        // «Ikke betalt». Kurven har den siste, men ikke den forste.
         'salgmaater' => SALGMAATER,
+        'kurvmaater' => KURVMAATER,
         // Delene et oppgjor kan settes sammen av. Skjermen bygger ett felt
         // per maate, og gavekortet er den som ogsaa trenger en kode.
         'delmaater' => DELMAATER,
@@ -171,19 +198,115 @@ $kropp    = Foresporsel::kropp();
 $handling = Foresporsel::tekst('handling', 'selg');
 
 // ─────────────────────────────────────────────────────────────── annuller
+// ────────────────────────────────────────────────────── gjor opp gjelden
+//
+// Et salg foert som «Ikke betalt» staar i lista over dem som skylder, med
+// «Kontant» og «Vipps» ved siden av navnet. Ett trykk gjor det opp.
+//
+// Her lages betalingsraden som ikke ble laget da salget gikk over disken.
+// Fra dette oeyeblikket er salget som ethvert annet kassesalg: samme rad,
+// samme kobling, samme vei inn i omsetningen og dagsoppgjoret. Datoen paa
+// raden er i dag, for det er i dag pengene kom.
+if ($handling === 'gjorOpp') {
+    $ordreId = (int) ($kropp['ordreId'] ?? 0);
+    $maate   = (string) ($kropp['maate'] ?? MAATER[0]);
+    // Bare de to som faktisk foerer penger. «Gratis» og «Ikke betalt» ville
+    // vaert aa gjore opp uten aa gjore opp.
+    if (!in_array($maate, MAATER, true)) {
+        Svar::feil('Velg kontant eller Vipps.');
+    }
+
+    $ordre = DB::en('SELECT id, ordrenr, sum_ore, status, betalt_maate, payment_id
+                       FROM orders WHERE id = :i', ['i' => $ordreId]);
+    if ($ordre === null) {
+        Svar::feil('Fant ikke salget.', 404);
+    }
+    // Betalingsraden er sperren, ikke maaten. Har salget en rad, er det
+    // gjort opp — eller det venter paa Vipps, og da skal ikke vi roere det.
+    if ($ordre['payment_id'] !== null) {
+        Svar::feil('Salget er alt gjort opp.', 409);
+    }
+    if (in_array((string) $ordre['status'], ['kansellert', 'refundert'], true)) {
+        Svar::feil('Salget er annullert.', 409);
+    }
+    $sum = (int) $ordre['sum_ore'];
+    if ($sum <= 0) {
+        Svar::feil('Salget har ingen sum å gjøre opp.');
+    }
+
+    // Hvilken konto og mva-kode salget skal foeres paa.
+    //
+    // Et fritt beloep kan vaere kurs, medlemskap eller produkt, og det
+    // avgjor kontoen i dagsoppgjoret. Uten betalingsrad var det ingen
+    // «formal» aa arve, saa den leses av linja salget ble skrevet med —
+    // samme SLAG-tabell som skrev den, lest andre veien, saa de to ikke kan
+    // drive fra hverandre. En kurv fra hylla har varenes egne titler og
+    // faller til «ordre», som er riktig: det er butikk.
+    $linjetittel = (string) DB::verdi(
+        'SELECT tittel FROM order_lines WHERE order_id = :o ORDER BY id LIMIT 1',
+        ['o' => $ordreId]
+    );
+    $formal = 'ordre';
+    foreach (SLAG as $def) {
+        if ($def['tittel'] === $linjetittel) {
+            $formal = $def['formal'];
+            break;
+        }
+    }
+
+    $adminId = (int) ($admin['id'] ?? 0);
+    DB::iTransaksjon(static function () use ($ordre, $sum, $maate, $adminId, $formal): void {
+        $felt = [
+            'vipps_reference' => 'KASSE-' . $ordre['ordrenr'],
+            'type'            => 'manuell',
+            'formal'          => $formal,
+            'belop_ore'       => $sum,
+            'status'          => 'betalt',
+            'idempotency_key' => Vipps::uuid(),
+        ];
+        if (DB::harKolonne('payments', 'maate')) {
+            $felt['maate'] = $maate;
+        }
+        if (DB::harKolonne('payments', 'registrert_av') && $adminId > 0) {
+            $felt['registrert_av'] = $adminId;
+        }
+        $betalingId = DB::settInn('payments', $felt);
+
+        DB::oppdater('orders', [
+            'betalt_maate' => $maate,
+            'payment_id'   => $betalingId,
+        ], ['id' => (int) $ordre['id']]);
+
+        if (DB::harKolonne('payments', 'order_id')) {
+            DB::oppdater('payments', ['order_id' => (int) $ordre['id']], ['id' => $betalingId]);
+        }
+    });
+
+    revider('uttak_gjort_opp', 'ordre', $ordreId,
+            ['ordrenr' => $ordre['ordrenr'], 'sum' => $sum, 'maate' => $maate]);
+
+    Svar::ok(['beskjed' => $ordre['ordrenr'] . ' er gjort opp med '
+                         . mb_strtolower($maate) . ' — ' . Booking::kroner($sum) . '.']);
+}
+
 if ($handling === 'annuller') {
     $ordreId = (int) ($kropp['ordreId'] ?? 0);
 
+    // «LEFT JOIN»: et salg foert som «Ikke betalt» har ingen betalingsrad,
+    // og skal likevel kunne annulleres — en feilregistrering maa kunne tas
+    // bort samme dag som alle andre.
     $ordre = DB::en(
         "SELECT o.*, p.id AS betaling_id, p.belop_ore, p.type AS betalingstype
-           FROM orders o JOIN payments p ON p.id = o.payment_id
+           FROM orders o LEFT JOIN payments p ON p.id = o.payment_id
           WHERE o.id = :i",
         ['i' => $ordreId]
     );
     if ($ordre === null) {
         Svar::feil('Fant ikke salget.', 404);
     }
-    if ((string) $ordre['betalingstype'] !== 'manuell') {
+    $ubetaltSalg = $ordre['payment_id'] === null
+        && (string) ($ordre['betalt_maate'] ?? '') === 'Ikke betalt';
+    if (!$ubetaltSalg && (string) $ordre['betalingstype'] !== 'manuell') {
         Svar::feil('Dette salget er gjort opp i Vipps. Det må refunderes der.', 409);
     }
     if ((string) $ordre['status'] === 'kansellert') {
@@ -543,7 +666,19 @@ if ($handling === 'salg') {
     $tittel  = SLAG[$slag]['tittel'];
 
     $ordreId = DB::iTransaksjon(static function () use ($sum, $maate, $kunde, $ordrenr, $formal, $tittel): int {
-        $betalingId = DB::settInn('payments', [
+        // Et ubetalt salg har ingen betalingsrad.
+        //
+        // Raden er selve pengene: den er det omsetningen, dagsoppgjoret og
+        // betalingslista leser. Lagde vi en med status «venter», ville hvert
+        // sted maattet huske aa se bort fra den — og det stedet som glemte
+        // det, ville talt penger som ikke finnes.
+        //
+        // Samme vei som en haandfoert kursplass merket «Ikke betalt»: ingen
+        // rad, og «payment_id IS NULL» er det som skiller den fra et
+        // forlatt Vipps-forsoek, som alltid har en.
+        $ubetalt = $maate === 'Ikke betalt';
+
+        $betalingId = $ubetalt ? null : DB::settInn('payments', [
             'vipps_reference' => 'KASSE-' . $ordrenr,
             'type'            => 'manuell',
             // Denne avgjor kontoen og mva-koden i dagsoppgjoret.
@@ -557,6 +692,8 @@ if ($handling === 'salg') {
             'ordrenr'      => $ordrenr,
             'kunde_navn'   => $kunde !== '' ? $kunde : 'Salg over disk',
             'sum_ore'      => $sum,
+            // Varen gaar ut av doera uansett om den er betalt. «hentet» sier
+            // hvor varen er, ikke hvor pengene er.
             'status'       => 'hentet',
             'betalt_maate' => $maate,
             'payment_id'   => $betalingId,
@@ -569,7 +706,7 @@ if ($handling === 'salg') {
         // migrasjon 134, og skal bety det samme paa alle salg: alle radene
         // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
         // kassesalg vaert usynlig for alt som leser den.
-        if (DB::harKolonne('payments', 'order_id')) {
+        if ($betalingId !== null && DB::harKolonne('payments', 'order_id')) {
             DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
         }
 
@@ -598,8 +735,10 @@ if ($handling === 'salg') {
 
     Svar::ok([
         'ordrenr' => $ordrenr,
-        'beskjed' => $tittel . ' · ' . $belopTekst . ' · ' . $maate
-                   . '. Det er med i regnskapet.',
+        'beskjed' => $tittel . ' · ' . $belopTekst . ' · ' . $maate . '. '
+                   . ($maate === 'Ikke betalt'
+                        ? 'Det står under «Ikke betalt» til pengene er inne.'
+                        : 'Det er med i regnskapet.'),
     ]);
 }
 
@@ -958,8 +1097,8 @@ if (count($linjerInn) > 50) {
     Svar::feil('For mange varer i ett salg.');
 }
 
-$maate = (string) ($kropp['maate'] ?? MAATER[0]);
-if (!in_array($maate, MAATER, true)) {
+$maate = (string) ($kropp['maate'] ?? KURVMAATER[0]);
+if (!in_array($maate, KURVMAATER, true)) {
     Svar::feil('Ukjent betalingsmåte.');
 }
 
@@ -991,7 +1130,10 @@ $kunde   = mb_substr(trim((string) ($kropp['kunde'] ?? '')), 0, 191);
 $ordrenr = 'D-' . gmdate('ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
 
 $ordreId = DB::iTransaksjon(static function () use ($rader, $sum, $maate, $kunde, $ordrenr): int {
-    $betalingId = DB::settInn('payments', [
+    // Ingen betalingsrad naar det ikke er betalt. Samme regel som paa salget
+    // med fritt beloep — se «$ubetalt» der. Varene gaar likevel ut av
+    // lageret: de staar ikke lenger i hylla.
+    $betalingId = $maate === 'Ikke betalt' ? null : DB::settInn('payments', [
         // Referansen er paakrevd og unik. Et disksalg har ingen fra Vipps,
         // saa den lages her — med en egen forstavelse, saa det er tydelig
         // hvor den kommer fra.
@@ -1020,7 +1162,7 @@ $ordreId = DB::iTransaksjon(static function () use ($rader, $sum, $maate, $kunde
     // migrasjon 134, og skal bety det samme paa alle salg: alle radene
     // som hoerer til ordren. Sto den bare paa de delte, ville et vanlig
     // kassesalg vaert usynlig for alt som leser den.
-    if (DB::harKolonne('payments', 'order_id')) {
+    if ($betalingId !== null && DB::harKolonne('payments', 'order_id')) {
         DB::oppdater('payments', ['order_id' => $id], ['id' => $betalingId]);
     }
 
@@ -1050,5 +1192,8 @@ revider('uttak_registrert', 'ordre', $ordreId, ['ordrenr' => $ordrenr, 'sum' => 
 Svar::ok([
     'ordrenr' => $ordrenr,
     'sum'     => Booking::kroner($sum),
-    'beskjed' => 'Salget er registrert: ' . Booking::kroner($sum) . ' med ' . mb_strtolower($maate) . '.',
+    'beskjed' => $maate === 'Ikke betalt'
+        ? 'Salget er registrert: ' . Booking::kroner($sum)
+          . ', ikke betalt. Det står i lista til pengene er inne.'
+        : 'Salget er registrert: ' . Booking::kroner($sum) . ' med ' . mb_strtolower($maate) . '.',
 ]);

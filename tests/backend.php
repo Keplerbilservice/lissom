@@ -8029,8 +8029,9 @@ sjekk('kassa har egne maater for delene av et oppgjor',
 // en betalingsrad med full sum og status «betalt» uten at det kom inn en
 // krone. Skiller vi ikke listene, loeyer regnskapet.
 sjekk('bare salget med fritt beloep kan vaere gratis',
-    str_contains($utFil, "const SALGMAATER = ['Kontant', 'Vipps', 'Gratis'];")
-    && str_contains($utFil, "const MAATER = ['Kontant', 'Vipps'];"));
+    str_contains($utFil, "'Gratis'")
+    && !str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Gratis'")
+    && !str_contains($utFil, "const MAATER = ['Kontant', 'Vipps', 'Gratis'"));
 sjekk('… og varekurven og gavekortet har den ikke',
     substr_count($utFil, 'in_array($maate, MAATER, true)') === 2
     && substr_count($utFil, 'in_array($maate, SALGMAATER, true)') === 1);
@@ -8055,8 +8056,12 @@ sjekk('… og har sitt eget valg, skilt fra varekurven',
     str_contains($sidaG, "const salgMaate = st.utSalgMaate || 'Kontant';")
     && str_contains($sidaG, "velg: () => this.setState({ utSalgMaate: n, utSalgBeskjed: '' }),")
     && str_contains($sidaG, '              maate: salgMaate,'));
-sjekk('… og teksten over kassa nevner den',
-    str_contains($sidaG, 'Skriv beløpet, velg kontant, Vipps eller gratis, og hva det var'));
+// Teksten ramset opp maatene. Da «Ikke betalt» kom, ble den for lang, og
+// den ville uansett maattet rettes hver gang lista endrer seg. Naa peker den
+// paa valget og paa lista under.
+sjekk('… og teksten over kassa peker paa valget og paa lista',
+    str_contains($sidaG, 'velg hvordan det gjøres opp, og hva det var')
+    && str_contains($sidaG, 'Det som ikke er betalt står i lista under.'));
 
 // ── Kasse som eget menypunkt ───────────────────────────────────────────
 //
@@ -8094,6 +8099,76 @@ sjekk('… og bare der',
 // sida maa dras sidelengs. Det skjedde en gang for, paa Oversikt.
 sjekk('… uten rutenettbredden fra Oversikt',
     !str_contains($sidaG, "ovSkylderRamme: {\n        gridColumn:"));
+
+$okoFil3 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+// ── Kassa kan foere et salg som ubetalt ────────────────────────────────
+//
+// Eieren, 4. september: «her skal alle som ikke har betalt vises, om det er
+// butikk, kurs eller medlemskap», og «kassa skal kunne foere som ikke betalt».
+//
+// Butikken manglet: alle sju stedene som lager en ordre satte enten «ny»
+// (venter paa Vipps) eller «hentet» (betalt over disk). Det fantes ingen
+// tilstand for «kunden har faatt varen, pengene mangler».
+sjekk('kassa kan foere et fritt beloep som ubetalt',
+    str_contains($utFil, "const SALGMAATER = ['Kontant', 'Vipps', 'Gratis', 'Ikke betalt'];"));
+sjekk('… og varekurven ogsaa',
+    str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Ikke betalt'];")
+    && str_contains($utFil, 'in_array($maate, KURVMAATER, true)'));
+// «Gratis» hoerer ikke hjemme i kurven: prisen kommer fra hylla, og en
+// gratislinje ville betydd at varen er gratis for alle.
+sjekk('… men kurven kan ikke gi bort en hyllevare',
+    !str_contains($utFil, "const KURVMAATER = ['Kontant', 'Vipps', 'Gratis'"));
+
+// Betalingsraden ER pengene. Lagde vi en med status «venter», maatte hvert
+// eneste sted som teller penger huske aa se bort fra den.
+sjekk('et ubetalt salg lager ingen betalingsrad',
+    substr_count($utFil, "\$ubetalt = \$maate === 'Ikke betalt';") === 1
+    && str_contains($utFil, '$betalingId = $ubetalt ? null : DB::settInn(\'payments\', [')
+    && str_contains($utFil, "\$betalingId = \$maate === 'Ikke betalt' ? null : DB::settInn('payments', ["));
+// Uten vakta kraesjer koblingen paa en null-id.
+sjekk('… og kobler ikke en betaling som ikke finnes',
+    substr_count($utFil, "if (\$betalingId !== null && DB::harKolonne('payments', 'order_id')) {") === 2);
+
+// «payment_id IS NULL» er hele skillet mot et forlatt Vipps-forsoek, som
+// alltid har en rad. Eieren om dem: «avbrutt er ikke et salg og skal ikke
+// vises noen sted».
+sjekk('«Ikke betalt» viser butikk, kurs og medlemskap',
+    str_contains($okoFil3, "'slag'  => 'ordre',")
+    && str_contains($okoFil3, "AND o.betalt_maate = 'Ikke betalt'")
+    && str_contains($okoFil3, 'WHERE o.payment_id IS NULL'));
+sjekk('… og ikke forlatte Vipps-forsoek',
+    str_contains($okoFil3, "AND o.status NOT IN ('kansellert', 'refundert')"));
+
+// Ett trykk paa «Kontant» eller «Vipps» ved navnet lager raden som ikke ble
+// laget over disken.
+sjekk('gjelden kan gjores opp fra lista',
+    str_contains($utFil, "if (\$handling === 'gjorOpp') {")
+    && str_contains($sidaG, "? this.uttakKall({ handling: 'gjorOpp', ordreId: u.id, maate: m })"));
+// Betalingsraden er sperren, ikke maaten: har salget en rad, er det gjort
+// opp — eller det venter paa Vipps, og da skal ikke vi roere det.
+sjekk('… bare én gang',
+    str_contains($utFil, "if (\$ordre['payment_id'] !== null) {")
+    && str_contains($utFil, "Svar::feil('Salget er alt gjort opp.', 409);"));
+// «Gratis» og «Ikke betalt» ville vaert aa gjore opp uten aa gjore opp.
+sjekk('… og bare med noe som faktisk er penger',
+    str_contains($utFil, "\$maate   = (string) (\$kropp['maate'] ?? MAATER[0]);"));
+// Et fritt beloep kan vaere kurs, medlemskap eller produkt, og det avgjor
+// kontoen i dagsoppgjoret. Uten betalingsrad var det ingen «formal» aa arve.
+sjekk('… paa den kontoen salget hoerer til',
+    str_contains($utFil, 'SELECT tittel FROM order_lines WHERE order_id = :o ORDER BY id LIMIT 1')
+    && str_contains($utFil, 'foreach (SLAG as $def) {')
+    && str_contains($utFil, "\$formal = \$def['formal'];"));
+
+// En feilregistrering maa kunne tas bort. Uten «LEFT JOIN» fant hverken
+// dagens liste eller annulleringen et salg uten betalingsrad.
+sjekk('en ubetalt feilregistrering kan annulleres',
+    str_contains($utFil, "FROM orders o LEFT JOIN payments p ON p.id = o.payment_id")
+    && str_contains($utFil, "\$ubetaltSalg = \$ordre['payment_id'] === null"));
+sjekk('… og staar i dagens liste',
+    str_contains($utFil, "OR (o.payment_id IS NULL AND o.betalt_maate = 'Ikke betalt'))"));
+// Maalt: det sto kr. 1 410,- i «Solgt i dag» med kr. 450,- i kassa.
+sjekk('… men teller ikke som penger i kassa',
+    str_contains($sidaG, "          .filter(s => s.status !== 'kansellert' && s.maate !== 'Ikke betalt')"));
 
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.
@@ -9310,10 +9385,12 @@ sjekk('betalingsstatusen for medlemmene regnes ett sted',
 sjekk('… og telleren leser den',
     str_contains($ovFil, "'ubetalte'    => \$medlemsstatus['ubetalte'],"));
 sjekk('… og kortet leser de samme radene',
-    str_contains($ovFil, "}, \$medlemsstatus['rader'])),"));
-// Uten dette staar kursplassene alene i kortet, som for.
-sjekk('kortet slaar sammen kursplasser og medlemskap',
-    str_contains($ovFil, "'ubetalte' => array_merge(array_map("));
+    str_contains($ovFil, "}, \$medlemsstatus['rader']), array_map(static function (array \$o): array {"));
+// Uten dette staar kursplassene alene i kortet, som for. Butikken kom
+// 4. september som den tredje kilden.
+sjekk('kortet slaar sammen kursplasser, medlemskap og butikk',
+    str_contains($ovFil, "'ubetalte' => array_merge(array_map(")
+    && substr_count($ovFil, 'array_map(static function') >= 3);
 // Skjermen maa vite hvilket slag raden er: de to gjores opp hvert sitt sted.
 sjekk('radene sier hvilket slag de er',
     str_contains($ovFil, "'slag'    => 'booking',")

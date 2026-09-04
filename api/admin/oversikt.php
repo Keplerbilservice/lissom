@@ -510,9 +510,13 @@ Svar::json([
     // bygget 29. august for kursplasser alene, for medlemmene hadde noen
     // betalingsstatus i det hele tatt.
     //
+    // Butikken kom 4. september: «her skal alle som ikke har betalt vises, om
+    // det er butikk, kurs eller medlemskap». Kassa kan foere et salg som
+    // «Ikke betalt» — varen gaar ut av doera, pengene kommer senere.
+    //
     // «slag» skiller dem: en kursplass merkes betalt med paameldingen sin,
-    // et medlemskap med en betalingsrad paa medlemmet. Skjermen trenger aa
-    // vite hvilken av delene raden er.
+    // et medlemskap med en betalingsrad paa medlemmet, og et butikksalg med
+    // «gjorOpp» i kassa. Skjermen trenger aa vite hvilken av delene raden er.
     'ubetalte' => array_merge(array_map(static function (array $r) use ($oslo, $utc): array {
         return [
             'slag'    => 'booking',
@@ -564,7 +568,45 @@ Svar::json([
                 : 0,
             'forfalt' => $m['forfalt'],
         ];
-    }, $medlemsstatus['rader'])),
+    }, $medlemsstatus['rader']), array_map(static function (array $o): array {
+        return [
+            'slag'  => 'ordre',
+            'id'    => (int) $o['id'],
+            'navn'  => (string) $o['kunde_navn'],
+            // Der kursraden sier hvilket kurs og medlemsraden hvilken plan,
+            // sier butikkraden hva som ble handlet — og ordrenummeret, saa
+            // den er til aa finne igjen i Nettbutikk.
+            'kurs'  => (string) ($o['hva'] ?? '') !== ''
+                ? (string) $o['hva'] : 'Salg over disk',
+            'naar'  => (string) $o['ordrenr'],
+            'belop' => Booking::kroner((int) $o['sum_ore']),
+            'belopOre' => (int) $o['sum_ore'],
+            'telefon' => (string) ($o['kunde_telefon'] ?? ''),
+            'maate'   => (string) ($o['betalt_maate'] ?? ''),
+            'dager'   => (int) $o['dager'],
+        ];
+    }, DB::alle(
+        // Butikken. Eieren, 4. september: «her skal alle som ikke har betalt
+        // vises, om det er butikk, kurs eller medlemskap».
+        //
+        // «payment_id IS NULL» er hele skillet. Et forlatt Vipps-forsoek har
+        // alltid en betalingsrad — den ble laget for kunden ble sendt til
+        // Vipps — og er ikke en gjeld, men et salg som aldri ble noe av.
+        // Eieren om nettopp dem: «avbrutt er ikke et salg og skal ikke vises
+        // noen sted». Et salg foert som «Ikke betalt» i kassa har ingen rad,
+        // og er en gjeld til noen trykker «Kontant» eller «Vipps».
+        "SELECT o.id, o.ordrenr, o.kunde_navn, o.kunde_telefon, o.sum_ore, o.betalt_maate,
+                DATEDIFF(UTC_DATE(), DATE(o.created_at)) AS dager,
+                (SELECT GROUP_CONCAT(CONCAT(ol.antall, ' × ', ol.tittel)
+                          ORDER BY ol.id SEPARATOR ', ')
+                   FROM order_lines ol WHERE ol.order_id = o.id) AS hva
+           FROM orders o
+          WHERE o.payment_id IS NULL
+            AND o.betalt_maate = 'Ikke betalt'
+            AND o.status NOT IN ('kansellert', 'refundert')
+            AND o.sum_ore > 0
+       ORDER BY o.created_at"
+    ))),
 
     'kommende'   => array_map(static function ($o) use ($oslo, $utc) {
         // startTid gaar med som ren ISO-tid i Oslo-sone, slik at nettleseren

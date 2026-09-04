@@ -27804,7 +27804,10 @@ class Component extends DCLogic {
       // ikke til aa finne uten aa vite hvor den var gjemt.
       ['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],
       ['Markedsføring', 'adminmarked'],
-      ['Nettsiden', 'admininnhold'],
+      // Nettsiden sto her til 4. september. Den er et av husets rom, som
+      // oppskriftene og brenningen: noe verkstedet steller med, ikke en
+      // gruppe mennesker eller et regnskap. Naa er den en fane under
+      // Verkstedet, og hovedmenyen er ti punkter i stedet for elleve.
       ['Brukere',   'adminbrukere'],
     ];
   }
@@ -27872,10 +27875,23 @@ class Component extends DCLogic {
         // Dreieskivene og bordplassene. Ett sted, fordi alt som gaar
         // samtidig deler dem — se Booking::ledigePlasserFlere.
         ['Ressurser',     'adminressurser'],
+        // Nettsiden var et menypunkt for seg. Den er doera inn til sin egen
+        // fanerad — Innhold, SEO, GEO, Mobilvisning, Feilmeldinger — og
+        // staar derfor her uten aa kunne lyse: trykker du paa den, er du et
+        // annet sted. Samme maate som Medlemmer -> Internbutikk virker paa.
+        ['Nettsiden',     'admininnhold'],
+        // Referansekundene sto under Nettsiden. De er verkstedets egne
+        // kunder, ikke en tekst paa en side.
+        ['Referansekunder', 'adminreferanser'],
+        // Malene sto under Markedsfoering. Tekstene er husets egne ord —
+        // det verkstedet sier naar det sender noe fra seg.
+        ['Maler',         'adminmaler'],
       ],
       'Nettsiden': [
+        // Veien tilbake. Nettsiden er ikke et menypunkt lenger, saa uten
+        // denne fantes det ingen vei ut uten aa gaa om menyen paa nytt.
+        ['← Verkstedet',  'adminoppskrifter', { vstFane: 'oppskrifter' }],
         ['Innhold',       'admininnhold'],
-        ['Referansekunder', 'adminreferanser'],
         // Kursvelgeren sto her. Den er et verktoy, ikke en tekst paa en
         // side, og staar naa som kort paa Oversikt.
         ['Nettbutikk',    'adminbutikk',     { butikkFane: 'Butikken' }],
@@ -27900,9 +27916,9 @@ class Component extends DCLogic {
       'Markedsføring': [
         ['← Markedsføring', 'adminmarked'],
         ['E-post og SMS',   'adminvarsler'],
-        // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
+        // «Maler» sto her. Flyttet til Verkstedet 4. september. Kortet paa
+        // Oversikt gaar dit som for — eieren, 1. september: «jeg vil ha et
         // eget kort paa oversikt som heter maler».
-        ['Maler',           'adminmaler'],
         // SEO hoerer hjemme baade her og under Nettsiden. Kom du fra
         // markedsforingsfanene, byttet hele sidemenyen til «Nettsiden», og
         // veien tilbake fantes ikke uten aa gaa om menyen paa nytt.
@@ -27955,24 +27971,27 @@ class Component extends DCLogic {
         return p('Verkstedet', 'Verkstedet',
           st.vstFane === 'vakter' ? 'Vakter'
           : st.vstFane === 'brenning' ? 'Brenning' : 'Oppskrifter');
-      case 'admininnhold':       return p('Nettsiden', 'Nettsiden', 'Innhold');
-      case 'adminreferanser':    return p('Nettsiden', 'Nettsiden', 'Referansekunder');
+      case 'admininnhold':       return p('Verkstedet', 'Nettsiden', 'Innhold');
+      // Referansekundene og malene flyttet inn i Verkstedets egen fanerad
+      // 4. september. De hoerer til huset, ikke til nettsida og ikke til
+      // markedsfoeringen.
+      case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');
       case 'adminkursvelger':    return p('Oversikt');
       case 'adminmarked':        return p('Markedsføring');
       case 'adminseo':
         return st.seoFra === 'marked'
           ? p('Markedsføring', 'Markedsføring', 'SEO')
-          : p('Nettsiden', 'Nettsiden', 'SEO');
+          : p('Verkstedet', 'Nettsiden', 'SEO');
       case 'admingeo':
         return st.geoFra === 'marked'
           ? p('Markedsføring', 'Markedsføring', 'GEO')
-          : p('Nettsiden', 'Nettsiden', 'GEO');
-      case 'adminmobilvis':      return p('Nettsiden', 'Nettsiden', 'Mobilvisning');
-      case 'adminfeil':          return p('Nettsiden', 'Nettsiden', 'Feilmeldinger');
+          : p('Verkstedet', 'Nettsiden', 'GEO');
+      case 'adminmobilvis':      return p('Verkstedet', 'Nettsiden', 'Mobilvisning');
+      case 'adminfeil':          return p('Verkstedet', 'Nettsiden', 'Feilmeldinger');
       case 'adminferie':         return p('Verkstedet', 'Verkstedet', 'Ferie');
       case 'adminressurser':     return p('Verkstedet', 'Verkstedet', 'Ressurser');
       case 'adminvarsler':       return p('Markedsføring', 'Markedsføring', 'E-post og SMS');
-      case 'adminmaler':         return p('Markedsføring', 'Markedsføring', 'Maler');
+      case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');
       case 'admin':
         if (st.kursFane === 'apne')    return p('Kurs og deltakere', 'Kurs og deltakere', 'Åpne kurs');
         if (st.kursFane === 'interne') return p('Medlemmer', 'Medlemmer', 'Kurs');

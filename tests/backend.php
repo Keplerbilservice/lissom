@@ -8170,6 +8170,49 @@ sjekk('… og staar i dagens liste',
 sjekk('… men teller ikke som penger i kassa',
     str_contains($sidaG, "          .filter(s => s.status !== 'kansellert' && s.maate !== 'Ikke betalt')"));
 
+// ── Nettsiden, Referansekunder og Maler inn under Verkstedet ───────────
+//
+// Nettsiden var et menypunkt for seg. Den er et av husets rom, som
+// oppskriftene og brenningen: noe verkstedet steller med, ikke en gruppe
+// mennesker eller et regnskap.
+sjekk('hovedmenyen er ti punkter',
+    !str_contains($sidaG, "['Nettsiden', 'admininnhold'],")
+    && str_contains($sidaG, "['Markedsføring', 'adminmarked'],\n"));
+sjekk('… og Verkstedet har faatt de tre',
+    str_contains($sidaG, "['Nettsiden',     'admininnhold'],")
+    && str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Malene sto under")
+    && str_contains($sidaG, "['Maler',         'adminmaler'],"));
+// Sto de begge steder, ville to faner gaatt til den samme skjermen og
+// begge villet lyse.
+sjekk('… og staar ikke igjen der de kom fra',
+    !str_contains($sidaG, "['Referansekunder', 'adminreferanser'],\n        // Kursvelgeren")
+    && !str_contains($sidaG, "['Maler',           'adminmaler'],"));
+
+// Uten dette lyste ingenting i menyen paa Nettsidens skjermer: «Nettsiden»
+// fantes ikke lenger som menypunkt.
+sjekk('nettsidens skjermer lyser Verkstedet',
+    str_contains($sidaG, "case 'admininnhold':       return p('Verkstedet', 'Nettsiden', 'Innhold');")
+    && str_contains($sidaG, "case 'adminmobilvis':      return p('Verkstedet', 'Nettsiden', 'Mobilvisning');")
+    && str_contains($sidaG, "case 'adminfeil':          return p('Verkstedet', 'Nettsiden', 'Feilmeldinger');")
+    && str_contains($sidaG, "          : p('Verkstedet', 'Nettsiden', 'SEO');")
+    && str_contains($sidaG, "          : p('Verkstedet', 'Nettsiden', 'GEO');"));
+// … men beholder sin egen fanerad. Ellers ville Innhold, SEO, GEO,
+// Mobilvisning og Feilmeldinger mistet veien mellom seg.
+sjekk('… og beholder sin egen fanerad',
+    str_contains($sidaG, "      'Nettsiden': [")
+    && str_contains($sidaG, "['← Verkstedet',  'adminoppskrifter', { vstFane: 'oppskrifter' }],"));
+
+// De to som flyttet helt hoerer til Verkstedets egen rad, ikke Nettsidens.
+sjekk('referansekundene og malene hoerer til Verkstedet',
+    str_contains($sidaG, "case 'adminreferanser':    return p('Verkstedet', 'Verkstedet', 'Referansekunder');")
+    && str_contains($sidaG, "case 'adminmaler':         return p('Verkstedet', 'Verkstedet', 'Maler');"));
+// Kortet paa Oversikt skal gaa dit som for. Eieren, 1. september: «jeg vil
+// ha et eget kort paa oversikt som heter maler».
+sjekk('… og kortet paa Oversikt gaar fortsatt til malene',
+    str_contains($sidaG, "'Se malene', () => this.gaaAdmin('adminmaler', {})"));
+sjekk('… og kortet til referansekundene ogsaa',
+    str_contains($sidaG, "() => this.gaaAdmin('adminreferanser', {})"));
+
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.
 if (DB::harKolonne('payments', 'order_id')) {

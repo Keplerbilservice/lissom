@@ -6343,7 +6343,7 @@ sjekk('… og innmeldingen faar nummeret fra kortet',
 sjekk('… og den som ikke er innlogget sendes til Vipps og tilbake hit',
     str_contains($sida, "sessionStorage.setItem('lissom_medlemsplan', navn);")
     && str_contains($sida, "sessionStorage.setItem('lissom_medlemskort', '1');")
-    && str_contains($sida, "window.location.href = '/api/vipps-login.php?retur=/medlemskap';"));
+    && str_contains($sida, "this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');"));
 // Det hun rakk aa skrive skal ikke vaere borte naar hun kommer tilbake.
 sjekk('… og e-posten og nummeret overlever innloggingen',
     str_contains($sida, "if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }")
@@ -10286,7 +10286,7 @@ sjekk('… og reserveknappen er vaar egen, uten etterlignet logo',
 // Den ene gjenstaaende #FF5B24-flata er designverktoyets simulering, som
 // aldri kjorer paa lissom.no: den staar bak erPublisert() === false.
 sjekk('simuleringen med Vipps-farge kjorer bare i forhaandsvisningen',
-    str_contains($sidaB, "if (this.erPublisert()) {\n          window.location.href = '/api/vipps-login.php?retur='"));
+    str_contains($sidaB, "if (this.erPublisert()) {\n          this.sendTilInnlogging(this.naaSti(), '');"));
 
 // «Betal i verkstedet» har ingen «disabled»-grein, men en som venter.
 sjekk('«Betal i verkstedet» viser Vipps sin ventetilstand',
@@ -10299,8 +10299,11 @@ sjekk('«Betal i verkstedet» viser Vipps sin ventetilstand',
 // den alene, forsvant summen fra stedet man trykker. Eieren, 3. september:
 // prisen skal staa rett over knappen.
 sjekk('summen staar over knappen paa kurs',
-    str_contains($sidaB, "bookBetalLinje: 'Du betaler ' + this.bookSum(),")
+    str_contains($sidaB, "        : 'Du betaler ' + this.bookSum(),")
     && str_contains($sidaB, '{{ bookBetalLinje }}'));
+// Er du ikke innlogget, betaler du ikke enda — da sier linja det i stedet.
+sjekk('… og sier fra naar du maa logge inn forst',
+    str_contains($sidaB, "? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()"));
 sjekk('… og paa medlemskap',
     str_contains($sidaB, "medlemsBetalLinje: pl.pris")
     && str_contains($sidaB, '{{ medlemsBetalLinje }}'));
@@ -10309,10 +10312,14 @@ sjekk('… og paa medlemskap',
 sjekk('… men ikke i kassa, som alt viser «Å betale»',
     str_contains($sidaB, '<span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-3xl); color: var(--text-heading);">{{ kurvSum }}</span>'));
 // Knappeteksten og prislinja maa lese det samme tallet.
+// Tre treff naa, ikke to: prislinja har faatt en gren til, for den som ikke
+// er innlogget. Alle tre leser den samme bookSum(), saa tallet er ett.
+// Knappen viser ikke summen naar du er utlogget — da staar den i linja rett
+// over, sammen med at du maa logge inn forst.
 sjekk('summen regnes ett sted',
     str_contains($sidaB, '  bookSum() {')
-    && str_contains($sidaB, "bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
-    && substr_count($sidaB, 'this.bookSum()') === 2);
+    && str_contains($sidaB, "        : ((this.state.valgtKurs || {}).tema === 'Medlemskap')")
+    && substr_count($sidaB, 'this.bookSum()') === 3);
 
 echo "\n== PHP-en lar seg lese ==\n";
 $rot = dirname(__DIR__);
@@ -10398,6 +10405,100 @@ sjekk('Vipps-ruta staar midt paa skjermen',
 sjekk('de fire skjemarutene sentreres av «margin: auto 0»',
     substr_count($sidaR, 'margin: auto 0;') === 4,
     'fire ruter');
+
+// ── Ingen skal falle ut uten beskjed ────────────────────────────────────
+//
+// 4. september: en ny kunde bestilte et kurs paa nett. Hun fikk ingen
+// feilmelding, ble ikke trukket i Vipps, og sto aldri i lista.
+//
+// Veien var denne: «Book plass» booker ikke naar du ikke er innlogget — den
+// sender deg til Vipps-innlogging, med et bart window.location.href og uten
+// et ord om hvorfor. Gaar innloggingen galt, sender vipps-callback.php deg
+// til forsida med «?innlogging=feilet». Ingen leste den parameteren. Da sto
+// det ingenting noe sted, og api/book.php var aldri kalt — derfor finnes det
+// heller ingen rad aa finne igjen.
+//
+// Maalt i nettleseren, utlogget:
+//   /?innlogging=feilet   for: forsida, ingen beskjed
+//                       etter: «Innloggingen gikk ikke» med rod ring
+//   /?innlogging=avbrutt  for: forsida, ingen beskjed
+//                       etter: «Innloggingen ble avbrutt» med rod ring
+//   /kurs/nybegynner-dreiekurs
+//                         for: «Book plass · kr. 2 800,-»
+//                       etter: «Logg inn med Vipps for aa melde deg paa»
+//   vanlig beskjed (gavekort, feil e-post): ingen ring, gronn tone som for
+$sidaI = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$kodeI = (string) preg_replace('/<!--.*?-->/s', '', $sidaI);
+$kodeI = (string) preg_replace('/^\s*\/\/.*$/m', '', $kodeI);
+
+sjekk('det er kode aa maale i innloggingssjekkene',
+    strlen($kodeI) > 500000, strlen($kodeI) . ' tegn');
+// Én vei til innlogging, ikke fem spredte hopp.
+sjekk('alle veier til Vipps-innlogging gaar gjennom én metode',
+    substr_count($kodeI, "window.location.href = '/api/vipps-login.php") === 1
+    && str_contains($kodeI, 'sendTilInnlogging(retur, hva) {'),
+    'ett hopp, i sendTilInnlogging()');
+sjekk('… og de fem stedene bruker den',
+    substr_count($kodeI, 'this.sendTilInnlogging(') === 5,
+    substr_count($kodeI, 'this.sendTilInnlogging(') . ' kall');
+// Grunnen legges igjen, saa beskjeden kan si hva som IKKE ble gjort.
+foreach ([
+    'Du ble ikke meldt på kurset.',
+    'Gavekortet ble ikke kjøpt.',
+    'Bestillingen ble ikke sendt.',
+    'Medlemskapet ble ikke opprettet.',
+] as $grunn) {
+    sjekk('grunnen «' . $grunn . '» tas vare paa',
+        str_contains($kodeI, "'" . $grunn . "'"), 'staar i et kall');
+}
+sjekk('grunnen lagres og hentes fra samme noekkel',
+    substr_count($kodeI, 'lissom_innlogging_grunn') === 4,
+    'skriv, slett-naar-tom, les og rydd');
+// Parameteren fra vipps-callback.php leses naa.
+sjekk('«?innlogging=feilet» leses av sida',
+    str_contains($kodeI, "window.location.search.match(/[?&]innlogging=([a-z]+)/)"),
+    'parameteren plukkes ut');
+sjekk('… og gir en beskjed med feiltone',
+    str_contains($kodeI, "kvitteringTone: 'danger',")
+    && str_contains($kodeI, "'Innloggingen gikk ikke'")
+    && str_contains($kodeI, "'Innloggingen ble avbrutt'"),
+    'begge utfallene');
+sjekk('… og blir ikke staaende i adressen etterpaa',
+    str_contains($kodeI, "replace(/([?&])innlogging=[a-z]+&?/, '\$1')"),
+    'parameteren fjernes');
+sjekk('… og bare «feilet» og «avbrutt» utloser den',
+    str_contains($kodeI, "if (innlogging === 'feilet' || innlogging === 'avbrutt') {"),
+    'ingen andre verdier');
+// Beskjedboksen sto paa «success» uansett hva den sa.
+sjekk('meldingsboksen leser tonen fra sida',
+    str_contains($sidaI, 'Toast" tone="{{ kvitteringTone }}"')
+    && !str_contains($sidaI, 'Toast" tone="success"'),
+    'bundet, ikke fast');
+sjekk('… og staar paa «success» naar ingen tone er satt',
+    str_contains($kodeI, "kvitteringTone: this.state.kvitteringTone || 'success',"),
+    'samme som for');
+// Ikonet hentes som en SVG-fil over nett. Uteblir den, staar boksen umerket —
+// derfor males ringen i CSS, som ikke henter noe.
+sjekk('en feilmelding faar en ring som ikke henter noe',
+    str_contains($kodeI, "boxShadow: '0 0 0 3px var(--danger)'")
+    && str_contains($kodeI, "boxShadow: '0 0 0 3px var(--warning)'"),
+    'danger og warning');
+sjekk('… og en vanlig beskjed faar ingen ring',
+    (bool) preg_match("/kvitteringStil: Object\.assign\(.*?: \{\}\),/s", $kodeI),
+    'tom for de andre tonene');
+sjekk('tonen nullstilles naar boksen lukkes',
+    substr_count($kodeI, 'kvitteringTone: null') === 3,
+    'lukk, auto-lukk og den andre auto-lukken');
+// Knappen skal si hva den gjor.
+sjekk('bookingknappen sier at du logger inn forst',
+    str_contains($kodeI, "? 'Logg inn med Vipps for å melde deg på'"),
+    'ny tekst naar du ikke er innlogget');
+sjekk('… og sier «Book plass» som for naar du er innlogget',
+    str_contains($kodeI, "          : 'Book plass · ' + this.bookSum(),"),
+    'uendret for innloggede');
+sjekk('… og linja over Vipps-knappen sier det samme',
+    str_contains($kodeI, "? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()"),
+    'staar rett over knappen');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

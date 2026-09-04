@@ -77,6 +77,58 @@ høyreklikkmeny skal stå, og den er klemt innenfor vinduet så den ikke kan
 havne utenfor. Etiketten som følger fingeren når et kurs dras er heller
 ikke rørt.
 
+### Kunden som bestilte, men aldri ble påmeldt
+
+4. september: en ny kunde bestilte et kurs på nett. Hun fikk **ingen
+feilmelding**, ble **ikke trukket i Vipps**, og sto **aldri i lista**.
+
+Veien hun gikk:
+
+1. «Book plass» booker ikke når du ikke er innlogget — den sendte deg til
+   Vipps-innlogging med et bart `window.location.href`, uten et ord om
+   hvorfor. Fire steder gjorde dette hver for seg.
+2. Gikk innloggingen galt, sendte `vipps-callback.php` deg til forsida med
+   `?innlogging=feilet`. **Ingen leste den parameteren.**
+3. Da hadde `api/book.php` aldri vært kalt. Derfor finnes det ingen booking,
+   ingen betaling og ingen rad å finne igjen — hun er «aldri registrert».
+
+Rettet:
+
+- Én delt `sendTilInnlogging(retur, hva)` erstatter alle fem hoppene. Den
+  husker hva som ikke ble gjort.
+- `?innlogging=feilet` og `=avbrutt` leses nå, og gir en beskjed som sier
+  hva som ikke ble gjort: «Innloggingen gikk ikke — Du ble ikke meldt på
+  kurset.»
+- Meldingsboksen sto på `tone="success"` uansett hva den sa. Tonen er nå
+  bundet, og en feil får en rød ring i CSS — ikonet hentes som en SVG-fil
+  over nett, og uteble den, sto boksen helt umerket.
+- Bookingknappen sier «Logg inn med Vipps for å melde deg på» når du ikke
+  er innlogget, i stedet for «Book plass · kr. 2 800,-».
+
+**Målt i nettleseren, utlogget:**
+
+| Hva | Før | Etter |
+|---|---|---|
+| `/?innlogging=feilet` | forsida, ingen beskjed | «Innloggingen gikk ikke», rød ring |
+| `/?innlogging=avbrutt` | forsida, ingen beskjed | «Innloggingen ble avbrutt», rød ring |
+| Med grunn lagret | — | «… Du ble ikke meldt på kurset.» |
+| Bookingknappen | «Book plass · kr. 2 800,-» | «Logg inn med Vipps for å melde deg på» |
+| Vanlig beskjed (gavekort, feil e-post) | grønn, ingen ring | uendret |
+
+**Ikke målt:** linja «Du logger inn med Vipps først — så betaler du kr X»
+vises bare når Vipps sitt eget knappeskript har lastet, og det skriptet
+hentes over nett. Det skjer ikke i testmiljøet. Teksten er låst med en
+sjekk i `tests/backend.php`, men den er ikke sett på skjerm.
+
+### Fortsatt åpent etter Vipps-gjennomgangen
+
+| Funn | Hvor | Status |
+|---|---|---|
+| Cron henter Vipps-status og gjør ingenting med den — trekker ikke, markerer ikke betalt, avbryter ikke. `siste_payload` skrives tre steder og leses null. | `bin/cron.php:174` | **Ikke rettet — venter på svar.** Webhooken sier «Cron rydder opp» ved feil. Det gjør den ikke. |
+| Sikkerhetsnettet som faktisk virker ser bare på `venter` og `autorisert` — ikke `opprettet`. | `app/lib/tikk.php:97` | **Ikke rettet.** Smalt hull: alle kanaler går `opprettet → venter` med én gang, så en rad blir bare stående på `opprettet` hvis PHP dør midt imellom. |
+| Admin varsler «N betalinger har hengt i over en time», men navngir ingen og teller ikke `opprettet`. | `api/admin/oversikt.php:197` | **Ikke rettet.** |
+| Kom kunden seg gjennom innloggingen, er skjemaet hun fylte ut (dato, telefon, allergier) borte når hun kommer tilbake. Bare medlemskap tar vare på det. | `lissom-2108.html` | **Ikke rettet.** |
+
 **Ikke gjort, venter på svar**
 
 | Punkt | Hva | Status |

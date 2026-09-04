@@ -16872,8 +16872,8 @@ window.__resources = {
 </sc-if>
 
 <sc-if value="{{ harKvittering }}" hint-placeholder-val="{{ true }}">
-  <div style="position: fixed; left: 50%; transform: translateX(-50%); top: 110px; z-index: 500; width: min(400px, calc(100vw - 32px));">
-    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="success" title="{{ kvittering }}" description="{{ kvitteringDetalj }}" on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
+  <div style="{{ kvitteringStil }}">
+    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Toast" tone="{{ kvitteringTone }}" title="{{ kvittering }}" description="{{ kvitteringDetalj }}" on-close="{{ lukkKvittering }}" hint-size="360px,auto"></x-import>
   </div>
 </sc-if>
 
@@ -21274,7 +21274,7 @@ class Component extends DCLogic {
       return;
     }
     if (!this.state.innlogget) {
-      window.location.href = '/api/vipps-login.php?retur=/gavekort';
+      this.sendTilInnlogging('/gavekort', 'Gavekortet ble ikke kjøpt.');
       return;
     }
     if (this._gavekortPagaar) return;
@@ -21357,7 +21357,7 @@ class Component extends DCLogic {
     // Kassen i designet har ingen felter for navn, e-post og telefon.
     // Vipps-innloggingen gir oss dem, og de blir riktige uten skrivefeil.
     if (!this.state.innlogget) {
-      window.location.href = '/api/vipps-login.php?retur=/kasse';
+      this.sendTilInnlogging('/kasse', 'Bestillingen ble ikke sendt.');
       return;
     }
     if (this._kjopPagaar) return;
@@ -24069,6 +24069,34 @@ class Component extends DCLogic {
         .catch(() => {});
     }, 5 * 60 * 1000);
 
+    // Innloggingen gikk ikke.
+    //
+    // vipps-callback.php sender folk hit med «?innlogging=feilet» eller
+    // «=avbrutt» naar Vipps ikke ga oss en profil. Ingen leste den
+    // parameteren: man havnet paa forsida, og det sto ingenting. Det er
+    // presis det en kunde beskrev 4. september — «hun gjorde det paa nett,
+    // men det virket ikke», «ingen feilmelding». Hun sto aldri i lista,
+    // fordi api/book.php aldri ble kalt.
+    //
+    // «Grunnen» er lagt igjen av sendTilInnlogging(), saa beskjeden kan si
+    // hva som IKKE ble gjort — ikke bare at noe gikk galt.
+    const innlogging = (window.location.search.match(/[?&]innlogging=([a-z]+)/) || [])[1];
+    if (innlogging === 'feilet' || innlogging === 'avbrutt') {
+      let grunn = '';
+      try {
+        grunn = sessionStorage.getItem('lissom_innlogging_grunn') || '';
+        sessionStorage.removeItem('lissom_innlogging_grunn');
+      } catch (_) { /* privat modus */ }
+      this.setState({
+        kvitteringTone: 'danger',
+        kvittering: innlogging === 'avbrutt' ? 'Innloggingen ble avbrutt' : 'Innloggingen gikk ikke',
+        kvitteringDetalj: (grunn ? grunn + ' ' : '')
+          + 'Prøv igjen, eller skriv til post@lissom.no så ordner vi det for deg.',
+      });
+      const rest = window.location.search.replace(/([?&])innlogging=[a-z]+&?/, '$1').replace(/[?&]$/, '');
+      history.replaceState(null, '', window.location.pathname + rest + window.location.hash);
+    }
+
     // «?ny=» settes bare for aa tvinge nettleseren til aa hente fila paa nytt.
     // Den skal ikke bli staaende i adressen etterpaa — da foelger den med
     // hver lenke som deles.
@@ -25617,7 +25645,7 @@ class Component extends DCLogic {
       clearTimeout(this._kvitteringTimer);
       const denne = this.state.kvittering;
       this._kvitteringTimer = setTimeout(() => {
-        this.setState(s => (s.kvittering === denne ? { kvittering: '' } : {}));
+        this.setState(s => (s.kvittering === denne ? { kvittering: '', kvitteringTone: null } : {}));
       }, 3000);
     }
   }
@@ -26217,7 +26245,7 @@ class Component extends DCLogic {
       this._kvittTimer = null;
       // Bare den beskjeden vi startet klokka for. Kom det en ny imens, skal
       // den faa sine egne tre sekunder.
-      this.setState(s => (s.kvittering === tekst ? { kvittering: '', kvitteringDetalj: '' } : {}));
+      this.setState(s => (s.kvittering === tekst ? { kvittering: '', kvitteringDetalj: '', kvitteringTone: null } : {}));
     }, 3000);
   }
 
@@ -31908,6 +31936,29 @@ class Component extends DCLogic {
       }));
   }
 
+  /**
+   * Sender brukeren til Vipps-innlogging — og husker hvorfor.
+   *
+   * Fire steder gjorde dette hver for seg, med et bart «window.location.href».
+   * Trykte du «Book plass» uten aa vaere innlogget, hoppet sida til Vipps uten
+   * et ord om hvorfor, og gikk innloggingen galt, kom du tilbake til forsida
+   * uten beskjed. Da hadde ingenting skjedd, og ingenting sto skrevet noe
+   * sted: ingen booking, ingen betaling, ingen feilmelding.
+   *
+   * 4. september: en kunde meldte seg paa et kurs, det virket ikke, hun fikk
+   * ingen feilmelding, og hun sto aldri i lista. Dette er den veien hun gikk.
+   *
+   * «Hva» lagres, og leses igjen naar Vipps sender oss tilbake — saa
+   * beskjeden kan si hva som IKKE ble gjort, ikke bare at noe gikk galt.
+   */
+  sendTilInnlogging(retur, hva) {
+    try {
+      if (hva) sessionStorage.setItem('lissom_innlogging_grunn', hva);
+      else sessionStorage.removeItem('lissom_innlogging_grunn');
+    } catch (_) { /* privat modus: da staar den generelle beskjeden */ }
+    window.location.href = '/api/vipps-login.php?retur=' + encodeURIComponent(retur);
+  }
+
   // Ekte booking: reserverer plassen og sender brukeren til Vipps.
   //
   // Er du ikke innlogget, sendes du dit forst. Bookingskjemaet i designet har
@@ -31929,7 +31980,7 @@ class Component extends DCLogic {
     }
     if (!this.state.innlogget) {
       // Tilbake til bookingen etterpaa, ikke til forsiden.
-      window.location.href = '/api/vipps-login.php?retur=' + encodeURIComponent(this.naaSti());
+      this.sendTilInnlogging(this.naaSti(), 'Du ble ikke meldt på kurset.');
       return;
     }
     // Krysset av for allergier, men ikke skrevet noe. Da vet verkstedet at
@@ -32966,7 +33017,25 @@ class Component extends DCLogic {
       utforDetalj: () => this.utforDetalj(),
       kvittering: this.state.kvittering || '',
       harKvittering: !!this.state.kvittering,
-      lukkKvittering: () => this.setState({ kvittering: '' }),
+      // Meldingsboksen sto paa «success» uansett hva den sa. «Innloggingen
+      // gikk ikke» kom med gronn hake — og det er én grunn til at en feil kan
+      // leses som at alt gikk bra. Tonen settes der beskjeden settes; staar
+      // den ikke, er det fortsatt «success», akkurat som for.
+      kvitteringTone: this.state.kvitteringTone || 'success',
+      // Tonen farger ikonet — men ikonet hentes som en SVG-fil over nett.
+      // Kommer den ikke fram, staar boksen uten merke, og en feilmelding ser
+      // ut som en kvittering. Derfor males en ring rundt hele boksen ogsaa.
+      // Den er vanlig CSS og henter ingenting.
+      kvitteringStil: Object.assign(
+        { position: 'fixed', left: '50%', transform: 'translateX(-50%)',
+          top: '110px', zIndex: 500, width: 'min(400px, calc(100vw - 32px))',
+          borderRadius: 'var(--radius-lg)' },
+        this.state.kvitteringTone === 'danger'
+          ? { boxShadow: '0 0 0 3px var(--danger)' }
+          : this.state.kvitteringTone === 'warning'
+            ? { boxShadow: '0 0 0 3px var(--warning)' }
+            : {}),
+      lukkKvittering: () => this.setState({ kvittering: '', kvitteringTone: null }),
       // Dialogen beskrev «PDF eller Excel» og lukket seg igjen naar man
       // trykket «Last ned» — ingenting ble lastet ned, og verkstedet maatte
       // skrive av navnene fra skjermen. Naa lastes lista ned som CSV med
@@ -34189,7 +34258,7 @@ class Component extends DCLogic {
                 if (epost) { sessionStorage.setItem('lissom_medlemsepost', epost); }
                 if (telefon) { sessionStorage.setItem('lissom_medlemstlf', telefon); }
               } catch (_) { /* privat modus */ }
-              window.location.href = '/api/vipps-login.php?retur=/medlemskap';
+              this.sendTilInnlogging('/medlemskap', 'Medlemskapet ble ikke opprettet.');
               return;
             }
             if (!epost || epost.indexOf('@') < 1) {
@@ -34322,9 +34391,15 @@ class Component extends DCLogic {
       // api/booking.php, som ogsaa holder av plassen.
       // Knappen sier hva som faktisk skjer. «Book plass» paa et medlemskap
       // er misvisende — det er en avtale, ikke en plass.
-      bookKnapp: ((this.state.valgtKurs || {}).tema === 'Medlemskap')
-        ? 'Opprett avtale i Vipps'
-        : 'Book plass · ' + this.bookSum(),
+      // Er du ikke innlogget, gjor knappen noe annet enn den sier: den sender
+      // deg til Vipps-innlogging, og ingenting er bestilt naar du kommer
+      // tilbake. Sto det «Book plass», var det rimelig aa tro at plassen var
+      // booket. Naa sier den hva som faktisk skjer.
+      bookKnapp: !this.state.innlogget
+        ? 'Logg inn med Vipps for å melde deg på'
+        : ((this.state.valgtKurs || {}).tema === 'Medlemskap')
+          ? 'Opprett avtale i Vipps'
+          : 'Book plass · ' + this.bookSum(),
       // ── Summen over Vipps-knappen ───────────────────────────────────
       //
       // Vipps sin knapp sier «Betal med Vipps» og har ikke plass til
@@ -34333,7 +34408,12 @@ class Component extends DCLogic {
       //
       // Samme tall som i knappeteksten over — begge leser bookSum(), saa
       // de kan ikke bli uenige.
-      bookBetalLinje: 'Du betaler ' + this.bookSum(),
+      // Vipps sin egen knapp sier «Betal med Vipps» og kan ikke endres. Er du
+      // ikke innlogget, staar det her i stedet — rett over knappen, der man
+      // ser det for man trykker.
+      bookBetalLinje: !this.state.innlogget
+        ? 'Du logger inn med Vipps først — så betaler du ' + this.bookSum()
+        : 'Du betaler ' + this.bookSum(),
       bekreftBooking: () => {
         const k = this.state.valgtKurs || { title: 'Nybegynner dreiekurs', price: 'Fra kr. 2 800,-', date: 'Onsdag 2. september, 17:30' };
         const dato = (this.state.bDato) || (k.datoer && k.datoer[0] && k.datoer[0].dato) || (k.date + (k.duration ? ', ' + k.duration : ''));
@@ -46390,7 +46470,7 @@ class Component extends DCLogic {
         // I designverktoyets forhandsvisning: simulert flyt, siden det ikke
         // finnes noen server der.
         if (this.erPublisert()) {
-          window.location.href = '/api/vipps-login.php?retur=' + encodeURIComponent(this.naaSti());
+          this.sendTilInnlogging(this.naaSti(), '');
           return;
         }
         this.setState({ vippsSteg: 'venter' });

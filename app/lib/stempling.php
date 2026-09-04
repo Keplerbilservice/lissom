@@ -172,6 +172,63 @@ final class Stempling
     }
 
     /**
+     * Minutter brukt i en hel maaned, N maaneder tilbake.
+     *
+     * «minutterDenneManeden» over teller fra den foerste i inneveerende
+     * maaned og fram til naa. Denne teller en HEL maaned som er over, og
+     * brukes til oppgraderingsforslaget: har medlemmet gaatt tom tre maaneder
+     * paa rad, er det planen som er for liten, ikke maaneden som var travel.
+     *
+     * Bare avsluttede oekter telles. En oekt som fortsatt staar aapen hoerer
+     * til inneveerende maaned uansett naar den startet, og en maaned som er
+     * over har ingen paagaaende oekter aa telle.
+     *
+     * @param int $tilbake 1 = forrige maaned, 2 = maaneden for der, og sa videre
+     */
+    public static function minutterIManed(int $medlemId, int $tilbake): int
+    {
+        if ($tilbake < 1) {
+            throw new InvalidArgumentException('«tilbake» maa vaere minst 1 — bruk minutterDenneManeden() for inneveerende.');
+        }
+        // Grensene regnes i norsk tid og gjores om til UTC, ikke motsatt:
+        // midnatt 1. juni i Oslo er 22:00 31. mai i UTC om sommeren og 23:00
+        // om vinteren. Regnet i UTC ville en oekt paa kvelden den siste i
+        // maaneden havnet i feil maaned.
+        $oslo = self::oslo();
+        $start = (new DateTimeImmutable('now', $oslo))
+            ->modify('first day of this month')->setTime(0, 0)
+            ->modify('-' . $tilbake . ' months');
+        $slutt = $start->modify('+1 month');
+
+        return max(0, (int) DB::verdi(
+            'SELECT COALESCE(SUM(minutter), 0) FROM check_ins
+              WHERE member_id = :m AND ut_tid IS NOT NULL
+                AND inn_tid >= :fra AND inn_tid < :til',
+            [
+                'm'   => $medlemId,
+                'fra' => $start->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+                'til' => $slutt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s'),
+            ]
+        ));
+    }
+
+    /**
+     * Navnet paa maaneden N maaneder tilbake, paa norsk.
+     *
+     * Staar her og ikke i nettsida: den som teller minuttene er den som vet
+     * hvilken maaned det var, og da kan de to aldri bli uenige.
+     */
+    public static function manedNavn(int $tilbake): string
+    {
+        $d = (new DateTimeImmutable('now', self::oslo()))
+            ->modify('first day of this month')
+            ->modify('-' . max(0, $tilbake) . ' months');
+        $navn = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                 'august', 'september', 'oktober', 'november', 'desember'];
+        return $navn[(int) $d->format('n') - 1];
+    }
+
+    /**
      * Stempler inn. Returnerer okt-id.
      *
      * Hele sjekken ligger inne i transaksjonen: to raske trykk etter hverandre

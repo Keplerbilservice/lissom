@@ -3351,6 +3351,50 @@ window.__resources = {
     </div>
   </sc-if>
 
+  <!-- Stemple inn ved doera.
+       Bak QR-koden som henger ved inngangen. Medlemmet skanner med kameraet
+       paa telefonen og er framme: sida vet hvem hen er fra sesjonen, viser
+       timene som staar igjen, og har én knapp.
+
+       Hele poenget er at det skal vaere ett trykk. Derfor staar det ingen
+       ressursvalg her, ingen meny og ingen lenker videre — det finnes paa
+       Min side for den som vil dit. Eieren, 4. september: superenkel
+       inn- og utstempling.
+
+       Er man ikke logget inn, sier sida det og sender til innloggingen med
+       «/stemple» som retur — da havner man tilbake her, ikke paa forsida. -->
+  <sc-if value="{{ erStemple }}" hint-placeholder-val="{{ false }}">
+    <div role="main" data-screen-label="Stemple inn">
+      <section style="background: var(--clay-50); padding: var(--section-y) var(--space-6); min-height: 70vh;">
+        <div style="max-width: 420px; margin: 0 auto;">
+          <div style="background: var(--surface-card); border: 2px solid var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-8) var(--space-6);">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ stStedet }}</div>
+            <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-3xl);">{{ stHilsen }}</h1>
+            <p style="margin: 0 0 var(--space-6); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ stTimer }}</p>
+
+            <sc-if value="{{ stKanStemple }}" hint-placeholder-val="{{ true }}">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stVariant }}" size="lg" full-width="{{ sant }}" on-click="{{ stVeksle }}" hint-size="100%,60px">{{ stKnapp }}</x-import>
+              <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-align: center; text-wrap: pretty;">{{ stHjelp }}</p>
+            </sc-if>
+
+            <sc-if value="{{ stMaaLoggeInn }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Du må logge inn med Vipps for å stemple inn. Da kommer du rett hit igjen.</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" full-width="{{ sant }}" on-click="{{ stLoggInn }}" hint-size="100%,56px">Logg inn med Vipps</x-import>
+            </sc-if>
+
+            <sc-if value="{{ stIkkeMedlem }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-5); font-size: var(--text-base); color: var(--text-body); text-wrap: pretty;">Innstempling er for medlemmer. Er du på kurs, er du velkommen inn — det er kursholderen som holder styr på tida.</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="lg" full-width="{{ sant }}" on-click="{{ stTilMinSide }}" hint-size="100%,52px">Til Min side</x-import>
+            </sc-if>
+          </div>
+          <div style="text-align: center; margin-top: var(--space-6);">
+            <button type="button" onClick="{{ stTilMinSide }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: var(--text-sm); color: var(--text-muted); text-decoration: underline;">Til Min side</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
   <!-- Betal i verkstedet.
        Bak den faste QR-koden ved disken. Kunden skanner, velger hva det
        gjelder, skriver beloepet og betaler med Vipps. Ingen innlogging:
@@ -3807,7 +3851,17 @@ window.__resources = {
                      Brikkene staar bare naar verkstedet har satt opp
                      ressurser, og de forsvinner naar du er inne — da har du
                      valgt. -->
-                <sc-if value="{{ msVisRessurs }}" hint-placeholder-val="{{ true }}">
+                <!-- Ressursvalget staar ikke lenger i veien.
+                     Brikkene «Bordplass» og «Dreieskive» sto over knappen paa
+                     hver eneste innstempling. De sperret ingenting — den
+                     forste var alt valgt — men de var det forste oyet traff,
+                     og de gjorde et ett-trykks valg til et to-trinns skjema.
+                     Eieren, 4. september: inn- og utstemplinga skal vaere
+                     superenkel.
+                     Naa staar knappen forst, og valget ligger under den som
+                     en linje man trykker paa naar man faktisk vil si fra.
+                     Ingenting er fjernet — det er flyttet ett trykk unna. -->
+                <sc-if value="{{ msRessursApen }}" hint-placeholder-val="{{ true }}">
                   <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
                     <span style="font-size: var(--text-xs); color: var(--text-muted);">{{ msRessursHjelp }}</span>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
@@ -3818,6 +3872,9 @@ window.__resources = {
                   </div>
                 </sc-if>
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
+                <sc-if value="{{ msRessursLukket }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ msRessursVis }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">{{ msRessursLenke }}</button>
+                </sc-if>
               </sc-if>
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ true }}">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
@@ -3839,9 +3896,15 @@ window.__resources = {
             </sc-if>
           </div>
 
-          <div style="display: flex; gap: var(--space-2) var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-6);">
-            <sc-for list="{{ minsideSnarveier }}" as="s" hint-placeholder-count="4">
-              <button type="button" onClick="{{ s.velg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 4px 0; font: var(--type-body-sm); font-weight: 600; color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;" style-hover="color: var(--lissom-brown);">{{ s.navn }}</button>
+          <!-- Snarveiene som piller, ikke understreket tekst.
+               De laa som fire understrekede lenker paa rad. Paa en telefon
+               er det fire smaa maal tett i tett, og de ser ut som brodtekst
+               som tilfeldigvis er understreket — ikke som noe man trykker paa.
+               Eieren, 4. september: mobilmeny med fem valg.
+               Samme pilleform som brukes ellers i systemet. -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-6);">
+            <sc-for list="{{ minsideSnarveier }}" as="s" hint-placeholder-count="5">
+              <button type="button" onClick="{{ s.velg }}" style="appearance: none; cursor: pointer; border: 1.5px solid var(--border-subtle); background: var(--surface-card); color: var(--text-heading); border-radius: var(--radius-pill); padding: 9px 15px; font: var(--type-body-sm); font-weight: 700;" style-hover="border-color: var(--lissom-brown);">{{ s.navn }}</button>
             </sc-for>
           </div>
 
@@ -3854,10 +3917,68 @@ window.__resources = {
           <sc-if value="{{ erMedlem }}" hint-placeholder-val="{{ true }}">
           <div style="{{ timerVarselStil }}">{{ timerVarsel }}</div>
 
+          <!-- Forslaget om en storre plan.
+               Staar bare naar medlemmet naadde taket i minst to av de tre
+               siste hele maanedene — eller er tomt naa og naadde det i minst
+               én. En travel maaned er en travel maaned; det er naar det
+               gjentar seg at planen er for liten. Se «visOppgrader». -->
+          <sc-if value="{{ visOppgrader }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ oppStil }}">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-bottom: 4px;">{{ oppTittel }}</div>
+              <p style="margin: 0 0 var(--space-4); font-size: var(--text-base); color: var(--lissom-brown); text-wrap: pretty;">{{ oppTekst }}</p>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" on-click="{{ oppVelg }}" hint-size="auto,40px">{{ oppKnapp }}</x-import>
+            </div>
+          </sc-if>
+
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: var(--space-5); align-items: stretch;">
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box;">
+            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dreieskivene denne uka</div>
+              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--space-3); font-size: var(--text-sm);">
+                    <span style="font-weight: 700; color: var(--text-heading); flex: 0 0 auto; min-width: 52px;">{{ o.dag }}</span>
+                    <!-- min-width: 0 er det som lar teksten bryte i stedet for
+                         aa presse raden bredere enn kortet. Uten den nekter et
+                         flex-element aa bli smalere enn innholdet sitt. -->
+                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;">{{ o.hva }}</span>
+                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; margin-left: auto;">{{ o.tid }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Medlemskapet ditt</div>
+                <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;">
+                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ mittAbo }}</span>
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
+              </div>
+              <!-- Avtalen og timene er uenige.
+                   Kortet sa «Mini 15 · 15 timer i måneden» rett over «35 av 35
+                   timer», fordi navnet kom fra abonnementet og timene fra
+                   medlemsraden. Naa staar det hva som er uenig, i stedet for
+                   to tall og ingen forklaring. Se «aboUenig». -->
+              <sc-if value="{{ aboUenig }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ aboUenigStil }}">{{ aboUenigTekst }}</div>
+              </sc-if>
+              <!-- Timene bor i medlemskapet, ikke i et eget kort ved siden av.
+                   «11,5» sto to steder: i et eget «Timer igjen»-kort oeverst, og
+                   som rad her nede. To tall om det samme, med hver sin kilde i
+                   markupen — og et medlem som leste det ene visste ikke om det
+                   andre. Eieren, 4. september: abonnementskortet skal vise
+                   timene som er igjen.
+                   Raden «Timer igjen» er tatt bort herfra; tallet staar stort
+                   over. Alt annet i det gamle kortet — stolpen, teksten, «glemt
+                   aa stemple ut» og fornyelsen naar det er tomt — er flyttet
+                   hit slik det sto. -->
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">Timer igjen</div>
+                <!-- Etiketten «Timer igjen» sto her. Det store tallet under
+                     sier det samme, og over det staar naa navnet paa planen —
+                     tre overskrifter oppaa hverandre om det samme kortet. -->
+                <div style="flex: 1 1 auto;"></div>
                 <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ timerMaks }}</span>
               </div>
               <div style="font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; color: var(--text-heading); margin-bottom: var(--space-3);">{{ timerIgjen }}</div>
@@ -3902,37 +4023,15 @@ window.__resources = {
                   </div>
                 </div>
               </sc-if>
-            </div>
-
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dreieskivene denne uka</div>
-              <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
-              <div style="display: flex; flex-direction: column; gap: 6px;">
-                <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
-                  <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--space-3); font-size: var(--text-sm);">
-                    <span style="font-weight: 700; color: var(--text-heading); flex: 0 0 auto; min-width: 52px;">{{ o.dag }}</span>
-                    <!-- min-width: 0 er det som lar teksten bryte i stedet for
-                         aa presse raden bredere enn kortet. Uten den nekter et
-                         flex-element aa bli smalere enn innholdet sitt. -->
-                    <span style="color: var(--text-body); flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere;">{{ o.hva }}</span>
-                    <span style="color: var(--terracotta-600); font-weight: 600; white-space: nowrap; margin-left: auto;">{{ o.tid }}</span>
-                  </div>
-                </sc-for>
-              </div>
-            </div>
-            <div id="minside-abonnement" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;">
-              <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Abonnement</div>
-                <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
-              </div>
-              <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap;">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); color: var(--text-heading);">{{ mittAbo }}</span>
-                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
-              </div>
               <div style="display: flex; flex-direction: column; gap: 4px; margin: var(--space-3) 0;">
-                <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs);"><span style="color: var(--text-muted);">Timer igjen</span><span style="font-weight: 600; color: var(--text-heading);">{{ timerIgjen }} {{ timerMaks }}</span></div>
                 <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs);"><span style="color: var(--text-muted);">Neste trekk</span><span style="font-weight: 600; color: var(--text-heading);">{{ aboNesteTrekk }}</span></div>
                 <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs);"><span style="color: var(--text-muted);">Betaling</span><span style="font-weight: 600; color: var(--text-heading);">Vipps</span></div>
+                <!-- Bindingstida sto bare i admin. Medlemmet kunne se den i
+                     statuslinja over — «· bundet til 3. november» — men bare
+                     naar den fantes, og bare som en hale paa en annen setning.
+                     Eieren, 4. september: medlemsvilkaar og bindingstid skal
+                     staa. Naa er den en egen rad, med samme tekst admin bruker. -->
+                <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xs);"><span style="color: var(--text-muted);">Bindingstid</span><span style="font-weight: 600; color: var(--text-heading);">{{ aboBinding }}</span></div>
               </div>
               <sc-if value="{{ erOppsagt }}" hint-placeholder-val="{{ false }}">
                 <div style="background: rgba(196,90,58,.1); border: 1px solid var(--terracotta-500); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); font-size: var(--text-xs); color: var(--text-body);">{{ oppsigelseTekst }} <button type="button" onClick="{{ angreOppsigelse }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: inherit; font-weight: 700; color: var(--terracotta-600); text-decoration: underline;">Angre</button></div>
@@ -3961,21 +4060,16 @@ window.__resources = {
               <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Ikke del koden med andre enn medlemmer.</p>
               <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: var(--space-3); cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Nyttig info — guider og tips →</button>
             </div>
-            <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; display: flex; flex-direction: column;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Påfyll</div>
-              <div style="display: flex; flex-direction: column; gap: var(--space-2);">
-                <sc-for list="{{ paafyll }}" as="v" hint-placeholder-count="2">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid var(--border-subtle); padding: 6px 0;">
-                    <div style="min-width: 0;">
-                      <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.navn }}</div>
-                      <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.pris }}</div>
-                    </div>
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" on-click="{{ v.kjop }}" hint-size="auto,32px">Legg til</x-import>
-                  </div>
-                </sc-for>
-              </div>
-              <p style="margin: auto 0 0; padding-top: var(--space-2); font-size: var(--text-xs); color: var(--text-muted);">Betales med Vipps.</p>
-            </div>
+            <!-- «Påfyll» sto her.
+
+                 Kortet hadde én ting i seg: «Gavekort — valgfritt beløp», og
+                 knappen gikk til gavekortsida. Den sida staar som for, med
+                 beloep, mottaker og hilsen. Kortet var altsaa en snarvei til
+                 noe man kommer til fra menyen uansett, og det tok en hel
+                 rute paa den skjermen medlemmet bruker mest.
+
+                 Eieren, 4. september: fjern «Påfyll». Ingenting er borte —
+                 gavekortet kjopes samme sted som for. -->
           </div>
           </sc-if>
 
@@ -4146,7 +4240,7 @@ window.__resources = {
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
-              <div class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+              <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Medlemsfordel</div>
                 <h3 style="margin: 0 0 var(--space-2); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Selg keramikk</h3>
                 <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">Selg arbeider du har laget hos Lissom, i nettbutikken under «Laget av medlemmene». Kjøper betaler direkte til deg med Vipps. Monica godkjenner alle produkter før de publiseres.</p>
@@ -4219,11 +4313,45 @@ window.__resources = {
                     </div>
                   </div>
                 </sc-if>
+
+                <!-- Det du har sendt inn.
+                     Her sto ingenting. «mineSalg» og «harMineSalg» ble regnet
+                     ut i koden — med status, avvisningsgrunn og en knapp for
+                     aa ta varen ned — men de var aldri bundet i markupen. Et
+                     medlem som sendte inn en vare fikk en kvittering og saa
+                     aldri noe mer: hverken «til godkjenning», «ute i butikken»
+                     eller «ikke lagt ut, fordi ...».
+                     Eieren, 4. september: «Selg mine produkter». Dette er
+                     halvparten som manglet. -->
+                <sc-if value="{{ harMineSalg }}" hint-placeholder-val="{{ true }}">
+                  <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
+                    <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">Det du har sendt inn</div>
+                    <div style="display: flex; flex-direction: column;">
+                      <sc-for list="{{ mineSalg }}" as="v" hint-placeholder-count="3">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); border-top: 1px solid var(--border-subtle); padding: var(--space-4) 0;">
+                          <div style="min-width: 0;">
+                            <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ v.tittel }}</div>
+                            <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ v.pris }}</div>
+                            <!-- En vare som ikke ble lagt ut skal si hvorfor.
+                                 Grunnen er den Monica skrev da hun avviste den. -->
+                            <sc-if value="{{ v.harGrunn }}" hint-placeholder-val="{{ false }}">
+                              <div style="margin-top: 4px; font-size: var(--text-xs); color: var(--terracotta-600); text-wrap: pretty;">{{ v.grunn }}</div>
+                            </sc-if>
+                            <sc-if value="{{ v.kanTrekke }}" hint-placeholder-val="{{ true }}">
+                              <button type="button" onClick="{{ v.trekk }}" style="appearance: none; background: transparent; border: none; padding: 6px 0 0; cursor: pointer; font-size: var(--text-xs); color: var(--text-muted); text-decoration: underline;">Ta den ned</button>
+                            </sc-if>
+                          </div>
+                          <span style="{{ v.merkeStil }}">{{ v.statusTekst }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
               </div>
               </sc-if>
 
               <div id="minside-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Beskjeder</div>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Chat</div>
                 <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Fra Monica</h3>
                 <div style="display: flex; flex-direction: column; gap: var(--space-5);">
                   <sc-for list="{{ beskjeder }}" as="b" hint-placeholder-count="3">
@@ -18909,6 +19037,14 @@ class Component extends DCLogic {
       // kunne leses hoyt over en benk, og koden blir mindre og skanner
       // raskere jo faerre tegn den baerer.
       { sti: '/betal',         side: 'betal' },
+      // Bak QR-koden ved doera. Samme tanke som «/betal»: kort adresse, saa
+      // koden blir liten og skanner raskt.
+      //
+      // Sida sa alt til medlemmene at de kunne «skanne QR-koden ved doera»
+      // (se punktet «Stemple inn og ut» i den nyttige lista), men det fantes
+      // ingen kode og ingen adresse aa lage en av. Det var et loefte
+      // systemet ikke holdt.
+      { sti: '/stemple',       side: 'stemple' },
       { sti: '/min-side',      side: 'minside' },
       { sti: '/admin/logg-inn',     side: 'adminlogin' },
       { sti: '/admin',              side: 'adminoversikt' },
@@ -25333,6 +25469,40 @@ class Component extends DCLogic {
   }
 
   /** Staar jeg innstemplet naa? */
+  /**
+   * Stempler inn eller ut — det motsatte av det du staar i naa.
+   *
+   * Ressursen er den du har valgt, eller den serveren husker fra sist, eller
+   * den forste i lista. Ingen av dem sperrer: har verkstedet ingen ressurser
+   * satt opp, sendes 0, og serveren tar det som «ikke oppgitt».
+   *
+   * Kalles fra to steder — knappen paa Min side og knappen paa «/stemple»
+   * bak QR-koden ved doera. Den laa som en pil inne i propene og var derfor
+   * ikke naabar utenfra; skjermen ved doera ville maattet skrive den om
+   * igjen, og to utgaver av det samme trykket er én for mye.
+   */
+  /**
+   * Aapner abonnementskortet og ruller dit.
+   *
+   * Kalles fra snarveien paa Min side og fra oppgraderingsforslaget. Laa som
+   * en pil inne i propene, og var derfor ikke naabar for forslaget — som da
+   * matte ha skrevet det samme hoppet én gang til.
+   */
+  hoppTilAbo() {
+    this.setState({ byttAboApen: true });
+    const el = document.getElementById('minside-abonnement');
+    if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
+  }
+
+  vekslStempling() {
+    const inne = this.erInne();
+    const st = this.state.stempling || {};
+    const alle = st.ressurser || [];
+    const valgt = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
+    this.stemplingKall(inne ? { handling: 'ut' }
+                            : { handling: 'inn', ressursId: valgt || 0 }, true);
+  }
+
   erInne() {
     const st = this.state.stempling;
     return st ? !!st.innstemplet : !!this.state.innstemplet;
@@ -32609,8 +32779,14 @@ class Component extends DCLogic {
     this.varselAutolukk();
 
     // Innstemplingsstatus hentes naar man er der den vises: Min side for
-    // medlemmet selv, og admin-sidene for «i verkstedet naa».
-    if ((side === 'minside' || this.erAdminSkjerm(side)) && this.state.innlogget && !this.state.stempling) {
+    // medlemmet selv, admin-sidene for «i verkstedet naa», og skjermen bak
+    // QR-koden ved doera.
+    //
+    // «/stemple» sto ikke her da den ble laget, og da sto det «Henter timene
+    // dine …» for alltid: sida ventet paa et kall ingen hadde bedt om. Maalt
+    // i nettleseren for rettingen.
+    if ((side === 'minside' || side === 'stemple' || this.erAdminSkjerm(side))
+        && this.state.innlogget && !this.state.stempling) {
       this.hentStempling();
     }
     // Feilrapportene. Hentes paa skjermen som viser dem, og paa Oversikt —
@@ -32937,10 +33113,13 @@ class Component extends DCLogic {
       const igjen = Math.round((maksT - brukt) * 10) / 10;
       t = {
         igjen, maks: 'av ' + maksT + ' timer', brukt: String(brukt).replace('.', ','), andel: Math.round(brukt / maksT * 100),
+        // Samme grense som paa den ekte sida: under en femdel igjen, ikke
+        // fire timer fast. Sto de ulikt, ville forhaandsvisningen i
+        // designverktoyet vist noe annet enn medlemmet faktisk faar.
         varsel: igjen === 0 ? 'Du har brukt opp timene dine i august. Nye timer kommer 1. september.'
-          : igjen <= 4 ? 'Du har ' + igjen + ' timer igjen denne måneden. Nye timer kommer 1. september.' : '',
+          : igjen <= maksT * 0.2 ? 'Du har ' + igjen + ' av ' + maksT + ' timer igjen denne måneden. Nye timer kommer 1. september.' : '',
         varselStil: igjen === 0 ? varselBoks('rgba(196,90,58,.12)', 'var(--terracotta-500)')
-          : igjen <= 4 ? varselBoks('var(--clay-100)', 'var(--border-subtle)') : { display: 'none' },
+          : igjen <= maksT * 0.2 ? varselBoks('var(--clay-100)', 'var(--border-subtle)') : { display: 'none' },
       };
     }
 
@@ -33857,6 +34036,41 @@ class Component extends DCLogic {
       })),
       mittAbo: aboNavn,
       mittAboPris: plan.pris + ' ' + plan.periode,
+      // ── Naar de to kildene er uenige ─────────────────────────────────
+      //
+      // Planen staar to steder i basen: «subscriptions.plan» er avtalen som
+      // trekkes i Vipps, «members.medlemskap_type» er den verkstedet har satt
+      // paa medlemmet. Kortet leste den forste for navn og pris, og timene
+      // kom fra den andre gjennom api/stempling.php.
+      //
+      // Sto de ulikt, sa kortet «Mini 15 · 15 timer i måneden» rett over
+      // «35 av 35 timer». Eieren meldte det 4. september, med bilde fra
+      // lissom.no.
+      //
+      // Vi gjetter ikke hvilken som er riktig — det er data, og det er
+      // verkstedet som vet. Vi sier at de er uenige, og hvilke to navn det
+      // gjelder, saa medlemmet ikke sitter med to tall og ingen forklaring.
+      ...(() => {
+        const st = this.state.stempling;
+        const fraTimene = st && st.plan ? String(st.plan.navn || '').trim() : '';
+        const fraAvtalen = String(aboNavn || '').trim();
+        const eget = !!(st && st.plan && st.plan.egetTimetall);
+        // Ingen uenighet aa melde naar vi mangler det ene navnet, naar de er
+        // like, eller naar verkstedet har satt et eget timetall med vilje.
+        const uenige = !!fraTimene && !!fraAvtalen && fraTimene !== fraAvtalen && !eget;
+        return {
+          aboUenig: uenige,
+          aboUenigTekst: uenige
+            ? 'Avtalen din står som «' + fraAvtalen + '», men timene dine regnes etter «'
+              + fraTimene + '». Ta kontakt med verkstedet, så retter vi det.'
+            : '',
+          aboUenigStil: {
+            background: 'rgba(196,90,58,.10)', border: '1px solid var(--terracotta-500)',
+            borderRadius: 'var(--radius-md)', padding: 'var(--space-3) var(--space-4)',
+            margin: 'var(--space-3) 0', fontSize: 'var(--text-xs)', color: 'var(--text-body)',
+          },
+        };
+      })(),
       // Avtalen slik den staar i Vipps. «Fornyes 1. september» sto som fast
       // tekst — en paastand om et trekk som ikke fantes noe sted.
       ...(() => {
@@ -33899,6 +34113,13 @@ class Component extends DCLogic {
                 + 'så det gjelder ut ' + naar + '. Du kan bruke verkstedet som vanlig til da.')) return;
             this.siOppAbonnement();
           },
+          // Bindingstida, i klartekst. Samme kilder som admin leser: sluttdato
+          // naar noe er sagt opp, «bundet til» mens bindinga loper, ellers
+          // fritt. Er avtalen ukjent — medlemskapet gjores opp direkte med
+          // verkstedet — staar det en strek, ikke «Fri»: vi vet det ikke.
+          aboBinding: !a ? '—'
+            : (a.slutter ? 'Sagt opp — gjelder ut ' + a.slutter
+            : (a.bundetTil ? 'Bundet til ' + a.bundetTil : 'Ingen bindingstid')),
           aboHarHindring: !!(a && a.hindring && !a.slutter),
           aboHindring: (a && a.hindring) || '',
           aboBadge: a ? ({ aktiv: 'Aktivt', venter: 'Venter', stoppet: 'Sagt opp', utlopt: 'Utløpt', avslaatt: 'Ikke godkjent' }[a.status] || a.status)
@@ -34026,21 +34247,6 @@ class Component extends DCLogic {
           if (p.brukt) return;
           p.velgOgLukk();
         },
-      })),
-      // Gavekortet er ikke en butikkvare.
-      //
-      // Knappen la «Gavekort» i handlekurven til fast 500 kroner. Kassa slaar
-      // hver linje opp blant butikkvarene, og det staar ingen «Gavekort»
-      // der — saa dette endte i den samme doede enden som medlemskapet:
-      // «Gavekort finnes ikke i butikken lenger». Det gikk heller ikke an aa
-      // velge belop, mottaker eller hilsen, som er hele poenget med et
-      // gavekort.
-      //
-      // Naa gaar den dit kjopet faktisk finnes.
-      paafyll: [
-        { navn: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter', pris: 'Valgfritt beløp' },
-      ].map(v => Object.assign(v, {
-        kjop: this.go('gavekortside'),
       })),
       // Tom seksjon er verre enn ingen seksjon: et medlem som ser overskriften
       // «Interne kurs og samlinger» over et tomt felt tror noe er i stykker.
@@ -40785,28 +40991,37 @@ class Component extends DCLogic {
       // klikket foerte ingen steder.
       //
       // En kursdeltaker har to ting her: paameldingene sine og beskjedene.
+      // Fem valg for medlemmet, i den rekkefolgen eieren ba om dem
+      // 4. september: Chat, Internbutikk, Kurs, Selg mine produkter, HMS.
+      //
+      // «Beskjeder» het chatten for. Den ER en chat — alle med aktivt
+      // medlemskap leser det samme rommet gjennom api/chat.php — og
+      // «Beskjeder» leses like gjerne som varsler man ikke kan svare paa.
+      //
+      // Navnene er korte med vilje: fem piller skal faa plass paa to linjer
+      // paa en telefon. «Internbutikk — leire og brenning» tok en hel linje
+      // alene.
       minsideSnarveier: (
         this.medlemsvisning()
           ? [
-            { navn: 'Internbutikk — leire og brenning', id: 'minside-internbutikk' },
-            { navn: 'Interne kurs og samlinger', id: 'minside-internkurs' },
-            { navn: 'Beskjeder', id: 'minside-beskjeder' },
-            { navn: 'Ordensregler og HMS', id: 'minside-ordensregler' },
+            { navn: 'Chat', id: 'minside-beskjeder' },
+            { navn: 'Internbutikk', id: 'minside-internbutikk' },
+            { navn: 'Kurs', id: 'minside-internkurs' },
+            { navn: 'Selg mine produkter', id: 'minside-salg' },
+            { navn: 'HMS', id: 'minside-ordensregler' },
           ]
           : [
             { navn: 'Kursene mine', id: 'minside-pameldinger' },
             { navn: 'Kursbevisene mine', id: 'minside-kursbevis' },
-            { navn: 'Beskjeder', id: 'minside-beskjeder' },
+            { navn: 'Chat', id: 'minside-beskjeder' },
           ]
       ).map(s => ({ navn: s.navn, velg: s.ekstern || (() => {
         const el = document.getElementById(s.id);
         if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
       }) })),
-      hoppTilAbo: () => {
-        this.setState({ byttAboApen: true });
-        const el = document.getElementById('minside-abonnement');
-        if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 90; window.scrollTo({ top: y, behavior: 'smooth' }); }
-      },
+      // Selve hoppet ligger i metoden hoppTilAbo(). Bade snarveien her og
+      // oppgraderingsforslaget kaller den — én vei til abonnementskortet.
+      hoppTilAbo: () => this.hoppTilAbo(),
       ...(() => {
         // Timene kommer fra innstemplingene i basen. Har vi ikke svar ennaa,
         // faller vi tilbake paa designverdiene — men bare i designmodus.
@@ -40855,6 +41070,9 @@ class Component extends DCLogic {
 
         const fri = st.timer.perMnd === null;
         const igjen = fri ? Infinity : st.timer.igjen;
+        // Under en femdel igjen. Regnet av planen, ikke et fast tall — se
+        // kommentaren ved «timerVarsel» under.
+        const grense = fri ? 0 : st.timer.perMnd * 0.2;
         const varselBoks = (bg, kant) => ({
           background: bg, border: '1px solid ' + kant, borderRadius: 'var(--radius-lg)',
           padding: 'var(--space-5) var(--space-6)', marginBottom: 'var(--space-6)',
@@ -40865,10 +41083,93 @@ class Component extends DCLogic {
           harTimer: somMedlem && igjen > 0,
           erTom: somMedlem && igjen === 0,
           timerBarStil: { width: st.timer.andel + '%', height: '100%', background: igjen === 0 ? 'var(--terracotta-500)' : 'var(--lissom-brown)', borderRadius: 999 },
+          // ── Varselet: 20 %, ikke fire timer ──────────────────────────
+          //
+          // Grensa sto paa fire timer fast. Den er lik enten du har 15 timer
+          // i maaneden eller 30: paa 30-timersplanen kom varselet naar det
+          // sto 13 % igjen, paa 15-timers ved 27 %. Eieren, 4. september:
+          // varsel naar det er under 20 % igjen.
+          //
+          // Fri tilgang har ingen grense, og «igjen» er da Infinity — der
+          // slaar varselet aldri inn, som for.
           timerVarsel: igjen === 0 ? 'Du har brukt opp timene dine denne måneden.'
-            : (igjen <= 4 ? 'Du har ' + String(igjen).replace('.', ',') + ' timer igjen denne måneden.' : ''),
+            : (igjen <= grense ? 'Du har ' + String(igjen).replace('.', ',') + ' av ' + st.timer.perMnd + ' timer igjen denne måneden.' : ''),
           timerVarselStil: igjen === 0 ? varselBoks('rgba(196,90,58,.12)', 'var(--terracotta-500)')
-            : (igjen <= 4 ? varselBoks('var(--clay-100)', 'var(--border-subtle)') : { display: 'none' }),
+            : (igjen <= grense ? varselBoks('var(--clay-100)', 'var(--border-subtle)') : { display: 'none' }),
+        };
+      })(),
+      // ── Oppgraderingsforslaget ────────────────────────────────────────
+      //
+      // Eieren, 4. september: forslag om oppgradering naar timene ikke
+      // strekker til.
+      //
+      // Det holder ikke aa se paa denne maaneden. En travel maaned er en
+      // travel maaned; det er naar det gjentar seg at planen er for liten.
+      // Derfor teller serveren de tre siste HELE maanedene (api/stempling.php
+      // → «historikk»), og forslaget kommer bare naar medlemmet naadde taket
+      // i minst to av dem — eller er tomt naa og naadde taket i minst én.
+      //
+      // Ett forslag, ikke en prisliste: den neste planen som gir flere timer,
+      // og hva den koster i tillegg. Fri tilgang har ingen timer og vinner
+      // naar ingen annen plan er stor nok.
+      ...(() => {
+        const av = { visOppgrader: false, oppTittel: '', oppTekst: '',
+                     oppKnapp: '', oppVelg: () => {}, oppStil: { display: 'none' } };
+        const st = this.state.stempling;
+        if (!st || !this.medlemsvisning()) return av;
+        const perMnd = st.timer.perMnd;
+        if (perMnd === null) return av;                 // fri tilgang: ingenting aa foreslaa
+
+        const hist = st.historikk || [];
+        const taket = hist.filter(h => h.naaddeTaket).length;
+        const tomtNaa = st.timer.igjen === 0;
+        if (!(taket >= 2 || (tomtNaa && taket >= 1))) return av;
+
+        // Neste plan opp: faerrest timer blant dem som gir MER enn dagens,
+        // og fri tilgang (timer === null) naar ingen slik finnes.
+        const planer = this.state.planListe || [];
+        // Planen medlemmet har naa. aktivPlan() er den samme kilden
+        // abonnementskortet leser — to steder skal ikke ha hver sin mening om
+        // hvilket medlemskap dette er.
+        const minPlan = this.aktivPlan() || {};
+        const naa = planer.find(p => p.navn === minPlan.navn) || null;
+        const storre = planer.filter(p => !p.engangs
+          && (p.timer === null || p.timer > perMnd)
+          && (!naa || p.prisOre > naa.prisOre));
+        if (!storre.length) return av;
+        storre.sort((a2, b2) => {
+          const t1 = a2.timer === null ? Infinity : a2.timer;
+          const t2 = b2.timer === null ? Infinity : b2.timer;
+          return t1 - t2 || a2.prisOre - b2.prisOre;
+        });
+        const neste = storre[0];
+        const diff = naa ? neste.prisOre - naa.prisOre : neste.prisOre;
+
+        const maaneder = hist.filter(h => h.naaddeTaket).map(h => h.maaned);
+        const naar = maaneder.length === 1 ? 'i ' + maaneder[0]
+          : maaneder.slice(0, -1).join(', ') + ' og ' + maaneder[maaneder.length - 1];
+
+        return {
+          visOppgrader: true,
+          oppTittel: tomtNaa ? 'Timene er brukt opp' : 'Du går tom hver måned',
+          // Setninga leder med tallet, ikke med navnet. Planen kan HETE «30
+          // timer», og «30 timer gir 30 timer» er noe man leser to ganger.
+          // Navnet staar paa knappen under, der man trenger det.
+          oppTekst: 'Du nådde taket på ' + perMnd + ' timer ' + naar + '. '
+            + (neste.timer === null
+                ? 'Neste steg opp har ingen timebegrensning'
+                : 'Neste steg opp gir ' + neste.timer + ' timer i måneden — '
+                  + (neste.timer - perMnd) + ' flere enn i dag')
+            + (diff > 0 ? ', og koster ' + this.kroner(diff) + ' mer i måneden.' : '.'),
+          oppKnapp: 'Se ' + neste.navn,
+          // Samme vei som «Bytt medlemskap» — ruta finnes fra for, og
+          // forslaget skal ikke bli en parallell innmelding.
+          oppVelg: () => this.hoppTilAbo(),
+          oppStil: {
+            background: 'var(--lissom-yellow)', border: '1px solid var(--lissom-yellow)',
+            borderRadius: 'var(--radius-lg)', padding: 'var(--space-5) var(--space-6)',
+            marginBottom: 'var(--space-6)',
+          },
         };
       })(),
       stemplingKnapp: this.erInne() ? 'Stemple ut' : 'Stemple inn',
@@ -40948,8 +41249,27 @@ class Component extends DCLogic {
         // sette seg ved en skive, og et valg man maa ta for man kommer inn
         // doera er en sperre, ikke en hjelp.
         const naa = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
+        // Brikkene staar ikke lenger over knappen. De ligger under den, bak
+        // én linje. «msVisRessurs» sier om det finnes noe aa velge i det hele
+        // tatt; de to under sier om valget staar aapent eller ligger sammen-
+        // klappet. To ferdige boolske verdier framfor to sc-if-er inni
+        // hverandre — skjermen skal ikke regne.
+        const harValg = !inne && alle.length > 1;
+        const apent = !!this.state.msRessursApen;
+        // Valget staar aapent av seg selv naar medlemmet har trykket paa noe
+        // annet enn det foreslaatte. Ellers ville det lukket seg igjen ved
+        // neste tegning, og valget hen nettopp tok ville vaert usynlig.
+        const harValgtSelv = this.state.msRessursId != null
+          && Number(this.state.msRessursId) !== Number((alle[0] || {}).id || 0);
         return {
-          msVisRessurs: !inne && alle.length > 1,
+          msVisRessurs: harValg,
+          msRessursApen: harValg && (apent || harValgtSelv),
+          msRessursLukket: harValg && !apent && !harValgtSelv,
+          msRessursVis: () => this.setState({ msRessursApen: true }),
+          // Navnet paa det som staar valgt staar i lenka, saa den som ikke
+          // aapner den likevel ser hva verkstedet vil tro.
+          msRessursLenke: 'Si fra hva du bruker — nå står det '
+            + ((alle.find(r => Number(r.id) === Number(naa)) || alle[0] || {}).navn || '').toLowerCase(),
           msRessursId: naa,
           msRessursHjelp: 'Hva skal du bruke? Da vet de som kommer etter deg hva som er ledig.',
           msRessursValg: alle.map(r => {
@@ -40968,14 +41288,10 @@ class Component extends DCLogic {
           }),
         };
       })(),
-      vekslStempling: () => {
-        const inne = this.erInne();
-        const st = this.state.stempling || {};
-        const alle = st.ressurser || [];
-        const valgt = this.state.msRessursId ?? (st.ressursId || (alle[0] || {}).id || 0);
-        this.stemplingKall(inne ? { handling: 'ut' }
-                                : { handling: 'inn', ressursId: valgt || 0 }, true);
-      },
+      // Selve trykket ligger i metoden vekslStempling() lenger nede. Bade
+      // knappen paa Min side og den paa «/stemple» kaller den — ett sted som
+      // stempler, ikke to som kan komme i utakt.
+      vekslStempling: () => this.vekslStempling(),
       // Dialogen sto i skjemamodus og tegnet tre tomme rader — «Vennens navn»
       // uten noe felt aa skrive i — og «Send invitasjon» satte en bryter i
       // nettleseren. Verkstedet fikk aldri vite at noen hadde invitert en
@@ -41733,6 +42049,48 @@ class Component extends DCLogic {
       erKasse: side === 'kasse',
       erVipps: side === 'vipps',
       erBetal: side === 'betal',
+      // ── Stemplingsskjermen bak QR-koden ved doera ─────────────────────
+      //
+      // Den gjor én ting. Alt den trenger finnes fra for: sesjonen sier hvem
+      // du er, api/stempling.php sier timene og om du staar inne, og
+      // vekslStempling() gjor selve trykket. Ingen ny vei inn i basen.
+      erStemple: side === 'stemple',
+      ...(() => {
+        if (side !== 'stemple') return {};
+        const st = this.state.stempling;
+        const inne = this.erInne();
+        const medlem = this.erPublisert() ? !!this.state.erMedlemBruker : true;
+        const fri = st && st.timer.perMnd === null;
+        return {
+          stStedet: 'Verkstedet · Nordre Løkkevei 15',
+          stHilsen: this.state.vippsNavn
+            ? 'Hei, ' + String(this.state.vippsNavn).split(' ')[0]
+            : 'Velkommen',
+          // Tallet staar bare naar serveren har svart. «30 av 30 timer» er
+          // like usant som feil tall — se kortet paa Min side, samme regel.
+          // «Henter timene dine …» sto ogsaa for den som ikke var logget inn.
+          // Da henter vi ingenting, og det er ikke hennes timer vi venter
+          // paa — vi vet ikke hvem hun er ennaa. Maalt i nettleseren.
+          stTimer: !this.state.innlogget ? ''
+            : !st ? 'Henter timene dine …'
+            : fri ? 'Fri tilgang — ingen timebegrensning.'
+            : String(st.timer.igjen).replace('.', ',') + ' av ' + st.timer.perMnd + ' timer igjen denne måneden.',
+          stKanStemple: this.state.innlogget && medlem,
+          stMaaLoggeInn: !this.state.innlogget,
+          stIkkeMedlem: this.state.innlogget && !medlem,
+          stKnapp: inne ? 'Stemple ut' : 'Stemple inn',
+          stVariant: inne ? 'secondary' : 'primary',
+          stHjelp: inne
+            ? 'Du er innstemplet. Trykk når du går.'
+            : 'Ett trykk. Du er allerede logget inn — koden ved døra tok deg hit.',
+          // Samme kall som Min side bruker. Ett sted som stempler.
+          stVeksle: () => this.vekslStempling(),
+          // «/stemple» som retur, saa man kommer tilbake hit og ikke til
+          // forsida. Den delte veien husker ogsaa hva som ikke ble gjort.
+          stLoggInn: () => this.sendTilInnlogging('/stemple', 'Du ble ikke stemplet inn.'),
+          stTilMinSide: () => { this.setState({ side: 'minside' }); window.scrollTo(0, 0); },
+        };
+      })(),
       ...(() => {
         const slag = this.state.btSlag || 'produkt';
         const navn = { kurs: 'Kurs', medlemskap: 'Medlemskap', produkt: 'Butikk' };
@@ -44472,8 +44830,35 @@ class Component extends DCLogic {
           .catch(() => this.setState({ skSender: false, skFeil: 'Fikk ikke kontakt med serveren.' }));
       },
       // Mine egne varer, med status. En vare som ble avvist skal si hvorfor.
+      // Lista over det medlemmet har sendt inn.
+      //
+      // Den ble regnet ut her fra for, men var aldri bundet i markupen — se
+      // «Det du har sendt inn» paa Min side. «merkeStil» og «harGrunn» er
+      // nye: pilla maa ha en farge som passer statusen, og en avvist vare
+      // maa kunne si hvorfor.
       mineSalg: (this.state.mineSalg || []).map(v => Object.assign({}, v, {
         statusTekst: { til_godkjenning: 'Til godkjenning', publisert: 'Ute i butikken', avvist: 'Ikke lagt ut', skjult: 'Tatt ned', solgt: 'Solgt' }[v.status] || v.status,
+        // Grunnen kommer fra Monica, skrevet da hun avviste varen. Staar den
+        // tom, sier vi ingenting framfor «Ikke lagt ut: ».
+        // Feltet heter «avvist» i api/medlemssalg.php, og sendes bare til
+        // eieren av varen — grunnen er ikke noe butikken skal se.
+        harGrunn: v.status === 'avvist' && !!v.avvist,
+        grunn: 'Ikke lagt ut: «' + String(v.avvist || '') + '»',
+        // Samme tre toner som resten av systemet: gronn naar noe er i havn,
+        // gul mens det venter, terrakotta naar det stoppet.
+        merkeStil: (() => {
+          const t = { publisert: ['rgba(90,140,80,.16)', '#3E6B36'],
+                      solgt:     ['rgba(90,140,80,.16)', '#3E6B36'],
+                      til_godkjenning: ['var(--lissom-yellow)', 'var(--lissom-brown)'],
+                      avvist:    ['rgba(196,90,58,.18)', 'var(--terracotta-600)'] }[v.status]
+                    || ['var(--clay-100)', 'var(--text-muted)'];
+          return {
+            flex: '0 0 auto', fontSize: 11, fontWeight: 700,
+            letterSpacing: 'var(--tracking-caps)', textTransform: 'uppercase',
+            padding: '3px 10px', borderRadius: 999,
+            background: t[0], color: t[1],
+          };
+        })(),
         tone: { publisert: 'success', til_godkjenning: 'warning', avvist: 'danger' }[v.status] || 'neutral',
         kanTrekke: v.status === 'publisert' || v.status === 'til_godkjenning',
         trekk: () => {

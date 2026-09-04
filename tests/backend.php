@@ -4837,8 +4837,13 @@ sjekk('ingen oppretter en betaling uten idempotency-noekkel',
 //
 // Gavekortet har heller ikke fast pris: belop, mottaker og hilsen er hele
 // poenget, og de finnes bare paa gavekortsida.
+// «Påfyll»-kortet paa Min side er fjernet — det hadde én ting i seg, og den
+// tingen finnes paa gavekortsida. Paa den publiserte sida gaar kjopet
+// gjennom kjopGavekort(), som spor serveren; linja som la «Gavekort» i
+// kurven staar igjen bak «!erPublisert()» og kjorer bare i designverktoyet.
 sjekk('gavekortet legges ikke i handlekurven',
-    str_contains($sida2, "kjop: this.go('gavekortside'),"));
+    !str_contains($sida2, 'paafyll')
+    && str_contains($sida2, "if (this.erPublisert()) { this.kjopGavekort(); return; }"));
 sjekk('… og kurs legges ikke i den heller',
     !str_contains($sida2, 'bookTilKurv:'));
 
@@ -10438,8 +10443,10 @@ sjekk('alle veier til Vipps-innlogging gaar gjennom én metode',
     substr_count($kodeI, "window.location.href = '/api/vipps-login.php") === 1
     && str_contains($kodeI, 'sendTilInnlogging(retur, hva) {'),
     'ett hopp, i sendTilInnlogging()');
-sjekk('… og de fem stedene bruker den',
-    substr_count($kodeI, 'this.sendTilInnlogging(') === 5,
+// Fem var det da den ble laget; skjermen bak QR-koden ved doera kom som den
+// sjette, og bruker den samme veien.
+sjekk('… og alle stedene bruker den',
+    substr_count($kodeI, 'this.sendTilInnlogging(') === 6,
     substr_count($kodeI, 'this.sendTilInnlogging(') . ' kall');
 // Grunnen legges igjen, saa beskjeden kan si hva som IKKE ble gjort.
 foreach ([
@@ -10770,6 +10777,205 @@ sjekk('tiden skrives i timer og dogn, ikke bare «over en time»',
     str_contains($ovU2, "? (\$t === 1 ? 'hengt i én time' : 'hengt i ' . \$t . ' timer')")
     && str_contains($ovU2, "'hengt i ett døgn'"),
     'begge');
+
+// ── Min side, bygget om ─────────────────────────────────────────────────
+//
+// Eieren, 4. september, femten punkter. Analysen ble lagt fram med maalinger
+// og skisser, og godkjent med «Bygg komplett du» — inkludert historikken
+// over tre maaneder, som var det ene punktet jeg foreslo aa forenkle.
+//
+// Maalt i nettleseren med ekte data i basen: et medlem paa «Mini 15» som
+// naadde taket i juni, juli og august, og har 3 av 15 timer igjen naa.
+//   piller:      Chat · Internbutikk · Kurs · Selg mine produkter · HMS
+//   varsel:      «Du har 3 av 15 timer igjen denne måneden.»  (3/15 = 20 %)
+//   forslag:     «Du nådde taket på 15 timer juni, juli og august. Neste steg
+//                 opp gir 30 timer i måneden — 15 flere enn i dag, og koster
+//                 kr 800 mer i måneden.»
+//   binding:     «Bundet til 1. november 2026»
+//   salgslista:  tre rader med «Ute i butikken», «Til godkjenning» og
+//                «Ikke lagt ut: «Bildet er for mørkt — send gjerne et nytt.»»
+//   «Påfyll»:    borte
+//   /stemple:    utlogget «Du må logge inn med Vipps …»; innlogget «Hei,
+//                Testadmin · 3 av 15 timer igjen» og ett trykk stemplet inn
+//                — bekreftet i basen med innstemplet=true, siden=20:25.
+$msK = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$msU = (string) preg_replace('/<!--.*?-->/s', '', $msK);
+$msU = (string) preg_replace('/^\s*\/\/.*$/m', '', $msU);
+sjekk('det er kode aa maale i Min side-sjekkene', strlen($msU) > 500000, strlen($msU) . ' tegn');
+
+// 1. Timene bor i medlemskapskortet.
+sjekk('timene staar i medlemskapskortet',
+    (bool) preg_match('/id="minside-abonnement".{0,4000}\{\{ timerBarStil \}\}/s', $msU),
+    'stolpen er inne i kortet');
+sjekk('… og «Timer igjen» staar ikke lenger som egen rad der',
+    !str_contains($msU, '>Timer igjen</span>'), 'raden er borte');
+sjekk('… og kortet heter medlemskapet',
+    str_contains($msU, '>Medlemskapet ditt</div>'), 'ikke «Abonnement»');
+
+// 2. Stemplinga: én knapp, valget under.
+sjekk('ressursvalget ligger bak en lenke',
+    str_contains($msU, 'msRessursLukket: harValg && !apent && !harValgtSelv,')
+    && str_contains($msU, '{{ msRessursLenke }}'),
+    'lukket som standard');
+sjekk('… og aapner seg av seg selv naar man har valgt noe annet',
+    str_contains($msU, 'msRessursApen: harValg && (apent || harValgtSelv),'),
+    'ellers ville valget vaert usynlig');
+sjekk('stemplinga skjer ett sted',
+    str_contains($msU, '  vekslStempling() {')
+    && substr_count($msU, 'this.stemplingKall(inne ?') === 1,
+    'én metode, to knapper');
+
+// 3. QR-en ved doera.
+sjekk('«/stemple» er en ekte rute',
+    str_contains($msU, "{ sti: '/stemple',       side: 'stemple' },"), 'i ruterlista');
+sjekk('… og skjermen finnes',
+    str_contains($msU, '{{ erStemple }}') && str_contains($msU, "erStemple: side === 'stemple',"),
+    'markup og prop');
+sjekk('… og henter timene, som Min side gjor',
+    str_contains($msU, "(side === 'minside' || side === 'stemple' || this.erAdminSkjerm(side))"),
+    'ellers sto «Henter timene dine …» for alltid');
+sjekk('… og sender utloggede til Vipps med «/stemple» som retur',
+    str_contains($msU, "this.sendTilInnlogging('/stemple', 'Du ble ikke stemplet inn.')"),
+    'tilbake hit, ikke til forsida');
+
+// 4. «Påfyll» er borte.
+sjekk('«Påfyll» er fjernet',
+    !str_contains($msU, 'paafyll') && !str_contains($msK, '>Påfyll</div>'),
+    'kortet og lista');
+
+// 5-6. Mobilmenyen.
+foreach (['Chat', 'Internbutikk', 'Kurs', 'Selg mine produkter', 'HMS'] as $valg) {
+    sjekk('menyen har «' . $valg . '»',
+        (bool) preg_match("/minsideSnarveier.{0,900}navn: '" . preg_quote($valg, '/') . "'/s", $msU),
+        'i medlemslista');
+}
+sjekk('… og de er piller, ikke understreket tekst',
+    (bool) preg_match('/minsideSnarveier \}\}" as="s"[^>]*>\s*<button[^>]*border-radius: var\(--radius-pill\)/s', $msU),
+    'pilleform');
+
+// 7. Chatten heter chat.
+sjekk('chatten heter Chat paa Min side',
+    (bool) preg_match('/id="minside-beskjeder".{0,400}>Chat<\/div>/s', $msU), 'ikke «Beskjeder»');
+
+// 10. Selg mine produkter.
+sjekk('lista over det du har sendt inn vises',
+    str_contains($msU, '<sc-for list="{{ mineSalg }}" as="v"')
+    && str_contains($msU, '{{ harMineSalg }}'),
+    'bundet i markup');
+sjekk('… med status paa hver rad',
+    str_contains($msU, '{{ v.merkeStil }}') && str_contains($msU, '{{ v.statusTekst }}'),
+    'pille med farge');
+sjekk('… og grunnen naar noe ikke ble lagt ut',
+    str_contains($msU, "harGrunn: v.status === 'avvist' && !!v.avvist,"),
+    'feltet heter «avvist» i API-et');
+sjekk('… og seksjonen har et sted menyen kan hoppe til',
+    str_contains($msU, 'id="minside-salg"'), 'minside-salg');
+
+// 12. Varselet paa 20 %.
+// Begge grenene: den ekte sida leser serverens timer, forhaandsvisningen i
+// designverktoyet regner sine egne. Sto de ulikt, ville forhaandsvisningen
+// vist noe annet enn medlemmet faar.
+sjekk('varselet gaar paa 20 %, ikke fire timer',
+    str_contains($msU, 'const grense = fri ? 0 : st.timer.perMnd * 0.2;')
+    && str_contains($msU, 'igjen <= maksT * 0.2 ?')
+    && !str_contains($msU, 'igjen <= 4 ?'),
+    'begge grenene');
+
+// 13. Oppgraderingsforslaget.
+sjekk('forslaget krever at det gjentar seg',
+    str_contains($msU, 'if (!(taket >= 2 || (tomtNaa && taket >= 1))) return av;'),
+    'to av tre maaneder, eller tomt naa og én');
+sjekk('… og leser historikken fra serveren',
+    str_contains($msU, 'const hist = st.historikk || [];'), 'ikke regnet i nettleseren');
+sjekk('… og foreslaar den neste planen opp, ikke en prisliste',
+    str_contains($msU, 'const neste = storre[0];'), 'ett forslag');
+sjekk('… og gaar samme vei som «Bytt medlemskap»',
+    str_contains($msU, 'oppVelg: () => this.hoppTilAbo(),'), 'ingen parallell innmelding');
+sjekk('… og fri tilgang faar ikke noe forslag',
+    str_contains($msU, 'if (perMnd === null) return av;'), 'ingenting aa foreslaa');
+
+// 15. Bindingstida.
+sjekk('bindingstida staar som egen rad',
+    str_contains($msU, '{{ aboBinding }}') && str_contains($msU, "aboBinding: !a ? '—'"),
+    'ikke bare som hale paa statuslinja');
+
+// ── Da kortet viste to medlemskap ───────────────────────────────────────
+//
+// Eieren, 4. september, med bilde fra lissom.no: «Viser feil medlemskap».
+// Kortet sto med «Mini 15 · kr. 1 790,- · 15 timer i måneden» rett over
+// «Timer igjen: 35 av 35 timer».
+//
+// Planen staar to steder i basen. «subscriptions.plan» er avtalen som
+// trekkes i Vipps, og den ga navnet og prisen. «members.medlemskap_type» er
+// den verkstedet har satt paa medlemmet, og den ga timene gjennom
+// Medlemskap::timerFor(). Ingen holdt dem i takt.
+//
+// Reprodusert i testbasen: subscriptions.plan = «Mini 15»,
+// members.medlemskap_type = «Årsmedlemskap» → api/stempling.php svarte
+// perMnd 35 mens kortet sa 15.
+//
+// Vi retter ikke dataene — hvilken av de to som er riktig er det bare
+// verkstedet som vet, og Claude har ikke tilgang til produksjonsbasen. Vi
+// slutter aa paastaa to ting: serveren sier hvor timene kommer fra, og
+// kortet sier fra naar de to er uenige.
+sjekk('serveren sier hvilken plan timene kom fra',
+    str_contains($apiK ?? file_get_contents(dirname(__DIR__) . '/api/stempling.php'), "'plan' => ["),
+    'nytt felt i svaret');
+sjekk('… og om verkstedet har satt et eget timetall',
+    str_contains(file_get_contents(dirname(__DIR__) . '/api/stempling.php'),
+                 "'egetTimetall' => \$medlem['timer_per_mnd'] !== null,"),
+    'da er det ikke planen som bestemmer');
+sjekk('kortet oppdager uenigheten',
+    str_contains($msU, "const uenige = !!fraTimene && !!fraAvtalen && fraTimene !== fraAvtalen && !eget;"),
+    'begge navn maa finnes, og de maa vaere ulike');
+sjekk('… og sier hvilke to navn det gjelder',
+    str_contains($msU, "'Avtalen din står som «' + fraAvtalen + '», men timene dine regnes etter «'"),
+    'ikke bare «noe er galt»');
+sjekk('… og lover ikke noe vi ikke gjor',
+    str_contains($msU, 'Ta kontakt med verkstedet, så retter vi det.')
+    && !str_contains($msU, 'Vi har fått beskjed'),
+    'ingen beskjed sendes automatisk');
+sjekk('… og staar stille naar verkstedet har satt timetallet med vilje',
+    str_contains($msU, 'const eget = !!(st && st.plan && st.plan.egetTimetall);'),
+    'da er uenigheten meningen');
+
+// ── Serveren: de tre siste hele maanedene ───────────────────────────────
+$stK = file_get_contents(dirname(__DIR__) . '/app/lib/stempling.php');
+$apiK = file_get_contents(dirname(__DIR__) . '/api/stempling.php');
+sjekk('Stempling teller en hel maaned tilbake',
+    str_contains($stK, 'public static function minutterIManed(int $medlemId, int $tilbake): int'),
+    'ny metode');
+sjekk('… i norsk tid, ikke i UTC',
+    str_contains($stK, "->modify('first day of this month')->setTime(0, 0)
+            ->modify('-' . \$tilbake . ' months');"),
+    'grensene regnes i Oslo');
+sjekk('… og bare avsluttede oekter',
+    str_contains($stK, "WHERE member_id = :m AND ut_tid IS NOT NULL
+                AND inn_tid >= :fra AND inn_tid < :til"),
+    'en maaned som er over har ingen paagaaende');
+sjekk('… og «tilbake» maa vaere minst 1',
+    str_contains($stK, "throw new InvalidArgumentException"), 'null er inneveerende maaned');
+sjekk('API-et sender tre maaneder',
+    str_contains($apiK, 'for ($i = 3; $i >= 1; $i--) {'), 'juni, juli, august');
+sjekk('… og sier om taket ble naadd',
+    str_contains($apiK, "'naaddeTaket' => \$min >= \$perMnd * 60,"), 'per maaned');
+sjekk('… og sender tom liste for fri tilgang',
+    str_contains($apiK, 'if ($perMnd !== null) {'), 'ingenting aa foreslaa');
+
+// Regnestykket, kjort mot basen.
+$mId = (int) DB::verdi("SELECT id FROM members ORDER BY id LIMIT 1");
+if ($mId > 0) {
+    $for = Stempling::minutterIManed($mId, 1);
+    sjekk('minutterIManed svarer med et tall', is_int($for), $for . ' minutter forrige maaned');
+    $navn = Stempling::manedNavn(1);
+    $ventet = ['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+    sjekk('… og maanedsnavnet er norsk', in_array($navn, $ventet, true), $navn);
+    sjekk('… og «denne maaneden» er et annet navn enn «forrige»',
+        Stempling::manedNavn(0) !== Stempling::manedNavn(1),
+        Stempling::manedNavn(0) . ' vs ' . $navn);
+} else {
+    sjekk('det finnes et medlem aa regne paa', false, 'ingen medlemmer i basen');
+}
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -133,14 +133,65 @@ if ($apen !== null) {
     $saaLenge = Stempling::varighet((int) round((time() - $inn->getTimestamp()) / 60));
 }
 
+// ── De tre siste hele maanedene ────────────────────────────────────────
+//
+// Til oppgraderingsforslaget. Gaar medlemmet tomt maaned etter maaned, er det
+// planen som er for liten — ikke maaneden som var travel. Ett enkelt tall
+// sier ikke det; tre gjor.
+//
+// Maalt mot dagens grense, ikke mot den som gjaldt den gangen. Vi lagrer ikke
+// hvilken plan medlemmet hadde i juni, og aa late som om vi vet det ville
+// vaert verre enn aa si det rett ut: dette er «saa mye brukte du», holdt opp
+// mot «saa mye faar du naa».
+//
+// Fri tilgang har ingen grense, og da er det ingenting aa foreslaa. Da sender
+// vi tom liste framfor tre rader som aldri kan bety noe.
+$historikk = [];
+if ($perMnd !== null) {
+    for ($i = 3; $i >= 1; $i--) {
+        $min = Stempling::minutterIManed($id, $i);
+        $historikk[] = [
+            'maaned'   => Stempling::manedNavn($i),
+            'timer'    => Stempling::timer($min),
+            'timerMin' => $min,
+            // «Naadde taket» og ikke «brukte opp»: en maaned der medlemmet
+            // brukte alt er ikke det samme som en der hen ville brukt mer.
+            'naaddeTaket' => $min >= $perMnd * 60,
+        ];
+    }
+}
+
 Svar::json([
     'innstemplet' => $apen !== null,
+    'historikk'   => $historikk,
     'siden'       => $siden,
     'saaLenge'    => $saaLenge,
     'visMeg'      => (bool) ($medlem['vis_innstempling'] ?? 1),
     // Hva medlemmet kan velge mellom, og hva det staar med naa.
     'ressurser'   => $ressurser,
     'ressursId'   => $valgtRessurs,
+    // ── Hvilken plan timene faktisk kommer fra ─────────────────────────
+    //
+    // Planen staar to steder: «subscriptions.plan» er avtalen som trekkes i
+    // Vipps, «members.medlemskap_type» er den verkstedet har satt paa
+    // medlemmet, og «members.timer_per_mnd» kan overstyre begge.
+    // Medlemskap::timerFor() leser de to siste; abonnementskortet paa Min
+    // side leste den forste. Sto de ulikt, viste kortet navnet og prisen fra
+    // avtalen og timene fra medlemsraden — «Mini 15 · 15 timer i måneden»
+    // rett over «35 av 35 timer».
+    //
+    // Meldt av eieren 4. september, med bilde fra lissom.no.
+    //
+    // Vi retter ikke dataene her — hvilken av de to som er riktig er det
+    // bare verkstedet som vet. Vi sier hvor timene kommer fra, saa skjermen
+    // kan slutte aa paastaa to ting, og si fra naar de to er uenige.
+    'plan' => [
+        // Navnet timene ble regnet etter.
+        'navn'  => trim((string) ($medlem['medlemskap_type'] ?? '')),
+        // Et eget timetall satt paa medlemmet gaar foran planen. Da er det
+        // ikke planen som bestemmer, og det maa skjermen faa vite.
+        'egetTimetall' => $medlem['timer_per_mnd'] !== null,
+    ],
     'timer' => [
         'brukt'    => Stempling::timer($brukt),
         'bruktMin' => $brukt,

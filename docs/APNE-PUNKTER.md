@@ -14,6 +14,71 @@ flerdagerskurset i kalenderen og på telefonen.
 
 ---
 
+## Min side og kursdeltakersidene — 4. september 2026
+
+Eieren la fram femten punkter, med krav om analyse og skisser før noe ble
+bygget. Analysen ble presentert med målinger, skissene ble satt inn i det
+ekte skjermbildet, og godkjenningen kom som «Bygg komplett du» — inkludert
+treməneders-historikken, som var det ene punktet jeg foreslo å forenkle.
+
+**Målt før:** medlemssiden var 5 987 px = 7,1 mobilskjermer, kursdeltaker-
+siden 2 568 px = 3.
+
+| # | Punkt | Gjort |
+|---|---|---|
+| 1 | Timene inn i medlemskapskortet | Ja — «11,5» sto to steder før |
+| 2 | Superenkel inn-/utstempling | Ja — én knapp, ressursvalget bak en lenke |
+| 3 | QR ved døra | Ja — `/stemple`, valgt av eieren blant to alternativer |
+| 4 | Fjerne «Påfyll» | Ja — kortet hadde én ting, og den finnes på gavekortsida |
+| 5 | Kort- og pillestandard | Ja — snarveiene er piller som ellers i systemet |
+| 6 | Mobilmeny med fem valg | Ja — Chat, Internbutikk, Kurs, Selg mine produkter, HMS |
+| 7 | Chat | Ja — het «Beskjeder», er en chat |
+| 8–9, 11 | Internbutikk, Kurs, HMS | Uendret, med plass i menyen |
+| 10 | Selg mine produkter | Ja — lista var regnet ut, men aldri bundet i markup |
+| 12 | 20 %-varsel | Ja — sto på fire timer fast, uansett plan |
+| 13 | Oppgraderingsforslag | Ja — krever at det gjentar seg over tre måneder |
+| 14 | Bytte medlemskap | Uendret |
+| 15 | Medlemsvilkår og bindingstid | Ja — sto bare i admin før |
+| 16 | «Bli medlem» på kursdeltakersiden | Uendret |
+
+**Målt etter, med ekte data i basen** — et medlem på «Mini 15» som nådde
+taket i juni, juli og august, med 3 av 15 timer igjen:
+
+| Hva | Resultat |
+|---|---|
+| Piller | Chat · Internbutikk · Kurs · Selg mine produkter · HMS |
+| Varsel | «Du har 3 av 15 timer igjen denne måneden.» (3/15 = 20 %) |
+| Forslag | «Du nådde taket på 15 timer juni, juli og august. Neste steg opp gir 30 timer i måneden — 15 flere enn i dag, og koster kr 800 mer i måneden.» |
+| Bindingstid | «Bundet til 1. november 2026» |
+| Salgslista | Tre rader med «Ute i butikken», «Til godkjenning» og «Ikke lagt ut: «Bildet er for mørkt — send gjerne et nytt.»» |
+| `/stemple`, utlogget | «Du må logge inn med Vipps for å stemple inn. Da kommer du rett hit igjen.» |
+| `/stemple`, innlogget | «Hei, Testadmin · 3 av 15 timer igjen» — ett trykk stemplet inn, bekreftet i basen (`innstemplet: true`, `siden: 20:25`) |
+
+### Da kortet viste to medlemskap
+
+Eieren sendte bilde fra lissom.no midt i byggingen: «Viser feil medlemskap».
+Kortet sto med «Mini 15 · kr. 1 790,- · 15 timer i måneden» rett over «Timer
+igjen: 35 av 35 timer».
+
+Planen står to steder i basen. `subscriptions.plan` er avtalen som trekkes i
+Vipps, og den ga navnet og prisen. `members.medlemskap_type` er den
+verkstedet har satt på medlemmet, og den ga timene gjennom
+`Medlemskap::timerFor()`. Ingenting holdt dem i takt.
+
+Reprodusert i testbasen: `subscriptions.plan = 'Mini 15'`,
+`members.medlemskap_type = 'Årsmedlemskap'` → `api/stempling.php` svarte
+`perMnd: 35` mens kortet sa 15.
+
+**Ikke rettet i dataene.** Hvilken av de to som er riktig er det bare
+verkstedet som vet, og Claude har ikke tilgang til produksjonsbasen. Det
+koden gjør nå: serveren sier hvilken plan timene ble regnet etter, og kortet
+sier fra når de to er uenige — med begge navnene, så medlemmet ikke sitter
+med to tall og ingen forklaring.
+
+**Åpent:** verkstedet får ingen automatisk beskjed når to medlemsrader er
+uenige. Teksten til medlemmet lover derfor ikke at noen er varslet, bare at
+de kan ta kontakt.
+
 ## Adminomleggingen — 4. september 2026
 
 Planen ligger i samtalen, ikke i repoet. Punktene under er nummerert slik de

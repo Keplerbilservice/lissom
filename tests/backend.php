@@ -8263,6 +8263,33 @@ sjekk('… og sier fortsatt at ingenting er bygget',
     str_contains($sidaG, 'Kurs som ligger som film, til å se når som helst. Ikke bygget ennå.')
     && str_contains($sidaG, 'Her skal videokursene ligge. Ingenting er bygget ennå.'));
 
+// ── «Se mer» paa kortene, paa telefonen ────────────────────────────────
+//
+// Eieren, 4. september: «mobil skal vise mindre direkte, men ikke miste
+// funksjon — resten bak Se mer», og «jatakk slik skissen viser paa mobil».
+//
+// Kortet viser tittel, tall og «Se mer» under 760 px. Forklaringslinja og
+// den egne lenketeksten staar som for paa stoerre skjerm.
+sjekk('kortene har «Se mer» paa telefonen',
+    str_contains($sidaG, '.lx-kortmer { display: none; }')
+    && str_contains($sidaG, '    .lx-korthva  { display: none !important; }')
+    && str_contains($sidaG, '    .lx-kortnavn { display: none !important; }')
+    && str_contains($sidaG, '    .lx-kortmer  { display: block !important; }'));
+// 760 px er det samme tallet erSmal() bruker. Ett tall, ett sted — ellers
+// oppfoerer kortene seg annerledes enn resten av admin i et smalt belte.
+sjekk('… paa det samme knekkpunktet som resten av admin',
+    str_contains($sidaG, 'erSmal() { return (this.state.vw || (typeof window !== \'undefined\' ? window.innerWidth : 1200)) <= 760; }')
+    && substr_count($sidaG, "  .lx-kortmer { display: none; }\n  @media (max-width: 760px) {") === 1);
+// Begge kortblokkene: Oversikt og omraadesidene. Sto det bare ett sted,
+// ville halvparten av kortene oppfoert seg annerledes.
+sjekk('… paa begge kortblokkene',
+    substr_count($sidaG, '<p class="lx-korthva"') === 2
+    && substr_count($sidaG, '<span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span>') === 2);
+// Funksjonen skal ikke vaere borte: kortet er den samme knappen, og gaar
+// til det samme stedet. Bare teksten paa det er kortere.
+sjekk('… uten at kortet mister noe',
+    str_contains($sidaG, '<button type="button" data-kort="{{ k.navn }}" onClick="{{ k.velg }}" style="{{ k.stil }}">'));
+
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.
 if (DB::harKolonne('payments', 'order_id')) {

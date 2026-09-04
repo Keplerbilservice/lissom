@@ -1270,6 +1270,26 @@ window.__resources = {
   @media (max-width: 760px) {
     [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
   }
+
+  /* Kortene paa telefonen: tittel, tall og «Se mer».
+     ------------------------------------------------
+     Eieren, 4. september: «mobil skal vise mindre direkte, men ikke miste
+     funksjon — resten bak Se mer», og «jatakk slik skissen viser paa mobil».
+
+     Forklaringslinja og den egne lenketeksten gaar ut; «Se mer» kommer inn.
+     Ingenting er borte: kortet gaar til det samme stedet som for, og paa
+     skjerm over 760 px staar begge deler som de alltid har gjort.
+
+     Gjort i CSS og ikke i erSmal(), fordi kortene da foelger med naar
+     telefonen snus — uten at skjermen maa tegnes om.
+
+     760 px er det samme knekkpunktet erSmal() bruker. Ett tall, ett sted. */
+  .lx-kortmer { display: none; }
+  @media (max-width: 760px) {
+    .lx-korthva  { display: none !important; }
+    .lx-kortnavn { display: none !important; }
+    .lx-kortmer  { display: block !important; }
+  }
   @media (max-width: 900px) {
     body { zoom: 1; --width-content: 100%; --width-wide: 100%; --section-y: 64px; }
     section { padding-left: 20px !important; padding-right: 20px !important; }
@@ -9731,8 +9751,8 @@ window.__resources = {
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading); text-align: left;">{{ k.navn }}</span>
                   <span style="{{ k.tallStil }}">{{ k.tall }}</span>
                 </div>
-                <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.hva }}</p>
-                <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;">{{ k.knapp }} →</span>
+                <p class="lx-korthva" style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-align: left; text-wrap: pretty;">{{ k.hva }}</p>
+                <span style="display: block; margin-top: auto; padding-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown); text-align: left;"><span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span></span>
               </button>
             </sc-for>
           </div>
@@ -11721,8 +11741,8 @@ window.__resources = {
                   <span style="font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">{{ k.navn }}</span>
                   <span style="{{ k.tallStil }}">{{ k.tall }}</span>
                 </div>
-                <p style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ k.hva }}</p>
-                <span style="display: block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);">{{ k.knapp }} →</span>
+                <p class="lx-korthva" style="margin: var(--space-2) 0 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ k.hva }}</p>
+                <span style="display: block; margin-top: var(--space-4); font: var(--type-body-sm); font-weight: 600; color: var(--lissom-brown);"><span class="lx-kortnavn">{{ k.knapp }} →</span><span class="lx-kortmer">Se mer →</span></span>
               </button>
               <sc-if value="{{ k.harMer }}" hint-placeholder-val="{{ false }}">
                 <button type="button" onClick="{{ k.merVelg }}" style="{{ k.merStil }}">{{ k.merNavn }} →</button>

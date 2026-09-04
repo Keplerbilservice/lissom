@@ -1270,6 +1270,26 @@ window.__resources = {
   @media (max-width: 760px) {
     [role="dialog"] { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; box-sizing: border-box; }
   }
+
+  /* Kortene paa telefonen: tittel, tall og «Se mer».
+     ------------------------------------------------
+     Eieren, 4. september: «mobil skal vise mindre direkte, men ikke miste
+     funksjon — resten bak Se mer», og «jatakk slik skissen viser paa mobil».
+
+     Forklaringslinja og den egne lenketeksten gaar ut; «Se mer» kommer inn.
+     Ingenting er borte: kortet gaar til det samme stedet som for, og paa
+     skjerm over 760 px staar begge deler som de alltid har gjort.
+
+     Gjort i CSS og ikke i erSmal(), fordi kortene da foelger med naar
+     telefonen snus — uten at skjermen maa tegnes om.
+
+     760 px er det samme knekkpunktet erSmal() bruker. Ett tall, ett sted. */
+  .lx-kortmer { display: none; }
+  @media (max-width: 760px) {
+    .lx-korthva  { display: none !important; }
+    .lx-kortnavn { display: none !important; }
+    .lx-kortmer  { display: block !important; }
+  }
   @media (max-width: 900px) {
     body { zoom: 1; --width-content: 100%; --width-wide: 100%; --section-y: 64px; }
     section { padding-left: 20px !important; padding-right: 20px !important; }

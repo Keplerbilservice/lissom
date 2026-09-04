@@ -6909,22 +6909,25 @@ sjekk('den smale blokka viser fortsatt plasstall, ansikter og merknader',
 sjekk('… og blokkene ligger foran rutenettet',
     substr_count($sida, 'zIndex: 2 + p.lane') === 2);
 
-// ── «Ikke betalt» og statistikken er kort som de andre ─────────────────
+// ── Statistikken er et kort som de andre ───────────────────────────────
 //
 // Eieren: «jeg vil at de skal ha vaert sitt kort, men ikke slike kort som i
 // dag, jeg vil at kortene skal vaere like som de andre kortene paa denne
 // siden». De sto som to brede paneler over rutenettet, i en annen drakt.
-sjekk('de to panelene staar inne i kortrutenettet',
-    strpos($sida2, 'id="ov-kortrutenett"') < strpos($sida2, '{{ ovSkylderVis }}'));
+//
+// «Ikke betalt» sto her ogsaa. Den flyttet til Kassa 4. september; se
+// «Ikke betalt flyttet til Kassa» lenger nede.
+sjekk('statistikkpanelet staar inne i kortrutenettet',
+    strpos($sida2, 'id="ov-kortrutenett"') < strpos($sida2, '{{ ovPopVis }}'));
 sjekk('… med samme ramme som resten',
     str_contains($sida2, "borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',")
     && str_contains($sida2, "borderRadius: 'var(--radius-lg)', overflow: 'hidden',"));
 // «span 2» var min feil. Paa telefonen har rutenettet én spalte, og «span 2»
-// lager da en spalte til: panelene ble 413 piksler paa en skjerm som er 390,
-// og hele Oversikt maatte dras sidelengs. Under 760 piksler skal de spenne
+// lager da en spalte til: panelet ble 413 piksler paa en skjerm som er 390,
+// og hele Oversikt maatte dras sidelengs. Under 760 piksler skal det spenne
 // over hele rada, over 760 over to spalter som for.
 sjekk('… og sprenger ikke telefonskjermen',
-    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 2
+    substr_count($sida2, "gridColumn: this.erSmal() ? '1 / -1' : 'span 2',") === 1
     && !str_contains($sida2, 'grid-column: span 2;'));
 
 // ── Dra-kortene i kalenderen ───────────────────────────────────────────
@@ -7702,10 +7705,19 @@ sjekk('filteret «Ubetalte» finnes',
     str_contains($sida, "'Alle', 'Aktive', 'Ubetalte', 'Sluttet'"));
 sjekk('… og teller det samme som kortet',
     str_contains($sida, "if (fv === 'Ubetalte') return !!m.erMedlem && !m.erFritatt && !!m.betalingUte;"));
-sjekk('Oversikt har kortet «Medlemmer og betaling»',
-    str_contains($sida, "kort('Medlemmer og betaling',"));
-sjekk('… og det gaar til de ubetalte',
-    str_contains($sida, "{ medlemFilter: 'Ubetalte', medlemSok: '' }"));
+$okoFil2 = file_get_contents(dirname(__DIR__) . '/api/admin/oversikt.php');
+// Kortet «Medlemmer og betaling» sto her. Eieren, 4. september: «jeg vil
+// fjerne kortet og at medlemmer som ikke har betalt skal vises i oversikten
+// ikke betalt, slik at vi har en oversikt naturligvis».
+//
+// De staar der alt: «Ikke betalt» har baaret baade kursplasser og medlemskap
+// siden 2. september. Kortet sa det samme tallet en gang til.
+sjekk('kortet «Medlemmer og betaling» er borte fra Oversikt',
+    !str_contains($sida, "kort('Medlemmer og betaling',"));
+// Uten dette er kortet fjernet og medlemmene borte fra begge steder.
+sjekk('… og ubetalte medlemskap staar fortsatt i «Ikke betalt»',
+    str_contains($okoFil2, "'slag'  => 'medlem',")
+    && str_contains($okoFil2, "'ubetalte' => array_merge(array_map("));
 
 // Haken staar begge steder skjemaet staar, og i begge personrutene. Sto den
 // bare det ene stedet, ville de to skjermene sagt forskjellige ting.
@@ -8045,6 +8057,43 @@ sjekk('… og har sitt eget valg, skilt fra varekurven',
     && str_contains($sidaG, '              maate: salgMaate,'));
 sjekk('… og teksten over kassa nevner den',
     str_contains($sidaG, 'Skriv beløpet, velg kontant, Vipps eller gratis, og hva det var'));
+
+// ── Kasse som eget menypunkt ───────────────────────────────────────────
+//
+// Kassa var et kort paa Oversikt. Eieren staar i den hele dagen og maatte
+// innom Oversikt hver gang.
+sjekk('Kasse staar i hovedmenyen',
+    str_contains($sidaG, "['Kasse',     'adminuttak'],"));
+// Lyste Oversikt mens man sto i kassa, sa to valg hver sin sannhet om hvor
+// man var. Det var derfor bunnmenyen maatte spoerre om selve skjermen.
+sjekk('… og adminSted foerer kassa til sitt eget punkt',
+    str_contains($sidaG, "case 'adminuttak':         return p('Kasse');")
+    && !str_contains($sidaG, "case 'adminuttak':         return p('Oversikt');"));
+sjekk('… saa bunnmenyen slipper aa spoerre om skjermen',
+    !str_contains($sidaG, "const iKassa = this.state.side === 'adminuttak';")
+    && str_contains($sidaG, '      const paa = sted.meny === menynavn;'));
+// Navnet og ruta hentes fra ADMIN_MENY, ikke skrevet av i bunnmenyen.
+sjekk('… og bunnmenyen henter Kasse fra menyen',
+    str_contains($sidaG, "const kasse = fra('Kasse');")
+    && str_contains($sidaG, "kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),"));
+
+// ── «Ikke betalt» flyttet til Kassa ────────────────────────────────────
+//
+// Oversikt skal si hva som skjer i dag. Kassa er der man staar naar noe
+// skal kreves inn, og knappene som gjor det er de samme.
+sjekk('«Ikke betalt» regnes ut ett sted',
+    str_contains($sidaG, '  skylderKort() {')
+    && substr_count($sidaG, 'ovSkylderVis: true,') === 1);
+sjekk('… og kortet staar i Kassa',
+    str_contains($sidaG, '          ...this.skylderKort(),'));
+// Markupen skal staa ett sted. Sto den begge steder, ville to kopier
+// drevet fra hverandre.
+sjekk('… og bare der',
+    substr_count($sidaG, '<sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">') === 1);
+// «span 2» i et rutenett som ikke finnes lager en spalte til, og hele
+// sida maa dras sidelengs. Det skjedde en gang for, paa Oversikt.
+sjekk('… uten rutenettbredden fra Oversikt',
+    !str_contains($sidaG, "ovSkylderRamme: {\n        gridColumn:"));
 
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.
@@ -8653,13 +8702,15 @@ sjekk('navn og ruter hentes fra ADMIN_MENY',
     str_contains($sidaB, 'const meny = Component.ADMIN_MENY;')
     && str_contains($sidaB, 'const rad = meny.find(([n]) => n === navn);'));
 
-// Kassa er ikke et menypunkt: adminSted() forer «adminuttak» til Oversikt,
-// fordi den naas fra et kort der. Uten et eget svar lyste «Oversikt» mens
-// man sto i kassa, og to valg sa hver sin sannhet om hvor man var.
+// Kassa maatte spoerre om selve skjermen saa lenge den ikke var et menypunkt:
+// adminSted() foerte «adminuttak» til Oversikt, og da lyste Oversikt mens man
+// sto i kassa — to valg sa hver sin sannhet om hvor man var. Fra 4. september
+// er Kasse et sted som de andre, og regelen er den samme for alle seks.
 sjekk('Kassa lyser naar man staar i kassa, ikke Oversikt',
-    str_contains($sidaB, "const iKassa = this.state.side === 'adminuttak';")
-    && str_contains($sidaB, "const paa = egen !== undefined ? egen : (sted.meny === menynavn && !iKassa);")
-    && str_contains($sidaB, "kasse: punkt('Kasse', 'adminuttak', {}, 'Kasse', iKassa),"));
+    str_contains($sidaB, "case 'adminuttak':         return p('Kasse');")
+    && str_contains($sidaB, '      const paa = sted.meny === menynavn;')
+    && str_contains($sidaB, "kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),")
+    && !str_contains($sidaB, "const iKassa = this.state.side === 'adminuttak';"));
 
 // Menyen ligger fast mot bunnen. Da maa innholdet ha plass under seg, ellers
 // dekker den den nederste knappen paa hver skjerm.

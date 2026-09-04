@@ -7371,6 +7371,59 @@ window.__resources = {
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Alt som selges over disk. Skriv beløpet, velg kontant, Vipps eller gratis, og hva det var — så er det med i regnskapet.</p>
         </div>
 
+        <!-- Ikke betalt.
+             To slag i samme kort:
+
+               kursplasser   lagt inn for haand og staar som reservert —
+                             noen har faatt plassen, pengene er ikke kommet.
+                             Eieren, 29. august: han vil ha et kort som
+                             varsler om dem, saa han kan kreve dem inn
+                             derfra.
+
+               medlemskap    som ikke er gjort opp. Eieren spurte om dem to
+                             ganger — «dverken hun eller eiriin kommer opp i
+                             kortet ikke betalt paa oversikten, og det maa de
+                             jo gjore, helt til pengene er inne», og senere
+                             «hvorfor vises ikke de to som er ubetalte i
+                             oversikten». Kortet var bygget for kursplasser
+                             alene, for medlemmene hadde noen betalingsstatus
+                             i det hele tatt.
+
+             «Kontant» og «Vipps» merker begge slag betalt med ett trykk.
+             Paa et medlemskap er navnet i tillegg en lenke inn til
+             medlemmet.
+
+             Kortet sto paa Oversikt, inne i kortrutenettet. Eieren, 4.
+             september: det hoerer til i Kassa. Oversikt skal si hva som
+             skjer i dag; Kassa er der man staar naar noe skal kreves inn,
+             og knappene som gjor det er de samme. Regnestykket ligger i
+             skylderKort() — markupen her er den samme som sto der. -->
+        <sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ ovSkylderRamme }}">
+            <div style="{{ ovSkylderHode }}">
+              <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke betalt</span>
+              <span style="font: var(--type-body-sm); opacity: .9;">{{ ovSkylderSum }}</span>
+            </div>
+            <sc-for list="{{ ovSkylder }}" as="u" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
+                <span style="min-width: 0; flex: 1 1 220px;">
+                  <button type="button" onClick="{{ u.aapne }}" style="{{ u.navnStil }}"><span style="display: block; font-size: var(--text-sm);">{{ u.navn }}</span></button>
+                  <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
+                </span>
+                <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
+                <div style="display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;">
+                  <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="2">
+                    <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
+              <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Alle har gjort opp for seg.</div>
+            </sc-if>
+          </div>
+        </sc-if>
+
         <!-- Hva selger du? Tre ting, og ingen vei innom noe annet. -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
           <sc-for list="{{ kasseValg }}" as="kv" hint-placeholder-count="3">
@@ -9616,53 +9669,6 @@ window.__resources = {
                kortene paa denne siden». De staar naa inne i rutenettet, med
                den samme ramma som resten. Se ovSkylderRamme og ovPopRamme. -->
           <div id="ov-kortrutenett" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: var(--space-4); align-items: stretch; margin-bottom: var(--space-3);">
-          <!-- Ikke betalt.
-               To slag i samme kort:
-
-                 kursplasser   lagt inn for haand og staar som reservert —
-                               noen har faatt plassen, pengene er ikke kommet.
-                               Eieren, 29. august: han vil ha et kort som
-                               varsler om dem, saa han kan kreve dem inn
-                               derfra.
-
-                 medlemskap    som ikke er gjort opp. Eieren spurte om dem to
-                               ganger — «dverken hun eller eiriin kommer opp i
-                               kortet ikke betalt paa oversikten, og det maa de
-                               jo gjore, helt til pengene er inne», og senere
-                               «hvorfor vises ikke de to som er ubetalte i
-                               oversikten». Kortet var bygget for kursplasser
-                               alene, for medlemmene hadde noen betalingsstatus
-                               i det hele tatt.
-
-               «Kontant» og «Vipps» merker begge slag betalt med ett trykk.
-               Paa et medlemskap er navnet i tillegg en lenke inn til
-               medlemmet. -->
-          <sc-if value="{{ ovSkylderVis }}" hint-placeholder-val="{{ false }}">
-            <div style="{{ ovSkylderRamme }}">
-              <div style="{{ ovSkylderHode }}">
-                <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; font-weight: 700;">Ikke betalt</span>
-                <span style="font: var(--type-body-sm); opacity: .9;">{{ ovSkylderSum }}</span>
-              </div>
-              <sc-for list="{{ ovSkylder }}" as="u" hint-placeholder-count="3">
-                <div style="display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle);">
-                  <span style="min-width: 0; flex: 1 1 220px;">
-                    <button type="button" onClick="{{ u.aapne }}" style="{{ u.navnStil }}"><span style="display: block; font-size: var(--text-sm);">{{ u.navn }}</span></button>
-                    <span style="display: block; font-size: var(--text-xs); color: var(--text-muted);">{{ u.under }}</span>
-                  </span>
-                  <span style="font-family: var(--font-display); font-weight: 800; color: var(--text-heading); white-space: nowrap;">{{ u.belop }}</span>
-                  <div style="display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto;">
-                    <sc-for list="{{ u.maater }}" as="m" hint-placeholder-count="2">
-                      <button type="button" onClick="{{ m.velg }}" style="{{ m.stil }}">{{ m.navn }}</button>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-for>
-              <sc-if value="{{ ovSkylderTom }}" hint-placeholder-val="{{ true }}">
-                <div style="padding: var(--space-4) var(--space-5); border-top: 1px solid var(--border-subtle); font-size: var(--text-sm); color: var(--text-muted);">Alle har gjort opp for seg.</div>
-              </sc-if>
-            </div>
-          </sc-if>
-
           <!-- Statistikk.
                Eieren 30. august: «her vil jeg se mine mest populaere kurs».
                Regnet av plassene som faktisk er solgt siste tolv maaneder —
@@ -27783,6 +27789,10 @@ class Component extends DCLogic {
       // tydeligste tegnet paa at de hoerte sammen. Ett punkt naa.
       ['Kurs og deltakere', 'adminomrkurs'],
       ['Medlemmer', 'adminomrmedlemmer'],
+      // Kassa var et kort paa Oversikt. Eieren staar i den hele dagen — alt
+      // som selges over disk, og alt som skal gjoeres opp — og maatte innom
+      // Oversikt hver gang. Naa er den et sted, som de andre.
+      ['Kasse',     'adminuttak'],
       // Oppskriftene laa under Medlemmer, men de er verkstedets egne —
       // glasurene og leiretypene som staar paa veggen. De hoerer ikke til
       // én gruppe mennesker. «Verkstedet» er det stedet de egentlig er, og
@@ -27928,7 +27938,7 @@ class Component extends DCLogic {
       case 'adminomrkurs':       return p('Kurs og deltakere', '', '');
       case 'adminmedlemskap':    return p('Kurs og deltakere', 'Kurs og deltakere', 'Medlemskap');
       case 'adminnyreg':         return p('Oversikt');
-      case 'adminuttak':         return p('Oversikt');
+      case 'adminuttak':         return p('Kasse');
       case 'adminferdigbrent':   return p('Oversikt');
       case 'adminvideokurs':     return p('Kurs og deltakere', 'Kurs og deltakere', 'Videokurs');
       case 'adminkalender':      return p('Kalender');
@@ -28109,6 +28119,134 @@ class Component extends DCLogic {
     return { merke: MERKE[tilstand] || '', stil: stil };
   }
 
+  /**
+   * Kortet «Ikke betalt».
+   *
+   * To slag i det samme kortet: kursplasser lagt inn for haand som staar som
+   * reservert, og medlemskap som ikke er gjort opp. «Kontant» og «Vipps»
+   * merker begge betalt med ett trykk.
+   *
+   * Kortet sto paa Oversikt. Eieren, 4. september: det hoerer til i Kassa —
+   * det er der man staar naar noe skal kreves inn, og Oversikt skal si hva
+   * som skjer i dag, ikke gjore jobben.
+   *
+   * Regnestykket ligger her og ikke inne i skjermen, saa kortet kan staa der
+   * det trengs uten aa bli skrevet av. Tallene er serverens
+   * (adminData.ubetalte); her staar bare ordene, fargene og knappene.
+   */
+  skylderKort() {
+    const liste = (this.state.adminData || {}).ubetalte || [];
+    const knapp = {
+      appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+      padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
+      border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)',
+      color: 'var(--lissom-brown)', whiteSpace: 'nowrap',
+    };
+    const sum = liste.reduce((n, u) => n + (parseInt(String(u.belop).replace(/[^\d]/g, ''), 10) || 0), 0);
+    return {
+      ovSkylderVis: true,
+      ovSkylderTom: liste.length === 0,
+      // Roedt bare naar noen faktisk skylder. En roed ramme hver dag naar
+      // alt er gjort opp slutter man aa se etter en uke.
+      // Samme ramme som de andre kortene paa Oversikt: hvit flate, tynn
+      // strek, samme runding. Eieren, 31. august: «jeg vil at kortene
+      // skal vaere like som de andre kortene paa denne siden».
+      //
+      // Kortet spenner over hele rada fordi radene inni er brede — navn,
+      // beloep og tre betalingsknapper. Én spalte gjorde dem uleselige.
+      //
+      // «gridColumn» sto her saa lenge kortet laa i rutenettet paa Oversikt.
+      // I Kassa staar det for seg selv, i full bredde av seg selv, og en
+      // «span 2» ville laget en spalte til paa en skjerm som ikke har noen.
+      ovSkylderRamme: {
+        border: '1px solid ' + (liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'),
+        borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',
+        overflow: 'hidden',
+      },
+      ovSkylderHode: {
+        display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)',
+        padding: 'var(--space-5) var(--space-5) var(--space-4)',
+        color: liste.length ? 'var(--terracotta-600)' : 'var(--text-muted)',
+      },
+      // «plasser» sto her fra den gang kortet bare hadde kursplasser.
+      // Naa staar medlemskapene her ogsaa, og et medlemskap er ingen
+      // plass.
+      // Beloepet brekker ikke midt i tallet.
+      //
+      // Mellomrommet etter «kr.» var hardt fra for, men tusenskillet var
+      // et vanlig mellomrom. Paa en telefon brakk «kr. 5 470,-» derfor i
+      // to: «kr. 5» paa én linje og «470,- utestaaende» paa neste.
+      // Eieren, 4. september, med bilde: «feil deling av tall her ogsaa».
+      //
+      // Samme regel som Booking::kroner() foelger paa serveren: begge
+      // mellomrommene er harde.
+      ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
+        : liste.length + (liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
+          + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',- utestående',
+      ovSkylder: liste.map(u => {
+        const erMedlem = u.slag === 'medlem';
+        return {
+        navn: u.navn,
+        // Kursraden sier hvilket kurs, naar det er, og hvor lenge plassen
+        // har staatt ubetalt — det siste avgjor om den haster.
+        //
+        // Tallet er dager siden paameldingen kom inn, ikke kursets
+        // lengde. Det sto som «2 dager», rett etter datoen for kurset,
+        // uten et ord om hva det telte. Eieren, 4. september, med bilde
+        // av to rader paa det samme kurset: «hvorfor staar det 2 dager
+        // paa disse?»
+        //
+        // Lesningen er den naturlige, og den er blitt verre etter at
+        // flerdagerskurs kom inn: naa FINNES det kurs som gaar over to
+        // dager, og varigheten staar andre steder som «3 timer per gang
+        // · 2 ganger». Samme ord, to forskjellige ting, paa samme kort.
+        //
+        // Medlemsraden sier hvilket medlemskap og HVORFOR den staar her:
+        // «Skulle vaert trukket 1. september», «Ingen betaling
+        // registrert». Dager siden innmelding ville bare gjentatt det
+        // teksten alt sier, med et annet tall.
+        under: erMedlem
+          ? [u.kurs, u.naar].filter(Boolean).join(' · ')
+          : [u.kurs, u.naar,
+             u.dager > 0
+               ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
+               : 'påmeldt i dag'].filter(Boolean).join(' · '),
+        // Tomt naar prisen ikke er kjent. «kr. 0,-» leses som «skylder
+        // ingenting», og det er det motsatte av det raden staar her for.
+        belop: u.belop || '',
+        // Navnet er en vei inn til medlemmet. Eieren ba om begge deler:
+        // knappene for ett trykk, og lenka naar han trenger aa se mer enn
+        // raden viser.
+        erMedlem,
+        aapne: erMedlem
+          ? () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })
+          : () => {},
+        navnStil: {
+          appearance: 'none', background: 'transparent', border: 'none', padding: 0,
+          font: 'inherit', fontWeight: 700, color: 'var(--text-heading)', textAlign: 'left',
+          cursor: erMedlem ? 'pointer' : 'default',
+          textDecoration: erMedlem ? 'underline' : 'none', textUnderlineOffset: '3px',
+        },
+        // Ett trykk merker den betalt, med maaten.
+        //
+        // De to slagene gjores opp hvert sitt sted: en kursplass paa
+        // paameldingen sin, et medlemskap som en betalingsrad paa
+        // medlemmet. Samme knapp, to endepunkt.
+        maater: ['Kontant', 'Vipps'].map(m => ({
+          navn: m,
+          stil: knapp,
+          // Begge henter admin paa nytt av seg selv naar det gikk bra, saa
+          // kortet oppdaterer seg.
+          velg: () => (erMedlem
+            ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
+            : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
+          ).then(() => {}),
+        })),
+      };
+      }),
+    };
+  }
+
   adminBunnMeny() {
     const sted = this.adminSted();
     const meny = Component.ADMIN_MENY;
@@ -28126,6 +28264,7 @@ class Component extends DCLogic {
       // seg igjen.
       'Butikk': 'Butikk',
       'Nettbutikk': 'Nettbutikk',
+      'Kasse': 'Kasse',
     };
 
     const fra = (navn) => {
@@ -28133,16 +28272,14 @@ class Component extends DCLogic {
       return rad || [navn, 'adminoversikt', {}];
     };
 
-    // Hvilket valg lyser?
+    // Hvilket valg lyser? Menypunktet man staar i.
     //
-    // For de fem er det menypunktet man staar i. Kassa er ikke et
-    // menypunkt — adminSted() foerer «adminuttak» til Oversikt, fordi den
-    // naas fra et kort der — saa den maa spoerre om selve skjermen. Uten
-    // dette lyste «Oversikt» mens man sto i kassa, og to valg sa hver sin
-    // sannhet om hvor man var.
-    const iKassa = this.state.side === 'adminuttak';
-    const punkt = (menynavn, rute, forvalg, kortnavn, egen) => {
-      const paa = egen !== undefined ? egen : (sted.meny === menynavn && !iKassa);
+    // Kassa maatte spoerre om selve skjermen saa lenge den ikke var et
+    // menypunkt — adminSted() foerte «adminuttak» til Oversikt, og da lyste
+    // Oversikt mens man sto i kassa. Naa er Kasse et sted som de andre, og
+    // regelen er den samme for alle seks.
+    const punkt = (menynavn, rute, forvalg, kortnavn) => {
+      const paa = sted.meny === menynavn;
       return {
         navn: kortnavn,
         full: menynavn,
@@ -28169,6 +28306,7 @@ class Component extends DCLogic {
     const kalender = fra('Kalender');
     const kurs = fra('Kurs og deltakere');
     const marked = fra('Markedsføring');
+    const kasse = fra('Kasse');
     const butikk = meny.find(([, r]) => r === 'adminbutikk') || ['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }];
 
     return {
@@ -28176,11 +28314,8 @@ class Component extends DCLogic {
       oversikt: punkt('Oversikt', 'adminoversikt', {}, KORT['Oversikt']),
       kurs: punkt('Kurs og deltakere', kurs[1], kurs[2], KORT['Kurs og deltakere']),
       marked: punkt('Markedsføring', marked[1], marked[2], KORT['Markedsføring']),
-      // Kassa er ikke et menypunkt enda — den naas fra et kort paa Oversikt.
-      // Den staar likevel her, fordi det er dit man skal hele dagen. Blir den
-      // et menypunkt senere, byttes ruta ett sted.
       butikk: punkt(butikk[0], butikk[1], butikk[2], KORT[butikk[0]] || butikk[0]),
-      kasse: punkt('Kasse', 'adminuttak', {}, 'Kasse', iKassa),
+      kasse: punkt('Kasse', kasse[1], kasse[2], KORT['Kasse']),
     };
   }
 
@@ -36314,6 +36449,11 @@ class Component extends DCLogic {
           utTomt: linjer.length === 0,
           utSum: sum > 0 ? kr(sum) : 'kr. 0,-',
 
+          // Kortet «Ikke betalt». Sto paa Oversikt; hoerer hjemme her, der
+          // man staar naar noe skal kreves inn. Regnestykket ligger i
+          // skylderKort(), saa det ikke skrives av.
+          ...this.skylderKort(),
+
           // Maatene et fritt beloep kan foeres paa. «Gratis» staar bare her.
           utSalgMaater: ((data && data.salgmaater) || ['Kontant', 'Vipps', 'Gratis']).map(n => ({
             navn: n,
@@ -36498,120 +36638,6 @@ class Component extends DCLogic {
           })),
         };
       })(),
-      ...(() => {
-        const liste = (this.state.adminData || {}).ubetalte || [];
-        const knapp = {
-          appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
-          padding: '6px 14px', font: 'var(--type-body-sm)', fontWeight: 700,
-          border: '1.5px solid var(--lissom-brown)', background: 'var(--surface-card)',
-          color: 'var(--lissom-brown)', whiteSpace: 'nowrap',
-        };
-        const sum = liste.reduce((n, u) => n + (parseInt(String(u.belop).replace(/[^\d]/g, ''), 10) || 0), 0);
-        return {
-          ovSkylderVis: true,
-          ovSkylderTom: liste.length === 0,
-          // Roedt bare naar noen faktisk skylder. En roed ramme hver dag naar
-          // alt er gjort opp slutter man aa se etter en uke.
-          // Samme ramme som de andre kortene paa Oversikt: hvit flate, tynn
-          // strek, samme runding. Eieren, 31. august: «jeg vil at kortene
-          // skal vaere like som de andre kortene paa denne siden».
-          //
-          // Kortet spenner over hele rada fordi radene inni er brede — navn,
-          // beloep og tre betalingsknapper. Én spalte gjorde dem uleselige.
-          //
-          // Paa telefonen har rutenettet bare én spalte, og «span 2» lager da
-          // en spalte til: kortet ble 413 piksler paa en skjerm som er 390, og
-          // hele Oversikt maatte dras sidelengs. Det var min feil. Der spenner
-          // det naa over hele rada, som er én spalte.
-          ovSkylderRamme: {
-            gridColumn: this.erSmal() ? '1 / -1' : 'span 2',
-            border: '1px solid ' + (liste.length ? 'var(--terracotta-500)' : 'var(--border-subtle)'),
-            borderRadius: 'var(--radius-lg)', background: 'var(--surface-card)',
-            overflow: 'hidden',
-          },
-          ovSkylderHode: {
-            display: 'flex', alignItems: 'baseline', gap: 'var(--space-3)',
-            padding: 'var(--space-5) var(--space-5) var(--space-4)',
-            color: liste.length ? 'var(--terracotta-600)' : 'var(--text-muted)',
-          },
-          // «plasser» sto her fra den gang kortet bare hadde kursplasser.
-          // Naa staar medlemskapene her ogsaa, og et medlemskap er ingen
-          // plass.
-          // Beloepet brekker ikke midt i tallet.
-          //
-          // Mellomrommet etter «kr.» var hardt fra for, men tusenskillet var
-          // et vanlig mellomrom. Paa en telefon brakk «kr. 5 470,-» derfor i
-          // to: «kr. 5» paa én linje og «470,- utestaaende» paa neste.
-          // Eieren, 4. september, med bilde: «feil deling av tall her ogsaa».
-          //
-          // Samme regel som Booking::kroner() foelger paa serveren: begge
-          // mellomrommene er harde.
-          ovSkylderSum: liste.length === 0 ? 'Ingenting utestående'
-            : liste.length + (liste.length === 1 ? ' ubetalt · ' : ' ubetalte · ')
-              + 'kr.' + ' ' + String(sum).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + ',- utestående',
-          ovSkylder: liste.map(u => {
-            const erMedlem = u.slag === 'medlem';
-            return {
-            navn: u.navn,
-            // Kursraden sier hvilket kurs, naar det er, og hvor lenge plassen
-            // har staatt ubetalt — det siste avgjor om den haster.
-            //
-            // Tallet er dager siden paameldingen kom inn, ikke kursets
-            // lengde. Det sto som «2 dager», rett etter datoen for kurset,
-            // uten et ord om hva det telte. Eieren, 4. september, med bilde
-            // av to rader paa det samme kurset: «hvorfor staar det 2 dager
-            // paa disse?»
-            //
-            // Lesningen er den naturlige, og den er blitt verre etter at
-            // flerdagerskurs kom inn: naa FINNES det kurs som gaar over to
-            // dager, og varigheten staar andre steder som «3 timer per gang
-            // · 2 ganger». Samme ord, to forskjellige ting, paa samme kort.
-            //
-            // Medlemsraden sier hvilket medlemskap og HVORFOR den staar her:
-            // «Skulle vaert trukket 1. september», «Ingen betaling
-            // registrert». Dager siden innmelding ville bare gjentatt det
-            // teksten alt sier, med et annet tall.
-            under: erMedlem
-              ? [u.kurs, u.naar].filter(Boolean).join(' · ')
-              : [u.kurs, u.naar,
-                 u.dager > 0
-                   ? 'ubetalt i ' + u.dager + (u.dager === 1 ? ' dag' : ' dager')
-                   : 'påmeldt i dag'].filter(Boolean).join(' · '),
-            // Tomt naar prisen ikke er kjent. «kr. 0,-» leses som «skylder
-            // ingenting», og det er det motsatte av det raden staar her for.
-            belop: u.belop || '',
-            // Navnet er en vei inn til medlemmet. Eieren ba om begge deler:
-            // knappene for ett trykk, og lenka naar han trenger aa se mer enn
-            // raden viser.
-            erMedlem,
-            aapne: erMedlem
-              ? () => this.gaaAdmin('adminmedlem', { medlemFilter: 'Alle', medlemSok: u.navn })
-              : () => {},
-            navnStil: {
-              appearance: 'none', background: 'transparent', border: 'none', padding: 0,
-              font: 'inherit', fontWeight: 700, color: 'var(--text-heading)', textAlign: 'left',
-              cursor: erMedlem ? 'pointer' : 'default',
-              textDecoration: erMedlem ? 'underline' : 'none', textUnderlineOffset: '3px',
-            },
-            // Ett trykk merker den betalt, med maaten.
-            //
-            // De to slagene gjores opp hvert sitt sted: en kursplass paa
-            // paameldingen sin, et medlemskap som en betalingsrad paa
-            // medlemmet. Samme knapp, to endepunkt.
-            maater: ['Kontant', 'Vipps'].map(m => ({
-              navn: m,
-              stil: knapp,
-              // Begge henter admin paa nytt av seg selv naar det gikk bra, saa
-              // kortet oppdaterer seg.
-              velg: () => (erMedlem
-                ? this.medlemKall({ handling: 'betaling', medlemId: u.id, maate: m })
-                : this.pameldingKall({ handling: 'status', id: u.id, status: 'betalt', maate: m })
-              ).then(() => {}),
-            })),
-          };
-          }),
-        };
-      })(),
 
       ovKort: (() => {
             // Her sto «Nytt kurs», «Medlemskap» og «Priser, tekst og bilder».
@@ -36644,34 +36670,19 @@ class Component extends DCLogic {
 
             // ── Hvem har ikke betalt ────────────────────────────────────
             //
-            // Eieren, 2. september: «jeg kan ikke se paa min side paa et
-            // medlem om det er betalt for medlemskapet eller ikke ... jeg vil
-            // ogsaa kunne se det direkte paa medlemmer».
+            // Her sto kortet «Medlemmer og betaling». Eieren, 4. september:
+            // «jeg vil fjerne kortet og at medlemmer som ikke har betalt
+            // skal vises i oversikten ikke betalt, slik at vi har en
+            // oversikt naturligvis».
             //
-            // Tallet er det samme som medlemslista regner ut — begge kommer
-            // fra Medlemskap::betalingsstatus() paa serveren. «haster» gjor
-            // tallet roedt, som paa de andre kortene, og trykket gaar rett
-            // inn i lista filtrert paa dem som mangler.
+            // De staar der alt. «Ikke betalt» har baert baade kursplasser og
+            // medlemskap siden 2. september — se «slag» i
+            // api/admin/oversikt.php — saa kortet her sa det samme tallet en
+            // gang til, med en annen ordlyd. Lista over dem staar i Kassa,
+            // med «Kontant» og «Vipps» ved siden av hvert navn.
             //
-            // Medlemmer som staar som fritatt fra betaling teller ikke med.
-            ...(d ? [kort('Medlemmer og betaling',
-                 ((d.medlemmer.ubetalte || 0) > 0
-                    ? (d.medlemmer.ubetalte === 1
-                        ? 'Ett medlemskap er ikke betalt. '
-                        : d.medlemmer.ubetalte + ' medlemskap er ikke betalt. ')
-                    : 'Alle medlemskap er gjort opp. ')
-                 + (d.medlemmer.aktive || 0) + ' aktive medlemmer'
-                 + ((d.medlemmer.nyeDenneMnd || 0) > 0
-                        ? ', ' + d.medlemmer.nyeDenneMnd + ' nye denne måneden' : '')
-                 + ((d.medlemmer.fritatt || 0) > 0
-                        ? ', ' + d.medlemmer.fritatt + ' betaler ikke' : '')
-                 + '.',
-                 d.medlemmer.ubetalte || 0, 'Se medlemmene',
-                 () => this.gaaAdmin('adminmedlem',
-                        (d.medlemmer.ubetalte || 0) > 0
-                          ? { medlemFilter: 'Ubetalte', medlemSok: '' }
-                          : { medlemSok: '' }),
-                 (d.medlemmer.ubetalte || 0) > 0)] : []),
+            // Ingenting er borte: medlemslista filtrert paa ubetalte naas
+            // fra Medlemmer → Alle medlemmer.
 
             // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
             // den veien verkstedet er vant til aa gaa naar noen skal meldes

@@ -1362,7 +1362,22 @@ final class Booking
     // betalt.
 
     /** Maatene en betaling kan komme paa naar den legges inn for haand. */
-    public const MAATER = ['Kontant', 'Vipps i verkstedet', 'Faktura', 'Bankoverføring', 'Gratis'];
+    /**
+     * Maatene verkstedet kan foere en betaling paa, for haand.
+     *
+     * Eieren, 4. september: «du kan droppe faktura og bankoverforing».
+     *
+     * Lista sto med fem valg. Faktura og Bankoverforing er ute; «Vipps i
+     * verkstedet» heter «Vipps», som i kassa og paa medlemskapene — ett ord
+     * for det samme, saa de tre stedene tilbyr det samme.
+     *
+     * Det som ALT er ført staar urort. Gamle rader beholder maaten sin —
+     * se MAATER i api/admin/pamelding.php, som fortsatt tar imot dem — og
+     * dagsoppgjoret har fortsatt en motkonto for Faktura, saa et gammelt
+     * bilag gaar i balanse som for. Bankoverforing hadde aldri en, og
+     * havnet paa Vipps-kontoen; det hullet forsvinner med valget.
+     */
+    public const MAATER = ['Kontant', 'Vipps', 'Gratis'];
 
     /**
      * Betalingene som gjelder én paamelding, og summen av dem.

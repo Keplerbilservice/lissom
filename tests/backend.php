@@ -7685,9 +7685,15 @@ sjekk('… og teller ikke dem som er fritatt',
     str_contains($ovApi, "if (\$b['tilstand'] === 'fri') {"));
 
 // ── Skjermene ──────────────────────────────────────────────────────────
+// Pilla var en etikett til 4. september, og kartet over ord og farge sto i
+// to kopier. Naa er den en knapp — eieren: «jeg vil ha den klikkbar som jeg
+// ber om» — og kartet staar ett sted, i betalingsPille().
 sjekk('medlemsraden viser om det er betalt',
-    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>')
-    && str_contains($sida, "betalingMerke: { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
+    str_contains($sida, '<button type="button" onClick="{{ m.apneBetaling }}" title="{{ m.betalingHjelp }}" style="{{ m.betalingStil }}">{{ m.betalingMerke }}</button>')
+    && str_contains($sida, 'betalingMerke: this.betalingsPille(m.betaling).merke,'));
+// Et gratismedlem har ingenting aa registrere, og staar som en etikett.
+sjekk('… og et gratismedlem staar som en etikett',
+    str_contains($sida, '<span style="{{ m.betalingStil }}">{{ m.betalingMerke }}</span>'));
 sjekk('… og timer igjen',
     str_contains($sida, "timerIgjen: m.timerIgjen ? m.timerIgjen + ' t igjen' : '',"));
 // Filteret maa lese det samme flagget kortet teller. Ellers kunne kortet sagt
@@ -8336,8 +8342,12 @@ sjekk('… og feltet viser hva en hel periode koster',
     str_contains($sidaP, 'personBetalingHint: p.pris'));
 // Boksen skal ikke staa aapen med forrige persons beloep naar en annen
 // aapnes.
+// Boksen skal ikke staa aapen med forrige persons beloep. Fra 4. september
+// kan den aapnes med vilje — pilla i medlemslista kaller apnePerson() med
+// «medBetaling» — men alle andre veier inn lukker den.
 sjekk('… og boksen nullstilles naar en annen person aapnes',
-    str_contains($sidaP, "personBetalingApen: false, personBetalingBelop: '',"));
+    str_contains($sidaP, "personBetalingApen: !!medBetaling, personBetalingBelop: '',")
+    && substr_count($sidaP, 'apnePerson(m.id, 0, true)') === 1);
 
 $medApiB = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
 // Ikke en hake: raden er en ekte betaling, med formaal «medlemskap», saa den
@@ -8374,7 +8384,7 @@ sjekk('betalingspilla har ett sted aa bo',
     && str_contains($sidaP3, "const MERKE = { fri: 'Fri', betalt: 'Betalt', bestilt: 'Bestilt',"));
 sjekk('… og medlemslista leser den',
     str_contains($sidaP3, 'betalingMerke: this.betalingsPille(m.betaling).merke,')
-    && str_contains($sidaP3, 'betalingStil: this.betalingsPille(m.betaling).stil,'));
+    && str_contains($sidaP3, "betalingStil: this.betalingsPille(m.betaling, m.betaling !== 'fri').stil,"));
 sjekk('… og personruta leser den samme',
     str_contains($sidaP3, 'personBetalingMerke: this.betalingsPille(p.betaling).merke,')
     && str_contains($sidaP3, 'personBetalingStil: this.betalingsPille(p.betaling, true).stil,'));
@@ -8408,6 +8418,35 @@ sjekk('… og teksten fra serveren staar urort, med plassene',
 // betalingsrad. Det skal ikke slaas sammen med dette.
 sjekk('kassas statuskart er ikke slaatt sammen med pilla',
     str_contains($sidaP3, "betalt: 'Betalt', venter: 'Venter', opprettet: 'Ikke fullført',"));
+
+echo "\n== Færre betalingsmåter å velge i ==\n";
+// Eieren, 4. september: «du kan droppe faktura og bankoverforing».
+//
+// Lista sto med fem valg paa kurs, to i kassa og to paa medlemskap. Naa er
+// det tre paa kurs, og ordet for Vipps er det samme alle tre stedene.
+$bookLib = file_get_contents(dirname(__DIR__) . '/app/lib/booking.php');
+sjekk('kurs tilbyr tre maater, ikke fem',
+    str_contains($bookLib, "public const MAATER = ['Kontant', 'Vipps', 'Gratis'];"));
+sjekk('… og «Vipps i verkstedet» heter «Vipps», som i kassa',
+    !str_contains($bookLib, "'Vipps i verkstedet', 'Faktura'"));
+
+// ── Det som alt er foert staar urort ──────────────────────────────────
+//
+// Aa slutte aa tilby en maate er ikke det samme som aa slette den.
+$pamLib = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+sjekk('gamle rader beholder maaten sin',
+    str_contains($pamLib, "'Ikke betalt', 'Faktura', 'Betaler ved oppmøte', 'Gratis'];")
+    && str_contains($pamLib, "'Vipps i verkstedet'"));
+// Dagsoppgjoret maa fortsatt kunne foere et gammelt fakturabilag.
+$dagLib = file_get_contents(dirname(__DIR__) . '/api/admin/dagsoppgjor.php');
+sjekk('… og dagsoppgjoret har fortsatt en motkonto for Faktura',
+    str_contains($dagLib, "'Faktura'  => 'regnskap_motkonto_faktura',")
+    && str_contains($dagLib, "if (\$m === 'Faktura') {"));
+// «Gratis» er null kroner, saa den forstyrrer ikke delingen mellom Kontant
+// og Vipps i dagsoppgjoret — den legger null til Vipps-kolonnen.
+$kbLib = file_get_contents(dirname(__DIR__) . '/api/admin/kursbetaling.php');
+sjekk('«Gratis» er null kroner, og forstyrrer ingen kolonne',
+    str_contains($kbLib, "if (\$maate === 'Gratis') {\n            \$belop = 0;"));
 
 echo "\n== Pilla i medlemslista er klikkbar ==\n";
 // Eieren, 4. september: «jeg vil ha den klikkbar som jeg ber om».

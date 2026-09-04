@@ -8334,6 +8334,36 @@ sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
 
+echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
+// Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg
+// klikke paa logoen min og komme tilbake til forsiden».
+//
+// Innloggingsskjermen fyller hele skjermen og har ingen meny. Logoen var det
+// eneste som saa ut som en vei tilbake, og den var et bilde — ingenting
+// skjedde naar man trykket. Adminpanelet har hatt den samme knappen hele
+// tida (se «adminHjem»); her sto den ikke.
+$sidaL = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('logoen paa innloggingsskjermen er en knapp',
+    str_contains($sidaL, '<button type="button" onClick="{{ goForside }}" title="Til forsiden"'));
+sjekk('… og den gaar til forsida',
+    str_contains($sidaL, "goForside: this.go('forside'),"));
+// Skjermlesere leser «alt». «lissom» alene sier ikke at det gaar an aa
+// trykke, eller hvor man havner.
+sjekk('… og den sier hvor den foerer',
+    str_contains($sidaL, 'alt="lissom — til forsiden"'));
+// Skjermen staar tre steder: /logg-inn, /admin/logg-inn, og /min-side naar
+// man ikke er innlogget. Alle tre er den samme markupen — sjekken her er at
+// den fortsatt er det, saa knappen ikke bare virker ett av stedene.
+sjekk('… og skjermen er den samme paa alle tre adressene',
+    str_contains($sidaL, "erLogin: side === 'login' || side === 'adminlogin'")
+    && str_contains($sidaL, "(side === 'minside' && this.erPublisert() && !this.state.innlogget),")
+    // Én markup, ett sted. Sto knappen i to kopier, kunne de drive fra
+    // hverandre — og da virker den ett sted og ikke det andre.
+    && substr_count($sidaL, 'onClick="{{ goForside }}" title="Til forsiden"') === 1);
+// Bildet skal ikke ligge igjen som et bilde uten knapp.
+sjekk('… og det gamle bildet uten knapp er borte',
+    !str_contains($sidaL, '<img src="logo-lockup.svg" alt="lissom" style="height: 72px; align-self: flex-start; position: relative;"'));
+
 echo "\n== Begynne på nytt med den samme personen ==\n";
 // Eieren, 4. september, om Eirin: «hun staar to ganger», «ingen ting er
 // betalt», og «Eirin skal ha en bruker og den skal ha aarsavtale, slett alt

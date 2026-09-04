@@ -3440,7 +3440,15 @@ window.__resources = {
     <div role="main" class="lx-split" data-screen-label="Logg inn" style="display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh;">
       <div data-theme="sun" style="background: var(--lissom-yellow); position: relative; overflow: hidden; padding: var(--space-12) var(--space-10); display: flex; flex-direction: column; justify-content: space-between;">
         <img src="mark-cup.svg" alt="" aria-hidden="true" style="position: absolute; right: -140px; bottom: -180px; width: 620px; opacity: 0.12; pointer-events: none;" loading="lazy" decoding="async" width="192" height="112">
-        <img src="logo-lockup.svg" alt="lissom" style="height: 72px; align-self: flex-start; position: relative;" loading="lazy" decoding="async" width="425" height="232">
+        <!-- Logoen er veien ut.
+             Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn,
+             saa vil jeg klikke paa logoen min og komme tilbake til
+             forsiden».
+             Innloggingsskjermen har ingen meny — den fyller hele skjermen —
+             saa logoen var det eneste som saa ut som en vei tilbake, og den
+             var et bilde. Adminpanelet har hatt den samme knappen hele
+             tida; her sto den ikke. -->
+        <button type="button" onClick="{{ goForside }}" title="Til forsiden" style="appearance: none; border: none; background: transparent; padding: 0; align-self: flex-start; position: relative; cursor: pointer;"><img src="logo-lockup.svg" alt="lissom — til forsiden" style="height: 72px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
         <div style="position: relative;">
           <h2 style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-4xl); color: var(--lissom-brown); margin: 0 0 var(--space-5);">{{ liTittel }}</h2>
           <p style="margin: 0; color: var(--brown-500); font-size: var(--text-lg); max-width: 38ch; text-wrap: pretty;">{{ liTekst }}</p>

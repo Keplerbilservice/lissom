@@ -4757,6 +4757,20 @@ window.__resources = {
     <div data-screen-label="Admin – nyttig info" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyttig }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5010,6 +5024,20 @@ window.__resources = {
     <div data-screen-label="Admin – nye påmeldinger" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyePameldinger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5077,6 +5105,20 @@ window.__resources = {
     <div data-screen-label="Admin – medlemskapsforespørsler" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemssoknader }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5144,6 +5186,20 @@ window.__resources = {
     <div data-screen-label="Admin – ubesvarte meldinger" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUbesvarte }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5215,6 +5271,20 @@ window.__resources = {
     <div data-screen-label="Admin – videokurs" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVideokurs }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5280,6 +5350,20 @@ window.__resources = {
     <div data-screen-label="Admin – ferdig glassert" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerdigbrent }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -5521,6 +5605,20 @@ window.__resources = {
     <div data-screen-label="Admin – kalender" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKalender }}" as="n" hint-placeholder-count="9">
             <button type="button" onClick="{{ n.velg }}" style="{{ n.stil }}">{{ n.navn }}</button>
@@ -6683,6 +6781,20 @@ window.__resources = {
     <div data-screen-label="Admin – venteliste" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVenteliste }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6814,6 +6926,20 @@ window.__resources = {
     <div data-screen-label="Admin – kursholdere" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursholdere }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -6991,6 +7117,20 @@ window.__resources = {
     <div data-screen-label="Admin – uttak butikk" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavUttak }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7508,6 +7648,20 @@ window.__resources = {
     <div data-screen-label="Admin – ny registrering" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavNyreg }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7708,6 +7862,20 @@ window.__resources = {
     <div data-screen-label="Admin – medlemskap" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlemskap }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -7983,6 +8151,20 @@ window.__resources = {
 
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNav }}" as="a" hint-placeholder-count="6">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9043,6 +9225,20 @@ window.__resources = {
     <div data-screen-label="Admin – oversikt" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOversikt }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9126,15 +9322,11 @@ window.__resources = {
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="download" on-click="{{ aDagsoppgjor }}" hint-size="auto,40px">Dagsoppgjør</x-import>
         </div>
 
-        <!-- Verkstedet: er du her, og naar er det ferie.
-             Sto oeverst i adminmenyen. Eieren, 30. august: «stemple inn og
-             ferie maa flyttes til oversikt. Behold utseende» — samme tekst,
-             samme piller, samme farger, paa den samme moerke bunnen. -->
-        <div data-theme="ink" style="background: var(--lissom-brown); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-10);">
-          <span style="{{ ovStempStatusStil }}">{{ ovStempStatus }}</span>
-          <button type="button" onClick="{{ ovStempVelg }}" style="{{ ovStempStil }}">{{ ovStempNavn }}</button>
-          <button type="button" onClick="{{ ovFerieVelg }}" style="{{ ovFerieStil }}">{{ ovFerieNavn }}</button>
-        </div>
+        <!-- Her sto stripa med «Stemple inn» og «Ferie».
+             Den kom hit fra menyen 30. august. Naa staar de samme pillene
+             under logoen i sidemenyen, paa hver eneste adminside — eieren,
+             4. september: «uansett hvilken side jeg er inne paa». Da er én
+             plass nok, og Oversikt begynner med kortene. -->
 
         <!-- Kortene.
              Oversikten aapnet foer med en rad snarveier og deretter tolv
@@ -9473,6 +9665,20 @@ window.__resources = {
     <div data-screen-label="Admin – kursvelgeren" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursvelger }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9683,6 +9889,20 @@ window.__resources = {
     <div data-screen-label="Admin – referansekunder" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavReferanser }}" as="a" hint-placeholder-count="11">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -9846,6 +10066,20 @@ window.__resources = {
     <div data-screen-label="Admin – e-post og SMS" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavVarsler }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10079,6 +10313,20 @@ window.__resources = {
     <div data-screen-label="Admin – ressurser" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavRessurser }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10181,6 +10429,20 @@ window.__resources = {
     <div data-screen-label="Admin – ferie" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFerie }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10271,6 +10533,20 @@ window.__resources = {
     <div data-screen-label="Admin – feilmeldinger" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavFeil }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10378,6 +10654,20 @@ window.__resources = {
     <div data-screen-label="Admin – mobilvisning" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMobilvis }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10452,6 +10742,20 @@ window.__resources = {
     <div data-screen-label="Admin – påmeldte" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavPameldte }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10794,6 +11098,20 @@ window.__resources = {
     <div data-screen-label="Admin – område" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOmraade }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -10882,6 +11200,20 @@ window.__resources = {
     <div data-screen-label="Admin – kursdeltakere" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavKursdeltakere }}" as="a" hint-placeholder-count="9">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11331,6 +11663,20 @@ window.__resources = {
     <div data-screen-label="Admin – brukere" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBrukere }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -11454,6 +11800,20 @@ window.__resources = {
     <div data-screen-label="Admin – medlemmer" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMedlem }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12180,6 +12540,20 @@ window.__resources = {
     <div data-screen-label="Admin – innhold" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavInnhold }}" as="a" hint-placeholder-count="8">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12361,6 +12735,20 @@ window.__resources = {
     <div data-screen-label="Admin – butikk" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavButikk }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12587,6 +12975,20 @@ window.__resources = {
     <div data-screen-label="Admin – beskjeder" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavBeskjeder }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12828,6 +13230,20 @@ window.__resources = {
     <div data-screen-label="Admin – maler" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMaler }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -12946,6 +13362,20 @@ window.__resources = {
     <div data-screen-label="Admin – oppskrifter" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOppskrifter }}" as="a" hint-placeholder-count="10">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -13186,6 +13616,20 @@ window.__resources = {
     <div data-screen-label="Admin – økonomi" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavOkonomi }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -13619,6 +14063,20 @@ window.__resources = {
     <div data-screen-label="Admin – markedsføring" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavMarked }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -14387,6 +14845,20 @@ window.__resources = {
     <div data-screen-label="Admin – SEO" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavSeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -14587,6 +15059,20 @@ window.__resources = {
     <div data-screen-label="Admin – GEO" style="{{ adminGridStil }}">
       <aside class="lx-adminaside" style="{{ adminAsideStil }}">
         <button type="button" onClick="{{ adminHjem }}" title="Til oversikten" style="appearance: none; border: none; background: transparent; padding: 0; cursor: pointer; align-self: flex-start;"><img src="logo-lockup-yellow.svg" alt="lissom — til oversikten" style="height: 54px; display: block;" loading="lazy" decoding="async" width="425" height="232"></button>
+        <!-- Stemple inn og Ferie, rett under logoen.
+             Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+             tilgjengelige under logoen uansett hvilken side jeg er inne
+             paa».
+             De sto paa Oversikt alene — flyttet dit 30. august, ogsaa paa
+             bestilling. Da maatte man tilbake til Oversikt for aa stemple
+             ut, uansett hvor man sto. Naa staar de i sidemenyen, som er den
+             samme paa alle 35 adminskjermene.
+             Ingen ny stemplings- eller ferielosning: dette er de samme
+             pillene, fra stemplingPiller(). -->
+        <div style="{{ admStemplingStil }}">
+          <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
+          <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
+        </div>
         <nav style="{{ adminNavStil }}">
           <sc-for list="{{ adminNavGeo }}" as="a" hint-placeholder-count="7">
             <button type="button" onClick="{{ a.velg }}" style="{{ a.stil }}">{{ a.navn }}</button>
@@ -37644,20 +38130,9 @@ class Component extends DCLogic {
       // det ikke alltid likt skrevet.
       adminHilsenHjerte: (this.state.vippsNavn || '').trim().split(/\s+/)[0]
         .toLowerCase() === 'monica',
-      // Innstemplinga og ferien, flyttet hit fra menyen. Se stemplingPiller().
-      ...(() => {
-        const st = this.stemplingPiller();
-        return {
-          ovStempStatus: st.statusNavn,
-          ovStempStatusStil: st.statusStil,
-          ovStempNavn: st.stempleNavn,
-          ovStempVelg: st.stempleVelg,
-          ovStempStil: st.stempleStil,
-          ovFerieNavn: st.ferieNavn,
-          ovFerieVelg: st.ferieVelg,
-          ovFerieStil: st.ferieStil,
-        };
-      })(),
+      // «ovStemp…» og «ovFerie…» sto her. Pillene staar naa under logoen i
+      // sidemenyen — se «admStempNavn» og folgende — og de leser den samme
+      // stemplingPiller(). To sett verdier for det samme er ett for mye.
       ovOmsListe: this.omsetningsLinjer(),
       ingenOmsLinjer: this.erPublisert() && this.omsetningsLinjer().length === 0,
       ingenOmsTekst: (this.state.ovOms || 'I dag') === 'I dag'
@@ -42527,6 +43002,50 @@ class Component extends DCLogic {
       // Logoen oeverst i sidemenyen i admin. Den sto som et bilde uten
       // funksjon; i alle andre systemer fører den hjem, og det gjor den her.
       adminHjem: () => this.gaaAdmin('adminoversikt', {}),
+
+      // ── Stemple inn og Ferie, under logoen paa hver adminside ─────────
+      //
+      // Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+      // tilgjengelige under logoen uansett hvilken side jeg er inne paa».
+      //
+      // De laa i menyen til 30. august, ble flyttet til Oversikt paa
+      // bestilling, og sto der alene. Sto du i Kalenderen kl. 22 og skulle
+      // stemple ut, maatte du innom Oversikt for aa finne knappen.
+      //
+      // Ingen ny losning: dette er de samme pillene, fra stemplingPiller(),
+      // med samme tekst, samme kall og samme farger. De ligger her paa
+      // toppnivaa fordi markupen staar i alle 35 adminskjermene — en verdi
+      // som mangler ett sted, tegner hele skjermen som «{{ }}».
+      //
+      // Paa smal skjerm er sidemenyen en stripe paa tvers. Da staar pillene
+      // ved siden av logoen og bryter til egen linje naar det er trangt —
+      // se adminAsideStil, som har «flexWrap» der.
+      ...(() => {
+        const st = this.stemplingPiller();
+        const smal = (this.state.vw || 1400) < 980;
+        // Samme pille, mindre av den. Paa en telefon deler stripa plass med
+        // logoen og «Meny», og da er 11 px luft over og under for mye.
+        const kompakt = (grunn) => Object.assign({}, grunn, {
+          padding: '6px 12px', borderRadius: 'var(--radius-pill)',
+          fontSize: 12, lineHeight: 1.2,
+        });
+        return {
+          admStemplingStil: smal
+            ? { display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }
+            : { display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'stretch',
+                paddingBottom: 'var(--space-6)',
+                borderBottom: '1px solid rgba(244,235,222,.20)' },
+          admStempNavn: st.stempleNavn,
+          admStempVelg: st.stempleVelg,
+          admStempStil: smal ? kompakt(st.stempleStil) : st.stempleStil,
+          // Tittelen sier hva som staar naa — den staar ikke som tekst i
+          // sidemenyen, slik den gjorde i stripa paa Oversikt.
+          admStempHjelp: st.statusNavn,
+          admFerieNavn: st.ferieNavn,
+          admFerieVelg: st.ferieVelg,
+          admFerieStil: smal ? kompakt(st.ferieStil) : st.ferieStil,
+        };
+      })(),
 
       // ── Kursene vaare ───────────────────────────────────────────────────
       //

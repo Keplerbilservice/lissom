@@ -3760,9 +3760,16 @@ sjekk('ferieskjermen finnes, med ukenummer aa trykke paa',
     str_contains($sida2, 'data-screen-label="Admin – ferie"')
     && str_contains($sida2, 'onClick="{{ v.vekslUke }}"')
     && str_contains($sida2, 'onClick="{{ g.veksl }}"'));
-sjekk('… og pillen staar paa Oversikt, sammen med innstemplinga',
+// Pillen sto i menyen til 30. august, saa paa Oversikt — «stemple inn og
+// ferie maa flyttes til oversikt» — og staar fra 4. september under logoen
+// paa hver eneste adminside: «uansett hvilken side jeg er inne paa».
+// Sjekken folger den siste flyttingen; se «Stemple inn og Ferie staar under
+// logoen, overalt» lenger nede.
+sjekk('… og pillen staar under logoen, paa alle adminsidene',
     str_contains($sida2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),")
-    && str_contains($sida2, '{{ ovStempNavn }}') && str_contains($sida2, '{{ ovFerieNavn }}'));
+    && str_contains($sida2, '{{ admFerieNavn }}')
+    && substr_count($sida2, '{{ admFerieNavn }}')
+       === substr_count($sida2, 'onClick="{{ adminHjem }}" title="Til oversikten"'));
 // Eieren, 30. august: «stemple inn og ferie maa flyttes til oversikt».
 sjekk('… og de staar ikke lenger i menyen',
     str_contains($sida2, 'const stempling = [];'));
@@ -8347,6 +8354,59 @@ sjekk('… og maaten lagres paa raden',
 sjekk('… og prisen foelger med til skjermen',
     str_contains($medApiB, "'pris'       => (static function () use (\$m): string {")
     && str_contains($medApiB, "SELECT pris_ore FROM subscriptions\n                      WHERE member_id = :m AND status = 'aktiv' ORDER BY id DESC LIMIT 1"));
+
+echo "\n== Stemple inn og Ferie står under logoen, overalt ==\n";
+// Eieren, 4. september: «pillene Stemple inn og Ferie skal vaere
+// tilgjengelige under logoen uansett hvilken side jeg er inne paa».
+//
+// De laa i adminmenyen til 30. august, ble flyttet til Oversikt paa
+// bestilling, og sto der alene. Sto du i Kalenderen og skulle stemple ut,
+// maatte du innom Oversikt for aa finne knappen.
+//
+// Spurt om stripa paa Oversikt skulle bli staaende i tillegg: «nei».
+$sidaP2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// Sidemenyen staar i hver eneste adminskjerm. Tallet er ikke poenget —
+// poenget er at pillene staar like mange steder som logoen gjor, saa ingen
+// skjerm er glemt.
+$logoer = substr_count($sidaP2, 'onClick="{{ adminHjem }}" title="Til oversikten"');
+$stempler = substr_count($sidaP2, '{{ admStemplingStil }}');
+sjekk('pillene staar like mange steder som logoen',
+    $logoer > 20 && $stempler === $logoer, $logoer . ' logoer, ' . $stempler . ' pillepar');
+sjekk('… og de staar rett etter logoen, ikke et vilkaarlig sted',
+    substr_count($sidaP2,
+        '</button>' . "\n" . '        <!-- Stemple inn og Ferie, rett under logoen.') === $logoer);
+
+// Ingen ny losning. Det er de samme pillene som sto paa Oversikt.
+sjekk('pillene kommer fra stemplingPiller(), ikke fra noe nytt',
+    str_contains($sidaP2, 'const st = this.stemplingPiller();')
+    && str_contains($sidaP2, 'admStempNavn: st.stempleNavn,')
+    && str_contains($sidaP2, 'admFerieVelg: st.ferieVelg,'));
+// Ferie skal aapne skjermen som finnes, ikke en ny.
+sjekk('… og Ferie aapner den eksisterende ferieskjermen',
+    str_contains($sidaP2, "ferieVelg: () => this.gaaAdmin('adminferie', {}),"));
+
+// Verdiene maa staa paa toppnivaa. Markupen finnes i alle adminskjermene,
+// og en verdi som mangler ett sted tegner hele skjermen som «{{ }}».
+$foerAdminHjem = substr($sidaP2, 0, (int) strpos($sidaP2, 'admStemplingStil:'));
+sjekk('verdiene staar paa toppnivaa, ikke bak en side-sjekk',
+    str_contains($foerAdminHjem, "adminHjem: () => this.gaaAdmin('adminoversikt', {}),"));
+
+// Stripa paa Oversikt er borte — bade markupen og verdiene den brukte.
+sjekk('stripa paa Oversikt er borte',
+    !str_contains($sidaP2, '{{ ovStempNavn }}')
+    && !str_contains($sidaP2, '{{ ovFerieNavn }}'));
+sjekk('… og verdiene den brukte staar ikke igjen som doed kode',
+    !str_contains($sidaP2, 'ovStempStatus:')
+    && !str_contains($sidaP2, 'ovFerieStil: st.ferieStil,'));
+
+// Paa en telefon er sidemenyen en stripe paa tvers. Pillene maa krympe, og
+// stripa maa kunne brekke — ellers dyttes «Meny» ut av skjermen.
+sjekk('pillene krymper paa smal skjerm',
+    str_contains($sidaP2, "const smal = (this.state.vw || 1400) < 980;")
+    && str_contains($sidaP2, "admStempStil: smal ? kompakt(st.stempleStil) : st.stempleStil,"));
+sjekk('… og stripa kan brekke til ny linje',
+    str_contains($sidaP2, "? { display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }"));
 
 echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
 // Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg

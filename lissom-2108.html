@@ -5431,6 +5431,22 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Videokurs</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Her skal videokursene ligge. Ingenting er bygget ennå.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
 
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8); max-width: 62ch;">
           <p style="margin: 0 0 var(--space-4); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Film på et delt webhotell er noe annet enn et bilde — det er plass, båndbredde og avspilling. Det må bestemmes hvor filmene skal ligge før noe kan bygges.</p>
@@ -10252,6 +10268,22 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-2); font-size: var(--text-4xl);">Referansekunder</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Kundene som har bestilt keramikk av dere. De vises ett om gangen på forsiden, og bytter av seg selv. Et kort står ute bare når det både er slått på og kunden har sagt ja.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
 
         <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-6);">
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="plus" on-click="{{ refNy }}" hint-size="auto,44px">Ny referansekunde</x-import>
@@ -10706,6 +10738,22 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Ressurser</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 64ch; text-wrap: pretty;">Én plass er én ressurs. Alt som skjer samtidig og bruker det samme, deler taket — kurs og medlemsbooking. Et planlagt kurs holder plassene sine, også før noen har meldt seg på.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
 
         <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-4);">{{ reListeTittel }}</div>
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 720px;">
@@ -10840,6 +10888,22 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Ferie</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 64ch; text-wrap: pretty;">Trykk på en dato for å stenge den. Trykk på ukenummeret for hele uka. Kursene som ligger på en stengt dag forsvinner fra nettsiden og kan ikke bookes — de blir stående i kalenderen din, og er tilbake straks du åpner dagen igjen.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
 
         <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 640px;">
           <div style="padding: var(--space-4) var(--space-5); background: var(--clay-100); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);">
@@ -10962,6 +11026,22 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Feilmeldinger</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 62ch; text-wrap: pretty;">Feil nettleseren fanger av seg selv, og feil folk melder inn. «Kopier alt» gir deg hele bunken som tekst — lim den inn i samtalen med den som skal rette.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
 
         <sc-if value="{{ frMangler }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--clay-100); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6);">
@@ -11106,6 +11186,22 @@ window.__resources = {
           <h1 style="margin: 0 0 var(--space-3); font-size: var(--text-4xl);">Mobilvisning</h1>
           <p style="margin: 0; font-size: var(--text-base); color: var(--text-body); max-width: 56ch; text-wrap: pretty;">Velg hva besøkende skal se på mobil. Det du skrur av her, skjules kun på små skjermer — PC-utgaven påvirkes ikke.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-8) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
         <div class="lx-split" style="display: grid; grid-template-columns: minmax(300px, 1fr) 400px; gap: var(--space-8); align-items: start;">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden;">
             <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100); font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Vises på mobil</div>
@@ -13849,6 +13945,22 @@ window.__resources = {
           <h1 style="margin: 0; font-size: var(--text-3xl);">Maler</h1>
           <p style="margin: 6px 0 0; font-size: var(--text-sm); color: var(--text-muted); max-width: 62ch;">Hver e-post og SMS systemet sender. Endre teksten, slå den av, eller se når den går ut. {{ malAntall }}.</p>
         </div>
+        <!-- Fanerekka for stedet. Samme blokk som paa de andre skjermene,
+             og den samme omraadeFaner() bak. Eieren, 4. september: «de maa
+             ha samme vei tilbake som alt annet, her er en global loesning
+             paa plass».
+
+             Sto den ikke her, var eneste vei ut av skjermen aa gaa om
+             menyen. «harOmrFaner» er usann paa de skjermene som ikke
+             hoerer til et omraade, saa raden tegnes ikke der. -->
+        <sc-if value="{{ harOmrFaner }}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin: calc(var(--space-6) * -1 + var(--space-2)) 0 var(--space-8);">
+            <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
+              <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+
 
         <sc-if value="{{ malIngen }}" hint-placeholder-val="{{ false }}">
           <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); font-size: var(--text-sm); color: var(--text-muted);">Henter malene …</div>

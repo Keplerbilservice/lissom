@@ -2670,8 +2670,11 @@ sjekk('ventelista har faatt sin plass i fanerekka',
 // En fane som forer til en skjerm uten fanerad er en blindvei.
 // Tallet er summen av skjermer med fanerad. Det gikk fra 15 til 16 da
 // GEO-skjermen kom til — den har fanerekka som SEO-skjermen har.
+// Tallet var 16 til 4. september. Da fikk sju skjermer til fanerada, saa
+// ingen av dem blir en blindvei — se «Samme vei tilbake paa alle
+// skjermene» lenger nede.
 sjekk('ventelisteskjermen har fanerekka, saa den ikke blir en blindvei',
-    substr_count($sida, '{{ harOmrFaner }}') === 16);
+    substr_count($sida, '{{ harOmrFaner }}') === 23);
 // Oversikt var blitt en oppslagstavle med fjorten kort. Eieren, 29. august,
 // pekte ut fire som skulle bort: «Kursadministrasjon», «Meld noen paa»,
 // «Intern side» og programlista. Skjermene naas fra menyen som for — det er
@@ -8212,6 +8215,38 @@ sjekk('… og kortet paa Oversikt gaar fortsatt til malene',
     str_contains($sidaG, "'Se malene', () => this.gaaAdmin('adminmaler', {})"));
 sjekk('… og kortet til referansekundene ogsaa',
     str_contains($sidaG, "() => this.gaaAdmin('adminreferanser', {})"));
+
+// ── Samme vei tilbake paa alle skjermene ───────────────────────────────
+//
+// Eieren, 4. september: «de maa ha samme vei tilbake som alt annet, her er
+// en global loesning paa plass saa endre det».
+//
+// Sju skjermer hoerte til et omraade uten aa tegne fanerada. Eneste vei ut
+// var aa gaa om menyen. Blokka er den samme overalt, og omraadeFaner()
+// bak den er den samme — ingen egen loesning per skjerm.
+sjekk('alle skjermene som hoerer til et omraade tegner fanerada',
+    substr_count($sidaG, '{{ harOmrFaner }}') === 23);
+// Én «sc-if» per «sc-for». Er de ulike, staar det en rad uten vakt foran —
+// eller en vakt uten rad bak.
+sjekk('… med den samme blokka, én rad per vakt',
+    substr_count($sidaG, '{{ harOmrFaner }}')
+        === substr_count($sidaG, '<sc-for list="{{ omrFaner }}"'));
+
+$manglerFane = [];
+foreach (['erAdminReferanser', 'erAdminMaler', 'erAdminFeil', 'erAdminMobilvis',
+          'erAdminFerie', 'erAdminRessurser', 'erAdminVideokurs'] as $skjerm) {
+    $start = strpos($sidaG, '<sc-if value="{{ ' . $skjerm . ' }}"');
+    if ($start === false) { $manglerFane[] = $skjerm . ' (fant ikke skjermen)'; continue; }
+    // Neste skjerm etter denne — fanerada maa staa foer den.
+    $neste = strlen($sidaG);
+    if (preg_match('~<sc-if value="\{\{ erAdmin\w+ \}\}"~', $sidaG, $t, PREG_OFFSET_CAPTURE, $start + 10)) {
+        $neste = $t[0][1];
+    }
+    $bit = substr($sidaG, $start, $neste - $start);
+    if (!str_contains($bit, '{{ harOmrFaner }}')) { $manglerFane[] = $skjerm; }
+}
+sjekk('… og hver enkelt av de sju har den',
+    $manglerFane === [], implode(', ', $manglerFane));
 
 // Selve salget, gjennom koden som kjorer det. Uten dette er alt over bare
 // tekst som ligner paa noe riktig.

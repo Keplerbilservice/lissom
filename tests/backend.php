@@ -2496,9 +2496,12 @@ sjekk('FAILED sier fra til medlemmet',
     str_contains($medlFil, "if (\$status === 'FAILED' || \$status === 'CANCELLED') {")
     && str_contains($medlFil, "Varsel::mal('betaling_feilet'"));
 $cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-sjekk('cron sporr om trekkene som ikke har fatt svar',
-    str_contains($cronFil, 'foreach (Medlemskap::trekkUtenSvar() as $p) {')
-    && str_contains($cronFil, 'Medlemskap::sjekkTrekk($p)'));
+// Runden ble flyttet ut av cron 5. september, saa trafikken paa sida kan
+// kjore den ogsaa — cron-jobben ble aldri satt opp. Samme kode, nytt hjem.
+$runden = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
+    str_contains($runden, 'foreach (self::trekkUtenSvar() as $p) {')
+    && str_contains($runden, 'self::sjekkTrekk($p)'));
 // ePayment-oppslaget ga 404 paa hvert eneste maanedstrekk, hvert femte
 // minutt, og skrev en linje i feilloggen hver gang.
 sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
@@ -7370,10 +7373,13 @@ foreach (['{navn}', '{type}', '{lenke}'] as $felt) {
 // dogn, hver gang. Aktiveringen maa staa foerst.
 echo "\n== Rekkefolgen i medlemstrekket ==\n";
 
-$cronKode = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$posMedlemstrekk = strpos($cronKode, "case 'medlemstrekk':");
+// Runden laa i bin/cron.php til 5. september. Den ligger i Medlemskap naa,
+// saa baade cron og trafikken paa sida kan kjore den — rekkefolgen er den
+// samme, og den er like viktig.
+$cronKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$posMedlemstrekk = strpos($cronKode, 'public static function kjorTrekkrunde(');
 $posAktiver = strpos($cronKode, "WHERE status = 'venter'", $posMedlemstrekk);
-$posTrekk   = strpos($cronKode, 'Medlemskap::tilTrekk()', $posMedlemstrekk);
+$posTrekk   = strpos($cronKode, 'self::tilTrekk()', $posMedlemstrekk);
 sjekk('begge blokkene finnes i medlemstrekket',
     $posMedlemstrekk !== false && $posAktiver !== false && $posTrekk !== false);
 sjekk('avtalene aktiveres FOER trekkrunden',
@@ -11798,14 +11804,14 @@ sjekk('… og serveren sier fra om at det maa godkjennes',
 // 3. Purringen.
 sjekk('en ugodkjent avtale blir purret paa',
     str_contains($mig, "'avtale_ikke_godkjent',")
-    && str_contains($cronV, "Varsel::mal('avtale_ikke_godkjent', [")
-    && str_contains($cronV, 'AND s.paaminnet_antall < 2'),
+    && str_contains($runden, "Varsel::mal('avtale_ikke_godkjent', [")
+    && str_contains($runden, 'AND s.paaminnet_antall < 2'),
     'maalt: paaminnet_antall gikk 0 → 1, og ikke videre samme natt');
 // Sju dager sto paa AVTALENE. Godkjente kunden i uke to, ble raden aldri
 // sett paa igjen, og trekket startet aldri. (De sju dagene paa hengende
 // BETALINGER lenger nede er noe annet og staar som for.)
 sjekk('… og vi slutter ikke aa se etter avtalen etter sju dager',
-    str_contains($cronV, "WHERE status = 'venter'\n                AND vipps_agreement_id IS NOT NULL\n                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"),
+    str_contains($runden, "WHERE status = 'venter'\n                AND vipps_agreement_id IS NOT NULL\n                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"),
     'godkjente kunden i uke to, fikk vi det aldri med oss');
 
 // 4. Knappen i admin.
@@ -11868,6 +11874,53 @@ sjekk('en proeveperiode kjopt paa nettsida faar en sluttdato',
 sjekk('… og en startdato som alt staar blir ikke rort',
     str_contains($mlB, "'start_dato'      => (\$fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),"),
     '«medlem siden mai» skal ikke bli «medlem siden i dag»');
+
+echo "\n== Trekkrunden kjores ogsaa av trafikken ==\n";
+// Eieren, 5. september: «Eirin og Lene har ikke faatt opprettet noen avtale i
+// vipps, dette fungerer ikke og krever en alvorlig sjekk av deg».
+//
+// Maalt: avtalen VAR opprettet og godkjent i Vipps. Det som manglet var noen
+// som kjorte trekkrunden. Den fantes bare som en cron-jobb — og «medlemstrekk»
+// stod aldri i docs/OPPSETT.md. Den lista har fem jobber, og denne er ikke én
+// av dem. Da ble den aldri satt opp i cPanel, og ingen ble noen gang trukket.
+//
+// Beviset laa i eierens eget skjermbilde: «Skulle vaert trukket 4. september».
+// Den teksten naas bare naar det ikke finnes en eneste betalingsrad — og
+// Medlemskap::trekk() skriver raden FOER den ringer Vipps. Hadde runden gaatt,
+// ville det staatt «Trekket er bestilt».
+$tikk = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$kron = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$mlT  = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+// Én utgave, ikke to. Runden laa i cron; naa ligger den i Medlemskap, og
+// begge veier kaller den samme.
+sjekk('runden ligger ett sted',
+    str_contains($mlT, 'public static function kjorTrekkrunde(?callable $si = null): array'));
+sjekk('… og cron kaller den',
+    str_contains($kron, '$t = Medlemskap::kjorTrekkrunde($si);'));
+sjekk('… og trafikken kaller den',
+    str_contains($tikk, 'Medlemskap::kjorTrekkrunde();')
+    && str_contains($tikk, 'self::medlemstrekk();'));
+// Uten dette ville cron staatt igjen med sin egen halve utgave — den samme
+// feilen som «Tikk hadde sin egen halve utgave» lenger oppe.
+sjekk('… og cron har ingen egen utgave igjen',
+    !str_contains($kron, "AND vipps_agreement_id IS NOT NULL")
+    && !str_contains($kron, "Varsel::mal('avtale_ikke_godkjent'"));
+
+// Trekk er penger. Resten av Tikk gaar hvert minutt; denne gaar én gang i
+// dognet, ellers ville et medlem blitt sett paa 1440 ganger om dagen.
+sjekk('trekkrunden gaar hoyst én gang i dognet',
+    str_contains($tikk, "Rate::tillat('medlemstrekk', 1, 86400, 'server')"),
+    'maalt: telleren gikk 1 → 2 paa neste sidelast, uten et nytt Vipps-kall');
+// En feil her skal aldri velte en forespoersel — som resten av Tikk.
+sjekk('… og en feil velter ikke sida',
+    str_contains($tikk, "logg_feil('Medlemstrekket feilet', \$e);"));
+// Dobbelt trekk: nokkelen er avtale pluss maaned, og raden sjekkes foer Vipps
+// ringes. Derfor gjor det ingen skade om cron settes opp i tillegg.
+sjekk('to runder gir ett trekk',
+    str_contains($mlT, "\$nokkel = substr(hash('sha256', 'trekk:' . \$avtale['id'] . ':' . \$maaned), 0, 36);")
+    && str_contains($mlT, "if (\$fra !== null) {\n            return 'alt fort';"),
+    'maalt: elleve sidebesok og cron etterpaa ga én betalingsrad');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

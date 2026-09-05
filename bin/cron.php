@@ -63,150 +63,16 @@ switch ($jobb) {
     // Trygg aa kjore flere ganger: idempotensnokkelen bygges av avtalen og
     // maaneden, saa to kjoringer samme natt gir ett trekk.
     case 'medlemstrekk':
-        // ── Foerst: hvem er blitt godkjent siden sist ────────────────────
-        //
-        // Kunden kan ha godkjent avtalen i Vipps-appen uten aa komme tilbake
-        // til nettsiden. Da staar raden vaar paa «venter» til vi sporr Vipps,
-        // og det er dette som gjor det.
-        //
-        // Dette sto ETTER trekkrunden under. Rekkefolgen var feil: en avtale
-        // som ble aktivert her fikk «neste_trekk» satt til i dag — men da
-        // hadde trekkrunden alt kjort, og hun var ikke med. Trekket kom
-        // foerst natta etter.
-        //
-        // Eirin, medlem, 2. september: «Jeg betalte med vipps i gaar via siden
-        // her. Saa ut til aa fungere greit. Men pengene er fremdeles paa min
-        // konto». Hun hadde godkjent i appen kvelden for. Hun sto ikke i
-        // betalingene, og hadde ikke gjort det for natta etter heller.
-        //
-        // Ingen penger gikk tapt av dette — men hvert medlem som godkjenner i
-        // appen tapte et dogn, hver gang. Naa aktiveres de foer trekkrunden,
-        // saa de trekkes den samme natta som alle andre.
-        // Sju dager sto her. Den grensa var satt for aa slippe aa sporre
-        // Vipps om gamle rader — men den gjorde ogsaa at en avtale som ble
-        // liggende i aatte dager aldri ble sett paa igjen. Godkjente kunden
-        // den i uke to, fikk vi det aldri med oss, og trekket startet aldri.
-        //
-        // Eieren, 5. september: «jeg får jo ikke inn pengene mine».
-        //
-        // Nitti dager i stedet. Det er ikke gratis — ett oppslag per rad per
-        // natt — men en ubetalt avtale koster mer.
-        $venter = DB::alle(
-            "SELECT * FROM subscriptions
-              WHERE status = 'venter'
-                AND vipps_agreement_id IS NOT NULL
-                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"
-        );
-        foreach ($venter as $a) {
-            Medlemskap::oppdaterFraVipps($a);
-            usleep(200_000);
-        }
-
-        // ── Paaminnelsen: avtalen venter paa deg ────────────────────────
-        //
-        // Fast trekk i Vipps er en fullmakt kunden maa gi i appen. Lukker hun
-        // sida foer hun har gjort det, er avtalen ikke gyldig — og lenka laa
-        // bare i basen. Ingen fikk den, og ingen purret.
-        //
-        // Eieren, 5. september: «kunden får ingen beskjed om å godkjenne så vi
-        // får ikke penger».
-        //
-        // Dagen etter, og én gang til etter tre dager. Mer enn det er mas;
-        // mindre er aa gi opp pengene. Kolonnene kom med migrasjon 139.
-        $paaminnet = 0;
-        if (DB::harKolonne('subscriptions', 'paaminnet_at')) {
-            $vent = DB::alle(
-                "SELECT s.*, m.navn, m.epost, m.telefon
-                   FROM subscriptions s
-                   JOIN members m ON m.id = s.member_id
-                  WHERE s.status = 'venter'
-                    AND s.vipps_url IS NOT NULL AND s.vipps_url <> ''
-                    AND s.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)
-                    AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
-                    AND s.paaminnet_antall < 2
-                    AND (s.paaminnet_at IS NULL
-                         OR s.paaminnet_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY))"
-            );
-            foreach ($vent as $a) {
-                if (trim((string) ($a['epost'] ?? '')) === '') {
-                    continue;
-                }
-                Varsel::mal('avtale_ikke_godkjent', [
-                    'epost'   => (string) $a['epost'],
-                    'telefon' => (string) ($a['telefon'] ?? ''),
-                ], [
-                    'navn'  => (string) ($a['navn'] ?? ''),
-                    'type'  => (string) $a['plan'],
-                    'belop' => Booking::kroner((int) $a['pris_ore']),
-                    'lenke' => (string) $a['vipps_url'],
-                ], 'subscription', (int) $a['id']);
-                DB::kjor(
-                    'UPDATE subscriptions
-                        SET paaminnet_at = UTC_TIMESTAMP(),
-                            paaminnet_antall = paaminnet_antall + 1
-                      WHERE id = :i',
-                    ['i' => (int) $a['id']]
-                );
-                $paaminnet++;
-            }
-        }
-
-        // ── Saa: trekk alle som er forfalt, de nettopp aktiverte med ─────
-        $avtaler = Medlemskap::tilTrekk();
-        $gjort = 0;
-        $feilet = 0;
-
-        foreach ($avtaler as $a) {
-            try {
-                $svar = Medlemskap::trekk($a);
-                $si('  ' . $a['navn'] . ' (' . $a['plan'] . '): ' . $svar);
-                $gjort++;
-            } catch (Throwable $e) {
-                logg_feil('Medlemstrekk feilet for avtale ' . $a['id'], $e);
-                $si('  ' . $a['navn'] . ': FEILET — ' . $e->getMessage());
-                $feilet++;
-            }
-            usleep(300_000);
-        }
-
-        // Oppsigelsestida ute: her stoppes avtalen i Vipps og tilgangen tas
-        // bort. Selve oppsigelsen setter bare sluttdatoen — medlemmet har
-        // betalt for maaneden, og skal ha den.
-        $avsluttet = 0;
-        foreach (Medlemskap::tilAvslutning() as $a) {
-            Medlemskap::avslutt($a);
-            $avsluttet++;
-            usleep(200_000);
-        }
-
-        // Hvordan gikk trekkene vi ba om?
-        //
-        // Trekket bes om noen dager fram i tid, saa svaret kommer ikke samme
-        // natt. Her sporr vi om dem vi ikke har fatt svar paa enda. Foer dette
-        // ble hver eneste rad staaende paa «venter» for alltid — og de to
-        // malene «Medlemskapet ditt er fornyet» og «Vi fikk ikke trukket
-        // betalingen» ble aldri sendt til noen.
-        $svart = 0;
-        foreach (Medlemskap::trekkUtenSvar() as $p) {
-            try {
-                $utfall = Medlemskap::sjekkTrekk($p);
-                $si('  trekk ' . $p['id'] . ' (' . ($p['navn'] ?? '') . '): ' . $utfall);
-                if ($utfall === 'betalt' || $utfall === 'failed' || $utfall === 'cancelled') {
-                    $svart++;
-                }
-            } catch (Throwable $e) {
-                logg_feil('Statusoppslag feilet for trekk ' . $p['id'], $e);
-            }
-            usleep(300_000);
-        }
-
-        if ($gjort > 0 || $feilet > 0 || $avsluttet > 0 || $svart > 0) {
-            logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet,
-                                        'avsluttet' => $avsluttet, 'gjort_opp' => $svart]);
-        }
-        $si("Ugodkjente avtaler: {$paaminnet} paaminnet");
-        $si("Medlemstrekk: {$gjort} trekk, {$feilet} feilet, " . count($venter)
-            . ' avtaler sjekket, ' . $avsluttet . ' avsluttet, ' . $svart . ' gjort opp.');
+        // Selve runden ligger i Medlemskap::kjorTrekkrunde(). Den stod her,
+        // og bin/cron.php var det eneste som kjorte den — men jobben stod
+        // aldri i docs/OPPSETT.md, saa den ble aldri satt opp i cPanel.
+        // Ingen ble trukket. Naa kjorer trafikken paa sida den ogsaa, én gang
+        // i dognet (Tikk::kjor), og begge kaller det samme.
+        $t = Medlemskap::kjorTrekkrunde($si);
+        $si("Ugodkjente avtaler: {$t['paaminnet']} paaminnet");
+        $si("Medlemstrekk: {$t['trukket']} trekk, {$t['feilet']} feilet, "
+            . $t['sjekket'] . ' avtaler sjekket, ' . $t['avsluttet']
+            . ' avsluttet, ' . $t['gjort_opp'] . ' gjort opp.');
         break;
 
     // -----------------------------------------------------------------------

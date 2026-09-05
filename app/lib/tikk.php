@@ -83,6 +83,51 @@ final class Tikk
         } catch (Throwable $e) {
             logg_feil('Kunne ikke legge ut aapne plasser', $e);
         }
+
+        // ── Medlemstrekket ──────────────────────────────────────────────
+        //
+        // Dette er pengene: godkjenningene kunden ga i appen, purringen til
+        // den som ikke har gitt den, og selve trekket.
+        //
+        // Runden fantes bare som en cron-jobb — og «medlemstrekk» stod aldri
+        // i docs/OPPSETT.md. Den lista har fem jobber, og denne er ikke én av
+        // dem. Da ble den aldri satt opp, og ingen ble noen gang trukket.
+        //
+        // Eieren, 5. september: «Eirin og Lene har ikke faatt opprettet noen
+        // avtale i vipps, dette fungerer ikke». Maalt: avtalen var opprettet
+        // OG godkjent. Det manglet bare noen som kjorte runden.
+        //
+        // Naa gjor trafikken det, som med varselkoen over. Settes cron-jobben
+        // opp senere, gjor det ingen skade: nokkelen i trekk() er avtale pluss
+        // maaned, og den andre runden finner «alt fort».
+        self::medlemstrekk();
+    }
+
+    /**
+     * Trekkrunden, hoyst én gang i dognet.
+     *
+     * Vinduet er 86400 sekunder, ikke 60 som resten her. Trekk er penger, og
+     * de skal ikke gaa oftere enn de ville gjort fra cron.
+     *
+     * Runden bruker et halvt sekund per medlem med vilje — den sover mellom
+     * hvert oppslag for aa skaane Vipps.
+     *
+     * Har serveren «fastcgi_finish_request», er svaret alt sendt naar dette
+     * gaar, og ingen venter (se planlegg() over). Har den det ikke, venter
+     * den ene besokende som traff dognets forste runde. Maalt lokalt, der
+     * funksjonen ikke finnes: 0,21 s uten arbeid, 0,62 s med ett medlem aa
+     * trekke. Om lissom.no har funksjonen er ikke maalt herfra.
+     */
+    private static function medlemstrekk(): void
+    {
+        if (!Rate::tillat('medlemstrekk', 1, 86400, 'server')) {
+            return;
+        }
+        try {
+            Medlemskap::kjorTrekkrunde();
+        } catch (Throwable $e) {
+            logg_feil('Medlemstrekket feilet', $e);
+        }
     }
 
     /**

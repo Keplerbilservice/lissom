@@ -10855,9 +10855,13 @@ $msU = (string) preg_replace('/^\s*\/\/.*$/m', '', $msU);
 sjekk('det er kode aa maale i Min side-sjekkene', strlen($msU) > 500000, strlen($msU) . ' tegn');
 
 // 1. Timene bor i medlemskapskortet.
-sjekk('timene staar i medlemskapskortet',
-    (bool) preg_match('/id="minside-abonnement".{0,4000}\{\{ timerBarStil \}\}/s', $msU),
-    'stolpen er inne i kortet');
+// Timene sto i medlemskapskortet. De staar naa i «Verkstedet ditt» paa
+// forsiden, sammen med stemplinga — det er der man spor om dem. Sto de
+// begge steder, ville det vaert to tall om det samme igjen.
+sjekk('timene staar sammen med stemplinga',
+    (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ timerBarStil \}\}/s', $msU)
+    && !preg_match('/id="minside-abonnement".{0,4000}\{\{ timerBarStil \}\}/s', $msU),
+    'ett sted, ikke to');
 sjekk('… og «Timer igjen» staar ikke lenger som egen rad der',
     !str_contains($msU, '>Timer igjen</span>'), 'raden er borte');
 sjekk('… og kortet heter medlemskapet',
@@ -11290,7 +11294,7 @@ sjekk('… og innholdet har plass under den',
 // først når man trykker på menyen?» — ja.
 sjekk('bare det stedet du staar paa tegnes',
     substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 5
-    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 1
+    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 2
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 2
     && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneNyttig }}"') === 2,

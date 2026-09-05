@@ -4073,28 +4073,13 @@ window.__resources = {
               <sc-if value="{{ aboUenig }}" hint-placeholder-val="{{ false }}">
                 <div style="{{ aboUenigStil }}">{{ aboUenigTekst }}</div>
               </sc-if>
-              <!-- Timene bor i medlemskapet, ikke i et eget kort ved siden av.
-                   «11,5» sto to steder: i et eget «Timer igjen»-kort oeverst, og
-                   som rad her nede. To tall om det samme, med hver sin kilde i
-                   markupen — og et medlem som leste det ene visste ikke om det
-                   andre. Eieren, 4. september: abonnementskortet skal vise
-                   timene som er igjen.
-                   Raden «Timer igjen» er tatt bort herfra; tallet staar stort
-                   over. Alt annet i det gamle kortet — stolpen, teksten, «glemt
-                   aa stemple ut» og fornyelsen naar det er tomt — er flyttet
-                   hit slik det sto. -->
-              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3);">
-                <!-- Etiketten «Timer igjen» sto her. Det store tallet under
-                     sier det samme, og over det staar naa navnet paa planen —
-                     tre overskrifter oppaa hverandre om det samme kortet. -->
-                <div style="flex: 1 1 auto;"></div>
-                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ timerMaks }}</span>
-              </div>
-              <div style="font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; color: var(--text-heading); margin-bottom: var(--space-3);">{{ timerIgjen }}</div>
-              <div style="height: 8px; border-radius: 999px; background: var(--clay-200); overflow: hidden; margin-bottom: var(--space-3);">
-                <div style="{{ timerBarStil }}"></div>
-              </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ timerUndertekst }}</p>
+              <!-- Timene sto her.
+                   De staar naa i «Verkstedet ditt» paa forsiden, sammen med
+                   stemplinga — det er der man spor om dem. Sto de begge
+                   steder, ville det vaert to tall om det samme igjen, som da
+                   de laa i hvert sitt kort for. Eieren, 5. september: «jeg
+                   ønsker at den infoen er samlet så det er synlig fra et
+                   sted». -->
               <!-- Glemt aa stemple ut.
                    Eieren, 2. september: «Naar et medlem glemmer aa stemple ut,
                    kan vi legge til knappen glemt aa stemple ut. Og mulighet aa
@@ -4168,11 +4153,11 @@ window.__resources = {
             <sc-if value="{{ msFaneNyttig }}" hint-placeholder-val="{{ false }}">
             <div onClick="{{ goNyttig }}" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); box-sizing: border-box; cursor: pointer; transition: box-shadow var(--duration-fast, .15s) ease, transform var(--duration-fast, .15s) ease;" style-hover="box-shadow: var(--shadow-md, 0 6px 20px rgba(45,20,12,.1)); transform: translateY(-2px);">
               <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Intern info</div>
-              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-2);">
-                <span style="font-size: var(--text-sm); color: var(--text-muted);">Dørkode</span>
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-2xl); letter-spacing: .08em; color: var(--text-heading);">{{ dorkode }}</span>
-              </div>
-              <p style="margin: 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Ikke del koden med andre enn medlemmer.</p>
+              <!-- Tallet sto her ogsaa. Doerkodepilla staar oeverst paa den
+                   samme skjermen, saa koden sto to ganger med to hundre
+                   piksler mellom seg. Her staar det som gjelder om aa bruke
+                   den, og veien videre til guidene. -->
+              <p style="margin: 0; font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">Dørkoden står øverst på siden. Ikke del den med andre enn medlemmer.</p>
               <button type="button" onClick="{{ goNyttig }}" style="appearance: none; background: transparent; border: none; padding: 0; margin-top: var(--space-3); cursor: pointer; text-align: left; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px;">Nyttig info — guider og tips →</button>
             </div>
             <!-- «Påfyll» sto her.
@@ -4267,7 +4252,12 @@ window.__resources = {
                Sto som en bryter i admin som ga medlemmene en knapp som ikke
                gjorde noe. Her er soknaden: en periode, en grunn, og et svar
                fra verkstedet. Kortet staar bare naar verkstedet har slaatt
-               det paa, og bare for den som faktisk er medlem. -->
+               det paa, og bare for den som faktisk er medlem.
+
+               Den staar bak menyvalget Medlemskap. Aa fryse er noe man gjor
+               med medlemskapet sitt, og skjemaet er langt — paa forsiden tok
+               det plassen til det man kom for. -->
+          <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
           <sc-if value="{{ frysVis }}" hint-placeholder-val="{{ false }}">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); margin-top: var(--space-5);">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-3);">
@@ -4322,6 +4312,7 @@ window.__resources = {
                    naar trekket gaar likevel. -->
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">{{ frysBetaling }}</p>
             </div>
+          </sc-if>
           </sc-if>
           <sc-if value="{{ byttAboApen }}" hint-placeholder-val="{{ false }}">
             <div onClick="{{ lukkByttAbo }}" style="position: fixed; inset: 0; z-index: 90; background: rgba(45,20,12,.45); display: flex; align-items: center; justify-content: center; padding: var(--space-6);">

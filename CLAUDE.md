@@ -13,6 +13,15 @@ de ble sagt i.
 - Bruk formatet ved nye funn:
   `Funnet:` / `Påvirkning:` / `Forslag:` / `Spørsmål:` — én linje hver.
 
+## Tekst
+
+- **Aldri legg til tekst uten at eieren vet om det.** Alt en kunde eller et
+  medlem kan lese — knappenavn, overskrifter, hjelpetekster, e-poster,
+  kvitteringer, feilmeldinger — skal vises og godkjennes før det bygges.
+  Gjelder også korte navn på noe som alt finnes. (Eieren, 5. september 2026.)
+- Er teksten uunngåelig for å få noe til å virke: vis den ordrett i svaret,
+  og si at den er ny.
+
 ## Endringer
 
 - Aldri gjør mer enn det som er bedt om.

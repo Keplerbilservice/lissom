@@ -10215,6 +10215,27 @@ window.__resources = {
           </div>
         </div>
 
+        <!-- «Må kreves inn».
+             Eieren, 5. september: «jeg vil at det bygges en paaminnelse i
+             admin». Bakgrunnen er at bare aarsmedlemskapet har fast trekk;
+             de andre betales én periode om gangen, og naar perioden er ute
+             er det ingen som ber om pengene. Kortet «Ikke betalt» i Kassa
+             viser dem alt — men ingen aapner Kassa for aa lete.
+             Linja staar bare naar noe faktisk er forfalt. Er alt gjort opp,
+             finnes den ikke. Tallene kommer fra krevInnLinje(), som leser de
+             samme radene som kortet i Kassa. -->
+        <sc-if value="{{ ovKrevInnVis }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ ovKrevInnRamme }}">
+            <div style="min-width: 0;">
+              <div style="{{ ovKrevInnTittelStil }}">{{ ovKrevInnTittel }}</div>
+              <sc-if value="{{ ovKrevInnHarDetalj }}" hint-placeholder-val="{{ true }}">
+                <div style="{{ ovKrevInnDetaljStil }}">{{ ovKrevInnDetalj }}</div>
+              </sc-if>
+            </div>
+            <button type="button" onClick="{{ ovKrevInnVelg }}" style="{{ ovKrevInnKnappStil }}">Til Kassa</button>
+          </div>
+        </sc-if>
+
         <div data-theme="sun" class="lx-hurtig" style="background: var(--lissom-yellow); border-radius: var(--radius-lg); padding: var(--space-5) var(--space-6); display: flex; align-items: center; gap: var(--space-3) var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-10);">
           <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--lissom-brown); margin-right: var(--space-3);">Ofte brukt</span>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ink" size="sm" icon="plus" on-click="{{ aNyKursdato }}" hint-size="auto,40px">Ny kursdato</x-import>
@@ -29246,6 +29267,83 @@ class Component extends DCLogic {
   }
 
   /**
+   * Linja «må kreves inn» på Oversikt.
+   *
+   * Eieren, 5. september: «jeg vil at det bygges en påminnelse i admin».
+   *
+   * Bakgrunnen er det ende-til-ende-testen viste: bare aarsmedlemskapet har
+   * fast trekk i Vipps. Mini 15, 30 timer og Fri tilgang betales én periode
+   * om gangen, og naar perioden er ute skjer det INGENTING — cron har seks
+   * jobber, og ingen av dem roerer et medlemskap uten avtale. Kunden faar
+   * ikke et krav, ikke en paaminnelse. Verkstedet maa selv oppdage det.
+   *
+   * Kortet «Ikke betalt» i Kassa viser dem alt — se skylderKort(). Feilen er
+   * at ingen aapner Kassa for aa lete. Denne linja kommer til deg i stedet:
+   * den staar oeverst paa Oversikt, som er skjermen dagen begynner paa.
+   *
+   * Ikke et kort til. Eieren flyttet «Ikke betalt» ut av Oversikt
+   * 4. september — «det hoerer til i Kassa; Oversikt skal si hva som skjer i
+   * dag, ikke gjore jobben». Dette er én linje som sier at det finnes noe,
+   * og en knapp til stedet der jobben gjores.
+   *
+   * Den leser de samme radene som kortet, saa tallet kan ikke bli et annet.
+   * Er ingenting forfalt, vises den ikke i det hele tatt.
+   */
+  krevInnLinje() {
+    const forfalte = ((this.state.adminData || {}).ubetalte || [])
+      .filter(u => u.slag === 'medlem' && u.forfalt);
+
+    // «belopOre» framfor aa lese tallet ut av «kr. 1 790,-» igjen. Serveren
+    // sender begge; det ene er til aa vise, det andre til aa regne med.
+    const sum = forfalte.reduce((n, u) => n + (u.belopOre || 0), 0);
+    const eldst = forfalte.reduce((n, u) => Math.max(n, u.dager || 0), 0);
+
+    // Beloepet brekker ikke midt i tallet. Samme regel som ovSkylderSum og
+    // Booking::kroner() paa serveren — eieren, 4. september, med bilde:
+    // «feil deling av tall her ogsaa».
+    const deler = [];
+    if (sum > 0) {
+      deler.push('kr.\u00A0'
+        + String(Math.round(sum / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0')
+        + ',- utestående');
+    }
+    // Er alle registrert i dag, staar det ikke «eldste 0 dager».
+    if (eldst > 0) {
+      deler.push('eldste ' + eldst + (eldst === 1 ? ' dag' : ' dager'));
+    }
+
+    return {
+      ovKrevInnVis: forfalte.length > 0,
+      // «Medlemskap» heter det samme i entall og flertall.
+      ovKrevInnTittel: forfalte.length + ' medlemskap må kreves inn',
+      ovKrevInnDetalj: deler.join(', '),
+      ovKrevInnHarDetalj: deler.length > 0,
+      ovKrevInnVelg: () => this.gaaAdmin('adminuttak', {}),
+      ovKrevInnRamme: {
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 'var(--space-3) var(--space-5)', flexWrap: 'wrap',
+        border: '1px solid var(--terracotta-500)', borderRadius: 'var(--radius-lg)',
+        background: 'var(--surface-card)',
+        padding: 'var(--space-4) var(--space-5)',
+        marginBottom: 'var(--space-6)',
+      },
+      ovKrevInnTittelStil: {
+        font: 'var(--type-body)', fontWeight: 700, color: 'var(--terracotta-600)',
+      },
+      ovKrevInnDetaljStil: {
+        font: 'var(--type-body-sm)', color: 'var(--text-muted)',
+      },
+      ovKrevInnKnappStil: {
+        appearance: 'none', cursor: 'pointer', flex: '0 0 auto',
+        borderRadius: 'var(--radius-pill)', padding: '8px 18px', minHeight: 40,
+        font: 'var(--type-body-sm)', fontWeight: 700, whiteSpace: 'nowrap',
+        border: '1.5px solid var(--lissom-brown)',
+        background: 'var(--surface-card)', color: 'var(--lissom-brown)',
+      },
+    };
+  }
+
+  /**
    * Kortet «Ikke betalt».
    *
    * To slag i det samme kortet: kursplasser lagt inn for haand som staar som
@@ -38224,6 +38322,7 @@ class Component extends DCLogic {
       // maaneder — saa kortet og en eventuell rapport ikke kan si hver sin
       // ting. Stolpen er andelen av det stoerste i lista, ikke av en
       // oppdiktet maksverdi.
+      ...this.krevInnLinje(),
       ...(() => {
         const liste = (this.state.adminData || {}).populaere || [];
         const storst = liste.reduce((n, k) => Math.max(n, k.plasser || 0), 0) || 1;

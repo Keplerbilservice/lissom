@@ -8827,9 +8827,10 @@ echo "\n== Beløp brekker ikke midt i tallet ==\n";
 $sidaT = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('ingen regner ut tusenskillet med et vanlig mellomrom',
     !str_contains($sidaT, "(?=(\\d{3})+(?!\\d))/g, ' ')"));
-// Fem, ikke fire: konustabellen regner ut to tall paa den samme linja.
-sjekk('… og alle fem stedene bruker et hardt',
-    substr_count($sidaT, "(?=(\\d{3})+(?!\\d))/g, '\\u00A0')") === 5);
+// Seks, ikke fem: konustabellen regner ut to tall paa den samme linja, og
+// linja «maa kreves inn» paa Oversikt kom 5. september.
+sjekk('… og alle seks stedene bruker et hardt',
+    substr_count($sidaT, "(?=(\\d{3})+(?!\\d))/g, '\\u00A0')") === 6);
 // Vakta som fanger den neste. Den leser teksten slik den staar paa skjermen,
 // saa den finner et mykt mellomrom uansett hvor i koden det kom fra.
 $bredde = file_get_contents(dirname(__DIR__) . '/bin/breddesjekk.mjs');
@@ -9205,6 +9206,39 @@ sjekk('kvitteringen legger seg ikke oppaa adminstripa',
 // Ute paa nettsida finnes ingen bunnmeny aa staa over.
 sjekk('… og ute paa nettsida staar den som for',
     !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
+
+// ── «Må kreves inn» på Oversikt ─────────────────────────────────────────
+//
+// Eieren, 5. september: «jeg vil at det bygges en paaminnelse i admin».
+//
+// Bare aarsmedlemskapet har fast trekk. De andre betales én periode om
+// gangen, og naar perioden er ute rorer ingen av cronjobbene dem. Kortet
+// «Ikke betalt» i Kassa viser dem — men ingen aapner Kassa for aa lete.
+$kreves = preg_replace('/^\s*\/\/.*$/m', '',
+    preg_replace('/<!--.*?-->/s', '', $sidaB));
+sjekk('linja «maa kreves inn» staar paa Oversikt',
+    str_contains($kreves, 'krevInnLinje() {')
+    && str_contains($kreves, '...this.krevInnLinje(),')
+    && str_contains($kreves, '<sc-if value="{{ ovKrevInnVis }}"'));
+// Den leser de samme radene som kortet i Kassa, saa tallene kan ikke sprike.
+sjekk('… og leser de samme radene som kortet i Kassa',
+    str_contains($kreves, ".filter(u => u.slag === 'medlem' && u.forfalt)"));
+// Beloepet regnes av oerene serveren sender, ikke ved aa lese tallet ut av
+// «kr. 1 790,-» paa nytt.
+sjekk('… og regner beloepet av oerene, ikke av teksten',
+    str_contains($kreves, '(u.belopOre || 0)'));
+// Er alt gjort opp, skal linja ikke finnes. En roed stripe hver dag naar det
+// ikke er noe aa gjore slutter man aa se etter en uke.
+sjekk('… og vises ikke naar ingenting er forfalt',
+    str_contains($kreves, 'ovKrevInnVis: forfalte.length > 0,'));
+// Ingen «eldste 0 dager», og ingen «kr. 0,- utestaaende».
+sjekk('… og sier bare det som er sant om alder og beloep',
+    str_contains($kreves, 'if (eldst > 0) {')
+    && str_contains($kreves, 'if (sum > 0) {'));
+// Knappen gaar til Kassa, der jobben faktisk gjores.
+sjekk('… og knappen gaar til Kassa',
+    str_contains($kreves, "ovKrevInnVelg: () => this.gaaAdmin('adminuttak', {}),")
+    && str_contains($kreves, '>Til Kassa</button>'));
 
 // ── Brevet lovet en lenke som ikke finnes ────────────────────────────────
 //

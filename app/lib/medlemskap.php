@@ -597,7 +597,18 @@ final class Medlemskap
         if ($motsatt === null) {
             return;
         }
+        self::avlysForsok($motsatt);
+    }
 
+    /**
+     * Stopper ETT forlatt forsoek — baade hos Vipps og hos oss.
+     *
+     * Dette sto inni avlysMotsattForsok(), som finner forsoeket paa sin egen
+     * maate. Naa er finningen og stoppingen skilt, saa startAvtale() kan
+     * stoppe et gammelt forsoek av SAMME slag uten en kopi av koden.
+     */
+    private static function avlysForsok(array $motsatt): void
+    {
         $avtaleId = trim((string) ($motsatt['vipps_agreement_id'] ?? ''));
         if ($avtaleId !== '') {
             try {
@@ -624,6 +635,37 @@ final class Medlemskap
         }
 
         DB::oppdater('subscriptions', ['status' => 'stoppet'], ['id' => (int) $motsatt['id']]);
+    }
+
+    /**
+     * Ugodkjente avtaleforsoek som ikke lenger er ferske.
+     *
+     * paagaaendeForsok() ser bare fem minutter tilbake — den er laget for aa
+     * fange to trykk paa rad, ikke for aa rydde. Er forsoeket eldre, lot
+     * startAvtale() det bare ligge og laget en avtale til ved siden av.
+     *
+     * Eieren, 5. september: «Saa jeg kan be de sjekke vipps? Eller maa de
+     * melde seg inn paa nytt?» — og han staar med to medlemmer som har en
+     * ugodkjent avtale fra dager tilbake. Trykker han «Send Vipps-avtale»
+     * paa dem, ville det ligget to gyldige lenker ute samtidig. Godkjenner
+     * hun begge, blir det to rader med status «aktiv» — og tilTrekk() henter
+     * begge. Da trekkes hun dobbelt.
+     *
+     * Ingen plan-begrensning her. Et medlem har ett medlemskap; ethvert
+     * ugodkjent avtaleforsoek er en lenke som kan gi et trekk hun ikke ba om.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private static function gamleAvtaleforsok(int $medlemId): array
+    {
+        return DB::alle(
+            "SELECT * FROM subscriptions
+              WHERE member_id = :m
+                AND status = 'venter'
+                AND vipps_agreement_id IS NOT NULL
+                AND created_at < (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)",
+            ['m' => $medlemId]
+        );
     }
 
     /** Lagrer adressen forsoeket godkjennes paa, om kolonna finnes. */
@@ -657,6 +699,13 @@ final class Medlemskap
         // Byttet hun fra «Betal i Vipps» til fast trekk, skal den forlatte
         // betalingen ikke bli staaende og kunne gjennomfores i tillegg.
         self::avlysMotsattForsok((int) $medlem['id'], $planNavn, true);
+
+        // Og et gammelt avtaleforsoek hun aldri godkjente stoppes ogsaa. Uten
+        // dette laa det to gyldige lenker ute samtidig, og godkjente hun
+        // begge, ble hun trukket to ganger. Se gamleAvtaleforsok().
+        foreach (self::gamleAvtaleforsok((int) $medlem['id']) as $gammelt) {
+            self::avlysForsok($gammelt);
+        }
 
         $vipps = Vipps::opprettAvtale(
             $planNavn,

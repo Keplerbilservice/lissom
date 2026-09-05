@@ -4346,10 +4346,12 @@ window.__resources = {
 
             <div style="display: flex; flex-direction: column; gap: var(--space-6); min-width: 0;">
 
-              <!-- «Selg mine produkter» hoerer til internbutikken: begge
-                   handler om varer som gaar gjennom verkstedet. De staar bak
-                   det samme menyvalget. -->
-              <sc-if value="{{ msFaneButikk }}" hint-placeholder-val="{{ false }}">
+              <!-- «Selg keramikk» har sitt eget sted.
+                   Den laa sammen med internbutikken. Eieren, 5. september:
+                   «Selg produkter må og få en meny i bunnen». Det er to ulike
+                   aerend — det ene er aa kjope leire, det andre aa legge ut
+                   noe du har laget. -->
+              <sc-if value="{{ msFaneSelg }}" hint-placeholder-val="{{ false }}">
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
               <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Medlemsfordel</div>
@@ -4666,8 +4668,13 @@ window.__resources = {
 
               </sc-if>
 
-              <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
-              <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
+              <!-- Gruppechatten staar paa forsiden.
+                   Den laa bak menyvalget Chat. Eieren, 5. september:
+                   «Gruppechatten må gjerne ligge på forsiden så man ser
+                   den» — en samtale man ikke ser, er en samtale man ikke
+                   svarer paa. Menyvalget staar, og ruller hit. -->
+              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <div id="minside-chat" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column;">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4);">
                   <span style="display: inline-flex; align-items: center; gap: 8px; font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">
                     Medlemschat
@@ -4809,6 +4816,7 @@ window.__resources = {
           <button type="button" onClick="{{ msBmHjem.velg }}" aria-label="{{ msBmHjem.full }}" style="{{ msBmHjem.stil }}"><span style="{{ msBmHjem.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/></svg><span style="{{ msBmTekstStil }}">{{ msBmHjem.navn }}</span></button>
           <button type="button" onClick="{{ msBmMedlemskap.velg }}" aria-label="{{ msBmMedlemskap.full }}" style="{{ msBmMedlemskap.stil }}"><span style="{{ msBmMedlemskap.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span style="{{ msBmTekstStil }}">{{ msBmMedlemskap.navn }}</span></button>
           <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
+          <button type="button" onClick="{{ msBmSelg.velg }}" aria-label="{{ msBmSelg.full }}" style="{{ msBmSelg.stil }}"><span style="{{ msBmSelg.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 8h16v12H4V8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/><path d="M12 12v5M9.5 14.5h5"/></svg><span style="{{ msBmTekstStil }}">{{ msBmSelg.navn }}</span></button>
           <button type="button" onClick="{{ msBmChat.velg }}" aria-label="{{ msBmChat.full }}" style="{{ msBmChat.stil }}"><span style="{{ msBmChat.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><span style="{{ msBmTekstStil }}">{{ msBmChat.navn }}</span></button>
           <button type="button" onClick="{{ msBmNyttig.velg }}" aria-label="{{ msBmNyttig.full }}" style="{{ msBmNyttig.stil }}"><span style="{{ msBmNyttig.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span style="{{ msBmTekstStil }}">{{ msBmNyttig.navn }}</span></button>
           <button type="button" onClick="{{ msBmLoggUt.velg }}" aria-label="{{ msBmLoggUt.full }}" style="{{ msBmLoggUt.stil }}"><span style="{{ msBmLoggUt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span style="{{ msBmTekstStil }}">{{ msBmLoggUt.navn }}</span></button>
@@ -29054,7 +29062,19 @@ class Component extends DCLogic {
       hjem:       p('Min side', 'Min side', 'hjem'),
       medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),
       butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),
-      chat:       p('Chat', 'Chat med verkstedet', 'chat'),
+      // Eieren, 5. september: «Selg produkter må og få en meny i bunnen».
+      // Den laa sammen med internbutikken; det er to ulike aerend — det ene
+      // er aa kjope leire, det andre aa legge ut noe du har laget.
+      selg:       p('Selg', 'Selg produktene dine', 'selg'),
+      // Chatten er ikke lenger et eget sted — den staar paa forsiden.
+      // Valget tar deg dit og ruller ned til den.
+      chat:       this.bunnMenyPunkt('Chat', 'Chat mellom medlemmene', false, () => {
+        this.setState({ msFane: 'hjem' });
+        setTimeout(() => {
+          const el = document.getElementById('minside-chat');
+          if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+        }, 60);
+      }),
       nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),
       // Utloggingen er ikke et sted, men en handling — den lyser aldri.
       //
@@ -29075,7 +29095,10 @@ class Component extends DCLogic {
   // saa siden ikke blir staaende tom.
   msFane() {
     const f = this.state.msFane || 'hjem';
-    if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'nyttig')) return 'hjem';
+    // «chat» var et eget sted til gruppechatten flyttet til forsiden. Staar
+    // den lagret fra for, hoerer den hjemme der chatten er naa.
+    if (f === 'chat') return 'hjem';
+    if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'selg' || f === 'nyttig')) return 'hjem';
     return f;
   }
 
@@ -29096,7 +29119,9 @@ class Component extends DCLogic {
       velg: velg,
       stil: {
         appearance: 'none', border: 'none', background: 'transparent',
-        cursor: 'pointer', padding: '7px 2px 3px', minWidth: 0,
+        // 1 px sidepolstring, ikke 2. Med sju valg er cella 51 px paa en
+        // telefon paa 360, og «Medlemskap» er 53 — to piksler for mye.
+        cursor: 'pointer', padding: '7px 1px 3px', minWidth: 0,
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
         // Fargen arves av bade ikonet og teksten — lucide tegner med
         // «currentColor».
@@ -41358,7 +41383,7 @@ class Component extends DCLogic {
           msFaneHjem:       f === 'hjem',
           msFaneMedlemskap: f === 'medlemskap',
           msFaneButikk:     f === 'butikk',
-          msFaneChat:       f === 'chat',
+          msFaneSelg:       f === 'selg',
           msFaneNyttig:     f === 'nyttig',
           // Bunnmenyen staar bare for den som faktisk har de fem stedene.
           // En kursdeltaker har to av dem, og faar dem paa forsiden som for.
@@ -41374,18 +41399,21 @@ class Component extends DCLogic {
                 gap: 'var(--space-5)', alignItems: 'stretch' }
             : { display: 'block', maxWidth: 640 },
           msBmHjem: b.hjem, msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
-          msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,
+          msBmSelg: b.selg, msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,
           msBmStil: {
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
             background: 'var(--surface-card)',
             borderTop: '1px solid var(--border-subtle)',
             boxShadow: '0 -2px 12px rgba(77,29,18,.08)',
-            display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)',
+            display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
             // Plass til hjemknappen paa iPhone, som i adminmenyen.
             paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
           },
+          // Sju valg, ikke seks som i admin. Da er cella 51 px paa en telefon
+          // paa 360, og «Medlemskap» er 53 med 9 px skrift. Et halvt punkt
+          // mindre holder det lengste navnet innenfor sin egen celle.
           msBmTekstStil: {
-            fontSize: 9, lineHeight: 1.15, letterSpacing: '-.01em',
+            fontSize: 8.5, lineHeight: 1.15, letterSpacing: '-.01em',
             whiteSpace: 'nowrap', color: 'inherit', fontWeight: 'inherit',
           },
           // Menyen ligger fast over innholdet. Uten luft under blir det

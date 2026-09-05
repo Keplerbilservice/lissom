@@ -9151,9 +9151,9 @@ sjekk('… med seks valg i hver',
 // Min side har faatt den samme menyen — fem valg, ett sted i markupen.
 // Ikonene teller derfor $logoerB * 6 + 5.
 sjekk('… og hvert valg har baade ikon og tekst',
-    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 6
+    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 7
     && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6
-    && substr_count($sidaB, '{{ msBmTekstStil }}') === 6);
+    && substr_count($sidaB, '{{ msBmTekstStil }}') === 7);
 
 // Rutene skrives ikke av. Doper vi om «Butikk», folger bunnmenyen med.
 sjekk('navn og ruter hentes fra ADMIN_MENY',
@@ -10931,6 +10931,16 @@ sjekk('… mens gruppechatten mellom medlemmene staar',
     && str_contains($msU, '{{ chatMeldinger }}')
     && str_contains($msU, '{{ sendChat }}'),
     'eieren: «Gruppechatten skal bestå»');
+// Den laa bak menyvalget Chat. Eieren, 5. september: «Gruppechatten må
+// gjerne ligge på forsiden så man ser den» — en samtale man ikke ser, er en
+// samtale man ikke svarer paa. Menyvalget staar, og ruller dit.
+sjekk('… og den staar paa forsiden',
+    (bool) preg_match('/<sc-if value="\{\{ msFaneHjem \}\}"[^>]*>\s*<div id="minside-chat"/s', $msU),
+    'maalt i nettleseren: kortet er der uten aa trykke paa noe');
+sjekk('… og menyvalget ruller til den',
+    str_contains($msU, "chat:       this.bunnMenyPunkt('Chat', 'Chat mellom medlemmene', false, () => {")
+    && str_contains($msU, "const el = document.getElementById('minside-chat');"),
+    'maalt: rullet til 1303 px paa 390, og kortet var synlig');
 // Endepunktet staar: det er det samme kontaktskjemaet paa nettsiden bruker,
 // og henvendelsene fra for ligger der de laa.
 sjekk('… og henvendelsene fra for er ikke rort',
@@ -11271,15 +11281,16 @@ sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
     'sto planen ikke i salgslista, falt prisen tilbake paa Vipps-avtalens');
 
 // ── Bunnmenyen ────────────────────────────────────────────────────
-sjekk('Min side har en bunnmeny med seks valg',
+sjekk('Min side har en bunnmeny med sju valg',
     str_contains($msRen, '<nav style="{{ msBmStil }}" aria-label="Min side">')
-    && substr_count($msRen, '{{ msBmTekstStil }}') === 6
-    && str_contains($msRen, "gridTemplateColumns: 'repeat(6, 1fr)'"));
+    && substr_count($msRen, '{{ msBmTekstStil }}') === 7
+    && str_contains($msRen, "gridTemplateColumns: 'repeat(7, 1fr)'"),
+    'maalt: alle sju navnene holder seg innenfor cella ned til 360 px');
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")
     && str_contains($msP, "butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),")
-    && str_contains($msP, "chat:       p('Chat', 'Chat med verkstedet', 'chat'),")
+    && str_contains($msP, "selg:       p('Selg', 'Selg produktene dine', 'selg'),")
     && str_contains($msP, "nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),"));
 sjekk('… og den staar bare for den som har de fem stedene',
     str_contains($msRen, 'msHarBunnmeny: this.medlemsvisning(),'),
@@ -11293,14 +11304,15 @@ sjekk('… og innholdet har plass under den',
 // Eieren: «Og da fjerner du tingene fra forsiden slik at det blir synlig
 // først når man trykker på menyen?» — ja.
 sjekk('bare det stedet du staar paa tegnes',
-    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 5
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 6
     && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 2
-    && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 2
-    && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 1
+    && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
+    && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
+    && !str_contains($msRen, 'msFaneChat')
     && substr_count($msRen, '<sc-if value="{{ msFaneNyttig }}"') === 2,
     'maalt i nettleseren: hvert valg viser bare sitt eget, 390 og 1280 px');
 sjekk('… og en kursdeltaker sendes hjem fra et sted hun ikke har',
-    str_contains($msP, "if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'nyttig')) return 'hjem';"));
+    str_contains($msP, "if (!this.medlemsvisning() && (f === 'medlemskap' || f === 'butikk' || f === 'selg' || f === 'nyttig')) return 'hjem';"));
 sjekk('… mens snarveipillene staar igjen for henne',
     str_contains($msRen, 'msViserSnarveier: !this.medlemsvisning(),')
     && str_contains($msRen, '<sc-if value="{{ msViserSnarveier }}"'),

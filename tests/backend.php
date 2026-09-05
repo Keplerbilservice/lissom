@@ -7338,18 +7338,24 @@ sjekk('migrasjon 132 retter velkomstmalen',
 $velkomst = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
 );
-sjekk('velkomsten sier at forste trekk kommer om noen dager',
-    str_contains($velkomst, 'Første trekk kommer om noen dager'), mb_substr($velkomst, 0, 40));
-sjekk('… og hvorfor det tar tid',
-    str_contains($velkomst, 'Vipps krever at vi varsler deg først'));
-// Den gamle setningen lovte noe systemet ikke gjor: medlemmet settes aktivt
-// naar AVTALEN blir aktiv i Vipps, for en eneste krone har flyttet seg.
+// Migrasjon 139 skrev malen om igjen. Den sa fortsatt at avtalen VAR
+// opprettet, og at medlemskapet var aktivt med det samme — begge deler er
+// usant for kunden har godkjent i appen. Eieren, 5. september: «eposten de
+// som bestiller årsmedlemskap får forteller ingenting om at de må godkjenne».
+sjekk('velkomsten sier at avtalen maa godkjennes',
+    str_contains($velkomst, 'DU MÅ GODKJENNE AVTALEN I VIPPS'), mb_substr($velkomst, 0, 40));
+sjekk('… og at medlemskapet ikke starter for det',
+    str_contains($velkomst, 'Medlemskapet starter ikke før du har gjort det'));
+sjekk('… og hvorfor trekket tar tid',
+    str_contains($velkomst, 'Vipps krever at vi varsler deg før hvert'));
+// De to gamle setningene lovte noe systemet ikke gjor.
 sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
     !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));
-sjekk('… men sier at det er aktivt med det samme',
-    str_contains($velkomst, 'Medlemskapet er aktivt med det samme'));
+sjekk('… og paastaar ikke at det er aktivt med det samme',
+    !str_contains($velkomst, 'Medlemskapet er aktivt med det samme'),
+    'det er det ikke for avtalen er godkjent');
 // Plassholderne maa staa. Uten dem staar det «Hei {navn}» i e-posten.
-foreach (['{navn}', '{type}'] as $felt) {
+foreach (['{navn}', '{type}', '{lenke}'] as $felt) {
     sjekk('… og «' . $felt . '» staar igjen i malen', str_contains($velkomst, $felt));
 }
 
@@ -9186,8 +9192,50 @@ sjekk('… og det er satt av plass til hjemknappen paa iPhone',
 
 // Bare paa telefon. Paa PC er sidemenyen der.
 sjekk('menyen staar bare paa smal skjerm',
-    str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny { display: none !important; }')
+    str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }')
     && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
+
+// ── Verktoeyene oeverst, ikke nederst i skuffen ──────────────────────────
+//
+// Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil og log ut
+// maa ligge i toppen slik at det alltid er tilgjengelig uansett hvilken side
+// man er paa».
+//
+// De fem laa nederst i menypanelet, bak «Meny». Naa staar de som piller rett
+// under logoen — paa hver eneste adminskjerm, ikke bare paa den ene.
+$uKode  = preg_replace('/<!--.*?-->/s', '', $sidaB);
+$uKode  = preg_replace('/^\s*\/\/.*$/m', '', $uKode);
+$antTopp = substr_count($uKode, 'class="lx-admtopp"');
+$antSide = substr_count($uKode, '<aside class="lx-adminaside"');
+
+sjekk('verktoeypillene staar paa hver adminskjerm',
+    $antTopp > 30 && $antTopp === $antSide);
+sjekk('… og de vises bare paa telefon',
+    str_contains($uKode, '.lx-admtopp { display: flex !important; }'));
+sjekk('… og de staar rett under Stemple inn og Ferie',
+    (bool) preg_match(
+        '/\{\{ admFerieNavn \}\}<\/button>\s*<\/div>\s*<div class="lx-admtopp" style="\{\{ admToppEkstraStil \}\}">/',
+        $uKode));
+sjekk('… og de er ikke lenger gjemt nederst i menypanelet',
+    !str_contains($uKode, 'admMobEkstra'));
+
+// Ingen ny meny: pillene er de samme radene fra adminMeny(), med kortere
+// navn. Blir det en rad til der, kommer den med hit av seg selv.
+sjekk('pillene kommer fra den samme lista som sidemenyen',
+    str_contains($uKode, 'const topp = ekstra.map(r => Object.assign({}, r, {'));
+sjekk('… og de fem har hvert sitt kortnavn',
+    str_contains($uKode, "kort: '↗ Nettsiden',")
+    && str_contains($uKode, "? '⚡ Sjekker …' : '⚡ Vipps',")
+    && str_contains($uKode, "kort: '⚑ Meld feil',")
+    && str_contains($uKode, "kort: '⌁ Logg ut',"));
+// Tallet er det eneste som maa vaere med naar plassen er trang.
+sjekk('… og oppdateringspilla sier hvor mange som venter',
+    str_contains($uKode, ": venter.length ? '⚙ ' + venter.length + ' ny' + (venter.length === 1 ? '' : 'e')")
+    && str_contains($uKode, "          : '⚙ Oppdatert';"));
+// Kortnavnet staar paa pilla, men skjermleseren skal faa hele.
+sjekk('… og hele navnet staar som aria-label',
+    str_contains($uKode, 'full: (r.navn || \'\').replace(/\s+/g, \' \').trim(),')
+    && str_contains($uKode, 'aria-label="{{ v.full }}"'));
 
 // Regelen som skjuler sidemenyens egen meny paa telefon gjaldt ALLE
 // nav-elementer i sidemenyen, og tok bunnmenyen med seg — den er ogsaa en
@@ -9254,7 +9302,14 @@ sjekk('pillene krymper paa smal skjerm',
     str_contains($sidaP2, "const smal = (this.state.vw || 1400) < 980;")
     && str_contains($sidaP2, "admStempStil: smal ? kompakt(st.stempleStil) : st.stempleStil,"));
 sjekk('… og stripa kan brekke til ny linje',
-    str_contains($sidaP2, "? { display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }"));
+    str_contains($sidaP2, "? { display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }"));
+// Eieren, 5. september: «litt trangt rundt pillene». Teksten sto rett i
+// kanten av ramma, og stripa hadde 16 px luft over og under mot 20 no.
+sjekk('… og pillene har luft inni seg',
+    str_contains($sidaP2, "padding: '8px 14px', borderRadius: 'var(--radius-pill)',")
+    && str_contains($sidaP2, "fontSize: 12, lineHeight: 1.2, minHeight: 34,"));
+sjekk('… og stripa har luft rundt seg',
+    str_contains($sidaP2, "padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row'"));
 
 echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
 // Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg
@@ -11289,7 +11344,7 @@ sjekk('Min side har en bunnmeny med sju valg',
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")
-    && str_contains($msP, "butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),")
+    && str_contains($msP, "butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),")
     && str_contains($msP, "selg:       p('Selg', 'Selg produktene dine', 'selg'),")
     && str_contains($msP, "nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),"));
 sjekk('… og den staar bare for den som har de fem stedene',
@@ -11305,7 +11360,7 @@ sjekk('… og innholdet har plass under den',
 // først når man trykker på menyen?» — ja.
 sjekk('bare det stedet du staar paa tegnes',
     substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 6
-    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 2
+    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 3
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
     && !str_contains($msRen, 'msFaneChat')
@@ -11356,6 +11411,241 @@ sjekk('… og veien videre til hele medlemskapet staar der',
     && str_contains($msRen, 'Se medlemskapet →'));
 sjekk('… og «glemt aa stemple ut» hoerer til stemplinga, ikke abonnementet',
     (bool) preg_match('/Verkstedet ditt.{0,6000}\{\{ apneMsGlemt \}\}/s', $msRen));
+
+
+echo "\n== Kortet, skivene og «Selg» sier det som er sant ==\n";
+// Eieren, 5. september, etter at forrige rettelse var ute: «Denne står» —
+// med bilde av «Mini 15 · kr 1 790,- · 15 timer i måneden» og «Fritt» rett
+// under. Og: «Og nå sjekker du grundig, jeg er fittelei av å sjekke og
+// sjekke.»
+$k2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$k2Ren = (string) preg_replace('/^\s*\/\/.*$/m', '',
+    (string) preg_replace('/<!--.*?-->/s', '', $k2));
+
+// ── Navnet maa komme fra den raden timene ble regnet av ────────────
+//
+// egenPlan() leste avtalen (subscriptions.plan). Timene kommer fra
+// Medlemskap::timerFor(), som leser members-raden. To kilder om det samme
+// medlemmet: avtalen sto paa Mini 15, medlemsraden var tom, og timene ble
+// ubegrensede.
+sjekk('kortet navngir raden timene ble regnet av',
+    str_contains($k2Ren, "const fraTimene = st && st.plan ? (st.plan.navn || '').trim() : '';")
+    && str_contains($k2Ren, "|| (harSvar ? fraTimene : ((this.state.minAvtale || {}).plan || ''));"),
+    'maalt: kortet sier ikke lenger «Mini 15 · Fritt» naar medlemsraden er tom');
+sjekk('… og timetallet kommer alltid fra stemplingssvaret',
+    str_contains($k2Ren, 'const timer = st.timer.perMnd;')
+    && str_contains($k2Ren, 'return Object.assign({}, funnet, { timer: timer, periode: tekst, detalj: tekst });'),
+    'planlista sier hva planen gir, serveren hva DETTE medlemmet har');
+sjekk('… og et eget timetall sier at det er et eget timetall',
+    str_contains($k2Ren, 'const eget = !!(st.plan && st.plan.egetTimetall);')
+    && str_contains($k2Ren, "(eget ? ' — eget timetall' : '')"),
+    'maalt: «45 timer i måneden — eget timetall» over «45 av 45 timer»');
+sjekk('… og uten medlemskap, men med avtale, staar begge deler',
+    str_contains($k2Ren, "'Medlemskapet ditt er ikke satt ennå, men Vipps-avtalen står på '"),
+    'ellers forklarer ingenting hvorfor det staar «venter» over');
+
+// ── «Dreieskivene denne uka» ───────────────────────────────────────
+//
+// Kortet leste UKE 35, skrevet inn i koden, og gjettet hvilke kurs som
+// bruker skivene av fire navn: dreiekurs, kurs boller, date night, store
+// fat. «Kurs boller» staar paa BORDPLASS i basen, saa lista var feil ogsaa
+// der den traff. Eieren: «Hvordan virker dreieskivene denne uka».
+sjekk('skivekortet leser uka man faktisk staar i',
+    !str_contains($k2Ren, 'this.ukeData(35)')
+    && str_contains($k2Ren, 'return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);')
+    && str_contains($k2Ren, 'this.ukeData(uke)'),
+    'maalt: kortet sa «Uke 36» den 5. september');
+sjekk('… og gjetter ikke lenger paa kursnavn',
+    !str_contains($k2Ren, "'dreiekurs', 'kurs boller', 'date night', 'store fat'")
+    && str_contains($k2Ren, "const skiva = alle.find(r => /dreieskive/i.test(r.navn || ''));")
+    && str_contains($k2Ren, 'if (!k || !skiva || k.ressursId !== skiva.id) return;'),
+    'maalt: dreiekurset kom med, bordplasskurset samme dag kom ikke');
+$kursApi2 = file_get_contents(dirname(__DIR__) . '/api/kurs.php');
+sjekk('… fordi ressursen foelger med kurset naa',
+    str_contains($kursApi2, "\$ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';")
+    && str_contains($kursApi2, "'ressursId' => (\$k['ressurs_id'] ?? null) === null ? null : (int) \$k['ressurs_id'],"),
+    'id-en laa i basen, men ble aldri sendt ut');
+sjekk('… og ingen kurs paa skivene er ogsaa et svar',
+    str_contains($k2Ren, 'skiveIngen: ut.length === 0,')
+    && str_contains($k2Ren, 'Ingen kurs på skivene denne uka'),
+    'et kort med overskrift og ingen linjer ser i stykker ut');
+
+// ── Et menyvalg skal aldri fore til en tom skjerm ──────────────────
+// Eieren: «Menyen selg viser ingenting, er det pga jeg ikke har aktivert
+// den». Skjemaet staar bak to brytere i admin.
+sjekk('«Selg» sier fra naar skjemaet er slaatt av',
+    str_contains($k2Ren, 'msSelgAv: this.medlemsvisning()')
+    && str_contains($k2Ren, "&& !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),")
+    && str_contains($k2Ren, '<sc-if value="{{ msSelgAv }}"'),
+    'maalt: ingen av de sju stedene staar tomme');
+
+// ── De to flyttingene ──────────────────────────────────────────────
+sjekk('kursbevisene staar bak Medlemskap',
+    (bool) preg_match('/<sc-if value="\{\{ msFaneMedlemskap \}\}"[^>]*>\s*<div id="minside-kursbevis"/s', $k2Ren),
+    'eieren: «Mine kursbevis skal vises i medlemskap og ikke på forside»');
+sjekk('menyen sier «Butikk», ikke «Internbutikk»',
+    str_contains($k2, "butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),"),
+    'kortnavn i cella, hele navnet i aria-label');
+
+
+echo "\n== Årsavtalen: ingen avtale, ingen penger ==\n";
+// Eieren, 5. september: «ved årsavatel en annen vippsløsning enn resten, men
+// kunden får ingen beskjed om å godkjenne så vi får ikke penger».
+//
+// Aarsmedlemskapet har «krever_fast_trekk = 1»: det kan ikke gjores opp én
+// maaned om gangen. Kjopet paa nettsida oppretter en Vipps-avtale kunden maa
+// godkjenne i appen.
+$mlA = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$sidaA = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// ── Verkstedet maa se at avtalen mangler ───────────────────────────
+//
+// Et medlem meldt inn fra admin faar ingen avtalerad — startAvtale() kalles
+// bare fra api/medlemskap.php og api/bli-medlem.php. Teksten sa «Ingen
+// betaling registrert», akkurat som for en plan som GJORES opp selv. To helt
+// ulike ting med de samme ordene.
+sjekk('en manglende Vipps-avtale sier at den mangler',
+    str_contains($mlA, "if (\$plan !== null && self::kreverFastTrekk(\$plan)) {")
+    && str_contains($mlA, "'Mangler Vipps-avtale — ' . \$plan['navn']"),
+    'maalt: «Mangler Vipps-avtale — Årsmedlemskap kan bare betales med fast trekk»');
+sjekk('… og den teller som forfalt, ikke som «venter»',
+    (bool) preg_match("/kreverFastTrekk\(\\\$plan\)\) \{\s*return \\\$ut\('forfalt',/s", $mlA),
+    'ellers staar den ikke i «Ikke betalt» paa Oversikt');
+// Avtaler opprettes bare de to stedene. Det er ikke en feil i seg selv, men
+// det er grunnen til at et medlem kan staa aktiv uten noe aa trekke paa.
+// Admin kan naa lage avtalen selv, med «Send Vipps-avtale». Foer dette gikk
+// det bare fra nettsida og innmeldingsskjemaet, og et medlem meldt inn
+// herfra sto uten noe aa trekke paa.
+sjekk('avtaler kan opprettes fra alle tre stedene',
+    substr_count(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
+    && substr_count(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'Medlemskap::startAvtale('));
+
+// ── «Forny» skal fornye DIN plan ───────────────────────────────────
+//
+// Knappen leste aktivPlan(), som faller tilbake paa foerste loepende plan
+// naar den ikke finner noe. Et medlem uten avtalerad fikk derfor tilbud om
+// «Mini 15» naar hen trykket Forny paa et aarsmedlemskap — feil plan, feil
+// pris, og en avtale paa noe hen ikke hadde bedt om.
+sjekk('«Forny» leser medlemmets egen plan',
+    str_contains($sidaA, "aFornyAbo: this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),"),
+    'maalt: dialogen sa «Årsmedlemskap · kr. 1 990,- · fast trekk i Vipps»');
+sjekk('… og det samme gjor start, fornying og oppgraderingsforslaget',
+    !str_contains(preg_replace('/^\s*\/\/.*$/m', '', $sidaA), 'this.aktivPlan().navn')
+    && str_contains($sidaA, 'const minPlan = this.egenPlan() || {};'),
+    'aktivPlan() staar igjen bare der et tilbud er poenget');
+
+
+echo "\n== Kunden får beskjed om å godkjenne i Vipps ==\n";
+// Eieren, 5. september: «eposten de som bestiller årsmedlemskap får forteller
+// ingenting om at de må godkjenne», «Jeg vil dessuten ha dette på pop up når
+// de har bestilt. Vi må få frem infoen», og «jeg får jo ikke inn pengene
+// mine».
+//
+// Fast trekk i Vipps er en FULLMAKT kunden gir i appen. Avtalen er ikke
+// gyldig for hun har godkjent den — og det sto ingen steder.
+$mig = file_get_contents(dirname(__DIR__) . '/db/migrations/139_avtalen_ma_godkjennes_i_vipps.sql');
+$sidaV = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mkV   = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$bmV   = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$admV  = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$cronV = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+
+// 1. E-posten.
+sjekk('velkomstmalen sier at avtalen maa godkjennes',
+    str_contains($mig, 'DU MÅ GODKJENNE AVTALEN I VIPPS')
+    && str_contains($mig, "SET emne  = 'Godkjenn medlemskapet i Vipps',"),
+    'den sa «Du har opprettet en fast betalingsavtale» — som om den var ferdig');
+sjekk('… og lenka til Vipps staar i den',
+    str_contains($mig, '{lenke}')
+    && str_contains($bmV, "'lenke' => (string) (\$avtale['url'] ?? '') !== ''"),
+    'uten den naadde adressen aldri fram til noen');
+sjekk('… og den gaar ogsaa naar man kjoper fra Min side',
+    str_contains($mkV, "Varsel::mal(\$betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',"),
+    'herfra gikk det ingen e-post i det hele tatt');
+
+// 2. Ruta paa skjermen.
+sjekk('skjermen sier det foer den sender deg til Vipps',
+    str_contains($sidaV, "if (ok && d.url && d.maaGodkjennes) {")
+    && str_contains($sidaV, "tittel: 'Godkjenn i Vipps',")
+    && str_contains($sidaV, "handling: 'Åpne Vipps',"),
+    'nettleseren gikk rett videre uten aa si hva som maatte gjores');
+sjekk('… og serveren sier fra om at det maa godkjennes',
+    str_contains($mkV, "'maaGodkjennes' => \$betaling === 'trekk',"));
+
+// 3. Purringen.
+sjekk('en ugodkjent avtale blir purret paa',
+    str_contains($mig, "'avtale_ikke_godkjent',")
+    && str_contains($cronV, "Varsel::mal('avtale_ikke_godkjent', [")
+    && str_contains($cronV, 'AND s.paaminnet_antall < 2'),
+    'maalt: paaminnet_antall gikk 0 → 1, og ikke videre samme natt');
+// Sju dager sto paa AVTALENE. Godkjente kunden i uke to, ble raden aldri
+// sett paa igjen, og trekket startet aldri. (De sju dagene paa hengende
+// BETALINGER lenger nede er noe annet og staar som for.)
+sjekk('… og vi slutter ikke aa se etter avtalen etter sju dager',
+    str_contains($cronV, "WHERE status = 'venter'\n                AND vipps_agreement_id IS NOT NULL\n                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"),
+    'godkjente kunden i uke to, fikk vi det aldri med oss');
+
+// 4. Knappen i admin.
+sjekk('verkstedet kan sende avtalen selv',
+    str_contains($admV, "if (\$handling === 'send-avtale') {")
+    && str_contains($admV, "? Medlemskap::startAvtale(\$m, \$type)")
+    && str_contains($sidaV, 'Send Vipps-avtale'),
+    'maalt: knappen staar i personruta med hjelpetekst');
+sjekk('… og den staar bare naar det faktisk mangler noe',
+    str_contains($sidaV, "personKanSendeAvtale: !!p.id && !!(p.medlemskap || '')")
+    && str_contains($sidaV, "&& (p.avtale || 'ingen') !== 'aktiv' && !!(p.epost || ''),"));
+sjekk('… og to avtaler ved siden av hverandre avvises',
+    str_contains($admV, "Svar::feil('Medlemmet har alt en løpende avtale.');"),
+    'to avtaler er to trekk');
+sjekk('… og handlingen staar i endringsloggen',
+    str_contains($admV, "'medlem_avtale_sendt'   => 'Vipps-avtale sendt til medlemmet',"));
+
+
+echo "\n== De andre medlemskapene: kvittering når pengene er inne ==\n";
+// Eieren, 5. september: «Hvilken info får de som kjøper et av de andre
+// medlemskapene». Svaret var: et brev som paastod noe som ikke hadde skjedd
+// enda, og ingenting naar det faktisk skjedde.
+$mig140 = file_get_contents(dirname(__DIR__) . '/db/migrations/140_kvittering_nar_pengene_faktisk_er_inne.sql');
+$mlB    = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+// 1. Brevet ved start sa «Du har betalt» — for kunden hadde betalt.
+//    startEngangs() oppretter betalingen, e-posten legges i koen, og FORST
+//    DERETTER sendes kunden til Vipps.
+$ordner = (string) DB::verdi(
+    "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_ordner_selv'"
+);
+sjekk('velkomsten sier hva som gjenstaar',
+    str_contains($ordner, 'FULLFØR BETALINGEN I VIPPS'), mb_substr($ordner, 0, 40));
+sjekk('… og paastaar ikke at det alt er betalt',
+    !str_contains($ordner, 'Du har betalt for denne perioden'),
+    'brevet gikk foer kunden hadde vaert i Vipps');
+sjekk('… og lenka staar i den',
+    str_contains($ordner, '{lenke}') && str_contains($ordner, '{belop}'));
+
+// 2. Kvitteringen fantes ikke. Betalingen gikk gjennom, medlemskapet ble
+//    slaatt paa, og kunden fikk aldri et ord fra oss.
+sjekk('det kommer en kvittering naar pengene er inne',
+    str_contains($mig140, "'medlemskap_betalt',")
+    && str_contains($mlB, "Varsel::mal('medlemskap_betalt', ['epost' => (string) \$m['epost']], ["),
+    'maalt: varselet ble lagt i koen med navn, plan og beloep');
+sjekk('… og den sier naar en proeveperiode gaar ut',
+    str_contains($mlB, "'gyldig' => \$slutt")
+    && str_contains($mlB, "? 'Gjelder ut ' . Booking::norskDatoKort((string) \$slutt . ' 12:00:00') . '.'"),
+    'maalt: «Gjelder ut 5. oktober 2026.»');
+
+// 3. ── Proeveperioden tok aldri slutt ──────────────────────────────
+//
+// «Prøv Lissom» er engangs: betales én gang, varer en maaned. Sluttdatoen
+// ble bare satt naar verkstedet meldte noen inn fra admin. Kjopte man den
+// paa nettsida, gikk veien gjennom betaltEngangs() — og der ble den aldri
+// satt. Kunden betalte 990 kroner én gang og beholdt verkstedet for alltid.
+sjekk('en proeveperiode kjopt paa nettsida faar en sluttdato',
+    str_contains($mlB, "if (\$engangs) {\n            \$felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));")
+    , 'maalt: slutt_dato ble 2026-10-05 for en kjopt 5. september');
+sjekk('… og en startdato som alt staar blir ikke rort',
+    str_contains($mlB, "'start_dato'      => (\$fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),"),
+    '«medlem siden mai» skal ikke bli «medlem siden i dag»');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

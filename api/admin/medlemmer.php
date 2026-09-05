@@ -236,6 +236,72 @@ if (Foresporsel::metode() === 'POST') {
     // beloep, og API-et har ingen vei til aa endre det — se app/lib/vipps.php.
     // Byttet gaar likevel gjennom; svaret sier fra om at avtalen trekker det
     // gamle beloepet, saa verkstedet vet hva som maa gjores.
+    // ── «Send Vipps-avtale» ────────────────────────────────────────
+    //
+    // Aarsmedlemskapet har «krever_fast_trekk = 1»: det kan ikke gjores opp
+    // én maaned om gangen. Kjopet paa nettsida oppretter en Vipps-avtale
+    // medlemmet maa godkjenne i appen.
+    //
+    // Men startAvtale() ble bare kalt fra nettsida og innmeldingsskjemaet.
+    // Meldte verkstedet inn noen fra admin, sto hun som «aktiv» uten
+    // avtalerad — og da fantes det ingenting aa trekke paa. Eieren,
+    // 5. september: «jeg får jo ikke inn pengene mine».
+    //
+    // Her lages avtalen, og lenka gaar til medlemmet paa e-post og SMS.
+    // Verkstedet trenger ikke aa be henne melde seg inn paa nytt.
+    if ($handling === 'send-avtale') {
+        $id = Foresporsel::heltall('medlemId');
+        $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
+        if ($m === null) {
+            Svar::feil('Fant ikke medlemmet.', 404);
+        }
+        $type = trim((string) ($m['medlemskap_type'] ?? ''));
+        if ($type === '') {
+            Svar::feil('Medlemmet står ikke på noe medlemskap. Sett det først.');
+        }
+        $plan = Medlemskap::plan($type);
+        if ($plan === null) {
+            Svar::feil('«' . $type . '» kan ikke velges lenger. Bytt medlemskap først.');
+        }
+        if (trim((string) ($m['epost'] ?? '')) === '') {
+            Svar::feil('Vi trenger e-postadressen for å sende lenka.');
+        }
+
+        // En avtale som alt loeper skal ikke faa en til ved siden av — da blir
+        // medlemmet trukket to ganger. startAvtale() vokter det samme, men
+        // svaret herfra skal si det med ord.
+        $fra = Medlemskap::avtale($id);
+        if ($fra !== null && (string) $fra['status'] === 'aktiv') {
+            Svar::feil('Medlemmet har alt en løpende avtale.');
+        }
+
+        try {
+            $ut = Medlemskap::kreverFastTrekk($plan)
+                ? Medlemskap::startAvtale($m, $type)
+                : Medlemskap::startEngangs($m, $type);
+        } catch (RuntimeException $e) {
+            Svar::feil($e->getMessage());
+        }
+
+        Varsel::mal(Medlemskap::kreverFastTrekk($plan)
+                ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
+            ['epost' => (string) $m['epost'], 'telefon' => (string) ($m['telefon'] ?? '')], [
+                'navn'  => (string) ($m['navn'] ?? ''),
+                'type'  => $type,
+                'belop' => Booking::kroner((int) $plan['pris_ore']),
+                'lenke' => (string) ($ut['url'] ?? '') !== ''
+                    ? (string) $ut['url']
+                    : Config::nettsted() . '/min-side',
+            ], 'subscription', (int) $ut['id']);
+
+        revider('medlem_avtale_sendt', 'member', $id, ['plan' => $type]);
+        Svar::ok([
+            'beskjed' => 'Lenka er sendt til ' . $m['epost']
+                . '. Medlemskapet starter når hun har godkjent avtalen i Vipps.',
+            'url' => (string) ($ut['url'] ?? ''),
+        ]);
+    }
+
     if ($handling === 'bytt-plan') {
         $id = Foresporsel::heltall('medlemId');
         $m = DB::en('SELECT * FROM members WHERE id = :i', ['i' => $id]);
@@ -1036,6 +1102,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
                 : 'Byttet medlemskap';
         }
         return match ($h) {
+            'medlem_avtale_sendt'   => 'Vipps-avtale sendt til medlemmet',
             'medlem_nullstilt'      => 'Medlemskapet nullstilt',
             'pamelding_lagt_inn'    => 'Lagt inn for hånd',
             'pamelding_fjernet'     => 'Avbestilt',

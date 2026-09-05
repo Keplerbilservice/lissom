@@ -82,15 +82,73 @@ switch ($jobb) {
         // Ingen penger gikk tapt av dette — men hvert medlem som godkjenner i
         // appen tapte et dogn, hver gang. Naa aktiveres de foer trekkrunden,
         // saa de trekkes den samme natta som alle andre.
+        // Sju dager sto her. Den grensa var satt for aa slippe aa sporre
+        // Vipps om gamle rader — men den gjorde ogsaa at en avtale som ble
+        // liggende i aatte dager aldri ble sett paa igjen. Godkjente kunden
+        // den i uke to, fikk vi det aldri med oss, og trekket startet aldri.
+        //
+        // Eieren, 5. september: «jeg får jo ikke inn pengene mine».
+        //
+        // Nitti dager i stedet. Det er ikke gratis — ett oppslag per rad per
+        // natt — men en ubetalt avtale koster mer.
         $venter = DB::alle(
             "SELECT * FROM subscriptions
               WHERE status = 'venter'
                 AND vipps_agreement_id IS NOT NULL
-                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)"
+                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"
         );
         foreach ($venter as $a) {
             Medlemskap::oppdaterFraVipps($a);
             usleep(200_000);
+        }
+
+        // ── Paaminnelsen: avtalen venter paa deg ────────────────────────
+        //
+        // Fast trekk i Vipps er en fullmakt kunden maa gi i appen. Lukker hun
+        // sida foer hun har gjort det, er avtalen ikke gyldig — og lenka laa
+        // bare i basen. Ingen fikk den, og ingen purret.
+        //
+        // Eieren, 5. september: «kunden får ingen beskjed om å godkjenne så vi
+        // får ikke penger».
+        //
+        // Dagen etter, og én gang til etter tre dager. Mer enn det er mas;
+        // mindre er aa gi opp pengene. Kolonnene kom med migrasjon 139.
+        $paaminnet = 0;
+        if (DB::harKolonne('subscriptions', 'paaminnet_at')) {
+            $vent = DB::alle(
+                "SELECT s.*, m.navn, m.epost, m.telefon
+                   FROM subscriptions s
+                   JOIN members m ON m.id = s.member_id
+                  WHERE s.status = 'venter'
+                    AND s.vipps_url IS NOT NULL AND s.vipps_url <> ''
+                    AND s.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY)
+                    AND s.created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
+                    AND s.paaminnet_antall < 2
+                    AND (s.paaminnet_at IS NULL
+                         OR s.paaminnet_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY))"
+            );
+            foreach ($vent as $a) {
+                if (trim((string) ($a['epost'] ?? '')) === '') {
+                    continue;
+                }
+                Varsel::mal('avtale_ikke_godkjent', [
+                    'epost'   => (string) $a['epost'],
+                    'telefon' => (string) ($a['telefon'] ?? ''),
+                ], [
+                    'navn'  => (string) ($a['navn'] ?? ''),
+                    'type'  => (string) $a['plan'],
+                    'belop' => Booking::kroner((int) $a['pris_ore']),
+                    'lenke' => (string) $a['vipps_url'],
+                ], 'subscription', (int) $a['id']);
+                DB::kjor(
+                    'UPDATE subscriptions
+                        SET paaminnet_at = UTC_TIMESTAMP(),
+                            paaminnet_antall = paaminnet_antall + 1
+                      WHERE id = :i',
+                    ['i' => (int) $a['id']]
+                );
+                $paaminnet++;
+            }
         }
 
         // ── Saa: trekk alle som er forfalt, de nettopp aktiverte med ─────
@@ -146,6 +204,7 @@ switch ($jobb) {
             logg('Medlemstrekk kjort', ['trukket' => $gjort, 'feilet' => $feilet,
                                         'avsluttet' => $avsluttet, 'gjort_opp' => $svart]);
         }
+        $si("Ugodkjente avtaler: {$paaminnet} paaminnet");
         $si("Medlemstrekk: {$gjort} trekk, {$feilet} feilet, " . count($venter)
             . ' avtaler sjekket, ' . $avsluttet . ' avsluttet, ' . $svart . ' gjort opp.');
         break;

@@ -195,13 +195,50 @@ final class Maler
         // ── Medlemskap ──────────────────────────────────────────────
         'innmelding_fast_trekk' => [
             'tittel' => 'Innmelding — fast trekk',
-            'hvor'   => 'Sendes når noen melder seg inn med fast trekk i Vipps.',
-            'felter' => ['navn' => 'Navnet på det nye medlemmet', 'type' => 'Medlemskapet de valgte'],
+            'hvor'   => 'Sendes når noen melder seg inn med fast trekk i Vipps. Avtalen'
+                        . ' er ikke gyldig før medlemmet har godkjent den i appen, så'
+                        . ' lenka er det viktigste i denne.',
+            'felter' => [
+                'navn'  => 'Navnet på det nye medlemmet',
+                'type'  => 'Medlemskapet de valgte',
+                'lenke' => 'Adressen til Vipps, der avtalen godkjennes',
+            ],
+        ],
+        'avtale_ikke_godkjent' => [
+            'tittel' => 'Avtalen er ikke godkjent',
+            'hvor'   => 'Sendes dagen etter, og igjen etter tre dager, når en'
+                        . ' Vipps-avtale blir liggende uten godkjenning. Uten den når'
+                        . ' lenka aldri fram til noen, og medlemskapet starter ikke.',
+            'felter' => [
+                'navn'  => 'Navnet på medlemmet',
+                'type'  => 'Medlemskapet de valgte',
+                'belop' => 'Prisen i måneden',
+                'lenke' => 'Adressen til Vipps, der avtalen godkjennes',
+            ],
         ],
         'innmelding_ordner_selv' => [
             'tittel' => 'Innmelding — ordner selv',
-            'hvor'   => 'Sendes når noen melder seg inn og betaler hver periode selv.',
-            'felter' => ['navn' => 'Navnet på det nye medlemmet', 'type' => 'Medlemskapet de valgte'],
+            'hvor'   => 'Sendes når noen melder seg inn og betaler hver periode selv.'
+                        . ' Den går når betalingen STARTES, så den sier hva som gjenstår —'
+                        . ' kvitteringen kommer i «Medlemskapet er i gang».',
+            'felter' => [
+                'navn'  => 'Navnet på det nye medlemmet',
+                'type'  => 'Medlemskapet de valgte',
+                'belop' => 'Prisen for perioden',
+                'lenke' => 'Adressen til Vipps, der betalingen fullføres',
+            ],
+        ],
+        'medlemskap_betalt' => [
+            'tittel' => 'Medlemskapet er i gang',
+            'hvor'   => 'Sendes når betalingen faktisk er registrert, og medlemskapet'
+                        . ' slås på. Uten den fikk medlemmet aldri et ord fra oss om at'
+                        . ' det gikk i orden — bare Vipps sin egen kvittering.',
+            'felter' => [
+                'navn'   => 'Navnet på medlemmet',
+                'type'   => 'Medlemskapet',
+                'belop'  => 'Beløpet som ble betalt',
+                'gyldig' => 'Når det går ut, eller at vi tar kontakt før neste periode',
+            ],
         ],
         'soknad_godkjent' => [
             'tittel' => 'Søknad godkjent',

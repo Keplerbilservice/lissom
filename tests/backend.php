@@ -9536,6 +9536,27 @@ sjekk('… og pillene har luft inni seg',
 sjekk('… og stripa har luft rundt seg',
     str_contains($sidaP2, "padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row'"));
 
+// Verktoeypillene: «Nettsiden», «Oppdater», «Vipps», «Meld feil», «Logg ut».
+//
+// Eieren sa det to ganger — «litt trangt rundt pillene», og etter forste
+// forsok «Pillene fortsatt trangt plassert». Andre gang maalte jeg framfor aa
+// gjette: pillene var 35 px hoye, mens ALT annet du kan trykke paa den samme
+// skjermen er 42-43. Bunnmenyens seks valg er 42, «Meny» rett under er 43.
+// De sto ikke trangt mot hverandre; de sto for smaa mot alt rundt.
+//
+// Og radene laa 8 px fra hverandre i en stripe der hvert eneste andre
+// mellomrom er 16 — det eneste som var pakket tettere enn omgivelsene.
+//
+// Maalt for og etter paa 390 px: pillehoyde 35 → 42, mellom radene 8 → 12,
+// hele stripa 227 → 245 px.
+sjekk('verktoeypillene er like store som alt annet man trykker paa',
+    str_contains($sidaP2, "padding: '11px 16px', borderRadius: 'var(--radius-pill)',")
+    && str_contains($sidaP2, "font: 'var(--type-chip)', minHeight: 42, whiteSpace: 'nowrap',"));
+// Nedover 12, sidelengs 10: to piller i samme rad hoerer taettere sammen enn
+// to rader gjor.
+sjekk('… og radene har like mye luft som resten av stripa',
+    str_contains($sidaP2, "display: 'flex', flexWrap: 'wrap', gap: '12px 10px',"));
+
 echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
 // Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg
 // klikke paa logoen min og komme tilbake til forsiden».

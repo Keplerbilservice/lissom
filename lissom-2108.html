@@ -29775,8 +29775,19 @@ class Component extends DCLogic {
       full: (r.navn || '').replace(/\s+/g, ' ').trim(),
       stil: {
         appearance: 'none', cursor: 'pointer', flex: '0 0 auto',
-        padding: '8px 14px', borderRadius: 'var(--radius-pill)',
-        font: 'var(--type-chip)', minHeight: 34, whiteSpace: 'nowrap',
+        // 11 px, ikke 8, og minst 42 hoye.
+        //
+        // Eieren sa «litt trangt rundt pillene», og etter forste forsok:
+        // «Pillene fortsatt trangt plassert». Da maalte jeg i stedet for aa
+        // gjette igjen: pillene var 35 px hoye, mens ALT annet du kan trykke
+        // paa den samme skjermen er 42-43 — bunnmenyens seks valg er 42, og
+        // «Meny» rett under er 43. De sto ikke trangt i forhold til
+        // hverandre; de sto for smaa i forhold til alt rundt.
+        //
+        // 42 er ogsaa naermest Apples egen grense for hvor lite et
+        // trykkemaal kan vaere for at fingeren boemmer.
+        padding: '11px 16px', borderRadius: 'var(--radius-pill)',
+        font: 'var(--type-chip)', minHeight: 42, whiteSpace: 'nowrap',
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         border: '1px solid rgba(244,235,222,.28)',
         background: 'transparent',
@@ -29788,7 +29799,12 @@ class Component extends DCLogic {
       admToppEkstra: topp,
       admToppEkstraStil: {
         width: '100%', boxSizing: 'border-box',
-        display: 'flex', flexWrap: 'wrap', gap: 8,
+        // 12 px mellom radene, ikke 8. Maalt: alle de andre mellomrommene i
+        // adminstripa er 16 — logoraden til pilleraden, pilleraden til
+        // «Meny». Pilleradene laa paa 8 og var det eneste som var pakket
+        // tettere enn resten. Nedover 12, sidelengs 10: pillene i den samme
+        // rada hoerer taettere sammen enn to rader gjor.
+        display: 'flex', flexWrap: 'wrap', gap: '12px 10px',
       },
       admMobNaa: sted.fane ? sted.meny + ' \u00b7 ' + sted.fane : (sted.meny || 'Admin'),
       admMobApen: apen,

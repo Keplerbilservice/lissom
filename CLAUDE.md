@@ -62,5 +62,11 @@ de ble sagt i.
 
 ## Sikkerhetskopi
 
+- **Ett gjenopprettingspunkt per dag.** Første gang det jobbes en dag,
+  lages en gren `sikkerhetskopi/ÅÅÅÅ-MM-DD` fra `main` slik den står da,
+  og den pushes. Da finnes det alltid en dag å gå tilbake til.
+  (Eieren, 5. september 2026.)
+- Dette er koden. **Produksjonsdatabasen kan Claude ikke ta kopi av** —
+  det finnes ingen tilgang dit. Den kopien må tas der basen driftes.
 - Gjenopprettingspunkt før den store adminomleggingen:
   `sikkerhetskopi/2026-09-04-for-adminomlegging` (= deploy 552).

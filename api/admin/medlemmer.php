@@ -1108,6 +1108,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'pamelding_fjernet'     => 'Avbestilt',
             'pamelding_flyttet'     => 'Flyttet til en annen dato',
             'pamelding_status'      => 'Status endret',
+            'pamelding_endret'      => 'Antall og beløp rettet',
             'betaling_registrert'   => 'Betaling registrert',
             'betaling_annullert'    => 'Betaling annullert',
             'kursbevis_endret'      => 'Kursbevis rettet',

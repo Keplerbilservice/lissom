@@ -9207,6 +9207,63 @@ sjekk('kvitteringen legger seg ikke oppaa adminstripa',
 sjekk('… og ute paa nettsida staar den som for',
     !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
 
+// ── Antall og beløp kan rettes på en påmelding ──────────────────────────
+//
+// Eieren, 5. september: «Jeg har et kurs som jeg har meldt paa 10 personer.
+// Saa kom det bare 6 stk. Jeg kan legge til flere osv, men ikke redigere
+// antall som kom.» Og: «Jeg maa endre antall og jeg maa kunne overstyre pris
+// ved aa taste inn.» Og: «Globalt».
+//
+// Fem handlinger fantes — legg til, fjern, flytt, status, kursbevis — og
+// ingen av dem kunne rette et tall.
+$pam = @file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php') ?: '';
+sjekk('paameldingen kan rettes',
+    str_contains($pam, "if (\$handling === 'endre') {")
+    && str_contains($pam, " *   POST handling=endre      { id, antall?, belop? }"));
+// Samme grenser som naar plassen legges inn.
+sjekk('… med samme grenser som naar plassen legges inn',
+    str_contains($pam, "Antallet må være mellom 1 og 20. Skal plassen bort, fjern den i stedet.")
+    && str_contains($pam, 'Beløpet må være mellom 0 og 100 000 kroner.'));
+// Tomt beloepsfelt: regn det av antallet, med prisen paa datoen foran
+// prisen paa kurset — samme uttrykk som naar plassen legges inn.
+sjekk('… og beloepet foelger antallet naar det ikke tastes inn',
+    str_contains($pam, "\$felt['belop_ore'] = (int) \$pris * \$nyttAntall;")
+    && substr_count($pam, "COALESCE(cs.pris_ore, c.pris_ore)") === 2);
+// Et tall i feltet gaar foran.
+sjekk('… og et tastet beloep gaar foran',
+    str_contains($pam, "if (\$belopRaa !== '') {")
+    && str_contains($pam, "\$felt['belop_ore'] = \$belop;"));
+// Et tall som endrer seg uten spor er et tall ingen kan etterproeve.
+sjekk('… og loggen sier hva som sto foer og hva som staar naa',
+    str_contains($pam, "revider('pamelding_endret', 'booking', \$id, [")
+    && str_contains($pam, "'antall_for' => (int) \$rad['antall'],")
+    && str_contains($pam, "'belop_for'  => (int) \$rad['belop_ore'],"));
+sjekk('… og loggen har en tekst i historikken',
+    str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php') ?: '',
+        "'pamelding_endret'      => 'Antall og beløp rettet',"));
+
+// Globalt: begge stedene én paamelding rettes fra.
+$endre = preg_replace('/^\s*\/\/.*$/m', '',
+    preg_replace('/<!--.*?-->/s', '', $sidaB));
+sjekk('«Endre» staar paa raden under Paameldte',
+    str_contains($endre, '>Endre</button>')
+    && str_contains($endre, '<sc-if value="{{ p.endreApen }}"')
+    && str_contains($endre, "endreApen: this.state.endreRad === p.id,"));
+sjekk('… og i deltakerruta i kalenderen',
+    str_contains($endre, '{{ klDAntall }}')
+    && str_contains($endre, "handling: 'endre', id: dv.bookingId"));
+// Kalenderen maa faa antallet fra serveren for aa kunne fylle feltet.
+sjekk('… og kalenderen faar antallet fra serveren',
+    str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php') ?: '',
+        "'antall'    => (int) \$b['antall'],"));
+// Begge stedene sier hva et tomt beloepsfelt betyr.
+sjekk('… og begge sier hva et tomt beloepsfelt gjor',
+    substr_count($endre, "'Tomt = prisen ganger antallet'") === 2);
+// To aapne paneler paa samme rad er ikke til aa se hvilket som lagres.
+sjekk('… og bare ett panel er aapent om gangen',
+    str_contains($endre, 'flyttRad: apen ? this.state.flyttRad : null,')
+    && str_contains($endre, 'betRad: apen ? this.state.betRad : null,'));
+
 // ── «Fornyes: 1. september» sto fast i koden ────────────────────────────
 //
 // Datoen har staatt der siden 21. august og gjaldt ingen. Maalt i

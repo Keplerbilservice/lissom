@@ -7270,6 +7270,19 @@ window.__resources = {
                   <button type="button" onClick="{{ klDAapneBevis }}" style="{{ klDHandlingStil }}">Åpne kursbeviset</button>
                   <button type="button" onClick="{{ klDAvbestill }}" style="{{ klDFareStil }}">Avbestill</button>
                 </div>
+                <!-- Antall og beloep. Samme felter som raden under
+                     Paameldte, samme kall. -->
+                <div style="display: flex; gap: var(--space-3); align-items: flex-end; flex-wrap: wrap; margin-top: var(--space-4);">
+                  <div style="flex: 0 1 110px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Antall</label>
+                    <input value="{{ klDAntall }}" onChange="{{ settKlDAntall }}" inputmode="numeric" style="{{ mpFeltStil }}">
+                  </div>
+                  <div style="flex: 1 1 180px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Beløp i kroner</label>
+                    <input value="{{ klDBelop }}" onChange="{{ settKlDBelop }}" placeholder="{{ klDBelopHint }}" inputmode="numeric" style="{{ mpFeltStil }}">
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ klDEndreUtfor }}" hint-size="auto,36px">Lagre</x-import>
+                </div>
                 <sc-if value="{{ klDIngenFlytt }}" hint-placeholder-val="{{ false }}">
                   <div style="margin-top: var(--space-4); font-size: var(--text-sm); color: var(--text-muted);">Kurset har ingen andre datoer å flytte til.</div>
                 </sc-if>
@@ -12138,6 +12151,13 @@ window.__resources = {
                        om noen slo inn feil. Her registreres pengene. -->
                   <button type="button" onClick="{{ p.betaling }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Betaling</button>
                   <button type="button" onClick="{{ p.flytt }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Flytt</button>
+                  <!-- Retter antallet, og beloepet.
+                       Eieren, 5. september: «jeg har meldt paa 10 personer,
+                       saa kom det bare 6 — jeg kan legge til flere, men ikke
+                       redigere antall som kom», og «jeg maa kunne overstyre
+                       pris ved aa taste inn». Samme moenster som Flytt og
+                       Betaling: panelet aapner paa raden. -->
+                  <button type="button" onClick="{{ p.endre }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Endre</button>
                   <button type="button" onClick="{{ p.avbestill }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--text-muted); font: var(--type-body-sm); white-space: nowrap;">Avbestill</button>
                 </div>
               </div>
@@ -12221,6 +12241,26 @@ window.__resources = {
 
               <!-- Flyttingen skjer paa raden. Ble den lagt i en egen skjerm,
                    maatte man finne personen igjen der. -->
+              <!-- Antall og beloep rettes paa raden, som flyttingen.
+                   Tomt beloepsfelt betyr «regn det av antallet»; skriver du
+                   et tall, er det tallet som gjelder. -->
+              <sc-if value="{{ p.endreApen }}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 0 var(--space-6) var(--space-5); display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4);">
+                  <div style="flex: 0 1 140px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Antall</label>
+                    <input value="{{ endreAntall }}" onChange="{{ settEndreAntall }}" inputmode="numeric" style="{{ mpFeltStil }}">
+                  </div>
+                  <div style="flex: 1 1 220px; min-width: 0;">
+                    <label style="{{ mpEtikett }}">Beløp i kroner</label>
+                    <input value="{{ endreBelop }}" onChange="{{ settEndreBelop }}" placeholder="{{ endreBelopHint }}" inputmode="numeric" style="{{ mpFeltStil }}">
+                  </div>
+                  <div style="display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;">
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ endreLagre }}" hint-size="auto,40px">Lagre</x-import>
+                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" variant="ghost" on-click="{{ endreAvbryt }}" hint-size="auto,40px">Avbryt</x-import>
+                  </div>
+                </div>
+              </sc-if>
+
               <sc-if value="{{ p.flyttApen }}" hint-placeholder-val="{{ false }}">
                 <div style="padding: 0 var(--space-6) var(--space-5); display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4);">
                   <div style="flex: 1 1 320px; min-width: 0;">
@@ -31719,6 +31759,29 @@ class Component extends DCLogic {
               // tatt. «Ikke moett» fantes bare som en verdi i pamelding.php:
               // ingen knapp noe sted brukte den.
               klDKanEndre: !!(dv && dv.bookingId),
+              // ── Antall og beloep, ogsaa herfra ──────────────────────
+              //
+              // Eieren, 5. september: «Legg til dette, paa samme sted som jeg
+              // legger til» — og «Globalt». Deltakerruta i kalenderen er det
+              // andre stedet én paamelding rettes, saa den maa kunne det
+              // samme som raden under Paameldte.
+              //
+              // Samme kall, samme regler: tomt beloepsfelt betyr «regn det av
+              // antallet», et tall betyr det tallet.
+              klDAntall: this.state.klDAntall ?? (dv ? String(dv.antall || 1) : ''),
+              settKlDAntall: e => this.setState({ klDAntall: e.target.value }),
+              klDBelop: this.state.klDBelop ?? '',
+              settKlDBelop: e => this.setState({ klDBelop: e.target.value }),
+              klDBelopHint: 'Tomt = prisen ganger antallet',
+              klDEndreUtfor: () => {
+                if (!dv || !dv.bookingId) return;
+                const antall = String(this.state.klDAntall ?? '').trim();
+                const belop  = String(this.state.klDBelop ?? '').trim();
+                if (antall === '' && belop === '') return;
+                this.klKall('/api/admin/pamelding.php',
+                  { handling: 'endre', id: dv.bookingId, antall: antall, belop: belop })
+                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null, klDAntall: null, klDBelop: '' }); });
+              },
               klDIkkeMott: () => {
                 if (!dv || !dv.bookingId) return;
                 this.klKall('/api/admin/pamelding.php',
@@ -43772,6 +43835,30 @@ class Component extends DCLogic {
           flyttOkt: this.state.flyttOkt || (okter[0] ? okter[0].verdi : ''),
           settFlyttOkt: e => this.setState({ flyttOkt: e.target.value }),
           flyttAvbryt: () => this.setState({ flyttRad: null, flyttId: null }),
+          // ── Panelet «Endre»: feltene og lagringen ────────────────────
+          //
+          // Feltene ligger flatt her, som flyttingen og betalingen: ett panel
+          // er aapent om gangen, saa de trenger ingen rad aa henge paa.
+          endreAntall: this.state.endreAntall ?? '',
+          settEndreAntall: e => this.setState({ endreAntall: e.target.value }),
+          endreBelop: this.state.endreBelop ?? '',
+          settEndreBelop: e => this.setState({ endreBelop: e.target.value }),
+          // Hva som skjer om feltet staar tomt. Sier det, framfor aa la
+          // eieren gjette paa om pengene foelger antallet.
+          endreBelopHint: 'Tomt = prisen ganger antallet',
+          endreAvbryt: () => this.setState({ endreRad: null, endreAntall: '', endreBelop: '' }),
+          endreLagre: () => {
+            const id = this.state.endreRad;
+            if (!id) return;
+            const antall = String(this.state.endreAntall ?? '').trim();
+            const belop  = String(this.state.endreBelop ?? '').trim();
+            if (antall === '' && belop === '') {
+              this.setState({ endreRad: null });
+              return;
+            }
+            this.pameldingKall({ handling: 'endre', id, antall, belop });
+            this.setState({ endreRad: null, endreAntall: '', endreBelop: '' });
+          },
           flyttUtfor: () => {
             const id = this.state.flyttId;
             const okt = this.state.flyttOkt || (okter[0] ? okter[0].verdi : '');
@@ -43828,6 +43915,32 @@ class Component extends DCLogic {
             flyttRad: apen ? this.state.flyttRad : null,
           });
           if (!apen) this.betalingHent(p.id);
+        },
+        // ── Rett antallet, og beloepet ──────────────────────────────
+        //
+        // Eieren, 5. september: «Jeg har et kurs som jeg har meldt paa 10
+        // personer. Saa kom det bare 6 stk. Jeg kan legge til flere osv, men
+        // ikke redigere antall som kom.» Og: «Jeg maa endre antall og jeg maa
+        // kunne overstyre pris ved aa taste inn.»
+        //
+        // Panelet aapner paa raden, som Flytt og Betaling. Tre paneler paa
+        // samme rad ville ikke vaert til aa se hvilket som lagres, saa det
+        // som var aapent lukkes.
+        endreApen: this.state.endreRad === p.id,
+        endre: (e) => {
+          if (e && e.stopPropagation) e.stopPropagation();
+          const apen = this.state.endreRad === p.id;
+          this.setState({
+            endreRad: apen ? null : p.id,
+            // Feltene starter paa det som staar. Da retter man et tall, i
+            // stedet for aa skrive begge to paa nytt.
+            endreAntall: apen ? '' : String(p.antall || 1),
+            // Beloepet staar tomt: da regnes det av antallet. Skriver eieren
+            // et tall, er det tallet som gjelder.
+            endreBelop: '',
+            flyttRad: apen ? this.state.flyttRad : null,
+            betRad: apen ? this.state.betRad : null,
+          });
         },
         flyttApen: this.state.flyttRad != null && this.state.flyttRad === (p.id != null ? p.id : p.navn),
         flytt: (e) => {

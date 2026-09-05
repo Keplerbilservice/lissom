@@ -8827,9 +8827,10 @@ echo "\n== Beløp brekker ikke midt i tallet ==\n";
 $sidaT = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 sjekk('ingen regner ut tusenskillet med et vanlig mellomrom',
     !str_contains($sidaT, "(?=(\\d{3})+(?!\\d))/g, ' ')"));
-// Fem, ikke fire: konustabellen regner ut to tall paa den samme linja.
-sjekk('… og alle fem stedene bruker et hardt',
-    substr_count($sidaT, "(?=(\\d{3})+(?!\\d))/g, '\\u00A0')") === 5);
+// Seks, ikke fem: konustabellen regner ut to tall paa den samme linja, og
+// linja «maa kreves inn» paa Oversikt kom 5. september.
+sjekk('… og alle seks stedene bruker et hardt',
+    substr_count($sidaT, "(?=(\\d{3})+(?!\\d))/g, '\\u00A0')") === 6);
 // Vakta som fanger den neste. Den leser teksten slik den staar paa skjermen,
 // saa den finner et mykt mellomrom uansett hvor i koden det kom fra.
 $bredde = file_get_contents(dirname(__DIR__) . '/bin/breddesjekk.mjs');
@@ -9194,6 +9195,75 @@ sjekk('… og det er satt av plass til hjemknappen paa iPhone',
 sjekk('menyen staar bare paa smal skjerm',
     str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }')
     && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
+
+// Kvitteringsboksen sto 110 px fra toppen, alltid. Da adminstripa fikk
+// verktoeypillene, la boksen seg midt oppaa dem — og oppaa linja som sier
+// hvor du er. Eieren saa det med én gang han trykket «Alt er oppdatert».
+sjekk('kvitteringen legger seg ikke oppaa adminstripa',
+    str_contains($sidaB, "(this.erAdminSkjerm(this.state.side) && (this.state.vw || 1400) < 980)")
+    && str_contains($sidaB, "? { bottom: 'calc(58px + 12px + env(safe-area-inset-bottom, 0px))' }")
+    && str_contains($sidaB, "          : { top: '110px' },"));
+// Ute paa nettsida finnes ingen bunnmeny aa staa over.
+sjekk('… og ute paa nettsida staar den som for',
+    !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
+
+// ── «Må kreves inn» på Oversikt ─────────────────────────────────────────
+//
+// Eieren, 5. september: «jeg vil at det bygges en paaminnelse i admin».
+//
+// Bare aarsmedlemskapet har fast trekk. De andre betales én periode om
+// gangen, og naar perioden er ute rorer ingen av cronjobbene dem. Kortet
+// «Ikke betalt» i Kassa viser dem — men ingen aapner Kassa for aa lete.
+$kreves = preg_replace('/^\s*\/\/.*$/m', '',
+    preg_replace('/<!--.*?-->/s', '', $sidaB));
+sjekk('linja «maa kreves inn» staar paa Oversikt',
+    str_contains($kreves, 'krevInnLinje() {')
+    && str_contains($kreves, '...this.krevInnLinje(),')
+    && str_contains($kreves, '<sc-if value="{{ ovKrevInnVis }}"'));
+// Den leser de samme radene som kortet i Kassa, saa tallene kan ikke sprike.
+sjekk('… og leser de samme radene som kortet i Kassa',
+    str_contains($kreves, ".filter(u => u.slag === 'medlem' && u.forfalt)"));
+// Beloepet regnes av oerene serveren sender, ikke ved aa lese tallet ut av
+// «kr. 1 790,-» paa nytt.
+sjekk('… og regner beloepet av oerene, ikke av teksten',
+    str_contains($kreves, '(u.belopOre || 0)'));
+// Er alt gjort opp, skal linja ikke finnes. En roed stripe hver dag naar det
+// ikke er noe aa gjore slutter man aa se etter en uke.
+sjekk('… og vises ikke naar ingenting er forfalt',
+    str_contains($kreves, 'ovKrevInnVis: forfalte.length > 0,'));
+// Ingen «eldste 0 dager», og ingen «kr. 0,- utestaaende».
+sjekk('… og sier bare det som er sant om alder og beloep',
+    str_contains($kreves, 'if (eldst > 0) {')
+    && str_contains($kreves, 'if (sum > 0) {'));
+// Knappen gaar til Kassa, der jobben faktisk gjores.
+sjekk('… og knappen gaar til Kassa',
+    str_contains($kreves, "ovKrevInnVelg: () => this.gaaAdmin('adminuttak', {}),")
+    && str_contains($kreves, '>Til Kassa</button>'));
+
+// ── Brevet lovet en lenke som ikke finnes ────────────────────────────────
+//
+// Eieren, 5. september: «sjekker du at man faktisk finner betalingslinken paa
+// min side som du paastaar i eposten». Svaret var nei: «vipps_url» lagres i
+// subscriptions, men «min»-objektet i api/medlemskap.php sender den aldri ut,
+// og ingenting i nettleseren leser den.
+//
+// Maalt: en som har bestilt Aarsmedlemskap uten aa godkjenne ser bare «Bli
+// medlem i verkstedet» og innmeldingsskjemaet paa nytt.
+$mig141 = @file_get_contents(dirname(__DIR__) . '/db/migrations/141_lenken_ligger_ikke_paa_min_side.sql') ?: '';
+sjekk('migrasjon 141 tar setningen ut av brevet',
+    str_contains($mig141, "WHERE navn = 'innmelding_fast_trekk'")
+    && str_contains($mig141, 'Har du lukket siden, finner du den samme lenken'));
+// REPLACE, ikke ny fulltekst: da overlever det eieren selv har rettet i malen.
+sjekk('… og tar bare den ene setningen, ikke hele malen',
+    str_contains($mig141, 'SET tekst = REPLACE(')
+    && !str_contains($mig141, 'DU MÅ GODKJENNE AVTALEN I VIPPS'));
+// Lenken finnes fortsatt i selve e-posten, og purringen sender den paa nytt.
+sjekk('… mens lenken i brevet og purringen staar',
+    str_contains($mig141, '{lenke}') === false
+    && str_contains($mig141, 'Tar det bare et minutt.'));
+// «Vipps_url» sendes ikke til Min side. Staar det en dag, skal denne felle.
+sjekk('Min side faar fortsatt ikke Vipps-adressen',
+    !str_contains($sidaB, 'vippsUrl') && !str_contains($sidaB, 'godkjennUrl'));
 
 // ── Verktoeyene oeverst, ikke nederst i skuffen ──────────────────────────
 //

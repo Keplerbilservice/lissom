@@ -12054,6 +12054,33 @@ sjekk('… med den samme stoppingen som alt fantes',
 sjekk('… og avtalen stoppes hos Vipps ogsaa',
     str_contains($dbl, 'Vipps::stoppAvtale($avtaleId);'));
 
+echo "\n== Medlemslista og Kassa sier det samme om det samme trekket ==\n";
+// Eieren, 5. september, med bilde av begge skjermene: «Ene stedet staar det
+// betalt, andre staar det ikke betalt».
+//
+// Begge kaller Medlemskap::betalingsstatus(). Men i medlemslista sto
+// «$sisteTrekk» brukt INNE i en lukking uten aa staa i use-lista, og «??»
+// svelget advarselen: oppslaget ble stille null. Da falt betalingsstatus()
+// gjennom til «Trukket <siste_trekk>» — og «siste_trekk» settes i det trekket
+// BES OM, ikke naar pengene kommer.
+//
+// Foelgen: medlemslista sa BETALT om hvert eneste trekk som bare var bestilt,
+// og om trekk som hadde FEILET. Kassa hadde rett hele tida.
+//
+// Maalt med den samme raden i alle tre tilstandene, for og etter:
+//   betalingsrad «venter»  → begge: «Trekket er bestilt … venter paa Vipps»
+//   betalingsrad «feilet»  → begge: «Trekket gikk ikke — proevd …»
+//   betalingsrad «betalt»  → ute av Kassa, «Trukket …» i lista
+// For rettinga sa medlemslista «Trukket 4. september» i alle tre.
+$medlL = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+sjekk('medlemslista faar med seg trekket den slaar opp',
+    str_contains($medlL,
+        'use ($m, $avtaler, $sisteBetaling, $sisteTrekk): array {'),
+    'uten $sisteTrekk i use-lista blir oppslaget stille null, og alt ser betalt ut');
+// Selve oppslaget. Uten dette kunne use-lista vaere riktig og bruken feil.
+sjekk('… og bruker det i betalingsstatus()',
+    str_contains($medlL, "\$a === null ? null : (\$sisteTrekk[(int) \$a['id']] ?? null)"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

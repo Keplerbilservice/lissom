@@ -1520,7 +1520,16 @@ Svar::json(['medlemmer' => array_map(static fn($m) => [
     'sisteBelop'      => isset($sisteBetaling[(int) $m['id']])
         ? Booking::kroner((int) $sisteBetaling[(int) $m['id']]['belop_ore']) : null,
 ] + $avtaleInfo((int) $m['id'])
-  + (static function () use ($m, $avtaler, $sisteBetaling): array {
+  // «$sisteTrekk» maa staa i use-lista. Den ble brukt inni her uten aa vaere
+  // med, og «??» svelget advarselen: oppslaget ble stille null, og da falt
+  // betalingsstatus() gjennom til «Trukket <siste_trekk>» — altsaa BETALT om
+  // hvert eneste trekk som bare var BESTILT, og om trekk som hadde feilet.
+  //
+  // Eieren, 5. september, med bilde av begge skjermene: «Ene stedet staar det
+  // betalt, andre staar det ikke betalt». Kassa hadde rett; medlemslista tok
+  // feil. Begge kaller den samme funksjonen — den ene ga den bare ikke det
+  // den trengte.
+  + (static function () use ($m, $avtaler, $sisteBetaling, $sisteTrekk): array {
         $a = $avtaler[(int) $m['id']] ?? null;
         $b = Medlemskap::betalingsstatus(
             $m,

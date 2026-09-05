@@ -9192,8 +9192,50 @@ sjekk('… og det er satt av plass til hjemknappen paa iPhone',
 
 // Bare paa telefon. Paa PC er sidemenyen der.
 sjekk('menyen staar bare paa smal skjerm',
-    str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny { display: none !important; }')
+    str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }')
     && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
+
+// ── Verktoeyene oeverst, ikke nederst i skuffen ──────────────────────────
+//
+// Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil og log ut
+// maa ligge i toppen slik at det alltid er tilgjengelig uansett hvilken side
+// man er paa».
+//
+// De fem laa nederst i menypanelet, bak «Meny». Naa staar de som piller rett
+// under logoen — paa hver eneste adminskjerm, ikke bare paa den ene.
+$uKode  = preg_replace('/<!--.*?-->/s', '', $sidaB);
+$uKode  = preg_replace('/^\s*\/\/.*$/m', '', $uKode);
+$antTopp = substr_count($uKode, 'class="lx-admtopp"');
+$antSide = substr_count($uKode, '<aside class="lx-adminaside"');
+
+sjekk('verktoeypillene staar paa hver adminskjerm',
+    $antTopp > 30 && $antTopp === $antSide);
+sjekk('… og de vises bare paa telefon',
+    str_contains($uKode, '.lx-admtopp { display: flex !important; }'));
+sjekk('… og de staar rett under Stemple inn og Ferie',
+    (bool) preg_match(
+        '/\{\{ admFerieNavn \}\}<\/button>\s*<\/div>\s*<div class="lx-admtopp" style="\{\{ admToppEkstraStil \}\}">/',
+        $uKode));
+sjekk('… og de er ikke lenger gjemt nederst i menypanelet',
+    !str_contains($uKode, 'admMobEkstra'));
+
+// Ingen ny meny: pillene er de samme radene fra adminMeny(), med kortere
+// navn. Blir det en rad til der, kommer den med hit av seg selv.
+sjekk('pillene kommer fra den samme lista som sidemenyen',
+    str_contains($uKode, 'const topp = ekstra.map(r => Object.assign({}, r, {'));
+sjekk('… og de fem har hvert sitt kortnavn',
+    str_contains($uKode, "kort: '↗ Nettsiden',")
+    && str_contains($uKode, "? '⚡ Sjekker …' : '⚡ Vipps',")
+    && str_contains($uKode, "kort: '⚑ Meld feil',")
+    && str_contains($uKode, "kort: '⌁ Logg ut',"));
+// Tallet er det eneste som maa vaere med naar plassen er trang.
+sjekk('… og oppdateringspilla sier hvor mange som venter',
+    str_contains($uKode, ": venter.length ? '⚙ ' + venter.length + ' ny' + (venter.length === 1 ? '' : 'e')")
+    && str_contains($uKode, "          : '⚙ Oppdatert';"));
+// Kortnavnet staar paa pilla, men skjermleseren skal faa hele.
+sjekk('… og hele navnet staar som aria-label',
+    str_contains($uKode, 'full: (r.navn || \'\').replace(/\s+/g, \' \').trim(),')
+    && str_contains($uKode, 'aria-label="{{ v.full }}"'));
 
 // Regelen som skjuler sidemenyens egen meny paa telefon gjaldt ALLE
 // nav-elementer i sidemenyen, og tok bunnmenyen med seg — den er ogsaa en
@@ -9260,7 +9302,14 @@ sjekk('pillene krymper paa smal skjerm',
     str_contains($sidaP2, "const smal = (this.state.vw || 1400) < 980;")
     && str_contains($sidaP2, "admStempStil: smal ? kompakt(st.stempleStil) : st.stempleStil,"));
 sjekk('… og stripa kan brekke til ny linje',
-    str_contains($sidaP2, "? { display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }"));
+    str_contains($sidaP2, "? { display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }"));
+// Eieren, 5. september: «litt trangt rundt pillene». Teksten sto rett i
+// kanten av ramma, og stripa hadde 16 px luft over og under mot 20 no.
+sjekk('… og pillene har luft inni seg',
+    str_contains($sidaP2, "padding: '8px 14px', borderRadius: 'var(--radius-pill)',")
+    && str_contains($sidaP2, "fontSize: 12, lineHeight: 1.2, minHeight: 34,"));
+sjekk('… og stripa har luft rundt seg',
+    str_contains($sidaP2, "padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row'"));
 
 echo "\n== Logoen på innloggingsskjermen er veien ut ==\n";
 // Eieren, 4. september: «naar jeg staar paa lissom.no/logg-inn, saa vil jeg

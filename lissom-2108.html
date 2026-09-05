@@ -1219,7 +1219,7 @@ window.__resources = {
      som skjuler den paa stor skjerm maa veie tyngre — og da maa den ogsaa
      si hva menyen skal vaere paa liten skjerm. Panelet er et rutenett i to
      spalter, saa hele menyen faar plass uten aa rulle. */
-  .lx-admmob, .lx-admmobpanel, .lx-bunnmeny { display: none !important; }
+  .lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }
   @media (max-width: 979px) {
     /* Uten en bredde her regner nettleseren SVG-en til 300px og
        dytter menyen ut av skjermen. */
@@ -1235,6 +1235,10 @@ window.__resources = {
        mener: sidemenyens egen meny, ikke enhver meny som staar der. */
     .lx-adminaside > nav:not(.lx-bunnmeny) { display: none !important; }
     .lx-admmob { display: flex !important; }
+    /* Verktoeypillene under logoen: Se nettsiden, oppdateringer, Vipps,
+       meld feil og logg ut. Paa stor skjerm staar de i sidemenyen, som
+       alltid er framme — da er raden overfloedig og skjules over. */
+    .lx-admtopp { display: flex !important; }
     /* Bunnmenyen. Seks valg, ikon og tekst — eieren valgte alternativ A
        4. september. Den staar «fixed» mot bunnen, saa hovedinnholdet maa
        ha plass under seg: 58 px meny, luft, og hjemknappen paa iPhone.
@@ -5144,6 +5148,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -5190,11 +5207,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -5429,6 +5441,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -5475,11 +5500,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -5528,6 +5548,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -5574,11 +5607,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -5627,6 +5655,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -5673,11 +5714,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -5730,6 +5766,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -5776,11 +5825,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -5848,6 +5892,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -5894,11 +5951,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -6121,6 +6173,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -6165,11 +6230,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -7358,6 +7418,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -7404,11 +7477,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -7521,6 +7589,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -7567,11 +7648,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -7730,6 +7806,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -7776,11 +7865,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -8374,6 +8458,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -8420,11 +8517,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -8606,6 +8698,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -8652,11 +8757,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -8913,6 +9013,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -8959,11 +9072,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -10013,6 +10121,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -10059,11 +10180,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -10424,6 +10540,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -10470,11 +10599,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -10666,6 +10790,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -10712,11 +10849,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -10877,6 +11009,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -10923,11 +11068,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -11142,6 +11282,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -11183,11 +11336,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -11292,6 +11440,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -11333,11 +11494,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -11430,6 +11586,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -11471,11 +11640,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -11585,6 +11749,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -11631,11 +11808,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -11707,6 +11879,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -11753,11 +11938,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -12086,6 +12266,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -12132,11 +12325,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -12206,6 +12394,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -12252,11 +12453,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -12694,6 +12890,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -12740,11 +12949,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -12849,6 +13053,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -12895,11 +13112,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -13627,6 +13839,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -13673,11 +13898,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -13840,6 +14060,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -13886,11 +14119,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -14105,6 +14333,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -14151,11 +14392,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -14378,6 +14614,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -14419,11 +14668,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -14544,6 +14788,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -14590,11 +14847,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -14816,6 +15068,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -14862,11 +15127,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
         <div class="lx-admstatus" style="margin-top: auto; border-top: 1px solid rgba(244,235,222,.18); padding-top: var(--space-5);">
@@ -15281,6 +15541,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -15327,11 +15600,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -16081,6 +16349,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -16127,11 +16408,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -16313,6 +16589,19 @@ window.__resources = {
           <button type="button" onClick="{{ admStempVelg }}" title="{{ admStempHjelp }}" style="{{ admStempStil }}">{{ admStempNavn }}</button>
           <button type="button" onClick="{{ admFerieVelg }}" title="Ferie og stengte dager" style="{{ admFerieStil }}">{{ admFerieNavn }}</button>
         </div>
+        <!-- Verktoeyene, alltid synlige paa telefon.
+             Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil
+             og log ut maa ligge i toppen slik at det alltid er tilgjengelig
+             uansett hvilken side man er paa».
+             De laa nederst i menypanelet, bak «Meny». Det er de samme
+             radene fra adminMeny() — bare kortere navn og pilleform, se
+             adminMobil(). Paa stor skjerm staar de i sidemenyen som for, og
+             denne raden er skjult. -->
+        <div class="lx-admtopp" style="{{ admToppEkstraStil }}">
+          <sc-for list="{{ admToppEkstra }}" as="v" hint-placeholder-count="5">
+            <button type="button" onClick="{{ v.velg }}" title="{{ v.full }}" aria-label="{{ v.full }}" style="{{ v.stil }}">{{ v.navn }}</button>
+          </sc-for>
+        </div>
         <!-- Bunnmenyen paa telefon.
              Eieren, 4. september, valgte alternativ A: seks synlige valg,
              ikon og tekst sammen, ingen «Mer».
@@ -16354,11 +16643,6 @@ window.__resources = {
                 </sc-if>
               </div>
             </sc-for>
-            <div style="{{ admMobEkstraStil }}">
-              <sc-for list="{{ admMobEkstra }}" as="e" hint-placeholder-count="6">
-                <button type="button" onClick="{{ e.velg }}" style="{{ e.stil }}">{{ e.navn }}</button>
-              </sc-for>
-            </div>
           </div>
         </sc-if>
       </aside>
@@ -29317,14 +29601,46 @@ class Component extends DCLogic {
         velg: lukkOg(r.velg),
       }));
 
+    // Verktoeyene oeverst, ikke nederst i skuffen.
+    //
+    // Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil og log
+    // ut maa ligge i toppen slik at det alltid er tilgjengelig uansett
+    // hvilken side man er paa».
+    //
+    // De laa nederst i menypanelet — bak «Meny», under ti steder med
+    // underpunkter. Tre trykk for aa logge ut, og «Kjor oppdateringer» sto
+    // gjemt paa den ene skjermen man ikke aapner naar man leter etter den.
+    //
+    // Naa er det de samme radene, fra den samme lista, tegnet som piller
+    // rett under logoen. Ingen ny meny: `kort` er bare et kortere navn paa
+    // rader som alt fantes. Paa stor skjerm staar sidemenyen som for — der
+    // har de alltid vaert synlige, og pilleraden er skjult.
+    const topp = ekstra.map(r => Object.assign({}, r, {
+      navn: r.kort || r.navn,
+      full: (r.navn || '').replace(/\s+/g, ' ').trim(),
+      stil: {
+        appearance: 'none', cursor: 'pointer', flex: '0 0 auto',
+        padding: '8px 14px', borderRadius: 'var(--radius-pill)',
+        font: 'var(--type-chip)', minHeight: 34, whiteSpace: 'nowrap',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        border: '1px solid rgba(244,235,222,.28)',
+        background: 'transparent',
+        color: (r.stil && r.stil.color) || 'var(--clay-200)',
+      },
+    }));
+
     return {
+      admToppEkstra: topp,
+      admToppEkstraStil: {
+        width: '100%', boxSizing: 'border-box',
+        display: 'flex', flexWrap: 'wrap', gap: 8,
+      },
       admMobNaa: sted.fane ? sted.meny + ' \u00b7 ' + sted.fane : (sted.meny || 'Admin'),
       admMobApen: apen,
       admMobUtvidet: apen ? 'true' : 'false',
       admMobKnappTekst: apen ? 'Lukk' : 'Meny',
       admMobVeksle: () => this.setState(s => ({ admMobApen: !s.admMobApen })),
       admMobPunkter: punkter,
-      admMobEkstra: ekstra,
       admMobLinjeStil: {
         flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center',
         justifyContent: 'space-between', gap: 'var(--space-4)',
@@ -29348,12 +29664,6 @@ class Component extends DCLogic {
         marginTop: 'var(--space-4)', paddingTop: 'var(--space-4)',
         borderTop: '1px solid rgba(244,235,222,.18)',
         maxHeight: '72vh', overflowY: 'auto', overscrollBehavior: 'contain',
-      },
-      admMobEkstraStil: {
-        gridColumn: '1 / -1',
-        display: 'flex', flexDirection: 'column', gap: 2,
-        marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)',
-        borderTop: '1px solid rgba(244,235,222,.18)',
       },
     };
   }
@@ -32275,6 +32585,7 @@ class Component extends DCLogic {
       // fantes: veien tilbake til nettsiden, og veien ut.
       {
         navn: '↗  Se nettsiden',
+        kort: '↗ Nettsiden',
         velg: this.go('forside'),
         stil: Object.assign({}, this.adminBunnStil(), { marginTop: 'var(--space-4)', borderTop: '1px solid rgba(244,235,222,.18)', paddingTop: 'var(--space-4)' }),
       },
@@ -32297,8 +32608,14 @@ class Component extends DCLogic {
           : !vet ? '⚙  Vedlikehold'
           : venter.length ? '⚙  Kjør ' + venter.length + ' oppdatering' + (venter.length === 1 ? '' : 'er')
           : '⚙  Alt er oppdatert';
+        // Kortformen til pillene oeverst paa telefon. Samme tilstand, faerre
+        // bokstaver — tallet er det eneste som maa vaere med.
+        const kort = !vet || !this.erPublisert() ? '⚙ Oppdater'
+          : venter.length ? '⚙ ' + venter.length + ' ny' + (venter.length === 1 ? '' : 'e')
+          : '⚙ Oppdatert';
         return [{
           navn: navn,
+          kort: kort,
           velg: () => {
             // I forhaandsvisningen finnes ingen server aa kjore mot.
             if (!this.erPublisert()) {
@@ -32337,6 +32654,7 @@ class Component extends DCLogic {
       // Ingen penger flyttes.
       {
         navn: this.state.vippsSjekk === 'henter' ? '⚡  Sjekker Vipps …' : '⚡  Test Vipps',
+        kort: this.state.vippsSjekk === 'henter' ? '⚡ Sjekker …' : '⚡ Vipps',
         velg: () => this.testVipps(),
         stil: this.adminBunnStil(),
       },
@@ -32344,11 +32662,13 @@ class Component extends DCLogic {
       // nettsida, og en feil han ser her er like verdt aa notere.
       {
         navn: '⚑  Meld inn feil',
+        kort: '⚑ Meld feil',
         velg: () => this.setState({ fmDialog: true, fmFeil: '' }),
         stil: this.adminBunnStil(),
       },
       {
         navn: '⌁  Logg ut',
+        kort: '⌁ Logg ut',
         velg: () => this.loggUtNaa(),
         stil: this.adminBunnStil(),
       },
@@ -45620,13 +45940,19 @@ class Component extends DCLogic {
         const smal = (this.state.vw || 1400) < 980;
         // Samme pille, mindre av den. Paa en telefon deler stripa plass med
         // logoen og «Meny», og da er 11 px luft over og under for mye.
+        //
+        // Eieren, 5. september: «litt trangt rundt pillene». Den var klemt
+        // for langt: 6 px over og under, 12 px paa sidene, og teksten sto
+        // rett i kanten av ramma. Naa er det 8 og 14, og 34 px hoyde — nok
+        // til aa treffes med tommelen uten aa ta mer av stripa enn den maa.
         const kompakt = (grunn) => Object.assign({}, grunn, {
-          padding: '6px 12px', borderRadius: 'var(--radius-pill)',
-          fontSize: 12, lineHeight: 1.2,
+          padding: '8px 14px', borderRadius: 'var(--radius-pill)',
+          fontSize: 12, lineHeight: 1.2, minHeight: 34,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
         });
         return {
           admStemplingStil: smal
-            ? { display: 'flex', flexDirection: 'row', gap: 6, alignItems: 'center', flexWrap: 'wrap' }
+            ? { display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }
             : { display: 'flex', flexDirection: 'column', gap: 6, alignSelf: 'stretch',
                 paddingBottom: 'var(--space-6)',
                 borderBottom: '1px solid rgba(244,235,222,.20)' },
@@ -47668,7 +47994,7 @@ class Component extends DCLogic {
         ? { display: 'block', minHeight: '100vh', background: 'var(--clay-100)' }
         : { display: 'grid', gridTemplateColumns: '248px 1fr', minHeight: '100vh', background: 'var(--clay-100)' },
       adminAsideStil: (this.state.vw || 1400) < 980
-        ? { background: 'var(--lissom-brown)', padding: 'var(--space-4) var(--space-5)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-4)', position: 'sticky', top: 0, zIndex: 30 }
+        ? { background: 'var(--lissom-brown)', padding: 'var(--space-5) var(--space-6)', display: 'flex', flexWrap: 'wrap', flexDirection: 'row', alignItems: 'center', gap: 'var(--space-4)', position: 'sticky', top: 0, zIndex: 30 }
         : { background: 'var(--lissom-brown)', padding: 'var(--space-8) var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' },
       adminNavStil: (this.state.vw || 1400) < 980
         ? { display: 'flex', flexDirection: 'row', gap: 4, overflowX: 'auto', overscrollBehaviorX: 'contain', flex: 1 }

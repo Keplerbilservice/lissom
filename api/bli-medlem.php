@@ -200,6 +200,9 @@ Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner
     ['epost' => $epost], [
         'navn'  => $navn,
         'type'  => $type,
+        // «ordner selv» sier hva perioden koster; «fast trekk» sier det i
+        // sin egen tekst. Feltet staar i begge malene, saa det fylles her.
+        'belop' => Booking::kroner((int) $plan['pris_ore']),
         'lenke' => (string) ($avtale['url'] ?? '') !== ''
             ? (string) $avtale['url']
             : Config::nettsted() . '/min-side',

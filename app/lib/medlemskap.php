@@ -792,12 +792,73 @@ final class Medlemskap
             return;
         }
         DB::oppdater('subscriptions', ['status' => 'aktiv', 'neste_trekk' => null], ['id' => $abonnementId]);
-        DB::oppdater('members', [
+
+        // ── En proeveperiode maa ha en slutt ────────────────────────────
+        //
+        // «Prøv Lissom» er engangs: den betales én gang og varer en maaned.
+        // Sluttdatoen ble bare satt naar verkstedet meldte noen inn fra
+        // admin — se «slutt_dato» i api/admin/medlemmer.php, der det staar
+        // svart paa hvitt at «uten sluttdato sto den som aktiv for alltid, og
+        // Prøv Lissom ble et gratis medlemskap».
+        //
+        // Kjopte man den paa nettsida, gikk veien hit i stedet, og her ble
+        // den aldri satt. Kunden betalte 990 kroner én gang og beholdt
+        // verkstedet for alltid.
+        //
+        // Eieren, 5. september: «jeg får jo ikke inn pengene mine».
+        //
+        // Samme regel som i admin: én maaned fram. Har medlemmet alt en
+        // sluttdato — hun har vaert her for — roerer vi den ikke.
+        $plan    = self::planUansett((string) $a['plan']);
+        $engangs = $plan !== null && (int) ($plan['engangs'] ?? 0) === 1;
+        $fra     = DB::en(
+            'SELECT start_dato, slutt_dato FROM members WHERE id = :m',
+            ['m' => (int) $a['member_id']]
+        ) ?? [];
+
+        $felter = [
             'status'          => 'aktiv',
             'medlemskap_type' => (string) $a['plan'],
-            'start_dato'      => DB::verdi('SELECT start_dato FROM members WHERE id = :m', ['m' => (int) $a['member_id']])
-                                  ?: gmdate('Y-m-d'),
-        ], ['id' => (int) $a['member_id']]);
+            'start_dato'      => ($fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),
+        ];
+        if ($engangs) {
+            $felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));
+        }
+        DB::oppdater('members', $felter, ['id' => (int) $a['member_id']]);
+
+        // ── Kvitteringen ────────────────────────────────────────────────
+        //
+        // Her sto det ingenting. Betalingen gikk gjennom, medlemskapet ble
+        // slaatt paa, og kunden fikk aldri et ord fra oss om at det var i
+        // orden — bare Vipps' egen kvittering.
+        //
+        // Velkomstbrevet gaar naar betalingen STARTES, og sier hva som
+        // gjenstaar. Dette er det andre halve: pengene er inne.
+        //
+        // Eieren, 5. september: «Hvilken info får de som kjøper et av de
+        // andre medlemskapene».
+        $m = DB::en(
+            'SELECT navn, epost FROM members WHERE id = :i',
+            ['i' => (int) $a['member_id']]
+        );
+        if ($m === null || trim((string) ($m['epost'] ?? '')) === '') {
+            return;
+        }
+        // En engangsplan varer én maaned. Da skal brevet si naar den er ute,
+        // ikke la medlemmet tro at den loeper videre av seg selv. Datoen ble
+        // satt rett over.
+        $slutt = $engangs
+            ? DB::verdi('SELECT slutt_dato FROM members WHERE id = :i', ['i' => (int) $a['member_id']])
+            : null;
+
+        Varsel::mal('medlemskap_betalt', ['epost' => (string) $m['epost']], [
+            'navn'   => (string) ($m['navn'] ?? ''),
+            'type'   => (string) $a['plan'],
+            'belop'  => Booking::kroner((int) $a['pris_ore']),
+            'gyldig' => $slutt
+                ? 'Gjelder ut ' . Booking::norskDatoKort((string) $slutt . ' 12:00:00') . '.'
+                : 'Vi tar kontakt før neste periode.',
+        ], 'subscription', $abonnementId);
     }
 
     /**

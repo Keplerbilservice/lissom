@@ -11552,6 +11552,52 @@ sjekk('… og to avtaler ved siden av hverandre avvises',
 sjekk('… og handlingen staar i endringsloggen',
     str_contains($admV, "'medlem_avtale_sendt'   => 'Vipps-avtale sendt til medlemmet',"));
 
+
+echo "\n== De andre medlemskapene: kvittering når pengene er inne ==\n";
+// Eieren, 5. september: «Hvilken info får de som kjøper et av de andre
+// medlemskapene». Svaret var: et brev som paastod noe som ikke hadde skjedd
+// enda, og ingenting naar det faktisk skjedde.
+$mig140 = file_get_contents(dirname(__DIR__) . '/db/migrations/140_kvittering_nar_pengene_faktisk_er_inne.sql');
+$mlB    = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+// 1. Brevet ved start sa «Du har betalt» — for kunden hadde betalt.
+//    startEngangs() oppretter betalingen, e-posten legges i koen, og FORST
+//    DERETTER sendes kunden til Vipps.
+$ordner = (string) DB::verdi(
+    "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_ordner_selv'"
+);
+sjekk('velkomsten sier hva som gjenstaar',
+    str_contains($ordner, 'FULLFØR BETALINGEN I VIPPS'), mb_substr($ordner, 0, 40));
+sjekk('… og paastaar ikke at det alt er betalt',
+    !str_contains($ordner, 'Du har betalt for denne perioden'),
+    'brevet gikk foer kunden hadde vaert i Vipps');
+sjekk('… og lenka staar i den',
+    str_contains($ordner, '{lenke}') && str_contains($ordner, '{belop}'));
+
+// 2. Kvitteringen fantes ikke. Betalingen gikk gjennom, medlemskapet ble
+//    slaatt paa, og kunden fikk aldri et ord fra oss.
+sjekk('det kommer en kvittering naar pengene er inne',
+    str_contains($mig140, "'medlemskap_betalt',")
+    && str_contains($mlB, "Varsel::mal('medlemskap_betalt', ['epost' => (string) \$m['epost']], ["),
+    'maalt: varselet ble lagt i koen med navn, plan og beloep');
+sjekk('… og den sier naar en proeveperiode gaar ut',
+    str_contains($mlB, "'gyldig' => \$slutt")
+    && str_contains($mlB, "? 'Gjelder ut ' . Booking::norskDatoKort((string) \$slutt . ' 12:00:00') . '.'"),
+    'maalt: «Gjelder ut 5. oktober 2026.»');
+
+// 3. ── Proeveperioden tok aldri slutt ──────────────────────────────
+//
+// «Prøv Lissom» er engangs: betales én gang, varer en maaned. Sluttdatoen
+// ble bare satt naar verkstedet meldte noen inn fra admin. Kjopte man den
+// paa nettsida, gikk veien gjennom betaltEngangs() — og der ble den aldri
+// satt. Kunden betalte 990 kroner én gang og beholdt verkstedet for alltid.
+sjekk('en proeveperiode kjopt paa nettsida faar en sluttdato',
+    str_contains($mlB, "if (\$engangs) {\n            \$felter['slutt_dato'] = gmdate('Y-m-d', strtotime('+1 month'));")
+    , 'maalt: slutt_dato ble 2026-10-05 for en kjopt 5. september');
+sjekk('… og en startdato som alt staar blir ikke rort',
+    str_contains($mlB, "'start_dato'      => (\$fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),"),
+    '«medlem siden mai» skal ikke bli «medlem siden i dag»');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

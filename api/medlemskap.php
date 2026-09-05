@@ -253,6 +253,7 @@ switch (Foresporsel::tekst('handling')) {
                 ['epost' => (string) $medlem['epost']], [
                     'navn'  => (string) ($medlem['navn'] ?? ''),
                     'type'  => $planNavn,
+                    'belop' => Booking::kroner((int) $plan['pris_ore']),
                     'lenke' => (string) ($ut['url'] ?? '') !== ''
                         ? (string) $ut['url']
                         : Config::nettsted() . '/min-side',

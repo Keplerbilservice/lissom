@@ -288,6 +288,7 @@ if (Foresporsel::metode() === 'POST') {
             ['epost' => (string) $m['epost'], 'telefon' => (string) ($m['telefon'] ?? '')], [
                 'navn'  => (string) ($m['navn'] ?? ''),
                 'type'  => $type,
+                'belop' => Booking::kroner((int) $plan['pris_ore']),
                 'lenke' => (string) ($ut['url'] ?? '') !== ''
                     ? (string) $ut['url']
                     : Config::nettsted() . '/min-side',

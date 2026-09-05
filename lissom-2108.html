@@ -6749,16 +6749,16 @@ window.__resources = {
             <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Sett opp kurset</div>
             <h2 style="margin: 0 0 var(--space-2); font-size: var(--text-2xl);">{{ klBTittel }}</h2>
             <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body);">Stemmer tiden? Juster om nødvendig, og velg om kurset skal gjentas.</p>
-            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
-              <div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
+              <div style="min-width: 0;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
                 <input type="date" value="{{ klBDato }}" onChange="{{ settKlBDato }}" style="{{ klRFeltStil }}">
               </div>
-              <div>
+              <div style="min-width: 0;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
                 <input type="time" value="{{ klBFra }}" onChange="{{ settKlBFra }}" style="{{ klRFeltStil }}">
               </div>
-              <div>
+              <div style="min-width: 0;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
                 <input type="time" value="{{ klBTil }}" onChange="{{ settKlBTil }}" style="{{ klRFeltStil }}">
               </div>
@@ -6814,16 +6814,16 @@ window.__resources = {
             <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Navn</label>
             <input value="{{ klRNavn }}" onChange="{{ settKlRNavn }}" style="box-sizing: border-box; width: 100%; border: 2px solid var(--lissom-brown); border-radius: var(--radius-md); padding: 11px 14px; font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); background: var(--clay-50); color: var(--text-heading);">
             <div style="font-size: var(--text-xs); color: var(--text-muted); margin: 5px 0 var(--space-5);">{{ klRNavnHint }}</div>
-            <div style="display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: var(--space-3); margin-bottom: var(--space-4);">
-              <div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);">
+              <div style="min-width: 0;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>
                 <input type="date" value="{{ klRDato }}" onChange="{{ settKlRDato }}" style="{{ klRFeltStil }}">
               </div>
-              <div>
+              <div style="min-width: 0;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Fra</label>
                 <input type="time" value="{{ klRFra }}" onChange="{{ settKlRFra }}" style="{{ klRFeltStil }}">
               </div>
-              <div>
+              <div style="min-width: 0;">
                 <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Til</label>
                 <input type="time" value="{{ klRTil }}" onChange="{{ settKlRTil }}" style="{{ klRFeltStil }}">
               </div>

@@ -9207,6 +9207,29 @@ sjekk('kvitteringen legger seg ikke oppaa adminstripa',
 sjekk('… og ute paa nettsida staar den som for',
     !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
 
+// ── «Til» falt utenfor dialogen på telefon ──────────────────────────────
+//
+// Eieren, 5. september, med en pil tegnet på skjermbildet: «se piller på
+// utsiden av bildet».
+//
+// Raden Dato / Fra / Til sto som tre faste spalter — «1.4fr 1fr 1fr». Et
+// datofelt har en minstebredde nettleseren selv setter, og i en dialog på
+// 390 px sprengte raden ramma: «Til» og sluttidspunktet lå 82 px utenfor på
+// 390, og 112 px utenfor på 360. Da kunne man hverken se eller sette når
+// økta slutter fra telefonen.
+//
+// Målt før og etter. Nå brekker raden i stedet, og «min-width: 0» lar
+// datofeltet krympe — uten den sprenger raden uansett hvor mange spalter
+// den får lov å ha.
+$klipp = @file_get_contents(dirname(__DIR__) . '/lissom-2108.html') ?: '';
+sjekk('dato- og klokkeslettraden brekker naar det er trangt',
+    !str_contains($klipp, 'grid-template-columns: 1.4fr 1fr 1fr;')
+    && substr_count($klipp, 'grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);') === 2);
+// Uten dette kan ikke datofeltet krympe, og raden sprenger likevel.
+sjekk('… og cellene faar lov aa krympe',
+    substr_count($klipp, '<div style="min-width: 0;">' . "\n"
+        . '                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>') === 2);
+
 // ── Antall og beløp kan rettes på en påmelding ──────────────────────────
 //
 // Eieren, 5. september: «Jeg har et kurs som jeg har meldt paa 10 personer.
@@ -9257,7 +9280,8 @@ sjekk('… og i deltakerruta i kalenderen',
 // paameldingen gjaldt — funnet 5. september, etter at eieren spurte «kan det
 // gjoeres i kalenderen og?».
 sjekk('… og antallet foelger med inn i deltakerruta',
-    str_contains($endre, "betalt: p.status === 'Betalt', antall: p.antall || 1 }"));
+    str_contains($endre, 'klDeltakerliste(evt) {')
+    && str_contains($endre, 'antall: p.antall || 1,'));
 sjekk('… og kalenderen faar antallet fra serveren',
     str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php') ?: '',
         "'antall'    => (int) \$b['antall'],"));

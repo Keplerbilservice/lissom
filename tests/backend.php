@@ -12081,6 +12081,47 @@ sjekk('medlemslista faar med seg trekket den slaar opp',
 sjekk('… og bruker det i betalingsstatus()',
     str_contains($medlL, "\$a === null ? null : (\$sisteTrekk[(int) \$a['id']] ?? null)"));
 
+echo "\n== Ende-til-ende-testen finnes og maaler det den skal ==\n";
+// Denne fila leser KODEN som tekst. Den kan si at riktige ord staar i riktige
+// filer — men den kan ikke se at to skjermer sier hver sin ting om det samme
+// medlemmet. 5. september sto det «BETALT» i medlemslista og «Trekket er
+// bestilt · venter paa Vipps» i Kassa, om den samme raden. Alle 2062
+// sjekkene her var groenne.
+//
+// tests/pengekjede.php kjorer i stedet ekte kjop gjennom de ekte
+// endepunktene, mot en falsk Vipps, og krever at svaret er det samme uansett
+// hvilken skjerm man staar paa. Slik kjores den:
+//
+//   node tests/falsk-vipps.mjs &
+//   LISSOM_VIPPS_BASE=http://127.0.0.1:8125 php -S 127.0.0.1:8124 ekte-ruter.php &
+//   php tests/pengekjede.php
+//
+// Maalt: med «$sisteTrekk» tatt ut av use-lista igjen gikk den fra 31 av 31
+// til 27 av 31, og navnga begge skjermene og hva hver av dem sa.
+$e2e = @file_get_contents(dirname(__DIR__) . '/tests/pengekjede.php') ?: '';
+$falsk = @file_get_contents(dirname(__DIR__) . '/tests/falsk-vipps.mjs') ?: '';
+sjekk('ende-til-ende-testen ligger i repoet', $e2e !== '' && $falsk !== '',
+    'uten den falske Vipps kan ingen kjore den paa nytt');
+// Selve kjernen: den sammenligner de to skjermene, i hver tilstand.
+sjekk('… og den leser BEGGE skjermene om det samme medlemmet',
+    str_contains($e2e, "kall('/api/admin/oversikt.php', null, \$ADMIN)")
+    && str_contains($e2e, "kall('/api/admin/medlemmer.php', null, \$ADMIN)")
+    && str_contains($e2e, "\$t['kassa'] === \$t['liste']"));
+// Og at den gaar gjennom hver tilstand en betalingsrad kan staa i.
+sjekk('… i hver tilstand en betalingsrad kan staa i',
+    str_contains($e2e, "['venter', 'bestilt'")
+    && str_contains($e2e, "['feilet', 'forfalt'")
+    && str_contains($e2e, "['betalt', 'betalt'"));
+// Den skal nekte aa kjore mot ekte Vipps. Et kjop fra en test er ikke et uhell
+// vi vil ha.
+sjekk('… og nekter aa kjore mot ekte Vipps',
+    str_contains($e2e, 'serveren snakker ikke med den falske Vipps'));
+// Miljovariabelen som gjor det mulig, og vakta som holder den unna produksjon.
+$cfg = file_get_contents(dirname(__DIR__) . '/app/config.php');
+sjekk('… uten at testadressen kan naa produksjon',
+    str_contains($cfg, "getenv('LISSOM_VIPPS_BASE')")
+    && str_contains($cfg, "self::miljo() !== 'produksjon'"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

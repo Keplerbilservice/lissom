@@ -162,6 +162,18 @@ final class Config
     /** Vipps-miljø: apitest.vipps.no under utvikling, api.vipps.no i produksjon. */
     public static function vippsBase(): string
     {
+        // Ende-til-ende-testen (tests/pengekjede.php) kjorer hele pengekjeden
+        // mot en falsk Vipps, saa den kan se hva vi faktisk BER om — beloep,
+        // intervall, forfall — og hva som skjer med svaret. Uten dette maatte
+        // testen skrive i secrets.php, og en avbrutt kjoring kunne latt fila
+        // staa igjen med en testadresse.
+        //
+        // Bare utenfor produksjon. Staar «miljo» paa produksjon, er det fila
+        // som gjelder, uansett hva som staar i miljovariablene.
+        $fra = (string) (getenv('LISSOM_VIPPS_BASE') ?: '');
+        if ($fra !== '' && self::miljo() !== 'produksjon') {
+            return rtrim($fra, '/');
+        }
         return rtrim(self::krev('vipps_base'), '/');
     }
 

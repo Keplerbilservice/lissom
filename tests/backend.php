@@ -11359,9 +11359,24 @@ sjekk('ingen butikkvare paastaar at den sendes paa e-post',
 sjekk('… og merknaden sier noe om glasuren i stedet',
     str_contains($utenKomm, "piMerknad: p ? (p.badge === 'Matsikret'")
     && str_contains($utenKomm, "p.badge === 'Kunstobjekt' ? 'Dekorglasur"));
-// Gavekortet SENDES paa e-post. Den linja hoerer hjemme og skal staa.
-sjekk('… mens gavekortet fortsatt sier at det sendes',
-    str_contains($sidaP, "badge: 'Sendes på e-post'"));
+// Gavekortet sto igjen med «Sendes paa e-post» — det er jo slik det leveres.
+// Eieren snudde 5. september: «fjern ogsaa at vi sender en epost», og paa
+// spoersmaal om gavekortet skulle beholde sin: «ta alle sammen».
+//
+// E-postene gaar som for. Det er loeftet paa skjermen som er borte, ikke
+// utsendingen — gavekort_mottaker og gavekort_kjoper ligger i koen som for.
+sjekk('ingen steder lover vi lenger en e-post om bestillingen',
+    !str_contains($utenKomm, "badge: 'Sendes på e-post'")
+    && !str_contains($utenKomm, "'Sendes på e-post, eller hentes i verkstedet.'")
+    && !str_contains($utenKomm, "'Sendes på e-post rett etter kjøp'")
+    && !str_contains($utenKomm, "'Sendes på e-post til mottaker'")
+    && !str_contains($utenKomm, 'Kjøp på nett, kommer på e-post')
+    && !str_contains($utenKomm, 'og sender deg en e-post samtidig')
+    && !str_contains($utenKomm, 'Vi sender den på e-post også'));
+// Admin sin egen forklaring paa hva malene ER staar. Den er ikke et loefte
+// til en kunde om en bestilling.
+sjekk('… mens admin fortsatt forklarer hva malene er',
+    str_contains($utenKomm, 'Hver e-post og SMS systemet sender.'));
 
 // 5. Oppsigelsen leste den samme lagrede datoen og sperret et proevemedlem
 //    ute fra aa si opp. Planen er avtalen.

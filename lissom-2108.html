@@ -2814,7 +2814,7 @@ window.__resources = {
             </div>
           </sc-if>
           <sc-if value="{{ fbTomt }}" hint-placeholder-val="{{ false }}">
-            <p style="margin: 0; font-size: var(--text-base); color: var(--text-muted); max-width: 60ch; text-wrap: pretty;">Ingenting står klart til henting akkurat nå. Vi legger det ut her så snart arbeidene fra et kurs er ferdig brent — og sender deg en e-post samtidig.</p>
+            <p style="margin: 0; font-size: var(--text-base); color: var(--text-muted); max-width: 60ch; text-wrap: pretty;">Ingenting står klart til henting akkurat nå. Vi legger det ut her så snart arbeidene fra et kurs er ferdig brent.</p>
           </sc-if>
         </div>
       </section>
@@ -17916,7 +17916,7 @@ const SIDEINNHOLD = {
     { navn: 'Topp', type: 'Overskrift og ingress', synlig: 'Publisert', felter: [
       { l: 'Kicker', v: 'Gavekort' },
       { l: 'Overskrift', v: 'Gavekort på keramikkurs' },
-      { l: 'Brødtekst', v: 'En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Kan brukes på alle våre tjenester og produkter. Gavekortet sendes på e-post, eller hentes i verkstedet, med en personlig hilsen fra deg.', lang: true } ] },
+      { l: 'Brødtekst', v: 'En opplevelse å glede seg til — og noe håndlaget å ta med hjem. Kan brukes på alle våre tjenester og produkter, med en personlig hilsen fra deg.', lang: true } ] },
     { navn: 'Seksjonstitler', type: 'Overskrifter', synlig: 'Publisert', felter: [
       { l: 'Slik fungerer det', v: 'Slik fungerer det' },
       { l: 'Ofte stilte spørsmål', v: 'Ofte stilte spørsmål' } ] },
@@ -20394,7 +20394,7 @@ class Component extends DCLogic {
       sekundare: 'gave keramikk, opplevelsesgave Vestfold, julegave Tønsberg',
       altTekst: 'Gavekort fra Lissom Keramikk ved siden av en håndlaget kopp',
       ogTittel: 'Gavekort på keramikkurs i Tønsberg | Lissom',
-      ogBeskrivelse: 'Gjelder alle kurs, events og varer. Gyldig i tre år. Kjøp på nett, kommer på e-post.',
+      ogBeskrivelse: 'Gjelder alle kurs, events og varer. Gyldig i tre år.',
       canonical: 'https://lissom.no/gavekort',
       internlenker: 'Kurs, Butikk, Medlemskap',
       schema: 'Product',
@@ -20581,7 +20581,7 @@ class Component extends DCLogic {
   static get BANNER_STANDARD() {
     return {
       tittel: 'Gi et gavekort',
-      tekst:  'Kan brukes på alle våre tjenester og produkter. Sendes på e-post, eller hentes i verkstedet.',
+      tekst:  'Kan brukes på alle våre tjenester og produkter.',
       knapp:  'Kjøp gavekort',
       lenke:  'gavekort',
       bilde:  'assets_photos_butikken.jpg',
@@ -23806,7 +23806,7 @@ class Component extends DCLogic {
   kvitteringPaaNytt(referanse) {
     if (!this.erPublisert()) {
       this.setState({ kvittering: 'Krever den ekte siden',
-                      kvitteringDetalj: 'Kvitteringen sendes med e-post, og det skjer bare på lissom.no.' });
+                      kvitteringDetalj: 'Det skjer bare på lissom.no.' });
       return Promise.resolve(false);
     }
     return fetch('/api/admin/betalinger.php', {
@@ -27247,8 +27247,8 @@ class Component extends DCLogic {
       },
       gavekort: {
         sporsmal: 'Finnes det gavekort på keramikkurs i Tønsberg?',
-        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg selger gavekort som gjelder på alle kurs, events og varer, og som sendes på e-post etter kjøp.',
-        fakta: ['Gjelder alle kurs, events og varer', 'Sendes på e-post rett etter kjøp', ADRESSE],
+        svar: 'Lissom Keramikk i Nordre Løkkevei 15 på Teie i Tønsberg selger gavekort som gjelder på alle kurs, events og varer.',
+        fakta: ['Gjelder alle kurs, events og varer', 'Gyldig i tre år', ADRESSE],
         hvemFor: 'Gave til noen som har lyst til å prøve keramikk.',
       },
       omoss: {
@@ -27702,8 +27702,14 @@ class Component extends DCLogic {
         // vi får ikke penger», og «Jeg vil dessuten ha dette på pop up når de
         // har bestilt. Vi må få frem infoen.»
         //
-        // Ruta sier det med ord, og knappen tar hen til Vipps. Lukker hun
-        // den, staar den samme lenka paa Min side.
+        // Ruta sier det med ord, og knappen tar hen til Vipps.
+        //
+        // Her sto det ogsaa «Lenka ligger paa Min side». Det stemte ikke:
+        // «vipps_url» lagres i subscriptions, men api/medlemskap.php sender
+        // den aldri ut, og Min side viser innmeldingsskjemaet paa nytt til en
+        // som ikke har godkjent. Den samme setningen sto i e-posten og ble
+        // tatt ut med migrasjon 141 — eieren, 5. september: «setningen ut av
+        // mailen». Den sto igjen her.
         if (ok && d.url && d.maaGodkjennes) {
           this.setState({
             detalj: {
@@ -27712,7 +27718,6 @@ class Component extends DCLogic {
               felter: [
                 { navn: 'Medlemskap', verdi: String(d.plan || '') },
                 { navn: 'Slik gjør du', verdi: 'Trykk «Åpne Vipps» under, og godkjenn avtalen i appen. Det tar et minutt.' },
-                { navn: 'Rekker du det ikke nå', verdi: 'Lenka ligger på Min side, og vi sender den på e-post også.' },
               ],
               handling: 'Åpne Vipps',
               maal: null, skjema: false,
@@ -41935,7 +41940,7 @@ class Component extends DCLogic {
           { title: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm. Fin til servering.', pris: 'kr. 590,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller' },
           { title: 'Bolle, liten', detalj: 'Dreid stengods, 14 cm. Selges enkeltvis.', pris: 'kr. 340,-', image: 'uploads_shutterstock_2830582659.jpg', badge: 'Matsikret', kategori: 'Boller', utsolgt: true },
           { title: 'Fat, 28 cm', detalj: 'Dekorglasur. Ikke matsikret, ment som pyntefat.', pris: 'kr. 790,-', image: 'uploads_shutterstock_2830582925.jpg', badge: 'Kunstobjekt', kategori: 'Fat' },
-          { title: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Sendes på e-post', kategori: 'Gavekort' },
+          { title: 'Gavekort', detalj: 'Kan brukes på alle våre tjenester og produkter.', pris: 'Valgfritt beløp', image: 'uploads_shutterstock_2829108657.jpg', badge: 'Valgfritt beløp', kategori: 'Gavekort' },
         ]).concat(this.state.nyeVarer || [])).map(p => Object.assign({}, p, {
           cta: p.utsolgt ? 'Utsolgt' : 'Legg i kurv',
           fokus: this.fokusFor(p.image || p.bilde || ''),
@@ -43279,7 +43284,7 @@ class Component extends DCLogic {
         return {
           erFerdigbrent: true,
           fbIngress: 'Her legger vi ut når arbeidene fra et kurs er ferdig brent. '
-            + 'Vi oppbevarer dem i ' + uker + ' uker, og sender deg en e-post samtidig.',
+            + 'Vi oppbevarer dem i ' + uker + ' uker.',
           fbHarNoe: liste.length > 0,
           fbTomt: !!d && liste.length === 0,
           fbListe: liste.map(m => ({
@@ -43755,7 +43760,7 @@ class Component extends DCLogic {
       kurv: [
         { navn: 'Kopp, sandglasur', detalj: 'Dreid stengods, ca. 3 dl', antall: '2', sum: 'kr. 780,-', image: FOTO + 'butikken.jpg' },
         { navn: 'Bolle, stor', detalj: 'Dreid stengods, 22 cm', antall: '1', sum: 'kr. 590,-', image: FOTO + 'butikken.jpg' },
-        { navn: 'Gavekort, kr. 1 000,-', detalj: 'Sendes på e-post til mottaker', antall: '1', sum: 'kr. 1 000,-', image: 'uploads_shutterstock_2829108657.jpg' },
+        { navn: 'Gavekort, kr. 1 000,-', detalj: 'Til mottakeren', antall: '1', sum: 'kr. 1 000,-', image: 'uploads_shutterstock_2829108657.jpg' },
       ],
       kasseLinjer: [
         { navn: 'Varer', sum: 'kr. 2 370,-' },
@@ -46159,14 +46164,14 @@ class Component extends DCLogic {
       goKontakt: this.go('kontakt'),
       gvPunkter: [
         'Kan brukes på alle våre tjenester og produkter.',
-        'Sendes på e-post, eller hentes i verkstedet.',
+        'Kan hentes i verkstedet.',
         'Mottakeren velger selv kurs og dato, og booker med koden på nettsiden.',
         'Gyldig i tre år fra kjøpsdato.',
       ],
       gvFaq: [
         { sp: 'Hva kan gavekortet brukes på?', sv: 'Alle våre tjenester og produkter — kurs, events, medlemskap, verkstedtid og varer i butikken. Er det du velger dyrere enn gavekortet, betaler du mellomlegget med Vipps.' },
         { sp: 'Hva om beløpet ikke brukes opp?', sv: 'Resten blir stående på koden og kan brukes senere, helt til gavekortet utløper.' },
-        { sp: 'Kan jeg få gavekortet fysisk?', sv: 'Gavekortet sendes på e-post og kan skrives ut. Vil du heller hente det i verkstedet, sier du fra — vi holder til i Nordre Løkkevei 15 på Teie.' },
+        { sp: 'Kan jeg få gavekortet fysisk?', sv: 'Vil du hente gavekortet i verkstedet, sier du fra — vi holder til i Nordre Løkkevei 15 på Teie.' },
       ],
       // Belopet er fritt. Feltet holdes som tekst mens man skriver, slik at
       // det gaar an aa slette alt og begynne paa nytt — et tall her ville

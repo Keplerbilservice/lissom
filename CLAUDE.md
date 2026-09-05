@@ -8,6 +8,11 @@ de ble sagt i.
 - **Ett spørsmål om gangen.** Still det, vent på svar, og gå videre.
   Ikke samle flere spørsmål i én melding, og ikke still et nytt før det
   forrige er besvart. (Eieren, 4. september 2026.)
+- **Spør alltid med alternativer eieren kan trykke på.** Bruk
+  spørsmålsverktøyet, så svarene blir knapper — ikke bokstaver han må
+  skrive av. Hvert alternativ skal si hva det betyr. Et spørsmål uten
+  valg er ingen hjelp; da er jobben med å finne alternativene lagt
+  tilbake på ham. (Eieren, 5. september 2026.)
 - Maks én linje per spørsmål, forslag, risiko og forklaring.
 - Er noe uklart: stopp den endringen og spør. Ikke gjett.
 - **Ikke anta.** Sjekk hvordan noe faktisk virker før du sier at det gjør

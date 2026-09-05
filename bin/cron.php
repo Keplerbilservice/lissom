@@ -3,9 +3,16 @@
 //
 //   */5 * * * *   php ~/lissom-app/bin/cron.php varsler
 //   */5 * * * *   php ~/lissom-app/bin/cron.php betalinger
-//   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser
+//   0 * * * *     php ~/lissom-app/bin/cron.php anmeldelser
 //   0 1 * * *     php ~/lissom-app/bin/cron.php vedlikehold
 //   0 4 * * *     php ~/lissom-app/bin/cron.php medlemstrekk
+//   0 7 * * *     php ~/lissom-app/bin/cron.php paaminnelser
+//
+// Alle seks staar her, og alle seks staar i docs/OPPSETT.md. Fram til
+// 5. september sto det fem hvert sted — men ikke de samme fem: her manglet
+// «anmeldelser», og i OPPSETT.md manglet «medlemstrekk». Det siste er jobben
+// som henter inn pengene, og den ble derfor aldri satt opp i cPanel.
+// tests/backend.php leser naa begge listene og krever at de stemmer.
 //
 // Klokkeslettene er UTC. 07:00 UTC er 09:00 norsk sommertid, 08:00 om vinteren.
 

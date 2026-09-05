@@ -11773,10 +11773,28 @@ $sidaA = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
 // ulike ting med de samme ordene.
 sjekk('en manglende Vipps-avtale sier at den mangler',
     str_contains($mlA, "if (\$plan !== null && self::kreverFastTrekk(\$plan)) {")
-    && str_contains($mlA, "'Mangler Vipps-avtale — ' . \$plan['navn']"),
-    'maalt: «Mangler Vipps-avtale — Årsmedlemskap kan bare betales med fast trekk»');
+    && str_contains($mlA, "'Mangler godkjent Vipps-avtale — ' . \$plan['navn']"),
+    'maalt: «Mangler godkjent Vipps-avtale — Årsmedlemskap kan bare betales med fast trekk»');
+// «GODKJENT», ikke «opprettet». Merket naas i to ulike tilfeller og sa det
+// samme om begge: naar avtalen aldri ble laget, OG naar den ER laget og
+// lenka sendt, men kunden ikke har trykket Godkjenn i appen. Vakta over ser
+// bare paa om avtalen er AKTIV — en som venter paa godkjenning er ikke det,
+// men den finnes.
+//
+// Eieren, 5. september: «Hva mener du med at avtalen ikke er opprettet? Det
+// skal jo ikke gaa an». Den VAR opprettet for baade Eirin og Lene. Maalt i
+// nettleseren samme dag: rad med «vipps_agreement_id», godkjenningslenke og
+// status «venter» — og merket sa likevel at den ikke fantes.
+sjekk('… og paastaar ikke at den aldri ble opprettet',
+    !str_contains($mlA, 'og avtalen er ikke opprettet'));
+// «(?:\s|\/\/[^\n]*)*» framfor bare «\s*»: mellom «if» og «return» staar det
+// naa en kommentar som forklarer hvorfor merket heter det det heter. Uten
+// dette ryker testen av en kommentar, og da sier den ingenting om det den
+// faktisk vokter — at grenen svarer «forfalt».
 sjekk('… og den teller som forfalt, ikke som «venter»',
-    (bool) preg_match("/kreverFastTrekk\(\\\$plan\)\) \{\s*return \\\$ut\('forfalt',/s", $mlA),
+    (bool) preg_match(
+        "/kreverFastTrekk\(\\\$plan\)\) \{(?:\s|\/\/[^\n]*)*return \\\$ut\('forfalt',/s",
+        $mlA),
     'ellers staar den ikke i «Ikke betalt» paa Oversikt');
 // Avtaler opprettes bare de to stedene. Det er ikke en feil i seg selv, men
 // det er grunnen til at et medlem kan staa aktiv uten noe aa trekke paa.
@@ -11960,6 +11978,48 @@ sjekk('to runder gir ett trekk',
     str_contains($mlT, "\$nokkel = substr(hash('sha256', 'trekk:' . \$avtale['id'] . ':' . \$maaned), 0, 36);")
     && str_contains($mlT, "if (\$fra !== null) {\n            return 'alt fort';"),
     'maalt: elleve sidebesok og cron etterpaa ga én betalingsrad');
+
+echo "\n== Cron-jobbene i koden og i oppsettet er de samme ==\n";
+// Rota under hele 5. september: to lister over cron-jobber, og de var ikke
+// like. docs/OPPSETT.md hadde fem og manglet «medlemstrekk». bin/cron.php sin
+// egen topptekst hadde fem og manglet «anmeldelser». Koden hadde seks.
+//
+// OPPSETT.md er den eieren satte opp serveren etter. Da ble medlemstrekket
+// aldri lagt inn i cPanel, og ingen medlemmer ble noen gang trukket. Eieren:
+// «Eirin og Lene har ikke faatt opprettet noen avtale i vipps, dette fungerer
+// ikke og krever en alvorlig sjekk av deg».
+//
+// Denne vakta leser BEGGE listene ut av filene og krever at de er de samme
+// som «case»-ene i koden. Legges det til en jobb uten aa skrive den ned,
+// blir dette roedt — og ingen trenger aa oppdage det med et bilde av en
+// skjerm igjen.
+$cronKilde = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$oppsett   = file_get_contents(dirname(__DIR__) . '/docs/OPPSETT.md');
+
+preg_match_all("/^    case '([a-z]+)':/m", $cronKilde, $t);
+$iKoden = $t[1];
+sort($iKoden);
+
+// Toppteksten i bin/cron.php: linjene «php ~/lissom-app/bin/cron.php <jobb>».
+preg_match_all('/cron\.php ([a-z]+)$/m', $cronKilde, $t2);
+$iToppteksten = array_values(array_unique($t2[1]));
+sort($iToppteksten);
+
+// Tabellen i docs/OPPSETT.md.
+preg_match_all('/cron\.php ([a-z]+)`/', $oppsett, $t3);
+$iOppsettet = array_values(array_unique($t3[1]));
+sort($iOppsettet);
+
+sjekk('oppsettet naevner alle jobbene som finnes',
+    $iOppsettet === $iKoden,
+    'koden: ' . implode(', ', $iKoden) . '  ·  OPPSETT.md: ' . implode(', ', $iOppsettet));
+sjekk('… og toppteksten i cron.php ogsaa',
+    $iToppteksten === $iKoden,
+    'koden: ' . implode(', ', $iKoden) . '  ·  toppteksten: ' . implode(', ', $iToppteksten));
+// Den som faktisk henter inn pengene. Sto den ikke her, ble den ikke satt opp.
+sjekk('… og medlemstrekket staar i oppsettet med klokkeslett',
+    str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk`')
+    && str_contains($oppsett, '`0 4 * * *`'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

@@ -183,11 +183,11 @@ fra admin-panelet. Poenget er at du aldri kan låse deg selv ute.
 
 ## 7. Sett opp de planlagte jobbene
 
-cPanel → **Cron Jobs**. Legg inn fem.
+cPanel → **Cron Jobs**. Legg inn seks.
 
 Øverst i skjemaet er det en nedtrekksmeny som heter **Common Settings**. Velger
 du noe der, fyller cPanel ut de fem feltene under — Minute, Hour, Day, Month,
-Weekday — helt av seg selv. Da trenger du ikke røre dem. Bare to av de fem
+Weekday — helt av seg selv. Da trenger du ikke røre dem. Tre av de seks
 jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 
 | Jobb | Common Settings | Feltene blir | Kommando |
@@ -195,12 +195,30 @@ jobbene har ikke en ferdig oppføring, og der skriver du inn to tall selv.
 | Varselkøen | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php varsler` |
 | Betalinger som henger | Every Five Minutes | `*/5 * * * *` | `php ~/lissom-app/bin/cron.php betalinger` |
 | «Takk for sist» | Once Per Hour | `0 * * * *` | `php ~/lissom-app/bin/cron.php anmeldelser` |
+| **Medlemstrekket** | *(ingen — sett Minute `0`, Hour `4`)* | `0 4 * * *` | `php ~/lissom-app/bin/cron.php medlemstrekk` |
 | Kurspåminnelser | *(ingen — sett Minute `0`, Hour `7`)* | `0 7 * * *` | `php ~/lissom-app/bin/cron.php paaminnelser` |
 | Opprydding | *(ingen — sett Minute `0`, Hour `1`)* | `0 1 * * *` | `php ~/lissom-app/bin/cron.php vedlikehold` |
 
-For de to siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`
-til `7` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
+For de tre siste: velg **Once Per Day** i menyen først, og rett så Hour fra `0`
+til `4`, `7` og `1`. Resten av feltene skal stå med stjerne — en stjerne betyr
 «hver».
+
+**Medlemstrekket sto ikke i denne lista fram til 5. september 2026.** Da ble
+den heller aldri satt opp, og ingen medlemmer ble noen gang trukket. Eieren
+samme dag: «Eirin og Lene har ikke fått opprettet noen avtale i vipps, dette
+fungerer ikke». Avtalene var opprettet og godkjent — det var denne jobben som
+manglet.
+
+Jobben gjør tre ting, og ingen andre gjør dem: den oppdager at kunden har
+godkjent avtalen i Vipps-appen, den purrer den som ikke har gjort det, og den
+ber Vipps om selve trekket.
+
+Siden 5. september kjører trafikken på nettsiden den samme runden, høyst én
+gang i døgnet (`app/lib/Tikk::kjor`). Da kommer pengene inn selv om jobben
+over ikke er satt opp. Men en dag uten en eneste besøkende blir en dag uten
+trekk, og derfor skal jobben stå her likevel. De to kan trygt kjøre side om
+side: nøkkelen i `Medlemskap::trekk()` er avtalen pluss måneden, så den andre
+runden finner «alt ført» og gjør ingenting.
 
 Klokkeslettene i cPanel er som regel servertid. Sjekk hva serveren står i, og
 juster hvis påminnelsene skal gå ut om morgenen norsk tid. De to som går hver

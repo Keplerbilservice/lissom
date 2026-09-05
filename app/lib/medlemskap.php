@@ -341,9 +341,29 @@ final class Medlemskap
             // plan som gjores opp selv. To helt ulike ting med samme ord.
             $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
             if ($plan !== null && self::kreverFastTrekk($plan)) {
+                // «Mangler GODKJENT avtale», ikke «avtalen er ikke opprettet».
+                //
+                // Merket naas i to helt ulike tilfeller, og sa det samme om
+                // begge: naar verkstedet meldte inn noen fra admin og aldri
+                // trykket «Send Vipps-avtale», OG naar avtalen ER opprettet
+                // og lenka sendt, men kunden ikke har trykket Godkjenn i
+                // appen enda. Vakta over ser bare paa om avtalen er AKTIV,
+                // og en avtale som venter paa godkjenning er ikke det — men
+                // den finnes.
+                //
+                // Eieren, 5. september: «Hva mener du med at avtalen ikke er
+                // opprettet? Det skal jo ikke gaa an». Han hadde rett: den
+                // VAR opprettet for baade Eirin og Lene. Maalt i nettleseren
+                // samme dag — rad med «vipps_agreement_id», godkjenningslenke
+                // og status «venter» — og merket sa likevel at den ikke
+                // fantes.
+                //
+                // Han valgte denne av fire: ett merke som er sant i begge
+                // tilfeller. Den lover ikke lenger noe om HVORFOR avtalen
+                // ikke trekker — bare at den ikke gjor det.
                 return $ut('forfalt',
-                    'Mangler Vipps-avtale — ' . $plan['navn']
-                    . ' kan bare betales med fast trekk, og avtalen er ikke opprettet',
+                    'Mangler godkjent Vipps-avtale — ' . $plan['navn']
+                    . ' kan bare betales med fast trekk',
                     true);
             }
             $start = trim((string) ($medlem['start_dato'] ?? ''));

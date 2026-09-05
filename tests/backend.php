@@ -9195,6 +9195,17 @@ sjekk('menyen staar bare paa smal skjerm',
     str_contains($sidaB, '.lx-admmob, .lx-admmobpanel, .lx-bunnmeny, .lx-admtopp { display: none !important; }')
     && str_contains($sidaB, '.lx-bunnmeny { display: grid !important; grid-template-columns: repeat(6, 1fr); }'));
 
+// Kvitteringsboksen sto 110 px fra toppen, alltid. Da adminstripa fikk
+// verktoeypillene, la boksen seg midt oppaa dem — og oppaa linja som sier
+// hvor du er. Eieren saa det med én gang han trykket «Alt er oppdatert».
+sjekk('kvitteringen legger seg ikke oppaa adminstripa',
+    str_contains($sidaB, "(this.erAdminSkjerm(this.state.side) && (this.state.vw || 1400) < 980)")
+    && str_contains($sidaB, "? { bottom: 'calc(58px + 12px + env(safe-area-inset-bottom, 0px))' }")
+    && str_contains($sidaB, "          : { top: '110px' },"));
+// Ute paa nettsida finnes ingen bunnmeny aa staa over.
+sjekk('… og ute paa nettsida staar den som for',
+    !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
+
 // ── Verktoeyene oeverst, ikke nederst i skuffen ──────────────────────────
 //
 // Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil og log ut

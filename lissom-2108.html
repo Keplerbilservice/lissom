@@ -33957,8 +33957,22 @@ class Component extends DCLogic {
       // Den er vanlig CSS og henter ingenting.
       kvitteringStil: Object.assign(
         { position: 'fixed', left: '50%', transform: 'translateX(-50%)',
-          top: '110px', zIndex: 500, width: 'min(400px, calc(100vw - 32px))',
+          zIndex: 500, width: 'min(400px, calc(100vw - 32px))',
           borderRadius: 'var(--radius-lg)' },
+        // Hvor boksen staar.
+        //
+        // 110 px fra toppen, alltid. Det holdt saa lenge adminstripa paa
+        // telefon var logo og «Meny». Naa staar Stemple inn og Ferie der, og
+        // de fem verktoeypillene under dem — og boksen la seg midt oppaa
+        // andre pillerad og linja som sier hvor du er. Eieren saa det med én
+        // gang han trykket «Alt er oppdatert».
+        //
+        // Under er det fritt: bunnmenyen er 58 px og staar fast, og en boks
+        // rett over den ses uansett hvor langt ned man har rullet. Ute paa
+        // nettsida finnes ingen bunnmeny, og der staar den som for.
+        (this.erAdminSkjerm(this.state.side) && (this.state.vw || 1400) < 980)
+          ? { bottom: 'calc(58px + 12px + env(safe-area-inset-bottom, 0px))' }
+          : { top: '110px' },
         this.state.kvitteringTone === 'danger'
           ? { boxShadow: '0 0 0 3px var(--danger)' }
           : this.state.kvitteringTone === 'warning'

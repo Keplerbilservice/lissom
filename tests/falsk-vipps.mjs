@@ -108,6 +108,9 @@ http.createServer((req, res) => {
     if (p.endsWith('/charges') && req.method === 'POST') {
       const tid = 'chg_' + Date.now().toString(36) + '_' + (trekk.size + 1);
       trekk.set(tid, kropp);
+      // «201 uten chargeId» er tilfellet der trekket trolig finnes hos Vipps,
+      // men vi ikke har noe aa foelge det opp med. Styres med .trekk-uten-id.
+      if (styrt('.trekk-uten-id', '') === 'ja') { return svar(res, 201, {}); }
       return svar(res, 201, { chargeId: tid });
     }
     if (p.startsWith('/recurring/v3/agreements/') && req.method === 'GET') {

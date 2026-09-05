@@ -711,8 +711,14 @@ final class Medlemskap
             $planNavn,
             (int) $plan['pris_ore'],
             'Medlemskap hos Lissom Keramikk — ' . $planNavn,
-            Config::nettsted() . '/api/vipps-avtale-retur.php',
-            $medlem['telefon'] ?? null
+            // Medlemsnummeret staar i returadressen. Kommer hun tilbake fra
+            // Vipps uten aa vaere innlogget — en annen nettleser, en app som
+            // aapner sin egen fane — visste retursida ellers ikke hvem hun
+            // var, og gjorde ingenting. Da maatte hun vente paa trekkrunden.
+            Config::nettsted() . '/api/vipps-avtale-retur.php?m=' . (int) $medlem['id'],
+            $medlem['telefon'] ?? null,
+            // Intervallet er planens, ikke alltid «maaned». Se opprettAvtale().
+            (string) ($plan['intervall'] ?? 'maaned')
         );
 
         if ($vipps['avtaleId'] === '' || $vipps['url'] === '') {
@@ -1327,6 +1333,23 @@ final class Medlemskap
         // vei tilbake til Vipps for aa sporre hvordan det gikk: raden ble
         // staaende paa «venter» for alltid, og verken «Medlemskapet ditt er
         // fornyet» eller «Vi fikk ikke trukket betalingen» ble sendt til noen.
+        // Uten charge-id kan trekket aldri foelges opp.
+        //
+        // trekkUtenSvar() krever «vipps_psp_ref IS NOT NULL». Svarte Vipps 201
+        // uten en id, ble raden staaende paa «venter» for alltid: den kom
+        // aldri med i statusrunden, og ingen kunne sporre hvordan det gikk.
+        // Pengene kan godt ha flyttet seg.
+        //
+        // Raden merkes ikke «feilet» — Vipps sa 201, saa trekket finnes
+        // trolig, og «feilet» ville invitert til aa kreve inn det samme
+        // beloepet én gang til. Den staar som «venter», synlig i Kassa, og
+        // feilloggen sier hva som mangler saa det kan finnes igjen hos Vipps.
+        if ($trekkId === '') {
+            logg_feil('Vipps ga ingen charge-id for trekk paa avtale '
+                . $avtale['vipps_agreement_id'] . ' (' . Booking::kroner((int) $avtale['pris_ore'])
+                . ', betaling ' . $betalingId . '). Den kan ikke foelges opp automatisk.');
+        }
+
         DB::oppdater('payments', [
             'status'        => 'venter',
             'vipps_psp_ref' => $trekkId !== '' ? $trekkId : null,

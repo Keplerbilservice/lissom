@@ -452,6 +452,105 @@ try {
     sjekk('null kroner slipper ikke gjennom til Vipps', true);
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+bolk('9. Hun kommer tilbake fra Vipps uten aa vaere innlogget');
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Vipps-appen aapner sin egen nettleser. Da har hun ingen sesjon hos oss, og
+// retursida gjorde tidligere INGENTING — avtalen ble liggende «venter» til
+// trekkrunden spurte, opptil et dogn senere.
+
+$mid = (int) DB::verdi("SELECT id FROM members WHERE epost = 'kjede.aar@test.local'");
+$sid = (int) DB::verdi('SELECT MAX(id) FROM subscriptions WHERE member_id = :m', ['m' => $mid]);
+DB::kjor("UPDATE subscriptions SET status = 'venter' WHERE id = :s", ['s' => $sid]);
+vippsSvarer('.avtale-status', 'ACTIVE');
+sperrTrekkrunden();
+
+// Ingen kjeks. Bare medlemsnummeret i adressen, slik Vipps sender henne.
+$r = kall('/api/vipps-avtale-retur.php?m=' . $mid);
+$etter = DB::en('SELECT status FROM subscriptions WHERE id = :s', ['s' => $sid]);
+sjekk('avtalen blir aktiv med det samme, uten innlogging',
+    ($etter['status'] ?? '') === 'aktiv',
+    'status: ' . ($etter['status'] ?? '—') . ' — HTTP ' . $r['http']);
+
+// Uten medlemsnummeret vet sida fortsatt ingenting. Da er det runden som tar den.
+DB::kjor("UPDATE subscriptions SET status = 'venter' WHERE id = :s", ['s' => $sid]);
+sperrTrekkrunden();
+kall('/api/vipps-avtale-retur.php');
+$etter = DB::en('SELECT status FROM subscriptions WHERE id = :s', ['s' => $sid]);
+sjekk('… og uten nummeret roeres ingenting',
+    ($etter['status'] ?? '') === 'venter',
+    'en tom retur skal ikke kunne endre en tilfeldig avtale');
+vippsSvarer('.avtale-status', '');
+
+// ─────────────────────────────────────────────────────────────────────────
+bolk('10. Vipps svarer 201 uten charge-id');
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Da finnes trekket trolig hos Vipps, men vi har ingenting aa sporre med.
+// trekkUtenSvar() krever «vipps_psp_ref IS NOT NULL», saa raden ble usynlig
+// for statusrunden — den sto «venter» for alltid uten at noen visste hvorfor.
+
+DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $sid]);
+DB::kjor("UPDATE subscriptions SET status = 'aktiv', neste_trekk = CURDATE() WHERE id = :s",
+         ['s' => $sid]);
+vippsSvarer('.trekk-uten-id', 'ja');
+Medlemskap::kjorTrekkrunde();
+vippsSvarer('.trekk-uten-id', '');
+
+$rad = DB::en('SELECT status, vipps_psp_ref FROM payments WHERE subscription_id = :s
+               ORDER BY id DESC LIMIT 1', ['s' => $sid]);
+sjekk('raden merkes ikke «feilet» — trekket finnes trolig',
+    ($rad['status'] ?? '') === 'venter',
+    '«feilet» ville invitert til aa kreve inn det samme beloepet én gang til');
+sjekk('… men den er synlig for deg i Kassa',
+    ($rad['status'] ?? '') === 'venter' && ($rad['vipps_psp_ref'] ?? null) === null);
+
+// Den skal staa i feilloggen, saa trekket kan finnes igjen hos Vipps for
+// haand. logg_feil() skriver til error_log — her fanges den ved aa kjore
+// runden om igjen med feilloggen midlertidig lagt i en fil vi kan lese.
+$loggfil = __DIR__ . '/.feillogg';
+@unlink($loggfil);
+$forrige = (string) ini_get('error_log');
+ini_set('error_log', $loggfil);
+DB::kjor('DELETE FROM payments WHERE subscription_id = :s', ['s' => $sid]);
+DB::kjor("UPDATE subscriptions SET neste_trekk = CURDATE() WHERE id = :s", ['s' => $sid]);
+vippsSvarer('.trekk-uten-id', 'ja');
+Medlemskap::kjorTrekkrunde();
+vippsSvarer('.trekk-uten-id', '');
+ini_set('error_log', $forrige);
+$logget = is_file($loggfil) ? (string) file_get_contents($loggfil) : '';
+@unlink($loggfil);
+sjekk('… og feilloggen sier hva som mangler',
+    str_contains($logget, 'ingen charge-id'),
+    'loggen sa: ' . mb_substr(trim($logget), 0, 140));
+
+// ─────────────────────────────────────────────────────────────────────────
+bolk('11. En betaling som henger i mer enn en uke');
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Grensa i cron var sju dager. En betaling som hang i aatte ble aldri sett
+// paa igjen: den sto «venter» for alltid, og pengene kunne staa reservert.
+
+DB::kjor("DELETE FROM payments WHERE vipps_reference = 'TEST-GAMMEL'");
+DB::settInn('payments', [
+    'vipps_reference' => 'TEST-GAMMEL', 'type' => 'epayment', 'formal' => 'booking',
+    'belop_ore' => 69000, 'status' => 'venter',
+    'idempotency_key' => 'test-gammel-' . time(),
+    'created_at' => gmdate('Y-m-d H:i:s', time() - 10 * 86400),
+    'updated_at' => gmdate('Y-m-d H:i:s', time() - 10 * 86400),
+]);
+$vFra = vippsAntall();
+shell_exec('cd ' . escapeshellarg(dirname(__DIR__)) . ' && LISSOM_VIPPS_BASE='
+    . escapeshellarg($FALSK) . ' php bin/cron.php betalinger 2>&1');
+$spurt = false;
+foreach (vippsSiden($vFra) as $k) {
+    if (str_contains((string) ($k['sti'] ?? ''), 'TEST-GAMMEL')) { $spurt = true; }
+}
+sjekk('en ti dager gammel betaling blir fortsatt sjekket', $spurt,
+    'med sju dagers grense ble den aldri sett paa igjen');
+DB::kjor("DELETE FROM payments WHERE vipps_reference = 'TEST-GAMMEL'");
+
 // ── Rydder ───────────────────────────────────────────────────────────────
 DB::kjor("DELETE p FROM payments p JOIN members m ON m.id = p.member_id WHERE m.epost IN ({$EPOSTER})");
 DB::kjor("DELETE s FROM subscriptions s JOIN members m ON m.id = s.member_id WHERE m.epost IN ({$EPOSTER})");

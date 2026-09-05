@@ -11289,7 +11289,7 @@ sjekk('Min side har en bunnmeny med sju valg',
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")
-    && str_contains($msP, "butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),")
+    && str_contains($msP, "butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),")
     && str_contains($msP, "selg:       p('Selg', 'Selg produktene dine', 'selg'),")
     && str_contains($msP, "nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),"));
 sjekk('… og den staar bare for den som har de fem stedene',
@@ -11305,7 +11305,7 @@ sjekk('… og innholdet har plass under den',
 // først når man trykker på menyen?» — ja.
 sjekk('bare det stedet du staar paa tegnes',
     substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 6
-    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 2
+    && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 3
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneSelg }}"') === 1
     && !str_contains($msRen, 'msFaneChat')
@@ -11356,6 +11356,81 @@ sjekk('… og veien videre til hele medlemskapet staar der',
     && str_contains($msRen, 'Se medlemskapet →'));
 sjekk('… og «glemt aa stemple ut» hoerer til stemplinga, ikke abonnementet',
     (bool) preg_match('/Verkstedet ditt.{0,6000}\{\{ apneMsGlemt \}\}/s', $msRen));
+
+
+echo "\n== Kortet, skivene og «Selg» sier det som er sant ==\n";
+// Eieren, 5. september, etter at forrige rettelse var ute: «Denne står» —
+// med bilde av «Mini 15 · kr 1 790,- · 15 timer i måneden» og «Fritt» rett
+// under. Og: «Og nå sjekker du grundig, jeg er fittelei av å sjekke og
+// sjekke.»
+$k2 = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$k2Ren = (string) preg_replace('/^\s*\/\/.*$/m', '',
+    (string) preg_replace('/<!--.*?-->/s', '', $k2));
+
+// ── Navnet maa komme fra den raden timene ble regnet av ────────────
+//
+// egenPlan() leste avtalen (subscriptions.plan). Timene kommer fra
+// Medlemskap::timerFor(), som leser members-raden. To kilder om det samme
+// medlemmet: avtalen sto paa Mini 15, medlemsraden var tom, og timene ble
+// ubegrensede.
+sjekk('kortet navngir raden timene ble regnet av',
+    str_contains($k2Ren, "const fraTimene = st && st.plan ? (st.plan.navn || '').trim() : '';")
+    && str_contains($k2Ren, "|| (harSvar ? fraTimene : ((this.state.minAvtale || {}).plan || ''));"),
+    'maalt: kortet sier ikke lenger «Mini 15 · Fritt» naar medlemsraden er tom');
+sjekk('… og timetallet kommer alltid fra stemplingssvaret',
+    str_contains($k2Ren, 'const timer = st.timer.perMnd;')
+    && str_contains($k2Ren, 'return Object.assign({}, funnet, { timer: timer, periode: tekst, detalj: tekst });'),
+    'planlista sier hva planen gir, serveren hva DETTE medlemmet har');
+sjekk('… og et eget timetall sier at det er et eget timetall',
+    str_contains($k2Ren, 'const eget = !!(st.plan && st.plan.egetTimetall);')
+    && str_contains($k2Ren, "(eget ? ' — eget timetall' : '')"),
+    'maalt: «45 timer i måneden — eget timetall» over «45 av 45 timer»');
+sjekk('… og uten medlemskap, men med avtale, staar begge deler',
+    str_contains($k2Ren, "'Medlemskapet ditt er ikke satt ennå, men Vipps-avtalen står på '"),
+    'ellers forklarer ingenting hvorfor det staar «venter» over');
+
+// ── «Dreieskivene denne uka» ───────────────────────────────────────
+//
+// Kortet leste UKE 35, skrevet inn i koden, og gjettet hvilke kurs som
+// bruker skivene av fire navn: dreiekurs, kurs boller, date night, store
+// fat. «Kurs boller» staar paa BORDPLASS i basen, saa lista var feil ogsaa
+// der den traff. Eieren: «Hvordan virker dreieskivene denne uka».
+sjekk('skivekortet leser uka man faktisk staar i',
+    !str_contains($k2Ren, 'this.ukeData(35)')
+    && str_contains($k2Ren, 'return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);')
+    && str_contains($k2Ren, 'this.ukeData(uke)'),
+    'maalt: kortet sa «Uke 36» den 5. september');
+sjekk('… og gjetter ikke lenger paa kursnavn',
+    !str_contains($k2Ren, "'dreiekurs', 'kurs boller', 'date night', 'store fat'")
+    && str_contains($k2Ren, "const skiva = alle.find(r => /dreieskive/i.test(r.navn || ''));")
+    && str_contains($k2Ren, 'if (!k || !skiva || k.ressursId !== skiva.id) return;'),
+    'maalt: dreiekurset kom med, bordplasskurset samme dag kom ikke');
+$kursApi2 = file_get_contents(dirname(__DIR__) . '/api/kurs.php');
+sjekk('… fordi ressursen foelger med kurset naa',
+    str_contains($kursApi2, "\$ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';")
+    && str_contains($kursApi2, "'ressursId' => (\$k['ressurs_id'] ?? null) === null ? null : (int) \$k['ressurs_id'],"),
+    'id-en laa i basen, men ble aldri sendt ut');
+sjekk('… og ingen kurs paa skivene er ogsaa et svar',
+    str_contains($k2Ren, 'skiveIngen: ut.length === 0,')
+    && str_contains($k2Ren, 'Ingen kurs på skivene denne uka'),
+    'et kort med overskrift og ingen linjer ser i stykker ut');
+
+// ── Et menyvalg skal aldri fore til en tom skjerm ──────────────────
+// Eieren: «Menyen selg viser ingenting, er det pga jeg ikke har aktivert
+// den». Skjemaet staar bak to brytere i admin.
+sjekk('«Selg» sier fra naar skjemaet er slaatt av',
+    str_contains($k2Ren, 'msSelgAv: this.medlemsvisning()')
+    && str_contains($k2Ren, "&& !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),")
+    && str_contains($k2Ren, '<sc-if value="{{ msSelgAv }}"'),
+    'maalt: ingen av de sju stedene staar tomme');
+
+// ── De to flyttingene ──────────────────────────────────────────────
+sjekk('kursbevisene staar bak Medlemskap',
+    (bool) preg_match('/<sc-if value="\{\{ msFaneMedlemskap \}\}"[^>]*>\s*<div id="minside-kursbevis"/s', $k2Ren),
+    'eieren: «Mine kursbevis skal vises i medlemskap og ikke på forside»');
+sjekk('menyen sier «Butikk», ikke «Internbutikk»',
+    str_contains($k2, "butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),"),
+    'kortnavn i cella, hele navnet i aria-label');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

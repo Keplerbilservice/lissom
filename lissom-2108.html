@@ -4034,8 +4034,17 @@ window.__resources = {
           <div style="{{ msRuterStil }}">
             <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
             <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-5); box-sizing: border-box; min-width: 0; overflow-wrap: anywhere;">
-              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-3);">Dreieskivene denne uka</div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3);">
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Dreieskivene denne uka</div>
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ skiveUke }}</span>
+              </div>
               <p style="margin: 0 0 var(--space-3); font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Under kurs og events er dreieskivene opptatt. Velg andre tider når du skal dreie selv.</p>
+              <!-- Ingen kurs paa skivene er ogsaa et svar. Kortet sto med
+                   overskrift og forklaring, og ingen linjer under — da kan man
+                   like gjerne tro at det er i stykker. -->
+              <sc-if value="{{ skiveIngen }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size: var(--text-sm); color: var(--text-body);">Ingen kurs på skivene denne uka — de er ledige når verkstedet er åpent.</div>
+              </sc-if>
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <sc-for list="{{ skiveOpptatt }}" as="o" hint-placeholder-count="3">
                   <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px var(--space-3); font-size: var(--text-sm);">
@@ -4352,6 +4361,19 @@ window.__resources = {
                    aerend — det ene er aa kjope leire, det andre aa legge ut
                    noe du har laget. -->
               <sc-if value="{{ msFaneSelg }}" hint-placeholder-val="{{ false }}">
+              <!-- Et menyvalg skal aldri fore til en tom skjerm.
+                   Skjemaet staar bak to brytere i admin — «salgsskjema» og
+                   «medlemssalg». Er én av dem av, sto det ingenting her, og
+                   ingenting som sa hvorfor. Eieren, 5. september: «Menyen
+                   selg viser ingenting, er det pga jeg ikke har aktivert
+                   den». Naa staar svaret paa skjermen. -->
+              <sc-if value="{{ msSelgAv }}" hint-placeholder-val="{{ false }}">
+                <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
+                  <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Selg keramikk</div>
+                  <h3 style="margin: 0 0 var(--space-3); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Ikke åpent akkurat nå</h3>
+                  <p style="margin: 0; font-size: var(--text-sm); color: var(--text-muted); text-wrap: pretty;">{{ msSelgAvTekst }}</p>
+                </div>
+              </sc-if>
               <sc-if class="lx-ms-selg" value="{{ visSalgSkjema }}" hint-placeholder-val="{{ true }}">
               <div id="minside-salg" class="lx-ms-selg" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Medlemsfordel</div>
@@ -4596,6 +4618,13 @@ window.__resources = {
                    samlet, nyeste forst, med den samme lenken. Knappen paa
                    raden staar der fortsatt — den som nettopp har vaert paa
                    kurset finner beviset der hen ser paa kurset sitt. -->
+              <!-- Kursbevisene staar bak menyvalget Medlemskap.
+                   Eieren, 5. september: «Mine kursbevis skal vises i
+                   medlemskap og ikke på forside». Et bevis er noe man henter
+                   fram naar man trenger det, ikke noe man ser paa hver gang
+                   man skal stemple inn. -->
+              </sc-if>
+              <sc-if value="{{ msFaneMedlemskap }}" hint-placeholder-val="{{ false }}">
               <div id="minside-kursbevis" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
                 <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap;">
                   <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600);">Kursbevis</div>
@@ -19075,18 +19104,63 @@ class Component extends DCLogic {
   // Denne svarer null naar medlemmet ikke staar paa noe. Da skal kortet si
   // det, ikke fylle plassen med en plan hen aldri har hatt.
   egenPlan() {
-    const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');
-    if (!navn) return null;
-    const funnet = this.planer().find(p => p.navn === navn);
-    if (funnet) return funnet;
-    // Planen ligger ikke i den offentlige lista — den er tatt ut av salg.
-    // Navnet er likevel riktig; timetallet kommer fra stemplingssvaret, som
-    // serveren regnet av den samme planen.
     const st = this.state.stempling;
+    // ── Navnet maa komme fra den raden timene ble regnet av ───────────
+    //
+    // Denne leste avtalen — «minAvtale.plan», altsaa subscriptions.plan.
+    // Timene kommer fra et helt annet sted: Medlemskap::timerFor() leser
+    // «members.timer_per_mnd», saa «members.medlemskap_type». To kilder om
+    // det samme medlemmet, og de kan staa paa hver sin plan.
+    //
+    // Eieren, 5. september, med bilde etter at forrige rettelse var ute:
+    // «Mini 15 · kr 1 790,- · 15 timer i måneden» i tittelen og «Fritt ·
+    // ingen timebegrensning» rett under. Avtalen sto paa Mini 15;
+    // medlemsraden sto tom, saa timene ble ubegrensede.
+    //
+    // Serveren sender planen timene ble regnet etter i «stempling.plan.navn»
+    // — nettopp for at skjermen skal kunne navngi den samme raden. Den gaar
+    // foerst naa. Avtalen er reserven, for den som ikke har stemplingssvar
+    // ennaa.
+    const fraTimene = st && st.plan ? (st.plan.navn || '').trim() : '';
+    const harSvar = !!(st && st.timer);
+    // Har serveren svart, er svaret fasit — ogsaa naar det er tomt. Falt vi
+    // tilbake paa avtalen da, ville vi vaert tilbake til to kilder: navnet
+    // fra avtalen og timene fra en medlemsrad som ikke finnes.
+    const navn = this.state.abo
+      || (harSvar ? fraTimene : ((this.state.minAvtale || {}).plan || ''));
+    if (!navn) return null;
+
+    // Timetallet kommer ALLTID fra stemplingssvaret naar det finnes.
+    // Planlista sier hva planen gir; serveren sier hva DETTE medlemmet har,
+    // og et eget timetall paa medlemmet gaar foran planen. Leste kortet
+    // lista, sto det «15 timer i måneden» paa en som har 35.
+    const funnet = this.planer().find(p => p.navn === navn);
+    if (funnet) {
+      if (!harSvar) return funnet;
+      const timer = st.timer.perMnd;
+      // ── Naar medlemmet har sitt eget timetall ─────────────────────
+      //
+      // «members.timer_per_mnd» gaar foran planen, og serveren regner
+      // timene etter den. Kortet leste likevel planens egen tekst, saa det
+      // sto «30 timer i måneden» rett over «45 av 45 timer».
+      //
+      // Eieren, 4. september: «Hvordan kan eirin vises med mini 15, men ha
+      // 35 timer». Det var ikke to feil tall — det var et eget timetall som
+      // ingen steder sa at det VAR et eget timetall.
+      const eget = !!(st.plan && st.plan.egetTimetall);
+      if (!eget && timer === funnet.timer) return funnet;
+      const tekst = (timer === null || timer === undefined)
+        ? 'Ingen timebegrensning'
+        : timer + ' timer i måneden' + (eget ? ' — eget timetall' : '');
+      return Object.assign({}, funnet, { timer: timer, periode: tekst, detalj: tekst });
+    }
+
+    // Planen ligger ikke i den offentlige lista — den er tatt ut av salg.
+    // Navnet er likevel riktig; prisen har vi fra avtalen.
     const a = this.state.minAvtale || {};
     return {
       navn: navn,
-      timer: st && st.timer ? st.timer.perMnd : null,
+      timer: harSvar ? st.timer.perMnd : null,
       pris: a.pris || '', periode: '', detalj: '', engangs: false, ukjent: true,
     };
   }
@@ -29061,7 +29135,10 @@ class Component extends DCLogic {
     return {
       hjem:       p('Min side', 'Min side', 'hjem'),
       medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),
-      butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),
+      // «Butikk» i cella, hele navnet i «aria-label». Eieren, 5. september:
+      // «Endre meny fra internbutkkk til butikk». Adminmenyen gjor det
+      // samme — kortnavn i cella, fullt navn for skjermleseren.
+      butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),
       // Eieren, 5. september: «Selg produkter må og få en meny i bunnen».
       // Den laa sammen med internbutikken; det er to ulike aerend — det ene
       // er aa kjope leire, det andre aa legge ut noe du har laget.
@@ -34352,7 +34429,17 @@ class Component extends DCLogic {
       // det som en paastand om hva du har, saa kortet sier heller fra.
       msHarEgenPlan: !!egen,
       msIngenEgenPlan: !egen,
-      msIngenPlanTekst: 'Du har ikke et medlemskap ennå.',
+      // Uten medlemskap, men MED en avtale i Vipps, er «du har ikke et
+      // medlemskap» bare halve sannheten — og den halve som ikke forklarer
+      // hvorfor det staar «venter» over. Da sier kortet begge deler.
+      msIngenPlanTekst: (() => {
+        const a = this.state.minAvtale || {};
+        const avtale = (a.avtalePlan || a.plan || '').trim();
+        return avtale
+          ? 'Medlemskapet ditt er ikke satt ennå, men Vipps-avtalen står på '
+            + avtale + '. Ta kontakt med verkstedet.'
+          : 'Du har ikke et medlemskap ennå.';
+      })(),
       mittAbo: aboNavn,
       // Ligger planen ikke i den offentlige lista, har vi navnet og prisen,
       // men ingen periodetekst aa henge paa. Da staar prisen alene heller
@@ -41234,17 +41321,56 @@ class Component extends DCLogic {
         rabattNivaer: this.rabattNivaer().concat([{ min: 3, prosent: 10, gjelder: 'alle', aktiv: true }]),
         rabattUlagret: true,
       }),
-      skiveOpptatt: (() => {
-        const skiveord = ['dreiekurs', 'kurs boller', 'date night', 'store fat'];
+      // ── «Dreieskivene denne uka» ─────────────────────────────────────
+      //
+      // Kortet gjorde to gale ting. Eieren, 5. september: «Hvordan virker
+      // dreieskivene denne uka».
+      //
+      // 1. Det leste UKE 35 — skrevet inn i koden. «Denne uka» var
+      //    slutten av august, uansett hvilken dag man sto paa.
+      //
+      // 2. Det gjettet hvilke kurs som bruker skivene, av fire navn skrevet
+      //    inn i koden: dreiekurs, kurs boller, date night, store fat. Et
+      //    kurs som het noe annet telte ikke, uansett hvor mange skiver det
+      //    tok — og «Kurs boller» staar paa BORDPLASS i basen, saa lista var
+      //    feil ogsaa der den traff.
+      //
+      // Begge deler kommer fra basen naa: uka regnes av dagens dato, og
+      // kurset peker paa ressursen sin (courses.ressurs_id), som foelger med
+      // katalogen. Se «ressursId» i api/kurs.php.
+      ...(() => {
+        // Ressursen som heter «Dreieskive». Navnet staar i basen og kan
+        // endres der; id-en skrives ikke inn her.
+        const alle = ((this.state.stempling || {}).ressurser) || [];
+        const skiva = alle.find(r => /dreieskive/i.test(r.navn || ''));
+        const uke = (() => {
+          const naa = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Oslo' }));
+          const t = new Date(Date.UTC(naa.getFullYear(), naa.getMonth(), naa.getDate()));
+          t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+          const nyttaar = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+          return Math.ceil((((t - nyttaar) / 86400000) + 1) / 7);
+        })();
+        const katalog = this.state.katalog || [];
         const ut = [];
-        this.ukeData(35).forEach(d => (d.poster || []).forEach(p => {
+        this.ukeData(uke).forEach(d => (d.poster || []).forEach(p => {
           const navn = (p.tekst || '').split(' · ')[0];
-          if (skiveord.some(o => navn.toLowerCase().indexOf(o) >= 0)) {
-            const k = (this._kursListe || []).find(x => x.title.toLowerCase().indexOf(navn.toLowerCase()) >= 0 || navn.toLowerCase().indexOf(x.title.toLowerCase()) >= 0);
-            ut.push({ dag: d.dag + ' ' + d.dato + '.', hva: navn, tid: (k && k.duration && /\d/.test(k.duration)) ? k.duration : ((p.tekst || '').split(' · ')[1] || '') });
-          }
+          const k = katalog.find(x => (x.tittel || '') === navn);
+          // Uten ressurs paa kurset vet vi ikke, og da paastaar vi ingenting.
+          if (!k || !skiva || k.ressursId !== skiva.id) return;
+          ut.push({
+            dag: d.dag + ' ' + d.dato + '.',
+            hva: navn,
+            tid: (p.tekst || '').split(' · ')[1] || '',
+          });
         }));
-        return ut;
+        return {
+          skiveOpptatt: ut,
+          // Er ingenting satt opp, er skivene ledige hele uka — og det er et
+          // svar. For sto kortet med overskrift og en forklaring under, og
+          // ingen linjer; da kunne man like gjerne tro at det var i stykker.
+          skiveIngen: ut.length === 0,
+          skiveUke: 'Uke ' + uke,
+        };
       })(),
       // Av og paa lagres naa i basen, ikke bare i denne nettleseren. Skrudde
       // eieren det av og lastet siden paa nytt, sto det paa igjen.
@@ -45166,6 +45292,12 @@ class Component extends DCLogic {
       salgSkjemaEtikett: this.bryterPaa('salgsskjema') ? 'Synlig' : 'Skjult',
       salgSkjemaVeksl: () => this.vekslBryter('salgsskjema', 'Skjemaet for å legge ut arbeider'),
       visSalgSkjema: this.medlemsvisning() && this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg'),
+      // Menyvalget «Selg» finnes for alle medlemmer. Er skjemaet slaatt av,
+      // skal skjermen si det — ikke staa tom.
+      msSelgAv: this.medlemsvisning()
+        && !(this.bryterPaa('salgsskjema') && this.bryterPaa('medlemssalg')),
+      msSelgAvTekst: 'Verkstedet har slått av muligheten til å legge ut egne arbeider'
+        + ' for øyeblikket. Ta kontakt hvis du har noe du vil selge.',
       lukkSalg: () => this.setState({ salgApen: null }),
       ...(() => {
         const p = this.galleriListe().find(g => g.id === this.state.salgApen);

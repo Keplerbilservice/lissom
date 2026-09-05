@@ -37,6 +37,9 @@ $kassaFelt = DB::harKolonne('courses', 'gjenstand_i_kassa') ? ', gjenstand_i_kas
 $apenFelt = DB::harKolonne('courses', 'folger_apningstid') ? ', folger_apningstid' : '';
 // Det faste vinduet — «hver dag 08–22». Kom med migrasjon 102.
 $vinduFelt = DB::harKolonne('courses', 'fast_fra') ? ', fast_fra, fast_til' : '';
+// Hvilken ressurs kurset legger beslag paa — dreieskive eller bordplass.
+// Sto i basen, men ble aldri sendt ut; se «ressursId» lenger nede.
+$ressursFelt = DB::harKolonne('courses', 'ressurs_id') ? ', ressurs_id' : '';
 
 // ── Billigste gjenstanden i butikken ────────────────────────────────────
 //
@@ -56,7 +59,7 @@ $gjenstandFra = DB::harKolonne('courses', 'gjenstand_i_kassa')
     : 0;
 
 $kurs = DB::alle(
-    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}
+    "SELECT id, slug, tittel, type, tema, pris_ore, kapasitet, beskrivelse, bilde{$bilderFelt}{$utenDatoFelt}{$oppsettFelt}{$tekstFelt}{$kassaFelt}{$apenFelt}{$vinduFelt}{$ressursFelt}
        FROM courses
       WHERE status = 'publisert' AND {$hvor}
       ORDER BY type, tittel"
@@ -206,6 +209,18 @@ foreach ($kurs as $k) {
         // «Maks aatte deltakere» — mens tallet under kom fra basen. De to
         // sto rett over hverandre og var uenige. Naa kommer begge herfra.
         'plasser' => (int) $k['kapasitet'],
+        // ── Hvilken ressurs kurset legger beslag paa ──────────────────
+        //
+        // Kurset peker paa en ressurs i basen — «Dreieskive» eller
+        // «Bordplass» — men id-en ble aldri sendt ut. «Dreieskivene denne
+        // uka» paa Min side maatte derfor gjette, og gjettet paa fire navn
+        // skrevet inn i koden: dreiekurs, kurs boller, date night, store
+        // fat. Et kurs som het noe annet telte ikke, uansett hvor mange
+        // skiver det tok.
+        //
+        // Eieren, 5. september: «Hvordan virker dreieskivene denne uka».
+        // Svaret var: paa gjetning. Naa foelger ressursen med kurset.
+        'ressursId' => ($k['ressurs_id'] ?? null) === null ? null : (int) $k['ressurs_id'],
         // «Alt som er inkludert».
         //
         // Lista sto fast i koden, og kunne ikke endres noe sted. Verkstedet

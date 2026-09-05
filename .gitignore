@@ -23,3 +23,9 @@ csp-ruter.php
 # terser hentes med «npm install terser» for bin/utenadmin.mjs og
 # bin/minifiser.mjs. Pakkene skal ikke i repoet.
 node_modules
+tests/.falsk-vipps.jsonl
+tests/.avtale-status
+tests/.trekk-status
+tests/.betaling-status
+tests/.trekk-uten-id
+tests/.feillogg

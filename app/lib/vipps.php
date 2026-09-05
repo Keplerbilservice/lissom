@@ -473,8 +473,17 @@ final class Vipps
         int $prisOre,
         string $beskrivelse,
         string $returUrl,
-        ?string $telefon = null
+        ?string $telefon = null,
+        string $intervall = 'maaned'
     ): array {
+        // Intervallet foelger planen. «MONTH» sto hardkodet her, mens
+        // «membership_plans.intervall» kunne staa paa «aar» — da ville
+        // nettsida sagt «per aar» mens Vipps trakk hver maaned.
+        //
+        // I dag staar alle planene paa «maaned», saa ingen har blitt trukket
+        // feil. Men det er ett tastetrykk i admin unna.
+        $enhet = $intervall === 'aar' ? 'YEAR' : 'MONTH';
+
         $kropp = [
             'pricing' => [
                 'type'     => 'LEGACY',
@@ -482,7 +491,7 @@ final class Vipps
                 'currency' => 'NOK',
             ],
             'interval' => [
-                'unit'  => 'MONTH',
+                'unit'  => $enhet,
                 'count' => 1,
             ],
             'merchantRedirectUrl'   => $returUrl,

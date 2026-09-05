@@ -94,7 +94,14 @@ switch ($jobb) {
                FROM payments
               WHERE status IN ('opprettet','venter','autorisert')
                 AND type <> 'recurring_charge'
-                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)
+                -- Tretti dager, ikke sju.
+                --
+                -- Grensa var der for aa slippe aa sporre om gamle rader. Men
+                -- en betaling som hang i aatte dager ble aldri sett paa igjen:
+                -- den sto «venter» for alltid, pengene kunne staa reservert
+                -- hos Vipps, og ingen visste noe. Tretti dager er den samme
+                -- grensa som maanedstrekkene bruker.
+                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 30 DAY)
                 AND updated_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 3 MINUTE)
               ORDER BY id
               LIMIT 30"

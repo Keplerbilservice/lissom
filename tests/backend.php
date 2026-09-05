@@ -8845,6 +8845,30 @@ sjekk('… og innhold som blir klippet av et kort',
 // klippet. Uten dette maaler vakta bare sida slik den staar naar den lastes.
 sjekk('… og skjermene som ligger bak et trykk',
     str_contains($bredde, "{ sti: '/admin/uttak', klikk: ['Betalinger'] },"));
+// 5. september: eieren tegnet en pil paa et bilde. Den pekte paa «Til» i
+// «Rediger okten», 103 piksler utenfor den hvite ruta paa telefonen. Sida
+// var 390 piksler, dialogen ogsaa — de tre maalene over saa ingenting, for
+// de maaler mot skjermkanten og mot kort som klipper. Dialogen klipper
+// ikke; feltet stakk bare ut i lufta. Derfor maales det naa mot innsida av
+// dialogruta ogsaa.
+//
+// Maalt: med «1.4fr 1fr 1fr» tilbake i sida melder vakta «2 utenfor
+// dialogen, verst 103 px» og navngir baade «Til» og spaltene. Med rettinga
+// paa plass er den gronn.
+sjekk('breddesjekken fanger felt som stikker utenfor dialogen',
+    str_contains($bredde, 'const utenforRuta = () => {')
+    && str_contains($bredde, 'const ur = await p.evaluate(utenforRuta);')
+    && str_contains($bredde, "' utenfor dialogen, verst '"));
+// Kortet i en dialog har «overflow: auto» for at lange skjemaer skal kunne
+// rulle nedover. Regnes det som «ruller med vilje», hopper vakta over alt
+// som ligger inni, og maaler ingenting i det hele tatt — den var gronn paa
+// den ekte feilen for dette ble rettet.
+sjekk('… og kortets egen rulling slaar ikke maalingen av',
+    str_contains($bredde, 'for (let f = e.parentElement; f && f !== kort; f = f.parentElement) {'));
+// Uten en dialog i lista aapnes ingen, og da maaler den nye vakta aldri noe.
+sjekk('… og dialogene aapnes for de maales',
+    str_contains($bredde, "{ sti: '/admin/kalender',  klikk: [{ velger: '.lx-agenda' }] },")
+    && str_contains($bredde, "{ sti: '/admin/medlemmer', klikk: ['NYTT MEDLEM'] },"));
 
 echo "\n== Kassa deler dagen på måten, ikke på refusjonsevnen ==\n";
 // Eieren, 4. september, etter aa ha registrert kr 500 med Vipps og sett dem

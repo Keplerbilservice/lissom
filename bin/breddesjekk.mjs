@@ -51,17 +51,29 @@
  * staar paa skjermen, og et mykt mellomrom mellom sifrene i et beloep
  * meldes uansett hvor i koden det kom fra.
  *
+ * ── Et maal til, lagt til 5. september ────────────────────────────────
+ *
+ * «Utenfor dialogen»: eieren sendte et bilde med en pil tegnet paa. Den
+ * pekte paa «Til»-feltet i «Rediger okten», som sto 103 piksler utenfor
+ * den hvite ruta paa telefonen. De tre feltene Dato/Fra/Til laa i et
+ * rutenett paa «1.4fr 1fr 1fr» som ikke bryter, og dialogen har ikke
+ * «overflow: hidden» — saa feltet stakk bare ut i lufta.
+ *
+ * Sida bak var 390 piksler hele tida, dialogen ogsaa. Ingen av de tre
+ * maalene over saa det. Derfor maales det naa ogsaa mot INNSIDA av
+ * dialogruta: felt, knapper og etiketter som naar lenger til hoyre enn
+ * kortet de ligger i.
+ *
  * ── Hva som IKKE maales ───────────────────────────────────────────────
  *
- * Ting som ligger bak et klikk: skjemaer som aapner seg, dialoger,
- * kalenderens dags- og maanedsvisning. Skriptet ser hver skjerm slik den
- * staar naar den er lastet. Det daekker det som pleier aa ryke — rutenett
- * og brede rader — men ikke alt.
+ * Ting som ligger bak et klikk maales bare naar det staar i EKSTRA-lista
+ * lenger nede. Ellers ser skriptet hver skjerm slik den staar naar den er
+ * lastet: kalenderens dags- og maanedsvisning, skjemaer som folder seg
+ * ut, og dialoger som ikke staar i lista, er ikke med.
  *
- * Med ett unntak: EKSTRA-lista lenger nede. Fanene i Kassa har ingen egen
- * adresse, og det var nettopp i én av dem tallet ble klippet. De aapnes
- * med et trykk for de maales. Lista kan vokse; hver rad koster tre
- * sekunder.
+ * EKSTRA rommer i dag fanene i Kassa — det var i én av dem tallet ble
+ * klippet — og de sju dialogene som har felt i rutenett. Lista kan vokse;
+ * hver rad koster fem sekunder.
  *
  * Noen ting skal kunne rulle sidelengs inni sin egen ramme: kalenderens
  * rutenett («.lx-kalbred») og brede tabeller. De hopper vi over — alt som
@@ -277,6 +289,61 @@ const klippet = () => {
 };
 
 /**
+ * Noe som stikker ut av en aapen dialog.
+ *
+ * Eieren, 5. september, med en pil tegnet paa skjermbildet: «se piller paa
+ * utsiden av bildet». Feltet «Til» i «Rediger oekten» laa 103 px utenfor
+ * dialogruta paa en telefon paa 390 px — maalt med feilen lagt inn igjen.
+ * Denne vakta saa det ikke: den maalte
+ * 69 skjermer slik de staar, og alt som ligger bak et klikk var usjekket.
+ *
+ * Vinduet er ikke maalestokken her. En dialog er 520 px bred paa en PC, og et
+ * felt kan ligge langt utenfor den uten aa naa kanten av skjermen. Derfor
+ * maales det mot ruta selv.
+ */
+const utenforRuta = () => {
+  const ut = [];
+  // Dialogene er de faste boksene med hoy z-index som legger seg over sida.
+  const ruter = Array.from(document.querySelectorAll('div')).filter(d => {
+    const st = getComputedStyle(d);
+    const r = d.getBoundingClientRect();
+    return st.position === 'fixed' && Number(st.zIndex) >= 50
+      && r.width > 200 && r.height > 200;
+  });
+  ruter.forEach(rute => {
+    // Selve kortet inni overlegget, ikke det gjennomsiktige teppet.
+    const kort = Array.from(rute.querySelectorAll(':scope > div'))
+      .filter(d => d.getBoundingClientRect().width > 200)
+      .sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0] || rute;
+    const k = kort.getBoundingClientRect();
+    kort.querySelectorAll('input, select, textarea, label, button').forEach(e => {
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      if (r.right <= k.right + 1) return;
+      // En bred tabell inni dialogen skal kunne rulle i sin egen ramme.
+      // Men kortet SELV har «overflow: auto» — det er hoyden som ruller,
+      // saa lange skjemaer faar plass. Regnes det med, forsvinner hele
+      // maalingen: da er alt inni kortet «med vilje». Derfor stopper
+      // vandringen ved kortet, ikke over det.
+      let ruller = false;
+      for (let f = e.parentElement; f && f !== kort; f = f.parentElement) {
+        const o = getComputedStyle(f).overflowX;
+        if (o === 'auto' || o === 'scroll') { ruller = true; break; }
+      }
+      if (ruller) return;
+      ut.push({
+        navn: e.tagName.toLowerCase() + (e.type ? '[' + e.type + ']' : ''),
+        tekst: (e.value || e.innerText || '').trim().slice(0, 24).replace(/\s+/g, ' '),
+        over: Math.round(r.right - k.right),
+        spalter: e.parentElement && e.parentElement.parentElement
+          ? getComputedStyle(e.parentElement.parentElement).gridTemplateColumns : 'none',
+      });
+    });
+  });
+  return ut.sort((a, b) => b.over - a.over).slice(0, 4);
+};
+
+/**
  * Beloep som kan brekke midt i tallet.
  *
  * «kr. 5 470,-» skal staa samlet. Skilles tusenene med et vanlig
@@ -321,33 +388,57 @@ const myktTall = () => {
  *
  * Adressene i STIER daekker sida slik den staar naar den er lastet. Fanene
  * i Kassa har ingen egen adresse — og det var nettopp i én av dem tallet
- * ble klippet. Her staar de faa som er verdt aa maale, med knappen som
- * aapner dem. Lista kan vokse; hver rad koster tre sekunder.
+ * ble klippet. Dialogene har ingen adresse i det hele tatt, og det var i
+ * én av dem «Til»-feltet sto utenfor ruta. Her staar de som er verdt aa
+ * maale, med det som aapner dem. Lista kan vokse; hver rad koster fem
+ * sekunder.
  */
 const EKSTRA = [
   { sti: '/admin/uttak', klikk: ['Betalinger'] },
   { sti: '/admin/uttak', klikk: ['Varer i butikken'] },
   { sti: '/admin/uttak', klikk: ['Internbutikk'] },
+
+  // Dialogene. 5. september pekte eieren paa et bilde: «Til»-feltet i
+  // «Rediger okten» sto 103 piksler utenfor ruta paa telefonen. Skjermen
+  // bak var helt fin — feilen laa i dialogen, og ingenting maalte den.
+  //
+  // Okt-blokkene i kalenderen har ingen fast tekst; de heter det kurset
+  // heter. Derfor en velger i stedet: forste synlige «.lx-agenda» er
+  // dagens forste okt, og den aapner nettopp den dialogen.
+  { sti: '/admin/kalender',  klikk: [{ velger: '.lx-agenda' }] },
+  { sti: '/admin/kalender',  klikk: ['NYTT KURS'] },
+  { sti: '/admin/medlemmer', klikk: ['NYTT MEDLEM'] },
+  { sti: '/admin/medlemmer', klikk: ['SEND BESKJED'] },
+  { sti: '/admin/kurs',      klikk: ['NY KURSDATO'] },
+  { sti: '/admin/kurs',      klikk: ['NYTT KURS'] },
+  { sti: '/admin/butikk',    klikk: ['NYTT PRODUKT'] },
 ];
 
 const p = await kontekst.newPage();
 p.setDefaultTimeout(20000);
 
-/** Trykker paa en knapp med denne teksten — den ekte, ikke malen. */
-const trykk = async (side, tekst) => await side.evaluate(t => {
-  const el = Array.from(document.querySelectorAll('button'))
-    .filter(x => (x.innerText || '').trim() === t)
-    .find(x => x.getBoundingClientRect().height > 0);
+/**
+ * Trykker paa noe. En streng er knappeteksten slik den staar paa skjermen
+ * — den ekte, ikke malen; store bokstaver kommer fra CSS-en. Et objekt med
+ * «velger» er en CSS-velger, for det som ikke har noen fast tekst.
+ */
+const trykk = async (side, hva) => await side.evaluate(h => {
+  const synlig = x => x.getBoundingClientRect().height > 0;
+  const el = typeof h === 'string'
+    ? Array.from(document.querySelectorAll('button'))
+        .filter(x => (x.innerText || '').trim() === h).find(synlig)
+    : Array.from(document.querySelectorAll(h.velger)).find(synlig);
   if (!el) return false;
   el.click();
   return true;
-}, tekst);
+}, hva);
 
 /** Maaler én skjerm slik den staar naa, og skriver det som er galt. */
 const maalNa = async (navn) => {
   const ute = await p.evaluate(utenfor);
   const kl = await p.evaluate(klippet);
   const mt = await p.evaluate(myktTall);
+  const ur = await p.evaluate(utenforRuta);
   const verst = ute.length ? Math.max(...ute.map(e => e.hoyre)) - BREDDE : 0;
   const deler = [];
   if (ute.length) {
@@ -358,6 +449,9 @@ const maalNa = async (navn) => {
   }
   if (mt.length) {
     deler.push(mt.length + ' beloep som kan brekke midt i tallet');
+  }
+  if (ur.length) {
+    deler.push(ur.length + ' utenfor dialogen, verst ' + ur[0].over + ' px');
   }
   si(deler.length === 0, navn + (deler.length ? ' — ' + deler.join(' · ') : ''));
   for (const e of ute) {
@@ -372,6 +466,11 @@ const maalNa = async (navn) => {
   }
   for (const e of mt) {
     console.log('          mykt mellomrom i beloepet: ' + e.navn + '  «' + e.tekst + '»');
+  }
+  for (const e of ur) {
+    console.log('          ' + e.over + ' px utenfor dialogen: ' + e.navn
+      + (e.tekst ? '  «' + e.tekst + '»' : '')
+      + (e.spalter && e.spalter !== 'none' ? '  [spalter: ' + e.spalter + ']' : ''));
   }
 };
 
@@ -391,13 +490,15 @@ for (const sti of liste) {
 // Skjermene bak et trykk. Bare de som er filtrert bort over hoppes.
 for (const e of EKSTRA) {
   if (FILTER && !e.sti.includes(FILTER)) continue;
-  const navn = e.sti + ' → ' + e.klikk.join(' → ');
+  const navn = e.sti + ' → '
+    + e.klikk.map(t => typeof t === 'string' ? t : t.velger).join(' → ');
   try {
     await p.goto(ADRESSE + e.sti, { waitUntil: 'domcontentloaded' });
     await p.waitForTimeout(3200);
     for (const t of e.klikk) {
       if (!(await trykk(p, t))) {
-        si(false, navn + ' — fant ingen knapp «' + t + '»');
+        si(false, navn + ' — fant ingenting aa trykke paa: «'
+          + (typeof t === 'string' ? t : t.velger) + '»');
         throw new Error('hoppet');
       }
       await p.waitForTimeout(1500);

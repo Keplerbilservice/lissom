@@ -1289,18 +1289,6 @@ window.__resources = {
     .lx-mstempeltekst { flex: 1 0 100%; }
   }
 
-  /* «Logg ut» paa de smaleste telefonene.
-     ------------------------------------
-     I kortet staar «Stemple inn» (201 px) og «Logg ut» (84 px) side om side.
-     Paa 390 px er det 292 av 298 tilgjengelige — det gaar opp. Paa 360 px er
-     det bare 272, og da brekker raden.
-
-     Ordet viker, ikke knappen: igjen staar ikonet, og «aria-label» sier
-     fortsatt «Logg ut» for den som bruker skjermleser. Over 380 px staar
-     ordet som for. */
-  @media (max-width: 380px) {
-    .lx-msloggut-ord { display: none; }
-  }
 
   /* Kortene paa telefonen: tittel, tall og «Se mer».
      ------------------------------------------------
@@ -3889,11 +3877,12 @@ window.__resources = {
               <span style="{{ aboBadgeStil }}">{{ aboBadge }}</span>
             </div>
 
-            <!-- «Stemple inn» og «Logg ut» paa samme linje. Eieren,
-                 5. september: «pillene logg ut og stemple inn maa vaere paa
-                 linje». Stemplingsknappen er 201 px; da maa naboen holde seg
-                 under 90 for at begge skal faa plass paa en telefon paa
-                 390 px. Derfor er «Logg ut» smalere her enn ellers. -->
+            <!-- Bare stemplingsknappen staar her.
+                 «Logg ut» sto ved siden av den. Eieren, 5. september, med
+                 bilde og ring rundt den: «Hva betyr denne?» — de to laa side
+                 om side og saa ut som et par, men den ene slipper deg ut av
+                 verkstedet og den andre ut av kontoen din. Han ba den bort:
+                 «Log ut fjernes her infra og legges på menyen i bunn». -->
             <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
               <sc-if value="{{ harTimer }}" hint-placeholder-val="{{ true }}">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="{{ stemplingVariant }}" size="lg" icon="qr-code" on-click="{{ vekslStempling }}" hint-size="auto,52px">{{ stemplingKnapp }}</x-import>
@@ -3901,14 +3890,6 @@ window.__resources = {
               <sc-if value="{{ erTom }}" hint-placeholder-val="{{ false }}">
                 <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="lg" icon="qr-code" disabled="{{ sant }}" hint-size="auto,52px">Stemple inn</x-import>
               </sc-if>
-              <button type="button" onClick="{{ loggUt }}" aria-label="Logg ut" style="appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 9px 11px; border-radius: var(--radius-pill); border: 2px solid var(--lissom-brown); background: transparent; color: var(--lissom-brown); font: var(--type-chip); font-size: 13px;">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                  <polyline points="16 17 21 12 16 7"></polyline>
-                  <line x1="21" y1="12" x2="9" y2="12"></line>
-                </svg>
-                <span class="lx-msloggut-ord">Logg ut</span>
-              </button>
             </div>
             <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: var(--space-3);">{{ stemplingTekst }}</div>
 
@@ -3953,7 +3934,10 @@ window.__resources = {
             </sc-if>
 
             <!-- Timene. Samme tall og samme stolpe som sto i
-                 medlemskapskortet — flyttet hit, ikke tegnet paa nytt. -->
+                 medlemskapskortet — flyttet hit, ikke tegnet paa nytt.
+                 Uten et medlemskap er det ingenting aa telle: da sto det
+                 «Fritt» og navnet paa en plan medlemmet aldri hadde. -->
+            <sc-if value="{{ msHarEgenPlan }}" hint-placeholder-val="{{ true }}">
             <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-5); padding-top: var(--space-4);">
               <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
                 <div style="font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; color: var(--text-heading);">{{ timerIgjen }}</div>
@@ -3970,16 +3954,22 @@ window.__resources = {
                 </div>
               </sc-if>
             </div>
+            </sc-if>
 
             <!-- Medlemskapet i kortform. Radene, knappene og oppsigelsen
                  staar bak menyvalget Medlemskap — her staar bare hva du har
                  og hva det koster, saa kortet svarer paa det uten aa bli en
                  side i seg selv. -->
             <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-4); padding-top: var(--space-4); display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap;">
-              <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; min-width: 0;">
-                <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ mittAbo }}</span>
-                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
-              </div>
+              <sc-if value="{{ msHarEgenPlan }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; min-width: 0;">
+                  <span style="font-family: var(--font-display); font-weight: 800; font-size: var(--text-xl); color: var(--text-heading);">{{ mittAbo }}</span>
+                  <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ mittAboPris }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ msIngenEgenPlan }}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: var(--text-sm); color: var(--text-muted);">{{ msIngenPlanTekst }}</span>
+              </sc-if>
               <button type="button" onClick="{{ msTilMedlemskap }}" style="appearance: none; background: transparent; border: none; padding: 0; cursor: pointer; font: var(--type-body-sm); font-weight: 700; color: var(--terracotta-600); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">Se medlemskapet →</button>
             </div>
           </div>
@@ -4837,6 +4827,7 @@ window.__resources = {
           <button type="button" onClick="{{ msBmButikk.velg }}" aria-label="{{ msBmButikk.full }}" style="{{ msBmButikk.stil }}"><span style="{{ msBmButikk.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M6 8h12l1.4 11.5H4.6L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span style="{{ msBmTekstStil }}">{{ msBmButikk.navn }}</span></button>
           <button type="button" onClick="{{ msBmChat.velg }}" aria-label="{{ msBmChat.full }}" style="{{ msBmChat.stil }}"><span style="{{ msBmChat.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 5h16v11H9l-5 4V5Z"/></svg><span style="{{ msBmTekstStil }}">{{ msBmChat.navn }}</span></button>
           <button type="button" onClick="{{ msBmNyttig.velg }}" aria-label="{{ msBmNyttig.full }}" style="{{ msBmNyttig.stil }}"><span style="{{ msBmNyttig.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span style="{{ msBmTekstStil }}">{{ msBmNyttig.navn }}</span></button>
+          <button type="button" onClick="{{ msBmLoggUt.velg }}" aria-label="{{ msBmLoggUt.full }}" style="{{ msBmLoggUt.stil }}"><span style="{{ msBmLoggUt.merkeStil }}"></span><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true" focusable="false" style="display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span style="{{ msBmTekstStil }}">{{ msBmLoggUt.navn }}</span></button>
         </nav>
       </sc-if>
     </div>
@@ -19078,6 +19069,36 @@ class Component extends DCLogic {
   // tilbud, ikke en paastand om hva noen har. Har medlemmet et plannavn,
   // beholder vi navnet og henter timetallet fra stemplingssvaret, som er
   // regnet av den samme planen paa serveren.
+  // Planen medlemmet HAR — eller ingenting.
+  //
+  // aktivPlan() svarer alltid med en plan: finner den ingen, gir den det
+  // forste loepende medlemskapet. Det er riktig paa medlemskapssida, der
+  // kortet er et TILBUD til en som ikke er medlem ennaa.
+  //
+  // Paa Min side er det feil. Der staar kortet under overskriften «Verkstedet
+  // ditt», og da leses hvert ord som en paastand om hva DU har. Eieren,
+  // 5. september, med bilde av mitt eget skjermbilde: «Bildet du selv viser
+  // har jo feil. Står fritt og det står mini og feil pris.»
+  //
+  // Denne svarer null naar medlemmet ikke staar paa noe. Da skal kortet si
+  // det, ikke fylle plassen med en plan hen aldri har hatt.
+  egenPlan() {
+    const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');
+    if (!navn) return null;
+    const funnet = this.planer().find(p => p.navn === navn);
+    if (funnet) return funnet;
+    // Planen ligger ikke i den offentlige lista — den er tatt ut av salg.
+    // Navnet er likevel riktig; timetallet kommer fra stemplingssvaret, som
+    // serveren regnet av den samme planen.
+    const st = this.state.stempling;
+    const a = this.state.minAvtale || {};
+    return {
+      navn: navn,
+      timer: st && st.timer ? st.timer.perMnd : null,
+      pris: a.pris || '', periode: '', detalj: '', engangs: false, ukjent: true,
+    };
+  }
+
   aktivPlan() {
     const alle = this.planer();
     const navn = this.state.abo || ((this.state.minAvtale || {}).plan || '');
@@ -29100,6 +29121,15 @@ class Component extends DCLogic {
       butikk:     p('Internbutikk', 'Internbutikk — leire og brenning', 'butikk'),
       chat:       p('Chat', 'Chat med verkstedet', 'chat'),
       nyttig:     p('Nyttig info', 'Nyttig info, HMS og guider', 'nyttig'),
+      // Utloggingen er ikke et sted, men en handling — den lyser aldri.
+      //
+      // Den sto som en knapp ved siden av stemplingsknappen. Eieren,
+      // 5. september, med ring rundt den: «Hva betyr denne?» De to saa ut
+      // som et par, men den ene slipper deg ut av verkstedet og den andre ut
+      // av kontoen. Han ba den bort: «Log ut fjernes her infra og legges på
+      // menyen i bunn».
+      loggUt: this.bunnMenyPunkt('Logg ut', 'Logg ut av kontoen din', false,
+        () => this.loggUtNaa()),
     };
   }
 
@@ -33403,8 +33433,12 @@ class Component extends DCLogic {
     };
 
     const status = this.props.timestatus || 'Normal';
-    const plan = this.aktivPlan();
-    const aboNavn = plan.navn;
+    // Kortet paa Min side skal si hva medlemmet HAR. Har hen ingenting,
+    // staar det ingenting — ikke det forste loepende medlemskapet i lista.
+    // Se egenPlan(). aktivPlan() staar igjen der et tilbud er poenget.
+    const egen = this.egenPlan();
+    const plan = egen || this.aktivPlan();
+    const aboNavn = egen ? egen.navn : '';
     const varselBoks = (bg, kant) => ({
       background: bg, border: '1px solid ' + kant, borderRadius: 'var(--radius-lg)',
       padding: 'var(--space-5) var(--space-6)', marginBottom: 'var(--space-6)',
@@ -33421,7 +33455,7 @@ class Component extends DCLogic {
       // Der en plan ikke har timetak sto uendelighetstegnet, stort og
       // alene. Eieren, 5. september: «Hva betyr dette tegnet? ∞». Det er et
       // matematikktegn paa en medlemsside; ordet sier det samme.
-      t = { igjen: 'Fritt', maks: 'ingen timebegrensning', brukt: (this.state.aboKjopt || this.erPublisert()) ? '0' : '11,5', andel: 100, varsel: '', varselStil: { display: 'none' } };
+      t = { igjen: 'Fritt', maks: 'ingen timebegrensning', brukt: (this.state.aboKjopt || this.erPublisert()) ? '0' : '11,5', andel: 100, varsel: '', varselStil: { display: 'none' }, ukjent: !egen };
     } else {
       const maksT = plan.timer;
       let brukt = this.state.aboKjopt ? 0 : status === 'Tom' ? maksT : status === 'Nesten tom' ? maksT - 4 : fastBrukt;
@@ -34350,6 +34384,14 @@ class Component extends DCLogic {
           },
         })),
       })),
+      // Har medlemmet en plan i det hele tatt?
+      //
+      // aktivPlan() faller tilbake paa forste loepende plan for den som ikke
+      // har noen — det er ment som et TILBUD. Inne i «Verkstedet ditt» leses
+      // det som en paastand om hva du har, saa kortet sier heller fra.
+      msHarEgenPlan: !!egen,
+      msIngenEgenPlan: !egen,
+      msIngenPlanTekst: 'Du har ikke et medlemskap ennå.',
       mittAbo: aboNavn,
       // Ligger planen ikke i den offentlige lista, har vi navnet og prisen,
       // men ingen periodetekst aa henge paa. Da staar prisen alene heller
@@ -41396,13 +41438,13 @@ class Component extends DCLogic {
                 gap: 'var(--space-5)', alignItems: 'stretch' }
             : { display: 'block', maxWidth: 640 },
           msBmHjem: b.hjem, msBmMedlemskap: b.medlemskap, msBmButikk: b.butikk,
-          msBmChat: b.chat, msBmNyttig: b.nyttig,
+          msBmChat: b.chat, msBmNyttig: b.nyttig, msBmLoggUt: b.loggUt,
           msBmStil: {
             position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 40,
             background: 'var(--surface-card)',
             borderTop: '1px solid var(--border-subtle)',
             boxShadow: '0 -2px 12px rgba(77,29,18,.08)',
-            display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)',
+            display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)',
             // Plass til hjemknappen paa iPhone, som i adminmenyen.
             paddingBottom: 'calc(6px + env(safe-area-inset-bottom, 0px))',
           },
@@ -47343,12 +47385,11 @@ class Component extends DCLogic {
       loggInnEpost: () => this.loggInnPassord(),
       loginBeskjed: this.state.loginBeskjed || '',
       kvitteringDetalj: this.state.kvitteringDetalj || 'Du finner det igjen under Min side.',
-      loggUt: () => {
-        if (!this.erPublisert()) { this.setState({ innlogget: false, side: 'forside' }); return; }
-        fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })
-          .then(() => { this.setState({ innlogget: false, erAdminBruker: false, erMedlemBruker: false, soknadStatus: null, vippsNavn: '', side: 'forside' }); window.scrollTo(0, 0); })
-          .catch(() => {});
-      },
+      // Utloggingen skjer ett sted. Denne var en nesten identisk kopi av
+      // loggUtNaa() — den glemte bare aa nullstille «erAdminBruker» i
+      // forhaandsvisning, og sa ikke fra at man var logget ut. Da kortet
+      // sluttet aa bruke den, sto to veier ut av den samme doera.
+      loggUt: () => this.loggUtNaa(),
       vippsSteg: this.state.vippsSteg || null,
       vippsStart: () => {
         // Paa den publiserte siden: ekte Vipps Login mot vaar egen backend.

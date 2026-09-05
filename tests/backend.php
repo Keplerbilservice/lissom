@@ -9151,9 +9151,9 @@ sjekk('… med seks valg i hver',
 // Min side har faatt den samme menyen — fem valg, ett sted i markupen.
 // Ikonene teller derfor $logoerB * 6 + 5.
 sjekk('… og hvert valg har baade ikon og tekst',
-    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 5
+    substr_count($sidaB, '<svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"') === $logoerB * 6 + 6
     && substr_count($sidaB, '{{ bmTekstStil }}') === $logoerB * 6
-    && substr_count($sidaB, '{{ msBmTekstStil }}') === 5);
+    && substr_count($sidaB, '{{ msBmTekstStil }}') === 6);
 
 // Rutene skrives ikke av. Doper vi om «Butikk», folger bunnmenyen med.
 sjekk('navn og ruter hentes fra ADMIN_MENY',
@@ -11176,14 +11176,19 @@ sjekk('… og den brekker ikke lenger',
 //     Raden er statustekst · Logg ut · Stemple inn; paa 390 px tok de tre
 //     484 px. Eieren, 5. september, med bilde: «pillene logg ut og stemple
 //     inn maa vaere paa linje». Teksten tar sin egen linje i stedet.
-// Raden er bygget om: knappene staar sammen i kortet «Verkstedet ditt»,
-// og statusteksten staar paa linja under dem. Ordet «Logg ut» viker for
-// ikonet paa de smaleste telefonene, slik at de to holder samme linje.
-sjekk('«Stemple inn» og «Logg ut» holder samme linje',
-    str_contains($sidaP, '.lx-msloggut-ord { display: none; }')
-    && str_contains($sidaP, '<span class="lx-msloggut-ord">Logg ut</span>')
-    && str_contains($sidaP, 'aria-label="Logg ut"'),
-    'maalt i nettleseren: samme linje paa 360, 390, 430, 820 og 1280 px');
+// «Logg ut» sto ved siden av stemplingsknappen. Eieren, 5. september, med
+// ring rundt den: «Hva betyr denne?» De to saa ut som et par, men den ene
+// slipper deg ut av verkstedet og den andre ut av kontoen din. Han ba den
+// bort: «Log ut fjernes her infra og legges på menyen i bunn».
+sjekk('utloggingen staar i bunnmenyen, ikke ved stemplingsknappen',
+    str_contains($sidaP, "loggUt: this.bunnMenyPunkt('Logg ut', 'Logg ut av kontoen din', false,")
+    && str_contains($sidaP, '{{ msBmLoggUt.velg }}')
+    && !str_contains($sidaP, 'lx-msloggut-ord'),
+    'maalt i nettleseren: seks celler, ingen utenfor kanten, 360/390/820/1280 px');
+sjekk('… og utloggingen skjer ett sted',
+    str_contains($sidaP, 'loggUt: () => this.loggUtNaa(),')
+    && substr_count($sidaP, "fetch('/api/logg-ut.php', { method: 'POST', credentials: 'same-origin' })") === 1,
+    'to nesten like kopier ble én');
 
 // 4. «Sendes på e-post med en gang» sto paa hver butikkvare som ikke var
 //    merket. Eieren, med bilde av en vase til 800 kroner: «fjern alle steder
@@ -11240,9 +11245,10 @@ sjekk('… og prisen paa Min side kommer fra medlemmets egen plan',
     'sto planen ikke i salgslista, falt prisen tilbake paa Vipps-avtalens');
 
 // ── Bunnmenyen ────────────────────────────────────────────────────
-sjekk('Min side har en bunnmeny med fem valg',
+sjekk('Min side har en bunnmeny med seks valg',
     str_contains($msRen, '<nav style="{{ msBmStil }}" aria-label="Min side">')
-    && substr_count($msRen, '{{ msBmTekstStil }}') === 5);
+    && substr_count($msRen, '{{ msBmTekstStil }}') === 6
+    && str_contains($msRen, "gridTemplateColumns: 'repeat(6, 1fr)'"));
 sjekk('… med de valgene eieren ba om',
     str_contains($msP, "hjem:       p('Min side', 'Min side', 'hjem'),")
     && str_contains($msP, "medlemskap: p('Medlemskap', 'Medlemskapet ditt', 'medlemskap'),")
@@ -11284,6 +11290,29 @@ sjekk('doerkoden staar som en liten pille ved navnet',
 sjekk('stempling, timer og medlemskap staar i ett kort',
     (bool) preg_match('/Verkstedet ditt.{0,7000}\{\{ vekslStempling \}\}.{0,7000}\{\{ timerBarStil \}\}.{0,4000}\{\{ mittAbo \}\}/s', $msRen),
     'tre steder ble ett');
+// ── Kortet finner ikke paa en plan ────────────────────────────────
+//
+// aktivPlan() svarer alltid med en plan: finner den ingen, gir den det
+// forste loepende medlemskapet. Det er riktig paa medlemskapssida, der
+// kortet er et TILBUD. Under overskriften «Verkstedet ditt» leses hvert ord
+// som en paastand om hva DU har.
+//
+// Eieren, 5. september, med bilde av mitt eget skjermbilde: «Bildet du selv
+// viser har jo feil. Står fritt og det står mini og feil pris.»
+sjekk('kortet sier ifra naar medlemmet ikke staar paa noe',
+    str_contains($msP, '  egenPlan() {')
+    && str_contains($msP, "    if (!navn) return null;")
+    && str_contains($msRen, 'const egen = this.egenPlan();')
+    && str_contains($msRen, "const aboNavn = egen ? egen.navn : '';"),
+    'maalt i nettleseren: «Du har ikke et medlemskap ennå», ingen timer, ingen pris');
+sjekk('… og timeblokka staar bare naar det finnes noe aa telle',
+    str_contains($msRen, 'msHarEgenPlan: !!egen,')
+    && str_contains($msRen, 'msIngenEgenPlan: !egen,')
+    && substr_count($msRen, '<sc-if value="{{ msHarEgenPlan }}"') === 2);
+sjekk('… mens en avslaatt plan gir riktig navn, pris og timetall',
+    str_contains($msP, "// Planen ligger ikke i den offentlige lista — den er tatt ut av salg.")
+    && str_contains($msP, 'timer: st && st.timer ? st.timer.perMnd : null,'),
+    'maalt: «30 timer · kr. 2 590,-» og «30 av 30 timer» med aktiv = 0');
 sjekk('… og veien videre til hele medlemskapet staar der',
     str_contains($msRen, 'onClick="{{ msTilMedlemskap }}"')
     && str_contains($msRen, 'Se medlemskapet →'));

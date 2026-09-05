@@ -10362,9 +10362,15 @@ sjekk('… og en feil hos Vipps stopper ikke betalingen hun holder paa med',
 //
 // Foerst gjorde vi vanlig Vipps til det forhaandsvalgte. Men de to pillene
 // sto der fortsatt, og et trykk var nok. Naa er valget borte helt.
+// Sjekken leste to tomme verdier — «bmBetalingsvalg: []» og
+// «bmKanVelgeBetaling: false» — som ble staaende igjen som gravstoetter da
+// pillene ble tatt bort 3. september. Ingen leste dem, og de gikk med i
+// oppryddinga 5. september. Naa sier sjekken det den mener: navnene finnes
+// ikke lenger noe sted, hverken som verdi eller i skjermbildet.
 sjekk('det finnes ingen betalingspiller lenger',
     str_contains($sidaV, 'bmBetalingsvalg: [],')
-    && str_contains($sidaV, 'bmKanVelgeBetaling: false,'));
+    && !str_contains($sidaV, 'bmKanVelgeBetaling')
+    && !str_contains($sidaV, 'bmBetalingValgt'));
 sjekk('… og ingen kan trykke seg til fast trekk',
     !str_contains($sidaV, "knapp('trekk', 'Fast trekk i Vipps')")
     && !str_contains($sidaV, 'velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),'));

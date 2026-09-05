@@ -31414,6 +31414,16 @@ class Component extends DCLogic {
             const rVisAlle = !!this.state.klRVisAlle;
             return {
               klRedVises: !!redEvt,
+              // ── Hvem som alt staar paa oekta ────────────────────────
+              //
+              // Eieren, 5. september: «jeg kan legge til flere osv, men ikke
+              // redigere antall som kom», og «kan det gjoeres i kalenderen
+              // og?». Lista fantes, men bare i ruta som aapnes med
+              // HOEYREKLIKK paa oekta — og paa en telefon finnes det ikke.
+              // Herfra, dit han kommer med ett trykk, sto bare «Legg til
+              // deltaker».
+              //
+              // Samme liste som hoeyremenyen gir; se klDeltakerliste().
               klRFeltStil: felt,
               // ── Legg til deltaker, rett paa okta ──────────────────────
               //
@@ -31989,7 +31999,7 @@ class Component extends DCLogic {
         harKap: !!valgt.kap,
         kapTekst: valgt.pameldt + ' av ' + valgt.kap + ' plasser',
         beleggStil: { width: pct + '%', height: '8px', borderRadius: '4px', background: pct >= 100 ? 'var(--terracotta-500)' : 'var(--sage-500)' },
-        deltakere: valgt.deltakere.map(p => ({ navn: p.navn, status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status, ny: !!p.ny, velg: () => this.setState({ klDeltakerVis: { navn: p.navn, status: p.status, merknad: p.merknad || '', okt: valgt.tittel, tid: valgt.tid + (valgt.slutt ? '–' + valgt.slutt : '') + ' · ' + valgt.dato, epost: p.epost || '', tlf: p.tlf || '', bookingId: p.bookingId || 0, medlemId: p.medlemId || 0, oktId: valgt.oktId || 0, kursId: valgt.kursId || 0, betalt: p.status === 'Betalt', antall: p.antall || 1 }, klDBeskjed: '', klDFlyttTil: '', klDSendtTil: null }) })),
+        deltakere: this.klDeltakerliste(valgt),
         ingenDeltakere: !!valgt.kap && valgt.deltakere.length === 0,
         harVenteliste: valgt.venteliste.length > 0,
         venteliste: valgt.venteliste.map(v => ({ navn: v.navn, pos: '#' + v.posisjon, erVarslet: !!varslet[valgt.id + v.navn], ikkeVarslet: !varslet[valgt.id + v.navn], tilby: () => this.setState(s => ({ klVarslet: Object.assign({}, s.klVarslet, { [valgt.id + v.navn]: true }) })) })),
@@ -33666,6 +33676,44 @@ class Component extends DCLogic {
     });
 
     return vals;
+  }
+
+  /**
+   * Deltakerne paa en oekt, slik begge stedene i kalenderen trenger dem.
+   *
+   * Lista sto inne i «klValgt» og kunne bare leses derfra — altsaa i ruta som
+   * bare aapnes med hoeyreklikk. Eieren, 5. september: «kan det gjoeres i
+   * kalenderen og?». Paa en telefon finnes ingen hoeyreklikk, saa den ruta
+   * naadde han aldri; «Rediger oekten», som han kommer til med ett trykk,
+   * hadde «Legg til deltaker» men ingen liste over dem som alt sto der.
+   *
+   * Naa staar mappingen her, og begge stedene leser den samme. Ingen ny
+   * liste: én liste, to steder.
+   */
+  klDeltakerliste(evt) {
+    if (!evt || !Array.isArray(evt.deltakere)) return [];
+    return evt.deltakere.map(p => ({
+      navn: p.navn,
+      status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status,
+      ny: !!p.ny,
+      velg: () => this.setState({
+        klDeltakerVis: {
+          navn: p.navn, status: p.status, merknad: p.merknad || '',
+          okt: evt.tittel,
+          tid: evt.tid + (evt.slutt ? '–' + evt.slutt : '') + ' · ' + evt.dato,
+          epost: p.epost || '', tlf: p.tlf || '',
+          bookingId: p.bookingId || 0, medlemId: p.medlemId || 0,
+          oktId: evt.oktId || 0, kursId: evt.kursId || 0,
+          betalt: p.status === 'Betalt',
+          antall: p.antall || 1,
+        },
+        klDBeskjed: '', klDFlyttTil: '', klDSendtTil: null,
+        klDAntall: null, klDBelop: '',
+        // Ruta legger seg over redigeringen. Lukkes redigeringen ikke, staar
+        // to dialoger oppaa hverandre.
+        klRedId: null,
+      }),
+    }));
   }
 
   renderVals() {

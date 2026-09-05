@@ -32,10 +32,49 @@ final class Medlemskap
      */
     public const VILKAAR_VERSJON = '2026-09-03';
 
-    /** @return array<string,mixed>|null */
+    /**
+     * En plan som kan VELGES naa.
+     *
+     * «aktiv = 0» betyr at planen er tatt ut av salg. Skal noen melde seg
+     * inn, bytte til, eller kjope den, er det denne som gjelder.
+     *
+     * @return array<string,mixed>|null
+     */
     public static function plan(string $navn): ?array
     {
         return DB::en('SELECT * FROM membership_plans WHERE navn = :n AND aktiv = 1', ['n' => $navn]);
+    }
+
+    /**
+     * Planen et medlem ALT STAAR PAA — enten den selges eller ikke.
+     *
+     * ── Hvorfor denne finnes ──────────────────────────────────────────
+     *
+     * «aktiv = 0» sier at planen ikke kan kjopes mer. Den sier ingenting om
+     * dem som alt staar paa den; de har den fortsatt, og timene, prisen,
+     * bindinga og oppsigelsestida deres staar i den raden.
+     *
+     * Alt som beskrev et medlem kalte plan(), som bare leter blant aktive.
+     * En avslaatt plan ble derfor ikke funnet — og «ikke funnet» ble tolket
+     * som «ingen grense»:
+     *
+     *   timerFor()          null  →  «∞ · ingen timebegrensning» paa doera
+     *   api/medlemskap.php  null  →  prisen falt tilbake paa Vipps-avtalens
+     *   sluttdato()         null  →  én maaneds oppsigelse uansett hva
+     *
+     * Eieren, 5. september, med bilde av sitt eget kort: «Mini 15 · kr 1 790,-
+     * · 15 timer i måneden» i tittelen og «∞ · ingen timebegrensning» rett
+     * under. «Fri tilgang» sto med aktiv = 0; planen ble ikke funnet, timene
+     * ble ubegrensede, og navnet falt tilbake paa en annen plan.
+     *
+     * Verkstedet skal kunne ta en plan ut av salg uten aa gi bort doegnaapen
+     * tilgang til dem som staar paa den.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function planUansett(string $navn): ?array
+    {
+        return DB::en('SELECT * FROM membership_plans WHERE navn = :n', ['n' => $navn]);
     }
 
     /**
@@ -132,7 +171,7 @@ final class Medlemskap
         if ($type === '') {
             return null;
         }
-        $plan = self::plan($type);
+        $plan = self::planUansett($type);
         return $plan === null || $plan['timer'] === null ? null : (int) $plan['timer'];
     }
 
@@ -293,7 +332,7 @@ final class Medlemskap
 
         // Proveperioden betales én gang og loper til slutt_dato. Da er det
         // ikke noe mer aa betale, og den skal ikke forfalle hver maaned.
-        $plan = self::plan((string) ($medlem['medlemskap_type'] ?? ''));
+        $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
         if ($plan !== null && (int) ($plan['engangs'] ?? 0) === 1) {
             return $ut('betalt', 'Betalt ' . $kort($betaltDen));
         }
@@ -948,9 +987,21 @@ final class Medlemskap
             return 'Medlemskapet er alt sagt opp, og gjelder ut '
                 . Booking::norskDatoKort((string) $avtale['slutter'] . ' 12:00:00') . '.';
         }
-        $binding = $avtale['binding_til'] ?? null;
+        // ── Planen gaar foran den lagrede datoen ──────────────────────
+        //
+        // «binding_til» settes én gang, naar avtalen opprettes. Endres
+        // planens «binding_mnd» etterpaa — fra to maaneder til null — blir
+        // datoen staaende i raden, og denne metoden sperret oppsigelsen paa
+        // en binding som ikke lenger fantes.
+        //
+        // Eieren, 5. september: «Prøv Lissom har ingen binding». Planen staar
+        // med binding_mnd = 0, men et medlem sto med «bundet til 2. november»
+        // — og kunne dermed ikke si opp. Planen er avtalen.
+        $plan = self::planUansett((string) $avtale['plan']);
+        $binderIDetHeleTatt = $plan === null || (int) ($plan['binding_mnd'] ?? 0) > 0;
+
+        $binding = $binderIDetHeleTatt ? ($avtale['binding_til'] ?? null) : null;
         if ($binding !== null && (string) $binding >= gmdate('Y-m-d')) {
-            $plan = self::plan((string) $avtale['plan']);
             $aar = $plan !== null && (int) $plan['binding_mnd'] >= 12;
             return ($aar
                 ? 'Årsavtalen kan ikke sies opp før året er ute. Den løper til '
@@ -985,7 +1036,7 @@ final class Medlemskap
      */
     public static function sluttdato(array $avtale): string
     {
-        $plan = self::plan((string) $avtale['plan']);
+        $plan = self::planUansett((string) $avtale['plan']);
         $mnd = $plan === null ? 1 : max(0, (int) ($plan['oppsigelse_mnd'] ?? 1));
         return (new DateTimeImmutable('now', new DateTimeZone('Europe/Oslo')))
             ->modify('first day of this month')
@@ -1130,7 +1181,7 @@ final class Medlemskap
 
         // Neste trekk en maaned fram. Er avtalen en proveperiode, er dette
         // det eneste trekket — da stopper vi den etterpaa.
-        $plan = self::plan((string) $avtale['plan']);
+        $plan = self::planUansett((string) $avtale['plan']);
         $engangs = $plan !== null && (int) $plan['engangs'] === 1;
 
         DB::oppdater('subscriptions', [

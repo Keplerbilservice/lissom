@@ -1006,8 +1006,37 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
     }
 
     /** Handlingene skrevet slik et menneske sier dem. */
-    $loggTekst = static function (string $h): string {
+    // ── Loggen maa si hvilken VEI det gikk ────────────────────────────
+    //
+    // «medlem_betaler_ikke» sto ikke i lista under, saa den falt til
+    // reserveregelen og ble skrevet ut som handlingsnavnet: «Medlem betaler
+    // ikke». Den teksten er den samme enten haken ble slaatt PAA eller AV —
+    // og en logg som ikke sier hvilken vei det gikk, svarer ikke paa det man
+    // spor om.
+    //
+    // Eieren, 5. september, om et medlem: «Har jeg satt hun ikke skal betale?
+    // Noe alvorlig feil er det». Loggen sto med «Medlem betaler ikke» og
+    // kunne ikke bekrefte eller avkrefte det.
+    //
+    // «detaljer» har baade «paa» og «grunn». Den ble hentet fra basen hele
+    // tiden, men aldri lest.
+    $loggTekst = static function (string $h, ?string $detaljer = null): string {
+        $d = $detaljer ? (json_decode($detaljer, true) ?: []) : [];
+        if ($h === 'medlem_betaler_ikke') {
+            $grunn = trim((string) ($d['grunn'] ?? ''));
+            return !empty($d['paa'])
+                ? 'Fritatt fra betaling' . ($grunn !== '' ? ' — ' . $grunn : '')
+                : 'Skal betale igjen';
+        }
+        if ($h === 'medlem_plan_byttet') {
+            $fra = trim((string) ($d['fra'] ?? ''));
+            $til = trim((string) ($d['til'] ?? ''));
+            return $til !== ''
+                ? 'Byttet medlemskap' . ($fra !== '' ? ' fra ' . $fra : '') . ' til ' . $til
+                : 'Byttet medlemskap';
+        }
         return match ($h) {
+            'medlem_nullstilt'      => 'Medlemskapet nullstilt',
             'pamelding_lagt_inn'    => 'Lagt inn for hånd',
             'pamelding_fjernet'     => 'Avbestilt',
             'pamelding_flyttet'     => 'Flyttet til en annen dato',
@@ -1019,7 +1048,6 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
             'medlem_meldt_inn'      => 'Meldt inn som medlem',
             'medlem_avsluttet'      => 'Medlemskapet avsluttet',
             'medlem_notat'          => 'Notat endret',
-            'medlem_plan_byttet'    => 'Byttet medlemskap',
             default                 => ucfirst(str_replace('_', ' ', $h)),
         };
     };
@@ -1199,7 +1227,7 @@ if (Foresporsel::heltall('person') > 0 || Foresporsel::heltall('booking') > 0) {
 
         // Endringsloggen. Sto skrevet hele tiden, men ble aldri lest.
         'logg' => array_map(static fn(array $a): array => [
-            'hva'  => $loggTekst((string) $a['handling']),
+            'hva'  => $loggTekst((string) $a['handling'], $a['detaljer'] ?? null),
             'av'   => (string) ($a['av'] ?? ''),
             'naar' => Booking::norskDato((string) $a['created_at']),
         ], $logg),
@@ -1347,7 +1375,25 @@ $avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
     // binder ingen. Uten statusen sto et forlatt forsok paa aarsavtale og
     // sa «Bundet til» et aar fram paa et medlem som aldri sa ja.
     $loeper = (string) $a['status'] === 'aktiv';
-    $bundet = $loeper && $a['binding_til'] !== null && (string) $a['binding_til'] >= $idag;
+    // ── Planen gaar foran den lagrede datoen ──────────────────────────
+    //
+    // «binding_til» settes én gang, naar avtalen opprettes, av planens
+    // «binding_mnd». Endres planen etterpaa — fra to maaneder til null —
+    // blir datoen staaende i raden.
+    //
+    // Eieren, 5. september, med bilde: «Prøv Lissom har ingen binding», men
+    // lista sa «BUNDET TIL 2. NOVEMBER 2026». Planen staar med binding_mnd
+    // = 0; datoen var to maaneder gammel og fra en annen regel.
+    //
+    // Det er ikke bare visning. Medlemskap::hvorforIkkeSiOpp() leser den
+    // samme datoen og SPERRER oppsigelsen — saa en proevekunde uten binding
+    // ikke fikk si opp. Planen er avtalen; sier den null, er det null.
+    $planBinder = (static function () use ($a): bool {
+        $p = Medlemskap::planUansett((string) $a['plan']);
+        return $p === null || (int) ($p['binding_mnd'] ?? 0) > 0;
+    })();
+    $bundet = $loeper && $planBinder
+        && $a['binding_til'] !== null && (string) $a['binding_til'] >= $idag;
     return [
         // Tom avtale-id betyr «gjor opp selv» — ingen automatiske trekk.
         //
@@ -1358,7 +1404,7 @@ $avtaleInfo = static function (int $id) use ($avtaler, $idag, $dato): array {
         // ikke trukket». Se Medlemskap::loepende().
         'fastTrekk'   => $loeper
                          && trim((string) ($a['vipps_agreement_id'] ?? '')) !== '',
-        'bundetTil'   => $loeper ? $dato($a['binding_til']) : null,
+        'bundetTil'   => $loeper && $planBinder ? $dato($a['binding_til']) : null,
         'bundet'      => $bundet,
         'sagtOpp'     => $a['sagt_opp_at'] ? $dato(substr((string) $a['sagt_opp_at'], 0, 10)) : null,
         'slutter'     => $dato($a['slutter']),

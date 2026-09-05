@@ -87,7 +87,7 @@ if (Foresporsel::metode() === 'GET') {
                 // Prisen paa planen medlemmet staar paa. Trekkes det et annet
                 // beloep, staar det for seg under.
                 'pris'       => (static function () use ($harPlan, $a): string {
-                    $p = $harPlan !== '' ? Medlemskap::plan($harPlan) : null;
+                    $p = $harPlan !== '' ? Medlemskap::planUansett($harPlan) : null;
                     return Booking::kroner((int) ($p['pris_ore'] ?? $a['pris_ore']));
                 })(),
                 // Avtalen, naar den staar paa noe annet enn medlemskapet.
@@ -122,7 +122,7 @@ if (Foresporsel::metode() === 'GET') {
                 // Oppsigelsestida hoerer til planen, ikke til teksten. «Én
                 // maaned» sto fast i bekreftelsen; har en plan to, loy den.
                 'oppsigelseMnd' => (static function () use ($a): int {
-                    $plan = Medlemskap::plan((string) $a['plan']);
+                    $plan = Medlemskap::planUansett((string) $a['plan']);
                     return $plan === null ? 1 : max(0, (int) ($plan['oppsigelse_mnd'] ?? 1));
                 })(),
             ];

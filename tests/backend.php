@@ -9253,6 +9253,11 @@ sjekk('… og i deltakerruta i kalenderen',
     str_contains($endre, '{{ klDAntall }}')
     && str_contains($endre, "handling: 'endre', id: dv.bookingId"));
 // Kalenderen maa faa antallet fra serveren for aa kunne fylle feltet.
+// Og videre inn i selve ruta. Uten dette sto feltet paa 1 uansett hva
+// paameldingen gjaldt — funnet 5. september, etter at eieren spurte «kan det
+// gjoeres i kalenderen og?».
+sjekk('… og antallet foelger med inn i deltakerruta',
+    str_contains($endre, "betalt: p.status === 'Betalt', antall: p.antall || 1 }"));
 sjekk('… og kalenderen faar antallet fra serveren',
     str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php') ?: '',
         "'antall'    => (int) \$b['antall'],"));

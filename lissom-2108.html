@@ -27153,7 +27153,7 @@ class Component extends DCLogic {
    */
   startAbonnement(planNavn, betaling, kontakt) {
     const navn = String(planNavn || '').replace(/^Abonnement: /, '').trim()
-      || (this.state.abo || this.aktivPlan().navn || '');
+      || (this.state.abo || (this.egenPlan() || {}).navn || '');
     if (!navn) {
       this.setState({ kvittering: 'Velg medlemskap', kvitteringDetalj: 'Vi fant ikke hvilket medlemskap det gjelder.' });
       return;
@@ -27231,7 +27231,7 @@ class Component extends DCLogic {
    * staar alene.
    */
   apneFornyValg(planNavn) {
-    const navn = planNavn || this.state.abo || this.aktivPlan().navn;
+    const navn = planNavn || this.state.abo || (this.egenPlan() || {}).navn || '';
     const pl = this.aboPlan(navn);
     const felter = [];
     if (pl.pris) felter.push({ navn: 'Pris', verdi: pl.pris + ' ' + pl.intervall });
@@ -41695,10 +41695,11 @@ class Component extends DCLogic {
         // Neste plan opp: faerrest timer blant dem som gir MER enn dagens,
         // og fri tilgang (timer === null) naar ingen slik finnes.
         const planer = this.state.planListe || [];
-        // Planen medlemmet har naa. aktivPlan() er den samme kilden
+        // Planen medlemmet har naa. egenPlan() er den samme kilden
         // abonnementskortet leser — to steder skal ikke ha hver sin mening om
-        // hvilket medlemskap dette er.
-        const minPlan = this.aktivPlan() || {};
+        // hvilket medlemskap dette er. Den svarer ingenting for den som ikke
+        // staar paa noe, og da er det ingen plan aa foreslaa noe stoerre enn.
+        const minPlan = this.egenPlan() || {};
         const naa = planer.find(p => p.navn === minPlan.navn) || null;
         const storre = planer.filter(p => !p.engangs
           && (p.timer === null || p.timer > perMnd)
@@ -41974,7 +41975,14 @@ class Component extends DCLogic {
         };
       })(),
 
-      aFornyAbo: this.apneFornyValg(this.state.abo || this.aktivPlan().navn),
+      // ── «Forny» skal fornye DIN plan ─────────────────────────────
+      //
+      // Den leste aktivPlan(), som faller tilbake paa foerste loepende plan
+      // for den som ikke blir funnet. Et medlem verkstedet har meldt inn fra
+      // admin har ingen avtalerad — og fikk derfor tilbud om aa starte
+      // «Mini 15» naar hen trykket Forny paa et aarsmedlemskap. Feil plan,
+      // feil pris. egenPlan() leser raden timene ble regnet av.
+      aFornyAbo: this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),
 
       apneManuell: this.apne('Stemple inn manuelt', 'Koden står på skiltet ved døra og byttes hver dag. Glemmer du å stemple ut, stopper telleren automatisk ved stengetid.', [
         { navn: 'Dagens kode', verdi: '' },

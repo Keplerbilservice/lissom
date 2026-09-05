@@ -11432,6 +11432,52 @@ sjekk('menyen sier «Butikk», ikke «Internbutikk»',
     str_contains($k2, "butikk:     p('Butikk', 'Internbutikk — leire og brenning', 'butikk'),"),
     'kortnavn i cella, hele navnet i aria-label');
 
+
+echo "\n== Årsavtalen: ingen avtale, ingen penger ==\n";
+// Eieren, 5. september: «ved årsavatel en annen vippsløsning enn resten, men
+// kunden får ingen beskjed om å godkjenne så vi får ikke penger».
+//
+// Aarsmedlemskapet har «krever_fast_trekk = 1»: det kan ikke gjores opp én
+// maaned om gangen. Kjopet paa nettsida oppretter en Vipps-avtale kunden maa
+// godkjenne i appen.
+$mlA = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$sidaA = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+
+// ── Verkstedet maa se at avtalen mangler ───────────────────────────
+//
+// Et medlem meldt inn fra admin faar ingen avtalerad — startAvtale() kalles
+// bare fra api/medlemskap.php og api/bli-medlem.php. Teksten sa «Ingen
+// betaling registrert», akkurat som for en plan som GJORES opp selv. To helt
+// ulike ting med de samme ordene.
+sjekk('en manglende Vipps-avtale sier at den mangler',
+    str_contains($mlA, "if (\$plan !== null && self::kreverFastTrekk(\$plan)) {")
+    && str_contains($mlA, "'Mangler Vipps-avtale — ' . \$plan['navn']"),
+    'maalt: «Mangler Vipps-avtale — Årsmedlemskap kan bare betales med fast trekk»');
+sjekk('… og den teller som forfalt, ikke som «venter»',
+    (bool) preg_match("/kreverFastTrekk\(\\\$plan\)\) \{\s*return \\\$ut\('forfalt',/s", $mlA),
+    'ellers staar den ikke i «Ikke betalt» paa Oversikt');
+// Avtaler opprettes bare de to stedene. Det er ikke en feil i seg selv, men
+// det er grunnen til at et medlem kan staa aktiv uten noe aa trekke paa.
+sjekk('avtaler opprettes bare fra nettsida og innmeldinga',
+    substr_count(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
+    && substr_count(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
+    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'startAvtale'),
+    'admin melder inn uten avtale — se «Mangler Vipps-avtale»');
+
+// ── «Forny» skal fornye DIN plan ───────────────────────────────────
+//
+// Knappen leste aktivPlan(), som faller tilbake paa foerste loepende plan
+// naar den ikke finner noe. Et medlem uten avtalerad fikk derfor tilbud om
+// «Mini 15» naar hen trykket Forny paa et aarsmedlemskap — feil plan, feil
+// pris, og en avtale paa noe hen ikke hadde bedt om.
+sjekk('«Forny» leser medlemmets egen plan',
+    str_contains($sidaA, "aFornyAbo: this.apneFornyValg(this.state.abo || (this.egenPlan() || {}).navn || ''),"),
+    'maalt: dialogen sa «Årsmedlemskap · kr. 1 990,- · fast trekk i Vipps»');
+sjekk('… og det samme gjor start, fornying og oppgraderingsforslaget',
+    !str_contains(preg_replace('/^\s*\/\/.*$/m', '', $sidaA), 'this.aktivPlan().navn')
+    && str_contains($sidaA, 'const minPlan = this.egenPlan() || {};'),
+    'aktivPlan() staar igjen bare der et tilbud er poenget');
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

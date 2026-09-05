@@ -323,6 +323,29 @@ final class Medlemskap
                 return $ut('venter', 'Betalingen gikk ikke gjennom '
                     . $kort(substr((string) $trekk['created_at'], 0, 10)), true);
             }
+            // ── Planen KREVER fast trekk, men det finnes ingen avtale ──
+            //
+            // Aarsmedlemskapet kan ikke gjores opp én maaned om gangen —
+            // «krever_fast_trekk» staar paa planen, og kjopet paa nettsida
+            // oppretter en Vipps-avtale kunden maa godkjenne i appen.
+            //
+            // Men startAvtale() kalles bare fra nettsida og innmeldinga.
+            // Melder verkstedet inn noen fra admin, blir hun staaende som
+            // aktiv uten avtale — og da staar det ingenting aa trekke paa.
+            //
+            // Eieren, 5. september: «ved årsavtale en annen vippsløsning enn
+            // resten, men kunden får ingen beskjed om å godkjenne så vi får
+            // ikke penger».
+            //
+            // Teksten sa «Ingen betaling registrert» — det samme som for en
+            // plan som gjores opp selv. To helt ulike ting med samme ord.
+            $plan = self::planUansett((string) ($medlem['medlemskap_type'] ?? ''));
+            if ($plan !== null && self::kreverFastTrekk($plan)) {
+                return $ut('forfalt',
+                    'Mangler Vipps-avtale — ' . $plan['navn']
+                    . ' kan bare betales med fast trekk, og avtalen er ikke opprettet',
+                    true);
+            }
             $start = trim((string) ($medlem['start_dato'] ?? ''));
             return $ut('venter', $start !== ''
                 ? 'Ingen betaling registrert · medlem siden ' . $kort($start)

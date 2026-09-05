@@ -9207,6 +9207,27 @@ sjekk('kvitteringen legger seg ikke oppaa adminstripa',
 sjekk('… og ute paa nettsida staar den som for',
     !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
 
+// ── «Fornyes: 1. september» sto fast i koden ────────────────────────────
+//
+// Datoen har staatt der siden 21. august og gjaldt ingen. Maalt i
+// nettleseren 5. september paa et medlem med neste trekk 14. november:
+// dialogen sa fortsatt 1. september.
+$fornyes = preg_replace('/^\s*\/\/.*$/m', '',
+    preg_replace('/<!--.*?-->/s', '', $sidaB));
+sjekk('«Ditt abonnement» gjetter ikke lenger paa datoen',
+    !str_contains($fornyes, "{ navn: 'Fornyes', verdi: '1. september' },")
+    && str_contains($fornyes, "rader.push({ navn: 'Fornyes', verdi: a.nesteTrekk });"));
+// Uten fast trekk finnes det ingen automatisk fornyelse aa love.
+sjekk('… og raden staar bare naar det finnes et neste trekk',
+    str_contains($fornyes, 'if (a.nesteTrekk) {'));
+// Oppsigelsen sa «gjelder fra maanedsslutt» — hverken dato eller lengde.
+sjekk('… og oppsigelsen sier hvilken dato det gjelder ut',
+    !str_contains($fornyes, "'Gjelder fra månedsslutt. Du kan angre fram til da.'")
+    && str_contains($fornyes, "'Sier du opp i dag, gjelder det ut ' + a.sluttHvisOppsagt"));
+// Samme kilde som bekreftelsen bruker, saa de to kan ikke si hver sin dato.
+sjekk('… fra den samme kilden som bekreftelsen leser',
+    str_contains($fornyes, "const naar = (a && (a.slutter || a.sluttHvisOppsagt))"));
+
 // ── «Må kreves inn» på Oversikt ─────────────────────────────────────────
 //
 // Eieren, 5. september: «jeg vil at det bygges en paaminnelse i admin».

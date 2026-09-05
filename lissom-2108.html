@@ -35084,12 +35084,38 @@ class Component extends DCLogic {
               { navn: 'Hvorfor', verdi: 'Prøveperioden kan kun benyttes én gang, og ikke når du allerede er medlem.' },
             ], 'Lukk')
           : p.valgt
-            ? this.apne(p.navn, 'Ditt abonnement', [
-                { navn: 'Pris', verdi: p.pris + ' ' + p.periode },
-                { navn: 'Inneholder', verdi: p.detalj },
-                { navn: 'Fornyes', verdi: '1. september' },
-                { navn: 'Oppsigelse', verdi: 'Gjelder fra månedsslutt. Du kan angre fram til da.' },
-              ],
+            ? this.apne(p.navn, 'Ditt abonnement', (() => {
+                // ── Datoene kommer fra serveren, ikke fra koden ─────────
+                //
+                // «Fornyes: 1. september» sto fast her fra 21. august og
+                // gjaldt ingen. Maalt 5. september paa et medlem med neste
+                // trekk 14. november: dialogen sa fortsatt 1. september.
+                //
+                // «Oppsigelse: Gjelder fra maanedsslutt» var like vag — den
+                // sa hverken hvilken dato eller hvor lang oppsigelsestida er,
+                // og planene har ulik. Serveren regner begge deler alt ut, med
+                // den samme regelen som utforer oppsigelsen; se «min» i
+                // api/medlemskap.php.
+                const a = this.state.minAvtale || {};
+                const rader = [
+                  { navn: 'Pris', verdi: p.pris + ' ' + p.periode },
+                  { navn: 'Inneholder', verdi: p.detalj },
+                ];
+                // Bare naar det FINNES et neste trekk. Mini 15 og 30 timer
+                // gjores opp én periode om gangen — der er det ingen
+                // automatisk fornyelse aa love.
+                if (a.nesteTrekk) {
+                  rader.push({ navn: 'Fornyes', verdi: a.nesteTrekk });
+                }
+                // «Du kan angre fram til da» blir staaende: Angre-knappen
+                // finnes paa Min side naar en oppsigelse loeper.
+                if (a.sluttHvisOppsagt) {
+                  rader.push({ navn: 'Oppsigelse',
+                    verdi: 'Sier du opp i dag, gjelder det ut ' + a.sluttHvisOppsagt
+                      + '. Du kan angre fram til da.' });
+                }
+                return rader;
+              })(),
               this.harSagtOpp() ? 'Lukk' : 'Si opp abonnementet',
               null, false,
               this.harSagtOpp() ? null : () => this.siOppAbonnement())

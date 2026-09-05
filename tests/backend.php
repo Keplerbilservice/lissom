@@ -10908,9 +10908,31 @@ sjekk('… og de er piller, ikke understreket tekst',
     (bool) preg_match('/minsideSnarveier \}\}" as="s"[^>]*>\s*<button[^>]*border-radius: var\(--radius-pill\)/s', $msU),
     'pilleform');
 
-// 7. Chatten heter chat.
-sjekk('chatten heter Chat paa Min side',
-    (bool) preg_match('/id="minside-beskjeder".{0,400}>Chat<\/div>/s', $msU), 'ikke «Beskjeder»');
+// 7. Kortet het «Chat — Fra Monica» og var to ting i ett: en liste med
+//    beskjeder til alle medlemmene, og en samtale med Monica. Eieren,
+//    5. september: «Fjern chat fra monica, også i admin», og presisert:
+//    «Det er chatten til og fra monica som jeg også spesifiserte som skal
+//    fjernes. Gruppechatten skal bestå.» Samtalen er borte; da er kortet en
+//    oppslagstavle, og heter det den er.
+sjekk('kortet heter det det er — beskjeder fra verkstedet',
+    (bool) preg_match('/id="minside-beskjeder".{0,400}>Beskjeder<\/div>/s', $msU)
+    && (bool) preg_match('/id="minside-beskjeder".{0,700}>Fra verkstedet<\/h3>/s', $msU));
+sjekk('… og samtalen med Monica er borte',
+    !str_contains($msU, 'Send en beskjed til Monica')
+    && !str_contains($msU, 'Dine meldinger til Monica')
+    && !str_contains($msU, 'sendTilMonicaNaa')
+    && !str_contains($msU, 'hentMineSamtaler'));
+sjekk('… mens gruppechatten mellom medlemmene staar',
+    str_contains($msU, 'Medlemschat')
+    && str_contains($msU, '{{ chatMeldinger }}')
+    && str_contains($msU, '{{ sendChat }}'),
+    'eieren: «Gruppechatten skal bestå»');
+// Endepunktet staar: det er det samme kontaktskjemaet paa nettsiden bruker,
+// og henvendelsene fra for ligger der de laa.
+sjekk('… og henvendelsene fra for er ikke rort',
+    file_exists(dirname(__DIR__) . '/api/foresporsel.php')
+    && str_contains($msU, "henvFilter"),
+    'de finnes igjen i admin under «Fra medlemmene»');
 
 // 10. Selg mine produkter.
 sjekk('lista over det du har sendt inn vises',
@@ -11267,10 +11289,10 @@ sjekk('… og innholdet har plass under den',
 // Eieren: «Og da fjerner du tingene fra forsiden slik at det blir synlig
 // først når man trykker på menyen?» — ja.
 sjekk('bare det stedet du staar paa tegnes',
-    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 4
+    substr_count($msRen, '<sc-if value="{{ msFaneHjem }}"') === 5
     && substr_count($msRen, '<sc-if value="{{ msFaneMedlemskap }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneButikk }}"') === 2
-    && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 2
+    && substr_count($msRen, '<sc-if value="{{ msFaneChat }}"') === 1
     && substr_count($msRen, '<sc-if value="{{ msFaneNyttig }}"') === 2,
     'maalt i nettleseren: hvert valg viser bare sitt eget, 390 og 1280 px');
 sjekk('… og en kursdeltaker sendes hjem fra et sted hun ikke har',

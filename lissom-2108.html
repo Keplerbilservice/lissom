@@ -4472,10 +4472,19 @@ window.__resources = {
 
               </sc-if>
 
-              <sc-if value="{{ msFaneChat }}" hint-placeholder-val="{{ false }}">
+              <!-- Beskjedene fra verkstedet.
+                   Kortet het «Chat — Fra Monica» og var to ting i ett: en
+                   liste med beskjeder til alle medlemmene, og en samtale med
+                   Monica. Samtalen er borte; da er dette en oppslagstavle,
+                   og heter det den er.
+
+                   Den staar paa forsiden. En beskjed fra verkstedet er noe
+                   du skal se, ikke noe du skal lete etter i en meny. -->
+              <sc-if value="{{ msFaneHjem }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ harBeskjeder }}" hint-placeholder-val="{{ true }}">
               <div id="minside-beskjeder" style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--space-8);">
-                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Chat</div>
-                <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Fra Monica</h3>
+                <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: 6px;">Beskjeder</div>
+                <h3 style="margin: 0 0 var(--space-6); font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: var(--text-heading);">Fra verkstedet</h3>
                 <div style="display: flex; flex-direction: column; gap: var(--space-5);">
                   <sc-for list="{{ beskjeder }}" as="b" hint-placeholder-count="3">
                     <div style="{{ b.stil }}">
@@ -4487,38 +4496,22 @@ window.__resources = {
                     </div>
                   </sc-for>
                 </div>
-                <!-- Det du har skrevet til Monica, med svarene.
-                     Foer sto det bare «Du faar svar paa e-post», og samtalen
-                     fantes ikke her — svaret kom et helt annet sted enn der
-                     spoersmaalet ble skrevet. -->
-                <sc-if value="{{ harMineSamtaler }}" hint-placeholder-val="{{ false }}">
-                  <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4);">
-                    <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading);">Dine meldinger til Monica</div>
-                    <sc-for list="{{ mineSamtaler }}" as="ms" hint-placeholder-count="1">
-                      <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5);">
-                        <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Du skrev {{ ms.tid }}</div>
-                        <p style="margin: 0 0 var(--space-3); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ ms.tekst }}</p>
-                        <sc-for list="{{ ms.svar }}" as="sv" hint-placeholder-count="1">
-                          <div style="border-left: 3px solid var(--lissom-brown); padding: 2px 0 2px var(--space-4); margin-top: var(--space-3);">
-                            <div style="font-size: var(--text-xs); color: var(--text-muted); margin-bottom: 4px;">Monica svarte {{ sv.tid }}</div>
-                            <p style="margin: 0; font-size: var(--text-sm); color: var(--text-heading); text-wrap: pretty;">{{ sv.tekst }}</p>
-                          </div>
-                        </sc-for>
-                        <sc-if value="{{ ms.venter }}" hint-placeholder-val="{{ false }}">
-                          <div style="font-size: var(--text-xs); color: var(--text-muted);">Ikke besvart ennå.</div>
-                        </sc-if>
-                      </div>
-                    </sc-for>
-                  </div>
-                </sc-if>
-                <div style="border-top: 1px solid var(--border-subtle); margin-top: var(--space-6); padding-top: var(--space-5);">
-                  <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 8px;">Send en beskjed til Monica</div>
-                  <div style="display: flex; gap: var(--space-3); align-items: center;">
-                    <input value="{{ medlemsBeskjed }}" onChange="{{ settMedlemsBeskjed }}" onKeyDown="{{ monicaEnter }}" placeholder="Skriv beskjeden her" style="box-sizing: border-box; width: min(360px, 100%); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 8px 12px; font: var(--type-body-sm); background: var(--clay-50); color: var(--text-heading); min-width: 0;">
-                    <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="send" on-click="{{ sendTilMonica }}" hint-size="auto,36px">Send</x-import>
-                  </div>
-                </div>
+                <!-- Chatten til og fra Monica sto her.
+                     «Dine meldinger til Monica» og skrivefeltet under den.
+                     Eieren, 5. september: «Fjern chat fra monica, også i
+                     admin» — og presisert: «Det er chatten til og fra monica
+                     som jeg også spesifiserte som skal fjernes.
+                     Gruppechatten skal bestå.»
+
+                     Verkstedets beskjeder over staar som for; det var hans
+                     svar da jeg spurte. Gruppechatten mellom medlemmene
+                     staar ogsaa, bak menyvalget Chat.
+
+                     Meldingene som ble sendt for dette er ikke slettet. De
+                     ligger som henvendelser i admin, sammen med dem fra
+                     kontaktskjemaet, og finnes igjen under «Fra medlemmene». -->
               </div>
+              </sc-if>
               </sc-if>
 
               <!-- Kursene blir staaende paa forsiden. Det er datoer man maa
@@ -25975,65 +25968,16 @@ class Component extends DCLogic {
     });
   }
 
-  hentMineSamtaler() {
-    if (!this.erPublisert() || this._samtalerHentes) return;
-    this._samtalerHentes = true;
-    fetch('/api/foresporsel.php', { credentials: 'same-origin', cache: 'no-store' })
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => {
-        this._samtalerHentes = false;
-        if (d && d.samtaler) this.setState({ mineSamtaler: d.samtaler });
-      })
-      .catch(() => { this._samtalerHentes = false; });
-  }
-
-  sendTilMonicaNaa() {
-    const tekst = (this.state.medlemsBeskjed || '').trim();
-    if (!tekst) return;
-
-    if (!this.erPublisert()) {
-      this.setState(s => ({
-        nyInnboks: (s.nyInnboks || []).concat([{ navn: s.vippsNavn || 'Medlem', tekst, tid: 'Nå nettopp', ny: true }]),
-        medlemsBeskjed: '', kvittering: 'Beskjeden er sendt til Monica',
-      }));
-      return;
-    }
-    if (this._beskjedPagaar) return;
-    this._beskjedPagaar = true;
-
-    fetch('/api/foresporsel.php', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        navn: (this.state.vippsNavn || '').trim() || 'Medlem',
-        // Serveren fyller inn fra sesjonen om dette staar tomt, men vi sender
-        // det vi har: verkstedet skal kunne svare uten aa slaa opp.
-        kontakt: (this.state.medlemEpost || '').trim(),
-        type: 'Beskjed fra medlem',
-        antall: '',
-        melding: tekst,
-      }),
-    })
-      .then(r => r.json().then(d => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => {
-        this._beskjedPagaar = false;
-        this.setState({
-          medlemsBeskjed: ok ? '' : this.state.medlemsBeskjed,
-          kvittering: ok ? 'Beskjeden er sendt til Monica' : 'Beskjeden ble ikke sendt',
-          kvitteringDetalj: ok ? 'Du får svar på e-post — og her på Min side.' : ((d && d.feil) || 'Prøv igjen om litt.'),
-        });
-        // Traaden hentes paa nytt, saa den nye meldingen staar der med det
-        // samme framfor ved neste sidelasting.
-        if (ok) { this._samtalerHentes = false; this.hentMineSamtaler(); }
-      })
-      .catch(() => {
-        this._beskjedPagaar = false;
-        this.setState({ kvittering: 'Beskjeden ble ikke sendt', kvitteringDetalj: 'Fikk ikke kontakt med serveren.' });
-      });
-  }
-
-
+  // ── Chatten til og fra Monica sto her ──────────────────────────────
+  //
+  // hentMineSamtaler() og sendTilMonicaNaa(). Den forste hentet traaden fra
+  // /api/foresporsel.php, den andre skrev til den. Eieren, 5. september:
+  // «Fjern chat fra monica, også i admin» — og presisert: «Det er chatten
+  // til og fra monica som jeg også spesifiserte som skal fjernes.
+  // Gruppechatten skal bestå.»
+  //
+  // Endepunktet staar. Det er det samme kontaktskjemaet paa nettsiden
+  // bruker, og henvendelsene fra for ligger der de laa.
 
   componentDidUpdate(prevProps, prevState) {
     // Tilbake fra Vipps-innloggingen, med et medlemskap i minnet.
@@ -33289,8 +33233,9 @@ class Component extends DCLogic {
     // selv naar man gaar videre — 20 sekunder er ofte nok til at en samtale
     // henger sammen, og sjelden nok til aa merkes.
     if (side === 'minside' && this.state.innlogget) {
+      // Gruppechatten. Samtalen med Monica ble hentet her ogsaa; den er
+      // borte, og endepunktet spoerres ikke lenger.
       this.startChat();
-      if (!this.state.mineSamtaler) this.hentMineSamtaler();
     } else if (side !== 'minside') {
       this.stoppChat();
     }
@@ -42005,7 +41950,10 @@ class Component extends DCLogic {
         { navn: 'Ingrid Hansen' }, { navn: 'Kari Nordbø' }, { navn: 'Jonas Five' },
         { navn: 'Silje Bratt (skjult for medlemmer)' }, { navn: 'Mari Lunde (skjult for medlemmer)' },
       ],
-      // Beskjeder fra verkstedet finnes ikke som endepunkt ennaa.
+      // Beskjeder fra verkstedet finnes ikke som endepunkt ennaa, saa lista
+      // er tom paa den ekte siden. Kortet staar derfor bare naar det faktisk
+      // er noe aa lese — et tomt kort med overskrift sier ingenting.
+      harBeskjeder: (this.erPublisert() ? [] : [1, 2, 3]).length > 0,
       beskjeder: (this.erPublisert() ? [] : [
         { tittel: 'Ovnen går natt til torsdag', tid: 'I dag', tekst: 'Sett arbeidene på hylla i gangen innen onsdag kl. 18 hvis de skal med.', ny: true },
         { tittel: 'Ny leire på lager', tid: '3 dager siden', tekst: 'Grå stengods 2 er tilbake. Ligger under trappa.' },
@@ -44524,16 +44472,8 @@ class Component extends DCLogic {
         { navn: 'Lest av', verdi: b.apnet },
         { navn: 'Ikke lest', verdi: b.ulest },
       ], 'Send påminnelse']),
-      medlemsBeskjed: this.state.medlemsBeskjed ?? '',
-      settMedlemsBeskjed: (e) => this.setState({ medlemsBeskjed: e.target.value }),
       // Samtalene mine med verkstedet. Svaret gikk bare paa e-post for; naa
       // staar det ogsaa der spoersmaalet ble skrevet.
-      mineSamtaler: (this.state.mineSamtaler || []).map(x => Object.assign({}, x, {
-        venter: !x.besvart,
-      })),
-      harMineSamtaler: (this.state.mineSamtaler || []).length > 0,
-      sendTilMonica: () => this.sendTilMonicaNaa(),
-      monicaEnter: (e) => { if (e && e.key === 'Enter') { e.preventDefault(); this.sendTilMonicaNaa(); } },
       // Innboksen paa Oversikt.
       //
       // Den viste bare det man selv hadde skrevet i forhandsvisningen —

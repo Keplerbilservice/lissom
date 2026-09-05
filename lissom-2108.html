@@ -3980,19 +3980,12 @@ window.__resources = {
           </sc-if>
           </sc-if>
 
-          <!-- Hvilken av de to sidene dette er.
-               Skillet mellom medlem og kursdeltaker har alltid avgjort hva
-               som tegnes, men det sto ingen steder hva man saa paa: en
-               kursdeltaker fikk en side med hull der medlemsdelen ville
-               vaert, uten at det fantes noe som sa at det finnes en
-               medlemsside i det hele tatt. -->
-          <div style="display: flex; align-items: baseline; gap: var(--space-2) var(--space-4); flex-wrap: wrap; border-left: 3px solid var(--terracotta-500); padding-left: var(--space-4); margin-bottom: var(--space-6); max-width: 74ch;">
-            <span style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); white-space: nowrap;">{{ rolleMerke }}</span>
-            <span style="font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ rolleTekst }}</span>
-            <sc-if value="{{ rolleHarLenke }}" hint-placeholder-val="{{ false }}">
-              <button type="button" onClick="{{ rolleVelg }}" style="appearance: none; background: transparent; border: none; cursor: pointer; padding: 0; font: var(--type-body-sm); font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;">{{ rolleLenkeTekst }}</button>
-            </sc-if>
-          </div>
+          <!-- Baandet «Kursdeltaker / Medlemsside» sto her.
+               Det sa hvilken av de to sidene du saa paa, og ga en lenke til
+               medlemskapene. Eieren, 5. september, ringet rundt hele baandet:
+               «fjern den teksten jeg har ringet rundt».
+               Ingenting gaar tapt: medlemskapskortet staar rett under paa den
+               samme skjermen, med de fire planene og prisen paa hver. -->
 
           <!-- Snarveispillene sto her.
                Fem piller som rullet deg nedover til seksjoner som sto paa
@@ -47721,23 +47714,6 @@ class Component extends DCLogic {
       visBliMedlem: this.state.fhRolle
         ? this.state.fhRolle === 'deltaker'
         : (this.erPublisert() && this.state.innlogget && !this.state.erMedlemBruker),
-
-      // ── Hvilken av de to sidene Min side er ───────────────────────────
-      //
-      // Baandet under hilsenen. Det tegner ingenting nytt — det sier hva
-      // sida som allerede staar der, er.
-      ...(() => {
-        const medlem = this.medlemsvisning();
-        return {
-          rolleMerke: medlem ? 'Medlemsside' : 'Kursdeltaker',
-          rolleTekst: medlem
-            ? 'Timene dine, dørkoden, abonnementet og det interne ligger her — sammen med kursene du er påmeldt.'
-            : 'Kursene du er påmeldt, bildene fra dem og beskjedene fra verkstedet. Medlemssiden er en annen: den gir dørkode, verkstedtid og egen hylle.',
-          rolleHarLenke: !medlem,
-          rolleLenkeTekst: 'Se medlemskapene',
-          rolleVelg: () => { this.setState({ side: 'medlemskap', fhRolle: '', fhFra: '' }); window.scrollTo(0, 0); },
-        };
-      })(),
 
       // Forhandsvisningen fra admin.
       //

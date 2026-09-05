@@ -25,6 +25,11 @@ de ble sagt i.
 ## Endringer
 
 - Aldri gjør mer enn det som er bedt om.
+- **Ikke gjør endringer andre steder enn der eieren ber om.** Ser du noe
+  annet som burde rettes: si fra, ikke rett det. (Eieren, 5. september 2026.)
+  Dette står ikke i strid med «gjøres globalt» under: en endring eieren har
+  godkjent skal gjøres alle steder den hører hjemme — men en endring han
+  ikke har bedt om, skal ikke gjøres noe sted.
 - Ikke fjern funksjonalitet uten godkjenning.
 - Ikke endre en arbeidsflyt uten å forklare konsekvensen først.
 - Ikke lag en parallell løsning når funksjonen finnes. Se etter den først.
@@ -34,6 +39,10 @@ de ble sagt i.
 
 ## Kontroll
 
+- **Test alle endringer skikkelig.** Hver endring eieren ber om skal kjøres
+  som en ekte bruker ville kjørt den — i nettleseren, hele veien gjennom —
+  før den meldes ferdig. Si hva som ble målt, og hva som ikke ble det.
+  (Eieren, 5. september 2026.)
 - Ikke påstå at noe er testet hvis det ikke er testet.
 - Mål i nettleseren, ikke bare i koden. En test kan være grønn av feil grunn.
 - Test på PC, nettbrett og mobil.

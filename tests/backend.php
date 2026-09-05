@@ -9206,6 +9206,31 @@ sjekk('kvitteringen legger seg ikke oppaa adminstripa',
 sjekk('… og ute paa nettsida staar den som for',
     !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
 
+// ── Brevet lovet en lenke som ikke finnes ────────────────────────────────
+//
+// Eieren, 5. september: «sjekker du at man faktisk finner betalingslinken paa
+// min side som du paastaar i eposten». Svaret var nei: «vipps_url» lagres i
+// subscriptions, men «min»-objektet i api/medlemskap.php sender den aldri ut,
+// og ingenting i nettleseren leser den.
+//
+// Maalt: en som har bestilt Aarsmedlemskap uten aa godkjenne ser bare «Bli
+// medlem i verkstedet» og innmeldingsskjemaet paa nytt.
+$mig141 = @file_get_contents(dirname(__DIR__) . '/db/migrations/141_lenken_ligger_ikke_paa_min_side.sql') ?: '';
+sjekk('migrasjon 141 tar setningen ut av brevet',
+    str_contains($mig141, "WHERE navn = 'innmelding_fast_trekk'")
+    && str_contains($mig141, 'Har du lukket siden, finner du den samme lenken'));
+// REPLACE, ikke ny fulltekst: da overlever det eieren selv har rettet i malen.
+sjekk('… og tar bare den ene setningen, ikke hele malen',
+    str_contains($mig141, 'SET tekst = REPLACE(')
+    && !str_contains($mig141, 'DU MÅ GODKJENNE AVTALEN I VIPPS'));
+// Lenken finnes fortsatt i selve e-posten, og purringen sender den paa nytt.
+sjekk('… mens lenken i brevet og purringen staar',
+    str_contains($mig141, '{lenke}') === false
+    && str_contains($mig141, 'Tar det bare et minutt.'));
+// «Vipps_url» sendes ikke til Min side. Staar det en dag, skal denne felle.
+sjekk('Min side faar fortsatt ikke Vipps-adressen',
+    !str_contains($sidaB, 'vippsUrl') && !str_contains($sidaB, 'godkjennUrl'));
+
 // ── Verktoeyene oeverst, ikke nederst i skuffen ──────────────────────────
 //
 // Eieren, 5. september: «Se nettsiden, vips, oppdatter melde feil og log ut

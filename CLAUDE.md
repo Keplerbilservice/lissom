@@ -10,6 +10,9 @@ de ble sagt i.
   forrige er besvart. (Eieren, 4. september 2026.)
 - Maks én linje per spørsmål, forslag, risiko og forklaring.
 - Er noe uklart: stopp den endringen og spør. Ikke gjett.
+- **Ikke anta.** Sjekk hvordan noe faktisk virker før du sier at det gjør
+  det — i koden og i nettleseren. Skriver du at en lenke, en knapp eller en
+  side finnes, skal du ha sett den. (Eieren, 5. september 2026.)
 - Bruk formatet ved nye funn:
   `Funnet:` / `Påvirkning:` / `Forslag:` / `Spørsmål:` — én linje hver.
 

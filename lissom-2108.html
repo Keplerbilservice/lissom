@@ -10234,9 +10234,10 @@ window.__resources = {
              de andre betales én periode om gangen, og naar perioden er ute
              er det ingen som ber om pengene. Kortet «Ikke betalt» i Kassa
              viser dem alt — men ingen aapner Kassa for aa lete.
-             Linja staar bare naar noe faktisk er forfalt. Er alt gjort opp,
-             finnes den ikke. Tallene kommer fra krevInnLinje(), som leser de
-             samme radene som kortet i Kassa. -->
+             Linja staar naar noe staar ubetalt — en kursplass, et medlemskap
+             eller et butikksalg. Er alt gjort opp, finnes den ikke. Tallene
+             kommer fra krevInnLinje(), som leser de samme radene som kortet i
+             Kassa, uten filter. -->
         <sc-if value="{{ ovKrevInnVis }}" hint-placeholder-val="{{ false }}">
           <div style="{{ ovKrevInnRamme }}">
             <div style="min-width: 0;">
@@ -29332,16 +29333,32 @@ class Component extends DCLogic {
    * og en knapp til stedet der jobben gjores.
    *
    * Den leser de samme radene som kortet, saa tallet kan ikke bli et annet.
-   * Er ingenting forfalt, vises den ikke i det hele tatt.
+   * Er ingenting ubetalt, vises den ikke i det hele tatt.
+   *
+   * «De samme radene» ble sant foerst 5. september. Fram til da sto et filter
+   * her — bare medlemskap, og bare de forfalte — mens Kassa talte hele lista.
+   * Eieren, med bilde av begge skjermene: «Den sier 2 medlemskap maa
+   * innkreves men det er totalt 3 ting, saa alt maa staa paa forsiden».
    */
   krevInnLinje() {
-    const forfalte = ((this.state.adminData || {}).ubetalte || [])
-      .filter(u => u.slag === 'medlem' && u.forfalt);
+    // Hele lista, ikke et utvalg.
+    //
+    // Her sto «u.slag === 'medlem' && u.forfalt». Det holdt kursplassene og
+    // butikksalgene utenfor, og medlemskapene som var utestaaende uten aa
+    // vaere forfalt enda. Kassa teller den samme lista uten filter, saa de to
+    // skjermene sa hvert sitt tall om den samme dagen: Kassa tre, forsida to.
+    //
+    // Eieren, 5. september: «Den sier 2 medlemskap maa innkreves men det er
+    // totalt 3 ting, saa alt maa staa paa forsiden».
+    //
+    // Alle tre slagene baerer «belopOre» og «dager», saa summen og alderen
+    // regnes likt uansett hva raden er.
+    const kreves = (this.state.adminData || {}).ubetalte || [];
 
     // «belopOre» framfor aa lese tallet ut av «kr. 1 790,-» igjen. Serveren
     // sender begge; det ene er til aa vise, det andre til aa regne med.
-    const sum = forfalte.reduce((n, u) => n + (u.belopOre || 0), 0);
-    const eldst = forfalte.reduce((n, u) => Math.max(n, u.dager || 0), 0);
+    const sum = kreves.reduce((n, u) => n + (u.belopOre || 0), 0);
+    const eldst = kreves.reduce((n, u) => Math.max(n, u.dager || 0), 0);
 
     // Beloepet brekker ikke midt i tallet. Samme regel som ovSkylderSum og
     // Booking::kroner() paa serveren — eieren, 4. september, med bilde:
@@ -29358,9 +29375,11 @@ class Component extends DCLogic {
     }
 
     return {
-      ovKrevInnVis: forfalte.length > 0,
-      // «Medlemskap» heter det samme i entall og flertall.
-      ovKrevInnTittel: forfalte.length + ' medlemskap må kreves inn',
+      ovKrevInnVis: kreves.length > 0,
+      // «Ting», ikke «medlemskap»: raden kan vaere en kursplass, et
+      // medlemskap eller et butikksalg. Eierens eget ord, valgt av ham
+      // 5. september. Det heter det samme i entall og flertall.
+      ovKrevInnTittel: kreves.length + ' ting må kreves inn',
       ovKrevInnDetalj: deler.join(', '),
       ovKrevInnHarDetalj: deler.length > 0,
       ovKrevInnVelg: () => this.gaaAdmin('adminuttak', {}),

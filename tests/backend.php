@@ -9358,16 +9358,34 @@ sjekk('linja «maa kreves inn» staar paa Oversikt',
     && str_contains($kreves, '...this.krevInnLinje(),')
     && str_contains($kreves, '<sc-if value="{{ ovKrevInnVis }}"'));
 // Den leser de samme radene som kortet i Kassa, saa tallene kan ikke sprike.
+//
+// Her sto et filter: «u.slag === 'medlem' && u.forfalt». Testen het det den
+// heter naa, men den vokta det motsatte av navnet sitt — filteret holdt
+// kursplassene og butikksalgene ute, og medlemskapene som var utestaaende
+// uten aa vaere forfalt enda. Kassa teller lista uten filter.
+//
+// Eieren, 5. september, med bilde: «Den sier 2 medlemskap maa innkreves men
+// det er totalt 3 ting, saa alt maa staa paa forsiden».
+//
+// Maalt etterpaa, med én ubetalt kursplass, seks medlemskap og ett
+// butikksalg i basen: forsida og Kassa sier begge «8» og «kr. 11 080,-».
+// Med det gamle filteret sa forsida «5» og «kr. 7 960,-».
 sjekk('… og leser de samme radene som kortet i Kassa',
-    str_contains($kreves, ".filter(u => u.slag === 'medlem' && u.forfalt)"));
+    str_contains($kreves, 'const kreves = (this.state.adminData || {}).ubetalte || [];')
+    && !str_contains($kreves, ".filter(u => u.slag === 'medlem' && u.forfalt)"));
+// «Medlemskap» var feil ord i det oyeblikket raden kunne vaere en kursplass
+// eller et butikksalg. Eieren valgte «ting» 5. september.
+sjekk('… og kaller dem «ting», ikke «medlemskap»',
+    str_contains($kreves, "ovKrevInnTittel: kreves.length + ' ting må kreves inn',")
+    && !str_contains($kreves, "' medlemskap må kreves inn'"));
 // Beloepet regnes av oerene serveren sender, ikke ved aa lese tallet ut av
 // «kr. 1 790,-» paa nytt.
 sjekk('… og regner beloepet av oerene, ikke av teksten',
     str_contains($kreves, '(u.belopOre || 0)'));
 // Er alt gjort opp, skal linja ikke finnes. En roed stripe hver dag naar det
 // ikke er noe aa gjore slutter man aa se etter en uke.
-sjekk('… og vises ikke naar ingenting er forfalt',
-    str_contains($kreves, 'ovKrevInnVis: forfalte.length > 0,'));
+sjekk('… og vises ikke naar ingenting staar ubetalt',
+    str_contains($kreves, 'ovKrevInnVis: kreves.length > 0,'));
 // Ingen «eldste 0 dager», og ingen «kr. 0,- utestaaende».
 sjekk('… og sier bare det som er sant om alder og beloep',
     str_contains($kreves, 'if (eldst > 0) {')

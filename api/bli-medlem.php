@@ -189,10 +189,20 @@ if ($gammel !== null) {
 // Sokeren far en kvittering, og verkstedet beskjed om at det ligger en soknad.
 // Delt i to maler. Eieren, 1. september: «del i to maler» — da ser han hele
 // teksten kunden faar, og kan skrive de to ulikt.
+// Lenka til Vipps maa vaere MED i e-posten naar det er fast trekk.
+//
+// Avtalen er ikke gyldig for medlemmet har godkjent den i appen. Rekker hun
+// det ikke der og da — nettet ryker, telefonen ligger i en annen jakke, hun
+// lukker fana — laa lenka bare i basen, og ingen fikk den. Eieren,
+// 5. september: «eposten de som bestiller årsmedlemskap får forteller
+// ingenting om at de må godkjenne», og «jeg får jo ikke inn pengene mine».
 Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
     ['epost' => $epost], [
-        'navn' => $navn,
-        'type' => $type,
+        'navn'  => $navn,
+        'type'  => $type,
+        'lenke' => (string) ($avtale['url'] ?? '') !== ''
+            ? (string) $avtale['url']
+            : Config::nettsted() . '/min-side',
     ], 'membership_application', $id);
 
 // Beskjeden til verkstedet gaar paa e-post, og som SMS i tillegg naar det er

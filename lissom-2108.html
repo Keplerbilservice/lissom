@@ -13388,6 +13388,14 @@ window.__resources = {
                         <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonPlan }}" hint-size="auto,36px">{{ personPlanKnapp }}</x-import>
                       </div>
                     </sc-if>
+                    <!-- Avtalen medlemmet mangler. Se den samme blokka i
+                         medlemsruta over. -->
+                    <sc-if value="{{ personKanSendeAvtale }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top: var(--space-4); border-top: 1px solid var(--border-subtle); padding-top: var(--space-3);">
+                        <div style="font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty; margin-bottom: 8px;">{{ personAvtaleHjelp }}</div>
+                        <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" size="sm" icon="send" on-click="{{ sendPersonAvtale }}" hint-size="auto,36px">Send Vipps-avtale</x-import>
+                      </div>
+                    </sc-if>
                   </div>
                   <label style="{{ personFriEtikett }}">
                     <input type="checkbox" checked="{{ personFri }}" onChange="{{ vekslPersonFri }}" style="width: 18px; height: 18px; accent-color: var(--lissom-brown); cursor: pointer;">
@@ -27385,7 +27393,40 @@ class Component extends DCLogic {
       .then(r => r.json().then(d => ({ ok: r.ok && d && d.ok, d })))
       .then(({ ok, d }) => {
         this._medlemskapLagrer = false;
-        // Skal kunden til Vipps for aa godkjenne, sender vi hen dit.
+        // ── Si hva som skjer, foer vi sender hen til Vipps ─────────────
+        //
+        // Her gikk nettleseren rett videre. En som ble avbrutt paa veien —
+        // nettet, en telefon i en annen jakke, en lukket fane — hadde ingen
+        // maate aa vite at avtalen ikke var gyldig. Og fast trekk er en
+        // FULLMAKT: den maa godkjennes i appen for vi kan trekke noe.
+        //
+        // Eieren, 5. september: «kunden får ingen beskjed om å godkjenne så
+        // vi får ikke penger», og «Jeg vil dessuten ha dette på pop up når de
+        // har bestilt. Vi må få frem infoen.»
+        //
+        // Ruta sier det med ord, og knappen tar hen til Vipps. Lukker hun
+        // den, staar den samme lenka paa Min side.
+        if (ok && d.url && d.maaGodkjennes) {
+          this.setState({
+            detalj: {
+              tittel: 'Godkjenn i Vipps',
+              undertittel: 'Medlemskapet starter ikke før du har sagt ja i Vipps-appen.',
+              felter: [
+                { navn: 'Medlemskap', verdi: String(d.plan || '') },
+                { navn: 'Slik gjør du', verdi: 'Trykk «Åpne Vipps» under, og godkjenn avtalen i appen. Det tar et minutt.' },
+                { navn: 'Rekker du det ikke nå', verdi: 'Lenka ligger på Min side, og vi sender den på e-post også.' },
+              ],
+              handling: 'Åpne Vipps',
+              maal: null, skjema: false,
+              gjor: () => { window.location.href = d.url; },
+              aboValg: null,
+            },
+            detaljMva: null,
+          });
+          this._medlemskapHentes = false;
+          this.hentMedlemskap();
+          return true;
+        }
         if (ok && d.url) { window.location.href = d.url; return true; }
         this.setState({
           kvittering: ok ? (merkelapp || 'Lagret') : 'Gikk ikke',
@@ -36418,6 +36459,30 @@ class Component extends DCLogic {
                 this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
               });
           },
+          // ── «Send Vipps-avtale» ────────────────────────────────────
+          //
+          // Aarsmedlemskapet kan bare betales med fast trekk. Kjopet paa
+          // nettsida oppretter en Vipps-avtale medlemmet maa godkjenne i
+          // appen — men melder verkstedet inn noen herfra, ble det aldri
+          // laget noen avtale. Hun sto som aktiv, brukte verkstedet, og det
+          // fantes ingenting aa trekke paa.
+          //
+          // Eieren, 5. september: «jeg får jo ikke inn pengene mine».
+          //
+          // Knappen lager avtalen og sender godkjenningslenka paa e-post og
+          // SMS. Den staar bare naar det faktisk mangler noe: medlemmet er
+          // paa en plan, og ingen avtale loeper.
+          personKanSendeAvtale: !!p.id && !!(p.medlemskap || '')
+            && (p.avtale || 'ingen') !== 'aktiv' && !!(p.epost || ''),
+          personAvtaleHjelp: 'Lager avtalen i Vipps og sender lenka til '
+            + fornavn + ' på e-post. Medlemskapet starter først når hun har '
+            + 'godkjent den i appen.',
+          sendPersonAvtale: () => this.medlemKall(
+            { handling: 'send-avtale', medlemId: p.id }, true
+          ).then(ok => {
+            if (!ok) { return; }
+            this.apnePerson(this.state.personMedlemId || 0, this.state.personBookingId || 0);
+          }),
           // ── Begynn paa nytt med den samme personen ─────────────────
           //
           // Eieren, 4. september, om Eirin: «Eirin skal ha en bruker og den

@@ -7338,18 +7338,24 @@ sjekk('migrasjon 132 retter velkomstmalen',
 $velkomst = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
 );
-sjekk('velkomsten sier at forste trekk kommer om noen dager',
-    str_contains($velkomst, 'Første trekk kommer om noen dager'), mb_substr($velkomst, 0, 40));
-sjekk('… og hvorfor det tar tid',
-    str_contains($velkomst, 'Vipps krever at vi varsler deg først'));
-// Den gamle setningen lovte noe systemet ikke gjor: medlemmet settes aktivt
-// naar AVTALEN blir aktiv i Vipps, for en eneste krone har flyttet seg.
+// Migrasjon 139 skrev malen om igjen. Den sa fortsatt at avtalen VAR
+// opprettet, og at medlemskapet var aktivt med det samme — begge deler er
+// usant for kunden har godkjent i appen. Eieren, 5. september: «eposten de
+// som bestiller årsmedlemskap får forteller ingenting om at de må godkjenne».
+sjekk('velkomsten sier at avtalen maa godkjennes',
+    str_contains($velkomst, 'DU MÅ GODKJENNE AVTALEN I VIPPS'), mb_substr($velkomst, 0, 40));
+sjekk('… og at medlemskapet ikke starter for det',
+    str_contains($velkomst, 'Medlemskapet starter ikke før du har gjort det'));
+sjekk('… og hvorfor trekket tar tid',
+    str_contains($velkomst, 'Vipps krever at vi varsler deg før hvert'));
+// De to gamle setningene lovte noe systemet ikke gjor.
 sjekk('… og lover ikke lenger at medlemskapet venter paa betalingen',
     !str_contains($velkomst, 'aktivt så snart betalingen er registrert'));
-sjekk('… men sier at det er aktivt med det samme',
-    str_contains($velkomst, 'Medlemskapet er aktivt med det samme'));
+sjekk('… og paastaar ikke at det er aktivt med det samme',
+    !str_contains($velkomst, 'Medlemskapet er aktivt med det samme'),
+    'det er det ikke for avtalen er godkjent');
 // Plassholderne maa staa. Uten dem staar det «Hei {navn}» i e-posten.
-foreach (['{navn}', '{type}'] as $felt) {
+foreach (['{navn}', '{type}', '{lenke}'] as $felt) {
     sjekk('… og «' . $felt . '» staar igjen i malen', str_contains($velkomst, $felt));
 }
 
@@ -11458,11 +11464,13 @@ sjekk('… og den teller som forfalt, ikke som «venter»',
     'ellers staar den ikke i «Ikke betalt» paa Oversikt');
 // Avtaler opprettes bare de to stedene. Det er ikke en feil i seg selv, men
 // det er grunnen til at et medlem kan staa aktiv uten noe aa trekke paa.
-sjekk('avtaler opprettes bare fra nettsida og innmeldinga',
+// Admin kan naa lage avtalen selv, med «Send Vipps-avtale». Foer dette gikk
+// det bare fra nettsida og innmeldingsskjemaet, og et medlem meldt inn
+// herfra sto uten noe aa trekke paa.
+sjekk('avtaler kan opprettes fra alle tre stedene',
     substr_count(file_get_contents(dirname(__DIR__) . '/api/medlemskap.php'), 'Medlemskap::startAvtale(') === 1
     && substr_count(file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php'), 'Medlemskap::startAvtale(') === 1
-    && !str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'startAvtale'),
-    'admin melder inn uten avtale — se «Mangler Vipps-avtale»');
+    && str_contains(file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php'), 'Medlemskap::startAvtale('));
 
 // ── «Forny» skal fornye DIN plan ───────────────────────────────────
 //
@@ -11477,6 +11485,72 @@ sjekk('… og det samme gjor start, fornying og oppgraderingsforslaget',
     !str_contains(preg_replace('/^\s*\/\/.*$/m', '', $sidaA), 'this.aktivPlan().navn')
     && str_contains($sidaA, 'const minPlan = this.egenPlan() || {};'),
     'aktivPlan() staar igjen bare der et tilbud er poenget');
+
+
+echo "\n== Kunden får beskjed om å godkjenne i Vipps ==\n";
+// Eieren, 5. september: «eposten de som bestiller årsmedlemskap får forteller
+// ingenting om at de må godkjenne», «Jeg vil dessuten ha dette på pop up når
+// de har bestilt. Vi må få frem infoen», og «jeg får jo ikke inn pengene
+// mine».
+//
+// Fast trekk i Vipps er en FULLMAKT kunden gir i appen. Avtalen er ikke
+// gyldig for hun har godkjent den — og det sto ingen steder.
+$mig = file_get_contents(dirname(__DIR__) . '/db/migrations/139_avtalen_ma_godkjennes_i_vipps.sql');
+$sidaV = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+$mkV   = file_get_contents(dirname(__DIR__) . '/api/medlemskap.php');
+$bmV   = file_get_contents(dirname(__DIR__) . '/api/bli-medlem.php');
+$admV  = file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php');
+$cronV = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+
+// 1. E-posten.
+sjekk('velkomstmalen sier at avtalen maa godkjennes',
+    str_contains($mig, 'DU MÅ GODKJENNE AVTALEN I VIPPS')
+    && str_contains($mig, "SET emne  = 'Godkjenn medlemskapet i Vipps',"),
+    'den sa «Du har opprettet en fast betalingsavtale» — som om den var ferdig');
+sjekk('… og lenka til Vipps staar i den',
+    str_contains($mig, '{lenke}')
+    && str_contains($bmV, "'lenke' => (string) (\$avtale['url'] ?? '') !== ''"),
+    'uten den naadde adressen aldri fram til noen');
+sjekk('… og den gaar ogsaa naar man kjoper fra Min side',
+    str_contains($mkV, "Varsel::mal(\$betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',"),
+    'herfra gikk det ingen e-post i det hele tatt');
+
+// 2. Ruta paa skjermen.
+sjekk('skjermen sier det foer den sender deg til Vipps',
+    str_contains($sidaV, "if (ok && d.url && d.maaGodkjennes) {")
+    && str_contains($sidaV, "tittel: 'Godkjenn i Vipps',")
+    && str_contains($sidaV, "handling: 'Åpne Vipps',"),
+    'nettleseren gikk rett videre uten aa si hva som maatte gjores');
+sjekk('… og serveren sier fra om at det maa godkjennes',
+    str_contains($mkV, "'maaGodkjennes' => \$betaling === 'trekk',"));
+
+// 3. Purringen.
+sjekk('en ugodkjent avtale blir purret paa',
+    str_contains($mig, "'avtale_ikke_godkjent',")
+    && str_contains($cronV, "Varsel::mal('avtale_ikke_godkjent', [")
+    && str_contains($cronV, 'AND s.paaminnet_antall < 2'),
+    'maalt: paaminnet_antall gikk 0 → 1, og ikke videre samme natt');
+// Sju dager sto paa AVTALENE. Godkjente kunden i uke to, ble raden aldri
+// sett paa igjen, og trekket startet aldri. (De sju dagene paa hengende
+// BETALINGER lenger nede er noe annet og staar som for.)
+sjekk('… og vi slutter ikke aa se etter avtalen etter sju dager',
+    str_contains($cronV, "WHERE status = 'venter'\n                AND vipps_agreement_id IS NOT NULL\n                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"),
+    'godkjente kunden i uke to, fikk vi det aldri med oss');
+
+// 4. Knappen i admin.
+sjekk('verkstedet kan sende avtalen selv',
+    str_contains($admV, "if (\$handling === 'send-avtale') {")
+    && str_contains($admV, "? Medlemskap::startAvtale(\$m, \$type)")
+    && str_contains($sidaV, 'Send Vipps-avtale'),
+    'maalt: knappen staar i personruta med hjelpetekst');
+sjekk('… og den staar bare naar det faktisk mangler noe',
+    str_contains($sidaV, "personKanSendeAvtale: !!p.id && !!(p.medlemskap || '')")
+    && str_contains($sidaV, "&& (p.avtale || 'ingen') !== 'aktiv' && !!(p.epost || ''),"));
+sjekk('… og to avtaler ved siden av hverandre avvises',
+    str_contains($admV, "Svar::feil('Medlemmet har alt en løpende avtale.');"),
+    'to avtaler er to trekk');
+sjekk('… og handlingen staar i endringsloggen',
+    str_contains($admV, "'medlem_avtale_sendt'   => 'Vipps-avtale sendt til medlemmet',"));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

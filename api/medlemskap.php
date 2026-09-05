@@ -234,7 +234,36 @@ switch (Foresporsel::tekst('handling')) {
             Svar::feil($e->getMessage());
         }
         revider('medlemsavtale_startet', 'subscription', $ut['id'], ['plan' => Foresporsel::tekst('plan')]);
-        Svar::ok(['url' => $ut['url']]);
+
+        // ── Kvitteringen med godkjenningslenka ─────────────────────────
+        //
+        // Herfra gikk det ingen e-post i det hele tatt. Innmeldingsskjemaet
+        // sender én; kjoper man det samme medlemskapet fra Min side eller i
+        // kassa, sto man igjen med bare nettleseren.
+        //
+        // Det gaar bra saa lenge kunden fullfoerer i Vipps med det samme. Gjor
+        // hun ikke det, er avtalen ikke gyldig, og lenka finnes ingen andre
+        // steder enn i basen. Eieren, 5. september: «jeg får jo ikke inn
+        // pengene mine».
+        //
+        // «gjentakelse» betyr at dette er det samme forsoeket om igjen — da er
+        // e-posten alt sendt, og en til ville bare vaert stoy.
+        if (empty($ut['gjentakelse']) && trim((string) ($medlem['epost'] ?? '')) !== '') {
+            Varsel::mal($betaling === 'trekk' ? 'innmelding_fast_trekk' : 'innmelding_ordner_selv',
+                ['epost' => (string) $medlem['epost']], [
+                    'navn'  => (string) ($medlem['navn'] ?? ''),
+                    'type'  => $planNavn,
+                    'lenke' => (string) ($ut['url'] ?? '') !== ''
+                        ? (string) $ut['url']
+                        : Config::nettsted() . '/min-side',
+                ], 'subscription', (int) $ut['id']);
+        }
+
+        Svar::ok(['url' => $ut['url'],
+                  // Skjermen skal kunne si at avtalen maa godkjennes, og
+                  // vise den samme lenka om kunden lukker Vipps.
+                  'maaGodkjennes' => $betaling === 'trekk',
+                  'plan' => $planNavn]);
 
     case 'siOpp':
         $a = Medlemskap::avtale((int) $medlem['id']);

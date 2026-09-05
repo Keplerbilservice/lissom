@@ -2496,9 +2496,12 @@ sjekk('FAILED sier fra til medlemmet',
     str_contains($medlFil, "if (\$status === 'FAILED' || \$status === 'CANCELLED') {")
     && str_contains($medlFil, "Varsel::mal('betaling_feilet'"));
 $cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-sjekk('cron sporr om trekkene som ikke har fatt svar',
-    str_contains($cronFil, 'foreach (Medlemskap::trekkUtenSvar() as $p) {')
-    && str_contains($cronFil, 'Medlemskap::sjekkTrekk($p)'));
+// Runden ble flyttet ut av cron 5. september, saa trafikken paa sida kan
+// kjore den ogsaa — cron-jobben ble aldri satt opp. Samme kode, nytt hjem.
+$runden = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('trekkrunden sporr om trekkene som ikke har fatt svar',
+    str_contains($runden, 'foreach (self::trekkUtenSvar() as $p) {')
+    && str_contains($runden, 'self::sjekkTrekk($p)'));
 // ePayment-oppslaget ga 404 paa hvert eneste maanedstrekk, hvert femte
 // minutt, og skrev en linje i feilloggen hver gang.
 sjekk('… og ePayment-oppslaget lar maanedstrekkene vaere',
@@ -7370,10 +7373,13 @@ foreach (['{navn}', '{type}', '{lenke}'] as $felt) {
 // dogn, hver gang. Aktiveringen maa staa foerst.
 echo "\n== Rekkefolgen i medlemstrekket ==\n";
 
-$cronKode = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$posMedlemstrekk = strpos($cronKode, "case 'medlemstrekk':");
+// Runden laa i bin/cron.php til 5. september. Den ligger i Medlemskap naa,
+// saa baade cron og trafikken paa sida kan kjore den — rekkefolgen er den
+// samme, og den er like viktig.
+$cronKode = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+$posMedlemstrekk = strpos($cronKode, 'public static function kjorTrekkrunde(');
 $posAktiver = strpos($cronKode, "WHERE status = 'venter'", $posMedlemstrekk);
-$posTrekk   = strpos($cronKode, 'Medlemskap::tilTrekk()', $posMedlemstrekk);
+$posTrekk   = strpos($cronKode, 'self::tilTrekk()', $posMedlemstrekk);
 sjekk('begge blokkene finnes i medlemstrekket',
     $posMedlemstrekk !== false && $posAktiver !== false && $posTrekk !== false);
 sjekk('avtalene aktiveres FOER trekkrunden',
@@ -8845,6 +8851,30 @@ sjekk('… og innhold som blir klippet av et kort',
 // klippet. Uten dette maaler vakta bare sida slik den staar naar den lastes.
 sjekk('… og skjermene som ligger bak et trykk',
     str_contains($bredde, "{ sti: '/admin/uttak', klikk: ['Betalinger'] },"));
+// 5. september: eieren tegnet en pil paa et bilde. Den pekte paa «Til» i
+// «Rediger okten», 103 piksler utenfor den hvite ruta paa telefonen. Sida
+// var 390 piksler, dialogen ogsaa — de tre maalene over saa ingenting, for
+// de maaler mot skjermkanten og mot kort som klipper. Dialogen klipper
+// ikke; feltet stakk bare ut i lufta. Derfor maales det naa mot innsida av
+// dialogruta ogsaa.
+//
+// Maalt: med «1.4fr 1fr 1fr» tilbake i sida melder vakta «2 utenfor
+// dialogen, verst 103 px» og navngir baade «Til» og spaltene. Med rettinga
+// paa plass er den gronn.
+sjekk('breddesjekken fanger felt som stikker utenfor dialogen',
+    str_contains($bredde, 'const utenforRuta = () => {')
+    && str_contains($bredde, 'const ur = await p.evaluate(utenforRuta);')
+    && str_contains($bredde, "' utenfor dialogen, verst '"));
+// Kortet i en dialog har «overflow: auto» for at lange skjemaer skal kunne
+// rulle nedover. Regnes det som «ruller med vilje», hopper vakta over alt
+// som ligger inni, og maaler ingenting i det hele tatt — den var gronn paa
+// den ekte feilen for dette ble rettet.
+sjekk('… og kortets egen rulling slaar ikke maalingen av',
+    str_contains($bredde, 'for (let f = e.parentElement; f && f !== kort; f = f.parentElement) {'));
+// Uten en dialog i lista aapnes ingen, og da maaler den nye vakta aldri noe.
+sjekk('… og dialogene aapnes for de maales',
+    str_contains($bredde, "{ sti: '/admin/kalender',  klikk: [{ velger: '.lx-agenda' }] },")
+    && str_contains($bredde, "{ sti: '/admin/medlemmer', klikk: ['NYTT MEDLEM'] },"));
 
 echo "\n== Kassa deler dagen på måten, ikke på refusjonsevnen ==\n";
 // Eieren, 4. september, etter aa ha registrert kr 500 med Vipps og sett dem
@@ -9206,6 +9236,113 @@ sjekk('kvitteringen legger seg ikke oppaa adminstripa',
 // Ute paa nettsida finnes ingen bunnmeny aa staa over.
 sjekk('… og ute paa nettsida staar den som for',
     !str_contains($sidaB, "transform: 'translateX(-50%)',\n          top: '110px', zIndex: 500"));
+
+// ── «Til» falt utenfor dialogen på telefon ──────────────────────────────
+//
+// Eieren, 5. september, med en pil tegnet på skjermbildet: «se piller på
+// utsiden av bildet».
+//
+// Raden Dato / Fra / Til sto som tre faste spalter — «1.4fr 1fr 1fr». Et
+// datofelt har en minstebredde nettleseren selv setter, og i en dialog på
+// 390 px sprengte raden ramma: «Til» og sluttidspunktet lå 82 px utenfor på
+// 390, og 112 px utenfor på 360. Da kunne man hverken se eller sette når
+// økta slutter fra telefonen.
+//
+// Målt før og etter. Nå brekker raden i stedet, og «min-width: 0» lar
+// datofeltet krympe — uten den sprenger raden uansett hvor mange spalter
+// den får lov å ha.
+$klipp = @file_get_contents(dirname(__DIR__) . '/lissom-2108.html') ?: '';
+sjekk('dato- og klokkeslettraden brekker naar det er trangt',
+    !str_contains($klipp, 'grid-template-columns: 1.4fr 1fr 1fr;')
+    && substr_count($klipp, 'grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4);') === 2);
+// Uten dette kan ikke datofeltet krympe, og raden sprenger likevel.
+sjekk('… og cellene faar lov aa krympe',
+    substr_count($klipp, '<div style="min-width: 0;">' . "\n"
+        . '                <label style="display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 6px;">Dato</label>') === 2);
+
+// ── Antall og beløp kan rettes på en påmelding ──────────────────────────
+//
+// Eieren, 5. september: «Jeg har et kurs som jeg har meldt paa 10 personer.
+// Saa kom det bare 6 stk. Jeg kan legge til flere osv, men ikke redigere
+// antall som kom.» Og: «Jeg maa endre antall og jeg maa kunne overstyre pris
+// ved aa taste inn.» Og: «Globalt».
+//
+// Fem handlinger fantes — legg til, fjern, flytt, status, kursbevis — og
+// ingen av dem kunne rette et tall.
+$pam = @file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php') ?: '';
+sjekk('paameldingen kan rettes',
+    str_contains($pam, "if (\$handling === 'endre') {")
+    && str_contains($pam, " *   POST handling=endre      { id, antall?, belop? }"));
+// Samme grenser som naar plassen legges inn.
+sjekk('… med samme grenser som naar plassen legges inn',
+    str_contains($pam, "Antallet må være mellom 1 og 20. Skal plassen bort, fjern den i stedet.")
+    && str_contains($pam, 'Beløpet må være mellom 0 og 100 000 kroner.'));
+// Tomt beloepsfelt: regn det av antallet, med prisen paa datoen foran
+// prisen paa kurset — samme uttrykk som naar plassen legges inn.
+sjekk('… og beloepet foelger antallet naar det ikke tastes inn',
+    str_contains($pam, "\$felt['belop_ore'] = (int) \$pris * \$nyttAntall;")
+    && substr_count($pam, "COALESCE(cs.pris_ore, c.pris_ore)") === 2);
+// Et tall i feltet gaar foran.
+sjekk('… og et tastet beloep gaar foran',
+    str_contains($pam, "if (\$belopRaa !== '') {")
+    && str_contains($pam, "\$felt['belop_ore'] = \$belop;"));
+// Et tall som endrer seg uten spor er et tall ingen kan etterproeve.
+sjekk('… og loggen sier hva som sto foer og hva som staar naa',
+    str_contains($pam, "revider('pamelding_endret', 'booking', \$id, [")
+    && str_contains($pam, "'antall_for' => (int) \$rad['antall'],")
+    && str_contains($pam, "'belop_for'  => (int) \$rad['belop_ore'],"));
+sjekk('… og loggen har en tekst i historikken',
+    str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/medlemmer.php') ?: '',
+        "'pamelding_endret'      => 'Antall og beløp rettet',"));
+
+// Globalt: begge stedene én paamelding rettes fra.
+$endre = preg_replace('/^\s*\/\/.*$/m', '',
+    preg_replace('/<!--.*?-->/s', '', $sidaB));
+sjekk('«Endre» staar paa raden under Paameldte',
+    str_contains($endre, '>Endre</button>')
+    && str_contains($endre, '<sc-if value="{{ p.endreApen }}"')
+    && str_contains($endre, "endreApen: this.state.endreRad === p.id,"));
+sjekk('… og i deltakerruta i kalenderen',
+    str_contains($endre, '{{ klDAntall }}')
+    && str_contains($endre, "handling: 'endre', id: dv.bookingId"));
+// Kalenderen maa faa antallet fra serveren for aa kunne fylle feltet.
+// Og videre inn i selve ruta. Uten dette sto feltet paa 1 uansett hva
+// paameldingen gjaldt — funnet 5. september, etter at eieren spurte «kan det
+// gjoeres i kalenderen og?».
+sjekk('… og antallet foelger med inn i deltakerruta',
+    str_contains($endre, 'klDeltakerliste(evt) {')
+    && str_contains($endre, 'antall: p.antall || 1,'));
+sjekk('… og kalenderen faar antallet fra serveren',
+    str_contains(@file_get_contents(dirname(__DIR__) . '/api/admin/kalender.php') ?: '',
+        "'antall'    => (int) \$b['antall'],"));
+// Begge stedene sier hva et tomt beloepsfelt betyr.
+sjekk('… og begge sier hva et tomt beloepsfelt gjor',
+    substr_count($endre, "'Tomt = prisen ganger antallet'") === 2);
+// To aapne paneler paa samme rad er ikke til aa se hvilket som lagres.
+sjekk('… og bare ett panel er aapent om gangen',
+    str_contains($endre, 'flyttRad: apen ? this.state.flyttRad : null,')
+    && str_contains($endre, 'betRad: apen ? this.state.betRad : null,'));
+
+// ── «Fornyes: 1. september» sto fast i koden ────────────────────────────
+//
+// Datoen har staatt der siden 21. august og gjaldt ingen. Maalt i
+// nettleseren 5. september paa et medlem med neste trekk 14. november:
+// dialogen sa fortsatt 1. september.
+$fornyes = preg_replace('/^\s*\/\/.*$/m', '',
+    preg_replace('/<!--.*?-->/s', '', $sidaB));
+sjekk('«Ditt abonnement» gjetter ikke lenger paa datoen',
+    !str_contains($fornyes, "{ navn: 'Fornyes', verdi: '1. september' },")
+    && str_contains($fornyes, "rader.push({ navn: 'Fornyes', verdi: a.nesteTrekk });"));
+// Uten fast trekk finnes det ingen automatisk fornyelse aa love.
+sjekk('… og raden staar bare naar det finnes et neste trekk',
+    str_contains($fornyes, 'if (a.nesteTrekk) {'));
+// Oppsigelsen sa «gjelder fra maanedsslutt» — hverken dato eller lengde.
+sjekk('… og oppsigelsen sier hvilken dato det gjelder ut',
+    !str_contains($fornyes, "'Gjelder fra månedsslutt. Du kan angre fram til da.'")
+    && str_contains($fornyes, "'Sier du opp i dag, gjelder det ut ' + a.sluttHvisOppsagt"));
+// Samme kilde som bekreftelsen bruker, saa de to kan ikke si hver sin dato.
+sjekk('… fra den samme kilden som bekreftelsen leser',
+    str_contains($fornyes, "const naar = (a && (a.slutter || a.sluttHvisOppsagt))"));
 
 // ── «Må kreves inn» på Oversikt ─────────────────────────────────────────
 //
@@ -10341,9 +10478,15 @@ sjekk('… og en feil hos Vipps stopper ikke betalingen hun holder paa med',
 //
 // Foerst gjorde vi vanlig Vipps til det forhaandsvalgte. Men de to pillene
 // sto der fortsatt, og et trykk var nok. Naa er valget borte helt.
+// Sjekken leste to tomme verdier — «bmBetalingsvalg: []» og
+// «bmKanVelgeBetaling: false» — som ble staaende igjen som gravstoetter da
+// pillene ble tatt bort 3. september. Ingen leste dem, og de gikk med i
+// oppryddinga 5. september. Naa sier sjekken det den mener: navnene finnes
+// ikke lenger noe sted, hverken som verdi eller i skjermbildet.
 sjekk('det finnes ingen betalingspiller lenger',
     str_contains($sidaV, 'bmBetalingsvalg: [],')
-    && str_contains($sidaV, 'bmKanVelgeBetaling: false,'));
+    && !str_contains($sidaV, 'bmKanVelgeBetaling')
+    && !str_contains($sidaV, 'bmBetalingValgt'));
 sjekk('… og ingen kan trykke seg til fast trekk',
     !str_contains($sidaV, "knapp('trekk', 'Fast trekk i Vipps')")
     && !str_contains($sidaV, 'velg: () => this.setState({ bmBetaling: verdi, bmFeil: null }),'));
@@ -11359,9 +11502,24 @@ sjekk('ingen butikkvare paastaar at den sendes paa e-post',
 sjekk('… og merknaden sier noe om glasuren i stedet',
     str_contains($utenKomm, "piMerknad: p ? (p.badge === 'Matsikret'")
     && str_contains($utenKomm, "p.badge === 'Kunstobjekt' ? 'Dekorglasur"));
-// Gavekortet SENDES paa e-post. Den linja hoerer hjemme og skal staa.
-sjekk('… mens gavekortet fortsatt sier at det sendes',
-    str_contains($sidaP, "badge: 'Sendes på e-post'"));
+// Gavekortet sto igjen med «Sendes paa e-post» — det er jo slik det leveres.
+// Eieren snudde 5. september: «fjern ogsaa at vi sender en epost», og paa
+// spoersmaal om gavekortet skulle beholde sin: «ta alle sammen».
+//
+// E-postene gaar som for. Det er loeftet paa skjermen som er borte, ikke
+// utsendingen — gavekort_mottaker og gavekort_kjoper ligger i koen som for.
+sjekk('ingen steder lover vi lenger en e-post om bestillingen',
+    !str_contains($utenKomm, "badge: 'Sendes på e-post'")
+    && !str_contains($utenKomm, "'Sendes på e-post, eller hentes i verkstedet.'")
+    && !str_contains($utenKomm, "'Sendes på e-post rett etter kjøp'")
+    && !str_contains($utenKomm, "'Sendes på e-post til mottaker'")
+    && !str_contains($utenKomm, 'Kjøp på nett, kommer på e-post')
+    && !str_contains($utenKomm, 'og sender deg en e-post samtidig')
+    && !str_contains($utenKomm, 'Vi sender den på e-post også'));
+// Admin sin egen forklaring paa hva malene ER staar. Den er ikke et loefte
+// til en kunde om en bestilling.
+sjekk('… mens admin fortsatt forklarer hva malene er',
+    str_contains($utenKomm, 'Hver e-post og SMS systemet sender.'));
 
 // 5. Oppsigelsen leste den samme lagrede datoen og sperret et proevemedlem
 //    ute fra aa si opp. Planen er avtalen.
@@ -11646,14 +11804,14 @@ sjekk('… og serveren sier fra om at det maa godkjennes',
 // 3. Purringen.
 sjekk('en ugodkjent avtale blir purret paa',
     str_contains($mig, "'avtale_ikke_godkjent',")
-    && str_contains($cronV, "Varsel::mal('avtale_ikke_godkjent', [")
-    && str_contains($cronV, 'AND s.paaminnet_antall < 2'),
+    && str_contains($runden, "Varsel::mal('avtale_ikke_godkjent', [")
+    && str_contains($runden, 'AND s.paaminnet_antall < 2'),
     'maalt: paaminnet_antall gikk 0 → 1, og ikke videre samme natt');
 // Sju dager sto paa AVTALENE. Godkjente kunden i uke to, ble raden aldri
 // sett paa igjen, og trekket startet aldri. (De sju dagene paa hengende
 // BETALINGER lenger nede er noe annet og staar som for.)
 sjekk('… og vi slutter ikke aa se etter avtalen etter sju dager',
-    str_contains($cronV, "WHERE status = 'venter'\n                AND vipps_agreement_id IS NOT NULL\n                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"),
+    str_contains($runden, "WHERE status = 'venter'\n                AND vipps_agreement_id IS NOT NULL\n                AND created_at > DATE_SUB(UTC_TIMESTAMP(), INTERVAL 90 DAY)"),
     'godkjente kunden i uke to, fikk vi det aldri med oss');
 
 // 4. Knappen i admin.
@@ -11716,6 +11874,53 @@ sjekk('en proeveperiode kjopt paa nettsida faar en sluttdato',
 sjekk('… og en startdato som alt staar blir ikke rort',
     str_contains($mlB, "'start_dato'      => (\$fra['start_dato'] ?? null) ?: gmdate('Y-m-d'),"),
     '«medlem siden mai» skal ikke bli «medlem siden i dag»');
+
+echo "\n== Trekkrunden kjores ogsaa av trafikken ==\n";
+// Eieren, 5. september: «Eirin og Lene har ikke faatt opprettet noen avtale i
+// vipps, dette fungerer ikke og krever en alvorlig sjekk av deg».
+//
+// Maalt: avtalen VAR opprettet og godkjent i Vipps. Det som manglet var noen
+// som kjorte trekkrunden. Den fantes bare som en cron-jobb — og «medlemstrekk»
+// stod aldri i docs/OPPSETT.md. Den lista har fem jobber, og denne er ikke én
+// av dem. Da ble den aldri satt opp i cPanel, og ingen ble noen gang trukket.
+//
+// Beviset laa i eierens eget skjermbilde: «Skulle vaert trukket 4. september».
+// Den teksten naas bare naar det ikke finnes en eneste betalingsrad — og
+// Medlemskap::trekk() skriver raden FOER den ringer Vipps. Hadde runden gaatt,
+// ville det staatt «Trekket er bestilt».
+$tikk = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+$kron = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$mlT  = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+
+// Én utgave, ikke to. Runden laa i cron; naa ligger den i Medlemskap, og
+// begge veier kaller den samme.
+sjekk('runden ligger ett sted',
+    str_contains($mlT, 'public static function kjorTrekkrunde(?callable $si = null): array'));
+sjekk('… og cron kaller den',
+    str_contains($kron, '$t = Medlemskap::kjorTrekkrunde($si);'));
+sjekk('… og trafikken kaller den',
+    str_contains($tikk, 'Medlemskap::kjorTrekkrunde();')
+    && str_contains($tikk, 'self::medlemstrekk();'));
+// Uten dette ville cron staatt igjen med sin egen halve utgave — den samme
+// feilen som «Tikk hadde sin egen halve utgave» lenger oppe.
+sjekk('… og cron har ingen egen utgave igjen',
+    !str_contains($kron, "AND vipps_agreement_id IS NOT NULL")
+    && !str_contains($kron, "Varsel::mal('avtale_ikke_godkjent'"));
+
+// Trekk er penger. Resten av Tikk gaar hvert minutt; denne gaar én gang i
+// dognet, ellers ville et medlem blitt sett paa 1440 ganger om dagen.
+sjekk('trekkrunden gaar hoyst én gang i dognet',
+    str_contains($tikk, "Rate::tillat('medlemstrekk', 1, 86400, 'server')"),
+    'maalt: telleren gikk 1 → 2 paa neste sidelast, uten et nytt Vipps-kall');
+// En feil her skal aldri velte en forespoersel — som resten av Tikk.
+sjekk('… og en feil velter ikke sida',
+    str_contains($tikk, "logg_feil('Medlemstrekket feilet', \$e);"));
+// Dobbelt trekk: nokkelen er avtale pluss maaned, og raden sjekkes foer Vipps
+// ringes. Derfor gjor det ingen skade om cron settes opp i tillegg.
+sjekk('to runder gir ett trekk',
+    str_contains($mlT, "\$nokkel = substr(hash('sha256', 'trekk:' . \$avtale['id'] . ':' . \$maaned), 0, 36);")
+    && str_contains($mlT, "if (\$fra !== null) {\n            return 'alt fort';"),
+    'maalt: elleve sidebesok og cron etterpaa ga én betalingsrad');
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

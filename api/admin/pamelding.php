@@ -7,6 +7,7 @@
  *   POST handling=fjern      { id }
  *   POST handling=flytt      { id, oktId }   samme person, ny dato
  *   POST handling=status     { id, status }   betalt | reservert | ikke_mott
+ *   POST handling=endre      { id, antall?, belop? }   retter antall og sum
  *   POST handling=bevis      { id, navn?, kurs?, sperret? }  retter kursbeviset
  *
  * Ikke alle bestiller paa nett. Noen ringer, noen staar i doera. De maa staa
@@ -180,6 +181,96 @@ if ($handling === 'status') {
     revider('pamelding_status', 'booking', $id,
             ['status' => $status] + ($nyMaate !== '' ? ['maate' => $nyMaate] : []));
     Svar::ok(['beskjed' => 'Statusen er endret.']);
+}
+
+// ---------------------------------------------------------------- endre
+//
+// Retter antallet plasser, og beloepet.
+//
+// Eieren, 5. september: «Jeg har et kurs som jeg har meldt paa 10 personer.
+// Saa kom det bare 6 stk. Jeg kan legge til flere osv, men ikke redigere
+// antall som kom. Legg til dette, paa samme sted som jeg legger til.» Og:
+// «Jeg maa endre antall og jeg maa kunne overstyre pris ved aa taste inn.»
+//
+// Fem handlinger fantes — legg til, fjern, flytt, status, kursbevis — og
+// ingen av dem kunne rette et tall som var skrevet inn feil, eller som ble
+// feil fordi ikke alle moette.
+//
+// «bookings.antall» styrer fire ting: plassene som er opptatt paa datoen,
+// summen paa deltakerlista, beloepet, og hva verkstedet har krav paa. Derfor
+// er beloepet med her: eieren skal ikke maatte rette antallet ett sted og
+// pengene et annet.
+//
+// Beloepet foelger antallet naar det ikke tastes inn, og lar seg overstyre
+// naar det gjor det. En plass som er gitt bort staar da paa null uten at
+// antallet maa lyve om hvor mange som kom.
+if ($handling === 'endre') {
+    $rad = DB::en(
+        'SELECT b.id, b.antall, b.belop_ore, b.course_session_id, b.status
+           FROM bookings b WHERE b.id = :i',
+        ['i' => $id]
+    );
+    if ($rad === null) {
+        Svar::feil('Fant ikke påmeldingen.');
+    }
+
+    $felt = [];
+    $nyttAntall = $rad['antall'];
+
+    // Antallet. Samme grenser som naar plassen legges inn: minst én, hoyst
+    // tjue. Null plasser er ikke en paamelding — den fjernes.
+    if (Foresporsel::tekst('antall') !== '') {
+        $nyttAntall = Foresporsel::heltall('antall');
+        if ($nyttAntall < 1 || $nyttAntall > 20) {
+            Svar::feil('Antallet må være mellom 1 og 20. Skal plassen bort, fjern den i stedet.');
+        }
+        $felt['antall'] = $nyttAntall;
+    }
+
+    // Beloepet. Tomt felt og et endret antall betyr «regn det ut paa nytt»:
+    // prisen paa datoen gaar foran prisen paa kurset, samme uttrykk som naar
+    // plassen legges inn — se lenger nede — saa de to ikke kan bli uenige.
+    $belopRaa = trim(Foresporsel::tekst('belop'));
+    if ($belopRaa !== '') {
+        $belop = (int) round((float) str_replace(',', '.', $belopRaa) * 100);
+        if ($belop < 0 || $belop > 10000000) {
+            Svar::feil('Beløpet må være mellom 0 og 100 000 kroner.');
+        }
+        $felt['belop_ore'] = $belop;
+    } elseif (isset($felt['antall'])) {
+        $prisKol = DB::harKolonne('course_sessions', 'pris_ore')
+            ? 'COALESCE(cs.pris_ore, c.pris_ore)' : 'c.pris_ore';
+        $pris = DB::verdi(
+            "SELECT {$prisKol} FROM course_sessions cs
+               JOIN courses c ON c.id = cs.course_id
+              WHERE cs.id = :i",
+            ['i' => (int) $rad['course_session_id']]
+        );
+        if ($pris !== null) {
+            $felt['belop_ore'] = (int) $pris * $nyttAntall;
+        }
+    }
+
+    if ($felt === []) {
+        Svar::feil('Ingenting å endre.');
+    }
+
+    DB::oppdater('bookings', $felt, ['id' => $id]);
+
+    // Loggen skal si hva som sto for og hva som staar naa. Et tall som
+    // endrer seg uten spor er det samme som et tall ingen kan etterproeve.
+    revider('pamelding_endret', 'booking', $id, [
+        'antall_for' => (int) $rad['antall'],
+        'antall_naa' => (int) ($felt['antall'] ?? $rad['antall']),
+        'belop_for'  => (int) $rad['belop_ore'],
+        'belop_naa'  => (int) ($felt['belop_ore'] ?? $rad['belop_ore']),
+    ]);
+
+    Svar::ok([
+        'beskjed' => 'Påmeldingen er rettet.',
+        'antall'  => (int) ($felt['antall'] ?? $rad['antall']),
+        'belop'   => Booking::kroner((int) ($felt['belop_ore'] ?? $rad['belop_ore'])),
+    ]);
 }
 
 // ------------------------------------------------------------------ bevis

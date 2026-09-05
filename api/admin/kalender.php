@@ -340,6 +340,11 @@ foreach ($okter as $o) {
             'medlemId'  => $b['member_id'] !== null ? (int) $b['member_id'] : 0,
             'gjest'     => $b['member_id'] === null,
             'bookingId' => (int) $b['id'],
+            // Hvor mange plasser raden gjelder. Deltakerruta i kalenderen
+            // retter antallet der — eieren, 5. september: «jeg har meldt paa
+            // 10 personer, saa kom det bare 6». Uten tallet her maatte ruta
+            // gjettet paa hva som staar for det rettes.
+            'antall'    => (int) $b['antall'],
             // Kontaktopplysningene, saa deltakerruta kan vise dem framfor aa
             // regne dem ut av navnet. Den gjorde noeyaktig det: «kari.nordmann
             // @epost.no» og et telefonnummer laget av lengden paa navnet.

@@ -12021,6 +12021,39 @@ sjekk('… og medlemstrekket staar i oppsettet med klokkeslett',
     str_contains($oppsett, 'php ~/lissom-app/bin/cron.php medlemstrekk`')
     && str_contains($oppsett, '`0 4 * * *`'));
 
+echo "\n== «Send Vipps-avtale» lager ikke en avtale nummer to ==\n";
+// Eieren, 5. september: «Saa jeg kan be de sjekke vipps? Eller maa de melde
+// seg inn paa nytt?» — med to medlemmer som hadde en ugodkjent avtale fra
+// dager tilbake.
+//
+// paagaaendeForsok() ser bare fem minutter tilbake. Den er laget for aa fange
+// to trykk paa rad, ikke for aa rydde. Var forsoeket eldre, lot startAvtale()
+// det bare ligge og laget en avtale til ved siden av — og den gamle lenka
+// virket fortsatt. Godkjente hun begge, ble det to rader med status «aktiv»,
+// og tilTrekk() henter begge.
+//
+// Maalt begge veier med et medlem som hadde en ugodkjent avtale fra tre dager
+// tilbake, og «Send Vipps-avtale» trykket:
+//   uten rettinga:  agr_gammel «venter» + agr_ny «venter»  → 2 trekk
+//   med rettinga:   agr_gammel «stoppet» + agr_ny «venter» → 1 trekk
+// Og Vipps fikk en PATCH paa den gamle avtalen, ikke bare vaar egen rad.
+$dbl = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
+sjekk('et gammelt, ugodkjent avtaleforsoek stoppes foerst',
+    str_contains($dbl, 'foreach (self::gamleAvtaleforsok((int) $medlem[\'id\']) as $gammelt) {')
+    && str_contains($dbl, 'self::avlysForsok($gammelt);'),
+    'maalt: uten dette ga to godkjente lenker to trekk');
+// Uten femminutters-grensa ville den stoppet forsoeket den nettopp gjenbrukte.
+sjekk('… og bare de som ikke lenger er ferske',
+    str_contains($dbl, "AND created_at < (UTC_TIMESTAMP() - INTERVAL 5 MINUTE)"));
+// Stoppingen er den samme koden som alt fantes for byttet av betalingsmaate.
+// En kopi ville betydd to steder aa huske paa.
+sjekk('… med den samme stoppingen som alt fantes',
+    str_contains($dbl, 'private static function avlysForsok(array $motsatt): void')
+    && str_contains($dbl, 'self::avlysForsok($motsatt);'));
+// Den maa naa Vipps, ikke bare vaar egen rad: lenka virker hos dem.
+sjekk('… og avtalen stoppes hos Vipps ogsaa',
+    str_contains($dbl, 'Vipps::stoppAvtale($avtaleId);'));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

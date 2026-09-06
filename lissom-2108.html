@@ -6364,6 +6364,45 @@ window.__resources = {
             </div>
             </div>
           </div>
+          <!-- ── Snarveiene, som kort ────────────────────────────────
+               Eieren, 6. september: «disse pillene, kan du tilpasse de, gjor
+               om til smaa kort og legg de i header menyen paa en fin maate».
+
+               De sto som fem knapper nederst i sidespalta, under kursene og
+               «Bytt dato» — langt fra alt annet man gjor paa denne sida, og
+               man matte rulle for aa se dem. Naa staar de oeverst, i samme
+               rad og samme stil som Beskjeder, Notater og Paaminnelser.
+
+               Raden spenner over hele bredden («1 / -1»), og kortene brekker
+               av seg selv: fem paa PC, to paa nettbrett, ett paa telefon.
+
+               Navnene er de samme fem som for. Tallet paa nye paameldinger
+               staar som et merke, saa det synes uten aa leses. -->
+          <div style="{{ klSnarveiRadStil }}">
+            <button type="button" onClick="{{ klRapApne }}" style="{{ klSnarveiStil }}" style-hover="box-shadow: var(--shadow-md);">
+              <span style="{{ klSnarveiIkonStil }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span>
+              <span style="{{ klSnarveiNavnStil }}">Dagsrapport</span>
+            </button>
+            <button type="button" onClick="{{ klKasse }}" style="{{ klSnarveiStil }}" style-hover="box-shadow: var(--shadow-md);">
+              <span style="{{ klSnarveiIkonStil }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg></span>
+              <span style="{{ klSnarveiNavnStil }}">Kasse</span>
+            </button>
+            <button type="button" onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}" style-hover="box-shadow: var(--shadow-md);">
+              <span style="{{ klSnarveiIkonStil }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
+              <span style="{{ klSnarveiNavnStil }}">Årskalender</span>
+            </button>
+            <button type="button" onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}" style-hover="box-shadow: var(--shadow-md);">
+              <span style="{{ klSnarveiIkonStil }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
+              <span style="{{ klSnarveiNavnStil }}">Nye påmeldinger</span>
+              <sc-if value="{{ klNyePamHar }}" hint-placeholder-val="{{ true }}">
+                <span style="{{ klSnarveiMerkeStil }}">{{ klNyePamAntall }}</span>
+              </sc-if>
+            </button>
+            <button type="button" onClick="{{ klIcsApne }}" style="{{ klSnarveiStil }}" style-hover="box-shadow: var(--shadow-md);">
+              <span style="{{ klSnarveiIkonStil }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg></span>
+              <span style="{{ klSnarveiNavnStil }}">Synk med mobilen</span>
+            </button>
+          </div>
         </div>
 
         <aside style="{{ klAsideStil }}">
@@ -6462,21 +6501,13 @@ window.__resources = {
             </sc-if>
           </div>
           <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Dra en deltaker hit, og så inn på en ny dato.</div>
-          <div style="height: var(--space-2);"></div>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ klRapApne }}" hint-size="auto,44px">Dagsrapport</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="shopping-cart" on-click="{{ klKasse }}" hint-size="auto,44px">Kasse</x-import>
-          <!-- Aarskalenderen og nye paameldinger, i samme stil som resten.
-               Eieren, 6. september: «jeg vil ha aarskalenderen som et kort
-               eller pille i samme stil, ingen link. et forslag kan jo vaere
-               mellom kasse og synk med mobilen paa kelender», og «jeg har
-               bedt om et kort eller pille paa kalender som viser ny
-               paamelding».
-               Raden oeverst paa sida med en understreket lenke er borte:
-               «ingen link». -->
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="calendar" on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="users" on-click="{{ klNyePamApne }}" hint-size="auto,44px">{{ klNyePamNavn }}</x-import>
-          <div style="height: var(--space-4);"></div>
-          <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="smartphone" on-click="{{ klIcsApne }}" hint-size="auto,44px">Synk med mobilen</x-import>
+          <!-- De fem knappene som sto her — Dagsrapport, Kasse,
+               Aarskalender, Nye paameldinger og Synk med mobilen — staar naa
+               som kort oeverst paa sida. Eieren, 6. september: «disse
+               pillene, kan du tilpasse de, gjor om til smaa kort og legg de
+               i header menyen paa en fin maate».
+               Spalta er dermed bare det som hoerer til dra-og-slipp:
+               kursene, ventelista og «Bytt dato». -->
         </aside>
 
         <!-- Kursholderpillene, i sin egen rad.
@@ -12987,6 +13018,27 @@ window.__resources = {
               </div>
               <button type="button" onClick="{{ lukkPerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--text-muted); padding: 2px 8px;">×</button>
             </div>
+            <!-- E-post og telefon, rettbare.
+                 Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+                 medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+                 settes ved innmelding — var den feilskrevet, gikk hver kvittering,
+                 paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
+                 rette den. -->
+            <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+              <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
+              <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1 1 220px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">E-post</label>
+                  <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                </div>
+                <div style="flex: 0 1 160px; min-width: 0;">
+                  <label style="{{ pkEtikett }}">Telefon</label>
+                  <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                </div>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
+              </div>
+            </div>
             <sc-if value="{{ personHenter }}" hint-placeholder-val="{{ false }}">
               <p style="margin: var(--space-4) 0 0; font-size: var(--text-sm); color: var(--text-muted);">Henter historikken …</p>
             </sc-if>
@@ -13909,6 +13961,27 @@ window.__resources = {
                   <div style="font-size: var(--text-sm); color: var(--text-muted); margin-top: 2px;">{{ personDetalj }}</div>
                 </div>
                 <button type="button" onClick="{{ lukkPerson }}" style="appearance: none; background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; color: var(--text-muted); padding: 2px 8px;">×</button>
+              </div>
+              <!-- E-post og telefon, rettbare.
+                   Eieren, 6. september: «dessuten maa jeg kunne endre epost paa
+                   medlemmer og deltakere, noen legge inn feil». Adressen kunne bare
+                   settes ved innmelding — var den feilskrevet, gikk hver kvittering,
+                   paaminnelse og godkjenningslenke til ingen, og ingen skjerm kunne
+                   rette den. -->
+              <div style="border-top: 2px solid var(--lissom-brown); margin-top: var(--space-4); padding-top: var(--space-5);">
+                <div style="font-size: var(--text-sm); font-weight: 600; color: var(--text-heading); margin-bottom: 4px;">E-post og telefon</div>
+                <p style="margin: 0 0 8px; font-size: var(--text-xs); color: var(--text-muted); text-wrap: pretty;">Kvitteringer, påminnelser og Vipps-lenker går hit. Er noe skrevet feil, rett det her.</p>
+                <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end;">
+                  <div style="flex: 1 1 220px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">E-post</label>
+                    <input value="{{ personEpost }}" onChange="{{ settPersonEpost }}" inputmode="email" placeholder="navn@epost.no" style="{{ pkFeltStil }}">
+                  </div>
+                  <div style="flex: 0 1 160px; min-width: 0;">
+                    <label style="{{ pkEtikett }}">Telefon</label>
+                    <input value="{{ personTelefon }}" onChange="{{ settPersonTelefon }}" inputmode="tel" placeholder="12345678" style="{{ pkFeltStil }}">
+                  </div>
+                  <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="check" on-click="{{ lagrePersonKontakt }}" hint-size="auto,36px">{{ personKontaktKnapp }}</x-import>
+                </div>
               </div>
 
               <sc-if value="{{ personHenter }}" hint-placeholder-val="{{ false }}">
@@ -41881,9 +41954,49 @@ class Component extends DCLogic {
           // Oversikt, med det samme tallet.
           klAarApne: () => this.gaaAdmin('adminarskalender', {}),
           klNyePamApne: () => this.gaaAdmin('adminnyepameldinger', {}),
-          klNyePamNavn: 'Nye påmeldinger'
-            + (((this.state.adminData || {}).nyeste || []).length
-                 ? ' · ' + ((this.state.adminData || {}).nyeste || []).length : ''),
+          // Tallet staar som et merke paa kortet, ikke i navnet. Eieren,
+          // 6. september: «gjor om til smaa kort og legg de i header menyen
+          // paa en fin maate».
+          klNyePamAntall: String(((this.state.adminData || {}).nyeste || []).length),
+          klNyePamHar: ((this.state.adminData || {}).nyeste || []).length > 0,
+          // ── Snarveiene, som kort ──────────────────────────────────
+          //
+          // De sto som fem knapper nederst i sidespalta, under kursene og
+          // «Bytt dato». Naa staar de oeverst, i samme rad som Beskjeder,
+          // Notater og Paaminnelser — og i den samme kortstilen.
+          //
+          // Raden spenner over hele toppraden, og kortene brekker av seg
+          // selv: fem paa PC, to paa nettbrett, ett paa telefon.
+          klSnarveiRadStil: {
+            gridColumn: '1 / -1',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',
+            gap: 'var(--space-3)',
+          },
+          // Samme flate, samme kant og samme hjoerner som boksene over.
+          // «position: relative» er for merket, som ligger i hjoernet.
+          klSnarveiStil: {
+            appearance: 'none', cursor: 'pointer', textAlign: 'left',
+            background: 'var(--surface-card)', border: '1px solid var(--border-subtle)',
+            borderRadius: '22px', padding: 'var(--space-4)',
+            display: 'flex', flexDirection: 'column', gap: '10px',
+            minWidth: 0, position: 'relative', boxSizing: 'border-box',
+          },
+          klSnarveiIkonStil: {
+            display: 'inline-flex', color: 'var(--lissom-brown)', opacity: .85,
+          },
+          klSnarveiNavnStil: {
+            fontSize: '13px', fontWeight: 700, color: 'var(--text-heading)',
+            lineHeight: 1.25, minWidth: 0, overflowWrap: 'anywhere',
+          },
+          // Tallet. Staar i hjoernet, saa navnet under aldri blir kortet ned
+          // av det.
+          klSnarveiMerkeStil: {
+            position: 'absolute', top: '10px', right: '12px',
+            background: 'var(--terracotta-500)', color: 'var(--clay-50)',
+            borderRadius: 'var(--radius-pill)', padding: '1px 8px',
+            fontSize: '11px', fontWeight: 700, lineHeight: 1.6,
+          },
           // Veien til ventelisteskjemaet, fra kalenderen.
           klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),
           kalKnapp: this.state.kalApent ? 'Skjul kalenderadressen' : 'Legg programmet i telefonens kalender →',

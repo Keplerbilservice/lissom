@@ -3,6 +3,8 @@
  * Ventelista.
  *
  *   GET                    hvem som venter, per kurs
+ *   POST handling=legg-til hen ringte og vil staa paa lista
+ *                          { oktId, navn, epost, telefon }
  *   POST handling=varsle   gi beskjed om ledig plass  { id }
  *   POST handling=fjern    ta noen av lista           { id }
  *   POST handling=gi-plass  sett hen rett inn paa en dato { id, oktId }
@@ -86,7 +88,35 @@ if (Foresporsel::metode() === 'GET') {
         return $ut;
     };
 
-    Svar::json(['venteliste' => array_map(static function ($w) use ($datoer) {
+    // ── Datoene du kan sette noen paa ────────────────────────────────
+    //
+    // Ventelista kunne bare fylles av kunden selv, fra nettsiden. Ringer
+    // noen og kurset er fullt, sto verkstedet uten en vei inn: enten maatte
+    // hen sende dem til nettsida, eller la det vaere.
+    //
+    // Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa opprette
+    // person paa venteliste», og paa spoersmaal om hvor: paa Venteliste-
+    // siden. Da maa siden vite hvilke kvelder som finnes.
+    //
+    // Alle planlagte kvelder, ogsaa de fulle — det er nettopp de fulle man
+    // staar paa venteliste til.
+    $okter = array_map(static function (array $o): array {
+        return [
+            'oktId' => (int) $o['id'],
+            'kurs'  => (string) $o['tittel'],
+            'naar'  => Booking::norskDato((string) $o['start_tid']),
+        ];
+    }, DB::alle(
+        "SELECT cs.id, cs.start_tid, c.tittel
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.status = 'planlagt'
+            AND cs.start_tid > UTC_TIMESTAMP()
+       ORDER BY cs.start_tid
+          LIMIT 60"
+    ));
+
+    Svar::json(['okter' => $okter, 'venteliste' => array_map(static function ($w) use ($datoer) {
         $venterPaa = $w['course_session_id'] !== null ? (int) $w['course_session_id'] : null;
         $valg = $datoer((int) $w['course_id'], $venterPaa);
         return [
@@ -115,6 +145,94 @@ if (Foresporsel::metode() === 'GET') {
 
 Foresporsel::krevMetode('POST');
 Foresporsel::krevSammeOpphav();
+
+// ── Legg noen paa lista for haand ────────────────────────────────────────
+//
+// Samme rad, samme ko og samme bekreftelse som naar kunden setter seg selv
+// paa lista fra nettsiden — se api/venteliste.php. Ingen ny mal og ingen ny
+// vei inn i basen; forskjellen er bare hvem som skriver navnet.
+//
+// Ligger foer oppslaget under, som krever en rad som alt finnes.
+if (Foresporsel::tekst('handling') === 'legg-til') {
+    $oktId   = Foresporsel::heltall('oktId');
+    $navn    = mb_substr(trim(Foresporsel::tekst('navn')), 0, 191);
+    $epost   = mb_substr(trim(Foresporsel::tekst('epost')), 0, 191);
+    $telefon = normaliser_telefon(Foresporsel::tekst('telefon'));
+
+    $okt = DB::en(
+        "SELECT cs.id, cs.course_id, cs.start_tid, c.tittel
+           FROM course_sessions cs
+           JOIN courses c ON c.id = cs.course_id
+          WHERE cs.id = :o",
+        ['o' => $oktId]
+    );
+    if ($okt === null) {
+        Svar::feil('Fant ikke datoen.');
+    }
+    if ($navn === '') {
+        Svar::feil('Vi trenger et navn.');
+    }
+    // E-posten er hele poenget: det er dit beskjeden om ledig plass gaar.
+    if ($epost === '' || !filter_var($epost, FILTER_VALIDATE_EMAIL)) {
+        Svar::feil('Vi trenger en gyldig e-postadresse — det er dit vi gir beskjed.');
+    }
+
+    $kursId = (int) $okt['course_id'];
+
+    // Staar hen der alt, skal hen ikke havne to ganger i koen.
+    $finnes = DB::en(
+        "SELECT id, posisjon FROM waitlist
+          WHERE course_id = :k AND course_session_id = :o
+            AND status IN ('venter','varslet')
+            AND (epost = :e OR (telefon IS NOT NULL AND telefon = :t))
+          LIMIT 1",
+        ['k' => $kursId, 'o' => $oktId, 'e' => $epost,
+         't' => $telefon !== '' ? $telefon : null]
+    );
+    if ($finnes !== null) {
+        Svar::feil($navn . ' står allerede på ventelisten for denne datoen, som nr. '
+                   . (int) $finnes['posisjon'] . '.');
+    }
+
+    $posisjon = 1 + (int) DB::verdi(
+        "SELECT COUNT(*) FROM waitlist
+          WHERE course_id = :k AND course_session_id = :o
+            AND status IN ('venter','varslet')",
+        ['k' => $kursId, 'o' => $oktId]
+    );
+
+    $nyId = DB::settInn('waitlist', [
+        'course_id'         => $kursId,
+        'course_session_id' => $oktId,
+        'navn'              => $navn,
+        'epost'             => $epost,
+        'telefon'           => $telefon !== '' ? $telefon : null,
+        'posisjon'          => $posisjon,
+    ]);
+
+    // Den samme bekreftelsen kunden faar naar hun setter seg paa lista selv.
+    // Eieren, 6. september, valgte «GO — og send e-posten».
+    Varsel::mal('venteliste_satt', ['epost' => $epost], [
+        'navn'     => $navn,
+        'kurs'     => (string) $okt['tittel'],
+        'dato'     => ' ' . Booking::norskDato((string) $okt['start_tid']),
+        'posisjon' => (string) $posisjon,
+    ], 'waitlist', $nyId);
+
+    revider('venteliste_lagt_til', 'waitlist', $nyId, [
+        'okt'      => $oktId,
+        'kurs'     => $okt['tittel'],
+        'posisjon' => $posisjon,
+    ]);
+
+    Svar::ok([
+        'id'       => $nyId,
+        'posisjon' => $posisjon,
+        'beskjed'  => $navn . ' står på ventelisten for ' . $okt['tittel'] . ' '
+                    . Booking::norskDato((string) $okt['start_tid'])
+                    . ', som nr. ' . $posisjon . '. Beskjeden er sendt.',
+    ]);
+}
 
 $id = Foresporsel::heltall('id');
 $rad = DB::en(

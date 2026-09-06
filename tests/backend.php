@@ -3955,9 +3955,10 @@ if ($kursIdT > 0) {
 sjekk('et dra maa vaere et dra, ikke et skjelv',
     str_contains($sida2, 'klDro(fra, mv) {')
     && str_contains($sida2, "(Math.abs(mv.clientX - fra.clientX) + Math.abs(mv.clientY - fra.clientY)) > 5"));
-// Alle tre stedene, ikke bare det ene eieren merket.
-sjekk('… i alle tre dra-handlerne',
-    substr_count($sida2, 'if (!d.moved && !this.klDro(e, mv)) return;') === 3);
+// Alle stedene, ikke bare det ene eieren merket. To kom til med «Bytt dato»
+// 6. september: ut av kurset, og inn paa en ny dato.
+sjekk('… i alle fem dra-handlerne',
+    substr_count($sida2, 'if (!d.moved && !this.klDro(e, mv)) return;') === 5);
 
 // ── Godkjenningslenka til Vipps ────────────────────────────────────────
 //
@@ -5892,13 +5893,14 @@ sjekk('… og kurspilla er én linje paa mobilen',
 // Uten avsluttende klamme: kurspilla har en opacity til slutt (kladd staar
 // blekt), ventelistepilla har ikke det. Alt foran er likt, og det er formen.
 $kurspille = "borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0";
+// Tre fra 6. september: «Bytt dato» la en pille til i den samme spalta.
 sjekk('… og ventelistepilla er like stor som kurspilla',
-    substr_count($sida, $kurspille) === 2
-    && substr_count($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }") === 2
-    && substr_count($sida, ": { padding: '6px 8px' }),") === 2);
+    substr_count($sida, $kurspille) === 3
+    && substr_count($sida, "? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }") === 3
+    && substr_count($sida, ": { padding: '6px 8px' }),") === 3);
 sjekk('… med den samme skrifta i navnet og i det under',
-    substr_count($sida, "navnStil: Object.assign({ fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },") === 2
-    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap' },") === 2);
+    substr_count($sida, "navnStil: Object.assign({ fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },") === 3
+    && substr_count($sida, "fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap' },") === 3);
 // Bare venstrekanten skiller dem, saa man ser hvilken liste man er i.
 sjekk('… men ventelista beholder den terrakotta venstrekanten',
     str_contains($sida, "borderLeftColor: 'var(--terracotta-500)', borderRadius: 'var(--radius-sm)'"));
@@ -12052,13 +12054,30 @@ $mlB    = file_get_contents(dirname(__DIR__) . '/app/lib/medlemskap.php');
 $ordner = (string) DB::verdi(
     "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_ordner_selv'"
 );
-sjekk('velkomsten sier hva som gjenstaar',
-    str_contains($ordner, 'FULLFØR BETALINGEN I VIPPS'), mb_substr($ordner, 0, 40));
-sjekk('… og paastaar ikke at det alt er betalt',
-    !str_contains($ordner, 'Du har betalt for denne perioden'),
-    'brevet gikk foer kunden hadde vaert i Vipps');
-sjekk('… og lenka staar i den',
-    str_contains($ordner, '{lenke}') && str_contains($ordner, '{belop}'));
+// Migrasjon 142 tok lenka ut igjen. Innmeldingen sender soekeren rett til
+// Vipps — brevet ba altsaa om en betaling som nettopp var gjort, og lenka
+// var en betaling til paa det samme medlemskapet. Eieren, 6. september:
+// «de andre medlemskapene, skal vel ikke ha noen link, de maa betale naar de
+// booker!!», og paa spoersmaal om admin-knappen som bruker samme mal:
+// «Én tekst — fjern lenka helt».
+sjekk('velkomsten ber ikke om en betaling som alt er gjort',
+    !str_contains($ordner, 'FULLFØR BETALINGEN I VIPPS')
+    && !str_contains($ordner, 'Har du ikke betalt ennå'), mb_substr($ordner, 0, 40));
+sjekk('… og har ingen lenke',
+    !str_contains($ordner, '{lenke}'));
+sjekk('… og paastaar heller ikke at det ER betalt',
+    !str_contains($ordner, 'Du har betalt for denne perioden')
+    && !str_contains($ordner, 'Betalingen er registrert'),
+    'brevet gaar foer vi vet hvordan det gikk i Vipps');
+sjekk('… men sier hvilket medlemskap og hva det koster',
+    str_contains($ordner, '{type}') && str_contains($ordner, '{belop}'));
+// Fast trekk er ikke roert: der ER lenka poenget, for avtalen maa godkjennes
+// i appen foer det finnes noe aa trekke paa.
+$fast = (string) DB::verdi(
+    "SELECT tekst FROM notification_templates WHERE navn = 'innmelding_fast_trekk'"
+);
+sjekk('fast trekk beholder godkjenningslenka',
+    str_contains($fast, '{lenke}') && str_contains($fast, 'GODKJENNE AVTALEN I VIPPS'));
 
 // 2. Kvitteringen fantes ikke. Betalingen gikk gjennom, medlemskapet ble
 //    slaatt paa, og kunden fikk aldri et ord fra oss.
@@ -12273,6 +12292,135 @@ $cfg = file_get_contents(dirname(__DIR__) . '/app/config.php');
 sjekk('… uten at testadressen kan naa produksjon',
     str_contains($cfg, "getenv('LISSOM_VIPPS_BASE')")
     && str_contains($cfg, "self::miljo() !== 'produksjon'"));
+
+
+// ── «Bytt dato»: dra en deltaker ut av kurset og inn paa en ny ────────
+//
+// Eieren, 6. september: «dersom en deltaker er paameldt et kurs, vil jeg
+// kunne dra de ut av kurset og inn paa siden bytt dato … deretter vil jeg
+// kunne velge en ny dato i kalender og trekke deltakeren inn i dette
+// kurset». Han saa skissen og svarte «GO — bygg det».
+//
+// Maalt i nettleseren, 28 av 28: raden dras ut, kortet lukker seg, ruta
+// lyser opp, kortet legger seg i lista, «Sett tilbake» staar der, et klikk
+// paa raden aapner fortsatt deltakeren, kortet dras inn paa en ny dato,
+// bekreftelsen kommer midt paa skjermen, «Avbryt» sender ingenting, og
+// «Ja, flytt og send beskjed» sender flyttingen og legger e-posten i koen.
+$byttSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('«Bytt dato» staar i kalenderens sidemeny',
+    str_contains($byttSida, '>Bytt dato</span>')
+    && str_contains($byttSida, 'id="klbd-sone"')
+    && str_contains($byttSida, 'Dra en deltaker hit, og så inn på en ny dato.')
+    && str_contains($byttSida, 'Ingen venter på ny dato.'));
+sjekk('… og kortet kan settes tilbake',
+    str_contains($byttSida, '>Sett tilbake</button>')
+    && str_contains($byttSida, "tilbake: () => this.setState(st => ({ klBd: (st.klBd || []).filter(x => x.bookingId !== v.bookingId) }))"));
+// Deltakerraden maa fortsatt kunne trykkes paa: dra og klikk side om side,
+// samme deling som paa brikkene i kalenderen.
+sjekk('… og deltakerraden bade kan dras og trykkes paa',
+    str_contains($byttSida, 'onClick="{{ p.velg }}" onMouseDown="{{ p.ned }}"')
+    && str_contains($byttSida, 'rad.ned = e => this.klBdTaUt({'));
+// Kurskortet er en dialog med et teppe over resten. Blir det staaende, drar
+// man mot noe man hverken ser eller treffer. Maalt: uten dette laa sonen
+// bak teppet, og draget kunne ikke fullfores.
+sjekk('… og kurskortet lukker seg naar draget starter',
+    str_contains($byttSida, "forst ? { klValgtId: null, klFlyttVis: false, klBekreftAvlys: false } : {}"));
+// Sidemenyen er lang. Maalt paa 1500x1000: sonen laa 1153 px ned.
+sjekk('… og sidemenyen rulles fram saa sonen er synlig',
+    str_contains($byttSida, "const s = document.getElementById('klbd-sone');")
+    && str_contains($byttSida, "s.scrollIntoView({ block: 'end' })"));
+// Ett piksel er ikke et dra — samme terskel som de tre andre handlerne.
+sjekk('… og de to nye dra-handlerne bruker samme terskel',
+    str_contains($byttSida, 'klBdTaUt(p, e) {')
+    && str_contains($byttSida, 'klBdDragStart(p, e) {'));
+// Bekreftelsen bruker det samme kortet som de tre andre. Ordene er eierens.
+sjekk('… og bekreftelsen spor foer noe skjer',
+    str_contains($byttSida, "emne: 'Bytt dato',")
+    && str_contains($byttSida, "tekst: 'Deltakeren får e-post om den nye datoen.',")
+    && str_contains($byttSida, "knapp: 'Ja, flytt og send beskjed',")
+    && str_contains($byttSida, 'gjor: () => this.klBdFlytt(bd.p, bdEvt.oktId),'));
+// «Avbryt» skal ikke sende noe, og skal ikke la ruta bli haengende.
+sjekk('… og «Avbryt» rydder bort slippet',
+    str_contains($byttSida, "klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null }),"));
+// Flyttingen gaar til den som fantes fra for.
+sjekk('… og flyttingen gaar til pamelding.php',
+    str_contains($byttSida, "handling: 'flytt', id: p.bookingId, oktId: oktId,"));
+
+// Serveren: beskjeden som ikke ble sendt for.
+$pmFlytt = file_get_contents(dirname(__DIR__) . '/api/admin/pamelding.php');
+sjekk('flyttingen sender beskjed til deltakeren',
+    str_contains($pmFlytt, "Varsel::mal('pamelding_flyttet', ['epost' => \$b['epost']], [")
+    && str_contains($pmFlytt, "'fra'   => \$b['fra_tid'] ? Booking::norskDato((string) \$b['fra_tid']) : '',"));
+// Har hun ingen adresse, sendes ingenting — og da skal svaret si det, ikke
+// paastaa at beskjeden er gitt.
+sjekk('… og sier fra naar den ikke kunne sendes',
+    str_contains($pmFlytt, "(\$varslet ? 'Beskjeden er sendt.' : 'Husk å gi beskjed.')"));
+
+// Malen. Ordlyden er den eieren godkjente 6. september.
+$mig143 = @file_get_contents(dirname(__DIR__) . '/db/migrations/143_ny_dato_pa_kurset.sql') ?: '';
+sjekk('malen «Ny dato på kurset» ligger i migrasjon 143',
+    str_contains($mig143, "'pamelding_flyttet',")
+    && str_contains($mig143, "'Ny dato på {kurs}',")
+    && str_contains($mig143, 'Plassen din på {kurs} er flyttet fra {fra} til {til}.')
+    && str_contains($mig143, 'Du trenger ikke gjøre noe — betalingen følger med.')
+    && str_contains($mig143, "'kurs',"));
+$malerFlytt = file_get_contents(dirname(__DIR__) . '/app/lib/maler.php');
+sjekk('… og den kan redigeres under E-postmaler',
+    str_contains($malerFlytt, "'pamelding_flyttet' => [")
+    && str_contains($malerFlytt, "'fra'   => 'Datoen hun sto på',")
+    && str_contains($malerFlytt, "'til'   => 'Den nye datoen',"));
+
+
+// ── Legg noen paa venteliste for haand ────────────────────────────────
+//
+// Lista kunne bare fylles av kunden selv, fra nettsiden. Ringer noen og
+// kurset er fullt, sto verkstedet uten en vei inn.
+//
+// Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa opprette person
+// paa venteliste», paa spoersmaal om hvor: «Paa Venteliste-siden», og paa
+// spoersmaal om beskjeden: «GO — og send e-posten».
+//
+// Maalt i nettleseren, 18 av 18: skjemaet staar der, «Legg til» uten dato
+// sender ingenting og sier hva som mangler, bekreftelsen kommer midt paa
+// skjermen, «Avbryt» sender ingenting, og et ja legger raden inn, tommer
+// feltene og legger e-posten i koen. Dobbeltforing stoppes.
+$vlSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('«Legg til på venteliste» staar paa Venteliste-siden',
+    str_contains($vlSida, '>Legg til på venteliste</span>')
+    && str_contains($vlSida, '>Velg kurs og dato</div>')
+    && str_contains($vlSida, 'placeholder="Navn"')
+    && str_contains($vlSida, 'on-click="{{ vlNyLeggTil }}"'));
+// Datoene som brikker, ikke som nedtrekk: en loekke inne i <select>
+// forsvinner i Safari, og det er telefonen verkstedet staar med.
+sjekk('… og datoene staar som brikker, ikke i et nedtrekk',
+    str_contains($vlSida, '<sc-for list="{{ vlNyDatoer }}" as="d"')
+    && !str_contains($vlSida, '{{ vlNyDatoer }}" as="d" hint-placeholder-count="4">' . "\n" . '                <option'));
+sjekk('… og den spoer foer noen legges inn',
+    str_contains($vlSida, '{{ vlNyBVises }}')
+    && str_contains($vlSida, '>Ja, sett på lista</x-import>')
+    && str_contains($vlSida, "{ navn: 'Plass i køen', verdi: 'Bakerst' },"));
+sjekk('… og kallet gaar til den ventelista som finnes',
+    str_contains($vlSida, "handling: 'legg-til', oktId: q.oktId, navn: q.navn,"));
+
+$vlApi = file_get_contents(dirname(__DIR__) . '/api/admin/venteliste.php');
+sjekk('serveren tar imot «legg-til»',
+    str_contains($vlApi, "if (Foresporsel::tekst('handling') === 'legg-til') {")
+    && str_contains($vlApi, "Svar::feil('Fant ikke datoen.');"));
+// E-posten er hele poenget: det er dit beskjeden om ledig plass gaar.
+sjekk('… og krever navn og en gyldig e-postadresse',
+    str_contains($vlApi, "Svar::feil('Vi trenger et navn.');")
+    && str_contains($vlApi, "!filter_var(\$epost, FILTER_VALIDATE_EMAIL)"));
+// Samme mal som naar kunden setter seg paa lista selv. Ingen ny tekst.
+sjekk('… og sender den bekreftelsen som alt finnes',
+    str_contains($vlApi, "Varsel::mal('venteliste_satt', ['epost' => \$epost], [")
+    && str_contains($vlApi, "'posisjon' => (string) \$posisjon,"));
+sjekk('… og lar ingen staa to ganger i samme ko',
+    str_contains($vlApi, 'står allerede på ventelisten for denne datoen'));
+// Kveldene skjemaet kan velge blant. Ogsaa de fulle — det er nettopp de
+// fulle man staar paa venteliste til.
+sjekk('… og gir skjermen kveldene aa velge blant',
+    str_contains($vlApi, "Svar::json(['okter' => \$okter, 'venteliste' =>")
+    && str_contains($vlSida, 'ny.adminVlOkter = venteliste.okter;'));
 
 echo "\n";
 echo str_repeat('─', 46), "\n";

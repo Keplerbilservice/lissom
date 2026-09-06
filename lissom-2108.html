@@ -6419,6 +6419,36 @@ window.__resources = {
             <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Ingen på venteliste.</div>
           </sc-if>
           <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Dra en person inn på en økt for å gi plass.</div>
+
+          <!-- ── Bytt dato ─────────────────────────────────────────────
+               Eieren, 6. september: «dersom en deltaker er paameldt et kurs,
+               vil jeg kunne dra de ut av kurset og inn paa siden bytt dato …
+               deretter vil jeg kunne velge en ny dato i kalender og trekke
+               deltakeren inn i dette kurset».
+
+               Ruta under tar imot. Den lyser opp mens du drar, saa du ser
+               hvor den er. -->
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); padding: 6px 2px 0;">
+            <span style="font-size: 13px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted); white-space: nowrap;">Bytt dato</span>
+          </div>
+          <div id="klbd-sone" style="{{ klBdSoneStil }}">
+            <sc-for list="{{ klBdSide }}" as="bd" hint-placeholder-count="1">
+              <div>
+                <button type="button" onMouseDown="{{ bd.ned }}" style="{{ bd.kortStil }}" style-hover="box-shadow: var(--shadow-md);">
+                  <div style="{{ bd.navnStil }}">{{ bd.navn }}</div>
+                  <div style="{{ bd.metaStil }}">
+                    <span style="{{ bd.kursStil }}">{{ bd.kurs }}</span>
+                    <span style="{{ bd.underStil }}">{{ bd.under }}</span>
+                  </div>
+                </button>
+                <button type="button" onClick="{{ bd.tilbake }}" style="appearance: none; border: none; background: transparent; cursor: pointer; padding: 2px 0 0; text-align: left; font-size: 10px; font-weight: 700; color: var(--lissom-brown); text-decoration: underline; text-underline-offset: 2px;">Sett tilbake</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ klBdTom }}" hint-placeholder-val="{{ true }}">
+              <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Ingen venter på ny dato.</div>
+            </sc-if>
+          </div>
+          <div style="font-size: var(--text-xs); color: var(--text-muted); padding: 0 2px;">Dra en deltaker hit, og så inn på en ny dato.</div>
           <div style="height: var(--space-2);"></div>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="download" on-click="{{ klRapApne }}" hint-size="auto,44px">Dagsrapport</x-import>
           <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="secondary" icon="shopping-cart" on-click="{{ klKasse }}" hint-size="auto,44px">Kasse</x-import>
@@ -7091,7 +7121,7 @@ window.__resources = {
                   <button type="button" onClick="{{ klGaPameldte }}" style="appearance: none; border: none; background: transparent; cursor: pointer; color: var(--lissom-brown); font: var(--type-body-sm); font-weight: 700;">Åpne Påmeldte →</button>
                 </div>
                 <sc-for list="{{ klValgt.deltakere }}" as="p" hint-placeholder-count="3">
-                  <button type="button" onClick="{{ p.velg }}" style="appearance: none; border: none; background: transparent; cursor: pointer; width: 100%; box-sizing: border-box; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle);" style-hover="background: var(--clay-100);">
+                  <button type="button" onClick="{{ p.velg }}" onMouseDown="{{ p.ned }}" style="appearance: none; border: none; background: transparent; cursor: grab; width: 100%; box-sizing: border-box; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding: 9px var(--space-4); border-top: 1px solid var(--border-subtle); user-select: none;">
                     <span style="display: inline-flex; align-items: center; gap: 8px; min-width: 0;">
                       <span style="font-size: var(--text-sm); font-weight: 600; color: var(--lissom-brown); text-decoration: underline; text-decoration-color: var(--clay-300); text-underline-offset: 3px;">{{ p.navn }}</span>
                       <sc-if value="{{ p.ny }}" hint-placeholder-val="{{ false }}">
@@ -7562,6 +7592,63 @@ window.__resources = {
             <sc-for list="{{ omrFaner }}" as="f" hint-placeholder-count="6">
               <button type="button" onClick="{{ f.velg }}" style="{{ f.stil }}">{{ f.navn }}</button>
             </sc-for>
+          </div>
+        </sc-if>
+
+        <!-- ── Legg til paa venteliste ──────────────────────────────────
+             Lista kunne bare fylles av kunden selv, fra nettsiden. Ringer
+             noen og kurset er fullt, sto verkstedet uten en vei inn.
+
+             Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa
+             opprette person paa venteliste», og paa spoersmaal om hvor:
+             paa Venteliste-siden.
+
+             Datoene staar som brikker, ikke som et nedtrekk — se
+             Component.NEDTREKK. -->
+        <div style="background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; max-width: 860px; margin-bottom: var(--space-6);">
+          <div style="padding: var(--space-4) var(--space-6); background: var(--clay-100);">
+            <span style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Legg til på venteliste</span>
+          </div>
+          <div style="padding: var(--space-5) var(--space-6); display: flex; flex-direction: column; gap: var(--space-3);">
+            <div style="font-size: 12px; letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--text-muted);">Velg kurs og dato</div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{ vlNyDatoer }}" as="d" hint-placeholder-count="4">
+                <button type="button" onClick="{{ d.velg }}" style="{{ d.stil }}">{{ d.navn }}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{ vlNyIngenDatoer }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size: var(--text-sm); color: var(--text-muted);">Ingen planlagte datoer i programmet nå.</div>
+            </sc-if>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <input value="{{ vlNyNavn }}" onChange="{{ settVlNyNavn }}" placeholder="Navn" style="{{ vlNyFeltStil }}">
+              <input value="{{ vlNyEpost }}" onChange="{{ settVlNyEpost }}" placeholder="E-post" style="{{ vlNyFeltStil }}">
+              <input value="{{ vlNyTlf }}" onChange="{{ settVlNyTlf }}" placeholder="Telefon" style="{{ vlNyFeltStil }}">
+            </div>
+            <div>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" size="sm" icon="plus" on-click="{{ vlNyLeggTil }}" hint-size="auto,40px">Legg til</x-import>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bekreftelsen. Samme kort som i kalenderen, midt paa skjermen:
+             eieren, 6. september, «naar jeg legger inn en deltaker, eller
+             endrer saa skal det alltid komme en pop up bekreftelse sentrert
+             i skjerne». -->
+        <sc-if value="{{ vlNyBVises }}" hint-placeholder-val="{{ false }}">
+          <div onClick="{{ vlNyBAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 90; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+            <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+              <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">Legg til på venteliste</div>
+              <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Er du sikker?</h2>
+              <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: 6px;">
+                <sc-for list="{{ vlNyBRader }}" as="r" hint-placeholder-count="4">
+                  <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">{{ r.navn }}</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ r.verdi }}</span></div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ vlNyBBekreft }}" hint-size="auto,44px">Ja, sett på lista</x-import>
+                <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ vlNyBAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+              </div>
+            </div>
           </div>
         </sc-if>
 
@@ -31443,6 +31530,47 @@ class Component extends DCLogic {
             };
           })), []).slice(0, 8); })(),
           klVlSideTom: alle.filter(e => e.dato >= idagIso && e.venteliste.length && !e.avlyst).length === 0,
+          // ── Bytt dato ─────────────────────────────────────────────
+          //
+          // Deltakere som er plukket ut av kurset sitt og venter paa en ny
+          // dato. Lista lever i denne okta: har du ikke sluppet noen inn paa
+          // en ny dato enda, staar de fortsatt der de sto.
+          ...(() => {
+            const bd = this.state.klBd || [];
+            return {
+              klBdSide: bd.map(v => {
+                const d = new Date(v.dato + 'T12:00:00');
+                const smal = this.erSmal();
+                return {
+                  navn: v.navn,
+                  kurs: v.kurs,
+                  under: uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()].slice(0, 3),
+                  // Tredje pille i den samme spalta. Tallene er de samme som
+                  // kurspilla og ventelistepilla staar med; bare den groenne
+                  // venstrekanten skiller, saa man ser hvilken liste man er i.
+                  kortStil: Object.assign({ background: 'var(--surface-card)', border: '1px solid var(--border-subtle)', borderLeftWidth: '3px', borderLeftStyle: 'solid', borderLeftColor: 'var(--sage-500)', borderRadius: 'var(--radius-sm)', cursor: 'grab', userSelect: 'none', minWidth: 0 },
+                    smal
+                      ? { display: 'flex', alignItems: 'baseline', gap: '8px', padding: '4px 8px' }
+                      : { padding: '6px 8px' }),
+                  navnStil: Object.assign({ fontSize: '12px', fontWeight: 700, color: 'var(--text-heading)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                    smal ? { minWidth: 0 } : {}),
+                  metaStil: Object.assign({ display: 'flex', alignItems: 'baseline', gap: '5px', fontSize: '10px', color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap' },
+                    smal ? { marginLeft: 'auto', flex: '0 0 auto' } : {}),
+                  kursStil: { overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 },
+                  underStil: { flex: '0 0 auto', marginLeft: 'auto' },
+                  ned: ev => this.klBdDragStart(v, ev),
+                  tilbake: () => this.setState(st => ({ klBd: (st.klBd || []).filter(x => x.bookingId !== v.bookingId) })),
+                };
+              }),
+              klBdTom: bd.length === 0,
+              // Ruta lyser opp mens du drar, saa du ser hvor den tar imot.
+              klBdSoneStil: Object.assign(
+                { display: 'flex', flexDirection: 'column', gap: '8px', borderRadius: 'var(--radius-md)', padding: '8px', boxSizing: 'border-box', minHeight: '46px' },
+                this.state.klBdDrar
+                  ? { border: '1.5px dashed var(--terracotta-500)', background: 'var(--terracotta-100)' }
+                  : { border: '1.5px dashed var(--clay-300)', background: 'transparent' }),
+            };
+          })(),
           ...(() => {
             const vb = this.state.klVlBekreft;
             const malEvt = vb ? alle.find(e => e.id === vb.malId) : null;
@@ -31474,7 +31602,28 @@ class Component extends DCLogic {
           // «gjor» kjores foerst naar ruta er lukket, saa kvitteringen som
           // kommer etterpaa ikke havner bak den.
           ...(() => {
-            const q = this.state.klSporr;
+            // Fjerde bruk: en deltaker som slippes paa en ny dato. Den
+            // bygges her fordi den trenger okta det ble sluppet paa — kurset,
+            // klokkeslettet og hvor mange stoler som er tatt.
+            const bd = this.state.klBdSlipp;
+            const bdEvt = bd ? alle.find(e => String(e.id) === String(bd.malId)) : null;
+            const bdSkriv = (iso, tid) => {
+              const dd = new Date(iso + 'T12:00:00');
+              return dagNavn[dd.getDay()] + ' ' + dd.getDate() + '. ' + mndNavn[dd.getMonth()] + ' kl. ' + tid;
+            };
+            const bdQ = (bd && bdEvt && Number(bdEvt.oktId) !== Number(bd.p.srcOktId)) ? {
+              emne: 'Bytt dato',
+              rader: [
+                ['Deltaker', bd.p.navn],
+                ['Fra', bd.p.kurs + ' · ' + bdSkriv(bd.p.dato, bd.p.tid)],
+                ['Til', bdEvt.tittel + ' · ' + bdSkriv(bdEvt.dato, bdEvt.tid)],
+                ['Plasser', bdEvt.kap ? ((bdEvt.pameldt || 0) + ' av ' + bdEvt.kap + ' plasser er tatt') : ''],
+              ],
+              tekst: 'Deltakeren får e-post om den nye datoen.',
+              knapp: 'Ja, flytt og send beskjed',
+              gjor: () => this.klBdFlytt(bd.p, bdEvt.oktId),
+            } : null;
+            const q = this.state.klSporr || bdQ;
             return {
               klSVises: !!q,
               klSEmne: q ? q.emne : '',
@@ -31482,10 +31631,10 @@ class Component extends DCLogic {
               klSTekst: q ? (q.tekst || '') : '',
               klSHarTekst: !!(q && q.tekst),
               klSKnapp: q ? q.knapp : '',
-              klSAvbryt: () => this.setState({ klSporr: null }),
+              klSAvbryt: () => this.setState({ klSporr: null, klBdSlipp: null }),
               klSBekreft: () => {
                 const gjor = q && q.gjor;
-                this.setState({ klSporr: null });
+                this.setState({ klSporr: null, klBdSlipp: null });
                 if (gjor) { gjor(); }
               },
             };
@@ -32867,6 +33016,115 @@ class Component extends DCLogic {
     window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
   }
 
+  // ── Bytt dato ───────────────────────────────────────────────────────
+  //
+  // Eieren, 6. september: «dersom en deltaker er paameldt et kurs, vil jeg
+  // kunne dra de ut av kurset og inn paa siden bytt dato … deretter vil jeg
+  // kunne velge en ny dato i kalender og trekke deltakeren inn i dette
+  // kurset».
+  //
+  // Flyttingen fantes fra for — «flytt» i pamelding.php beholder betalingen,
+  // notatet og sporet av at det er den samme personen. Men den laa inne i
+  // deltakerkortet, bak et datofelt, og du matte vite datoen for du apnet
+  // det. Her plukker du henne opp, blar i kalenderen, og slipper henne der
+  // det passer.
+  //
+  // Lista lever i denne okta. Lukker du fana, staar deltakeren fortsatt paa
+  // den datoen hun hadde: ingenting er endret for du har sluppet henne et
+  // nytt sted og bekreftet.
+  klBdTaUt(p, e) {
+    if (e.button !== 0) return;
+    // Ikke preventDefault: raden har en «onClick» som skal fortsette aa
+    // aapne deltakeren naar du bare trykker.
+    // Uten en paamelding aa flytte er raden bare en rad: klikket apner
+    // deltakeren, og ingenting kan dras.
+    const kanDra = !!(p && p.bookingId);
+    this._klBd = { p: p, moved: false };
+    const move = mv => {
+      const d = this._klBd; if (!d || !kanDra) return;
+      // Ett piksel er ikke et dra. Se klDro().
+      if (!d.moved && !this.klDro(e, mv)) return;
+      const forst = !d.moved;
+      d.moved = true;
+      // Kurskortet er en dialog med et teppe over resten av skjermen. Blir
+      // det staaende, drar du mot noe du hverken ser eller treffer. Foerste
+      // gang du drar, lukker det seg — da ligger kalenderen og sidemenyen
+      // aapne under, og du ser hvor hun skal.
+      this.setState(Object.assign(
+        { klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY }, klBdDrar: true },
+        forst ? { klValgtId: null, klFlyttVis: false, klBekreftAvlys: false } : {}));
+      // Sidemenyen er lang, og «Bytt dato» staar nederst i den. Uten dette
+      // drar du mot noe som ligger under skjermkanten — nettleseren ruller
+      // ikke av seg selv naar man drar med musa. Maalt: ruta laa 1153 px ned
+      // paa en skjerm som er 1000 px hoy.
+      if (forst) {
+        setTimeout(() => {
+          const s = document.getElementById('klbd-sone');
+          if (s) s.scrollIntoView({ block: 'end' });
+        }, 0);
+      }
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._klBd; this._klBd = null;
+      this.setState({ klNyDrag: null, klBdDrar: false });
+      if (!d) return;
+      // Slapp du uten aa dra, var det et klikk. Raden har fortsatt sin egen
+      // «onClick» — den aapner deltakeren, som for. Samme deling som paa
+      // brikkene i kalenderen, der «velg» og «ned» sitter side om side.
+      if (!d.moved) return;
+      const traff = document.elementsFromPoint(mv.clientX, mv.clientY)
+        .some(x => x && x.id === 'klbd-sone');
+      if (!traff) return;
+      this.setState(st => {
+        const liste = (st.klBd || []).slice();
+        if (liste.some(x => x.bookingId === p.bookingId)) return null;
+        return { klBd: liste.concat([p]) };
+      });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
+  }
+
+  // Fra lista og inn paa en ny dato. Samme maal som ventelista sikter paa:
+  // brikka baerer nummeret sitt i «id», som «kalevt-<nummer>».
+  klBdDragStart(p, e) {
+    if (e.button !== 0 || !p || !p.bookingId) return;
+    e.preventDefault();
+    this._klBdFra = { p: p, moved: false };
+    const move = mv => {
+      const d = this._klBdFra; if (!d) return;
+      if (!d.moved && !this.klDro(e, mv)) return;
+      d.moved = true;
+      this.setState({ klNyDrag: { navn: p.navn, x: mv.clientX, y: mv.clientY } });
+    };
+    const opp = mv => {
+      window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', opp);
+      const d = this._klBdFra; this._klBdFra = null;
+      this.setState({ klNyDrag: null });
+      if (!d || !d.moved) return;
+      const el = document.elementsFromPoint(mv.clientX, mv.clientY)
+        .find(x => x && x.id && String(x.id).indexOf('kalevt-') === 0);
+      if (!el) return;
+      const malId = String(el.id).slice(7);
+      this.setState({ klBdSlipp: { p: p, malId: malId } });
+    };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
+  }
+
+  // Selve flyttingen. Serveren sjekker at det finnes en ledig stol, beholder
+  // betalingen og notatet, foerer det i endringsloggen og sender beskjeden.
+  klBdFlytt(p, oktId) {
+    return this.klKall('/api/admin/pamelding.php', {
+      handling: 'flytt', id: p.bookingId, oktId: oktId,
+    }).then(ok => {
+      if (!ok) return false;
+      this.setState(st => ({ klBd: (st.klBd || []).filter(x => x.bookingId !== p.bookingId) }));
+      // Belegget paa begge datoene har endret seg.
+      this.klFrisk();
+      return true;
+    });
+  }
+
   klPaminLeggTil() {
     const t = (this.state.klPaminNy || '').trim();
     if (!t) return;
@@ -33437,6 +33695,9 @@ class Component extends DCLogic {
         // Kurskatalogen. Uten den falt admin tilbake paa to oppdiktede kurs,
         // og «Ny kursdato» tilbod datoer paa kurs som ikke fantes.
         if (venteliste && venteliste.venteliste) ny.adminVenteliste = venteliste.venteliste;
+        // Kveldene du kan sette noen paa ventelista til. Alle planlagte,
+        // ogsaa de fulle — det er nettopp de fulle man venter paa.
+        if (venteliste && venteliste.okter) ny.adminVlOkter = venteliste.okter;
         if (produkter && produkter.varer) ny.adminProdukter = produkter.varer;
         if (produkter && produkter.internkjop) ny.adminInternkjop = produkter.internkjop;
         if (kurs && kurs.kurs) {
@@ -34027,7 +34288,8 @@ class Component extends DCLogic {
 
   klDeltakerliste(evt) {
     if (!evt || !Array.isArray(evt.deltakere)) return [];
-    return evt.deltakere.map(p => ({
+    return evt.deltakere.map(p => {
+    const rad = {
       navn: p.navn,
       status: p.merknad ? p.status + ' · ⚠ ' + p.merknad : p.status,
       ny: !!p.ny,
@@ -34048,7 +34310,18 @@ class Component extends DCLogic {
         // to dialoger oppaa hverandre.
         klRedId: null,
       }),
-    }));
+    };
+    // Raden kan dras ut av kurset og inn i «Bytt dato». Se klBdTaUt().
+    rad.ned = e => this.klBdTaUt({
+      bookingId: p.bookingId || 0,
+      navn: p.navn,
+      kurs: evt.tittel,
+      dato: evt.dato,
+      tid: evt.tid,
+      srcOktId: evt.oktId || 0,
+    }, e);
+    return rad;
+    });
   }
 
   renderVals() {
@@ -45559,6 +45832,83 @@ class Component extends DCLogic {
           settVlEmne: (e) => this.setState({ vlEmne: e.target.value }),
           vlMelding: this.state.vlMelding || '',
           settVlMelding: (e) => this.setState({ vlMelding: e.target.value }),
+          // ── Legg til paa venteliste ──────────────────────────────────
+          //
+          // Lista kunne bare fylles av kunden selv, fra nettsiden. Ringer
+          // noen og kurset er fullt, sto verkstedet uten en vei inn.
+          //
+          // Eieren, 6. september: «Jeg maa ogsaa ha mulighet til aa
+          // opprette person paa venteliste», og paa spoersmaal om hvor:
+          // paa Venteliste-siden.
+          //
+          // Datoene staar som brikker, ikke som et nedtrekk: se
+          // Component.NEDTREKK — en loekke inne i <select> forsvinner i
+          // Safari, og det er telefonen verkstedet staar med.
+          ...(() => {
+            const okter = (this.state.adminVlOkter || []).slice(0, 24);
+            const valgtId = this.state.vlNyOkt || '';
+            const valgt = okter.find(o => String(o.oktId) === String(valgtId)) || null;
+            const navn = (this.state.vlNyNavn || '').trim();
+            const epost = (this.state.vlNyEpost || '').trim();
+            const b = this.state.vlNyBekreft;
+            const felt = {
+              boxSizing: 'border-box', border: '1px solid var(--border-subtle)',
+              borderRadius: 'var(--radius-md)', padding: '9px 12px',
+              font: 'var(--type-body-sm)', background: 'var(--clay-50)',
+              color: 'var(--text-heading)', flex: '1 1 180px', minWidth: 0,
+            };
+            return {
+              vlNyDatoer: okter.map(o => ({
+                navn: o.kurs + ' · ' + o.naar,
+                velg: () => this.setState({ vlNyOkt: String(o.oktId) }),
+                stil: {
+                  appearance: 'none', cursor: 'pointer', borderRadius: 'var(--radius-pill)',
+                  padding: '6px 12px', font: 'var(--type-body-sm)', whiteSpace: 'nowrap',
+                  border: '1.5px solid ' + (String(o.oktId) === String(valgtId) ? 'var(--lissom-brown)' : 'var(--border-subtle)'),
+                  background: String(o.oktId) === String(valgtId) ? 'var(--lissom-yellow)' : 'transparent',
+                  color: String(o.oktId) === String(valgtId) ? 'var(--lissom-brown)' : 'var(--text-muted)',
+                  fontWeight: String(o.oktId) === String(valgtId) ? 700 : 500,
+                },
+              })),
+              vlNyIngenDatoer: this.erPublisert() && okter.length === 0,
+              vlNyFeltStil: felt,
+              vlNyNavn: this.state.vlNyNavn || '',
+              settVlNyNavn: (e) => this.setState({ vlNyNavn: e.target.value }),
+              vlNyEpost: this.state.vlNyEpost || '',
+              settVlNyEpost: (e) => this.setState({ vlNyEpost: e.target.value }),
+              vlNyTlf: this.state.vlNyTlf || '',
+              settVlNyTlf: (e) => this.setState({ vlNyTlf: e.target.value }),
+              // Spoer foerst, som overalt ellers der noe legges inn.
+              vlNyLeggTil: () => {
+                if (!valgt) { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Velg kurs og dato først.' }); return; }
+                if (navn === '') { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Vi trenger et navn.' }); return; }
+                if (epost.indexOf('@') < 0) { this.setState({ kvittering: 'Gikk ikke', kvitteringDetalj: 'Vi trenger en gyldig e-postadresse — det er dit vi gir beskjed.' }); return; }
+                this.setState({ vlNyBekreft: {
+                  navn: navn, kurs: valgt.kurs, naar: valgt.naar, oktId: valgt.oktId,
+                  epost: epost, telefon: (this.state.vlNyTlf || '').trim(),
+                } });
+              },
+              vlNyBVises: !!b,
+              vlNyBRader: b ? [
+                { navn: 'Person', verdi: b.navn },
+                { navn: 'Kurs', verdi: b.kurs },
+                { navn: 'Dato', verdi: b.naar },
+                { navn: 'Plass i køen', verdi: 'Bakerst' },
+              ] : [],
+              vlNyBAvbryt: () => this.setState({ vlNyBekreft: null }),
+              vlNyBBekreft: () => {
+                const q = b;
+                this.setState({ vlNyBekreft: null });
+                if (!q) return;
+                this.ventelisteKall({
+                  handling: 'legg-til', oktId: q.oktId, navn: q.navn,
+                  epost: q.epost, telefon: q.telefon,
+                }).then(ok => {
+                  if (ok) this.setState({ vlNyNavn: '', vlNyEpost: '', vlNyTlf: '' });
+                });
+              },
+            };
+          })(),
           ovVentelisteAntall: liste.length === 0 ? '' : liste.length + ' venter',
           // ── Ferdig glassert ────────────────────────────────────────────
           //

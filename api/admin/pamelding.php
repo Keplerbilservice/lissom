@@ -93,9 +93,13 @@ if ($handling === 'flytt') {
 
     $b = DB::en(
         'SELECT b.id, b.antall, b.course_id, b.course_session_id, b.status,
-                COALESCE(m.navn, b.gjest_navn) AS navn
+                COALESCE(m.navn, b.gjest_navn) AS navn,
+                COALESCE(m.epost, b.gjest_epost) AS epost,
+                fra.start_tid AS fra_tid, frak.tittel AS fra_kurs
            FROM bookings b
       LEFT JOIN members m ON m.id = b.member_id
+      LEFT JOIN course_sessions fra ON fra.id = b.course_session_id
+      LEFT JOIN courses frak ON frak.id = fra.course_id
           WHERE b.id = :i',
         ['i' => $id]
     );
@@ -146,9 +150,32 @@ if ($handling === 'flytt') {
         'til' => $tilOkt,
     ]);
 
+    // ── Deltakeren skal vite det ────────────────────────────────────────
+    //
+    // Flyttingen sendte ingenting for. Svaret sa «Husk aa gi beskjed.», og da
+    // sto det paa at noen faktisk husket. Gjorde ingen det, motte deltakeren
+    // opp paa en kveld hun ikke lenger var satt opp paa.
+    //
+    // Eieren, 6. september, om «Bytt dato» i kalenderen: e-post hver gang, og
+    // trykket i bekreftelsen er det som sender den. Har hun ingen adresse,
+    // sendes ingenting — og da sier svaret det, i stedet for aa paastaa at
+    // beskjeden er gitt.
+    $tilTekst = Booking::norskDato((string) $okt['start_tid']);
+    $varslet = false;
+    if (($b['epost'] ?? '') !== '') {
+        Varsel::mal('pamelding_flyttet', ['epost' => $b['epost']], [
+            'navn'  => (string) ($b['navn'] ?: ''),
+            'kurs'  => (string) $okt['tittel'],
+            'fra'   => $b['fra_tid'] ? Booking::norskDato((string) $b['fra_tid']) : '',
+            'til'   => $tilTekst,
+            'lenke' => Config::nettsted() . '/min-side',
+        ], 'booking', $id);
+        $varslet = true;
+    }
+
     Svar::ok(['beskjed' => ($b['navn'] ?: 'Påmeldingen') . ' er flyttet til '
-                         . $okt['tittel'] . ' ' . Booking::norskDato((string) $okt['start_tid'])
-                         . '. Husk å gi beskjed.']);
+                         . $okt['tittel'] . ' ' . $tilTekst . '. '
+                         . ($varslet ? 'Beskjeden er sendt.' : 'Husk å gi beskjed.')]);
 }
 
 // ---------------------------------------------------------- endre status

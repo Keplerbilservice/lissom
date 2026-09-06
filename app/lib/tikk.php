@@ -22,8 +22,16 @@ final class Tikk
     /** Registrerer at arbeidet skal gjores naar svaret er levert. */
     public static function planlegg(): void
     {
-        if (PHP_SAPI === 'cli') {
-            return; // cron kjorer jobbene direkte
+        // Er det ingen foresporsel rundt oss, er dette en jobb — og da
+        // kjorer cron det som skal kjores, direkte.
+        //
+        // Sto som «PHP_SAPI === 'cli'». «php» paa tjeneren er CGI-utgaven,
+        // saa under cron var svaret nei: cron-jobben ble regnet som en
+        // besokende, og la nettsidens bakgrunnsarbeid oppaa jobben som alt
+        // holdt paa med det samme. Samme feil som veltet bin/cron.php, bare
+        // andre veien. Regelen staar naa ett sted, i app/lib/foresporsel.php.
+        if (!er_nettforesporsel(PHP_SAPI, $_SERVER)) {
+            return;
         }
 
         register_shutdown_function(static function (): void {

@@ -42,6 +42,7 @@ if ($hemmeligheter === '') {
 /** @var array<string,mixed> $LISSOM_SECRETS */
 $LISSOM_SECRETS = require $hemmeligheter;
 
+require_once APP_DIR . '/lib/foresporsel.php';
 require APP_DIR . '/config.php';
 require APP_DIR . '/lib/db.php';
 require APP_DIR . '/lib/http.php';

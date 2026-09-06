@@ -18,44 +18,18 @@
 
 declare(strict_types=1);
 
-/**
- * Kjorer dette fra et terminalvindu eller fra cron — eller fra nettet?
- *
- * Sto som «PHP_SAPI !== 'cli'», og da svarte jobbene 404 og gjorde ingenting.
- *
- * Eieren, 6. september 2026, med en videresendt e-post fra Cron Daemon:
- *
- *     Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php betalinger
- *     Status: 404 Not Found
- *     Content-type: text/html; charset=UTF-8
- *
- * «php» paa den tjeneren er CGI-utgaven, ikke CLI-utgaven. Alle seks jobbene
- * traff derfor denne linja og stoppet foer foerste linje arbeid — ingen
- * varsler, ingen betalinger, ingen medlemstrekk. Det er grunnen til at
- * pengene aldri ble trukket.
- *
- * SAPI-navnet er feil sted aa spoerre. Det som skiller en jobb fra en
- * nettforespoersel er at nettforespoerselen HAR en foresporsel: webtjeneren
- * setter alltid REQUEST_METHOD. Cron setter den aldri, uansett hvilken
- * PHP-utgave som kjorer.
- *
- * Vakta staar fortsatt — bin/ ligger over public_html og kan ikke naas fra
- * nettet i dag, men den dagen noen flytter en mappe skal den fange det.
- *
- * @param array<string,mixed> $server
- */
-function cron_fra_nettet(string $sapi, array $server): bool
-{
-    // De tre SAPI-ene en webtjener faktisk bruker. «cgi» og «cgi-fcgi» staar
-    // ikke her: det er dem cron bruker paa tjenere som denne.
-    if (in_array($sapi, ['apache2handler', 'fpm-fcgi', 'litespeed'], true)) {
-        return true;
-    }
-    // En ekte foresporsel har en metode og et vertsnavn. En jobb har ingen.
-    return isset($server['REQUEST_METHOD']) || isset($server['HTTP_HOST']);
-}
+// Kjorer dette fra et terminalvindu eller fra cron — eller fra nettet?
+//
+// Sto som «PHP_SAPI !== 'cli'», og da svarte jobbene 404 og gjorde ingenting.
+// Hele historien, og hvorfor SAPI-navnet er feil sted aa spoerre, staar i
+// app/lib/foresporsel.php. Den lastes her, foer alt annet, slik at vakta staar
+// foer foerste linje arbeid.
+//
+// Vakta staar fortsatt — bin/ ligger over public_html og kan ikke naas fra
+// nettet i dag, men den dagen noen flytter en mappe skal den fange det.
+require_once dirname(__DIR__) . '/app/lib/foresporsel.php';
 
-if (cron_fra_nettet(PHP_SAPI, $_SERVER)) {
+if (er_nettforesporsel(PHP_SAPI, $_SERVER)) {
     http_response_code(404);
     exit;
 }
@@ -71,9 +45,52 @@ if (PHP_SAPI !== 'cli') {
     header_remove();
 }
 
+// ---------------------------------------------------------------------------
+// Utstroemmene. STDOUT og STDERR finnes BARE i CLI-utgaven av PHP.
+//
+// Eieren, 6. september 2026, videresendt e-post fra Cron Daemon klokka 22:10
+// — etter at 404-en over var rettet, samme kveld:
+//
+//     Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php varsler
+//     Status: 500 Internal Server Error
+//     Content-Type: application/json; charset=utf-8
+//     {"feil":"Noe gikk galt. Proev igjen, eller ta kontakt med oss."}
+//
+// Jobben kom altsaa forbi vakta og inn i koden — og stoppet paa neste linje.
+// Der sto det «stream_isatty(STDOUT)». CGI-utgaven definerer ikke den
+// konstanten, og i PHP 8 er et ukjent konstantnavn en Error som velter alt.
+// Feilhandtereren i app/bootstrap.php tok imot den og svarte slik den svarer
+// nettet: 500 og en JSON-linje. Ingen varsler ble sendt.
+//
+// php://stdout og php://stderr finnes i alle utgaver av PHP.
+$ut  = fopen('php://stdout', 'wb');
+$err = fopen('php://stderr', 'wb');
+
 require dirname(__DIR__) . '/app/bootstrap.php';
 
-$jobb = $argv[1] ?? '';
+// ---------------------------------------------------------------------------
+// En jobb som feiler skal si det som en jobb, ikke som en nettside.
+//
+// Handtereren i app/bootstrap.php svarer med HTTP-status og JSON. Det er
+// riktig for /api — men for en cron-jobb ble det bare «Status: 500» i en
+// e-post, uten et ord om hva som var galt. Denne overtar for jobbene og
+// skriver grunnen til stderr, som er nettopp det cPanel sender videre.
+set_exception_handler(static function (Throwable $e) use ($err): void {
+    logg_feil('Cron-jobben stoppet', $e);
+    if ($err !== false) {
+        fwrite($err, 'Cron-jobben stoppet: ' . $e::class . ': ' . $e->getMessage()
+            . ' @ ' . $e->getFile() . ':' . $e->getLine() . "\n");
+    }
+    exit(1);
+});
+
+// Navnet paa jobben staar bak kommandoen: «php bin/cron.php varsler».
+//
+// $argv fylles bare naar register_argc_argv staar paa. CLI-utgaven har den
+// paa uansett; CGI-utgaven foelger php.ini, og der er den slaatt av i PHPs
+// egen produksjonsmal. $_SERVER['argv'] er samme liste, og den ene finnes
+// noen ganger naar den andre ikke gjoer det.
+$jobb = (string) ($argv[1] ?? $_SERVER['argv'][1] ?? '');
 $start = microtime(true);
 
 /**
@@ -90,10 +107,10 @@ $start = microtime(true);
  *
  * Kjorer du kommandoen selv i et terminalvindu, skriver den som for.
  */
-$tilSkjerm = stream_isatty(STDOUT);
-$si = static function (string $t) use ($tilSkjerm): void {
-    if ($tilSkjerm) {
-        echo $t . "\n";
+$tilSkjerm = $ut !== false && stream_isatty($ut);
+$si = static function (string $t) use ($tilSkjerm, $ut): void {
+    if ($tilSkjerm && $ut !== false) {
+        fwrite($ut, $t . "\n");
     }
 };
 
@@ -363,7 +380,18 @@ switch ($jobb) {
 
     // -----------------------------------------------------------------------
     default:
-        fwrite(STDERR, "Bruk: php bin/cron.php <jobb>\n\n"
+        $skriv = $err === false ? fopen('php://output', 'wb') : $err;
+        // Staar det ingenting bak kommandoen, er det sjelden fordi noen glemte
+        // det: da har PHP-utgaven latt vaere aa fylle $argv. Det skal e-posten
+        // si rett ut, ikke bare vise bruksanvisningen paa nytt.
+        if ($jobb === '') {
+            fwrite($skriv, "Fikk ikke med navnet paa jobben.\n"
+                . 'PHP-utgave: ' . PHP_SAPI
+                . '. register_argc_argv: ' . (ini_get('register_argc_argv') ? 'paa' : 'av')
+                . ".\n\n");
+        }
+        fwrite($skriv,
+            "Bruk: php bin/cron.php <jobb>\n\n"
             . "  varsler        Sender det som ligger i varselkøen\n"
             . "  betalinger     Henter status fra Vipps for betalinger som henger\n"
             . "  paaminnelser   Kurspåminnelser og ventelistevarsler\n"

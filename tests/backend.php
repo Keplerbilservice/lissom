@@ -12420,15 +12420,31 @@ sjekk('… og deltakerkortet har den samme knappen',
 //
 // Hele avgjorelsen kjores for alle SAPI-ene i tests/cronvakt.php: 11 av 11.
 $cronFil = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
+$vaktFil = file_get_contents(dirname(__DIR__) . '/app/lib/foresporsel.php');
 sjekk('cron-vakta spor om det finnes en foresporsel, ikke om SAPI-navnet',
-    str_contains($cronFil, 'function cron_fra_nettet(string $sapi, array $server): bool')
-    && str_contains($cronFil, "return isset(\$server['REQUEST_METHOD']) || isset(\$server['HTTP_HOST']);")
+    str_contains($vaktFil, 'function er_nettforesporsel(string $sapi, array $server): bool')
+    && str_contains($vaktFil, "return isset(\$server['REQUEST_METHOD']) || isset(\$server['HTTP_HOST']);")
     && !str_contains($cronFil, "if (PHP_SAPI !== 'cli') {\n    http_response_code(404);"));
 sjekk('… og de tre webtjener-SAPI-ene stoppes uansett',
-    str_contains($cronFil, "if (in_array(\$sapi, ['apache2handler', 'fpm-fcgi', 'litespeed'], true)) {"));
+    str_contains($vaktFil, "if (in_array(\$sapi, ['apache2handler', 'fpm-fcgi', 'litespeed'], true)) {"));
 sjekk('… og vakta staar fortsatt',
-    str_contains($cronFil, 'if (cron_fra_nettet(PHP_SAPI, $_SERVER)) {')
+    str_contains($cronFil, 'if (er_nettforesporsel(PHP_SAPI, $_SERVER)) {')
     && str_contains($cronFil, '    http_response_code(404);'));
+// Regelen staar ett sted. Tikk sto som «PHP_SAPI === 'cli'» og tok feil den
+// andre veien: under CGI la den nettsidens bakgrunnsarbeid oppaa cron-jobben.
+$tikkFil = file_get_contents(dirname(__DIR__) . '/app/lib/tikk.php');
+sjekk('… og Tikk bruker den samme regelen, ikke sin egen',
+    str_contains($tikkFil, 'if (!er_nettforesporsel(PHP_SAPI, $_SERVER)) {')
+    && !str_contains($tikkFil, "if (PHP_SAPI === 'cli') {"));
+// STDOUT og STDERR settes bare av CLI-utgaven. «stream_isatty(STDOUT)» veltet
+// jobben under CGI, og feilhandtereren svarte 500 med en JSON-linje.
+sjekk('… og jobben roerer ikke STDOUT eller STDERR',
+    !str_contains($cronFil, '$tilSkjerm = stream_isatty(STDOUT);')
+    && str_contains($cronFil, "\$ut  = fopen('php://stdout', 'wb');")
+    && str_contains($cronFil, "\$err = fopen('php://stderr', 'wb');"));
+sjekk('… og en jobb som feiler svarer som en jobb, ikke som en nettside',
+    str_contains($cronFil, "logg_feil('Cron-jobben stoppet', \$e);")
+    && str_contains($cronFil, '    exit(1);'));
 // CGI-utgaven skriver «Content-type» av seg selv, og cPanel sender e-post for
 // hver linje en jobb skriver. Uten dette ville rettelsen gitt én e-post hvert
 // femte minutt fra jobber som gjor akkurat det de skal.

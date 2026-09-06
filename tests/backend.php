@@ -12404,6 +12404,37 @@ sjekk('… og deltakerkortet har den samme knappen',
     str_contains($byttSida, 'onClick="{{ klDTilVenteliste }}" style="{{ klDHandlingStil }}">Sett på venteliste</button>')
     && str_contains($byttSida, 'klDTilVenteliste: () => {'));
 
+// ── Snarveiene, som kort oeverst ─────────────────────────────────────
+//
+// Eieren, 6. september: «disse pillene, kan du tilpasse de, gjor om til smaa
+// kort og legg de i header menyen paa en fin maate».
+//
+// Maalt i nettleseren paa 1500, 820 og 390 px, 9 av 9 hver: alle fem staar,
+// med ikon, 80 px hoye, tallet som merke i hjoernet, borte fra sidespalta,
+// og «Aarskalender» aapner aarskalenderen. Én rad paa PC, to paa nettbrett,
+// tre paa telefon.
+sjekk('de fem snarveiene staar som kort',
+    substr_count($byttSida, 'style="{{ klSnarveiStil }}"') === 5);
+sjekk('… i sin egen rad, over hele bredden',
+    str_contains($byttSida, "klSnarveiRadStil: {")
+    && str_contains($byttSida, "gridColumn: '1 / -1',")
+    && str_contains($byttSida, "gridTemplateColumns: 'repeat(auto-fit, minmax(148px, 1fr))',"));
+sjekk('… i samme kortstil som boksene over',
+    str_contains($byttSida, "borderRadius: '22px', padding: 'var(--space-4)',"));
+sjekk('… og tallet staar som et merke, ikke i navnet',
+    str_contains($byttSida, 'klNyePamAntall: String(')
+    && str_contains($byttSida, "klSnarveiMerkeStil: {")
+    && !str_contains($byttSida, "klNyePamNavn:"));
+sjekk('… og de er borte fra sidespalta',
+    !str_contains($byttSida, 'on-click="{{ klRapApne }}" hint-size="auto,44px">Dagsrapport</x-import>')
+    && !str_contains($byttSida, 'on-click="{{ klIcsApne }}" hint-size="auto,44px">Synk med mobilen</x-import>'));
+sjekk('… men de gjoer det samme som for',
+    str_contains($byttSida, 'onClick="{{ klRapApne }}" style="{{ klSnarveiStil }}"')
+    && str_contains($byttSida, 'onClick="{{ klKasse }}" style="{{ klSnarveiStil }}"')
+    && str_contains($byttSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
+    && str_contains($byttSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
+    && str_contains($byttSida, 'onClick="{{ klIcsApne }}" style="{{ klSnarveiStil }}"'));
+
 // ── Godkjenningslenka lages naar hun trykker ─────────────────────────
 //
 // Eieren, 6. september: «men det fungerer ikke, linken virker ikke, saa noe er
@@ -12770,8 +12801,10 @@ sjekk('… og draget bruker den samme terskelen som de andre',
 // «jeg vil ha aarskalenderen som et kort eller pille i samme stil, ingen
 // link ... mellom kasse og synk med mobilen paa kelender». Raden er borte,
 // og pilla staar i sidemenyen — se vakta lenger nede.
+// Pilla ble siden et kort oeverst paa sida: «gjor om til smaa kort og legg
+// de i header menyen paa en fin maate».
 sjekk('… og naas fra kalenderen uten en lenke',
-    str_contains($aarSida, 'on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>'));
+    str_contains($aarSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"'));
 // Kursene fyller den ikke av seg selv.
 sjekk('… og fylles bare av det eieren skriver selv',
     !str_contains($aarSida, 'aarKurs')
@@ -12877,12 +12910,18 @@ sjekk('«Legg til person» staar som pille ved Venteliste i kalenderen',
     str_contains($veiSida, 'on-click="{{ klVlLeggTil }}" hint-size="auto,44px">Legg til person</x-import>')
     && !str_contains($veiSida, '>Legg til person →</button>')
     && str_contains($veiSida, "klVlLeggTil: () => this.gaaAdmin('adminventeliste', {}),"));
-sjekk('… og aarskalenderen staar som pille mellom Kasse og Synk med mobilen',
-    str_contains($veiSida, 'on-click="{{ klAarApne }}" hint-size="auto,44px">Årskalender</x-import>')
+// Begge to ble kort oeverst paa sida samme kveld. Rekkefolgen staar
+// fortsatt: Dagsrapport, Kasse, Aarskalender, Nye paameldinger, Synk.
+sjekk('… og aarskalenderen staar som kort mellom Kasse og Nye paameldinger',
+    str_contains($veiSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
+    && strpos($veiSida, 'onClick="{{ klKasse }}" style="{{ klSnarveiStil }}"')
+       < strpos($veiSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
+    && strpos($veiSida, 'onClick="{{ klAarApne }}" style="{{ klSnarveiStil }}"')
+       < strpos($veiSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
     && str_contains($veiSida, "klAarApne: () => this.gaaAdmin('adminarskalender', {}),"));
-sjekk('… og nye paameldinger som pille, med tallet',
-    str_contains($veiSida, 'on-click="{{ klNyePamApne }}" hint-size="auto,44px">{{ klNyePamNavn }}</x-import>')
-    && str_contains($veiSida, "klNyePamNavn: 'Nye påmeldinger'"));
+sjekk('… og nye paameldinger som kort, med tallet som merke',
+    str_contains($veiSida, 'onClick="{{ klNyePamApne }}" style="{{ klSnarveiStil }}"')
+    && str_contains($veiSida, '{{ klSnarveiMerkeStil }}">{{ klNyePamAntall }}</span>'));
 // «ingen link»: raden oeverst er borte.
 sjekk('… og raden med lenka oeverst er borte',
     !str_contains($veiSida, 'aarStripe')

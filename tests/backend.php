@@ -12567,6 +12567,31 @@ sjekk('tabellen ligger i migrasjon 144',
     && str_contains($mig144, 'sortering INT NOT NULL DEFAULT 0')
     && str_contains($mig144, 'KEY aar_mnd (aar, mnd, sortering)'));
 
+
+// ── Kasse og Nettbutikk paa Oversikt: bare paa PC ─────────────────────
+//
+// Eieren, 6. september, med bilde av Oversikt paa telefonen: «Kasse og
+// nettbutikk vil jeg ikke skal vises paa forsiden, vi har det allerede paa
+// bunnmenyen» — og paa spoersmaal: «Bare paa mobil jeg viste deg. Ingen
+// endring paa pc.»
+//
+// Paa telefonen staar begge i bunnmenyen, alltid synlige. Da sa kortene det
+// samme en gang til, oeverst der man skal se hva som haster. Paa PC finnes
+// ingen bunnmeny, og der staar kortene som for.
+//
+// Maalt i nettleseren: paa 390 px er begge kortene borte fra hovedspalta og
+// begge fortsatt i bunnmenyen; paa 1500 px staar begge som for.
+$kortSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('Kasse-kortet paa Oversikt staar bare paa PC',
+    str_contains($kortSida, "...(this.erSmal() ? [] : [kort('Kasse',"));
+sjekk('… og Nettbutikk-kortet likesaa',
+    str_contains($kortSida, "...(this.erSmal() ? [] : [kort('Nettbutikk',"));
+// Ingen vei forsvinner: begge staar i hovedmenyen, som er bunnmenyen paa
+// telefon og sidemenyen paa PC.
+sjekk('… og begge staar fortsatt i hovedmenyen',
+    str_contains($kortSida, "['Kasse',     'adminuttak'],")
+    && str_contains($kortSida, "['Nettbutikk', 'adminbutikk', { butikkFane: 'Butikken' }],"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

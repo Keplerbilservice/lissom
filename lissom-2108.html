@@ -39432,15 +39432,27 @@ class Component extends DCLogic {
             // Ingenting er borte: medlemslista filtrert paa ubetalte naas
             // fra Medlemmer → Alle medlemmer.
 
-            // Samme kasse, andre halvdel. Kortet staar igjen fordi det er
-            // den veien verkstedet er vant til aa gaa naar noen skal meldes
-            // paa — det gaar bare rett inn i kassa naa.
+            // ── Kassa: bare paa PC ──────────────────────────────────
+            //
+            // Eieren, 6. september, med bilde av Oversikt paa telefonen:
+            // «Kasse og nettbutikk vil jeg ikke skal vises paa forsiden, vi
+            // har det allerede paa bunnmenyen» — og, paa spoersmaal: «Bare
+            // paa mobil jeg viste deg. Ingen endring paa pc.»
+            //
+            // Paa telefonen staar Kasse og Nettbutikk i bunnmenyen, alltid
+            // synlige. Da sa kortene det samme en gang til, oeverst der man
+            // skal se hva som haster. Paa PC finnes ingen bunnmeny, og der
+            // staar kortene som for.
+            //
+            // Samme kasse, andre halvdel. Kortet staar fordi det er den veien
+            // verkstedet er vant til aa gaa naar noen skal meldes paa — det
+            // gaar bare rett inn i kassa naa.
             // Kortet sa hva kassa er, ikke hva som har skjedd i den. Dagens
             // tall staar i teksten og ikke i merket: det er kroner, og et
             // beloep i en tallboks ved siden av «3» paa ventelista leses som
             // antall. Summen er den samme som «I dag» i omsetningen lenger
             // nede — ett tall, ett sted det regnes ut.
-            kort('Kasse',
+            ...(this.erSmal() ? [] : [kort('Kasse',
                  (kasseIdag
                     ? 'Solgt for ' + kasseIdag + ' i dag. '
                     : 'Ingen salg over disk i dag ennå. ')
@@ -39450,7 +39462,7 @@ class Component extends DCLogic {
                  () => this.gaaAdmin('adminuttak', {
                    utKurv: {}, utKunde: '', utSok: '', utDel: 'salg',
                    utBelop: '', utSalgBeskjed: '',
-                 })),
+                 }))]),
 
             // Tekstene som sendes ut. Eieren, 1. september: «jeg vil ha et
             // eget kort paa oversikt som heter maler».
@@ -39479,10 +39491,11 @@ class Component extends DCLogic {
                  null, 'Se siden',
                  () => this.gaaAdmin('minside', { fhRolle: 'medlem', fhFra: 'adminoversikt' })),
 
-            kort('Nettbutikk',
+            // Nettbutikken: som Kassa, bare paa PC. Se kommentaren over.
+            ...(this.erSmal() ? [] : [kort('Nettbutikk',
                  'Varer, priser, bilder og lager.',
                  varer.length || null, 'Se butikken',
-                 () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' })),
+                 () => this.gaaAdmin('adminbutikk', { butikkFane: 'Butikken' }))]),
 
             kort('Kursholdere',
                  'Hvem som holder kursene, og timene deres.',

@@ -464,7 +464,10 @@ Svar::json([
         'naar'      => $b['start_tid'] ? Booking::norskDato((string) $b['start_tid']) : '',
         'tid'       => Booking::norskDato((string) $b['created_at']),
         'belop'     => Booking::kroner((int) $b['belop_ore']),
-        'status'    => $b['status'] === 'betalt' ? 'Betalt' : 'Ubetalt',
+        // Samme to ord som betalingspilla bruker ellers i systemet, og som
+        // deltakerraden i kalenderen fikk 6. september. Her sto «Ubetalt»,
+        // og da het den samme tilstanden to ting paa to skjermer.
+        'status'    => $b['status'] === 'betalt' ? 'Betalt' : 'Ikke betalt',
         'referanse' => $b['vipps_reference'],
     ], $nyeste),
     'omsetning' => [

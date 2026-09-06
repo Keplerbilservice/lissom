@@ -5515,7 +5515,12 @@ window.__resources = {
                 <div style="font-weight: 600; font-size: var(--text-sm); color: var(--text-heading);">{{ n.navn }}</div>
                 <div style="font-size: var(--text-xs); color: var(--text-muted);">{{ n.hvaNaar }}</div>
               </div>
-              <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
+              <!-- Betalingspilla, den samme som medlemslista, personruta,
+                   kalenderen og paameldte bruker. Se betalingsPille(). -->
+              <div style="display: flex; align-items: center; gap: var(--space-3); flex: 0 0 auto;">
+                <span style="{{ n.betalingStil }}">{{ n.betalingMerke }}</span>
+                <span style="font-size: var(--text-xs); color: var(--text-muted); white-space: nowrap;">{{ n.tid }}</span>
+              </div>
             </div>
           </sc-for>
         </div>
@@ -6718,6 +6723,33 @@ window.__resources = {
             <div style="display: flex; gap: var(--space-3);">
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" on-click="{{ klKonfliktBekreft }}" hint-size="auto,44px">Flytt likevel</x-import>
               <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klKonfliktAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- «Er du sikker?» foer noe gjores.
+           Eieren, 6. september: «naar jeg legger til eller sletter deltakere
+           saa faar jeg fortsatt ikke opp, er du sikker at du vil… bekreft /
+           avbryt», og «ikke naar jeg endrer tid heller, faar bare en pop upp
+           om at det er gjort, ikke beskjed om aa bekrefte som jeg ba om».
+           Samme kort som tildelingen under, ett sted, tre bruk. -->
+      <sc-if value="{{ klSVises }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ klSAvbryt }}" style="position: fixed; inset: 0; background: rgba(46,16,2,.42); backdrop-filter: blur(3px); z-index: 90; display: flex; align-items: center; justify-content: center; padding: var(--space-6);">
+          <div onClick="{{ klStopp }}" style="background: var(--surface-card); border-radius: 22px; width: min(440px, 100%); max-height: 86vh; overflow: auto; padding: var(--space-8); box-shadow: var(--shadow-lg); box-sizing: border-box;">
+            <div style="font: var(--type-eyebrow); letter-spacing: var(--tracking-caps); text-transform: uppercase; color: var(--terracotta-600); margin-bottom: var(--space-2);">{{ klSEmne }}</div>
+            <h2 style="margin: 0 0 var(--space-4); font-size: var(--text-2xl);">Er du sikker?</h2>
+            <div style="background: var(--clay-100); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); margin-bottom: var(--space-4); display: flex; flex-direction: column; gap: 6px;">
+              <sc-for list="{{ klSRader }}" as="r" hint-placeholder-count="3">
+                <div style="display: flex; justify-content: space-between; gap: var(--space-3); font-size: var(--text-sm);"><span style="color: var(--text-muted);">{{ r.navn }}</span><span style="font-weight: 700; color: var(--text-heading); text-align: right;">{{ r.verdi }}</span></div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ klSHarTekst }}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0 0 var(--space-5); font-size: var(--text-sm); color: var(--text-body); text-wrap: pretty;">{{ klSTekst }}</p>
+            </sc-if>
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" icon="check" on-click="{{ klSBekreft }}" hint-size="auto,44px">{{ klSKnapp }}</x-import>
+              <x-import component-from-global-scope="LissomDesignSystem_8402ac.Button" variant="ghost" on-click="{{ klSAvbryt }}" hint-size="auto,44px">Avbryt</x-import>
             </div>
           </div>
         </div>
@@ -31433,6 +31465,31 @@ class Component extends DCLogic {
               },
             };
           })(),
+          // ── «Er du sikker?» ────────────────────────────────────────
+          //
+          // Ett kort, tre bruk: legg inn en deltaker, avbestill en plass, og
+          // flytt en okt. Alle tre gjorde det for uten aa spoerre — de to
+          // forste hadde ingenting, og flyttingen sa bare fra etterpaa.
+          //
+          // «gjor» kjores foerst naar ruta er lukket, saa kvitteringen som
+          // kommer etterpaa ikke havner bak den.
+          ...(() => {
+            const q = this.state.klSporr;
+            return {
+              klSVises: !!q,
+              klSEmne: q ? q.emne : '',
+              klSRader: q ? (q.rader || []).filter(r => r[1] !== '' && r[1] != null).map(r => ({ navn: r[0], verdi: r[1] })) : [],
+              klSTekst: q ? (q.tekst || '') : '',
+              klSHarTekst: !!(q && q.tekst),
+              klSKnapp: q ? q.knapp : '',
+              klSAvbryt: () => this.setState({ klSporr: null }),
+              klSBekreft: () => {
+                const gjor = q && q.gjor;
+                this.setState({ klSporr: null });
+                if (gjor) { gjor(); }
+              },
+            };
+          })(),
           klNyDragVises: !!this.state.klNyDrag,
           klNyDragNavn: this.state.klNyDrag ? this.state.klNyDrag.navn : '',
           klNyDragStil: this.state.klNyDrag ? { position: 'fixed', left: (this.state.klNyDrag.x + 12) + 'px', top: (this.state.klNyDrag.y + 8) + 'px', zIndex: 90, pointerEvents: 'none', background: 'var(--lissom-yellow)', color: 'var(--lissom-brown)', borderRadius: 'var(--radius-pill)', padding: '7px 16px', font: 'var(--type-body-sm)', fontWeight: 700, boxShadow: 'var(--shadow-lg)' } : { display: 'none' },
@@ -31649,7 +31706,8 @@ class Component extends DCLogic {
                       this.setState({ kvittering: 'Ble ikke lagret', kvitteringDetalj: 'Skriv inn gavekortkoden.' });
                       return;
                     }
-                    this.pameldingKall({
+                    // Spoer foerst. Se «klSporr».
+                    const leggInn = () => this.pameldingKall({
                       handling: 'legg-til',
                       oktId: Number(redEvt.oktId),
                       navn: navn,
@@ -31668,6 +31726,18 @@ class Component extends DCLogic {
                       // stemmer med det som nettopp ble lagt inn.
                       this.klFrisk();
                     });
+                    this.setState({ klSporr: {
+                      emne: 'Legg til deltaker',
+                      rader: [
+                        ['Deltaker', navn],
+                        ['Kurs', redEvt.tittel],
+                        ['Tidspunkt', (d ? uked[(d.getDay() + 6) % 7] + ' ' + d.getDate() + '. ' + mndNavn[d.getMonth()] : '') + ' · ' + redEvt.tid],
+                        ['Betaling', maate],
+                        ['Antall', String(Number(u.antall) || 1)],
+                      ],
+                      knapp: 'Ja, legg inn plassen',
+                      gjor: leggInn,
+                    } });
                   },
                 };
               })(),
@@ -31934,13 +32004,27 @@ class Component extends DCLogic {
               },
               // Avbestillingen frigir plassen. Er den betalt med Vipps, sier
               // endepunktet fra: da skal den refunderes, ikke slettes.
+              // Sto som nettleserens egen «confirm». Den ser ikke ut som
+              // resten, kan slaas av i nettleseren, og sier ingenting om
+              // hvilket kurs eller hvilken dato det gjelder. Naa er det den
+              // samme ruta som resten — se «klSporr».
               klDAvbestill: () => {
                 if (!dv || !dv.bookingId) return;
-                if (!window.confirm('Ta ' + dv.navn + ' av lista?\n\n'
-                    + 'Plassen blir ledig med det samme. Er den betalt med Vipps, '
-                    + 'må den refunderes under Økonomi i stedet.')) return;
-                this.klKall('/api/admin/pamelding.php', { handling: 'fjern', id: dv.bookingId })
-                  .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); });
+                this.setState({ klSporr: {
+                  emne: 'Avbestill plassen',
+                  rader: [
+                    ['Deltaker', dv.navn],
+                    ['Kurs', dv.okt],
+                    ['Tidspunkt', dv.tid],
+                    ['Betaling', dv.status],
+                  ],
+                  tekst: dv.betalt
+                    ? 'Plassen blir ledig med det samme. Beløpet må refunderes under Økonomi — det skjer ikke av seg selv.'
+                    : 'Plassen blir ledig med det samme.',
+                  knapp: 'Ja, ta plassen av lista',
+                  gjor: () => this.klKall('/api/admin/pamelding.php', { handling: 'fjern', id: dv.bookingId })
+                    .then(ok => { if (ok) this.setState({ klDeltakerVis: null }); }),
+                } });
               },
               // De andre datoene paa det samme kurset.
               klDFlyttValg: (dv ? alle.filter(e => e.kursId === dv.kursId && e.oktId
@@ -32099,7 +32183,8 @@ class Component extends DCLogic {
         const bet = this.state.klNyDBet || 'Ikke betalt';
         const tlf = (this.state.klNyDTlf || '').trim();
         const belop = (this.state.klNyDBelop || '').trim();
-        this.klKall('/api/admin/pamelding.php', {
+        // Spoer foerst. Se «klSporr».
+        const leggInn = () => this.klKall('/api/admin/pamelding.php', {
           handling: 'legg-til', oktId: valgt.oktId, navn: navn,
           epost: (this.state.klNyDEpost || '').trim(),
           telefon: tlf, antall: 1,
@@ -32108,6 +32193,17 @@ class Component extends DCLogic {
         }).then(ok => {
           if (ok) this.setState({ klNyDNavn: '', klNyDEpost: '', klNyDTlf: '', klNyDBelop: '' });
         });
+        this.setState({ klSporr: {
+          emne: 'Legg til deltaker',
+          rader: [
+            ['Deltaker', navn],
+            ['Kurs', valgt.tittel],
+            ['Tidspunkt', dagNavn[vd.getDay()] + ' ' + vd.getDate() + '. ' + mndNavn[vd.getMonth()] + ' · ' + valgt.tid],
+            ['Betaling', bet],
+          ],
+          knapp: 'Ja, legg inn plassen',
+          gjor: leggInn,
+        } });
       },
       klValgt: valgt ? {
         tittel: valgt.tittel,
@@ -32570,7 +32666,21 @@ class Component extends DCLogic {
     // dato. Aa dra dag to alene ville flyttet hele kurset dit.
     if (e.button !== 0 || !evt || !evt.oktId || evt.samling) return;
     e.preventDefault();
-    this._klFlytt = { evt: evt, moved: false };
+    // Hvor i blokka du grep tak.
+    //
+    // Tida ble regnet av pekerposisjonen alene. Griper du en tre timers okt
+    // paa midten, ligger pekeren halvannen time under blokkas topp — og da
+    // landet okta halvannen time for sent. Eieren, 6. september: «jeg kan
+    // ikke flytte til f eks kl 17, naar jeg drar og slipper, den faller
+    // tilbake paa feil tid, noe gaar men ikke helt riktig».
+    //
+    // Naa trekkes grepet fra, saa det er blokkas topp som treffer klokka.
+    // Blokka finnes paa id-en sin, som resten av kalenderen gjor det.
+    // «currentTarget» er tomt utenfor utsendingen, og et kast her ville
+    // stoppet hele draget for det kom i gang.
+    const el0 = document.getElementById('kalevt-' + evt.id);
+    const r0 = el0 ? el0.getBoundingClientRect() : null;
+    this._klFlytt = { evt: evt, moved: false, grepY: r0 ? (e.clientY - r0.top) : 0 };
     const move = mv => {
       const d = this._klFlytt; if (!d) return;
       // Ett piksel er ikke et dra. Se klDro().
@@ -32585,14 +32695,24 @@ class Component extends DCLogic {
       if (!d || !d.moved) return;
 
       const lengde = evt.slutt ? Math.max(0, this.klMin(evt.slutt) - this.klMin(evt.tid)) : 0;
-      const mal = this.klSlippMaal(mv, lengde);
+      const mal = this.klSlippMaal(mv, lengde, d.grepY || 0);
       if (!mal) return;
       // Maanedsrutenettet har ingen tidsakse. Da flyttes dagen, og
       // klokkeslettet staar — det er det eneste svaret som ikke er en gjetning.
       const nyFra = mal.fra || evt.tid;
       if (mal.dato === evt.dato && nyFra === evt.tid) return;
 
-      this.klKall('/api/admin/kurs.php', {
+      // Spoer foerst. Eieren, 6. september: «ikke naar jeg endrer tid heller,
+      // faar bare en pop upp om at det er gjort, ikke beskjed om aa bekrefte
+      // som jeg ba om». Se «klSporr».
+      const DAG = ['Søndag', 'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag'];
+      const MND = ['januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli',
+                   'august', 'september', 'oktober', 'november', 'desember'];
+      const skrivDato = (iso, tid) => {
+        const dd = new Date(iso + 'T12:00:00');
+        return DAG[dd.getDay()] + ' ' + dd.getDate() + '. ' + MND[dd.getMonth()] + ' kl. ' + tid;
+      };
+      const flytt = () => this.klKall('/api/admin/kurs.php', {
         handling: 'endredato', oktId: evt.oktId,
         start: mal.dato + ' ' + nyFra,
         slutt: lengde ? mal.dato + ' ' + this.klFmt(this.klMin(nyFra) + lengde) : '',
@@ -32609,6 +32729,22 @@ class Component extends DCLogic {
                    slutt: lengde ? evt.dato + ' ' + evt.slutt : '' },
         });
       });
+      this.setState({ klSporr: {
+        emne: 'Flytt økta',
+        rader: [
+          ['Kurs', evt.tittel],
+          ['Fra', skrivDato(evt.dato, evt.tid)],
+          ['Til', skrivDato(mal.dato, nyFra)],
+          ['Påmeldte', evt.kap ? String(evt.pameldt || 0) : ''],
+        ],
+        // Serveren sier det samme i svaret sitt: «De som alt står på lista
+        // får ingen beskjed av seg selv.»
+        tekst: (evt.pameldt || 0) > 0
+          ? 'De som står på lista får ingen beskjed automatisk — send den under Påmeldte.'
+          : '',
+        knapp: 'Ja, flytt økta',
+        gjor: flytt,
+      } });
     };
     window.addEventListener('mousemove', move); window.addEventListener('mouseup', opp);
   }
@@ -32621,14 +32757,18 @@ class Component extends DCLogic {
    *
    * @return {{dato: string, fra: string}|null}
    */
-  klSlippMaal(mv, lengde) {
+  klSlippMaal(mv, lengde, grepY) {
     const els = document.elementsFromPoint(mv.clientX, mv.clientY);
     const kolEl = els.find(el => el.getAttribute && el.getAttribute('data-kol'));
     const datoEl = els.find(el => el.getAttribute && el.getAttribute('data-dato'));
     const omr = this._klRange || { start: 420, slutt: 1320, px: 52 };
+    // «grepY» er hvor langt ned i blokka man tok tak. Uten den regnes tida
+    // av pekeren, og en okt man griper paa midten lander for sent — se
+    // klDragStart().
     const iAksen = (el, y) => {
       const r = el.getBoundingClientRect();
-      let mn = omr.start + Math.round(((y - r.top) / (omr.px || 52) * 60) / 30) * 30;
+      const topp = y - (grepY || 0);
+      let mn = omr.start + Math.round(((topp - r.top) / (omr.px || 52) * 60) / 30) * 30;
       return this.klFmt(Math.max(omr.start, Math.min(omr.slutt - Math.max(30, lengde || 60), mn)));
     };
     if (kolEl) {

@@ -27175,6 +27175,73 @@ class Component extends DCLogic {
    * kunden har paa at bookingen gikk gjennom, og den skal staa til den
    * lukkes.
    */
+  /**
+   * Malrestene support.min.js legger igjen.
+   *
+   * ── Hva som staar der ─────────────────────────────────────────────────
+   *
+   * Naar en «sc-if» eller «sc-for» ligger inne i noe som er «display: none»
+   * — mobilmenyen paa stor skjerm, verktoeyraden paa liten — tegner ikke
+   * runtimen den. Den lar den staa som ren mal i stedet, med bindingene
+   * uskrevet: «onclick="{{ klRDeltakere }}"», «{{ p.navn }}».
+   *
+   * Maalt paa /admin/kalender, 6. september:
+   *
+   *   9900 noder i sida, hvorav 1470 «sc-if»/«sc-for»
+   *   1262 knapper og felt som ingen kan naa
+   *   Alle andre adminskjermer: 264-1267 noder, og null rester
+   *
+   * De er ikke farlige: hver eneste en ligger under noe som er skjult, saa
+   * de kan verken klikkes, faa fokus eller leses opp. Maalt: 50 forsoek paa
+   * aa sette fokus, null som tok imot. Men de er tunge — nitten av tjue
+   * noder paa kalendersida var en mal ingen skulle se.
+   *
+   * ── Hvorfor det er trygt aa fjerne dem ────────────────────────────────
+   *
+   * Runtimen leser dem ikke om igjen. Maalt: fjernet, og deretter byttet
+   * mellom Dag, Uke, Maaned og Liste, krympet til 390 px og tilbake til
+   * 1400. Alt tegnet seg som for, mobilmenyen hadde fortsatt sine fem
+   * knapper, og null feil i konsollet. Noder etter rydding: 467.
+   *
+   * To krav for aa roere en node: den maa ligge under noe som er skjult,
+   * OG den maa selv baere en ubehandlet binding. Er begge sanne, er det en
+   * mal som aldri ble tegnet — ikke noe noen ser.
+   *
+   * Kjores én gang per sidevisning. Etterpaa finnes det ingen igjen, og da
+   * koster kallet ett oppslag som gir tom liste.
+   */
+  ryddMalrester() {
+    if (typeof document === 'undefined' || typeof setTimeout !== 'function') return;
+    // Malene legges inn ETTER at renderVals har kjort. Ryddes det med det
+    // samme, finnes det ingenting aa rydde: maalt til null fjernet, og 1470
+    // rester igjen i sida. Derfor to strok, ett med en gang og ett litt
+    // etter, og ikke oftere enn hvert halve sekund.
+    const na = Date.now();
+    if (this._ryddSist && na - this._ryddSist < 500) return;
+    this._ryddSist = na;
+    setTimeout(() => this.ryddMalresterNa(), 0);
+    setTimeout(() => this.ryddMalresterNa(), 400);
+  }
+
+  ryddMalresterNa() {
+    if (typeof document === 'undefined' || typeof getComputedStyle !== 'function') return;
+    const rester = document.querySelectorAll('sc-if, sc-for');
+    if (!rester.length) return;
+
+    for (const el of Array.prototype.slice.call(rester)) {
+      if (!el.parentElement) continue;
+      // Baerer den en binding som aldri ble skrevet ut?
+      if (el.outerHTML.indexOf('{{') < 0) continue;
+      // Ligger den under noe som er skjult?
+      let n = el, skjult = false;
+      while (n) {
+        if (n.nodeType === 1 && getComputedStyle(n).display === 'none') { skjult = true; break; }
+        n = n.parentElement;
+      }
+      if (skjult) el.remove();
+    }
+  }
+
   varselAutolukk() {
     const tekst = this.state.kvittering || '';
 
@@ -34332,6 +34399,10 @@ class Component extends DCLogic {
 
     // Kvitteringer i admin lukker seg selv etter tre sekunder.
     this.varselAutolukk();
+
+    // Malrestene runtimen legger igjen under det som er skjult. Se
+    // ryddMalrester(): 9900 noder ned til 467 paa kalendersida.
+    this.ryddMalrester();
 
     // Innstemplingsstatus hentes naar man er der den vises: Min side for
     // medlemmet selv, admin-sidene for «i verkstedet naa», og skjermen bak

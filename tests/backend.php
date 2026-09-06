@@ -12422,6 +12422,35 @@ sjekk('… og gir skjermen kveldene aa velge blant',
     str_contains($vlApi, "Svar::json(['okter' => \$okter, 'venteliste' =>")
     && str_contains($vlSida, 'ny.adminVlOkter = venteliste.okter;'));
 
+
+// ── Malrestene runtimen legger igjen ──────────────────────────────────
+//
+// Ligger en «sc-if» eller «sc-for» inne i noe som er «display: none»,
+// tegner ikke support.min.js den. Den blir staaende som ren mal, med
+// bindingene uskrevet.
+//
+// Maalt paa /admin/kalender 6. september: 9900 noder, hvorav 1470 slike
+// rester og 1262 knapper og felt ingen kan naa. Alle andre skjermer sto paa
+// null. Ingen av dem kunne klikkes eller faa fokus — 50 forsoek, null som
+// tok imot — saa dette er vekt, ikke en feil man merker.
+//
+// Etter rydding: 467 noder. Maalt paa aatte skjermer x to bredder, og
+// kalenderen tegner fortsatt Dag, Uke, Maaned og Liste, mobiltoppen har
+// sine fem knapper, og menypanelet aapner seg.
+$ryddSida = file_get_contents(dirname(__DIR__) . '/lissom-2108.html');
+sjekk('malrestene ryddes bort etter hver tegning',
+    str_contains($ryddSida, 'ryddMalrester() {')
+    && str_contains($ryddSida, 'this.ryddMalrester();'));
+// To strok: malene legges inn ETTER at renderVals har kjort, saa et strok
+// med det samme finner ingenting. Maalt: null fjernet, 1470 igjen.
+sjekk('… i to strok, fordi malene legges inn etter tegninga',
+    str_contains($ryddSida, 'setTimeout(() => this.ryddMalresterNa(), 0);')
+    && str_contains($ryddSida, 'setTimeout(() => this.ryddMalresterNa(), 400);'));
+// To krav for aa roere en node, saa ingenting som vises kan forsvinne.
+sjekk('… og bare det som bade er skjult og ubehandlet roeres',
+    str_contains($ryddSida, "if (el.outerHTML.indexOf('{{') < 0) continue;")
+    && str_contains($ryddSida, "if (n.nodeType === 1 && getComputedStyle(n).display === 'none') { skjult = true; break; }"));
+
 echo "\n";
 echo str_repeat('─', 46), "\n";
 echo $ok, " av ", $ok + count($feil), " sjekker gikk gjennom\n";

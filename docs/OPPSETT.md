@@ -289,6 +289,12 @@ Målt før og etter, med en database som ikke finnes:
 
 Er det noe annet som feiler i produksjon, står grunnen nå i e-posten.
 
+Samme spørsmål sto to steder, og begge tok feil på denne serveren.
+`Tikk::planlegg()` spurte `PHP_SAPI === 'cli'` og tok feil den andre veien:
+under CGI regnet den cron-jobben som en besøkende, og la nettsidens
+bakgrunnsarbeid oppå jobben som allerede gjorde det samme. Regelen står nå
+ett sted, i `app/lib/foresporsel.php`, og begge bruker den.
+
 ---
 
 ## 8. Registrer adressene i Vipps-portalen

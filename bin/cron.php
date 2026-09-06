@@ -18,44 +18,18 @@
 
 declare(strict_types=1);
 
-/**
- * Kjorer dette fra et terminalvindu eller fra cron — eller fra nettet?
- *
- * Sto som «PHP_SAPI !== 'cli'», og da svarte jobbene 404 og gjorde ingenting.
- *
- * Eieren, 6. september 2026, med en videresendt e-post fra Cron Daemon:
- *
- *     Cron <rbvapxvz@gungnir> php ~/lissom-app/bin/cron.php betalinger
- *     Status: 404 Not Found
- *     Content-type: text/html; charset=UTF-8
- *
- * «php» paa den tjeneren er CGI-utgaven, ikke CLI-utgaven. Alle seks jobbene
- * traff derfor denne linja og stoppet foer foerste linje arbeid — ingen
- * varsler, ingen betalinger, ingen medlemstrekk. Det er grunnen til at
- * pengene aldri ble trukket.
- *
- * SAPI-navnet er feil sted aa spoerre. Det som skiller en jobb fra en
- * nettforespoersel er at nettforespoerselen HAR en foresporsel: webtjeneren
- * setter alltid REQUEST_METHOD. Cron setter den aldri, uansett hvilken
- * PHP-utgave som kjorer.
- *
- * Vakta staar fortsatt — bin/ ligger over public_html og kan ikke naas fra
- * nettet i dag, men den dagen noen flytter en mappe skal den fange det.
- *
- * @param array<string,mixed> $server
- */
-function cron_fra_nettet(string $sapi, array $server): bool
-{
-    // De tre SAPI-ene en webtjener faktisk bruker. «cgi» og «cgi-fcgi» staar
-    // ikke her: det er dem cron bruker paa tjenere som denne.
-    if (in_array($sapi, ['apache2handler', 'fpm-fcgi', 'litespeed'], true)) {
-        return true;
-    }
-    // En ekte foresporsel har en metode og et vertsnavn. En jobb har ingen.
-    return isset($server['REQUEST_METHOD']) || isset($server['HTTP_HOST']);
-}
+// Kjorer dette fra et terminalvindu eller fra cron — eller fra nettet?
+//
+// Sto som «PHP_SAPI !== 'cli'», og da svarte jobbene 404 og gjorde ingenting.
+// Hele historien, og hvorfor SAPI-navnet er feil sted aa spoerre, staar i
+// app/lib/foresporsel.php. Den lastes her, foer alt annet, slik at vakta staar
+// foer foerste linje arbeid.
+//
+// Vakta staar fortsatt — bin/ ligger over public_html og kan ikke naas fra
+// nettet i dag, men den dagen noen flytter en mappe skal den fange det.
+require_once dirname(__DIR__) . '/app/lib/foresporsel.php';
 
-if (cron_fra_nettet(PHP_SAPI, $_SERVER)) {
+if (er_nettforesporsel(PHP_SAPI, $_SERVER)) {
     http_response_code(404);
     exit;
 }

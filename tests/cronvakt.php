@@ -23,14 +23,8 @@
  */
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/app/lib/foresporsel.php';
 $kilde = file_get_contents(dirname(__DIR__) . '/bin/cron.php');
-$i = strpos($kilde, 'function cron_fra_nettet');
-if ($i === false) {
-    fwrite(STDERR, "Fant ikke cron_fra_nettet() i bin/cron.php\n");
-    exit(1);
-}
-$j = strpos($kilde, "\n}\n", $i) + 3;
-eval(substr($kilde, $i, $j - $i));
 
 $ok = 0;
 $feil = 0;
@@ -43,27 +37,27 @@ echo "\n── Cron-vakta ──────────────────
 
 // ── Slik cron kjorer: ingen foresporsel rundt ────────────────────────
 $sjekk('cron med CLI-utgaven slipper gjennom',
-    cron_fra_nettet('cli', ['PATH' => '/usr/bin']) === false);
+    er_nettforesporsel('cli', ['PATH' => '/usr/bin']) === false);
 $sjekk('cron med CGI-utgaven slipper gjennom — det er den tjeneren bruker',
-    cron_fra_nettet('cgi-fcgi', ['PATH' => '/usr/bin']) === false);
+    er_nettforesporsel('cgi-fcgi', ['PATH' => '/usr/bin']) === false);
 $sjekk('… ogsaa den gamle «cgi»',
-    cron_fra_nettet('cgi', ['PATH' => '/usr/bin']) === false);
+    er_nettforesporsel('cgi', ['PATH' => '/usr/bin']) === false);
 $sjekk('… og «phpdbg»',
-    cron_fra_nettet('phpdbg', []) === false);
+    er_nettforesporsel('phpdbg', []) === false);
 
 // ── Slik nettet kommer: alltid med en foresporsel ────────────────────
 $nett = ['REQUEST_METHOD' => 'GET', 'HTTP_HOST' => 'lissom.no', 'REMOTE_ADDR' => '1.2.3.4'];
-$sjekk('Apache stoppes', cron_fra_nettet('apache2handler', $nett) === true);
-$sjekk('PHP-FPM stoppes', cron_fra_nettet('fpm-fcgi', $nett) === true);
-$sjekk('LiteSpeed stoppes', cron_fra_nettet('litespeed', $nett) === true);
+$sjekk('Apache stoppes', er_nettforesporsel('apache2handler', $nett) === true);
+$sjekk('PHP-FPM stoppes', er_nettforesporsel('fpm-fcgi', $nett) === true);
+$sjekk('LiteSpeed stoppes', er_nettforesporsel('litespeed', $nett) === true);
 $sjekk('CGI bak en webtjener stoppes ogsaa',
-    cron_fra_nettet('cgi-fcgi', $nett) === true);
+    er_nettforesporsel('cgi-fcgi', $nett) === true);
 $sjekk('… og en foresporsel uten vertsnavn',
-    cron_fra_nettet('cgi-fcgi', ['REQUEST_METHOD' => 'POST']) === true);
+    er_nettforesporsel('cgi-fcgi', ['REQUEST_METHOD' => 'POST']) === true);
 $sjekk('… og en med bare vertsnavn',
-    cron_fra_nettet('cgi-fcgi', ['HTTP_HOST' => 'lissom.no']) === true);
+    er_nettforesporsel('cgi-fcgi', ['HTTP_HOST' => 'lissom.no']) === true);
 $sjekk('Apache stoppes selv uten foresporsel i miljoet',
-    cron_fra_nettet('apache2handler', []) === true);
+    er_nettforesporsel('apache2handler', []) === true);
 
 // ── Konstanter som bare finnes i CLI-utgaven ─────────────────────────
 //
